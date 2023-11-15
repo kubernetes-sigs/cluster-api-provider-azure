@@ -1384,7 +1384,7 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 	}
 	if in.OSDiskSizeGB != nil {
 		in, out := &in.OSDiskSizeGB, &out.OSDiskSizeGB
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.AvailabilityZones != nil {
@@ -1416,7 +1416,7 @@ func (in *AzureManagedMachinePoolSpec) DeepCopyInto(out *AzureManagedMachinePool
 	}
 	if in.MaxPods != nil {
 		in, out := &in.MaxPods, &out.MaxPods
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.OsDiskType != nil {
@@ -2034,12 +2034,12 @@ func (in *KubeletConfig) DeepCopyInto(out *KubeletConfig) {
 	}
 	if in.ImageGcHighThreshold != nil {
 		in, out := &in.ImageGcHighThreshold, &out.ImageGcHighThreshold
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.ImageGcLowThreshold != nil {
 		in, out := &in.ImageGcLowThreshold, &out.ImageGcLowThreshold
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.TopologyManagerPolicy != nil {
@@ -2059,17 +2059,17 @@ func (in *KubeletConfig) DeepCopyInto(out *KubeletConfig) {
 	}
 	if in.ContainerLogMaxSizeMB != nil {
 		in, out := &in.ContainerLogMaxSizeMB, &out.ContainerLogMaxSizeMB
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.ContainerLogMaxFiles != nil {
 		in, out := &in.ContainerLogMaxFiles, &out.ContainerLogMaxFiles
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.PodMaxPids != nil {
 		in, out := &in.PodMaxPids, &out.PodMaxPids
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 }
@@ -2089,7 +2089,7 @@ func (in *LinuxOSConfig) DeepCopyInto(out *LinuxOSConfig) {
 	*out = *in
 	if in.SwapFileSizeMB != nil {
 		in, out := &in.SwapFileSizeMB, &out.SwapFileSizeMB
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.Sysctls != nil {
@@ -2144,7 +2144,7 @@ func (in *LoadBalancerProfile) DeepCopyInto(out *LoadBalancerProfile) {
 	*out = *in
 	if in.ManagedOutboundIPs != nil {
 		in, out := &in.ManagedOutboundIPs, &out.ManagedOutboundIPs
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.OutboundIPPrefixes != nil {
@@ -2159,12 +2159,12 @@ func (in *LoadBalancerProfile) DeepCopyInto(out *LoadBalancerProfile) {
 	}
 	if in.AllocatedOutboundPorts != nil {
 		in, out := &in.AllocatedOutboundPorts, &out.AllocatedOutboundPorts
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.IdleTimeoutInMinutes != nil {
 		in, out := &in.IdleTimeoutInMinutes, &out.IdleTimeoutInMinutes
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 }
@@ -2283,12 +2283,12 @@ func (in *ManagedMachinePoolScaling) DeepCopyInto(out *ManagedMachinePoolScaling
 	*out = *in
 	if in.MinSize != nil {
 		in, out := &in.MinSize, &out.MinSize
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.MaxSize != nil {
 		in, out := &in.MaxSize, &out.MaxSize
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 }
@@ -2969,62 +2969,62 @@ func (in *SysctlConfig) DeepCopyInto(out *SysctlConfig) {
 	*out = *in
 	if in.FsAioMaxNr != nil {
 		in, out := &in.FsAioMaxNr, &out.FsAioMaxNr
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.FsFileMax != nil {
 		in, out := &in.FsFileMax, &out.FsFileMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.FsInotifyMaxUserWatches != nil {
 		in, out := &in.FsInotifyMaxUserWatches, &out.FsInotifyMaxUserWatches
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.FsNrOpen != nil {
 		in, out := &in.FsNrOpen, &out.FsNrOpen
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.KernelThreadsMax != nil {
 		in, out := &in.KernelThreadsMax, &out.KernelThreadsMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreNetdevMaxBacklog != nil {
 		in, out := &in.NetCoreNetdevMaxBacklog, &out.NetCoreNetdevMaxBacklog
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreOptmemMax != nil {
 		in, out := &in.NetCoreOptmemMax, &out.NetCoreOptmemMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreRmemDefault != nil {
 		in, out := &in.NetCoreRmemDefault, &out.NetCoreRmemDefault
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreRmemMax != nil {
 		in, out := &in.NetCoreRmemMax, &out.NetCoreRmemMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreSomaxconn != nil {
 		in, out := &in.NetCoreSomaxconn, &out.NetCoreSomaxconn
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreWmemDefault != nil {
 		in, out := &in.NetCoreWmemDefault, &out.NetCoreWmemDefault
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetCoreWmemMax != nil {
 		in, out := &in.NetCoreWmemMax, &out.NetCoreWmemMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4IPLocalPortRange != nil {
@@ -3034,42 +3034,42 @@ func (in *SysctlConfig) DeepCopyInto(out *SysctlConfig) {
 	}
 	if in.NetIpv4NeighDefaultGcThresh1 != nil {
 		in, out := &in.NetIpv4NeighDefaultGcThresh1, &out.NetIpv4NeighDefaultGcThresh1
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4NeighDefaultGcThresh2 != nil {
 		in, out := &in.NetIpv4NeighDefaultGcThresh2, &out.NetIpv4NeighDefaultGcThresh2
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4NeighDefaultGcThresh3 != nil {
 		in, out := &in.NetIpv4NeighDefaultGcThresh3, &out.NetIpv4NeighDefaultGcThresh3
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPFinTimeout != nil {
 		in, out := &in.NetIpv4TCPFinTimeout, &out.NetIpv4TCPFinTimeout
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPKeepaliveProbes != nil {
 		in, out := &in.NetIpv4TCPKeepaliveProbes, &out.NetIpv4TCPKeepaliveProbes
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPKeepaliveTime != nil {
 		in, out := &in.NetIpv4TCPKeepaliveTime, &out.NetIpv4TCPKeepaliveTime
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPMaxSynBacklog != nil {
 		in, out := &in.NetIpv4TCPMaxSynBacklog, &out.NetIpv4TCPMaxSynBacklog
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPMaxTwBuckets != nil {
 		in, out := &in.NetIpv4TCPMaxTwBuckets, &out.NetIpv4TCPMaxTwBuckets
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetIpv4TCPTwReuse != nil {
@@ -3079,32 +3079,32 @@ func (in *SysctlConfig) DeepCopyInto(out *SysctlConfig) {
 	}
 	if in.NetIpv4TCPkeepaliveIntvl != nil {
 		in, out := &in.NetIpv4TCPkeepaliveIntvl, &out.NetIpv4TCPkeepaliveIntvl
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetNetfilterNfConntrackBuckets != nil {
 		in, out := &in.NetNetfilterNfConntrackBuckets, &out.NetNetfilterNfConntrackBuckets
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.NetNetfilterNfConntrackMax != nil {
 		in, out := &in.NetNetfilterNfConntrackMax, &out.NetNetfilterNfConntrackMax
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.VMMaxMapCount != nil {
 		in, out := &in.VMMaxMapCount, &out.VMMaxMapCount
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.VMSwappiness != nil {
 		in, out := &in.VMSwappiness, &out.VMSwappiness
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 	if in.VMVfsCachePressure != nil {
 		in, out := &in.VMVfsCachePressure, &out.VMVfsCachePressure
-		*out = new(int32)
+		*out = new(int)
 		**out = **in
 	}
 }

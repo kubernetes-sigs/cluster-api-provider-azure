@@ -305,17 +305,18 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentPoolSpec {
 	pool := agentpools.AgentPoolSpec{
 		Name:              "fake-agent-pool-name",
+		AzureName:         "fake-agent-pool-name",
 		ResourceGroup:     "fake-rg",
 		Cluster:           "fake-cluster",
 		AvailabilityZones: []string{"fake-zone"},
 		EnableAutoScaling: true,
 		EnableUltraSSD:    ptr.To(true),
 		KubeletDiskType:   (*infrav1.KubeletDiskType)(ptr.To("fake-kubelet-disk-type")),
-		MaxCount:          ptr.To[int32](5),
-		MaxPods:           ptr.To[int32](10),
-		MinCount:          ptr.To[int32](1),
+		MaxCount:          ptr.To(5),
+		MaxPods:           ptr.To(10),
+		MinCount:          ptr.To(1),
 		Mode:              "fake-mode",
-		NodeLabels:        map[string]*string{"fake-label": ptr.To("fake-value")},
+		NodeLabels:        map[string]string{"fake-label": "fake-value"},
 		NodeTaints:        []string{"fake-taint"},
 		OSDiskSizeGB:      2,
 		OsDiskType:        ptr.To("fake-os-disk-type"),
@@ -324,7 +325,6 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 		SKU:               "fake-sku",
 		Version:           ptr.To("fake-version"),
 		VnetSubnetID:      "fake-vnet-subnet-id",
-		Headers:           map[string]string{"fake-header": "fake-value"},
 		AdditionalTags:    infrav1.Tags{"fake": "tag"},
 	}
 

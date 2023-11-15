@@ -21,276 +21,123 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters/mock_managedclusters"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var fakeManagedClusterSpec = &ManagedClusterSpec{Name: "my-managedcluster", ResourceGroup: "my-rg"}
-var fakeManagedClusterSpecWithAAD = &ManagedClusterSpec{
-	Name:          "my-managedcluster",
-	ResourceGroup: "my-rg",
-	AADProfile: &AADProfile{
-		Managed:             true,
-		AdminGroupObjectIDs: []string{"000000-000000-000000-000000"},
-	},
-}
+func TestPostCreateOrUpdateResourceHook(t *testing.T) {
+	t.Run("error creating or updating", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
 
-func TestReconcile(t *testing.T) {
-	testcases := []struct {
-		name          string
-		expectedError string
-		expect        func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
-	}{
-		{
-			name:          "noop if managedcluster spec is nil",
-			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(nil)
-			},
-		},
-		{
-			name:          "create managed cluster returns an error",
-			expectedError: "some unexpected error occurred",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil, errors.New("some unexpected error occurred"))
-				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("some unexpected error occurred"))
-			},
-		},
-		{
-			name:          "create managed cluster succeeds",
-			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				var userKubeConfigData []byte
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
-					Properties: &armcontainerservice.ManagedClusterProperties{
-						Fqdn:              ptr.To("my-managedcluster-fqdn"),
-						ProvisioningState: ptr.To("Succeeded"),
-						IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-							kubeletIdentityKey: {
-								ResourceID: ptr.To("kubelet-id"),
-							},
-						},
-						OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
-							Enabled:   ptr.To(true),
-							IssuerURL: ptr.To("oidc issuer url"),
-						},
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
-					Host: "my-managedcluster-fqdn",
-					Port: 443,
-				})
-				s.IsAADEnabled().Return(false)
-				s.AreLocalAccountsDisabled().Return(false)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
-				s.SetAdminKubeconfigData([]byte("credentials"))
-				s.SetUserKubeconfigData(userKubeConfigData)
-				s.SetKubeletIdentity("kubelet-id")
-				s.SetOIDCIssuerProfileStatus(nil)
-				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
-					IssuerURL: ptr.To("oidc issuer url"),
-				})
-				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "create managed private cluster succeeds",
-			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				var userKubeConfigData []byte
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
-					Properties: &armcontainerservice.ManagedClusterProperties{
-						APIServerAccessProfile: &armcontainerservice.ManagedClusterAPIServerAccessProfile{
-							EnablePrivateCluster:           ptr.To(true),
-							EnablePrivateClusterPublicFQDN: ptr.To(false),
-						},
-						PrivateFQDN:       ptr.To("my-managedcluster-fqdn.private"),
-						ProvisioningState: ptr.To("Succeeded"),
-						IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-							kubeletIdentityKey: {
-								ResourceID: ptr.To("kubelet-id"),
-							},
-						},
-						OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
-							Enabled:   ptr.To(true),
-							IssuerURL: ptr.To("oidc issuer url"),
-						},
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
-					Host: "my-managedcluster-fqdn.private",
-					Port: 443,
-				})
-				s.IsAADEnabled().Return(false)
-				s.AreLocalAccountsDisabled().Return(false)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
-				s.SetAdminKubeconfigData([]byte("credentials"))
-				s.SetUserKubeconfigData(userKubeConfigData)
-				s.SetKubeletIdentity("kubelet-id")
-				s.SetOIDCIssuerProfileStatus(nil)
-				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
-					IssuerURL: ptr.To("oidc issuer url"),
-				})
-				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "create managed cluster succeeds with user kubeconfig",
-			expectedError: "",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpecWithAAD)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpecWithAAD, serviceName).Return(armcontainerservice.ManagedCluster{
-					Properties: &armcontainerservice.ManagedClusterProperties{
-						Fqdn:              ptr.To("my-managedcluster-fqdn"),
-						ProvisioningState: ptr.To("Succeeded"),
-						IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-							kubeletIdentityKey: {
-								ResourceID: ptr.To("kubelet-id"),
-							},
-						},
-						OidcIssuerProfile: &armcontainerservice.ManagedClusterOIDCIssuerProfile{
-							Enabled:   ptr.To(true),
-							IssuerURL: ptr.To("oidc issuer url"),
-						},
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
-					Host: "my-managedcluster-fqdn",
-					Port: 443,
-				})
-				s.IsAADEnabled().Return(true)
-				s.AreLocalAccountsDisabled().Return(false)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials"), nil)
-				m.GetUserCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte("credentials-user"), nil)
-				s.SetAdminKubeconfigData([]byte("credentials"))
-				s.SetUserKubeconfigData([]byte("credentials-user"))
-				s.SetKubeletIdentity("kubelet-id")
-				s.SetOIDCIssuerProfileStatus(nil)
-				s.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
-					IssuerURL: ptr.To("oidc issuer url"),
-				})
-				s.UpdatePutStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "fail to get managed cluster credentials",
-			expectedError: "error while reconciling adminKubeConfigData: failed to get credentials for managed cluster: internal server error",
-			expect: func(m *mock_managedclusters.MockCredentialGetterMockRecorder, s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(armcontainerservice.ManagedCluster{
-					Properties: &armcontainerservice.ManagedClusterProperties{
-						Fqdn:              ptr.To("my-managedcluster-fqdn"),
-						ProvisioningState: ptr.To("Succeeded"),
-					},
-				}, nil)
-				s.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
-					Host: "my-managedcluster-fqdn",
-					Port: 443,
-				})
-				s.IsAADEnabled().Return(false)
-				s.AreLocalAccountsDisabled().Return(false)
-				m.GetCredentials(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return([]byte(""), errors.New("internal server error"))
-			},
-		},
-	}
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, nil, errors.New("an error"))
+		g.Expect(err).To(HaveOccurred())
+	})
 
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
-			credsGetterMock := mock_managedclusters.NewMockCredentialGetter(mockCtrl)
-			reconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+	t.Run("successful create or update", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
+		namespace := "default"
+		clusterName := "cluster"
 
-			tc.expect(credsGetterMock.EXPECT(), scopeMock.EXPECT(), reconcilerMock.EXPECT())
+		adminASOKubeconfig := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      adminKubeconfigSecretName(clusterName),
+			},
+			Data: map[string][]byte{
+				secret.KubeconfigDataName: []byte("admin credentials"),
+			},
+		}
+		userASOKubeconfig := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      userKubeconfigSecretName(clusterName),
+			},
+			Data: map[string][]byte{
+				secret.KubeconfigDataName: []byte("user credentials"),
+			},
+		}
+		kclient := fakeclient.NewClientBuilder().
+			WithObjects(adminASOKubeconfig, userASOKubeconfig).
+			Build()
+		scope.EXPECT().GetClient().Return(kclient).AnyTimes()
 
-			s := &Service{
-				Scope:            scopeMock,
-				CredentialGetter: credsGetterMock,
-				Reconciler:       reconcilerMock,
-			}
-
-			err := s.Reconcile(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
+		scope.EXPECT().SetControlPlaneEndpoint(clusterv1.APIEndpoint{
+			Host: "fdqn",
+			Port: 443,
 		})
-	}
-}
-
-func TestDelete(t *testing.T) {
-	testcases := []struct {
-		name          string
-		expectedError string
-		expect        func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder)
-	}{
-		{
-			name:          "noop if no managed cluster spec is found",
-			expectedError: "",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(nil)
-			},
-		},
-		{
-			name:          "successfully delete an existing managed cluster",
-			expectedError: "",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, nil)
-			},
-		},
-		{
-			name:          "managed cluster deletion fails",
-			expectedError: "internal error",
-			expect: func(s *mock_managedclusters.MockManagedClusterScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
-				s.ManagedClusterSpec().Return(fakeManagedClusterSpec)
-				r.DeleteResource(gomockinternal.AContext(), fakeManagedClusterSpec, serviceName).Return(errors.New("internal error"))
-				s.UpdateDeleteStatus(infrav1.ManagedClusterRunningCondition, serviceName, errors.New("internal error"))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-			scopeMock := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
-
-			tc.expect(scopeMock.EXPECT(), asyncMock.EXPECT())
-
-			s := &Service{
-				Scope:      scopeMock,
-				Reconciler: asyncMock,
-			}
-
-			err := s.Delete(context.TODO())
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
+		scope.EXPECT().ClusterName().Return(clusterName).AnyTimes()
+		scope.EXPECT().IsAADEnabled().Return(true)
+		scope.EXPECT().AreLocalAccountsDisabled().Return(false)
+		scope.EXPECT().SetAdminKubeconfigData([]byte("admin credentials"))
+		scope.EXPECT().SetUserKubeconfigData([]byte("user credentials"))
+		scope.EXPECT().SetOIDCIssuerProfileStatus(gomock.Nil())
+		scope.EXPECT().SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+			IssuerURL: ptr.To("oidc"),
 		})
-	}
+
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				Fqdn:        ptr.To("fdqn"),
+				PrivateFQDN: ptr.To("private fqdn"),
+				OidcIssuerProfile: &asocontainerservicev1.ManagedClusterOIDCIssuerProfile_STATUS{
+					IssuerURL: ptr.To("oidc"),
+				},
+			},
+		}
+
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("private cluster fqdn", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
+		namespace := "default"
+		clusterName := "cluster"
+
+		kclient := fakeclient.NewClientBuilder().
+			Build()
+		scope.EXPECT().GetClient().Return(kclient).AnyTimes()
+
+		scope.EXPECT().SetControlPlaneEndpoint(clusterv1.APIEndpoint{
+			Host: "private fqdn",
+			Port: 443,
+		})
+		scope.EXPECT().ClusterName().Return(clusterName).AnyTimes()
+		scope.EXPECT().IsAADEnabled().Return(true)
+
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				Fqdn:        ptr.To("fdqn"),
+				PrivateFQDN: ptr.To("private fqdn"),
+				ApiServerAccessProfile: &asocontainerservicev1.ManagedClusterAPIServerAccessProfile_STATUS{
+					EnablePrivateCluster:           ptr.To(true),
+					EnablePrivateClusterPublicFQDN: ptr.To(false),
+				},
+			},
+		}
+
+		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		g.Expect(err).To(HaveOccurred())
+	})
 }

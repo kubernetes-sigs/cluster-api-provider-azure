@@ -20,9 +20,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilfeature "k8s.io/component-base/featuregate/testing"
@@ -45,7 +44,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 		Spec: AzureManagedMachinePoolSpec{
 			Mode:         "System",
 			SKU:          "StandardD2S_V3",
-			OSDiskSizeGB: ptr.To[int32](512),
+			OSDiskSizeGB: ptr.To(512),
 		},
 	}
 	var client client.Client
@@ -60,7 +59,6 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(val).To(Equal("System"))
 	g.Expect(*ammp.Spec.Name).To(Equal("fooname"))
 	g.Expect(*ammp.Spec.OSType).To(Equal(LinuxOS))
-	g.Expect(ammp.Spec.SpotMaxPrice).To(BeNil())
 
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
@@ -82,18 +80,6 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	err = mw.Default(context.Background(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*ammp.Spec.OsDiskType).To(Equal("Ephemeral"))
-
-	t.Logf("Testing ammp defaulting webhook with scaleSetPriority Spot")
-	ammp.Spec.ScaleSetPriority = ptr.To(string(armcontainerservice.ScaleSetPrioritySpot))
-	err = mw.Default(context.Background(), ammp)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(ammp.Spec.SpotMaxPrice.Equal(resource.MustParse("-1"))).To(BeTrue())
-
-	t.Logf("Testing ammp defaulting webhook with scaleSetPriority Spot with max price set")
-	ammp.Spec.SpotMaxPrice = ptr.To(resource.MustParse("100"))
-	err = mw.Default(context.Background(), ammp)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(ammp.Spec.SpotMaxPrice.Equal(resource.MustParse("100"))).To(BeTrue())
 }
 
 func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
@@ -125,14 +111,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			wantErr: true,
@@ -144,7 +130,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 					OSType:       ptr.To(LinuxOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
@@ -152,7 +138,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 					OSType:       ptr.To(WindowsOS),
 					Mode:         "System",
 					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			wantErr: true,
@@ -163,14 +149,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](1024),
+					OSDiskSizeGB: ptr.To(1024),
 				},
 			},
 			wantErr: true,
@@ -181,7 +167,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -189,7 +175,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			wantErr: true,
@@ -200,14 +186,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
+					OSDiskSizeGB: ptr.To(512),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -219,7 +205,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "2"},
 				},
 			},
@@ -227,7 +213,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -239,7 +225,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "3", "2"},
 				},
 			},
@@ -247,7 +233,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:              "System",
 					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To[int32](512),
+					OSDiskSizeGB:      ptr.To(512),
 					AvailabilityZones: []string{"1", "2", "3"},
 				},
 			},
@@ -259,16 +245,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](24),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(24),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](25),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(25),
 				},
 			},
 			wantErr: true,
@@ -279,16 +265,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](30),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(30),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](30),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(30),
 				},
 			},
 			wantErr: false,
@@ -299,102 +285,21 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](24),
-					OsDiskType:   ptr.To(string(armcontainerservice.OSDiskTypeEphemeral)),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(24),
+					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](24),
-					OsDiskType:   ptr.To(string(armcontainerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(24),
+					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 				},
 			},
 			wantErr: true,
-		},
-		{
-			name: "custom header annotation values are immutable",
-			old: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			new: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "false",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "cannot remove custom header annotation after resource creation",
-			old: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			new: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "cannot add new custom header annotations after resource creation",
-			old: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			new: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature":    "true",
-						"infrastructure.cluster.x-k8s.io/custom-header-AnotherFeature": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "non-custom headers annotations are mutable",
-			old: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"annotation-a": "true",
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			new: &AzureManagedMachinePool{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"infrastructure.cluster.x-k8s.io/custom-header-SomeFeature": "true",
-						"annotation-b": "true",
-					},
-				},
-				Spec: AzureManagedMachinePoolSpec{},
-			},
-			wantErr: false,
 		},
 		{
 			name: "Unchanged OSDiskType in an agentpool should not result in an error",
@@ -402,18 +307,18 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](30),
-					OsDiskType:   ptr.To(string(armcontainerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(30),
+					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To[int32](512),
-					MaxPods:      ptr.To[int32](30),
-					OsDiskType:   ptr.To(string(armcontainerservice.OSDiskTypeManaged)),
+					OSDiskSizeGB: ptr.To(512),
+					MaxPods:      ptr.To(30),
+					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 				},
 			},
 			wantErr: false,
@@ -542,14 +447,14 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To[int32](10),
+						SwapFileSizeMB: ptr.To(10),
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To[int32](5),
+						SwapFileSizeMB: ptr.To(5),
 					},
 				},
 			},
@@ -664,8 +569,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "another valid permutation",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods:    ptr.To[int32](249),
-					OsDiskType: ptr.To(string(armcontainerservice.OSDiskTypeManaged)),
+					MaxPods:    ptr.To(249),
+					OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 				},
 			},
 			wantErr: false,
@@ -681,7 +586,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too many MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: ptr.To[int32](251),
+					MaxPods: ptr.To(251),
 				},
 			},
 			wantErr:  true,
@@ -797,7 +702,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too few MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: ptr.To[int32](9),
+					MaxPods: ptr.To(9),
 				},
 			},
 			wantErr:  true,
@@ -984,8 +889,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  ptr.To[int32](100),
-						ImageGcHighThreshold: ptr.To[int32](99),
+						ImageGcLowThreshold:  ptr.To(100),
+						ImageGcHighThreshold: ptr.To(99),
 					},
 				},
 			},
@@ -997,8 +902,8 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  ptr.To[int32](99),
-						ImageGcHighThreshold: ptr.To[int32](100),
+						ImageGcLowThreshold:  ptr.To(99),
+						ImageGcHighThreshold: ptr.To(100),
 					},
 				},
 			},
@@ -1148,7 +1053,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 						FailSwapOn: ptr.To(false),
 					},
 					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To[int32](1500),
+						SwapFileSizeMB: ptr.To(1500),
 					},
 				},
 			},
@@ -1162,7 +1067,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 						FailSwapOn: ptr.To(true),
 					},
 					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To[int32](1500),
+						SwapFileSizeMB: ptr.To(1500),
 					},
 				},
 			},
@@ -1174,7 +1079,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To[int32](1500),
+						SwapFileSizeMB: ptr.To(1500),
 					},
 				},
 			},
@@ -1317,8 +1222,8 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 func getKnownValidAzureManagedMachinePool() *AzureManagedMachinePool {
 	return &AzureManagedMachinePool{
 		Spec: AzureManagedMachinePoolSpec{
-			MaxPods:    ptr.To[int32](30),
-			OsDiskType: ptr.To(string(armcontainerservice.OSDiskTypeEphemeral)),
+			MaxPods:    ptr.To(30),
+			OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
 		},
 	}
 }

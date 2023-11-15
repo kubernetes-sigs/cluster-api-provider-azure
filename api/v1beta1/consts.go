@@ -146,14 +146,6 @@ const (
 )
 
 const (
-	// CustomHeaderPrefix is the prefix of annotations that enable additional cluster / node pool features.
-	// Whatever follows the prefix will be passed as a header to cluster/node pool creation/update requests.
-	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
-	// AzureManagedMachinePool CR to enable creating GPU nodes by the node pool.
-	CustomHeaderPrefix = "infrastructure.cluster.x-k8s.io/custom-header-"
-)
-
-const (
 	// LinuxOS is Linux OS value for OSDisk.OSType.
 	LinuxOS = "Linux"
 	// WindowsOS is Windows OS value for OSDisk.OSType.

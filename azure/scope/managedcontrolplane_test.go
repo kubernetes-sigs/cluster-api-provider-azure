@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -102,7 +103,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.ResourceSpecGetter
+		Expected []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 		Err      string
 	}{
 		{
@@ -130,15 +131,16 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.ResourceSpecGetter{
+			Expected: []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]{
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
+					AzureName:    "pool0",
+					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Replicas:     1,
 					Mode:         "System",
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-					Headers:      map[string]string{},
 				},
 			},
 		},
@@ -168,16 +170,17 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.ResourceSpecGetter{
+			Expected: []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]{
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
+					AzureName:    "pool0",
+					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
 					Version:      ptr.To("1.21.1"),
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-					Headers:      map[string]string{},
 				},
 			},
 		},
@@ -324,7 +327,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    ManagedControlPlaneScopeParams
-		Expected []azure.ResourceSpecGetter
+		Expected []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
 		Err      string
 	}{
 		{
@@ -361,35 +364,38 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					},
 				},
 			},
-			Expected: []azure.ResourceSpecGetter{
+			Expected: []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]{
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
+					AzureName:    "pool0",
+					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
-					Headers:      map[string]string{},
 				},
 				&agentpools.AgentPoolSpec{
 					Name:         "pool1",
+					AzureName:    "pool1",
+					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 					OSType:       ptr.To(azure.LinuxOS),
-					Headers:      map[string]string{},
 				},
 				&agentpools.AgentPoolSpec{
 					Name:         "pool2",
+					AzureName:    "pool2",
+					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
 					Replicas:     1,
 					Cluster:      "cluster1",
 					VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
 					OSType:       ptr.To(azure.WindowsOS),
-					Headers:      map[string]string{},
 				},
 			},
 		},

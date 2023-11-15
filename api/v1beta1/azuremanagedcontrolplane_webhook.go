@@ -76,10 +76,6 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 		networkPlugin := "azure"
 		m.Spec.NetworkPlugin = &networkPlugin
 	}
-	if m.Spec.LoadBalancerSKU == nil {
-		loadBalancerSKU := "Standard"
-		m.Spec.LoadBalancerSKU = &loadBalancerSKU
-	}
 
 	if m.Spec.Version != "" && !strings.HasPrefix(m.Spec.Version, "v") {
 		normalizedVersion := "v" + m.Spec.Version

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
@@ -41,7 +42,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
-	"sigs.k8s.io/cluster-api-provider-azure/util/maps"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/remote"
@@ -471,11 +471,6 @@ func (s *ManagedControlPlaneScope) FailureDomains() []*string {
 	return []*string{}
 }
 
-// ManagedClusterAnnotations returns the annotations for the managed cluster.
-func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string {
-	return s.ControlPlane.Annotations
-}
-
 // AreLocalAccountsDisabled checks if local accounts are disabled for aad enabled managed clusters.
 func (s *ManagedControlPlaneScope) AreLocalAccountsDisabled() bool {
 	if s.IsAADEnabled() &&
@@ -495,15 +490,15 @@ func (s *ManagedControlPlaneScope) IsAADEnabled() bool {
 }
 
 // ManagedClusterSpec returns the managed cluster spec.
-func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter {
+func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
 		Name:              s.ControlPlane.Name,
+		Namespace:         s.ControlPlane.Namespace,
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
 		ClusterName:       s.ClusterName(),
 		Location:          s.ControlPlane.Spec.Location,
 		Tags:              s.ControlPlane.Spec.AdditionalTags,
-		Headers:           maps.FilterByKeyPrefix(s.ManagedClusterAnnotations(), infrav1.CustomHeaderPrefix),
 		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
 		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
@@ -530,7 +525,8 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 		managedClusterSpec.NetworkPolicy = *s.ControlPlane.Spec.NetworkPolicy
 	}
 	if s.ControlPlane.Spec.LoadBalancerSKU != nil {
-		managedClusterSpec.LoadBalancerSKU = *s.ControlPlane.Spec.LoadBalancerSKU
+		// CAPZ accepts Standard/Basic, Azure accepts standard/basic
+		managedClusterSpec.LoadBalancerSKU = strings.ToLower(*s.ControlPlane.Spec.LoadBalancerSKU)
 	}
 
 	if clusterNetwork := s.Cluster.Spec.ClusterNetwork; clusterNetwork != nil {
@@ -629,9 +625,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ResourceSpecGetter
 }
 
 // GetAllAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
-func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ResourceSpecGetter, error) {
+func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool], error) {
 	var (
-		ammps           = make([]azure.ResourceSpecGetter, 0, len(s.ManagedMachinePools))
+		ammps           = make([]azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool], 0, len(s.ManagedMachinePools))
 		foundSystemPool = false
 	)
 	for _, pool := range s.ManagedMachinePools {
@@ -647,7 +643,7 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ResourceSpecG
 			foundSystemPool = true
 		}
 
-		ammp := buildAgentPoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool, pool.InfraMachinePool.Annotations)
+		ammp := buildAgentPoolSpec(s.ControlPlane, pool.MachinePool, pool.InfraMachinePool)
 		ammps = append(ammps, ammp)
 	}
 
@@ -756,11 +752,6 @@ func (s *ManagedControlPlaneScope) StoreClusterInfo(ctx context.Context, caData 
 	return nil
 }
 
-// SetKubeletIdentity sets the ID of the user-assigned identity for kubelet if not already set.
-func (s *ManagedControlPlaneScope) SetKubeletIdentity(id string) {
-	s.ControlPlane.Spec.KubeletUserAssignedIdentity = id
-}
-
 // SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue
 // in the next reconciliation.
 func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.Future) {
@@ -846,18 +837,6 @@ func (s *ManagedControlPlaneScope) SetAnnotation(key, value string) {
 		s.ControlPlane.Annotations = map[string]string{}
 	}
 	s.ControlPlane.Annotations[key] = value
-}
-
-// TagsSpecs returns the tag specs for the ManagedControlPlane.
-func (s *ManagedControlPlaneScope) TagsSpecs() []azure.TagsSpec {
-	specs := []azure.TagsSpec{
-		{
-			Scope:      azure.ManagedClusterID(s.SubscriptionID(), s.ResourceGroup(), s.ManagedClusterSpec().ResourceName()),
-			Tags:       s.AdditionalTags(),
-			Annotation: azure.ManagedClusterTagsLastAppliedAnnotation,
-		},
-	}
-	return specs
 }
 
 // AvailabilityStatusResource refers to the AzureManagedControlPlane.

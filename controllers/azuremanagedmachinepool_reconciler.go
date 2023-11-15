@@ -75,10 +75,6 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 
 // newAzureManagedMachinePoolService populates all the services based on input scope.
 func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
-	agentPoolsSvc, err := agentpools.New(scope)
-	if err != nil {
-		return nil, err
-	}
 	scaleSetAuthorizer, err := scaleSetAuthorizer(scope)
 	if err != nil {
 		return nil, err
@@ -89,7 +85,7 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*a
 	}
 	return &azureManagedMachinePoolService{
 		scope:         scope,
-		agentPoolsSvc: agentPoolsSvc,
+		agentPoolsSvc: agentpools.New(scope),
 		scaleSetsSvc:  scaleSetsClient,
 	}, nil
 }
@@ -112,7 +108,11 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	s.scope.SetSubnetName()
 
 	log.Info("reconciling managed machine pool")
-	agentPoolName := s.scope.AgentPoolSpec().ResourceName()
+	agentPool, err := s.scope.AgentPoolSpec().Parameters(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get agent pool parameters")
+	}
+	agentPoolName := agentPool.AzureName()
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)

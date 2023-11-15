@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourcehealth"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -46,10 +45,6 @@ type azureManagedControlPlaneService struct {
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope.
 func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error) {
-	managedClustersSvc, err := managedclusters.New(scope)
-	if err != nil {
-		return nil, err
-	}
 	privateEndpointsSvc, err := privateendpoints.New(scope)
 	if err != nil {
 		return nil, err
@@ -59,10 +54,6 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 		return nil, err
 	}
 	subnetsSvc, err := subnets.New(scope)
-	if err != nil {
-		return nil, err
-	}
-	tagsSvc, err := tags.New(scope)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +68,8 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 			groups.New(scope),
 			virtualNetworksSvc,
 			subnetsSvc,
-			managedClustersSvc,
+			managedclusters.New(scope),
 			privateEndpointsSvc,
-			tagsSvc,
 			resourceHealthSvc,
 		},
 	}, nil

@@ -116,13 +116,13 @@ type KubeletConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +optional
-	ImageGcHighThreshold *int32 `json:"imageGcHighThreshold,omitempty"`
+	ImageGcHighThreshold *int `json:"imageGcHighThreshold,omitempty"`
 	// ImageGcLowThreshold - The percent of disk usage before which image garbage collection is never run.
 	// Valid values are 0-100 (inclusive) and must be less than `imageGcHighThreshold`.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +optional
-	ImageGcLowThreshold *int32 `json:"imageGcLowThreshold,omitempty"`
+	ImageGcLowThreshold *int `json:"imageGcLowThreshold,omitempty"`
 	// TopologyManagerPolicy - Topology Manager policy to use.
 	// +kubebuilder:validation:Enum=none;best-effort;restricted;single-numa-node
 	// +optional
@@ -136,16 +136,16 @@ type KubeletConfig struct {
 	FailSwapOn *bool `json:"failSwapOn,omitempty"`
 	// ContainerLogMaxSizeMB - The maximum size in MB of a container log file before it is rotated.
 	// +optional
-	ContainerLogMaxSizeMB *int32 `json:"containerLogMaxSizeMB,omitempty"`
+	ContainerLogMaxSizeMB *int `json:"containerLogMaxSizeMB,omitempty"`
 	// ContainerLogMaxFiles - The maximum number of container log files that can be present for a container. The number must be ≥ 2.
 	// +kubebuilder:validation:Minimum=2
 	// +optional
-	ContainerLogMaxFiles *int32 `json:"containerLogMaxFiles,omitempty"`
+	ContainerLogMaxFiles *int `json:"containerLogMaxFiles,omitempty"`
 	// PodMaxPids - The maximum number of processes per pod.
 	// Must not exceed kernel PID limit. -1 disables the limit.
 	// +kubebuilder:validation:Minimum=-1
 	// +optional
-	PodMaxPids *int32 `json:"podMaxPids,omitempty"`
+	PodMaxPids *int `json:"podMaxPids,omitempty"`
 }
 
 // SysctlConfig specifies the settings for Linux agent nodes.
@@ -156,7 +156,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=65536
 	// +kubebuilder:validation:Maximum=6553500
 	// +optional
-	FsAioMaxNr *int32 `json:"fsAioMaxNr,omitempty"`
+	FsAioMaxNr *int `json:"fsAioMaxNr,omitempty"`
 
 	// FsFileMax specifies the max number of file-handles that the Linux kernel will allocate, by increasing increases the maximum number of open files permitted.
 	// Valid values are 8192-12000500 (inclusive).
@@ -164,7 +164,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=8192
 	// +kubebuilder:validation:Maximum=12000500
 	// +optional
-	FsFileMax *int32 `json:"fsFileMax,omitempty"`
+	FsFileMax *int `json:"fsFileMax,omitempty"`
 
 	// FsInotifyMaxUserWatches specifies the number of file watches allowed by the system. Each watch is roughly 90 bytes on a 32-bit kernel, and roughly 160 bytes on a 64-bit kernel.
 	// Valid values are 781250-2097152 (inclusive).
@@ -172,7 +172,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=781250
 	// +kubebuilder:validation:Maximum=2097152
 	// +optional
-	FsInotifyMaxUserWatches *int32 `json:"fsInotifyMaxUserWatches,omitempty"`
+	FsInotifyMaxUserWatches *int `json:"fsInotifyMaxUserWatches,omitempty"`
 
 	// FsNrOpen specifies the maximum number of file-handles a process can allocate.
 	// Valid values are 8192-20000500 (inclusive).
@@ -180,7 +180,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=8192
 	// +kubebuilder:validation:Maximum=20000500
 	// +optional
-	FsNrOpen *int32 `json:"fsNrOpen,omitempty"`
+	FsNrOpen *int `json:"fsNrOpen,omitempty"`
 
 	// KernelThreadsMax specifies the maximum number of all threads that can be created.
 	// Valid values are 20-513785 (inclusive).
@@ -188,7 +188,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=20
 	// +kubebuilder:validation:Maximum=513785
 	// +optional
-	KernelThreadsMax *int32 `json:"kernelThreadsMax,omitempty"`
+	KernelThreadsMax *int `json:"kernelThreadsMax,omitempty"`
 
 	// NetCoreNetdevMaxBacklog specifies maximum number of packets, queued on the INPUT side, when the interface receives packets faster than kernel can process them.
 	// Valid values are 1000-3240000 (inclusive).
@@ -196,7 +196,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=1000
 	// +kubebuilder:validation:Maximum=3240000
 	// +optional
-	NetCoreNetdevMaxBacklog *int32 `json:"netCoreNetdevMaxBacklog,omitempty"`
+	NetCoreNetdevMaxBacklog *int `json:"netCoreNetdevMaxBacklog,omitempty"`
 
 	// NetCoreOptmemMax specifies the maximum ancillary buffer size (option memory buffer) allowed per socket.
 	// Socket option memory is used in a few cases to store extra structures relating to usage of the socket.
@@ -205,7 +205,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=20480
 	// +kubebuilder:validation:Maximum=4194304
 	// +optional
-	NetCoreOptmemMax *int32 `json:"netCoreOptmemMax,omitempty"`
+	NetCoreOptmemMax *int `json:"netCoreOptmemMax,omitempty"`
 
 	// NetCoreRmemDefault specifies the default receive socket buffer size in bytes.
 	// Valid values are 212992-134217728 (inclusive).
@@ -213,7 +213,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=212992
 	// +kubebuilder:validation:Maximum=134217728
 	// +optional
-	NetCoreRmemDefault *int32 `json:"netCoreRmemDefault,omitempty"`
+	NetCoreRmemDefault *int `json:"netCoreRmemDefault,omitempty"`
 
 	// NetCoreRmemMax specifies the maximum receive socket buffer size in bytes.
 	// Valid values are 212992-134217728 (inclusive).
@@ -221,7 +221,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=212992
 	// +kubebuilder:validation:Maximum=134217728
 	// +optional
-	NetCoreRmemMax *int32 `json:"netCoreRmemMax,omitempty"`
+	NetCoreRmemMax *int `json:"netCoreRmemMax,omitempty"`
 
 	// NetCoreSomaxconn specifies maximum number of connection requests that can be queued for any given listening socket.
 	// An upper limit for the value of the backlog parameter passed to the listen(2)(https://man7.org/linux/man-pages/man2/listen.2.html) function.
@@ -231,7 +231,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=4096
 	// +kubebuilder:validation:Maximum=3240000
 	// +optional
-	NetCoreSomaxconn *int32 `json:"netCoreSomaxconn,omitempty"`
+	NetCoreSomaxconn *int `json:"netCoreSomaxconn,omitempty"`
 
 	// NetCoreWmemDefault specifies the default send socket buffer size in bytes.
 	// Valid values are 212992-134217728 (inclusive).
@@ -239,7 +239,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=212992
 	// +kubebuilder:validation:Maximum=134217728
 	// +optional
-	NetCoreWmemDefault *int32 `json:"netCoreWmemDefault,omitempty"`
+	NetCoreWmemDefault *int `json:"netCoreWmemDefault,omitempty"`
 
 	// NetCoreWmemMax specifies the maximum send socket buffer size in bytes.
 	// Valid values are 212992-134217728 (inclusive).
@@ -247,7 +247,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=212992
 	// +kubebuilder:validation:Maximum=134217728
 	// +optional
-	NetCoreWmemMax *int32 `json:"netCoreWmemMax,omitempty"`
+	NetCoreWmemMax *int `json:"netCoreWmemMax,omitempty"`
 
 	// NetIpv4IPLocalPortRange is used by TCP and UDP traffic to choose the local port on the agent node.
 	// PortRange should be specified in the format "first last".
@@ -264,7 +264,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=128
 	// +kubebuilder:validation:Maximum=80000
 	// +optional
-	NetIpv4NeighDefaultGcThresh1 *int32 `json:"netIpv4NeighDefaultGcThresh1,omitempty"`
+	NetIpv4NeighDefaultGcThresh1 *int `json:"netIpv4NeighDefaultGcThresh1,omitempty"`
 
 	// NetIpv4NeighDefaultGcThresh2 specifies soft maximum number of entries that may be in the ARP cache.
 	// ARP garbage collection will be triggered about 5 seconds after reaching this soft maximum.
@@ -273,7 +273,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=512
 	// +kubebuilder:validation:Maximum=90000
 	// +optional
-	NetIpv4NeighDefaultGcThresh2 *int32 `json:"netIpv4NeighDefaultGcThresh2,omitempty"`
+	NetIpv4NeighDefaultGcThresh2 *int `json:"netIpv4NeighDefaultGcThresh2,omitempty"`
 
 	// NetIpv4NeighDefaultGcThresh3 specified hard maximum number of entries in the ARP cache.
 	// Valid values are 1024-100000 (inclusive).
@@ -281,7 +281,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=1024
 	// +kubebuilder:validation:Maximum=100000
 	// +optional
-	NetIpv4NeighDefaultGcThresh3 *int32 `json:"netIpv4NeighDefaultGcThresh3,omitempty"`
+	NetIpv4NeighDefaultGcThresh3 *int `json:"netIpv4NeighDefaultGcThresh3,omitempty"`
 
 	// NetIpv4TCPFinTimeout specifies the length of time an orphaned connection will remain in the FIN_WAIT_2 state before it's aborted at the local end.
 	// Valid values are 5-120 (inclusive).
@@ -289,7 +289,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=5
 	// +kubebuilder:validation:Maximum=120
 	// +optional
-	NetIpv4TCPFinTimeout *int32 `json:"netIpv4TCPFinTimeout,omitempty"`
+	NetIpv4TCPFinTimeout *int `json:"netIpv4TCPFinTimeout,omitempty"`
 
 	// NetIpv4TCPKeepaliveProbes specifies the number of keepalive probes TCP sends out, until it decides the connection is broken.
 	// Valid values are 1-15 (inclusive).
@@ -297,7 +297,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=15
 	// +optional
-	NetIpv4TCPKeepaliveProbes *int32 `json:"netIpv4TCPKeepaliveProbes,omitempty"`
+	NetIpv4TCPKeepaliveProbes *int `json:"netIpv4TCPKeepaliveProbes,omitempty"`
 
 	// NetIpv4TCPKeepaliveTime specifies the rate at which TCP sends out a keepalive message when keepalive is enabled.
 	// Valid values are 30-432000 (inclusive).
@@ -305,7 +305,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=30
 	// +kubebuilder:validation:Maximum=432000
 	// +optional
-	NetIpv4TCPKeepaliveTime *int32 `json:"netIpv4TCPKeepaliveTime,omitempty"`
+	NetIpv4TCPKeepaliveTime *int `json:"netIpv4TCPKeepaliveTime,omitempty"`
 
 	// NetIpv4TCPMaxSynBacklog specifies the maximum number of queued connection requests that have still not received an acknowledgment from the connecting client.
 	// If this number is exceeded, the kernel will begin dropping requests.
@@ -314,7 +314,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=128
 	// +kubebuilder:validation:Maximum=3240000
 	// +optional
-	NetIpv4TCPMaxSynBacklog *int32 `json:"netIpv4TCPMaxSynBacklog,omitempty"`
+	NetIpv4TCPMaxSynBacklog *int `json:"netIpv4TCPMaxSynBacklog,omitempty"`
 
 	// NetIpv4TCPMaxTwBuckets specifies maximal number of timewait sockets held by system simultaneously.
 	// If this number is exceeded, time-wait socket is immediately destroyed and warning is printed.
@@ -323,7 +323,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=8000
 	// +kubebuilder:validation:Maximum=1440000
 	// +optional
-	NetIpv4TCPMaxTwBuckets *int32 `json:"netIpv4TCPMaxTwBuckets,omitempty"`
+	NetIpv4TCPMaxTwBuckets *int `json:"netIpv4TCPMaxTwBuckets,omitempty"`
 
 	// NetIpv4TCPTwReuse is used to allow to reuse TIME-WAIT sockets for new connections when it's safe from protocol viewpoint.
 	// Maps to net.ipv4.tcp_tw_reuse.
@@ -337,7 +337,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=75
 	// +optional
-	NetIpv4TCPkeepaliveIntvl *int32 `json:"netIpv4TCPkeepaliveIntvl,omitempty"`
+	NetIpv4TCPkeepaliveIntvl *int `json:"netIpv4TCPkeepaliveIntvl,omitempty"`
 
 	// NetNetfilterNfConntrackBuckets specifies the size of hash table used by nf_conntrack module to record the established connection record of the TCP protocol.
 	// Valid values are 65536-147456 (inclusive).
@@ -345,7 +345,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=65536
 	// +kubebuilder:validation:Maximum=147456
 	// +optional
-	NetNetfilterNfConntrackBuckets *int32 `json:"netNetfilterNfConntrackBuckets,omitempty"`
+	NetNetfilterNfConntrackBuckets *int `json:"netNetfilterNfConntrackBuckets,omitempty"`
 
 	// NetNetfilterNfConntrackMax specifies the maximum number of connections supported by the nf_conntrack module or the size of connection tracking table.
 	// Valid values are 131072-1048576 (inclusive).
@@ -353,7 +353,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=131072
 	// +kubebuilder:validation:Maximum=1048576
 	// +optional
-	NetNetfilterNfConntrackMax *int32 `json:"netNetfilterNfConntrackMax,omitempty"`
+	NetNetfilterNfConntrackMax *int `json:"netNetfilterNfConntrackMax,omitempty"`
 
 	// VMMaxMapCount specifies the maximum number of memory map areas a process may have.
 	// Maps to vm.max_map_count.
@@ -361,7 +361,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=65530
 	// +kubebuilder:validation:Maximum=262144
 	// +optional
-	VMMaxMapCount *int32 `json:"vmMaxMapCount,omitempty"`
+	VMMaxMapCount *int `json:"vmMaxMapCount,omitempty"`
 
 	// VMSwappiness specifies aggressiveness of the kernel in swapping memory pages.
 	// Higher values will increase aggressiveness, lower values decrease the amount of swap.
@@ -370,7 +370,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +optional
-	VMSwappiness *int32 `json:"vmSwappiness,omitempty"`
+	VMSwappiness *int `json:"vmSwappiness,omitempty"`
 
 	// VMVfsCachePressure specifies the percentage value that controls tendency of the kernel to reclaim the memory, which is used for caching of directory and inode objects.
 	// Valid values are 1-500 (inclusive).
@@ -378,7 +378,7 @@ type SysctlConfig struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=500
 	// +optional
-	VMVfsCachePressure *int32 `json:"vmVfsCachePressure,omitempty"`
+	VMVfsCachePressure *int `json:"vmVfsCachePressure,omitempty"`
 }
 
 // LinuxOSConfig specifies the custom Linux OS settings and configurations.
@@ -394,7 +394,7 @@ type LinuxOSConfig struct {
 	// [AKS doc]: https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview#temporary-disk
 	// +kubebuilder:validation:Minimum=1
 	// +optional
-	SwapFileSizeMB *int32 `json:"swapFileSizeMB,omitempty"`
+	SwapFileSizeMB *int `json:"swapFileSizeMB,omitempty"`
 
 	// Sysctl specifies the settings for Linux agent nodes.
 	// +optional
@@ -442,7 +442,7 @@ type AzureManagedMachinePoolSpec struct {
 	// If you specify 0, it will apply the default osDisk size according to the vmSize specified.
 	// Immutable.
 	// +optional
-	OSDiskSizeGB *int32 `json:"osDiskSizeGB,omitempty"`
+	OSDiskSizeGB *int `json:"osDiskSizeGB,omitempty"`
 
 	// AvailabilityZones - Availability zones for nodes. Must use VirtualMachineScaleSets AgentPoolType.
 	// Immutable.
@@ -478,7 +478,7 @@ type AzureManagedMachinePoolSpec struct {
 	// [AKS doc]: https://learn.microsoft.com/azure/aks/configure-azure-cni#configure-maximum---new-clusters
 	// [K8s doc]: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
 	// +optional
-	MaxPods *int32 `json:"maxPods,omitempty"`
+	MaxPods *int `json:"maxPods,omitempty"`
 
 	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed' (default).
 	// Immutable.
@@ -574,9 +574,9 @@ type AzureManagedMachinePoolSpec struct {
 // ManagedMachinePoolScaling specifies scaling options.
 type ManagedMachinePoolScaling struct {
 	// MinSize is the minimum number of nodes for auto-scaling.
-	MinSize *int32 `json:"minSize,omitempty"`
+	MinSize *int `json:"minSize,omitempty"`
 	// MaxSize is the maximum number of nodes for auto-scaling.
-	MaxSize *int32 `json:"maxSize,omitempty"`
+	MaxSize *int `json:"maxSize,omitempty"`
 }
 
 // TaintEffect is the effect for a Kubernetes taint.
