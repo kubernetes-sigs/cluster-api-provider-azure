@@ -149,7 +149,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	// Construct secret for this machine
 	userAssignedIdentityIfExists := ""
 	if len(azureMachinePool.Spec.UserAssignedIdentities) > 0 {
-		idsClient, err := identities.NewClient(clusterScope)
+		idsClient, err := getClient(clusterScope)
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create identities client")
 		}
@@ -194,3 +194,5 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 
 	return ctrl.Result{}, nil
 }
+
+var getClient = identities.NewClient
