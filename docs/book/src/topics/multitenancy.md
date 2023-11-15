@@ -2,29 +2,32 @@
 
 To enable single controller multi-tenancy, a different Identity can be added to the Azure Cluster that will be used as the Azure Identity when creating Azure resources related to that cluster.
 
-This is achieved using [workload identity](https://azure.github.io/azure-workload-identity). Workload identity is the next iteration of the now deprecated [aad-pod-identity](https://azure.github.io/aad-pod-identity).
+This is achieved using [workload identity](workload-identity.md).
 
-## Identity Types
+## Supported Identity Types
 
-### Workload Identity (Recommended)
+Please read the [identities](identities.md) page for more information on the supported identity types.
 
-Follow this [link](./workload-identity.md) for a quick start guide on setting up workload identity.
+### allowedNamespaces
 
-Once you've set up the management cluster with the workload identity (see link above), the corresponding values should be used to create an `AzureClusterIdentity` resource. Create an `azure-cluster-identity.yaml` file with the following content:
+AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from. Namespaces can be selected either using an array of namespaces or with label selector.
+An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace.
+If this object is nil, no namespaces will be allowed (default behavior, if this field is not provided)
+A namespace should be either in the NamespaceList or match with Selector to use the identity.
+Please note NamespaceList will take precedence over Selector if both are set.
 
-```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  name: cluster-identity
-spec:
-  type: WorkloadIdentity
-  tenantID: <your-tenant-id>
-  clientID: <your-client-id>
-  allowedNamespaces:
-    list:
-    - <cluster-namespace>
-```
+## Deprecated Identity Types
+
+<aside class="note warning">
+
+<h1> Warning </h1>
+The capability to set credentials using environment variables has been removed, the required approach is to use `AzureClusterIdentity` as seen in the [identities](identities.md) page.
+</aside>
+
+<aside class="note warning">
+<h1> Warning </h1>
+All of the remaining methods utilize AAD Pod Identity and will no longer function starting in the 1.13 release of CAPZ.
+</aside>
 
 ### AAD Pod Identity using Service Principal With Client Password (Deprecated)
 
@@ -153,60 +156,3 @@ spec:
 #### Assigning VM identities for cloud-provider authentication
 
 When using a user-assigned managed identity to create the workload cluster, a VM identity should also be assigned to each control-plane machine in the workload cluster for Cloud Provider to use. See [here](../topics/vm-identity.md#managed-identities) for more information.
-
-### Manual Service Principal Identity
-
-Manual Service Principal Identity is similar to [Service Principal Identity](https://capz.sigs.k8s.io/topics/multitenancy.html#service-principal-identity) except that the service principal's `clientSecret` is directly fetched from the secret containing it.
-To use this type of identity, set the identity type as `ManualServicePrincipal` in `AzureClusterIdentity`. For example,
-
-```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  name: example-identity
-  namespace: default
-spec:
-  type: ManualServicePrincipal
-  tenantID: <azure-tenant-id>
-  clientID: <client-id-of-SP-identity>
-  clientSecret: {"name":"<secret-name-for-client-password>","namespace":"default"}
-  allowedNamespaces:
-    list:
-    - <cluster-namespace>
-```
-
-The rest of the configuration is the same as that of service principal identity. This useful in scenarios where you don't want to have a dependency on [aad-pod-identity](https://azure.github.io/aad-pod-identity).
-
-## allowedNamespaces
-
-AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from. Namespaces can be selected either using an array of namespaces or with label selector.
-An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace.
-If this object is nil, no namespaces will be allowed (default behaviour, if this field is not provided)
-A namespace should be either in the NamespaceList or match with Selector to use the identity.
-Please note NamespaceList will take precedence over Selector if both are set.
-
-## IdentityRef in AzureCluster
-
-The Identity can be added to an `AzureCluster` by using `IdentityRef` field:
-
-```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureCluster
-metadata:
-  name: example-cluster
-  namespace: default
-spec:
-  location: eastus
-  networkSpec:
-    vnet:
-      name: example-cluster-vnet
-  resourceGroup: example-cluster
-  subscriptionID: <AZURE_SUBSCRIPTION_ID>
-  identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: AzureClusterIdentity
-    name: <name-of-identity>
-    namespace: <namespace-of-identity>
-```
-
-
