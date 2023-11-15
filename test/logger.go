@@ -28,8 +28,10 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func Fail(message string, callerSkip ...int) {
@@ -39,6 +41,8 @@ func Fail(message string, callerSkip ...int) {
 func main() {
 	// needed for ginkgo/gomega which is used by the capi test framework
 	RegisterFailHandler(Fail)
+
+	ctrl.SetLogger(klog.Background())
 
 	// using a custom FlagSet here due to the dependency in controller-runtime that is already using this flag
 	// https://github.com/kubernetes-sigs/controller-runtime/blob/c7a98aa706379c4e5c79ea675c7f333192677971/pkg/client/config/config.go#L37-L41

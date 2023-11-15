@@ -40,6 +40,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/component-base/logs"
+	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/textlogger"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -254,7 +255,8 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
-	ctrl.SetLogger(textlogger.NewLogger(logConfig))
+	// klog.Background will automatically use the right logger.
+	ctrl.SetLogger(klog.Background())
 
 	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
 	// Setting the burst size higher ensures all events will be recorded and submitted to the API
