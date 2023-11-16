@@ -701,7 +701,7 @@ func (s *ManagedControlPlaneScope) MakeClusterCA() *corev1.Secret {
 			Name:      secret.Name(s.Cluster.Name, secret.ClusterCA),
 			Namespace: s.Cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind("AzureManagedControlPlane")),
+				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
 			},
 		},
 	}
