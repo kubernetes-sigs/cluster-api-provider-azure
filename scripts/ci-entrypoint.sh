@@ -134,6 +134,12 @@ create_cluster() {
         echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
         exit 1
     fi
+
+    # set the SSH bastion and user that can be used to SSH into nodes
+    KUBE_SSH_BASTION=$(${KUBECTL} get azurecluster -o json | jq '.items[0].spec.networkSpec.apiServerLB.frontendIPs[0].publicIP.dnsName' | tr -d \"):22
+    export KUBE_SSH_BASTION
+    KUBE_SSH_USER=capi
+    export KUBE_SSH_USER
 }
 
 # get_cidrs derives the CIDR from the Cluster's '.spec.clusterNetwork.pods.cidrBlocks' metadata
