@@ -94,7 +94,7 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.12.99 # "vNext"; use manifests from local source files
+    - name: v1.13.99 # "vNext"; use manifests from local source files
       value: "${PWD}/config/default"
       contract: v1beta1
       files:
