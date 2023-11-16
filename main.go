@@ -264,6 +264,7 @@ func main() {
 
 	diagnosticsOpts := GetDiagnosticsOptions(diagnosticsOptions)
 
+	setupLog.Info("Thank you for gathering additional test signal prior to the 1.12 release")
 	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
