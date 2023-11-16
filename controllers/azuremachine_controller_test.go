@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-type TestReconcileInput struct {
+type TestMachineReconcileInput struct {
 	createAzureMachineService func(*scope.MachineScope) (*azureMachineService, error)
 	azureMachineOptions       func(am *infrav1.AzureMachine)
 	expectedErr               string
@@ -161,7 +161,7 @@ func (f fakeSKUCacher) Get(context.Context, string, resourceskus.ResourceType) (
 }
 
 func TestAzureMachineReconcileNormal(t *testing.T) {
-	cases := map[string]TestReconcileInput{
+	cases := map[string]TestMachineReconcileInput{
 		"should reconcile normally": {
 			createAzureMachineService: getFakeAzureMachineService,
 			cache:                     &scope.MachineCache{},
@@ -229,7 +229,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			reconciler, machineScope, clusterScope, err := getReconcileInputs(tc)
+			reconciler, machineScope, clusterScope, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			result, err := reconciler.reconcileNormal(context.Background(), machineScope, clusterScope)
@@ -253,7 +253,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 }
 
 func TestAzureMachineReconcilePause(t *testing.T) {
-	cases := map[string]TestReconcileInput{
+	cases := map[string]TestMachineReconcileInput{
 		"should pause successfully": {
 			createAzureMachineService: getFakeAzureMachineService,
 			cache:                     &scope.MachineCache{},
@@ -275,7 +275,7 @@ func TestAzureMachineReconcilePause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			reconciler, machineScope, _, err := getReconcileInputs(tc)
+			reconciler, machineScope, _, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			result, err := reconciler.reconcilePause(context.Background(), machineScope)
@@ -292,7 +292,7 @@ func TestAzureMachineReconcilePause(t *testing.T) {
 }
 
 func TestAzureMachineReconcileDelete(t *testing.T) {
-	cases := map[string]TestReconcileInput{
+	cases := map[string]TestMachineReconcileInput{
 		"should delete successfully": {
 			createAzureMachineService: getFakeAzureMachineService,
 			cache:                     &scope.MachineCache{},
@@ -319,7 +319,7 @@ func TestAzureMachineReconcileDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			reconciler, machineScope, clusterScope, err := getReconcileInputs(tc)
+			reconciler, machineScope, clusterScope, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			result, err := reconciler.reconcileDelete(context.Background(), machineScope, clusterScope)
@@ -335,7 +335,7 @@ func TestAzureMachineReconcileDelete(t *testing.T) {
 	}
 }
 
-func getReconcileInputs(tc TestReconcileInput) (*AzureMachineReconciler, *scope.MachineScope, *scope.ClusterScope, error) {
+func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineReconciler, *scope.MachineScope, *scope.ClusterScope, error) {
 	scheme, err := newScheme()
 	if err != nil {
 		return nil, nil, nil, err
@@ -507,8 +507,8 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 	}
 }
 
-func getFakeCluster(changes ...func(*clusterv1.Cluster)) *clusterv1.Cluster {
-	input := &clusterv1.Cluster{
+func getFakeCluster() *clusterv1.Cluster {
+	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-cluster",
 			Namespace: "default",
@@ -524,12 +524,6 @@ func getFakeCluster(changes ...func(*clusterv1.Cluster)) *clusterv1.Cluster {
 			InfrastructureReady: true,
 		},
 	}
-
-	for _, change := range changes {
-		change(input)
-	}
-
-	return input
 }
 
 func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureCluster {
@@ -537,13 +531,6 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-azure-cluster",
 			Namespace: "default",
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "cluster.x-k8s.io/v1beta1",
-					Kind:       "Cluster",
-					Name:       "my-cluster",
-				},
-			},
 		},
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
@@ -558,6 +545,20 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 						},
 					},
 				},
+				APIServerLB: infrav1.LoadBalancerSpec{
+					Name: "my-cluster-public-lb",
+					FrontendIPs: []infrav1.FrontendIP{
+						{
+							PublicIP: &infrav1.PublicIPSpec{
+								Name:    "my-cluster-public-lb-frontEnd",
+								DNSName: "my-cluster-fb560e20.westus2.cloudapp.azure.com",
+							},
+						},
+					},
+				},
+			},
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+				Port: 6443,
 			},
 		},
 	}
