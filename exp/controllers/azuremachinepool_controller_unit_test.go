@@ -117,7 +117,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *expv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
-		Kind:       "AzureMachinePool",
+		Kind:       infrav1.AzureMachinePoolKind,
 		Namespace:  m.Namespace,
 		Name:       "azure" + poolName,
 		APIVersion: infrav1exp.GroupVersion.String(),

@@ -49,7 +49,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		Spec: clusterv1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       "AzureCluster",
+				Kind:       infrav1.AzureClusterKind,
 				Name:       "my-azure-cluster",
 			},
 		},

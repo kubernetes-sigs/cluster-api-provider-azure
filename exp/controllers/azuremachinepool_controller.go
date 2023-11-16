@@ -115,7 +115,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&expv1.MachinePool{},
-			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)),
+			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), log)),
 		).
 		// watch for changes in AzureCluster resources
 		Watches(
@@ -182,7 +182,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 		"controllers.AzureMachinePoolReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", "AzureMachinePool"),
+		tele.KVP("kind", infrav1.AzureMachinePoolKind),
 	)
 	defer done()
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampr.ReconcileTimeout))

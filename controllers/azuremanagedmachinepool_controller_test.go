@@ -241,13 +241,13 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 		Spec: clusterv1.ClusterSpec{
 			ControlPlaneRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       "AzureManagedControlPlane",
+				Kind:       infrav1.AzureManagedControlPlaneKind,
 				Name:       azManagedControlPlane.Name,
 				Namespace:  azManagedControlPlane.Namespace,
 			},
 			InfrastructureRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       "AzureManagedCluster",
+				Kind:       infrav1.AzureManagedClusterKind,
 				Name:       azManagedCluster.Name,
 				Namespace:  azManagedCluster.Namespace,
 			},
