@@ -282,4 +282,3 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
-  version: ${AZUREDISK_CSI_DRIVER_VERSION}
