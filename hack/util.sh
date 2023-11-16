@@ -82,10 +82,12 @@ capz::util::generate_ssh_key() {
     AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
     if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
         echo "generating sshkey for e2e"
-        SSH_KEY_FILE=.sshkey
-        rm -f "${SSH_KEY_FILE}" 2>/dev/null
-        ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
-        AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
+        AZURE_SSH_KEY=.sshkey
+        rm -f "${AZURE_SSH_KEY}" 2>/dev/null
+        ssh-keygen -t rsa -b 2048 -f "${AZURE_SSH_KEY}" -N '' 1>/dev/null
+        AZURE_SSH_PUBLIC_KEY_FILE="${AZURE_SSH_KEY}.pub"
+        # This is needed to run tests that required SSH access to nodes
+        export AZURE_SSH_KEY
     fi
     AZURE_SSH_PUBLIC_KEY_B64=$(base64 < "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
     export AZURE_SSH_PUBLIC_KEY_B64
