@@ -55,7 +55,9 @@ func WaitForAKSControlPlaneInitialized(ctx context.Context, input clusterctl.App
 		Getter:  client,
 		Cluster: result.Cluster,
 	}, input.WaitForControlPlaneIntervals...)
-	InstallCNIManifest(ctx, input, cluster.Spec.ClusterNetwork.Services.CIDRBlocks, true)
+	if cluster.Spec.ClusterNetwork != nil && cluster.Spec.ClusterNetwork.Services != nil {
+		InstallCNIManifest(ctx, input, cluster.Spec.ClusterNetwork.Services.CIDRBlocks, true)
+	}
 }
 
 // WaitForAKSControlPlaneReady waits for the azure managed control plane to be ready.

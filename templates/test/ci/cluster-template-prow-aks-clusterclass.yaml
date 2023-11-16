@@ -1,0 +1,273 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+  namespace: default
+spec:
+  controlPlane:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureManagedControlPlaneTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureManagedClusterTemplate
+      name: ${CLUSTER_NAME}
+  patches:
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/files
+        valueFrom:
+          template: |
+            - contentFrom:
+                secret:
+                  key: worker-node-azure.json
+                  name: "{{ .builtin.machinePool.infrastructureRef.name }}-azure-json"
+              owner: root:root
+              path: /etc/kubernetes/azure.json
+              permissions: "0644"
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machinePoolClass:
+            names:
+            - default-system
+            - default-worker
+    name: workerAzureJsonSecretName
+  workers:
+    machinePools:
+    - class: default-system
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_NAME}-pool0
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: ${CLUSTER_NAME}-pool0
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_NAME}-pool1
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: ${CLUSTER_NAME}-pool1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlaneTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      additionalTags:
+        buildProvenance: ${BUILD_PROVENANCE}
+        creationTimestamp: ${TIMESTAMP}
+        jobName: ${JOB_NAME}
+      addonProfiles:
+      - enabled: true
+        name: azurepolicy
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: ${CLUSTER_IDENTITY_NAME}
+      location: ${AZURE_LOCATION}
+      subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  template:
+    spec: {}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  template:
+    spec:
+      availabilityZones:
+      - "1"
+      - "2"
+      enableNodePublicIP: false
+      enableUltraSSD: true
+      maxPods: 30
+      mode: System
+      name: pool0
+      osDiskSizeGB: 30
+      osDiskType: Managed
+      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  template:
+    spec:
+      enableNodePublicIP: false
+      kubeletConfig:
+        allowedUnsafeSysctls:
+        - net.*
+        - kernel.msg*
+        containerLogMaxFiles: 50
+        containerLogMaxSizeMB: 500
+        cpuCfsQuota: true
+        cpuCfsQuotaPeriod: 110ms
+        cpuManagerPolicy: static
+        failSwapOn: false
+        imageGcHighThreshold: 70
+        imageGcLowThreshold: 50
+        podMaxPids: 2048
+        topologyManagerPolicy: best-effort
+      linuxOSConfig:
+        swapFileSizeMB: 1500
+        sysctls:
+          fsAioMaxNr: 65536
+          fsFileMax: 709620
+          fsInotifyMaxUserWatches: 1048576
+          fsNrOpen: 1048576
+          kernelThreadsMax: 55601
+          netCoreNetdevMaxBacklog: 1000
+          netCoreOptmemMax: 20480
+          netCoreRmemDefault: 212992
+          netCoreRmemMax: 212992
+          netCoreSomaxconn: 16384
+          netCoreWmemDefault: 212992
+          netCoreWmemMax: 212992
+          netIpv4IPLocalPortRange: 32768 60999
+          netIpv4NeighDefaultGcThresh1: 4096
+          netIpv4NeighDefaultGcThresh2: 8192
+          netIpv4NeighDefaultGcThresh3: 16384
+          netIpv4TCPFinTimeout: 60
+          netIpv4TCPKeepaliveProbes: 9
+          netIpv4TCPKeepaliveTime: 7200
+          netIpv4TCPMaxSynBacklog: 16384
+          netIpv4TCPMaxTwBuckets: 32768
+          netIpv4TCPTwReuse: false
+          netIpv4TCPkeepaliveIntvl: 75
+          netNetfilterNfConntrackBuckets: 65536
+          netNetfilterNfConntrackMax: 131072
+          vmMaxMapCount: 65530
+          vmSwappiness: 60
+          vmVfsCachePressure: 100
+        transparentHugePageDefrag: madvise
+        transparentHugePageEnabled: always
+      maxPods: 64
+      mode: User
+      name: pool1
+      nodeLabels:
+        type: shared
+      osDiskSizeGB: 40
+      osDiskType: Ephemeral
+      scaleSetPriority: Regular
+      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      taints:
+      - effect: NoSchedule
+        key: type
+        value: shared
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands: []
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands: []
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  topology:
+    class: default
+    version: ${KUBERNETES_VERSION}
+    workers:
+      machinePools:
+      - class: default-system
+        name: mp-0
+        replicas: 1
+      - class: default-worker
+        name: mp-1
+        replicas: 1

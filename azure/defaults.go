@@ -230,6 +230,11 @@ func PublicIPID(subscriptionID, resourceGroup, ipName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/publicIPAddresses/%s", subscriptionID, resourceGroup, ipName)
 }
 
+// PublicIPPrefixID returns the azure resource ID for a given public IP prefix.
+func PublicIPPrefixID(subscriptionID, resourceGroup, ipName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/publicipprefixes/%s", subscriptionID, resourceGroup, ipName)
+}
+
 // RouteTableID returns the azure resource ID for a given route table.
 func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, resourceGroup, routeTableName)

@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -419,156 +418,11 @@ type LinuxOSConfig struct {
 
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
-
-	// AdditionalTags is an optional set of tags to add to Azure resources managed by the
-	// Azure provider, in addition to the ones added by default.
-	// +optional
-	AdditionalTags Tags `json:"additionalTags,omitempty"`
-
-	// Name - name of the agent pool. If not specified, CAPZ uses the name of the CR as the agent pool name.
-	// Immutable.
-	// +optional
-	Name *string `json:"name,omitempty"`
-
-	// Mode - represents mode of an agent pool. Possible values include: System, User.
-	// +kubebuilder:validation:Enum=System;User
-	Mode string `json:"mode"`
-
-	// SKU is the size of the VMs in the node pool.
-	// Immutable.
-	SKU string `json:"sku"`
-
-	// OSDiskSizeGB is the disk size for every machine in this agent pool.
-	// If you specify 0, it will apply the default osDisk size according to the vmSize specified.
-	// Immutable.
-	// +optional
-	OSDiskSizeGB *int `json:"osDiskSizeGB,omitempty"`
-
-	// AvailabilityZones - Availability zones for nodes. Must use VirtualMachineScaleSets AgentPoolType.
-	// Immutable.
-	// +optional
-	AvailabilityZones []string `json:"availabilityZones,omitempty"`
-
-	// Node labels - labels for all of the nodes present in node pool.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/azure/aks/use-labels
-	// +optional
-	NodeLabels map[string]string `json:"nodeLabels,omitempty"`
-
-	// Taints specifies the taints for nodes present in this agent pool.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/azure/aks/use-multiple-node-pools#setting-node-pool-taints
-	// +optional
-	Taints Taints `json:"taints,omitempty"`
+	AzureManagedMachinePoolClassSpec `json:",inline"`
 
 	// ProviderIDList is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderIDList []string `json:"providerIDList,omitempty"`
-
-	// Scaling specifies the autoscaling parameters for the node pool.
-	// +optional
-	Scaling *ManagedMachinePoolScaling `json:"scaling,omitempty"`
-
-	// MaxPods specifies the kubelet `--max-pods` configuration for the node pool.
-	// Immutable.
-	// See also [AKS doc], [K8s doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/azure/aks/configure-azure-cni#configure-maximum---new-clusters
-	// [K8s doc]: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
-	// +optional
-	MaxPods *int `json:"maxPods,omitempty"`
-
-	// OsDiskType specifies the OS disk type for each node in the pool. Allowed values are 'Ephemeral' and 'Managed' (default).
-	// Immutable.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/azure/aks/cluster-configuration#ephemeral-os
-	// +kubebuilder:validation:Enum=Ephemeral;Managed
-	// +kubebuilder:default=Managed
-	// +optional
-	OsDiskType *string `json:"osDiskType,omitempty"`
-
-	// EnableUltraSSD enables the storage type UltraSSD_LRS for the agent pool.
-	// Immutable.
-	// +optional
-	EnableUltraSSD *bool `json:"enableUltraSSD,omitempty"`
-
-	// OSType specifies the virtual machine operating system. Default to Linux. Possible values include: 'Linux', 'Windows'.
-	// 'Windows' requires the AzureManagedControlPlane's `spec.networkPlugin` to be `azure`.
-	// Immutable.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#ostype
-	// +kubebuilder:validation:Enum=Linux;Windows
-	// +optional
-	OSType *string `json:"osType,omitempty"`
-
-	// EnableNodePublicIP controls whether or not nodes in the pool each have a public IP address.
-	// Immutable.
-	// +optional
-	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
-
-	// NodePublicIPPrefixID specifies the public IP prefix resource ID which VM nodes should use IPs from.
-	// Immutable.
-	// +optional
-	NodePublicIPPrefixID *string `json:"nodePublicIPPrefixID,omitempty"`
-
-	// ScaleSetPriority specifies the ScaleSetPriority value. Default to Regular. Possible values include: 'Regular', 'Spot'
-	// Immutable.
-	// +kubebuilder:validation:Enum=Regular;Spot
-	// +optional
-	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
-
-	// ScaleDownMode affects the cluster autoscaler behavior. Default to Delete. Possible values include: 'Deallocate', 'Delete'
-	// +kubebuilder:validation:Enum=Deallocate;Delete
-	// +kubebuilder:default=Delete
-	// +optional
-	ScaleDownMode *string `json:"scaleDownMode,omitempty"`
-
-	// SpotMaxPrice defines max price to pay for spot instance. Possible values are any decimal value greater than zero or -1.
-	// If you set the max price to be -1, the VM won't be evicted based on price. The price for the VM will be the current price
-	// for spot or the price for a standard VM, which ever is less, as long as there's capacity and quota available.
-	// +optional
-	SpotMaxPrice *resource.Quantity `json:"spotMaxPrice,omitempty"`
-
-	// KubeletConfig specifies the kubelet configurations for nodes.
-	// Immutable.
-	// +optional
-	KubeletConfig *KubeletConfig `json:"kubeletConfig,omitempty"`
-
-	// KubeletDiskType specifies the kubelet disk type. Default to OS. Possible values include: 'OS', 'Temporary'.
-	// Requires Microsoft.ContainerService/KubeletDisk preview feature to be set.
-	// Immutable.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#kubeletdisktype
-	// +kubebuilder:validation:Enum=OS;Temporary
-	// +optional
-	KubeletDiskType *KubeletDiskType `json:"kubeletDiskType,omitempty"`
-
-	// LinuxOSConfig specifies the custom Linux OS settings and configurations.
-	// Immutable.
-	// +optional
-	LinuxOSConfig *LinuxOSConfig `json:"linuxOSConfig,omitempty"`
-	// SubnetName specifies the Subnet where the MachinePool will be placed
-	// Immutable.
-	// +optional
-	SubnetName *string `json:"subnetName,omitempty"`
-
-	// EnableFIPS indicates whether FIPS is enabled on the node pool.
-	// Immutable.
-	// +optional
-	EnableFIPS *bool `json:"enableFIPS,omitempty"`
-
-	// EnableEncryptionAtHost indicates whether host encryption is enabled on the node pool.
-	// Immutable.
-	// See also [AKS doc].
-	//
-	// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/enable-host-encryption
-	// +optional
-	EnableEncryptionAtHost *bool `json:"enableEncryptionAtHost,omitempty"`
 }
 
 // ManagedMachinePoolScaling specifies scaling options.

@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -89,10 +90,12 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 			Namespace: input.Cluster.Namespace,
 		},
 		Spec: infrav1.AzureManagedMachinePoolSpec{
-			Mode:                 "User",
-			SKU:                  os.Getenv("AZURE_NODE_MACHINE_TYPE"),
-			EnableNodePublicIP:   ptr.To(true),
-			NodePublicIPPrefixID: ptr.To("/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "/providers/Microsoft.Network/publicipprefixes/" + *publicIPPrefix.Name),
+			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
+				Mode:                 "User",
+				SKU:                  os.Getenv("AZURE_NODE_MACHINE_TYPE"),
+				EnableNodePublicIP:   ptr.To(true),
+				NodePublicIPPrefixID: ptr.To(azure.PublicIPPrefixID(subscriptionID, resourceGroupName, *publicIPPrefix.Name)),
+			},
 		},
 	}
 	err = mgmtClient.Create(ctx, infraMachinePool)

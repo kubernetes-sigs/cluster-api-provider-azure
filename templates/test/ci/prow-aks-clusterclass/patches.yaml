@@ -1,0 +1,54 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+spec:
+  workers:
+    machinePools:
+    - class: default-system
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_NAME}-pool0
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: ${CLUSTER_NAME}-pool0
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_NAME}-pool1
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: ${CLUSTER_NAME}-pool1
+  patches:
+    - name: workerAzureJsonSecretName
+      definitions:
+        - selector:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            matchResources:
+              machinePoolClass:
+                names:
+                  - default-system
+                  - default-worker
+          jsonPatches:
+            - op: replace
+              path: "/spec/template/spec/files"
+              valueFrom:
+                template: |
+                  - contentFrom:
+                      secret:
+                        key: worker-node-azure.json
+                        name: "{{ .builtin.machinePool.infrastructureRef.name }}-azure-json"
+                    owner: root:root
+                    path: /etc/kubernetes/azure.json
+                    permissions: "0644"

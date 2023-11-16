@@ -71,6 +71,7 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 		g.Expect(aksCluster.Properties).NotTo(BeNil())
 		g.Expect(aksCluster.Properties.KubernetesVersion).NotTo(BeNil())
 		g.Expect("v" + *aksCluster.Properties.KubernetesVersion).To(Equal(input.KubernetesVersionUpgradeTo))
+		g.Expect(aksCluster.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
 	}, input.WaitForControlPlane...).Should(Succeed())
 
 	By("Upgrading the machinepool instances")

@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlaneTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  identityRef: 
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: "${CLUSTER_IDENTITY_NAME}"

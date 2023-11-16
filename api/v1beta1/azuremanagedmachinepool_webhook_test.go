@@ -42,9 +42,11 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 			Name: "fooname",
 		},
 		Spec: AzureManagedMachinePoolSpec{
-			Mode:         "System",
-			SKU:          "StandardD2S_V3",
-			OSDiskSizeGB: ptr.To(512),
+			AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+				Mode:         "System",
+				SKU:          "StandardD2S_V3",
+				OSDiskSizeGB: ptr.To(512),
+			},
 		},
 	}
 	var client client.Client
@@ -95,12 +97,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change Name of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Name: ptr.To("pool-new"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Name: ptr.To("pool-new"),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Name: ptr.To("pool-old"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Name: ptr.To("pool-old"),
+					},
 				},
 			},
 			wantErr: true,
@@ -109,16 +115,20 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change SKU of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V4",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			wantErr: true,
@@ -127,18 +137,22 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change OSType of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       ptr.To(LinuxOS),
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						OSType:       ptr.To(LinuxOS),
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					OSType:       ptr.To(WindowsOS),
-					Mode:         "System",
-					SKU:          "StandardD2S_V4",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						OSType:       ptr.To(WindowsOS),
+						Mode:         "System",
+						SKU:          "StandardD2S_V4",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			wantErr: true,
@@ -147,16 +161,20 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change OSDiskSizeGB of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(1024),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(1024),
+					},
 				},
 			},
 			wantErr: true,
@@ -165,17 +183,21 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot add AvailabilityZones after creating agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "2", "3"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "2", "3"},
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			wantErr: true,
@@ -184,17 +206,21 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot remove AvailabilityZones after creating agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "2", "3"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "2", "3"},
+					},
 				},
 			},
 			wantErr: true,
@@ -203,18 +229,22 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change AvailabilityZones of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "2"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "2"},
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "2", "3"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "2", "3"},
+					},
 				},
 			},
 			wantErr: true,
@@ -223,18 +253,22 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "AvailabilityZones order can be different",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "3", "2"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "3", "2"},
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:              "System",
-					SKU:               "StandardD2S_V3",
-					OSDiskSizeGB:      ptr.To(512),
-					AvailabilityZones: []string{"1", "2", "3"},
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:              "System",
+						SKU:               "StandardD2S_V3",
+						OSDiskSizeGB:      ptr.To(512),
+						AvailabilityZones: []string{"1", "2", "3"},
+					},
 				},
 			},
 			wantErr: false,
@@ -243,18 +277,22 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change MaxPods of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(24),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(24),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(25),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(25),
+					},
 				},
 			},
 			wantErr: true,
@@ -263,18 +301,22 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unchanged MaxPods in an agentpool should not result in an error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(30),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(30),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(30),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(30),
+					},
 				},
 			},
 			wantErr: false,
@@ -283,20 +325,24 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot change OSDiskType of the agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(24),
-					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(24),
+						OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(24),
-					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(24),
+						OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					},
 				},
 			},
 			wantErr: true,
@@ -305,20 +351,24 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unchanged OSDiskType in an agentpool should not result in an error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(30),
-					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(30),
+						OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:         "System",
-					SKU:          "StandardD2S_V3",
-					OSDiskSizeGB: ptr.To(512),
-					MaxPods:      ptr.To(30),
-					OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:         "System",
+						SKU:          "StandardD2S_V3",
+						OSDiskSizeGB: ptr.To(512),
+						MaxPods:      ptr.To(30),
+						OsDiskType:   ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					},
 				},
 			},
 			wantErr: false,
@@ -327,12 +377,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unexpected error, value EnableUltraSSD is unchanged",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableUltraSSD: ptr.To(true),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableUltraSSD: ptr.To(true),
+					},
 				},
 			},
 			wantErr: false,
@@ -341,12 +395,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "EnableUltraSSD feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableUltraSSD: ptr.To(false),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableUltraSSD: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableUltraSSD: ptr.To(true),
+					},
 				},
 			},
 			wantErr: true,
@@ -355,12 +413,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Unexpected error, value EnableNodePublicIP is unchanged",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(true),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(true),
+					},
 				},
 			},
 			wantErr: false,
@@ -369,12 +431,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "EnableNodePublicIP feature is immutable and currently enabled on this agentpool",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(false),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(true),
+					},
 				},
 			},
 			wantErr: true,
@@ -383,22 +449,26 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "NodeTaints are mutable",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Taints: []Taint{
-						{
-							Effect: TaintEffect("NoSchedule"),
-							Key:    "foo",
-							Value:  "baz",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Taints: []Taint{
+							{
+								Effect: TaintEffect("NoSchedule"),
+								Key:    "foo",
+								Value:  "baz",
+							},
 						},
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Taints: []Taint{
-						{
-							Effect: TaintEffect("NoSchedule"),
-							Key:    "foo",
-							Value:  "bar",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Taints: []Taint{
+							{
+								Effect: TaintEffect("NoSchedule"),
+								Key:    "foo",
+								Value:  "bar",
+							},
 						},
 					},
 				},
@@ -409,16 +479,20 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't add a node label that begins with kubernetes.azure.com",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					NodeLabels: map[string]string{
-						"foo":                                   "bar",
-						"kubernetes.azure.com/scalesetpriority": "spot",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						NodeLabels: map[string]string{
+							"foo":                                   "bar",
+							"kubernetes.azure.com/scalesetpriority": "spot",
+						},
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					NodeLabels: map[string]string{
-						"foo": "bar",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						NodeLabels: map[string]string{
+							"foo": "bar",
+						},
 					},
 				},
 			},
@@ -428,15 +502,19 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update kubeletconfig",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						CPUCfsQuota: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							CPUCfsQuota: ptr.To(true),
+						},
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						CPUCfsQuota: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							CPUCfsQuota: ptr.To(false),
+						},
 					},
 				},
 			},
@@ -446,15 +524,19 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update LinuxOSConfig",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To(10),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							SwapFileSizeMB: ptr.To(10),
+						},
 					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To(5),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							SwapFileSizeMB: ptr.To(5),
+						},
 					},
 				},
 			},
@@ -464,12 +546,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update SubnetName with error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet"),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet-1"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet-1"),
+					},
 				},
 			},
 			wantErr: true,
@@ -478,12 +564,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can update SubnetName if subnetName is empty",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet"),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: nil,
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: nil,
+					},
 				},
 			},
 			wantErr: false,
@@ -492,12 +582,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Can't update SubnetName without error",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet"),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet"),
+					},
 				},
 			},
 			wantErr: false,
@@ -506,12 +600,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot update enableFIPS",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableFIPS: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableFIPS: ptr.To(true),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableFIPS: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableFIPS: ptr.To(false),
+					},
 				},
 			},
 			wantErr: true,
@@ -520,12 +618,16 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			name: "Cannot update enableEncryptionAtHost",
 			new: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableEncryptionAtHost: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableEncryptionAtHost: ptr.To(true),
+					},
 				},
 			},
 			old: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableEncryptionAtHost: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableEncryptionAtHost: ptr.To(false),
+					},
 				},
 			},
 			wantErr: true,
@@ -569,8 +671,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "another valid permutation",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods:    ptr.To(249),
-					OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						MaxPods:    ptr.To(249),
+						OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					},
 				},
 			},
 			wantErr: false,
@@ -586,7 +690,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too many MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: ptr.To(251),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						MaxPods: ptr.To(251),
+					},
 				},
 			},
 			wantErr:  true,
@@ -596,7 +702,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("1+subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("1+subnet"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -606,7 +714,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("1"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("1"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -616,7 +726,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("-a_b-c"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("-a_b-c"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -626,7 +738,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("E-a_b-c"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("E-a_b-c"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -636,7 +750,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("-_-_"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("-_-_"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -646,7 +762,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("abc@#$"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("abc@#$"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -656,7 +774,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "invalid subnetname with character length 81",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb8"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb8"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -666,7 +786,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname with character length 80",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
+					},
 				},
 			},
 			wantErr: false,
@@ -675,7 +797,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("1abc"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("1abc"),
+					},
 				},
 			},
 			wantErr: false,
@@ -684,7 +808,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("1-a-b-c"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("1-a-b-c"),
+					},
 				},
 			},
 			wantErr: false,
@@ -693,7 +819,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid subnetname",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					SubnetName: ptr.To("my-subnet"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("my-subnet"),
+					},
 				},
 			},
 			wantErr: false,
@@ -702,7 +830,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "too few MaxPods",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					MaxPods: ptr.To(9),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						MaxPods: ptr.To(9),
+					},
 				},
 			},
 			wantErr:  true,
@@ -712,8 +842,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "ostype Windows with System mode not allowed",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:   "System",
-					OSType: ptr.To(WindowsOS),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:   "System",
+						OSType: ptr.To(WindowsOS),
+					},
 				},
 			},
 			wantErr:  true,
@@ -723,8 +855,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "ostype windows with User mode",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:   "User",
-					OSType: ptr.To(WindowsOS),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:   "User",
+						OSType: ptr.To(WindowsOS),
+					},
 				},
 			},
 			wantErr: false,
@@ -736,8 +870,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 					Name: "pool0",
 				},
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:   "User",
-					OSType: ptr.To(WindowsOS),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:   "User",
+						OSType: ptr.To(WindowsOS),
+					},
 				},
 			},
 			wantErr: false,
@@ -746,9 +882,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "Windows clusters with more than 6char names are not allowed",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Name:   ptr.To("pool0-name-too-long"),
-					Mode:   "User",
-					OSType: ptr.To(WindowsOS),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Name:   ptr.To("pool0-name-too-long"),
+						Mode:   "User",
+						OSType: ptr.To(WindowsOS),
+					},
 				},
 			},
 			wantErr:  true,
@@ -758,10 +896,12 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid label",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:   "User",
-					OSType: ptr.To(LinuxOS),
-					NodeLabels: map[string]string{
-						"foo": "bar",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:   "User",
+						OSType: ptr.To(LinuxOS),
+						NodeLabels: map[string]string{
+							"foo": "bar",
+						},
 					},
 				},
 			},
@@ -771,10 +911,12 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "kubernetes.azure.com label",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					Mode:   "User",
-					OSType: ptr.To(LinuxOS),
-					NodeLabels: map[string]string{
-						"kubernetes.azure.com/scalesetpriority": "spot",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						Mode:   "User",
+						OSType: ptr.To(LinuxOS),
+						NodeLabels: map[string]string{
+							"kubernetes.azure.com/scalesetpriority": "spot",
+						},
 					},
 				},
 			},
@@ -785,8 +927,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with invalid public ip prefix",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   ptr.To(true),
-					NodePublicIPPrefixID: ptr.To("not a valid resource ID"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP:   ptr.To(true),
+						NodePublicIPPrefixID: ptr.To("not a valid resource ID"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -796,8 +940,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix cannot omit node public IP",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   nil,
-					NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP:   nil,
+						NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -807,8 +953,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix cannot disable node public IP",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   ptr.To(false),
-					NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP:   ptr.To(false),
+						NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					},
 				},
 			},
 			wantErr:  true,
@@ -818,8 +966,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   ptr.To(true),
-					NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP:   ptr.To(true),
+						NodePublicIPPrefixID: ptr.To("subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					},
 				},
 			},
 			wantErr: false,
@@ -828,8 +978,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool with public ip prefix with leading slash with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP:   ptr.To(true),
-					NodePublicIPPrefixID: ptr.To("/subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP:   ptr.To(true),
+						NodePublicIPPrefixID: ptr.To("/subscriptions/11111111-2222-aaaa-bbbb-cccccccccccc/resourceGroups/public-ip-test/providers/Microsoft.Network/publicipprefixes/public-ip-prefix"),
+					},
 				},
 			},
 			wantErr: false,
@@ -838,7 +990,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool without public ip prefix with node public IP unset ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: nil,
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: nil,
+					},
 				},
 			},
 			wantErr: false,
@@ -847,7 +1001,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool without public ip prefix with node public IP enabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(true),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(true),
+					},
 				},
 			},
 			wantErr: false,
@@ -856,7 +1012,9 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "pool without public ip prefix with node public IP disabled ok",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					EnableNodePublicIP: ptr.To(false),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						EnableNodePublicIP: ptr.To(false),
+					},
 				},
 			},
 			wantErr: false,
@@ -865,8 +1023,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "KubeletConfig CPUCfsQuotaPeriod needs 'ms' suffix",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						CPUCfsQuotaPeriod: ptr.To("100"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							CPUCfsQuotaPeriod: ptr.To("100"),
+						},
 					},
 				},
 			},
@@ -877,8 +1037,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "KubeletConfig CPUCfsQuotaPeriod has valid 'ms' suffix",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						CPUCfsQuotaPeriod: ptr.To("100ms"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							CPUCfsQuotaPeriod: ptr.To("100ms"),
+						},
 					},
 				},
 			},
@@ -888,9 +1050,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "KubeletConfig ImageGcLowThreshold can't be more than ImageGcHighThreshold",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  ptr.To(100),
-						ImageGcHighThreshold: ptr.To(99),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							ImageGcLowThreshold:  ptr.To(100),
+							ImageGcHighThreshold: ptr.To(99),
+						},
 					},
 				},
 			},
@@ -901,9 +1065,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "KubeletConfig ImageGcLowThreshold is lower than ImageGcHighThreshold",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						ImageGcLowThreshold:  ptr.To(99),
-						ImageGcHighThreshold: ptr.To(100),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							ImageGcLowThreshold:  ptr.To(99),
+							ImageGcHighThreshold: ptr.To(100),
+						},
 					},
 				},
 			},
@@ -913,13 +1079,15 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid KubeletConfig AllowedUnsafeSysctls values",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						AllowedUnsafeSysctls: []string{
-							"kernel.shm*",
-							"kernel.msg*",
-							"kernel.sem",
-							"fs.mqueue.*",
-							"net.*",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							AllowedUnsafeSysctls: []string{
+								"kernel.shm*",
+								"kernel.msg*",
+								"kernel.sem",
+								"fs.mqueue.*",
+								"net.*",
+							},
 						},
 					},
 				},
@@ -930,13 +1098,15 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "more valid KubeletConfig AllowedUnsafeSysctls values",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						AllowedUnsafeSysctls: []string{
-							"kernel.shm.something",
-							"kernel.msg.foo.bar",
-							"kernel.sem",
-							"fs.mqueue.baz",
-							"net.my.configuration.path",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							AllowedUnsafeSysctls: []string{
+								"kernel.shm.something",
+								"kernel.msg.foo.bar",
+								"kernel.sem",
+								"fs.mqueue.baz",
+								"net.my.configuration.path",
+							},
 						},
 					},
 				},
@@ -947,14 +1117,16 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid KubeletConfig AllowedUnsafeSysctls value in a set",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						AllowedUnsafeSysctls: []string{
-							"kernel.shm.something",
-							"kernel.msg.foo.bar",
-							"kernel.sem",
-							"fs.mqueue.baz",
-							"net.my.configuration.path",
-							"kernel.not.allowed",
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							AllowedUnsafeSysctls: []string{
+								"kernel.shm.something",
+								"kernel.msg.foo.bar",
+								"kernel.sem",
+								"fs.mqueue.baz",
+								"net.my.configuration.path",
+								"kernel.not.allowed",
+							},
 						},
 					},
 				},
@@ -966,9 +1138,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "validLinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First is less than NetIpv4IpLocalPortRange.Last",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("2000 33000"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("2000 33000"),
+							},
 						},
 					},
 				},
@@ -979,9 +1153,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First string is ill-formed",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("wrong 33000"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("wrong 33000"),
+							},
 						},
 					},
 				},
@@ -993,9 +1169,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.Last string is ill-formed",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("2000 wrong"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("2000 wrong"),
+							},
 						},
 					},
 				},
@@ -1007,9 +1185,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First less than allowed value",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("1020 32999"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("1020 32999"),
+							},
 						},
 					},
 				},
@@ -1021,9 +1201,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.Last less than allowed value",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("1024 32000"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("1024 32000"),
+							},
 						},
 					},
 				},
@@ -1035,9 +1217,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls NetIpv4IpLocalPortRange.First is greater than NetIpv4IpLocalPortRange.Last",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						Sysctls: &SysctlConfig{
-							NetIpv4IPLocalPortRange: ptr.To("33000 32999"),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							Sysctls: &SysctlConfig{
+								NetIpv4IPLocalPortRange: ptr.To("33000 32999"),
+							},
 						},
 					},
 				},
@@ -1049,11 +1233,13 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "valid LinuxOSConfig Sysctls is set by disabling FailSwapOn",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						FailSwapOn: ptr.To(false),
-					},
-					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To(1500),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							FailSwapOn: ptr.To(false),
+						},
+						LinuxOSConfig: &LinuxOSConfig{
+							SwapFileSizeMB: ptr.To(1500),
+						},
 					},
 				},
 			},
@@ -1063,11 +1249,13 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls is set with FailSwapOn set to true",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					KubeletConfig: &KubeletConfig{
-						FailSwapOn: ptr.To(true),
-					},
-					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To(1500),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						KubeletConfig: &KubeletConfig{
+							FailSwapOn: ptr.To(true),
+						},
+						LinuxOSConfig: &LinuxOSConfig{
+							SwapFileSizeMB: ptr.To(1500),
+						},
 					},
 				},
 			},
@@ -1078,8 +1266,10 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			name: "an invalid LinuxOSConfig Sysctls is set without disabling FailSwapOn",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
-					LinuxOSConfig: &LinuxOSConfig{
-						SwapFileSizeMB: ptr.To(1500),
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						LinuxOSConfig: &LinuxOSConfig{
+							SwapFileSizeMB: ptr.To(1500),
+						},
 					},
 				},
 			},
@@ -1209,7 +1399,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			_ = AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.cluster, tc.ammp).Build()
-			err := tc.ammp.validateLastSystemNodePool(fakeClient)
+			err := validateLastSystemNodePool(fakeClient, tc.ammp.Spec.NodeLabels, tc.ammp.Namespace)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1222,8 +1412,10 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 func getKnownValidAzureManagedMachinePool() *AzureManagedMachinePool {
 	return &AzureManagedMachinePool{
 		Spec: AzureManagedMachinePoolSpec{
-			MaxPods:    ptr.To(30),
-			OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
+			AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+				MaxPods:    ptr.To(30),
+				OsDiskType: ptr.To(string(asocontainerservicev1.OSDiskType_Ephemeral)),
+			},
 		},
 	}
 }
@@ -1235,6 +1427,13 @@ func getManagedMachinePoolWithSystemMode() *AzureManagedMachinePool {
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel: "test-cluster",
 				LabelAgentPoolMode:         string(NodePoolModeSystem),
+			},
+		},
+		Spec: AzureManagedMachinePoolSpec{
+			AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+				NodeLabels: map[string]string{
+					clusterv1.ClusterNameLabel: "test-cluster",
+				},
 			},
 		},
 	}

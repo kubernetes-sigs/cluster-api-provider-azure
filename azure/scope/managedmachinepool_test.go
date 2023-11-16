@@ -60,7 +60,9 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -95,7 +97,9 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -160,7 +164,9 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -194,7 +200,9 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -261,7 +269,9 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -295,7 +305,9 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -362,7 +374,9 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -396,7 +410,9 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -459,7 +475,9 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -494,7 +512,9 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -563,7 +583,9 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -597,7 +619,9 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -660,7 +684,9 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -694,13 +720,17 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
-							Name: "my-vnet",
-							Subnet: infrav1.ManagedControlPlaneSubnet{
-								Name: "my-vnet-subnet",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Name: "my-vnet",
+									Subnet: infrav1.ManagedControlPlaneSubnet{
+										Name: "my-vnet-subnet",
+									},
+								},
+								ResourceGroup: "my-resource-group",
 							},
-							ResourceGroup: "my-resource-group",
 						},
 					},
 				},
@@ -735,13 +765,17 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
-						VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
-							Name: "my-vnet",
-							Subnet: infrav1.ManagedControlPlaneSubnet{
-								Name: "my-vnet-subnet",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Name: "my-vnet",
+									Subnet: infrav1.ManagedControlPlaneSubnet{
+										Name: "my-vnet-subnet",
+									},
+								},
+								ResourceGroup: "my-resource-group",
 							},
-							ResourceGroup: "my-resource-group",
 						},
 					},
 				},
@@ -805,7 +839,9 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -839,7 +875,9 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
 					},
 				},
 				ManagedMachinePool: ManagedMachinePool{
@@ -894,9 +932,11 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 			},
 		},
 		Spec: infrav1.AzureManagedMachinePoolSpec{
-			Mode: string(mode),
-			SKU:  "Standard_D2s_v3",
-			Name: ptr.To(name),
+			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
+				Mode: string(mode),
+				SKU:  "Standard_D2s_v3",
+				Name: ptr.To(name),
+			},
 		},
 	}
 }
