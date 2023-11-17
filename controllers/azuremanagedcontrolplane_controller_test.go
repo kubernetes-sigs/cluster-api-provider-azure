@@ -23,15 +23,20 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -110,10 +115,11 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	recorder := record.NewFakeRecorder(1)
 
 	reconciler := &AzureManagedControlPlaneReconciler{
-		Client:           c,
-		Recorder:         recorder,
-		ReconcileTimeout: reconciler.DefaultLoopTimeout,
-		WatchFilterValue: "",
+		Client:                                   c,
+		Recorder:                                 recorder,
+		ReconcileTimeout:                         reconciler.DefaultLoopTimeout,
+		WatchFilterValue:                         "",
+		getNewAzureManagedControlPlaneReconciler: newAzureManagedControlPlaneReconciler,
 	}
 	name := test.RandomName("paused", 10)
 	namespace := "default"
@@ -175,4 +181,82 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 
 	g.Expect(err).To(BeNil())
 	g.Expect(result.RequeueAfter).To(BeZero())
+}
+
+func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+	cp := &infrav1.AzureManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-azmp",
+			Namespace: "fake-ns",
+		},
+		Spec: infrav1.AzureManagedControlPlaneSpec{
+			AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+				Version: "0.0.1",
+			},
+		},
+		Status: infrav1.AzureManagedControlPlaneStatus{
+			Ready:       false,
+			Initialized: false,
+		},
+	}
+	scheme, err := newScheme()
+	g.Expect(err).ToNot(HaveOccurred())
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(cp).WithStatusSubresource(cp).Build()
+	amcpr := &AzureManagedControlPlaneReconciler{
+		Client: client,
+	}
+
+	helper, err := patch.NewHelper(cp, client)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	scopes := &scope.ManagedControlPlaneScope{
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "fake-cluster",
+				Namespace: "fake-ns",
+			},
+		},
+		Client:       client,
+		PatchHelper:  helper,
+		ControlPlane: cp,
+	}
+	scopes.SetAdminKubeconfigData(createFakeKubeConfig())
+	scopes.SetUserKubeconfigData(createFakeKubeConfig())
+
+	amcpr.getNewAzureManagedControlPlaneReconciler = func(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error) {
+		ctrlr := gomock.NewController(t)
+		svcr := mock_azure.NewMockServiceReconciler(ctrlr)
+		svcr.EXPECT().Reconcile(gomock.Any()).Return(nil)
+
+		return &azureManagedControlPlaneService{
+			kubeclient: scope.Client,
+			scope:      scope,
+			services: []azure.ServiceReconciler{
+				svcr,
+			},
+		}, nil
+	}
+
+	_, err = amcpr.reconcileNormal(ctx, scopes)
+	g.Expect(err).To(HaveOccurred())
+}
+
+func createFakeKubeConfig() []byte {
+	return []byte(`
+  apiVersion: v1
+  kind: Config
+  clusters:
+  - cluster:
+      certificate-authority-data: UEhPTlkK
+      server: https://1.1.1.1
+    name: production
+  contexts:
+  - context:
+      cluster: production
+      user: production
+    name: production
+  current-context: production`)
 }

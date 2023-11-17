@@ -119,7 +119,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		Cluster:             params.Cluster,
 		ControlPlane:        params.ControlPlane,
 		ManagedMachinePools: params.ManagedMachinePools,
-		patchHelper:         helper,
+		PatchHelper:         helper,
 		cache:               params.Cache,
 		VnetDescriber:       params.VnetDescriber,
 	}, nil
@@ -128,7 +128,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 // ManagedControlPlaneScope defines the basic context for an actuator to operate upon.
 type ManagedControlPlaneScope struct {
 	Client              client.Client
-	patchHelper         *patch.Helper
+	PatchHelper         *patch.Helper
 	adminKubeConfigData []byte
 	userKubeConfigData  []byte
 	cache               *ManagedControlPlaneCache
@@ -230,7 +230,7 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 
 	conditions.SetSummary(s.ControlPlane)
 
-	return s.patchHelper.Patch(
+	return s.PatchHelper.Patch(
 		ctx,
 		s.ControlPlane,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{

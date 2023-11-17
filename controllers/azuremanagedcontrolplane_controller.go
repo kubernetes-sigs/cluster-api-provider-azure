@@ -48,9 +48,10 @@ import (
 // AzureManagedControlPlaneReconciler reconciles an AzureManagedControlPlane object.
 type AzureManagedControlPlaneReconciler struct {
 	client.Client
-	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
-	WatchFilterValue string
+	Recorder                                 record.EventRecorder
+	ReconcileTimeout                         time.Duration
+	WatchFilterValue                         string
+	getNewAzureManagedControlPlaneReconciler func(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error)
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -61,6 +62,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 	)
 	defer done()
 
+	amcpr.getNewAzureManagedControlPlaneReconciler = newAzureManagedControlPlaneReconciler
 	var r reconcile.Reconciler = amcpr
 	if options.Cache != nil {
 		r = coalescing.NewReconciler(amcpr, options.Cache, log)
@@ -238,7 +240,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 		}
 	}
 
-	svc, err := newAzureManagedControlPlaneReconciler(scope)
+	svc, err := amcpr.getNewAzureManagedControlPlaneReconciler(scope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azureManagedControlPlane service")
 	}
@@ -279,7 +281,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcilePause(ctx context.Cont
 
 	log.Info("Reconciling AzureManagedControlPlane pause")
 
-	svc, err := newAzureManagedControlPlaneReconciler(scope)
+	svc, err := amcpr.getNewAzureManagedControlPlaneReconciler(scope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azureManagedControlPlane service")
 	}
@@ -296,7 +298,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 
 	log.Info("Reconciling AzureManagedControlPlane delete")
 
-	svc, err := newAzureManagedControlPlaneReconciler(scope)
+	svc, err := amcpr.getNewAzureManagedControlPlaneReconciler(scope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azureManagedControlPlane service")
 	}
