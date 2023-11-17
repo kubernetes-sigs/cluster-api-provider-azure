@@ -270,7 +270,7 @@ func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateUpdate(ctx context.Co
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePoolTemplate").GroupKind(), mp.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedMachinePoolTemplateKind).GroupKind(), mp.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

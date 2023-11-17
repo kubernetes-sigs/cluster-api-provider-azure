@@ -293,7 +293,7 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 	}
 
 	if len(allErrs) != 0 {
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedMachinePool").GroupKind(), m.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedMachinePoolKind).GroupKind(), m.Name, allErrs)
 	}
 
 	return nil, nil
