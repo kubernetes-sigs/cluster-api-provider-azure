@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -107,10 +108,10 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 		}, inputGetter().WaitForUpdate...).Should(Succeed())
 
 		By("Creating tags for control plane")
-		expectedTags = infrav1.Tags{
-			"test":    "tag",
-			"another": "value",
-		}
+		// Preserve "creationTimestamp" so the RG cleanup doesn't fire on this cluster during this test.
+		expectedTags = maps.Clone(initialTags)
+		expectedTags["test"] = "tag"
+		expectedTags["another"] = "value"
 		Eventually(func(g Gomega) {
 			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
 			infraControlPlane.Spec.AdditionalTags = expectedTags
@@ -129,16 +130,14 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 		}, inputGetter().WaitForUpdate...).Should(Succeed())
 		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
-		if initialTags != nil {
-			By("Restoring initial tags for control plane")
-			expectedTags = initialTags
-			Eventually(func(g Gomega) {
-				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
-				infraControlPlane.Spec.AdditionalTags = expectedTags
-				g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
-			}, inputGetter().WaitForUpdate...).Should(Succeed())
-			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
-		}
+		By("Restoring initial tags for control plane")
+		expectedTags = initialTags
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraControlPlane), infraControlPlane)).To(Succeed())
+			infraControlPlane.Spec.AdditionalTags = expectedTags
+			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+		}, inputGetter().WaitForUpdate...).Should(Succeed())
+		Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 	}()
 
 	for _, mp := range input.MachinePools {
@@ -182,11 +181,16 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 				}
 			}
 
+			Byf("Deleting all tags for machine pool %s", mp.Name)
+			expectedTags = nil
 			var initialTags infrav1.Tags
 			Eventually(func(g Gomega) {
 				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
 				initialTags = ammp.Spec.AdditionalTags
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
 			}, inputGetter().WaitForUpdate...).Should(Succeed())
+			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
 			Byf("Creating tags for machine pool %s", mp.Name)
 			expectedTags = infrav1.Tags{
@@ -211,16 +215,14 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 			}, inputGetter().WaitForUpdate...).Should(Succeed())
 			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 
-			if initialTags != nil {
-				Byf("Restoring initial tags for machine pool %s", mp.Name)
-				expectedTags = initialTags
-				Eventually(func(g Gomega) {
-					g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-					ammp.Spec.AdditionalTags = expectedTags
-					g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
-				}, inputGetter().WaitForUpdate...).Should(Succeed())
-				Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
-			}
+			Byf("Restoring initial tags for machine pool %s", mp.Name)
+			expectedTags = initialTags
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.AdditionalTags = expectedTags
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
+			Eventually(checkTags, input.WaitForUpdate...).Should(Succeed())
 		}(mp)
 	}
 

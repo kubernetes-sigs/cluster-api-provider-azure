@@ -98,6 +98,15 @@ func AKSNodeTaintsSpec(ctx context.Context, inputGetter func() AKSNodeTaintsSpec
 				}
 			}
 
+			Byf("Deleting all node taints for machine pool %s", mp.Name)
+			expectedTaints = nil
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.Taints = expectedTaints
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
+			Eventually(checkTaints, input.WaitForUpdate...).Should(Succeed())
+
 			Byf("Creating taints for machine pool %s", mp.Name)
 			expectedTaints = infrav1.Taints{
 				{
@@ -127,16 +136,14 @@ func AKSNodeTaintsSpec(ctx context.Context, inputGetter func() AKSNodeTaintsSpec
 			}, input.WaitForUpdate...).Should(Succeed())
 			Eventually(checkTaints, input.WaitForUpdate...).Should(Succeed())
 
-			if initialTaints != nil {
-				Byf("Restoring initial taints for machine pool %s", mp.Name)
-				expectedTaints = initialTaints
-				Eventually(func(g Gomega) {
-					g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-					ammp.Spec.Taints = expectedTaints
-					g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
-				}, input.WaitForUpdate...).Should(Succeed())
-				Eventually(checkTaints, input.WaitForUpdate...).Should(Succeed())
-			}
+			Byf("Restoring initial taints for machine pool %s", mp.Name)
+			expectedTaints = initialTaints
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.Taints = expectedTaints
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, input.WaitForUpdate...).Should(Succeed())
+			Eventually(checkTaints, input.WaitForUpdate...).Should(Succeed())
 		}(mp)
 	}
 
