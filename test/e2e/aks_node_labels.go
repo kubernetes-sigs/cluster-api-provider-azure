@@ -95,15 +95,24 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 				}
 			}
 
-			Byf("Creating node labels for machine pool %s", mp.Name)
+			Byf("Deleting all node labels for machine pool %s", mp.Name)
+			expectedLabels = nil
 			var initialLabels map[string]string
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				initialLabels = ammp.Spec.NodeLabels
+				ammp.Spec.NodeLabels = expectedLabels
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, inputGetter().WaitForUpdate...).Should(Succeed())
+			Eventually(checkLabels, input.WaitForUpdate...).Should(Succeed())
+
+			Byf("Creating node labels for machine pool %s", mp.Name)
 			expectedLabels = map[string]string{
 				"test":    "label",
 				"another": "value",
 			}
 			Eventually(func(g Gomega) {
 				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-				initialLabels = ammp.Spec.NodeLabels
 				ammp.Spec.NodeLabels = expectedLabels
 				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
 			}, input.WaitForUpdate...).Should(Succeed())
@@ -120,16 +129,14 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 			}, input.WaitForUpdate...).Should(Succeed())
 			Eventually(checkLabels, input.WaitForUpdate...).Should(Succeed())
 
-			if initialLabels != nil {
-				Byf("Restoring initial node labels for machine pool %s", mp.Name)
-				expectedLabels = initialLabels
-				Eventually(func(g Gomega) {
-					g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
-					ammp.Spec.NodeLabels = expectedLabels
-					g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
-				}, input.WaitForUpdate...).Should(Succeed())
-				Eventually(checkLabels, input.WaitForUpdate...).Should(Succeed())
-			}
+			Byf("Restoring initial node labels for machine pool %s", mp.Name)
+			expectedLabels = initialLabels
+			Eventually(func(g Gomega) {
+				g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(ammp), ammp)).To(Succeed())
+				ammp.Spec.NodeLabels = expectedLabels
+				g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
+			}, input.WaitForUpdate...).Should(Succeed())
+			Eventually(checkLabels, input.WaitForUpdate...).Should(Succeed())
 		}(mp)
 	}
 
