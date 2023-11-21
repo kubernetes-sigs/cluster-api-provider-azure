@@ -18,18 +18,26 @@ package controllers
 
 import (
 	"context"
-	"os"
+	"fmt"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
+	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -178,9 +186,9 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	os.Setenv(auth.ClientID, "fooClient")
-	os.Setenv(auth.ClientSecret, "fooSecret")
-	os.Setenv(auth.TenantID, "fooTenant")
+	t.Setenv(auth.ClientID, "fooClient")
+	t.Setenv(auth.ClientSecret, "fooSecret")
+	t.Setenv(auth.TenantID, "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -209,4 +217,127 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
+	g := NewWithT(t)
+	ctrlr := gomock.NewController(t)
+	defer ctrlr.Finish()
+	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "fake-machine-pool", Namespace: "fake-ns"}}
+	ctx := context.Background()
+	scheme, err := newScheme()
+	g.Expect(err).ToNot(HaveOccurred())
+
+	azureMP := &infrav1exp.AzureMachinePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-machine-pool",
+			Namespace: "fake-ns",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: "fake-cluster",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: fmt.Sprintf("%s/%s", expv1.GroupVersion.Group, expv1.GroupVersion.Version),
+					Kind:       "MachinePool",
+					Name:       "fake-other-machine-pool",
+					Controller: to.Ptr(true),
+				},
+			},
+		},
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			UserAssignedIdentities: []infrav1.UserAssignedIdentity{
+				{
+					ProviderID: "fake-id",
+				},
+			},
+		},
+	}
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-cluster",
+			Namespace: "fake-ns",
+		},
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: &corev1.ObjectReference{
+				Kind:      "AzureCluster",
+				Name:      "fake-azure-cluster",
+				Namespace: "fake-ns",
+			},
+		},
+	}
+
+	ownerMP := &expv1.MachinePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-other-machine-pool",
+			Namespace: "fake-ns",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: "fake-cluster",
+			},
+		},
+	}
+
+	azureCluster := &infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-azure-cluster",
+			Namespace: "fake-ns",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "cluster.x-k8s.io/v1beta1",
+					Kind:       "Cluster",
+					Name:       "my-cluster",
+				},
+			},
+		},
+		Spec: infrav1.AzureClusterSpec{
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "123",
+			},
+			NetworkSpec: infrav1.NetworkSpec{
+				Subnets: infrav1.Subnets{
+					{
+						SubnetClassSpec: infrav1.SubnetClassSpec{
+							Name: "node",
+							Role: infrav1.SubnetNode,
+						},
+					},
+				},
+			},
+		},
+	}
+	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
+
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      azureMP.Name,
+			Namespace: "fake-ns",
+			Labels: map[string]string{
+				"fake-cluster": string(infrav1.ResourceLifecycleOwned),
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       azureMP.GetName(),
+					Controller: ptr.To(true),
+				},
+			},
+		},
+	}
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(azureMP, ownerMP, cluster, azureCluster, sec).Build()
+	rec := AzureJSONMachinePoolReconciler{
+		Client:           client,
+		Recorder:         record.NewFakeRecorder(42),
+		ReconcileTimeout: reconciler.DefaultLoopTimeout,
+	}
+	id := "fake-id"
+	getClient = func(auth azure.Authorizer) (identities.Client, error) {
+		mockClient := mock_identities.NewMockClient(ctrlr)
+		mockClient.EXPECT().GetClientID(gomock.Any(), gomock.Any()).Return(id, nil)
+		return mockClient, nil
+	}
+
+	_, err = rec.Reconcile(ctx, req)
+	g.Expect(err).ToNot(HaveOccurred())
 }
