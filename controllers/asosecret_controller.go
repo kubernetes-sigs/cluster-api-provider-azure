@@ -116,7 +116,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	)
 	defer done()
 
-	log = log.WithValues("namespace", req.Namespace, "AzureCluster", req.Name)
+	log = log.WithValues("namespace", req.Namespace)
 
 	// asoSecretOwner is the resource that created the identity. This could be either an AzureCluster or AzureManagedControlPlane (if AKS is enabled).
 	// check for AzureCluster first and if it is not found, check for AzureManagedControlPlane.

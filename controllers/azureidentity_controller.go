@@ -151,8 +151,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	var bindingsToDelete []aadpodv1.AzureIdentityBinding
 	for _, b := range bindings.Items {
-		log = log.WithValues("azureidentitybinding", b.Name)
-
 		binding := b
 		clusterName := binding.ObjectMeta.Labels[clusterv1.ClusterNameLabel]
 		clusterNamespace := binding.ObjectMeta.Labels[infrav1.ClusterLabelNamespace]

@@ -63,7 +63,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 			return nil
 		}
 
-		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+		log := log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
 		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -116,7 +116,7 @@ func AzureManagedControlPlaneToAzureMachinePoolsMapper(ctx context.Context, c cl
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
+		log := log.WithValues("AzureManagedControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
 
 		// Don't handle deleted AzureManagedControlPlane
 		if !azControlPlane.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -165,7 +165,7 @@ func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) hand
 			return nil
 		}
 
-		log = log.WithValues("AzureMachinePoolMachine", azureMachinePoolMachine.Name, "Namespace", azureMachinePoolMachine.Namespace)
+		log := log.WithValues("AzureMachinePoolMachine", azureMachinePoolMachine.Name, "Namespace", azureMachinePoolMachine.Namespace)
 		for _, ref := range azureMachinePoolMachine.OwnerReferences {
 			if ref.Kind != gvk.Kind {
 				continue
