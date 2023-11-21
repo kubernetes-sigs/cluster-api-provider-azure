@@ -41,7 +41,6 @@ import (
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/textlogger"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -117,11 +116,10 @@ var (
 	diagnosticsOptions                 = DiagnosticsOptions{}
 	reconcileTimeout                   time.Duration
 	enableTracing                      bool
-	logConfig                          = textlogger.NewConfig()
 )
 
 // InitFlags initializes all command-line flags.
-func InitFlags(fs *pflag.FlagSet, gofs *flag.FlagSet) {
+func InitFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(
 		&enableLeaderElection,
 		"leader-elect",
@@ -241,7 +239,6 @@ func InitFlags(fs *pflag.FlagSet, gofs *flag.FlagSet) {
 	)
 
 	AddDiagnosticsOptions(fs, &diagnosticsOptions)
-	logConfig.AddFlags(gofs)
 
 	feature.MutableGates.AddFlag(fs)
 }
@@ -251,7 +248,8 @@ func InitFlags(fs *pflag.FlagSet, gofs *flag.FlagSet) {
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 func main() {
-	InitFlags(pflag.CommandLine, flag.CommandLine)
+	InitFlags(pflag.CommandLine)
+	klog.InitFlags(flag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
