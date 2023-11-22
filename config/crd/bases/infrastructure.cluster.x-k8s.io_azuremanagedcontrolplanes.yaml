@@ -384,6 +384,7 @@ spec:
                 enum:
                 - azure
                 - kubenet
+                - none
                 type: string
               networkPluginMode:
                 description: NetworkPluginMode is the mode the network plugin should
