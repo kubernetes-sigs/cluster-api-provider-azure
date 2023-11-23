@@ -207,10 +207,20 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, err)
 	}
 
+	oldDNSPrefix := old.Spec.DNSPrefix
+	newDNSPrefix := m.Spec.DNSPrefix
+	if reflect.ValueOf(oldDNSPrefix).IsZero() {
+		oldDNSPrefix = ptr.To(old.Name)
+	}
+
+	if reflect.ValueOf(newDNSPrefix).IsZero() {
+		newDNSPrefix = ptr.To(m.Name)
+	}
+
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "DNSPrefix"),
-		m.Spec.DNSPrefix,
-		old.Spec.DNSPrefix,
+		oldDNSPrefix,
+		newDNSPrefix,
 	); err != nil {
 		allErrs = append(allErrs, err)
 	}
