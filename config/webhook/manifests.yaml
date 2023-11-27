@@ -2,7 +2,6 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  creationTimestamp: null
   name: mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
@@ -203,7 +202,6 @@ webhooks:
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  creationTimestamp: null
   name: validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
@@ -451,27 +449,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool
-  failurePolicy: Fail
-  name: validation.azuremachinepool.infrastructure.cluster.x-k8s.io
-  rules:
-  - apiGroups:
-    - infrastructure.cluster.x-k8s.io
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - azuremachinepools
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  - v1beta1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine
   failurePolicy: Fail
   name: azuremachinepoolmachine.kb.io
@@ -485,4 +462,25 @@ webhooks:
     - UPDATE
     resources:
     - azuremachinepoolmachines
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool
+  failurePolicy: Fail
+  name: validation.azuremachinepool.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremachinepools
   sideEffects: None

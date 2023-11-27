@@ -33,7 +33,7 @@ export GOPROXY
 export GO111MODULE=on
 
 # Kubebuilder.
-export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.27
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.28
 export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?= 60s
 export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?= 60s
 
@@ -69,7 +69,7 @@ ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azu
 endif
 
 # Binaries.
-CONTROLLER_GEN_VER := v0.9.2
+CONTROLLER_GEN_VER := v0.13.0
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
@@ -301,7 +301,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.0/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAAPH
 	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.1.0-alpha.10/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
@@ -475,6 +475,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		output:webhook:dir=$(WEBHOOK_ROOT) \
 		webhook
 	$(CONTROLLER_GEN) \
+		paths=./ \
 		paths=./controllers/... \
 		paths=./$(EXP_DIR)/controllers/... \
 		output:rbac:dir=$(RBAC_ROOT) \
