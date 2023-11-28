@@ -103,7 +103,7 @@ func AzureClusterToAzureMachinesMapper(ctx context.Context, c client.Client, obj
 			return nil
 		}
 
-		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+		log := log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
 		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -750,7 +750,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+		log := log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
 		// Don't handle deleted AzureManagedClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -803,7 +803,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
+		log := log.WithValues("AzureManagedControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
 
 		// Don't handle deleted AzureManagedControlPlanes
 		if !azControlPlane.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -850,7 +850,7 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(ctx context.Context, c 
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
+		log := log.WithValues("AzureManagedCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
 		// Don't handle deleted AzureManagedClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -899,7 +899,7 @@ func AzureManagedControlPlaneToAzureManagedClusterMapper(ctx context.Context, c 
 			return nil
 		}
 
-		log = log.WithValues("AzureManagedControlPlane", azManagedControlPlane.Name, "Namespace", azManagedControlPlane.Namespace)
+		log := log.WithValues("AzureManagedControlPlane", azManagedControlPlane.Name, "Namespace", azManagedControlPlane.Namespace)
 
 		// Don't handle deleted AzureManagedControlPlanes
 		if !azManagedControlPlane.ObjectMeta.DeletionTimestamp.IsZero() {
