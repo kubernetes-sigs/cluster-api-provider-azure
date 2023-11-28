@@ -162,7 +162,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// only delete bindings when the identity owner type is not found.
 		// we should not delete an identity when azureCluster is not found because it could have been created by AzureManagedControlPlane.
 		switch identityOwner.(type) {
-		case infrav1.AzureCluster:
+		case *infrav1.AzureCluster:
 			azCluster := &infrav1.AzureCluster{}
 			if err := r.Get(ctx, key, azCluster); err != nil {
 				if apierrors.IsNotFound(err) {
@@ -172,7 +172,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					return ctrl.Result{}, errors.Wrap(err, "failed to get AzureCluster")
 				}
 			}
-		case infrav1.AzureManagedControlPlane:
+		case *infrav1.AzureManagedControlPlane:
 			azManagedControlPlane := &infrav1.AzureManagedControlPlane{}
 			if err := r.Get(ctx, key, azManagedControlPlane); err != nil {
 				if apierrors.IsNotFound(err) {
