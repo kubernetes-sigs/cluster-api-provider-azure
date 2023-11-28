@@ -17,7 +17,7 @@ repos:
   - id: end-of-file-fixer
   - id: trailing-whitespace
 - repo: https://github.com/pylint-dev/pylint
-  rev: v2.17.2
+  rev: v3.0.2
   hooks:
   - id: pylint
     exclude: ^hack/boilerplate/boilerplate.py$
