@@ -305,6 +305,7 @@ rules:
 - apiGroups:
   - network.azure.com
   resources:
+  - bastionhosts
   - natgateways
   verbs:
   - create
@@ -317,6 +318,7 @@ rules:
 - apiGroups:
   - network.azure.com
   resources:
+  - bastionhosts/status
   - natgateways/status
   verbs:
   - get

@@ -544,13 +544,14 @@ func (s *ClusterScope) AzureBastion() *infrav1.AzureBastion {
 }
 
 // AzureBastionSpec returns the bastion spec.
-func (s *ClusterScope) AzureBastionSpec() azure.ResourceSpecGetter {
+func (s *ClusterScope) AzureBastionSpec() azure.ASOResourceSpecGetter[*asonetworkv1.BastionHost] {
 	if s.IsAzureBastionEnabled() {
 		subnetID := azure.SubnetID(s.SubscriptionID(), s.ResourceGroup(), s.Vnet().Name, s.AzureBastion().Subnet.Name)
 		publicIPID := azure.PublicIPID(s.SubscriptionID(), s.ResourceGroup(), s.AzureBastion().PublicIP.Name)
 
 		return &bastionhosts.AzureBastionSpec{
 			Name:            s.AzureBastion().Name,
+			Namespace:       s.Namespace(),
 			ResourceGroup:   s.ResourceGroup(),
 			Location:        s.Location(),
 			ClusterName:     s.ClusterName(),
