@@ -44,6 +44,7 @@ case ${os} in
         ;;
     darwin)
         target="apple-darwin"
+        arch="x86_64" # mdbook isn't packaged for arm64 darwin yet
         ;;
     linux)
         # works for linux, too
