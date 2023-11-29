@@ -37,6 +37,9 @@ kubeconfig
 # Example and binary output directory
 /out
 
+# Mdbook build directory
+bookout
+
 # vscode
 .vscode
 *.code-workspace

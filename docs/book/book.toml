@@ -5,6 +5,10 @@ multilingual = false
 src = "src"
 title = "The Cluster API Provider Azure Book"
 
+[build]
+build-dir = "bookout"
+create-missing = false
+
 [output.html]
 curly-quotes = true
 git-repository-url = "https://sigs.k8s.io/cluster-api-provider-azure"
