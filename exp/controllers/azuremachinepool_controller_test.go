@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -69,6 +70,8 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 		infrav1.AddToScheme,
 		expv1.AddToScheme,
 		infrav1exp.AddToScheme,
+		corev1.AddToScheme,
+		aadpodv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -106,10 +109,37 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "something",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 		},
 	}
 	g.Expect(c.Create(ctx, azCluster)).To(Succeed())
+
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+			ClientSecret: corev1.SecretReference{
+				Name:      "fooSecret",
+				Namespace: "default",
+			},
+		},
+	}
+	fakeSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fooSecret",
+			Namespace: "default",
+		},
+	}
+	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())
+	g.Expect(c.Create(ctx, fakeSecret)).To(Succeed())
 
 	mp := &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{

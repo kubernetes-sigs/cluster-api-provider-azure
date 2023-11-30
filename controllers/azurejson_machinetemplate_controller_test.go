@@ -67,6 +67,11 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 		},
 	}
@@ -84,6 +89,17 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		},
 	}
 
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+		},
+	}
+	fakeSecret := &corev1.Secret{}
+
 	cases := map[string]struct {
 		objects []runtime.Object
 		fail    bool
@@ -94,6 +110,8 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 				cluster,
 				azureCluster,
 				azureMachineTemplate,
+				fakeIdentity,
+				fakeSecret,
 			},
 		},
 		"missing azure cluster should return error": {

@@ -23,10 +23,12 @@ import (
 	"strings"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
@@ -44,6 +46,9 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+const fakeClientID = "fake-client-id"
+const fakeTenantID = "fake-tenant-id"
 
 func specToString(spec any) string {
 	var sb strings.Builder
@@ -78,6 +83,9 @@ func TestAPIServerHost(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
@@ -103,6 +111,9 @@ func TestAPIServerHost(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
@@ -128,6 +139,9 @@ func TestAPIServerHost(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						NetworkClassSpec: infrav1.NetworkClassSpec{
@@ -150,6 +164,8 @@ func TestAPIServerHost(t *testing.T) {
 		scheme := runtime.NewScheme()
 		_ = clusterv1.AddToScheme(scheme)
 		_ = infrav1.AddToScheme(scheme)
+		_ = corev1.AddToScheme(scheme)
+		_ = aadpodv1.AddToScheme(scheme)
 
 		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -170,7 +186,16 @@ func TestAPIServerHost(t *testing.T) {
 		}
 		tc.azureCluster.Default()
 
-		initObjects := []runtime.Object{cluster, &tc.azureCluster}
+		fakeIdentity := &infrav1.AzureClusterIdentity{
+			Spec: infrav1.AzureClusterIdentitySpec{
+				Type:     infrav1.ServicePrincipal,
+				ClientID: fakeClientID,
+				TenantID: fakeTenantID,
+			},
+		}
+		fakeSecret := &corev1.Secret{}
+
+		initObjects := []runtime.Object{cluster, &tc.azureCluster, fakeIdentity, fakeSecret}
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 		clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -189,6 +214,8 @@ func TestGettingSecurityRules(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = aadpodv1.AddToScheme(scheme)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -211,6 +238,9 @@ func TestGettingSecurityRules(t *testing.T) {
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Kind: infrav1.AzureClusterIdentityKind,
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
@@ -226,7 +256,16 @@ func TestGettingSecurityRules(t *testing.T) {
 	}
 	azureCluster.Default()
 
-	initObjects := []runtime.Object{cluster, azureCluster}
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type:     infrav1.ServicePrincipal,
+			ClientID: fakeClientID,
+			TenantID: fakeTenantID,
+		},
+	}
+	fakeSecret := &corev1.Secret{}
+
+	initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -278,6 +317,9 @@ func TestPublicIPSpecs(t *testing.T) {
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
 						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: infrav1.LoadBalancerSpec{
@@ -318,6 +360,9 @@ func TestPublicIPSpecs(t *testing.T) {
 						AdditionalTags: infrav1.Tags{
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
@@ -362,6 +407,9 @@ func TestPublicIPSpecs(t *testing.T) {
 						AdditionalTags: infrav1.Tags{
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
@@ -429,6 +477,9 @@ func TestPublicIPSpecs(t *testing.T) {
 						AdditionalTags: infrav1.Tags{
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
@@ -535,6 +586,9 @@ func TestPublicIPSpecs(t *testing.T) {
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
 						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
@@ -598,6 +652,9 @@ func TestPublicIPSpecs(t *testing.T) {
 						AdditionalTags: infrav1.Tags{
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
@@ -674,6 +731,9 @@ func TestPublicIPSpecs(t *testing.T) {
 							"Name": "my-publicip-ipv6",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
 						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
@@ -746,6 +806,8 @@ func TestPublicIPSpecs(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -753,10 +815,17 @@ func TestPublicIPSpecs(t *testing.T) {
 					Namespace: "default",
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, tc.azureCluster}
+			initObjects := []runtime.Object{cluster, tc.azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
@@ -803,6 +872,9 @@ func TestRouteTableSpecs(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
@@ -897,6 +969,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Subnets: infrav1.Subnets{
@@ -958,6 +1033,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Subnets: infrav1.Subnets{
@@ -1037,6 +1115,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Subnets: infrav1.Subnets{
@@ -1211,6 +1292,9 @@ func TestNSGSpecs(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
@@ -1304,6 +1388,9 @@ func TestSubnetSpecs(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
@@ -1407,6 +1494,9 @@ func TestSubnetSpecs(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
@@ -1672,6 +1762,9 @@ func TestAzureBastionSpec(t *testing.T) {
 						ResourceGroup: "my-rg",
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							Location: "centralIndia",
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
@@ -1788,6 +1881,9 @@ func TestSubnet(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -1809,11 +1905,22 @@ func TestSubnet(t *testing.T) {
 					NetworkSpec: tc.azureClusterNetworkSpec,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -1884,6 +1991,9 @@ func TestControlPlaneRouteTable(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -1905,11 +2015,22 @@ func TestControlPlaneRouteTable(t *testing.T) {
 					NetworkSpec: tc.azureClusterNetworkSpec,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -1950,6 +2071,9 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -1971,11 +2095,22 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 					NetworkSpec: tc.azureClusterNetworkSpec,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2013,6 +2148,9 @@ func TestAPIServerLBPoolName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2038,11 +2176,22 @@ func TestAPIServerLBPoolName(t *testing.T) {
 					},
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2130,6 +2279,8 @@ func TestOutboundLBName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2152,6 +2303,9 @@ func TestOutboundLBName(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
@@ -2180,7 +2334,16 @@ func TestOutboundLBName(t *testing.T) {
 
 			azureCluster.Default()
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
+
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2247,6 +2410,8 @@ func TestBackendPoolName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2269,6 +2434,9 @@ func TestBackendPoolName(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
@@ -2294,6 +2462,15 @@ func TestBackendPoolName(t *testing.T) {
 
 			azureCluster.Default()
 
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
+
 			if tc.customAPIServerBackendPoolName != "" {
 				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
 			}
@@ -2306,7 +2483,7 @@ func TestBackendPoolName(t *testing.T) {
 				azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.BackendPool.Name = tc.customControlPlaneBackendPoolName
 			}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2363,6 +2540,9 @@ func TestOutboundPoolName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2383,9 +2563,20 @@ func TestOutboundPoolName(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
 			if tc.loadBalancerName != "" {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
@@ -2393,7 +2584,7 @@ func TestOutboundPoolName(t *testing.T) {
 				}
 			}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			azureCluster.Default()
 
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2448,6 +2639,9 @@ func TestGenerateFQDN(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2469,12 +2663,23 @@ func TestGenerateFQDN(t *testing.T) {
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       tc.location,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					ResourceGroup: tc.resourceGroup,
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2534,6 +2739,9 @@ func TestAdditionalTags(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2555,11 +2763,22 @@ func TestAdditionalTags(t *testing.T) {
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						AdditionalTags: tc.azureClusterAdditionalTags,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2608,6 +2827,9 @@ func TestAPIServerPort(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2631,11 +2853,22 @@ func TestAPIServerPort(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2692,6 +2925,9 @@ func TestFailureDomains(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
+
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
@@ -2712,12 +2948,23 @@ func TestFailureDomains(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 				Status: tc.azureClusterStatus,
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -2751,6 +2998,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 						},
 						SubscriptionID: "123",
 						Location:       "westus2",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					ResourceGroup: "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
@@ -2922,6 +3172,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "westus2",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					ResourceGroup: "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
@@ -2986,6 +3239,8 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2993,8 +3248,16 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					Namespace: "default",
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, tc.azureCluster}
+			initObjects := []runtime.Object{cluster, tc.azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -3039,6 +3302,8 @@ func TestExtendedLocationName(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3065,11 +3330,22 @@ func TestExtendedLocationName(t *testing.T) {
 							Name: tc.extendedLocation.Name,
 							Type: tc.extendedLocation.Type,
 						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -3114,6 +3390,8 @@ func TestExtendedLocationType(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3140,11 +3418,22 @@ func TestExtendedLocationType(t *testing.T) {
 							Name: tc.extendedLocation.Name,
 							Type: tc.extendedLocation.Type,
 						},
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -3342,6 +3631,8 @@ func TestVNetPeerings(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
+			_ = corev1.AddToScheme(scheme)
+			_ = aadpodv1.AddToScheme(scheme)
 			clusterName := "my-cluster"
 			clusterNamespace := "default"
 
@@ -3367,14 +3658,28 @@ func TestVNetPeerings(t *testing.T) {
 					ResourceGroup: "rg1",
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: tc.subscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: tc.azureClusterVNetSpec,
 					},
 				},
 			}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: clusterNamespace,
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{}
 
-			initObjects := []runtime.Object{cluster, azureCluster}
+			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
@@ -3681,6 +3986,9 @@ func TestSetFailureDomain(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 							FailureDomains: tc.specifiedFDs,
+							IdentityRef: &corev1.ObjectReference{
+								Kind: infrav1.AzureClusterIdentityKind,
+							},
 						},
 					},
 				},

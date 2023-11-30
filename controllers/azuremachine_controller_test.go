@@ -37,6 +37,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -61,6 +62,8 @@ func TestAzureMachineReconcile(t *testing.T) {
 	defaultAzureCluster := getFakeAzureCluster()
 	defaultAzureMachine := getFakeAzureMachine()
 	defaultMachine := getFakeMachine(defaultAzureMachine)
+	defaultAzureClusterIdentity := getFakeAzureClusterIdentity()
+	defaultSecret := &corev1.Secret{}
 
 	cases := map[string]struct {
 		objects []runtime.Object
@@ -74,6 +77,8 @@ func TestAzureMachineReconcile(t *testing.T) {
 				defaultAzureCluster,
 				defaultAzureMachine,
 				defaultMachine,
+				defaultAzureClusterIdentity,
+				defaultSecret,
 			},
 		},
 		"should not fail if the azure machine is not found": {
@@ -81,6 +86,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 				defaultCluster,
 				defaultAzureCluster,
 				defaultMachine,
+				defaultAzureClusterIdentity,
 			},
 		},
 		"should fail if machine is not found": {
@@ -88,6 +94,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 				defaultCluster,
 				defaultAzureCluster,
 				defaultAzureMachine,
+				defaultAzureClusterIdentity,
 			},
 			fail: true,
 			err:  "machines.cluster.x-k8s.io \"my-machine\" not found",
@@ -100,6 +107,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 					am.OwnerReferences = nil
 				}),
 				defaultMachine,
+				defaultAzureClusterIdentity,
 			},
 			event: "Machine controller dependency not yet met",
 		},
@@ -123,7 +131,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			client := fake.NewClientBuilder().
+			fakeClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithRuntimeObjects(tc.objects...).
 				WithStatusSubresource(
@@ -131,8 +139,12 @@ func TestAzureMachineReconcile(t *testing.T) {
 				).
 				Build()
 
+			resultIdentity := &infrav1.AzureClusterIdentity{}
+			key := client.ObjectKey{Name: defaultAzureClusterIdentity.Name, Namespace: defaultAzureClusterIdentity.Namespace}
+			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity))
+
 			reconciler := &AzureMachineReconciler{
-				Client:   client,
+				Client:   fakeClient,
 				Recorder: record.NewFakeRecorder(128),
 			}
 
@@ -357,12 +369,17 @@ func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineRecon
 			DataSecretName: ptr.To("fooSecret"),
 		}
 	})
+	azureClusterIdentity := getFakeAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+		identity.Spec.ClientSecret.Name = "fooSecret"
+		identity.Spec.ClientSecret.Namespace = "default"
+	})
 
 	objects := []runtime.Object{
 		cluster,
 		azureCluster,
 		machine,
 		azureMachine,
+		azureClusterIdentity,
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "fooSecret",
@@ -535,6 +552,11 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
@@ -596,6 +618,26 @@ func getFakeAzureMachine(changes ...func(*infrav1.AzureMachine)) *infrav1.AzureM
 	return input
 }
 
+func getFakeAzureClusterIdentity(changes ...func(*infrav1.AzureClusterIdentity)) *infrav1.AzureClusterIdentity {
+	input := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type:     infrav1.ServicePrincipal,
+			ClientID: "fake-client-id",
+			TenantID: "fake-tenant-id",
+		},
+	}
+
+	for _, change := range changes {
+		change(input)
+	}
+
+	return input
+}
+
 func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*clusterv1.Machine)) *clusterv1.Machine {
 	input := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -628,7 +670,8 @@ func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*cluster
 
 func TestConditions(t *testing.T) {
 	g := NewWithT(t)
-	scheme := setupScheme(g)
+	scheme, err := newScheme()
+	g.Expect(err).NotTo(HaveOccurred())
 
 	testcases := []struct {
 		name               string
@@ -714,29 +757,42 @@ func TestConditions(t *testing.T) {
 				Spec: infrav1.AzureClusterSpec{
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Name:      "fake-identity",
+							Namespace: "default",
+							Kind:      "AzureClusterIdentity",
+						},
 					},
 				},
 			}
+			azureClusterIdentity := getFakeAzureClusterIdentity()
+			defaultSecret := &corev1.Secret{}
+
 			initObjects := []runtime.Object{
 				cluster,
 				tc.machine,
 				azureCluster,
 				tc.azureMachine,
+				azureClusterIdentity,
+				defaultSecret,
 			}
-			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			resultIdentity := &infrav1.AzureClusterIdentity{}
+			key := client.ObjectKey{Name: azureClusterIdentity.Name, Namespace: azureClusterIdentity.Namespace}
+			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity))
 			recorder := record.NewFakeRecorder(10)
 
-			reconciler := NewAzureMachineReconciler(client, recorder, reconciler.DefaultLoopTimeout, "")
+			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.DefaultLoopTimeout, "")
 
 			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
-				Client:       client,
+				Client:       fakeClient,
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				Client:       client,
+				Client:       fakeClient,
 				ClusterScope: clusterScope,
 				Machine:      tc.machine,
 				AzureMachine: tc.azureMachine,

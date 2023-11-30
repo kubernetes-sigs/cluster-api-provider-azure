@@ -75,20 +75,13 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
 	}
 
-	if params.AzureCluster.Spec.IdentityRef == nil {
-		err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID, params.AzureCluster.Spec.AzureEnvironment)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
-		}
-	} else {
-		credentialsProvider, err := NewAzureClusterCredentialsProvider(ctx, params.Client, params.AzureCluster)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to init credentials provider")
-		}
-		err = params.AzureClients.setCredentialsWithProvider(ctx, params.AzureCluster.Spec.SubscriptionID, params.AzureCluster.Spec.AzureEnvironment, credentialsProvider)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
-		}
+	credentialsProvider, err := NewAzureClusterCredentialsProvider(ctx, params.Client, params.AzureCluster)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init credentials provider")
+	}
+	err = params.AzureClients.setCredentialsWithProvider(ctx, params.AzureCluster.Spec.SubscriptionID, params.AzureCluster.Spec.AzureEnvironment, credentialsProvider)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}
 
 	if params.Cache == nil {
