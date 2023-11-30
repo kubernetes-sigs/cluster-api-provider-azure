@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -96,6 +97,8 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = aadpodv1.AddToScheme(scheme)
 
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
@@ -174,8 +177,34 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			if tc.machinePoolFeature {
 				defer utilfeature.SetFeatureGateDuringTest(t, capifeature.Gates, capifeature.MachinePool, true)()
 			}
-			initObjects := []runtime.Object{tc.cluster, tc.azureCluster}
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:         infrav1.ServicePrincipal,
+					ClientID:     "fooClient",
+					TenantID:     "fooTenant",
+					ClientSecret: corev1.SecretReference{Name: "fooSecret", Namespace: "default"},
+				},
+			}
+			fakeSecret := getASOSecret(tc.cluster, func(s *corev1.Secret) {
+				s.ObjectMeta.Name = "fooSecret"
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("fooSubscription"),
+					"AZURE_TENANT_ID":       []byte("fooTenant"),
+					"AZURE_CLIENT_ID":       []byte("fooClient"),
+					"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
+					"clientSecret":          []byte("fooSecret"),
+				}
+			})
+
+			initObjects := []runtime.Object{tc.cluster, tc.azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			resultSecret := &corev1.Secret{}
+			key := client.ObjectKey{Name: fakeSecret.Name, Namespace: fakeSecret.Namespace}
+			g.Expect(fakeClient.Get(context.Background(), key, resultSecret)).To(Succeed())
 
 			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 				Cluster:      tc.cluster,
@@ -280,8 +309,20 @@ func TestReconcileAzureSecret(t *testing.T) {
 	azureCluster.Default()
 	cluster.Name = "testCluster"
 
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+		},
+	}
+	fakeSecret := &corev1.Secret{}
+	initObjects := []runtime.Object{fakeIdentity, fakeSecret}
+
 	scheme := setupScheme(g)
-	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	kubeclient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 		Cluster:      cluster,
@@ -337,6 +378,7 @@ func setupScheme(g *WithT) *runtime.Scheme {
 	g.Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(aadpodv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
@@ -382,6 +424,11 @@ func newAzureCluster(location string) *infrav1.AzureCluster {
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				Location:       location,
 				SubscriptionID: "baz",
+				IdentityRef: &corev1.ObjectReference{
+					Kind:      "AzureClusterIdentity",
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{},
@@ -435,6 +482,11 @@ func newAzureClusterWithCustomVnet(location string) *infrav1.AzureCluster {
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				Location:       location,
 				SubscriptionID: "baz",
+				IdentityRef: &corev1.ObjectReference{
+					Kind:      "AzureClusterIdentity",
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{

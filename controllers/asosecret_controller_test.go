@@ -262,7 +262,20 @@ func TestASOSecretReconcile(t *testing.T) {
 				getASOCluster(func(c *clusterv1.Cluster) {
 					c.Spec.Paused = true
 				}),
-				defaultAzureCluster,
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = defaultClusterIdentityType
+					identity.Spec.ClientSecret = corev1.SecretReference{
+						Name:      "fooSecret",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentitySecret(),
 			},
 			event: "AzureCluster or linked Cluster is marked as paused. Won't reconcile",
 		},
@@ -305,13 +318,13 @@ func TestASOSecretReconcile(t *testing.T) {
 				g.Expect(asoSecretErr).To(HaveOccurred())
 			}
 
-			if tc.event != "" {
-				g.Expect(reconciler.Recorder.(*record.FakeRecorder).Events).To(Receive(ContainSubstring(tc.event)))
-			}
 			if tc.err != "" {
 				g.Expect(err).To(MatchError(ContainSubstring(tc.err)))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+			if tc.event != "" {
+				g.Expect(reconciler.Recorder.(*record.FakeRecorder).Events).To(Receive(ContainSubstring(tc.event)))
 			}
 		})
 	}
