@@ -98,6 +98,14 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).To(Succeed())
+
+		cloudProviderAzureLabel := "azure"
+		fmt.Println("Value of useCIArtifacts is", useCIArtifacts)
+		if useCIArtifacts {
+			cloudProviderAzureLabel = "azure-ci"
+		}
+		os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", cloudProviderAzureLabel)
+		setPlaceholderValuesForCCMEnvVars()
 	})
 
 	// Management clusters do not support Windows nodes because of cert manager

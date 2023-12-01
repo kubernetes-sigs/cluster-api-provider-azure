@@ -77,6 +77,7 @@ var _ = Describe("Workload cluster creation", func() {
 			cloudProviderAzureLabel = "azure-ci"
 		}
 		os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", cloudProviderAzureLabel)
+		setPlaceholderValuesForCCMEnvVars()
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error

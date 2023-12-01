@@ -942,3 +942,18 @@ func getSubscriptionID(g Gomega) string {
 	g.Expect(subscriptionID).NotTo(BeEmpty())
 	return subscriptionID
 }
+
+func setPlaceholderValuesForCCMEnvVars() {
+	Expect(setEnvVarIfNotSet("CCM_IMAGE_NAME", "ccm_image_name_placeholder")).To(Succeed())
+	Expect(setEnvVarIfNotSet("CCM_IMAGE_REGISTRY", "ccm_image_registry_placeholder")).To(Succeed())
+	Expect(setEnvVarIfNotSet("CNM_IMAGE_NAME", "cnm_image_name_placeholder")).To(Succeed())
+	Expect(setEnvVarIfNotSet("CNM_IMAGE_REGISTRY", "cnm_image_registry_placeholder")).To(Succeed())
+	Expect(setEnvVarIfNotSet("IMAGE_TAG_CCM", "image_tag_ccm_placeholder")).To(Succeed())
+}
+
+func setEnvVarIfNotSet(name string, defaultValue string) error {
+	if _, ok := os.LookupEnv(name); !ok {
+		return os.Setenv(name, defaultValue)
+	}
+	return nil
+}

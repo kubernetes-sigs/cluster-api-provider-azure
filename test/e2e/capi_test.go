@@ -86,6 +86,14 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, identityNamespace.Name)).To(Succeed())
 
+		cloudProviderAzureLabel := "azure"
+		fmt.Println("Value of useCIArtifacts is", useCIArtifacts)
+		if useCIArtifacts {
+			cloudProviderAzureLabel = "azure-ci"
+		}
+		os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", cloudProviderAzureLabel)
+		setPlaceholderValuesForCCMEnvVars()
+
 		logCheckpoint(specTimes)
 	})
 
