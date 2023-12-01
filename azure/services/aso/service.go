@@ -63,6 +63,10 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, reconcilerutil.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
 
+	if len(s.Specs) == 0 {
+		return nil
+	}
+
 	// We go through the list of Specs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	// Order of precedence (highest -> lowest) is:
@@ -94,6 +98,10 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 
 	ctx, cancel := context.WithTimeout(ctx, reconcilerutil.DefaultAzureServiceReconcileTimeout)
 	defer cancel()
+
+	if len(s.Specs) == 0 {
+		return nil
+	}
 
 	// We go through the list of Specs to delete each one, independently of the resultErr of the previous one.
 	// If multiple errors occur, we return the most pressing one.
