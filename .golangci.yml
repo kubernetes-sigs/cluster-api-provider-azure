@@ -132,13 +132,13 @@ issues:
       text: "use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name"
     - path: 'mock(\w+)/doc.go$'
       text: "use underscores in package names|don't use an underscore in package name"
-    - path: ^test/
+    - path: (^test/|_test.go$)
       linters:
         - dogsled
         - goconst
         - godot
         - prealloc
-    - path: ^test/
+    - path: (^test/|_test.go$)
       text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
     # Need to use the deprecated module "github.com/Azure/azure-sdk-for-go/services" till issue #2670 is addressed.
     - linters:
