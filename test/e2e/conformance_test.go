@@ -164,7 +164,7 @@ var _ = Describe("Conformance Tests", func() {
 			withControlPlaneMachineCount(controlPlaneMachineCount),
 			withWorkerMachineCount(linuxWorkerMachineCount),
 			withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-				WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 			}),
 		), result)
 		stopwatch.Record("cluster creation")
