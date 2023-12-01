@@ -174,7 +174,7 @@ var _ = Describe("Workload cluster creation", func() {
 					withControlPlaneMachineCount(1),
 					withWorkerMachineCount(1),
 					withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-						WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+						WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 					}),
 					withPostMachinesProvisioned(func() {
 						EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -224,7 +224,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -322,7 +322,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -381,7 +381,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -419,7 +419,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -479,7 +479,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneInterval(specName, "wait-control-plane"),
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -547,7 +547,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withMachineDeploymentInterval(specName, "wait-gpu-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -606,7 +606,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withKubernetesVersion("v1.26.1"),
 				withMachineDeploymentInterval(specName, ""),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneInterval(specName, "wait-control-plane"),
@@ -662,7 +662,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -910,7 +910,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -984,7 +984,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1028,7 +1028,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1069,7 +1069,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
