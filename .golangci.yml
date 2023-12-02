@@ -140,10 +140,6 @@ issues:
         - prealloc
     - path: ^test/
       text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
-    # Need to use the deprecated module "github.com/Azure/azure-sdk-for-go/services" till issue #2670 is addressed.
-    - linters:
-      - staticcheck
-      text: "github.com/Azure/azure-sdk-for-go/services/.* is deprecated"
     - source: \"github.com/onsi/(ginkgo/v2|gomega)\"
       text: "should not use dot imports"
   include:
