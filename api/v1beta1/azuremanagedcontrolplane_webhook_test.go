@@ -97,6 +97,15 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.AutoUpgradeProfile = &ManagedClusterAutoUpgradeProfile{
 		UpgradeChannel: ptr.To(UpgradeChannelPatch),
 	}
+	amcp.Spec.SecurityProfile = &ManagedClusterSecurityProfile{
+		AzureKeyVaultKms: &AzureKeyVaultKms{
+			Enabled: true,
+		},
+		ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+			Enabled:       true,
+			IntervalHours: ptr.To(48),
+		},
+	}
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -115,6 +124,11 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.AutoUpgradeProfile).ToNot(BeNil())
 	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).ToNot(BeNil())
 	g.Expect(*amcp.Spec.AutoUpgradeProfile.UpgradeChannel).To(Equal(UpgradeChannelPatch))
+	g.Expect(amcp.Spec.SecurityProfile).ToNot(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.AzureKeyVaultKms).ToNot(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner).ToNot(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).ToNot(BeNil())
+	g.Expect(*amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).To(Equal(48))
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{
@@ -128,6 +142,17 @@ func TestDefaultingWebhook(t *testing.T) {
 				NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
 				AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
 					UpgradeChannel: ptr.To(UpgradeChannelRapid),
+				},
+				SecurityProfile: &ManagedClusterSecurityProfile{
+					Defender: &ManagedClusterSecurityProfileDefender{
+						LogAnalyticsWorkspaceResourceID: "not empty",
+						SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+							Enabled: true,
+						},
+					},
+					WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+						Enabled: true,
+					},
 				},
 			},
 			ResourceGroupName: "fooRg",
@@ -1206,6 +1231,66 @@ func TestValidatingWebhook(t *testing.T) {
 				},
 			},
 			expectErr: true,
+		},
+		{
+			name: "Test invalid AzureKeyVaultKms",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Test valid AzureKeyVaultKms",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+								KeyVaultResourceID:    ptr.To("0000-0000-0000-000"),
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Test valid AzureKeyVaultKms",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
 		},
 	}
 
@@ -3022,5 +3107,647 @@ func getAMCPMetaData() metav1.ObjectMeta {
 			"cluster.x-k8s.io/cluster-name": "test-cluster",
 		},
 		Namespace: "default",
+	}
+}
+
+func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
+	testsCreate := []struct {
+		name    string
+		amcp    *AzureManagedControlPlane
+		wantErr string
+	}{
+		{
+			name: "Cannot enable Workload Identity without enabling OIDC issuer",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.WorkloadIdentity: Invalid value: v1beta1.ManagedClusterSecurityProfileWorkloadIdentity{Enabled:true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
+		},
+		{
+			name: "Cannot enable AzureKms without user assigned identity",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID: Invalid value: \"null\": Spec.SecurityProfile.AzureKeyVaultKms can be set only when Spec.Identity.Type is UserAssigned",
+		},
+		{
+			name: "When AzureKms.KeyVaultNetworkAccess is private AzureKeyVaultKms.KeyVaultResourceID cannot be empty",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						Version: "v1.17.8",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "not empty",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID: Invalid value: \"null\": Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID cannot be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Private",
+		},
+		{
+			name: "When AzureKms.KeyVaultNetworkAccess is public AzureKeyVaultKms.KeyVaultResourceID should be empty",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "not empty",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+								KeyVaultResourceID:    ptr.To("not empty"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID: Invalid value: \"not empty\": Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID should be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Public",
+		},
+		{
+			name: "Valid profile",
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "not empty",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+							Defender: &ManagedClusterSecurityProfileDefender{
+								LogAnalyticsWorkspaceResourceID: "not empty",
+								SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+									Enabled: true,
+								},
+							},
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled:       true,
+								IntervalHours: ptr.To(24),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+	}
+	client := mockClient{ReturnError: false}
+	for _, tc := range testsCreate {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			mcpw := &azureManagedControlPlaneWebhook{
+				Client: client,
+			}
+			_, err := mcpw.ValidateCreate(context.Background(), tc.amcp)
+			if tc.wantErr != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(Equal(tc.wantErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
+	tests := []struct {
+		name    string
+		oldAMCP *AzureManagedControlPlane
+		amcp    *AzureManagedControlPlane
+		wantErr string
+	}{
+		{
+			name: "AzureManagedControlPlane SecurityProfile.Defender is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							Defender: &ManagedClusterSecurityProfileDefender{
+								LogAnalyticsWorkspaceResourceID: "0000-0000-0000-0000",
+								SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+									Enabled: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.Defender is mutable and cannot be unset",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							Defender: &ManagedClusterSecurityProfileDefender{
+								LogAnalyticsWorkspaceResourceID: "0000-0000-0000-0000",
+								SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+									Enabled: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: Spec.SecurityProfile.Defender: Invalid value: \"null\": cannot unset Spec.SecurityProfile.Defender, to disable defender please set Spec.SecurityProfile.Defender.SecurityMonitoring.Enabled to false",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.Defender is mutable and can be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							Defender: &ManagedClusterSecurityProfileDefender{
+								LogAnalyticsWorkspaceResourceID: "0000-0000-0000-0000",
+								SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+									Enabled: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							Defender: &ManagedClusterSecurityProfileDefender{
+								LogAnalyticsWorkspaceResourceID: "0000-0000-0000-0000",
+								SecurityMonitoring: ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+									Enabled: false,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity cannot be enabled without OIDC issuer",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.WorkloadIdentity: Invalid value: v1beta1.ManagedClusterSecurityProfileWorkloadIdentity{Enabled:true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity cannot unset values",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+					},
+				},
+			},
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: Spec.SecurityProfile.WorkloadIdentity: Invalid value: \"null\": cannot unset Spec.SecurityProfile.WorkloadIdentity, to disable workloadIdentity please set Spec.SecurityProfile.WorkloadIdentity.Enabled to false",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity can be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						OIDCIssuerProfile: &OIDCIssuerProfile{
+							Enabled: ptr.To(true),
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+								Enabled: false,
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+								KeyVaultResourceID:    ptr.To("0000-0000-0000-0000"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess can be updated when KMS is enabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+								KeyVaultResourceID:    ptr.To("0000-0000-0000-0000"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms.Enabled can be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               false,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms cannot unset",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPublic),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Identity: &Identity{
+							Type:                           ManagedControlPlaneIdentityTypeUserAssigned,
+							UserAssignedIdentityResourceID: "not empty",
+						},
+					},
+				},
+			},
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: Spec.SecurityProfile.AzureKeyVaultKms: Invalid value: \"null\": cannot unset Spec.SecurityProfile.AzureKeyVaultKms profile to disable the profile please set Spec.SecurityProfile.AzureKeyVaultKms.Enabled to false",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms cannot be enabled without UserAssigned Identity",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							AzureKeyVaultKms: &AzureKeyVaultKms{
+								Enabled:               true,
+								KeyID:                 "0000-0000-0000-0000",
+								KeyVaultNetworkAccess: ptr.To(KeyVaultNetworkAccessTypesPrivate),
+								KeyVaultResourceID:    ptr.To("0000-0000-0000-0000"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID: Invalid value: \"0000-0000-0000-0000\": Spec.SecurityProfile.AzureKeyVaultKms can be set only when Spec.Identity.Type is UserAssigned",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.ImageCleaner is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled:       true,
+								IntervalHours: ptr.To(28),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.ImageCleaner cannot be unset",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled:       true,
+								IntervalHours: ptr.To(48),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version:         "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{},
+					},
+				},
+			},
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: Spec.SecurityProfile.ImageCleaner: Invalid value: \"null\": cannot unset Spec.SecurityProfile.ImageCleaner, to disable imageCleaner please set Spec.SecurityProfile.ImageCleaner.Enabled to false",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.ImageCleaner is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								IntervalHours: ptr.To(48),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "AzureManagedControlPlane SecurityProfile.ImageCleaner can be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled:       true,
+								IntervalHours: ptr.To(48),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						SecurityProfile: &ManagedClusterSecurityProfile{
+							ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+								Enabled:       false,
+								IntervalHours: ptr.To(36),
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+	}
+	client := mockClient{ReturnError: false}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			mcpw := &azureManagedControlPlaneWebhook{
+				Client: client,
+			}
+			_, err := mcpw.ValidateUpdate(context.Background(), tc.oldAMCP, tc.amcp)
+			if tc.wantErr != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(Equal(tc.wantErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
 	}
 }

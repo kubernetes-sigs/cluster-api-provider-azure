@@ -328,6 +328,42 @@ spec:
 
 To find the `extensionType` and plan details for your desired extension, refer to the [az k8s-extension cli reference](https://learn.microsoft.com/cli/azure/k8s-extension).
 
+
+### Security Profile for AKS clusters.
+
+Example for configuring AzureManagedControlPlane with a security profile:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  location: southcentralus
+  resourceGroupName: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
+  version: v1.26.6
+  identity:
+    type: UserAssigned
+    userAssignedIdentityResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
+  oidcIssuerProfile:                                                                                              
+    enabled: true
+  securityProfile:                                                                                                
+    workloadIdentity:                                                                                             
+      enabled: true
+    imageCleaner:
+      enabled: true
+      intervalHours: 48
+    azureKeyVaultKms:
+      enabled: true
+      keyID: https://key-vault.vault.azure.net/keys/secret-key/00000000000000000 
+    defender:
+      logAnalyticsWorkspaceResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
+      securityMonitoring:
+        enabled: true  
+```
+
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,

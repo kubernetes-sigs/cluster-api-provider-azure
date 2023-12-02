@@ -572,6 +572,97 @@ spec:
                         - userAssignedNATGateway
                         - userDefinedRouting
                         type: string
+                      securityProfile:
+                        description: SecurityProfile defines the security profile
+                          for cluster.
+                        properties:
+                          azureKeyVaultKms:
+                            description: AzureKeyVaultKms defines Azure Key Vault
+                              Management Services Profile for the security profile.
+                            properties:
+                              enabled:
+                                description: Enabled enables the Azure Key Vault key
+                                  management service. The default is false.
+                                type: boolean
+                              keyID:
+                                description: KeyID defines the Identifier of Azure
+                                  Key Vault key. When Azure Key Vault key management
+                                  service is enabled, this field is required and must
+                                  be a valid key identifier.
+                                type: string
+                              keyVaultNetworkAccess:
+                                default: Public
+                                description: KeyVaultNetworkAccess defines the network
+                                  access of key vault. The possible values are Public
+                                  and Private. Public means the key vault allows public
+                                  access from all networks. Private means the key
+                                  vault disables public access and enables private
+                                  link. The default value is Public.
+                                type: string
+                              keyVaultResourceID:
+                                description: KeyVaultResourceID is the Resource ID
+                                  of key vault. When keyVaultNetworkAccess is Private,
+                                  this field is required and must be a valid resource
+                                  ID.
+                                type: string
+                            required:
+                            - enabled
+                            - keyID
+                            type: object
+                          defender:
+                            description: Defender settings for the security profile.
+                            properties:
+                              logAnalyticsWorkspaceResourceID:
+                                description: LogAnalyticsWorkspaceResourceID is the
+                                  ID of the Log Analytics workspace that has to be
+                                  associated with Microsoft Defender. When Microsoft
+                                  Defender is enabled, this field is required and
+                                  must be a valid workspace resource ID.
+                                type: string
+                              securityMonitoring:
+                                description: SecurityMonitoring profile defines the
+                                  Microsoft Defender threat detection for Cloud settings
+                                  for the security profile.
+                                properties:
+                                  enabled:
+                                    description: Enabled enables Defender threat detection
+                                    type: boolean
+                                required:
+                                - enabled
+                                type: object
+                            required:
+                            - logAnalyticsWorkspaceResourceID
+                            - securityMonitoring
+                            type: object
+                          imageCleaner:
+                            description: ImageCleaner settings for the security profile.
+                            properties:
+                              enabled:
+                                description: Enabled enables the Image Cleaner on
+                                  AKS cluster.
+                                type: boolean
+                              intervalHours:
+                                description: IntervalHours defines Image Cleaner scanning
+                                  interval in hours. Default value is 24 hours.
+                                maximum: 2160
+                                minimum: 24
+                                type: integer
+                            required:
+                            - enabled
+                            type: object
+                          workloadIdentity:
+                            description: Workloadidentity enables Kubernetes applications
+                              to access Azure cloud resources securely with Azure
+                              AD. Ensure to enable OIDC issuer while enabling Workload
+                              Identity
+                            properties:
+                              enabled:
+                                description: Enabled enables the workload identity.
+                                type: boolean
+                            required:
+                            - enabled
+                            type: object
+                        type: object
                       sku:
                         description: SKU is the SKU of the AKS to be provisioned.
                         properties:

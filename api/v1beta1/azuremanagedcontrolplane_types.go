@@ -112,6 +112,19 @@ const (
 	LoadBalancerSKUBasic = "Basic"
 )
 
+// KeyVaultNetworkAccessTypes defines the types of network access of key vault.
+// The possible values are Public and Private.
+// The default value is Public.
+type KeyVaultNetworkAccessTypes string
+
+const (
+	// KeyVaultNetworkAccessTypesPrivate means the key vault disables public access and enables private link.
+	KeyVaultNetworkAccessTypesPrivate KeyVaultNetworkAccessTypes = "Private"
+
+	// KeyVaultNetworkAccessTypesPublic means the key vault allows public access from all networks.
+	KeyVaultNetworkAccessTypesPublic KeyVaultNetworkAccessTypes = "Public"
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	AzureManagedControlPlaneClassSpec `json:",inline"`
@@ -149,6 +162,100 @@ type AzureManagedControlPlaneSpec struct {
 	// [AKS doc]: https://learn.microsoft.com/en-us/azure/templates/microsoft.containerservice/2023-03-15-preview/fleets/members
 	// +optional
 	FleetsMember *FleetsMember `json:"fleetsMember,omitempty"`
+}
+
+// ManagedClusterSecurityProfile defines the security profile for the cluster.
+type ManagedClusterSecurityProfile struct {
+	// AzureKeyVaultKms defines Azure Key Vault Management Services Profile for the security profile.
+	// +optional
+	AzureKeyVaultKms *AzureKeyVaultKms `json:"azureKeyVaultKms,omitempty"`
+
+	// Defender settings for the security profile.
+	// +optional
+	Defender *ManagedClusterSecurityProfileDefender `json:"defender,omitempty"`
+
+	// ImageCleaner settings for the security profile.
+	// +optional
+	ImageCleaner *ManagedClusterSecurityProfileImageCleaner `json:"imageCleaner,omitempty"`
+
+	// Workloadidentity enables Kubernetes applications to access Azure cloud resources securely with Azure AD. Ensure to enable OIDC issuer while enabling Workload Identity
+	// +optional
+	WorkloadIdentity *ManagedClusterSecurityProfileWorkloadIdentity `json:"workloadIdentity,omitempty"`
+}
+
+// ManagedClusterSecurityProfileDefender defines Microsoft Defender settings for the security profile.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/defender-for-cloud/defender-for-containers-enable
+type ManagedClusterSecurityProfileDefender struct {
+	// LogAnalyticsWorkspaceResourceID is the ID of the Log Analytics workspace that has to be associated with Microsoft Defender.
+	// When Microsoft Defender is enabled, this field is required and must be a valid workspace resource ID.
+	// +kubebuilder:validation:Required
+	LogAnalyticsWorkspaceResourceID string `json:"logAnalyticsWorkspaceResourceID"`
+
+	// SecurityMonitoring profile defines the Microsoft Defender threat detection for Cloud settings for the security profile.
+	// +kubebuilder:validation:Required
+	SecurityMonitoring ManagedClusterSecurityProfileDefenderSecurityMonitoring `json:"securityMonitoring"`
+}
+
+// ManagedClusterSecurityProfileDefenderSecurityMonitoring settings for the security profile threat detection.
+type ManagedClusterSecurityProfileDefenderSecurityMonitoring struct {
+	// Enabled enables Defender threat detection
+	// +kubebuilder:validation:Required
+	Enabled bool `json:"enabled"`
+}
+
+// ManagedClusterSecurityProfileImageCleaner removes unused images from nodes, freeing up disk space and helping to reduce attack surface area.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/image-cleaner
+type ManagedClusterSecurityProfileImageCleaner struct {
+	// Enabled enables the Image Cleaner on AKS cluster.
+	// +kubebuilder:validation:Required
+	Enabled bool `json:"enabled"`
+
+	// IntervalHours defines Image Cleaner scanning interval in hours. Default value is 24 hours.
+	// +optional
+	// +kubebuilder:validation:Minimum=24
+	// +kubebuilder:validation:Maximum=2160
+	IntervalHours *int `json:"intervalHours,omitempty"`
+}
+
+// ManagedClusterSecurityProfileWorkloadIdentity settings for the security profile.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/defender-for-cloud/defender-for-containers-enable
+type ManagedClusterSecurityProfileWorkloadIdentity struct {
+	// Enabled enables the workload identity.
+	// +kubebuilder:validation:Required
+	Enabled bool `json:"enabled"`
+}
+
+// AzureKeyVaultKms service settings for the security profile.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/azure/aks/use-kms-etcd-encryption#update-key-vault-mode
+type AzureKeyVaultKms struct {
+	// Enabled enables the Azure Key Vault key management service. The default is false.
+	// +kubebuilder:validation:Required
+	Enabled bool `json:"enabled"`
+
+	// KeyID defines the Identifier of Azure Key Vault key.
+	// When Azure Key Vault key management service is enabled, this field is required and must be a valid key identifier.
+	// +kubebuilder:validation:Required
+	KeyID string `json:"keyID"`
+
+	// KeyVaultNetworkAccess defines the network access of key vault.
+	// The possible values are Public and Private.
+	// Public means the key vault allows public access from all networks.
+	// Private means the key vault disables public access and enables private link. The default value is Public.
+	// +optional
+	// +kubebuilder:default:=Public
+	KeyVaultNetworkAccess *KeyVaultNetworkAccessTypes `json:"keyVaultNetworkAccess,omitempty"`
+
+	// KeyVaultResourceID is the Resource ID of key vault. When keyVaultNetworkAccess is Private, this field is required and must be a valid resource ID.
+	// +optional
+	KeyVaultResourceID *string `json:"keyVaultResourceID,omitempty"`
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.

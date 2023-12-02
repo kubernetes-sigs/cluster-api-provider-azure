@@ -662,7 +662,52 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 		}
 	}
 
+	if s.ControlPlane.Spec.SecurityProfile != nil {
+		managedClusterSpec.SecurityProfile = s.getManagedClusterSecurityProfile()
+	}
+
 	return &managedClusterSpec
+}
+
+// GetManagedClusterSecurityProfile gets the security profile for managed cluster.
+func (s *ManagedControlPlaneScope) getManagedClusterSecurityProfile() *managedclusters.ManagedClusterSecurityProfile {
+	securityProfile := &managedclusters.ManagedClusterSecurityProfile{}
+	if s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms != nil {
+		securityProfile.AzureKeyVaultKms = &managedclusters.AzureKeyVaultKms{
+			Enabled: ptr.To(s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.Enabled),
+			KeyID:   ptr.To(s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.KeyID),
+		}
+		if s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess != nil {
+			securityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess = s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess
+		}
+		if s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID != nil {
+			securityProfile.AzureKeyVaultKms.KeyVaultResourceID = s.ControlPlane.Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID
+		}
+	}
+
+	if s.ControlPlane.Spec.SecurityProfile.Defender != nil {
+		securityProfile.Defender = &managedclusters.ManagedClusterSecurityProfileDefender{
+			LogAnalyticsWorkspaceResourceID: ptr.To(s.ControlPlane.Spec.SecurityProfile.Defender.LogAnalyticsWorkspaceResourceID),
+			SecurityMonitoring: &managedclusters.ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+				Enabled: ptr.To(s.ControlPlane.Spec.SecurityProfile.Defender.SecurityMonitoring.Enabled),
+			},
+		}
+	}
+
+	if s.ControlPlane.Spec.SecurityProfile.ImageCleaner != nil {
+		securityProfile.ImageCleaner = &managedclusters.ManagedClusterSecurityProfileImageCleaner{
+			Enabled:       ptr.To(s.ControlPlane.Spec.SecurityProfile.ImageCleaner.Enabled),
+			IntervalHours: s.ControlPlane.Spec.SecurityProfile.ImageCleaner.IntervalHours,
+		}
+	}
+
+	if s.ControlPlane.Spec.SecurityProfile.WorkloadIdentity != nil {
+		securityProfile.WorkloadIdentity = &managedclusters.ManagedClusterSecurityProfileWorkloadIdentity{
+			Enabled: ptr.To(s.ControlPlane.Spec.SecurityProfile.WorkloadIdentity.Enabled),
+		}
+	}
+
+	return securityProfile
 }
 
 // GetAllAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.

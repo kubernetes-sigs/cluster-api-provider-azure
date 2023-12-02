@@ -103,6 +103,26 @@ func TestParameters(t *testing.T) {
 			},
 			DNSPrefix:            ptr.To("dns prefix"),
 			DisableLocalAccounts: ptr.To(true),
+			SecurityProfile: &ManagedClusterSecurityProfile{
+				AzureKeyVaultKms: &AzureKeyVaultKms{
+					Enabled:               ptr.To(true),
+					KeyID:                 ptr.To("KeyID"),
+					KeyVaultNetworkAccess: ptr.To(infrav1.KeyVaultNetworkAccessTypesPublic),
+				},
+				Defender: &ManagedClusterSecurityProfileDefender{
+					LogAnalyticsWorkspaceResourceID: ptr.To("LogAnalyticsWorkspaceResourceID"),
+					SecurityMonitoring: &ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+						Enabled: ptr.To(true),
+					},
+				},
+				ImageCleaner: &ManagedClusterSecurityProfileImageCleaner{
+					Enabled:       ptr.To(true),
+					IntervalHours: ptr.To(24),
+				},
+				WorkloadIdentity: &ManagedClusterSecurityProfileWorkloadIdentity{
+					Enabled: ptr.To(true),
+				},
+			},
 		}
 
 		expected := &asocontainerservicev1.ManagedCluster{
@@ -231,6 +251,28 @@ func TestParameters(t *testing.T) {
 					"Name": "name",
 					"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster": "owned",
 					"sigs.k8s.io_cluster-api-provider-azure_role":            "common",
+				},
+				SecurityProfile: &asocontainerservicev1.ManagedClusterSecurityProfile{
+					AzureKeyVaultKms: &asocontainerservicev1.AzureKeyVaultKms{
+						Enabled:               ptr.To(true),
+						KeyId:                 ptr.To("KeyID"),
+						KeyVaultNetworkAccess: ptr.To(asocontainerservicev1.AzureKeyVaultKms_KeyVaultNetworkAccess_Public),
+					},
+					Defender: &asocontainerservicev1.ManagedClusterSecurityProfileDefender{
+						LogAnalyticsWorkspaceResourceReference: &genruntime.ResourceReference{
+							ARMID: "LogAnalyticsWorkspaceResourceID",
+						},
+						SecurityMonitoring: &asocontainerservicev1.ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+							Enabled: ptr.To(true),
+						},
+					},
+					ImageCleaner: &asocontainerservicev1.ManagedClusterSecurityProfileImageCleaner{
+						Enabled:       ptr.To(true),
+						IntervalHours: ptr.To(24),
+					},
+					WorkloadIdentity: &asocontainerservicev1.ManagedClusterSecurityProfileWorkloadIdentity{
+						Enabled: ptr.To(true),
+					},
 				},
 			},
 		}
