@@ -1095,3 +1095,72 @@ const (
 	// UniformOrchestrationMode treats VMs as identical instances accessible by the VMSS VM API.
 	UniformOrchestrationMode OrchestrationModeType = "Uniform"
 )
+
+// ExtensionPlan represents the plan for an AKS marketplace extension.
+type ExtensionPlan struct {
+	// Name is the user-defined name of the 3rd Party Artifact that is being procured.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Product is the name of the 3rd Party artifact that is being procured.
+	Product string `json:"product"`
+
+	// PromotionCode is a publisher-provided promotion code as provisioned in Data Market for the said product/artifact.
+	// +optional
+	PromotionCode string `json:"promotionCode,omitempty"`
+
+	// Publisher is the name of the publisher of the 3rd Party Artifact that is being bought.
+	Publisher string `json:"publisher"`
+
+	// Version is the version of the plan.
+	// +optional
+	Version string `json:"version,omitempty"`
+}
+
+// ExtensionScope defines the scope of the AKS marketplace extension, if configured.
+type ExtensionScope struct {
+	// ScopeType is the scope of the extension. It can be either Cluster or Namespace, but not both.
+	ScopeType ExtensionScopeType `json:"scopeType"`
+
+	// ReleaseNamespace is the namespace where the extension Release must be placed, for a Cluster-scoped extension.
+	// Required for Cluster-scoped extensions.
+	// +optional
+	ReleaseNamespace string `json:"releaseNamespace,omitempty"`
+
+	// TargetNamespace is the namespace where the extension will be created for a Namespace-scoped extension.
+	// Required for Namespace-scoped extensions.
+	// +optional
+	TargetNamespace string `json:"targetNamespace,omitempty"`
+}
+
+// ExtensionScopeType defines the scope type of the AKS marketplace extension, if configured.
+// +kubebuilder:validation:Enum=Cluster;Namespace
+type ExtensionScopeType string
+
+const (
+	// ExtensionScopeCluster ...
+	ExtensionScopeCluster ExtensionScopeType = "Cluster"
+	// ExtensionScopeNamespace ...
+	ExtensionScopeNamespace ExtensionScopeType = "Namespace"
+)
+
+// ExtensionIdentity defines the identity of the AKS marketplace extension, if configured.
+// +kubebuilder:validation:Enum=SystemAssigned
+type ExtensionIdentity string
+
+const (
+	// ExtensionIdentitySystemAssigned ...
+	ExtensionIdentitySystemAssigned ExtensionIdentity = "SystemAssigned"
+)
+
+// AKSAssignedIdentity defines the AKS assigned-identity of the aks marketplace extension, if configured.
+// +kubebuilder:validation:Enum=SystemAssigned;UserAssigned
+type AKSAssignedIdentity string
+
+const (
+	// AKSAssignedIdentitySystemAssigned ...
+	AKSAssignedIdentitySystemAssigned AKSAssignedIdentity = "SystemAssigned"
+
+	// AKSAssignedIdentityUserAssigned ...
+	AKSAssignedIdentityUserAssigned AKSAssignedIdentity = "UserAssigned"
+)

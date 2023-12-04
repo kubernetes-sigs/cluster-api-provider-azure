@@ -302,6 +302,32 @@ The `managerName` and `managerResourceGroup` fields are the name and resource gr
 
 When the `fleetMember` field is included, CAPZ will create an AKS fleet member resource which will join the CAPZ cluster to the AKS fleet. The AKS fleet member resource will be created in the same resource group as the CAPZ cluster.
 
+### AKS Extensions
+
+CAPZ supports enabling AKS extensions on your managed AKS clusters. Cluster extensions provide an Azure Resource Manager driven experience for installation and lifecycle management of services like Azure Machine Learning or Kubernetes applications on an AKS cluster. For more documentation on AKS extensions, refer [AKS Docs](https://learn.microsoft.com/azure/aks/cluster-extensions). 
+
+You can either provision official AKS extensions or Kubernetes applications through Marketplace. Please refer to [AKS Docs](https://learn.microsoft.com/en-us/azure/aks/cluster-extensions#currently-available-extensions) for the list of currently available extensions.
+
+To add an AKS extension to your managed cluster, simply add the `extensions` field to your AzureManagedControlPlane resource spec:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  extensions:
+  - name: my-extension
+    extensionType: "TraefikLabs.TraefikProxy"
+    plan: 
+      name: "traefik-proxy"
+      product: "traefik-proxy"
+      publisher: "containous"
+```
+
+To find the `extensionType` and plan details for your desired extension, refer to the [az k8s-extension cli reference](https://learn.microsoft.com/cli/azure/k8s-extension).
+
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,

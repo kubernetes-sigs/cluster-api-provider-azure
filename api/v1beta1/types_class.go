@@ -218,6 +218,10 @@ type AzureManagedControlPlaneClassSpec struct {
 	// [AKS doc]: https://learn.microsoft.com/en-us/azure/templates/microsoft.containerservice/2023-03-15-preview/fleets/members
 	// +optional
 	FleetsMember *FleetsMemberClassSpec `json:"fleetsMember,omitempty"`
+
+	// Extensions is a list of AKS extensions to be installed on the cluster.
+	// +optional
+	Extensions []AKSExtension `json:"extensions,omitempty"`
 }
 
 // AzureManagedMachinePoolClassSpec defines the AzureManagedMachinePool properties that may be shared across several Azure managed machinepools.

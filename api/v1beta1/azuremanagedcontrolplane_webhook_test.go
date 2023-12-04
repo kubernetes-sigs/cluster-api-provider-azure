@@ -45,6 +45,15 @@ func TestDefaultingWebhook(t *testing.T) {
 			AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 				Location: "fooLocation",
 				Version:  "1.17.5",
+				Extensions: []AKSExtension{
+					{
+						Name: "test-extension",
+						Plan: &ExtensionPlan{
+							Product:   "test-product",
+							Publisher: "test-publisher",
+						},
+					},
+				},
 			},
 			ResourceGroupName: "fooRg",
 			SSHPublicKey:      ptr.To(""),
@@ -67,6 +76,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
 	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal(amcp.Name))
+	g.Expect(amcp.Spec.Extensions[0].Plan.Name).To(Equal("fooName-test-product"))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -1113,6 +1123,77 @@ func TestValidatingWebhook(t *testing.T) {
 				},
 			},
 			expectErr: false,
+		},
+		{
+			name: "Testing valid AKS Extension",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Extensions: []AKSExtension{
+							{
+								Name:          "extension1",
+								ExtensionType: ptr.To("test-type"),
+								Plan: &ExtensionPlan{
+									Name:      "test-plan",
+									Product:   "test-product",
+									Publisher: "test-publisher",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid AKS Extension: version given when AutoUpgradeMinorVersion is true",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension1",
+								ExtensionType:           ptr.To("test-type"),
+								Version:                 ptr.To("1.0.0"),
+								AutoUpgradeMinorVersion: ptr.To(true),
+								Plan: &ExtensionPlan{
+									Name:      "test-plan",
+									Product:   "test-product",
+									Publisher: "test-publisher",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid AKS Extension: missing plan.product and plan.publisher",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension1",
+								ExtensionType:           ptr.To("test-type"),
+								Version:                 ptr.To("1.0.0"),
+								AutoUpgradeMinorVersion: ptr.To(true),
+								Plan: &ExtensionPlan{
+									Name: "test-plan",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
 		},
 	}
 
@@ -2652,6 +2733,107 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane AKSExtensions ConfigurationSettings and AutoUpgradeMinorVersion are mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension1",
+								AutoUpgradeMinorVersion: ptr.To(false),
+								ConfigurationSettings: map[string]string{
+									"key1": "value1",
+								},
+								Plan: &ExtensionPlan{
+									Name:      "planName",
+									Product:   "planProduct",
+									Publisher: "planPublisher",
+								},
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension1",
+								AutoUpgradeMinorVersion: ptr.To(true),
+								ConfigurationSettings: map[string]string{
+									"key1": "value1",
+									"key2": "value2",
+								},
+								Plan: &ExtensionPlan{
+									Name:      "planName",
+									Product:   "planProduct",
+									Publisher: "planPublisher",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane all other fields are immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension1",
+								AKSAssignedIdentityType: AKSAssignedIdentitySystemAssigned,
+								ExtensionType:           ptr.To("extensionType"),
+								Plan: &ExtensionPlan{
+									Name:      "planName",
+									Product:   "planProduct",
+									Publisher: "planPublisher",
+								},
+								Scope: &ExtensionScope{
+									ScopeType:        "Cluster",
+									ReleaseNamespace: "default",
+								},
+								ReleaseTrain: ptr.To("releaseTrain"),
+								Version:      ptr.To("v1.0.0"),
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+						Extensions: []AKSExtension{
+							{
+								Name:                    "extension2",
+								AKSAssignedIdentityType: AKSAssignedIdentityUserAssigned,
+								ExtensionType:           ptr.To("extensionType1"),
+								Plan: &ExtensionPlan{
+									Name:      "planName1",
+									Product:   "planProduct1",
+									Publisher: "planPublisher1",
+								},
+								Scope: &ExtensionScope{
+									ScopeType:        "Namespace",
+									ReleaseNamespace: "default",
+								},
+								ReleaseTrain: ptr.To("releaseTrain1"),
+								Version:      ptr.To("v1.1.0"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	client := mockClient{ReturnError: false}

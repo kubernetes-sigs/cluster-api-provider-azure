@@ -172,6 +172,10 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := validateAKSExtensionsUpdate(old.Spec.Template.Spec.Extensions, mcp.Spec.Template.Spec.Extensions); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return nil, mcp.validateManagedControlPlaneTemplate(mcpw.Client)
 	}
@@ -202,6 +206,8 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 	allErrs = append(allErrs, validateName(mcp.Name, field.NewPath("Name"))...)
 
 	allErrs = append(allErrs, validateAutoScalerProfile(mcp.Spec.Template.Spec.AutoScalerProfile, field.NewPath("spec").Child("template").Child("spec").Child("AutoScalerProfile"))...)
+
+	allErrs = append(allErrs, validateAKSExtensions(mcp.Spec.Template.Spec.Extensions, field.NewPath("spec").Child("Extensions"))...)
 
 	return allErrs.ToAggregate()
 }

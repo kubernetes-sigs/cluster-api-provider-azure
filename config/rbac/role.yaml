@@ -316,6 +316,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - kubernetesconfiguration.azure.com
+  resources:
+  - extensions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubernetesconfiguration.azure.com
+  resources:
+  - extensions/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - network.azure.com
   resources:
   - bastionhosts
