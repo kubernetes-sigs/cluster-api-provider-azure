@@ -15,7 +15,6 @@ patchesStrategicMerge:
   - ../patches/machine-pool-worker-counts.yaml
   - ../patches/windows-containerd-labels.yaml
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:

@@ -7,4 +7,3 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml

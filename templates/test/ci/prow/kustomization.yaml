@@ -23,7 +23,6 @@ patchesStrategicMerge:
   - ../patches/windows-containerd-labels.yaml
   - ../patches/windows-server-version.yaml
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io

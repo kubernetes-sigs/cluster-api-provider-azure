@@ -16,7 +16,6 @@ patchesStrategicMerge:
   - ../prow-intree-cloud-provider/patches/intree-cp.yaml # TODO: remove once CAPI supports Helm addons
   - ../prow-intree-cloud-provider/patches/intree-md-0.yaml # TODO: remove once CAPI supports Helm addons
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml
 patches:
   - path: patches/user-assigned.yaml
     target:
