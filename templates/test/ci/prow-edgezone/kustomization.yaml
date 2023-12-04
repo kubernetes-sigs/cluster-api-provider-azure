@@ -16,4 +16,3 @@ patchesStrategicMerge:
   - patches/machine-type.yaml
   - patches/kubernetes-version.yaml
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml

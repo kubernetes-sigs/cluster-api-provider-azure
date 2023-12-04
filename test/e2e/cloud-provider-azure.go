@@ -26,6 +26,9 @@ import (
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/types"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -36,6 +39,7 @@ const (
 	azureDiskCSIDriverHelmRepoURL     = "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
 	azureDiskCSIDriverChartName       = "azuredisk-csi-driver"
 	azureDiskCSIDriverHelmReleaseName = "azuredisk-csi-driver-oot"
+	azureDiskCSIDriverCAAPHLabelName  = "azuredisk-csi"
 )
 
 // InstallCNIAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
@@ -81,6 +85,7 @@ func InstallCNIAndCloudProviderAzureHelmChart(ctx context.Context, input cluster
 func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, hasWindows bool) {
 	specName := "ensure-azuredisk-csi-drivers"
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
+	mgmtClient := input.ClusterProxy.GetClient()
 
 	if installHelmChart {
 		By("Installing azure-disk CSI driver components via helm")
@@ -94,6 +99,22 @@ func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.App
 		InstallHelmChart(ctx, clusterProxy, kubesystem, azureDiskCSIDriverHelmRepoURL, azureDiskCSIDriverChartName, azureDiskCSIDriverHelmReleaseName, options, "")
 	} else {
 		By("Ensuring azure-disk CSI driver is installed via CAAPH")
+		cluster := &clusterv1.Cluster{}
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, types.NamespacedName{
+				Namespace: input.Namespace,
+				Name:      input.ClusterName,
+			}, cluster)).To(Succeed())
+			// Label the cluster so that CAAPH installs the azuredisk-csi helm chart via existing HelmChartProxy resource
+			if cluster.Labels != nil {
+				cluster.Labels[azureDiskCSIDriverCAAPHLabelName] = "true"
+			} else {
+				cluster.Labels = map[string]string{
+					azureDiskCSIDriverCAAPHLabelName: "true",
+				}
+			}
+			g.Expect(mgmtClient.Update(ctx, cluster)).To(Succeed())
+		}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(Succeed())
 	}
 
 	By("Waiting for Ready csi-azuredisk-controller deployment pods")
