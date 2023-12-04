@@ -103,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		scaleSetSpec.VMSSInstances, err = s.Client.ListInstances(ctx, spec.ResourceGroupName(), spec.ResourceName())
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get existing VMSS instances")
-			s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
+			s.Scope.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, err)
 			return err
 		}
 	} else if !azure.ResourceNotFound(err) {
@@ -111,7 +111,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	}
 
 	result, err := s.CreateOrUpdateResource(ctx, scaleSetSpec, serviceName)
-	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
+	s.Scope.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, err)
 
 	if err == nil && result != nil {
 		vmss, ok := result.(armcompute.VirtualMachineScaleSet)
@@ -160,7 +160,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	err := s.DeleteResource(ctx, scaleSetSpec, serviceName)
 
-	s.Scope.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
+	s.Scope.UpdateDeleteStatus(infrav1.ScaleSetRunningCondition, serviceName, err)
 
 	return err
 }

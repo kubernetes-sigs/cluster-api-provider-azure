@@ -110,7 +110,7 @@ func TestReconcileVMSS(t *testing.T) {
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(&resultVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).Return(getResultVMSS(), nil)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, nil)
 
 				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedVMSS).Return(nil)
 				s.SetProviderID(azureutil.ProviderIDPrefix + defaultVMSSID)
@@ -126,7 +126,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(spec).AnyTimes()
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(nil, notFoundError)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).Return(getResultVMSS(), nil)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, nil)
 
 				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedVMSS).Return(nil)
 				s.SetProviderID(azureutil.ProviderIDPrefix + defaultVMSSID)
@@ -152,7 +152,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(spec).AnyTimes()
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(&resultVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, internalError)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing VMSS instances: #: Internal Server Error: StatusCode=500"))
+				s.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing VMSS instances: #: Internal Server Error: StatusCode=500"))
 			},
 		},
 		{
@@ -166,7 +166,7 @@ func TestReconcileVMSS(t *testing.T) {
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).
 					Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
+				s.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, internalError)
 			},
 		},
 		{
@@ -179,7 +179,7 @@ func TestReconcileVMSS(t *testing.T) {
 				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, nil)
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).Return(getResultVMSS(), nil)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.ScaleSetRunningCondition, serviceName, nil)
 
 				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedVMSS).Return(internalError)
 			},
@@ -336,7 +336,7 @@ func TestDeleteVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.UpdateDeleteStatus(infrav1.ScaleSetRunningCondition, serviceName, nil)
 
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(resultVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, nil)
@@ -349,7 +349,7 @@ func TestDeleteVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
+				s.UpdateDeleteStatus(infrav1.ScaleSetRunningCondition, serviceName, nil)
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
@@ -359,7 +359,7 @@ func TestDeleteVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(internalError)
-				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
+				s.UpdateDeleteStatus(infrav1.ScaleSetRunningCondition, serviceName, internalError)
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
