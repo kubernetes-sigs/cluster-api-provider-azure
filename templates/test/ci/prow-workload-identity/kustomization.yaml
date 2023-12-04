@@ -4,7 +4,6 @@ namespace: default
 resources:
   - ../../../flavors/default
   - ../../../addons/cluster-api-helm/calico.yaml
-  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 patchesStrategicMerge:
   - ../patches/azureclusteridentity-azwi.yaml
   - ../patches/tags.yaml
@@ -13,4 +12,3 @@ patchesStrategicMerge:
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml

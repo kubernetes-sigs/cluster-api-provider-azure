@@ -297,7 +297,7 @@ func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 		EnsureCNI(ctx, input, installHelmCharts, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
-	EnsureAzureDiskCSIDriverHelmChart(ctx, input, installHelmCharts, hasWindows)
+	InstallAzureDiskCSIDriverHelmChart(ctx, input, hasWindows)
 	result.ControlPlane = controlPlane
 }
 
