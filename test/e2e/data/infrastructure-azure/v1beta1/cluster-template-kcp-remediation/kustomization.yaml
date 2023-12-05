@@ -9,4 +9,3 @@ bases:
 patchesStrategicMerge:
   - ../patches/azurecluster-identity-ref.yaml
   - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml

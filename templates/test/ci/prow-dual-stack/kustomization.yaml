@@ -12,4 +12,3 @@ patchesStrategicMerge:
   - patches/azure-machine-template-control-plane.yaml
   - patches/azure-machine-template.yaml
   - patches/cluster-label-calico-dual-stack.yaml
-  - ../patches/cluster-label-azuredisk-csi-driver.yaml
