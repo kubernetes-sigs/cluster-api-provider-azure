@@ -54,7 +54,7 @@ source "${REPO_ROOT}/hack/common-vars.sh"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 ## Install cert manager and wait for availability
-"${KUBECTL}" apply -f https://github.com/jetstack/cert-manager/releases/download/v1.13.1/cert-manager.yaml
+"${KUBECTL}" apply -f https://github.com/jetstack/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 "${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
 "${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
 "${KUBECTL}" wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
