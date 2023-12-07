@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"

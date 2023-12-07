@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -193,7 +193,7 @@ func TestParameters(t *testing.T) {
 						},
 					},
 					LoadBalancerSku:   ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku("lb sku")),
-					NetworkPlugin:     ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPlugin("network plugin")),
+					NetworkPlugin:     ptr.To(asocontainerservicev1.NetworkPlugin("network plugin")),
 					NetworkPluginMode: ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPluginMode("network plugin mode")),
 					NetworkPolicy:     ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy("network policy")),
 					OutboundType:      ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_OutboundType("outbound type")),

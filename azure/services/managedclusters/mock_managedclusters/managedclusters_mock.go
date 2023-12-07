@@ -29,7 +29,7 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	v1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	v1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -270,10 +270,10 @@ func (mr *MockManagedClusterScopeMockRecorder) MakeEmptyKubeConfigSecret() *gomo
 }
 
 // ManagedClusterSpec mocks base method.
-func (m *MockManagedClusterScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*v1api20230201.ManagedCluster] {
+func (m *MockManagedClusterScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*v1api20231001.ManagedCluster] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ManagedClusterSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20230201.ManagedCluster])
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20231001.ManagedCluster])
 	return ret0
 }
 

@@ -28,7 +28,7 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	v1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	v1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -74,10 +74,10 @@ func (mr *MockAgentPoolScopeMockRecorder) AdditionalTags() *gomock.Call {
 }
 
 // AgentPoolSpec mocks base method.
-func (m *MockAgentPoolScope) AgentPoolSpec() azure.ASOResourceSpecGetter[*v1api20230201.ManagedClustersAgentPool] {
+func (m *MockAgentPoolScope) AgentPoolSpec() azure.ASOResourceSpecGetter[*v1api20231001.ManagedClustersAgentPool] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AgentPoolSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20230201.ManagedClustersAgentPool])
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20231001.ManagedClustersAgentPool])
 	return ret0
 }
 
