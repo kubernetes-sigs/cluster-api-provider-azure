@@ -27,11 +27,12 @@ package mock_privateendpoints
 import (
 	reflect "reflect"
 
-	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	v1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MockPrivateEndpointScope is a mock of PrivateEndpointScope interface.
@@ -57,60 +58,18 @@ func (m *MockPrivateEndpointScope) EXPECT() *MockPrivateEndpointScopeMockRecorde
 	return m.recorder
 }
 
-// BaseURI mocks base method.
-func (m *MockPrivateEndpointScope) BaseURI() string {
+// ClusterName mocks base method.
+func (m *MockPrivateEndpointScope) ClusterName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
+	ret := m.ctrl.Call(m, "ClusterName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockPrivateEndpointScopeMockRecorder) BaseURI() *gomock.Call {
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockPrivateEndpointScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockPrivateEndpointScope)(nil).BaseURI))
-}
-
-// ClientID mocks base method.
-func (m *MockPrivateEndpointScope) ClientID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientID indicates an expected call of ClientID.
-func (mr *MockPrivateEndpointScopeMockRecorder) ClientID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockPrivateEndpointScope)(nil).ClientID))
-}
-
-// ClientSecret mocks base method.
-func (m *MockPrivateEndpointScope) ClientSecret() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientSecret")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientSecret indicates an expected call of ClientSecret.
-func (mr *MockPrivateEndpointScopeMockRecorder) ClientSecret() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockPrivateEndpointScope)(nil).ClientSecret))
-}
-
-// CloudEnvironment mocks base method.
-func (m *MockPrivateEndpointScope) CloudEnvironment() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudEnvironment")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// CloudEnvironment indicates an expected call of CloudEnvironment.
-func (mr *MockPrivateEndpointScopeMockRecorder) CloudEnvironment() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockPrivateEndpointScope)(nil).CloudEnvironment))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockPrivateEndpointScope)(nil).ClusterName))
 }
 
 // DeleteLongRunningOperationState mocks base method.
@@ -123,6 +82,20 @@ func (m *MockPrivateEndpointScope) DeleteLongRunningOperationState(arg0, arg1, a
 func (mr *MockPrivateEndpointScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockPrivateEndpointScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
+}
+
+// GetClient mocks base method.
+func (m *MockPrivateEndpointScope) GetClient() client.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(client.Client)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient.
+func (mr *MockPrivateEndpointScopeMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockPrivateEndpointScope)(nil).GetClient))
 }
 
 // GetLongRunningOperationState mocks base method.
@@ -139,25 +112,11 @@ func (mr *MockPrivateEndpointScopeMockRecorder) GetLongRunningOperationState(arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockPrivateEndpointScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
-// HashKey mocks base method.
-func (m *MockPrivateEndpointScope) HashKey() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HashKey")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// HashKey indicates an expected call of HashKey.
-func (mr *MockPrivateEndpointScopeMockRecorder) HashKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockPrivateEndpointScope)(nil).HashKey))
-}
-
 // PrivateEndpointSpecs mocks base method.
-func (m *MockPrivateEndpointScope) PrivateEndpointSpecs() []azure.ResourceSpecGetter {
+func (m *MockPrivateEndpointScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*v1api20220701.PrivateEndpoint] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PrivateEndpointSpecs")
-	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
+	ret0, _ := ret[0].([]azure.ASOResourceSpecGetter[*v1api20220701.PrivateEndpoint])
 	return ret0
 }
 
@@ -177,48 +136,6 @@ func (m *MockPrivateEndpointScope) SetLongRunningOperationState(arg0 *v1beta1.Fu
 func (mr *MockPrivateEndpointScopeMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockPrivateEndpointScope)(nil).SetLongRunningOperationState), arg0)
-}
-
-// SubscriptionID mocks base method.
-func (m *MockPrivateEndpointScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockPrivateEndpointScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockPrivateEndpointScope)(nil).SubscriptionID))
-}
-
-// TenantID mocks base method.
-func (m *MockPrivateEndpointScope) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockPrivateEndpointScopeMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockPrivateEndpointScope)(nil).TenantID))
-}
-
-// Token mocks base method.
-func (m *MockPrivateEndpointScope) Token() azcore.TokenCredential {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Token")
-	ret0, _ := ret[0].(azcore.TokenCredential)
-	return ret0
-}
-
-// Token indicates an expected call of Token.
-func (mr *MockPrivateEndpointScopeMockRecorder) Token() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockPrivateEndpointScope)(nil).Token))
 }
 
 // UpdateDeleteStatus mocks base method.

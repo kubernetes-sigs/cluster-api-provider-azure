@@ -113,8 +113,8 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;
 // +kubebuilder:rbac:groups=resources.azure.com,resources=resourcegroups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=resources.azure.com,resources=resourcegroups/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=network.azure.com,resources=natgateways;bastionhosts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=network.azure.com,resources=natgateways/status;bastionhosts/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=network.azure.com,resources=natgateways;bastionhosts;privateendpoints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=network.azure.com,resources=natgateways/status;bastionhosts/status;privateendpoints/status,verbs=get;list;watch
 
 // Reconcile idempotently gets, creates, and updates a cluster.
 func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {

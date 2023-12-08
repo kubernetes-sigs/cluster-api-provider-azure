@@ -16,8 +16,6 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //
-//go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_privateendpoints -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination privateendpoints_mock.go -package mock_privateendpoints -source ../privateendpoints.go PrivateEndpointScope
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt privateendpoints_mock.go > _privateendpoints_mock.go && mv _privateendpoints_mock.go privateendpoints_mock.go"
 package mock_privateendpoints

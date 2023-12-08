@@ -307,6 +307,7 @@ rules:
   resources:
   - bastionhosts
   - natgateways
+  - privateendpoints
   verbs:
   - create
   - delete
@@ -320,6 +321,27 @@ rules:
   resources:
   - bastionhosts/status
   - natgateways/status
+  - privateendpoints/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - network.azure.com
+  resources:
+  - privateendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - network.azure.com
+  resources:
+  - privateendpoints/status
   verbs:
   - get
   - list
