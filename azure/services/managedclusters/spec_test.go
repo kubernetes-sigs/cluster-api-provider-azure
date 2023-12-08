@@ -38,7 +38,6 @@ func TestParameters(t *testing.T) {
 
 		spec := &ManagedClusterSpec{
 			Name:              "name",
-			Namespace:         "namespace",
 			ResourceGroup:     "rg",
 			NodeResourceGroup: "node rg",
 			ClusterName:       "cluster",

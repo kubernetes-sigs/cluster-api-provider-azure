@@ -62,7 +62,6 @@ var (
 	}
 	fakeAzureBastionSpec1 = AzureBastionSpec{
 		Name:            "my-bastion-host",
-		Namespace:       "default",
 		ClusterName:     "cluster",
 		Location:        "westus",
 		SubnetID:        "my-subnet-id",

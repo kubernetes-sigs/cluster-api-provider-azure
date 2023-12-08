@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -68,6 +69,33 @@ func (e ErroringDeleteClient) Delete(_ context.Context, _ client.Object, _ ...cl
 	return e.err
 }
 
+func newOwner() *asoresourcesv1.ResourceGroup {
+	return &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace",
+		},
+	}
+}
+
+func ownerRefs() []metav1.OwnerReference {
+	s := runtime.NewScheme()
+	if err := asoresourcesv1.AddToScheme(s); err != nil {
+		panic(err)
+	}
+	gvk, err := apiutil.GVKForObject(&asoresourcesv1.ResourceGroup{}, s)
+	if err != nil {
+		panic(err)
+	}
+	return []metav1.OwnerReference{
+		{
+			APIVersion:         gvk.GroupVersion().String(),
+			Kind:               gvk.Kind,
+			Controller:         ptr.To(true),
+			BlockOwnerDeletion: ptr.To(true),
+		},
+	}
+}
+
 // TestCreateOrUpdateResource tests the CreateOrUpdateResource function.
 func TestCreateOrUpdateResource(t *testing.T) {
 	t.Run("ready status unknown", func(t *testing.T) {
@@ -78,25 +106,22 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{},
 		})).To(Succeed())
@@ -115,14 +140,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Nil()).Return(&asoresourcesv1.ResourceGroup{
@@ -144,9 +168,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, created)).To(Succeed())
 		g.Expect(created.Name).To(Equal("name"))
 		g.Expect(created.Namespace).To(Equal("namespace"))
-		g.Expect(created.Labels).To(Equal(map[string]string{
-			infrav1.OwnedByClusterLabelKey: clusterName,
-		}))
+		g.Expect(created.OwnerReferences).To(Equal(ownerRefs()))
 		g.Expect(created.Annotations).To(Equal(map[string]string{
 			asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicySkip),
 			asoannotations.PerResourceSecret: "cluster-aso-secret",
@@ -164,14 +186,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -182,11 +203,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -220,14 +239,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -238,11 +256,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -272,14 +288,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -290,11 +305,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -328,14 +341,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](ErroringGetClient{Client: c, err: errors.New("an error")}, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](ErroringGetClient{Client: c, err: errors.New("an error")}, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 
@@ -354,14 +366,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -373,11 +384,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -403,14 +412,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			WithScheme(sch).
 			Build()
 		clusterName := "cluster"
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -420,11 +428,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
@@ -461,14 +467,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			WithScheme(sch).
 			Build()
 		clusterName := "cluster"
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -479,11 +484,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
@@ -510,6 +513,65 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		}))
 	})
 
+	t.Run("adopt previously managed resource with label", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		clusterName := "cluster"
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "name",
+			},
+		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		})
+		specMock.EXPECT().WasManaged(gomock.Any()).Return(true)
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					//nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
+				},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err).NotTo(BeNil())
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Annotations).To(Equal(map[string]string{
+			asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+			asoannotations.PerResourceSecret: "cluster-aso-secret",
+		}))
+		g.Expect(updated.OwnerReferences).To(Equal(ownerRefs()))
+	})
+
 	t.Run("Parameters error", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -518,14 +580,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).Return(nil, errors.New("parameters error"))
@@ -533,11 +594,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -563,14 +622,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 
@@ -603,14 +661,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -621,11 +678,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
@@ -661,14 +716,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](ErroringPatchClient{Client: c, err: errors.New("an error")}, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](ErroringPatchClient{Client: c, err: errors.New("an error")}, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -680,11 +734,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -710,7 +762,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := struct {
@@ -722,8 +774,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		}
 		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -739,11 +790,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 				},
@@ -775,7 +824,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := struct {
@@ -787,8 +836,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		}
 		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -798,11 +846,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 					tagsLastAppliedAnnotation:      "{",
@@ -831,7 +877,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := struct {
@@ -853,11 +899,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		existing := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 				},
@@ -896,14 +940,13 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		mockCtrl := gomock.NewController(t)
 		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
 		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
@@ -914,11 +957,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 				Annotations: map[string]string{
 					prePauseReconcilePolicyAnnotation: string(asoannotations.ReconcilePolicyManage),
 					asoannotations.ReconcilePolicy:    string(asoannotations.ReconcilePolicySkip),
@@ -958,12 +999,11 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
+				Name: "name",
 			},
 		}
 
@@ -980,16 +1020,14 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		ctx := context.Background()
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 		}
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
@@ -1010,7 +1048,7 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1034,7 +1072,7 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](ErroringGetClient{Client: c, err: errors.New("a get error")}, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](ErroringGetClient{Client: c, err: errors.New("a get error")}, clusterName, newOwner())
 
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1058,15 +1096,13 @@ func TestDeleteResource(t *testing.T) {
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
 			Build()
-		s := New[*asoresourcesv1.ResourceGroup](ErroringDeleteClient{Client: c, err: errors.New("an error")}, clusterName)
+		s := New[*asoresourcesv1.ResourceGroup](ErroringDeleteClient{Client: c, err: errors.New("an error")}, clusterName, newOwner())
 
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-				Labels: map[string]string{
-					infrav1.OwnedByClusterLabelKey: clusterName,
-				},
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
 			},
 		}
 
@@ -1091,8 +1127,7 @@ func TestPauseResource(t *testing.T) {
 			name: "success, not already paused",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1107,9 +1142,7 @@ func TestPauseResource(t *testing.T) {
 							Annotations: map[string]string{
 								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 							},
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: clusterName,
-							},
+							OwnerReferences: ownerRefs(),
 						},
 					}).
 					Build()
@@ -1126,8 +1159,7 @@ func TestPauseResource(t *testing.T) {
 			name: "success, already paused",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1142,9 +1174,7 @@ func TestPauseResource(t *testing.T) {
 							Annotations: map[string]string{
 								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 							},
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: clusterName,
-							},
+							OwnerReferences: ownerRefs(),
 						},
 					}).
 					Build()
@@ -1161,8 +1191,7 @@ func TestPauseResource(t *testing.T) {
 			name: "success, no patch needed",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1178,9 +1207,7 @@ func TestPauseResource(t *testing.T) {
 								asoannotations.ReconcilePolicy:    string(asoannotations.ReconcilePolicySkip),
 								prePauseReconcilePolicyAnnotation: string(asoannotations.ReconcilePolicyManage),
 							},
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: clusterName,
-							},
+							OwnerReferences: ownerRefs(),
 						},
 					}).
 					Build()
@@ -1192,8 +1219,7 @@ func TestPauseResource(t *testing.T) {
 			name: "failure getting existing resource",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1209,8 +1235,7 @@ func TestPauseResource(t *testing.T) {
 			name: "failure patching resource",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1225,9 +1250,7 @@ func TestPauseResource(t *testing.T) {
 							Annotations: map[string]string{
 								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 							},
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: clusterName,
-							},
+							OwnerReferences: ownerRefs(),
 						},
 					}).
 					Build()
@@ -1239,8 +1262,7 @@ func TestPauseResource(t *testing.T) {
 			name: "success, unmanaged resource",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "namespace",
+					Name: "name",
 				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
@@ -1255,9 +1277,7 @@ func TestPauseResource(t *testing.T) {
 							Annotations: map[string]string{
 								asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 							},
-							Labels: map[string]string{
-								infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
-							},
+							OwnerReferences: []metav1.OwnerReference{{Name: "other-owner"}},
 						},
 					}).
 					Build()
@@ -1281,7 +1301,7 @@ func TestPauseResource(t *testing.T) {
 
 			ctrlClient := test.clientBuilder(g)
 
-			s := New[*asoresourcesv1.ResourceGroup](ctrlClient, clusterName)
+			s := New[*asoresourcesv1.ResourceGroup](ctrlClient, clusterName, newOwner())
 
 			err := s.PauseResource(ctx, test.resource, svcName)
 			if test.expectedErr != "" {

@@ -460,6 +460,7 @@ func TestServicePause(t *testing.T) {
 			}),
 			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
+		scope.EXPECT().ASOOwner().Return(&asoresourcesv1.ResourceGroup{})
 
 		pauseErr := errors.New("Pause error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)

@@ -143,6 +143,11 @@ func (s *ManagedControlPlaneScope) GetClient() client.Client {
 	return s.Client
 }
 
+// ASOOwner implements aso.Scope.
+func (s *ManagedControlPlaneScope) ASOOwner() client.Object {
+	return s.ControlPlane
+}
+
 // GetDeletionTimestamp returns the deletion timestamp of the cluster.
 func (s *ManagedControlPlaneScope) GetDeletionTimestamp() *metav1.Time {
 	return s.Cluster.DeletionTimestamp
@@ -266,11 +271,9 @@ func (s *ManagedControlPlaneScope) GroupSpecs() []azure.ASOResourceSpecGetter[*a
 	return []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 		&groups.GroupSpec{
 			Name:           s.ResourceGroup(),
-			Namespace:      s.Cluster.Namespace,
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
-			Owner:          *metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
 		},
 	}
 }
@@ -280,7 +283,6 @@ func (s *ManagedControlPlaneScope) VNetSpec() azure.ASOResourceSpecGetter[*asone
 	return &virtualnetworks.VNetSpec{
 		ResourceGroup:  s.Vnet().ResourceGroup,
 		Name:           s.Vnet().Name,
-		Namespace:      s.ControlPlane.Namespace,
 		CIDRs:          s.Vnet().CIDRBlocks,
 		Location:       s.Location(),
 		ClusterName:    s.ClusterName(),
@@ -295,7 +297,6 @@ func (s *ManagedControlPlaneScope) AzureFleetsMemberSpec() []azure.ASOResourceSp
 	}
 	return []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.FleetsMember]{&fleetsmembers.AzureFleetsMemberSpec{
 		Name:                 s.AzureFleetMembership().Name,
-		Namespace:            s.Cluster.Namespace,
 		ClusterName:          s.ClusterName(),
 		ClusterResourceGroup: s.ResourceGroup(),
 		Group:                s.AzureFleetMembership().Group,
@@ -325,7 +326,6 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*
 	return []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{
 		&subnets.SubnetSpec{
 			Name:              s.NodeSubnet().Name,
-			Namespace:         s.ControlPlane.Namespace,
 			ResourceGroup:     s.ResourceGroup(),
 			SubscriptionID:    s.SubscriptionID(),
 			CIDRs:             s.NodeSubnet().CIDRBlocks,
@@ -422,6 +422,7 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	defer done()
 
 	vnet := s.VNetSpec().ResourceRef()
+	vnet.SetNamespace(s.ASOOwner().GetNamespace())
 	err := s.Client.Get(ctx, client.ObjectKeyFromObject(vnet), vnet)
 	if err != nil {
 		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz, assuming unmanaged", "AzureManagedCluster", s.ClusterName())
@@ -503,7 +504,6 @@ func (s *ManagedControlPlaneScope) IsAADEnabled() bool {
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
 		Name:              s.ControlPlane.Name,
-		Namespace:         s.ControlPlane.Namespace,
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
 		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
 		ClusterName:       s.ClusterName(),
@@ -876,7 +876,6 @@ func (s *ManagedControlPlaneScope) PrivateEndpointSpecs() []azure.ASOResourceSpe
 	for _, privateEndpoint := range s.ControlPlane.Spec.VirtualNetwork.Subnet.PrivateEndpoints {
 		privateEndpointSpec := &privateendpoints.PrivateEndpointSpec{
 			Name:                       privateEndpoint.Name,
-			Namespace:                  s.Cluster.Namespace,
 			ResourceGroup:              s.Vnet().ResourceGroup,
 			Location:                   privateEndpoint.Location,
 			CustomNetworkInterfaceName: privateEndpoint.CustomNetworkInterfaceName,

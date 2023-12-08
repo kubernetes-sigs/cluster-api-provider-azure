@@ -43,7 +43,7 @@ type Service[T deepCopier[T], S Scope] struct {
 // NewService creates a new Service.
 func NewService[T deepCopier[T], S Scope](name string, scope S) *Service[T, S] {
 	return &Service[T, S]{
-		Reconciler: New[T](scope.GetClient(), scope.ClusterName()),
+		Reconciler: New[T](scope.GetClient(), scope.ClusterName(), scope.ASOOwner()),
 		Scope:      scope,
 		name:       name,
 	}
@@ -133,7 +133,7 @@ func (s *Service[T, S]) Pause(ctx context.Context) error {
 	for _, spec := range s.Specs {
 		ref := spec.ResourceRef()
 		if err := s.PauseResource(ctx, ref, s.Name()); err != nil {
-			return errors.Wrapf(err, "failed to pause ASO resource %s %s/%s", ref.GetObjectKind().GroupVersionKind(), ref.GetNamespace(), ref.GetName())
+			return errors.Wrapf(err, "failed to pause ASO resource %s %s/%s", ref.GetObjectKind().GroupVersionKind(), s.Scope.ASOOwner().GetNamespace(), ref.GetName())
 		}
 	}
 

@@ -176,7 +176,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Replicas:     1,
 					Mode:         "System",
@@ -222,7 +221,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
@@ -474,7 +472,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "System",
 					Replicas:     1,
@@ -484,7 +481,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool1",
 					AzureName:    "pool1",
-					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
 					Replicas:     1,
@@ -495,7 +491,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool2",
 					AzureName:    "pool2",
-					Namespace:    "default",
 					SKU:          "Standard_D2s_v3",
 					Mode:         "User",
 					Replicas:     1,
@@ -1390,7 +1385,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 			Expected: []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]{
 				&privateendpoints.PrivateEndpointSpec{
 					Name:                       "my-private-endpoint",
-					Namespace:                  "dummy-ns",
 					ResourceGroup:              "dummy-rg",
 					Location:                   "westus2",
 					CustomNetworkInterfaceName: "my-custom-nic",

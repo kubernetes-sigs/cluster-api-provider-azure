@@ -3820,7 +3820,6 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint]{
 				&privateendpoints.PrivateEndpointSpec{
 					Name:                       "my-private-endpoint",
-					Namespace:                  "dummy-ns",
 					ResourceGroup:              "dummy-rg",
 					Location:                   "westus2",
 					CustomNetworkInterfaceName: "my-custom-nic",
@@ -3848,7 +3847,6 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 				},
 				&privateendpoints.PrivateEndpointSpec{
 					Name:                       "my-private-endpoint-2",
-					Namespace:                  "dummy-ns",
 					ResourceGroup:              "dummy-rg",
 					Location:                   "westus2",
 					CustomNetworkInterfaceName: "my-custom-nic-2",
@@ -3876,7 +3874,6 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 				},
 				&privateendpoints.PrivateEndpointSpec{
 					Name:                       "my-private-endpoint-3",
-					Namespace:                  "dummy-ns",
 					ResourceGroup:              "dummy-rg",
 					Location:                   "westus2",
 					CustomNetworkInterfaceName: "my-custom-nic-3",

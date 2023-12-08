@@ -32,7 +32,6 @@ import (
 var (
 	fakeNatGatewaySpec = &NatGatewaySpec{
 		Name:           "my-natgateway",
-		Namespace:      "dummy-ns",
 		ResourceGroup:  "my-rg",
 		SubscriptionID: "123",
 		Location:       "eastus",

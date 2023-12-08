@@ -31,7 +31,6 @@ import (
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
 	Name              string
-	Namespace         string
 	ResourceGroup     string
 	SubscriptionID    string
 	CIDRs             []string
@@ -50,8 +49,7 @@ func (s *SubnetSpec) ResourceRef() *asonetworkv1.VirtualNetworksSubnet {
 		ObjectMeta: metav1.ObjectMeta{
 			// s.Name isn't unique per-cluster, so combine with vnet name to avoid collisions.
 			// ToLower makes the name compatible with standard Kubernetes name requirements.
-			Name:      s.VNetName + "-" + strings.ToLower(s.Name),
-			Namespace: s.Namespace,
+			Name: s.VNetName + "-" + strings.ToLower(s.Name),
 		},
 	}
 }

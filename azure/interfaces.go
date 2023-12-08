@@ -152,8 +152,9 @@ type ResourceSpecGetterWithHeaders interface {
 
 // ASOResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.
 type ASOResourceSpecGetter[T genruntime.MetaObject] interface {
-	// ResourceRef returns a concrete, named (and namespaced if applicable) ASO
-	// resource type to facilitate a strongly-typed GET.
+	// ResourceRef returns a concrete, named ASO resource type to facilitate a
+	// strongly-typed GET. Namespace is not read if set here and is instead
+	// derived from OwnerReferences.
 	ResourceRef() T
 	// Parameters returns a modified object if it points to a non-nil resource.
 	// Otherwise it returns an unmodified object if no updates are needed.

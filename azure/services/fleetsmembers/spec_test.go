@@ -43,7 +43,6 @@ var (
 	}
 	fakeAzureFleetsMemberSpec = AzureFleetsMemberSpec{
 		Name:                 "fake-name",
-		Namespace:            "fake-namespace",
 		ClusterName:          "fake-cluster-name",
 		ClusterResourceGroup: "fake-cluster-resource-group",
 		Group:                "fake-group",

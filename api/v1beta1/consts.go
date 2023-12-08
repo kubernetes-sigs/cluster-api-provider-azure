@@ -158,6 +158,8 @@ const (
 	// OwnedByClusterLabelKey communicates CAPZ's ownership of an ASO resource
 	// independently of its ownership of the underlying Azure resource. The
 	// value for the label is the CAPI Cluster Name.
+	//
+	// Deprecated: OwnerReferences now determine ownership.
 	OwnedByClusterLabelKey = NameAzureProviderPrefix + string(ResourceLifecycleOwned)
 )
 

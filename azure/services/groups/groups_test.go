@@ -26,14 +26,39 @@ import (
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups/mock_groups"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestIsManaged(t *testing.T) {
+	newOwner := func() *asoresourcesv1.ResourceGroup {
+		return &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "namespace",
+			},
+		}
+	}
+
+	newOwnerRefs := func() []metav1.OwnerReference {
+		s := runtime.NewScheme()
+		if err := asoresourcesv1.AddToScheme(s); err != nil {
+			t.Fatal(err.Error())
+		}
+		gvk, _ := apiutil.GVKForObject(&asoresourcesv1.ResourceGroup{}, s)
+		return []metav1.OwnerReference{
+			{
+				APIVersion:         gvk.GroupVersion().String(),
+				Kind:               gvk.Kind,
+				Controller:         ptr.To(true),
+				BlockOwnerDeletion: ptr.To(true),
+			},
+		}
+	}
+
 	tests := []struct {
 		name          string
 		objects       []client.Object
@@ -57,8 +82,10 @@ func TestIsManaged(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "name",
 						Namespace: "namespace",
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: "not-cluster",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: "wrong version",
+							},
 						},
 					},
 				},
@@ -66,8 +93,7 @@ func TestIsManaged(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
 				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 					&GroupSpec{
-						Name:      "name",
-						Namespace: "namespace",
+						Name: "name",
 					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
@@ -79,11 +105,9 @@ func TestIsManaged(t *testing.T) {
 			objects: []client.Object{
 				&asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: "cluster",
-						},
+						Name:            "name",
+						Namespace:       "namespace",
+						OwnerReferences: newOwnerRefs(),
 						Annotations: map[string]string{
 							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 						},
@@ -93,8 +117,7 @@ func TestIsManaged(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
 				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 					&GroupSpec{
-						Name:      "name",
-						Namespace: "namespace",
+						Name: "name",
 					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
@@ -106,11 +129,9 @@ func TestIsManaged(t *testing.T) {
 			objects: []client.Object{
 				&asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: "cluster",
-						},
+						Name:            "name",
+						Namespace:       "namespace",
+						OwnerReferences: newOwnerRefs(),
 						Annotations: map[string]string{
 							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
@@ -120,8 +141,7 @@ func TestIsManaged(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder) {
 				s.GroupSpecs().Return([]azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 					&GroupSpec{
-						Name:      "name",
-						Namespace: "namespace",
+						Name: "name",
 					},
 				}).AnyTimes()
 				s.ClusterName().Return("cluster").AnyTimes()
@@ -145,6 +165,7 @@ func TestIsManaged(t *testing.T) {
 				WithObjects(test.objects...).
 				Build()
 			scopeMock.EXPECT().GetClient().Return(ctrlClient).AnyTimes()
+			scopeMock.EXPECT().ASOOwner().Return(newOwner()).AnyTimes()
 			test.expect(scopeMock.EXPECT())
 
 			actual, err := New(scopeMock).IsManaged(context.Background())

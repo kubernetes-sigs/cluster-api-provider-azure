@@ -29,6 +29,7 @@ import (
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -177,8 +178,19 @@ func TestAzureClusterServicePause(t *testing.T) {
 
 func TestAzureClusterServiceDelete(t *testing.T) {
 	clusterName := "cluster"
+	azClusterName := "azCluster"
 	namespace := "ns"
 	resourceGroup := "rg"
+
+	ownerRefs := []metav1.OwnerReference{
+		{
+			APIVersion:         infrav1.GroupVersion.String(),
+			Kind:               infrav1.AzureClusterKind,
+			Name:               azClusterName,
+			Controller:         ptr.To(true),
+			BlockOwnerDeletion: ptr.To(true),
+		},
+	}
 
 	cases := map[string]struct {
 		expectedError string
@@ -189,15 +201,14 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expectedError: "",
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
+				g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 
 				rg := &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceGroup,
-						Namespace: namespace,
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: clusterName,
-						},
+						Name:            resourceGroup,
+						Namespace:       namespace,
+						OwnerReferences: ownerRefs,
 						Annotations: map[string]string{
 							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
@@ -224,15 +235,14 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expectedError: "failed to delete resource group: internal error",
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
+				g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 
 				rg := &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceGroup,
-						Namespace: namespace,
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: clusterName,
-						},
+						Name:            resourceGroup,
+						Namespace:       namespace,
+						OwnerReferences: ownerRefs,
 						Annotations: map[string]string{
 							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 						},
@@ -259,15 +269,14 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expectedError: "",
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
+				g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 
 				rg := &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceGroup,
-						Namespace: namespace,
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
-						},
+						Name:            resourceGroup,
+						Namespace:       namespace,
+						OwnerReferences: []metav1.OwnerReference{},
 					},
 				}
 
@@ -291,15 +300,14 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 			expectedError: "failed to delete AzureCluster service two: some error happened",
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
+				g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 
 				rg := &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceGroup,
-						Namespace: namespace,
-						Labels: map[string]string{
-							infrav1.OwnedByClusterLabelKey: "not-" + clusterName,
-						},
+						Name:            resourceGroup,
+						Namespace:       namespace,
+						OwnerReferences: []metav1.OwnerReference{},
 					},
 				}
 
@@ -340,6 +348,10 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 				scope: &scope.ClusterScope{
 					Client: c,
 					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      azClusterName,
+							Namespace: namespace,
+						},
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: resourceGroup,
 							NetworkSpec: infrav1.NetworkSpec{
