@@ -24,6 +24,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -45,6 +46,7 @@ type GroupScope interface {
 // New creates a new service.
 func New(scope GroupScope) *Service {
 	svc := aso.NewService[*asoresourcesv1.ResourceGroup](ServiceName, scope)
+	svc.ListFunc = list
 	svc.Specs = scope.GroupSpecs()
 	svc.ConditionType = infrav1.ResourceGroupReadyCondition
 	return &Service{
@@ -76,4 +78,10 @@ func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asoresourcesv1.ResourceGroup, error) {
+	list := &asoresourcesv1.ResourceGroupList{}
+	err := client.List(ctx, list, opts...)
+	return slice.ToPtrs(list.Items), err
 }

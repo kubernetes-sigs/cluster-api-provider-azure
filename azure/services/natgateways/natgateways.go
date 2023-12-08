@@ -23,6 +23,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const serviceName = "natgateways"
@@ -37,6 +39,7 @@ type NatGatewayScope interface {
 // New creates a new service.
 func New(scope NatGatewayScope) *aso.Service[*asonetworkv1.NatGateway, NatGatewayScope] {
 	svc := aso.NewService[*asonetworkv1.NatGateway, NatGatewayScope](serviceName, scope)
+	svc.ListFunc = list
 	svc.Specs = scope.NatGatewaySpecs()
 	svc.ConditionType = infrav1.NATGatewaysReadyCondition
 	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
@@ -53,4 +56,10 @@ func postCreateOrUpdateResourceHook(_ context.Context, scope NatGatewayScope, re
 		scope.SetNatGatewayIDInSubnets(result.Name, *result.Status.Id)
 	}
 	return nil
+}
+
+func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asonetworkv1.NatGateway, error) {
+	list := &asonetworkv1.NatGatewayList{}
+	err := client.List(ctx, list, opts...)
+	return slice.ToPtrs(list.Items), err
 }
