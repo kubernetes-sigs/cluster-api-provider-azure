@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -90,6 +89,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		if !apierrors.IsNotFound(err) {
 			return zero, errors.Wrapf(err, "failed to get existing resource %s/%s (service: %s)", resourceNamespace, resourceName, serviceName)
 		}
+		log.V(2).Info("existing resource not found, will create a new one")
 	} else {
 		existing = resource
 		resourceExists = true
@@ -212,32 +212,30 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		log.V(2).Info("resource up to date")
 		return existing, nil
 	}
+	log.V(2).Info("creating or updating resource", "diff", cmp.Diff(existing, parameters))
+	return r.createOrUpdateResource(ctx, existing, parameters, resourceExists, serviceName)
+}
 
-	// Create or update the resource with the desired parameters.
-	logMessageVerbPrefix := "creat"
+func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters T, resourceExists bool, serviceName string) (T, error) {
+	var zero T
+	var err error
+	var logMessageVerbPrefix string
 	if resourceExists {
 		logMessageVerbPrefix = "updat"
-	}
-	log.V(2).Info(logMessageVerbPrefix+"ing resource", "diff", diff)
-	if resourceExists {
-		var helper *patch.Helper
-		helper, err = patch.NewHelper(existing, r.Client)
-		if err != nil {
-			return zero, errors.Errorf("failed to init patch helper: %v", err)
-		}
-		err = helper.Patch(ctx, parameters)
+		err = r.Client.Patch(ctx, parameters, client.MergeFrom(existing))
 	} else {
+		logMessageVerbPrefix = "creat"
 		err = r.Client.Create(ctx, parameters)
 	}
 	if err == nil {
 		// Resources need to be requeued to wait for the create or update to finish.
 		return zero, azure.WithTransientError(azure.NewOperationNotDoneError(&infrav1.Future{
 			Type:          createOrUpdateFutureType,
-			ResourceGroup: resourceNamespace,
-			Name:          resourceName,
+			ResourceGroup: parameters.GetNamespace(),
+			Name:          parameters.GetName(),
 		}), requeueInterval)
 	}
-	return zero, errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, resourceNamespace, resourceName, serviceName))
+	return zero, errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, parameters.GetNamespace(), parameters.GetName(), serviceName))
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
@@ -325,12 +323,7 @@ func (r *reconciler[T]) PauseResource(ctx context.Context, resource T, serviceNa
 	}
 
 	log.V(4).Info("Pausing resource")
-
-	var helper *patch.Helper
-	helper, err := patch.NewHelper(resource, r.Client)
-	if err != nil {
-		return errors.Errorf("failed to init patch helper: %v", err)
-	}
+	before := resource.DeepCopy()
 
 	if annotations == nil {
 		annotations = make(map[string]string, 2)
@@ -339,5 +332,5 @@ func (r *reconciler[T]) PauseResource(ctx context.Context, resource T, serviceNa
 	annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicySkip)
 	resource.SetAnnotations(annotations)
 
-	return helper.Patch(ctx, resource)
+	return r.Client.Patch(ctx, resource, client.MergeFrom(before))
 }
