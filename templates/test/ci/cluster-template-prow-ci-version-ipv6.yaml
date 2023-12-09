@@ -228,11 +228,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-      /etc/resolv.conf
-    - systemctl restart systemd-resolved containerd
+    postKubeadmCommands: []
     preKubeadmCommands:
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
@@ -442,11 +438,6 @@ spec:
             image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
           name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-        /etc/resolv.conf
-      - systemctl restart systemd-resolved containerd
       preKubeadmCommands:
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/kubeadm-bootstrap.sh

@@ -121,14 +121,6 @@ The reference [ipv6 flavor](https://raw.githubusercontent.com/kubernetes-sigs/cl
 
 - Kubernetes version needs to be 1.18+
 
-- The :53 port needs to be free on the host so coredns can use it. In 18.04, systemd-resolved uses the port :53 on the host and is used by default for DNS. This causes the coredns pods to crash for single stack IPv6 with bind address already in use as coredns pods are run on hostNetwork to leverage the host routes for DNS resolution. This is done by running the following commands in postKubeadmCommands:
-```yaml
-    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-      /etc/resolv.conf
-    - systemctl restart systemd-resolved
-```
-
 - The coredns pod needs to run on the host network, so it can leverage host routes for the v4 network to do the DNS resolution. The workaround is to edit the coredns deployment and add `hostNetwork: true`:
 ```bash
 kubectl patch deploy/coredns -n kube-system --type=merge -p '{"spec": {"template": {"spec":{"hostNetwork": true}}}}'
