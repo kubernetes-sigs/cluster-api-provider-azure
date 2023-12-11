@@ -585,7 +585,7 @@ endif
 # the previous release tag, e.g., v0.3.9, excluding pre-release tags
 PREVIOUS_TAG ?= $(shell git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | grep -B1 $(RELEASE_TAG) | head -n 1 2>/dev/null)
 RELEASE_DIR ?= out
-RELEASE_NOTES_DIR := _releasenotes
+RELEASE_NOTES_DIR := CHANGELOG
 GIT_REPO_NAME ?= cluster-api-provider-azure
 GIT_ORG_NAME ?= kubernetes-sigs
 FULL_VERSION := $(RELEASE_TAG:v%=%)
