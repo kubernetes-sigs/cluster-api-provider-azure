@@ -280,7 +280,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipCleanup:           skipCleanup,
 				SkipConformanceTests:  true,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}
 		})
@@ -298,7 +298,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}
 		})
@@ -317,7 +317,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipConformanceTests:     true,
 				Flavor:                   ptr.To("kcp-scale-in"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				},
 			}
 		})
