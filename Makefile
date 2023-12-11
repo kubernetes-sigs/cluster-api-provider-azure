@@ -759,7 +759,7 @@ delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "ca
 	$(KIND) delete cluster --name=capz
 
 .PHONY: kind-reset
-kind-reset: ## Destroys the "capz" and "capz-e2e" kind clusters.
+kind-reset: $(KIND) ## Destroys the "capz" and "capz-e2e" kind clusters.
 	$(KIND) delete cluster --name=$(KIND_CLUSTER_NAME) || true
 	$(KIND) delete cluster --name=capz-e2e || true
 
