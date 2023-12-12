@@ -170,7 +170,7 @@ variables:
   AKS_KUBERNETES_VERSION: "latest"
   AKS_KUBERNETES_VERSION_UPGRADE_FROM: "latest-1"
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.26.6}" # temporarily pin to v1.26.6 to workaround Calico dual stack issues
-  FLATCAR_KUBERNETES_VERSION: "${FLATCAR_KUBERNETES_VERSION:-stable-1.26}"
+  FLATCAR_KUBERNETES_VERSION: "${FLATCAR_KUBERNETES_VERSION:-v1.26.10}" # temporarily pin to v1.26.10 to workaround Flatcar image issues
   FLATCAR_VERSION: "${FLATCAR_VERSION:-latest}"
   ETCD_VERSION_UPGRADE_TO: "3.5.4-0"
   COREDNS_VERSION_UPGRADE_TO: "v1.9.3"
