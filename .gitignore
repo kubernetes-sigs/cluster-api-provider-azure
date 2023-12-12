@@ -79,9 +79,6 @@ hack/boilerplate/*.pyc
 # Helm chart caching
 .helm/
 
-# release notes
-_releasenotes
-
 # calico manifests archive
 release-*/manifests/calico-*.yaml
 

@@ -37,6 +37,8 @@ Sometimes pull requests touch a large number of files and are more likely to cre
 - Make sure the [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/metadata.yaml) file is up to date and contains the new release with the correct cluster-api contract version.
   - If not, open a [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1928) to add it.
 
+This must be done prior to generating release artifacts, so the release contains the correct metadata information for clusterctl to use.
+
 ### Change milestone (skip for patch releases)
 
 - Create a new GitHub milestone for the next release
@@ -63,35 +65,30 @@ releaseSeries:
 
 Additionally, we need to update the `type: InfrastructureProvider` spec in [azure-dev.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/config/azure-dev.yaml) to express that our intent is to test (using the above example) `1.5`. By convention we use a sentinel patch version "99" to express "any patch version". In this example we want to look for the `type: InfrastructureProvider` with a `name` value of `v1.4.99` and update it to `v1.5.99`:
 
-```
+```yaml
     - name: v1.5.99 # "vNext"; use manifests from local source files
 ```
 
-### Create a tag
+This can be done in parallel with release publishing and does not impact the release or its artifacts.
 
-Before you create a GPG-signed tag you may need to prepare your local environment's TTY to properly hoist your signed key into the flow of the `git tag` command:
+### Open a PR for release notes
 
-```sh
-$ export GPG_TTY=$(tty)
-```
+1. Checkout the latest commit on the release branch, e.g. `release-1.4`, or the main branch if the release branch doesn't yet exist (e.g. beta release).
 
-- Prepare the release branch. :warning: Always release from the release branch and not from main!
-  - If releasing a patch release, check out the existing release branch and make sure you have the latest changes:
-    - `git checkout release-1.x`
-    - `git fetch upstream`
-    - `git rebase upstream/release-1.x`
-  - If releasing a minor release, create a new release branch from the main branch:
-    - `git fetch upstream`
-    - `git rebase upstream/main`
-    - `git checkout -b release-1.x`
-    - `git push upstream release-1.x`
-- Create tag with git
-  - `export RELEASE_TAG=v1.2.3` (the tag of the release to be cut)
-  - `git tag -s ${RELEASE_TAG} -m "${RELEASE_TAG}"`
-  - `-s` creates a signed tag, you must have a GPG key [added to your GitHub account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-new-gpg-key-to-your-github-account)
-  - `git push upstream ${RELEASE_TAG}`
+1. Generate release notes by running the following command:
 
-This will automatically trigger a [Github Action](https://github.com/kubernetes-sigs/cluster-api-provider-azure/actions) to create a draft release.
+    ```sh
+    export RELEASE_TAG=v1.2.3 # change this to the tag of the release to be cut
+    make release-notes
+    ```
+
+1. Review the release notes file generated at `CHANGELOG/<RELEASE_TAG>.md` and make any necessary changes.
+
+1. Open a pull request with the release notes.
+
+**Note**: Important! The commit should only contain the release notes file, nothing else, otherwise automation will not work.
+
+Merging the PR will automatically trigger a [Github Action](https://github.com/kubernetes-sigs/cluster-api-provider-azure/actions) to create a release branch (if needed), push a tag, and publish a draft release.
 
 ### Promote image to prod repo
 
@@ -113,9 +110,11 @@ Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to
 
 - Manually format and categorize the release notes
 - Ensure that the promoted release image is live. For example:
+
 ```sh
-$ docker pull registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:${RELEASE_TAG}
+docker pull registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:${RELEASE_TAG}
 ```
+
 - Publish release
 - [Announce][release-announcement] the release
 
