@@ -823,6 +823,71 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(err.Error()).To(ContainSubstring("failed to reconcile tags"))
 	})
 
+	t.Run("with tags not done error and readyErr", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := struct {
+			*mock_azure.MockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
+			*mock_aso.MockTagsGetterSetter[*asoresourcesv1.ResourceGroup]
+		}{
+			MockASOResourceSpecGetter: mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			MockTagsGetterSetter:      mock_aso.NewMockTagsGetterSetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+		}
+		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+			},
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		})
+
+		existing := &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					infrav1.OwnedByClusterLabelKey: clusterName,
+				},
+				Annotations: map[string]string{
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+				},
+			},
+			Spec: asoresourcesv1.ResourceGroup_Spec{
+				Tags: map[string]string{"desired": "tags"},
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Tags: map[string]string{"actual": "tags"},
+				Conditions: []conditions.Condition{
+					{
+						Type:    conditions.ConditionTypeReady,
+						Status:  metav1.ConditionFalse,
+						Message: "not ready :(",
+					},
+				},
+			},
+		}
+
+		specMock.MockTagsGetterSetter.EXPECT().GetActualTags(gomock.Any()).Return(existing.Status.Tags)
+		specMock.MockTagsGetterSetter.EXPECT().GetDesiredTags(gomock.Any()).Return(existing.Spec.Tags)
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, existing)).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("not ready :("))
+	})
+
 	t.Run("reconcile policy annotation resets after un-pause", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
