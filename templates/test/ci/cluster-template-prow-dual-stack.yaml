@@ -129,11 +129,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-      /etc/resolv.conf
-    - systemctl restart systemd-resolved containerd
+    postKubeadmCommands: []
     preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
@@ -247,11 +243,6 @@ spec:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-        /etc/resolv.conf
-      - systemctl restart systemd-resolved containerd
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -319,11 +310,6 @@ spec:
         cloud-provider: azure
         cluster-dns: '[fd00::10]'
       name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-  - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
-    /etc/resolv.conf
-  - systemctl restart systemd-resolved containerd
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
 kind: HelmChartProxy
