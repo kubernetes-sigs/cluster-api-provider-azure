@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"encoding/base64"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -194,7 +195,7 @@ func (m *AzureManagedControlPlane) setDefaultOIDCIssuerProfile() {
 }
 
 func (m *AzureManagedControlPlane) setDefaultDNSPrefix() {
-	if m.Spec.DNSPrefix == nil {
+	if reflect.ValueOf(m.Spec.DNSPrefix).IsZero() {
 		m.Spec.DNSPrefix = ptr.To(m.Name)
 	}
 }
