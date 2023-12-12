@@ -65,6 +65,8 @@ func New(ctrlClient client.Client, clusterName string) *Service {
 
 // CreateOrUpdateResource implements the logic for creating a new or updating an
 // existing resource with ASO.
+//
+//nolint:gocyclo // This function is necessarily complex.
 func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter, serviceName string) (result genruntime.MetaObject, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.CreateOrUpdateResource")
 	defer done()
@@ -155,6 +157,9 @@ func (s *Service) CreateOrUpdateResource(ctx context.Context, spec azure.ASOReso
 
 	if t, ok := spec.(TagsGetterSetter); ok {
 		if err := reconcileTags(t, existing, parameters); err != nil {
+			if azure.IsOperationNotDoneError(err) && readyErr != nil {
+				return nil, readyErr
+			}
 			return nil, errors.Wrap(err, "failed to reconcile tags")
 		}
 	}
