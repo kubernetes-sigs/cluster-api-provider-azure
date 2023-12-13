@@ -279,6 +279,22 @@ The following resources need to be updated when using `capi-quickstart.yaml` (th
                 .
     ```
 
+### Disable Azure network discovery (if using custom images without image-builder)
+
+By default, Azure assigns secondary IP Configurations to the host OS.
+
+This behavior interfere with Azure CNI who needs those free to allocate them to pod netns's/veth's.
+
+Simply create a file in `/etc/cloud/cloud.cfg.d/15_azure-vnet.cfg` with:
+```yaml
+datasource:
+  Azure:
+    apply_network_config: false
+```
+
+For more information, here's a [link](https://github.com/kubernetes-sigs/image-builder/pull/1090) to the entire discussion for context.
+
+
 # External Cloud Provider
 
 The "external" or "out-of-tree" cloud provider for Azure is the recommended  cloud provider for CAPZ clusters. The "in-tree" cloud provider has been deprecated since v1.20 and only bug fixes are allowed in its Kubernetes repository directory.
