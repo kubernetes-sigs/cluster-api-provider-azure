@@ -1,0 +1,23 @@
+## Changes by Kind
+
+### Other (Cleanup or Flake)
+
+- Bump CAPI to v1.5.4 (#4344, @mboersma)
+
+### Uncategorized
+
+- Support AKS BYOCNI by allowing networkPlugin: none (#4318, @illrill)
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/felixge/httpsnoop: [v1.0.3 → v1.0.4](https://github.com/felixge/httpsnoop/compare/v1.0.3...v1.0.4)
+- go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp: v0.44.0 → v0.46.0
+- sigs.k8s.io/cluster-api/test: v1.5.3 → v1.5.4
+- sigs.k8s.io/cluster-api: v1.5.3 → v1.5.4
+
+### Removed
+_Nothing has changed._
