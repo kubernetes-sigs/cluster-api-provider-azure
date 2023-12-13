@@ -207,22 +207,23 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, err)
 	}
 
-	oldDNSPrefix := old.Spec.DNSPrefix
-	newDNSPrefix := m.Spec.DNSPrefix
-	if reflect.ValueOf(oldDNSPrefix).IsZero() {
-		oldDNSPrefix = ptr.To(old.Name)
-	}
-
-	if reflect.ValueOf(newDNSPrefix).IsZero() {
-		newDNSPrefix = ptr.To(m.Name)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "DNSPrefix"),
-		oldDNSPrefix,
-		newDNSPrefix,
-	); err != nil {
-		allErrs = append(allErrs, err)
+	// This nil check is only to streamline tests from having to define this correctly in every test case.
+	// Normally, the defaulting webhooks will always set the new DNSPrefix so users can never entirely unset it.
+	if m.Spec.DNSPrefix != nil {
+		// Pre-1.12 versions of CAPZ do not set this field while 1.12+ defaults it, so emulate the current
+		// defaulting here to avoid unrelated updates from failing this immutability check due to the
+		// nil -> non-nil transition.
+		oldDNSPrefix := old.Spec.DNSPrefix
+		if oldDNSPrefix == nil {
+			oldDNSPrefix = ptr.To(old.Name)
+		}
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("Spec", "DNSPrefix"),
+			oldDNSPrefix,
+			m.Spec.DNSPrefix,
+		); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	// Consider removing this once moves out of preview

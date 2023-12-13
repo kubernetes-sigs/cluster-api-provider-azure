@@ -2560,6 +2560,29 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "AzureManagedControlPlane DNSPrefix can be updated from nil when resource name matches",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capz-aks",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: nil,
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSPrefix: ptr.To("capz-aks"),
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.18.0",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "DisableLocalAccounts cannot be set for non AAD clusters",
 			oldAMCP: &AzureManagedControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
