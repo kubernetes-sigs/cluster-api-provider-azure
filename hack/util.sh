@@ -82,12 +82,21 @@ capz::util::generate_ssh_key() {
     AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
     if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
         echo "generating sshkey for e2e"
-        AZURE_SSH_KEY=.sshkey
+        AZURE_SSH_KEY="${PWD}"/.sshkey
+        # This is required if e2e.test is run with --provider=skeleton. This option is used when
+        # running Windows e2e tests against a CAPZ cluster to ensure no extra Azure resources are
+        # created by e2e.test.
+        # Ref: https://github.com/kubernetes-sigs/windows-testing/blob/be73dd57a551be4f9527e7a3a3e6491e86cae6d2/capz/run-capz-e2e.sh#L300
+        # Further more, --provider is what decides which SSH environment variable is used to create
+        # the signer needed to SSH into nodes.
+        # Ref: https://github.com/kubernetes/kubernetes/blob/41890534532931742770a7dc98f78bcdc59b1a6f/test/e2e/framework/ssh/ssh.go#L58
+        KUBE_SSH_KEY="${AZURE_SSH_KEY}"
         rm -f "${AZURE_SSH_KEY}" 2>/dev/null
         ssh-keygen -t rsa -b 2048 -f "${AZURE_SSH_KEY}" -N '' 1>/dev/null
         AZURE_SSH_PUBLIC_KEY_FILE="${AZURE_SSH_KEY}.pub"
         # This is needed to run tests that required SSH access to nodes
         export AZURE_SSH_KEY
+        export KUBE_SSH_KEY
     fi
     AZURE_SSH_PUBLIC_KEY_B64=$(base64 < "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
     export AZURE_SSH_PUBLIC_KEY_B64
