@@ -152,6 +152,9 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	if t, ok := spec.(TagsGetterSetter[T]); ok {
 		if err := reconcileTags(t, existing, resourceExists, parameters); err != nil {
+			if azure.IsOperationNotDoneError(err) && readyErr != nil {
+				return zero, readyErr
+			}
 			return zero, errors.Wrap(err, "failed to reconcile tags")
 		}
 	}
