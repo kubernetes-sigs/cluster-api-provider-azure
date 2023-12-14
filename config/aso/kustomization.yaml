@@ -4,7 +4,7 @@ namespace: capz-system
 resources:
 - https://github.com/Azure/azure-service-operator/releases/download/v2.4.0/azureserviceoperator_v2.4.0.yaml
 - crds.yaml
-- credentials.yaml
+- settings.yaml
 
 patches:
   - patch: |- # default kustomization includes a namespace already

@@ -36,6 +36,19 @@ the resource will not be deleted in Azure.
 Additionally, BYO resources may include ASO resources managed by the user. CAPZ will not modify or delete such
 resources. Note that `clusterctl move` will not move user-managed ASO resources.
 
+## Configuration with Environment Variables
+
+These environment variables are passed through to the `aso-controller-settings` Secret to configure ASO when
+CAPZ is installed and are consumed by `clusterctl init`. They may also be modified directly in the Secret
+after installing ASO with CAPZ:
+
+- `AZURE_AUTHORITY_HOST`
+- `AZURE_RESOURCE_MANAGER_AUDIENCE`
+- `AZURE_RESOURCE_MANAGER_ENDPOINT`
+- `AZURE_SYNC_PERIOD`
+
+More details on each can be found in [ASO's documentation](https://azure.github.io/azure-service-operator/guide/aso-controller-settings-options/).
+
 ## Using ASO for non-CAPZ resources
 
 CAPZ's installation of ASO can be used directly to manage Azure resources outside the domain of
