@@ -34,7 +34,6 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -337,8 +336,7 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 		return nil
 	}
 
-	// checking if the Cluster is going to be deleted for clusterctl move operation
-	if _, found := ownerCluster.Annotations[clusterctlv1.DeleteForMoveAnnotation]; found {
+	if ownerCluster.Spec.Paused {
 		return nil
 	}
 
