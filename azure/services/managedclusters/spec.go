@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -330,7 +330,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		ClientId: ptr.To("msi"),
 	}
 	managedCluster.Spec.NetworkProfile = &asocontainerservicev1.ContainerServiceNetworkProfile{
-		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPlugin](&s.NetworkPlugin),
+		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.NetworkPlugin](&s.NetworkPlugin),
 		LoadBalancerSku: azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku](&s.LoadBalancerSKU),
 		NetworkPolicy:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy](&s.NetworkPolicy),
 	}
