@@ -1,5 +1,6 @@
 # -*- mode: Python -*-
 
+# Pre-requisite make targets "install-tools" and "kind-create" ensure that the below tools are already installed.
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
 helm_cmd = "./hack/tools/bin/helm"
@@ -11,7 +12,7 @@ os.putenv("PATH", os.getenv("PATH") + ":" + tools_bin)
 
 update_settings(k8s_upsert_timeout_secs = 60)  # on first tilt up, often can take longer than 30 seconds
 
-# set defaults
+# Default settings for tilt
 settings = {
     "allowed_contexts": [
         "kind-capz",
@@ -21,19 +22,23 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.6.0",
     "cert_manager_version": "v1.13.2",
-    "kubernetes_version": "v1.28.0",
-    "aks_kubernetes_version": "v1.26.3",
+    "kubernetes_version": "v1.28.3",
+    "aks_kubernetes_version": "v1.28.3",
     "flatcar_version": "3374.2.1",
+    "azure_location": "eastus",
+    "control_plane_machine_count": "1",
+    "az_control_plane_machine_type": "Standard_B2s",
+    "worker_machine_count": "2",
+    "az_node_machine_type": "Standard_B2s",
+    "cluster_class_name": "default",
 }
 
+# Auth keys that need to be loaded from the environment
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
 
-# global settings
+# Get global settings from tilt-settings.yaml or tilt-settings.json
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
-settings.update(read_yaml(
-    tilt_file,
-    default = {},
-))
+settings.update(read_yaml(tilt_file, default = {}))
 
 if settings.get("trigger_mode") == "manual":
     trigger_mode(TRIGGER_MODE_MANUAL)
@@ -334,16 +339,16 @@ def deploy_worker_templates(template, substitutions):
     # programmatically define any remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
-        "AZURE_LOCATION": "eastus",
+        "AZURE_LOCATION": settings.get("azure_location"),
         "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
         "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
-        "CONTROL_PLANE_MACHINE_COUNT": "1",
+        "CONTROL_PLANE_MACHINE_COUNT": settings.get("control_plane_machine_count"),
         "KUBERNETES_VERSION": settings.get("kubernetes_version"),
-        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_B2s",
-        "WORKER_MACHINE_COUNT": "2",
-        "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": settings.get("az_control_plane_machine_type"),
+        "WORKER_MACHINE_COUNT": settings.get("worker_machine_count"),
+        "AZURE_NODE_MACHINE_TYPE": settings.get("az_node_machine_type"),
         "FLATCAR_VERSION": settings.get("flatcar_version"),
-        "CLUSTER_CLASS_NAME": "default",
+        "CLUSTER_CLASS_NAME": settings.get("cluster_class_name"),
     }
 
     if "aks" in flavor:
