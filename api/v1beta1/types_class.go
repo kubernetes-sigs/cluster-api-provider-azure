@@ -46,6 +46,18 @@ type AzureClusterClassSpec struct {
 	// - GermanCloud: "AzureGermanCloud"
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	//
+	// Note that values other than the default must also be accompanied by corresponding changes to the
+	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
+	// not support referring to multiple different clouds in a single installation. The following fields must
+	// be defined in the Secret:
+	// - AZURE_AUTHORITY_HOST
+	// - AZURE_RESOURCE_MANAGER_ENDPOINT
+	// - AZURE_RESOURCE_MANAGER_AUDIENCE
+	//
+	// See the [ASO docs] for more details.
+	//
+	// [ASO docs]: https://azure.github.io/azure-service-operator/guide/aso-controller-settings-options/
 	// +optional
 	AzureEnvironment string `json:"azureEnvironment,omitempty"`
 
