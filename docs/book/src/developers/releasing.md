@@ -73,11 +73,19 @@ This can be done in parallel with release publishing and does not impact the rel
 
 ### Open a PR for release notes
 
-1. Checkout the latest commit on the release branch, e.g. `release-1.4`, or the main branch if the release branch doesn't yet exist (e.g. beta release).
+1. If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
+
+1. Fetch the latest changes from upstream and checkout the main branch:
+
+    ```sh
+    git fetch upstream
+    git checkout main
+    ```
 
 1. Generate release notes by running the following command:
 
     ```sh
+    export GITHUB_TOKEN=<your GH token>
     export RELEASE_TAG=v1.2.3 # change this to the tag of the release to be cut
     make release-notes
     ```
@@ -93,9 +101,7 @@ Merging the PR will automatically trigger a [Github Action](https://github.com/k
 ### Promote image to prod repo
 
 - Images are built by the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images). This will push the image to a [staging repository][staging-repository].
-- If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
 - Wait for the above job to complete for the tag commit and for the image to exist in the staging directory, then create a PR to promote the image and tag:
-  - `export GITHUB_TOKEN=<your GH token>`
   - `make promote-images`
 
 This will automatically create a PR in [k8s.io](https://github.com/kubernetes/k8s.io) and assign the CAPZ maintainers. Example PR: https://github.com/kubernetes/k8s.io/pull/4284.

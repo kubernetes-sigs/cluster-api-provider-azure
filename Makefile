@@ -583,15 +583,24 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 ifneq (,$(findstring -,$(RELEASE_TAG)))
     PRE_RELEASE=true
 endif
+FULL_VERSION := $(RELEASE_TAG:v%=%)
+MINOR_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v%.*}")
+PATCH_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v##*.}")
+# if the release tag is a .0 version, use the main branch
+ifeq ($(PATCH_VERSION),0)
+	RELEASE_BRANCH ?= main
+else
+	RELEASE_BRANCH ?= release-$(MINOR_VERSION)
+endif
 # the previous release tag, e.g., v0.3.9, excluding pre-release tags
-PREVIOUS_TAG ?= $(shell git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | grep -B1 $(RELEASE_TAG) | head -n 1 2>/dev/null)
+PREVIOUS_TAG ?= $(shell git tag --merged $(GIT_REMOTE_NAME)/$(RELEASE_BRANCH) -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1 2>/dev/null)
+START_SHA ?= $(shell git rev-list -n 1 $(PREVIOUS_TAG) 2>/dev/null)
+END_SHA ?= $(shell git rev-parse $(GIT_REMOTE_NAME)/$(RELEASE_BRANCH) 2>/dev/null)
 RELEASE_DIR ?= out
 RELEASE_NOTES_DIR := CHANGELOG
 GIT_REPO_NAME ?= cluster-api-provider-azure
 GIT_ORG_NAME ?= kubernetes-sigs
-FULL_VERSION := $(RELEASE_TAG:v%=%)
-MINOR_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v%.*}")
-RELEASE_BRANCH ?= release-$(MINOR_VERSION)
+GIT_REMOTE_NAME ?= upstream
 USER_FORK ?= $(shell git config --get remote.origin.url | cut -d/ -f4)
 IMAGE_REVIEWERS ?= $(shell ./hack/get-project-maintainers.sh)
 
@@ -650,9 +659,11 @@ release-alias-tag: ## Adds the tag to the last build tag.
 
 .PHONY: release-notes
 release-notes: $(RELEASE_NOTES) $(RELEASE_NOTES_DIR) ## Generate/update release notes.
+	@echo "generating release notes from $(PREVIOUS_TAG) to $(RELEASE_TAG) with start sha $(START_SHA) and end sha $(END_SHA)"
 	@if [ -n "${PRE_RELEASE}" ]; then echo ":rotating_light: This is a RELEASE CANDIDATE. Use it only for testing purposes. If you find any bugs, file an [issue](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new)." > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
-	else $(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output $(RELEASE_NOTES_DIR)/tmp-release-notes.md --list-v2; \
-	sed 's/\[SIG Cluster Lifecycle\]//g' $(RELEASE_NOTES_DIR)/tmp-release-notes.md > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
+	else $(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-sha $(START_SHA) --end-sha $(END_SHA) --markdown-links true --output $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md --list-v2; \
+	sed 's/\[SIG Cluster Lifecycle\]//g' $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md > $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
+	cp $(RELEASE_NOTES_DIR)/tmp-release-notes.md $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md; \
 	rm -f $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
 	fi
 
