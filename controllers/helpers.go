@@ -1077,7 +1077,7 @@ func ClusterPauseChangeAndInfrastructureReady(log logr.Logger) predicate.Funcs {
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
-func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster) (ClusterScoper, error) {
+func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster, timeouts reconciler.Timeouts) (ClusterScoper, error) {
 	infraRef := cluster.Spec.InfrastructureRef
 	switch infraRef.Kind {
 	case "AzureCluster":
@@ -1097,6 +1097,7 @@ func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, 
 			Client:       c,
 			Cluster:      cluster,
 			AzureCluster: azureCluster,
+			Timeouts:     timeouts,
 		})
 
 	case "AzureManagedCluster":
@@ -1116,6 +1117,7 @@ func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, 
 			Client:       c,
 			Cluster:      cluster,
 			ControlPlane: azureManagedControlPlane,
+			Timeouts:     timeouts,
 		})
 	}
 

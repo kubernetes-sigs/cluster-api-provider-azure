@@ -55,7 +55,7 @@ func TestAzureIdentityControllerReconcileAzureCluster(t *testing.T) {
 	aiRec := &AzureIdentityReconciler{
 		Client:           client,
 		Recorder:         record.NewFakeRecorder(42),
-		ReconcileTimeout: reconciler.DefaultLoopTimeout,
+		Timeouts:         reconciler.Timeouts{},
 		WatchFilterValue: "fake",
 	}
 	_, err = aiRec.Reconcile(ctx, req)
@@ -84,7 +84,7 @@ func TestAzureIdentityControllerReconcileAzureManagedControlPlane(t *testing.T) 
 	aiRec := &AzureIdentityReconciler{
 		Client:           client,
 		Recorder:         record.NewFakeRecorder(42),
-		ReconcileTimeout: reconciler.DefaultLoopTimeout,
+		Timeouts:         reconciler.Timeouts{},
 		WatchFilterValue: "fake",
 	}
 	_, err = aiRec.Reconcile(ctx, req)

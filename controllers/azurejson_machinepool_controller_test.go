@@ -371,9 +371,9 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(azureMP, ownerMP, cluster, azureCluster, sec, fakeIdentity).Build()
 	rec := AzureJSONMachinePoolReconciler{
-		Client:           client,
-		Recorder:         record.NewFakeRecorder(42),
-		ReconcileTimeout: reconciler.DefaultLoopTimeout,
+		Client:   client,
+		Recorder: record.NewFakeRecorder(42),
+		Timeouts: reconciler.Timeouts{},
 	}
 	id := "fake-id"
 	getClient = func(auth azure.Authorizer) (identities.Client, error) {

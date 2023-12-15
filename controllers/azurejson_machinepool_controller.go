@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +46,7 @@ import (
 type AzureJSONMachinePoolReconciler struct {
 	client.Client
 	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
 }
 
@@ -90,7 +89,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 
 // Reconcile reconciles the Azure json for AzureMachinePool objects.
 func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, r.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(
@@ -141,7 +140,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, nil
 	}
 
-	clusterScope, err := GetClusterScoper(ctx, log, r.Client, cluster)
+	clusterScope, err := GetClusterScoper(ctx, log, r.Client, cluster, r.Timeouts)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}

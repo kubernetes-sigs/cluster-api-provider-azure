@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
-func TestDefaultedTimeout(t *testing.T) {
+func TestDefaultedLoopTimeout(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Subject  time.Duration
@@ -52,7 +52,118 @@ func TestDefaultedTimeout(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
-			g.Expect(reconciler.DefaultedLoopTimeout(c.Subject)).To(gomega.Equal(c.Expected))
+			timeouts := reconciler.Timeouts{
+				Loop: c.Subject,
+			}
+			g.Expect(timeouts.DefaultedLoopTimeout()).To(gomega.Equal(c.Expected))
+		})
+	}
+}
+
+func TestDefaultedReconcilerRequeue(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Subject  time.Duration
+		Expected time.Duration
+	}{
+		{
+			Name:     "WithZeroValueDefaults",
+			Subject:  time.Duration(0),
+			Expected: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			Name:     "WithRealValue",
+			Subject:  2 * time.Hour,
+			Expected: 2 * time.Hour,
+		},
+		{
+			Name:     "WithNegativeValue",
+			Subject:  time.Duration(-2),
+			Expected: reconciler.DefaultReconcilerRequeue,
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewWithT(t)
+			timeouts := reconciler.Timeouts{
+				Requeue: c.Subject,
+			}
+			g.Expect(timeouts.DefaultedReconcilerRequeue()).To(gomega.Equal(c.Expected))
+		})
+	}
+}
+
+func TestDefaultedAzureCallTimeout(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Subject  time.Duration
+		Expected time.Duration
+	}{
+		{
+			Name:     "WithZeroValueDefaults",
+			Subject:  time.Duration(0),
+			Expected: reconciler.DefaultAzureCallTimeout,
+		},
+		{
+			Name:     "WithRealValue",
+			Subject:  2 * time.Hour,
+			Expected: 2 * time.Hour,
+		},
+		{
+			Name:     "WithNegativeValue",
+			Subject:  time.Duration(-2),
+			Expected: reconciler.DefaultAzureCallTimeout,
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewWithT(t)
+			timeouts := reconciler.Timeouts{
+				AzureCall: c.Subject,
+			}
+			g.Expect(timeouts.DefaultedAzureCallTimeout()).To(gomega.Equal(c.Expected))
+		})
+	}
+}
+
+func TestDefaultedAzureServiceReconcileTimeout(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Subject  time.Duration
+		Expected time.Duration
+	}{
+		{
+			Name:     "WithZeroValueDefaults",
+			Subject:  time.Duration(0),
+			Expected: reconciler.DefaultAzureServiceReconcileTimeout,
+		},
+		{
+			Name:     "WithRealValue",
+			Subject:  2 * time.Hour,
+			Expected: 2 * time.Hour,
+		},
+		{
+			Name:     "WithNegativeValue",
+			Subject:  time.Duration(-2),
+			Expected: reconciler.DefaultAzureServiceReconcileTimeout,
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
+			g := gomega.NewWithT(t)
+			timeouts := reconciler.Timeouts{
+				AzureServiceReconcile: c.Subject,
+			}
+			g.Expect(timeouts.DefaultedAzureServiceReconcileTimeout()).To(gomega.Equal(c.Expected))
 		})
 	}
 }

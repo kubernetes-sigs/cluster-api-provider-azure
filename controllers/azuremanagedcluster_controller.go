@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +43,7 @@ import (
 type AzureManagedClusterReconciler struct {
 	client.Client
 	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
 }
 
@@ -101,7 +100,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 
 // Reconcile idempotently gets, creates, and updates a managed cluster.
 func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amcr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, amcr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(

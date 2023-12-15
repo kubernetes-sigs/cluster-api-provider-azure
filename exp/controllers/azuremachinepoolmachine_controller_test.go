@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	reconcilerutils "sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -104,7 +105,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler.EXPECT())
-			controller := NewAzureMachinePoolMachineController(cb.Build(), nil, 30*time.Second, "foo")
+			controller := NewAzureMachinePoolMachineController(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo")
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
 				return reconciler, nil
 			}

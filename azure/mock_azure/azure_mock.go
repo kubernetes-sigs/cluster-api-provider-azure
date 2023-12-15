@@ -27,6 +27,7 @@ package mock_azure
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
@@ -882,6 +883,48 @@ func (m *MockAsyncStatusUpdater) EXPECT() *MockAsyncStatusUpdaterMockRecorder {
 	return m.recorder
 }
 
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockAsyncStatusUpdater) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockAsyncStatusUpdaterMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockAsyncStatusUpdater)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockAsyncStatusUpdater) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockAsyncStatusUpdaterMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockAsyncStatusUpdater)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockAsyncStatusUpdater) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockAsyncStatusUpdaterMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockAsyncStatusUpdater)(nil).DefaultedReconcilerRequeue))
+}
+
 // DeleteLongRunningOperationState mocks base method.
 func (m *MockAsyncStatusUpdater) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
 	m.ctrl.T.Helper()
@@ -954,6 +997,71 @@ func (m *MockAsyncStatusUpdater) UpdatePutStatus(arg0 v1beta10.ConditionType, ar
 func (mr *MockAsyncStatusUpdaterMockRecorder) UpdatePutStatus(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockAsyncStatusUpdater)(nil).UpdatePutStatus), arg0, arg1, arg2)
+}
+
+// MockAsyncReconciler is a mock of AsyncReconciler interface.
+type MockAsyncReconciler struct {
+	ctrl     *gomock.Controller
+	recorder *MockAsyncReconcilerMockRecorder
+}
+
+// MockAsyncReconcilerMockRecorder is the mock recorder for MockAsyncReconciler.
+type MockAsyncReconcilerMockRecorder struct {
+	mock *MockAsyncReconciler
+}
+
+// NewMockAsyncReconciler creates a new mock instance.
+func NewMockAsyncReconciler(ctrl *gomock.Controller) *MockAsyncReconciler {
+	mock := &MockAsyncReconciler{ctrl: ctrl}
+	mock.recorder = &MockAsyncReconcilerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAsyncReconciler) EXPECT() *MockAsyncReconcilerMockRecorder {
+	return m.recorder
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockAsyncReconciler) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockAsyncReconcilerMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockAsyncReconciler)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockAsyncReconciler) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockAsyncReconcilerMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockAsyncReconciler)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockAsyncReconciler) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockAsyncReconcilerMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockAsyncReconciler)(nil).DefaultedReconcilerRequeue))
 }
 
 // MockClusterScoper is a mock of ClusterScoper interface.
@@ -1159,6 +1267,48 @@ func (m *MockClusterScoper) ControlPlaneSubnet() v1beta1.SubnetSpec {
 func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockClusterScoper) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockClusterScoperMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockClusterScoper)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockClusterScoper) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockClusterScoperMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockClusterScoper)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockClusterScoper) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockClusterScoperMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockClusterScoper)(nil).DefaultedReconcilerRequeue))
 }
 
 // DeleteLongRunningOperationState mocks base method.
@@ -1702,6 +1852,48 @@ func (m *MockManagedClusterScoper) ClusterName() string {
 func (mr *MockManagedClusterScoperMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClusterName))
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockManagedClusterScoper) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockManagedClusterScoperMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockManagedClusterScoper)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockManagedClusterScoper) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockManagedClusterScoperMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockManagedClusterScoper)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockManagedClusterScoper) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockManagedClusterScoperMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockManagedClusterScoper)(nil).DefaultedReconcilerRequeue))
 }
 
 // ExtendedLocation mocks base method.

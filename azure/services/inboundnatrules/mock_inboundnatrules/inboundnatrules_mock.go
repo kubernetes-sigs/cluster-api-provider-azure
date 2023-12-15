@@ -26,6 +26,7 @@ package mock_inboundnatrules
 
 import (
 	reflect "reflect"
+	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
@@ -181,6 +182,48 @@ func (m *MockInboundNatScope) ClusterName() string {
 func (mr *MockInboundNatScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockInboundNatScope)(nil).ClusterName))
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockInboundNatScope) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockInboundNatScopeMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockInboundNatScope)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockInboundNatScope) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockInboundNatScopeMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockInboundNatScope)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockInboundNatScope) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockInboundNatScopeMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockInboundNatScope)(nil).DefaultedReconcilerRequeue))
 }
 
 // DeleteLongRunningOperationState mocks base method.

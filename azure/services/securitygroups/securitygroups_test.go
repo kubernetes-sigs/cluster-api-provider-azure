@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups/mock_securitygroups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var (
@@ -98,6 +99,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "create single security group with single rule succeeds, should return no error",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
@@ -109,6 +111,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "create single security group with multiple rules succeeds, should return no error",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&multipleRulesNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{multipleRulesNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description, securityRule2.Name: securityRule2.Description}}).Times(1)
@@ -120,6 +123,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "create multiple security groups, should return no error",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
@@ -132,6 +136,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "first security groups create fails, should return error",
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
@@ -144,6 +149,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "first sg create fails, second sg create not done, should return create error",
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}}).Times(1)
@@ -156,6 +162,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "security groups create not done, should return not done error",
 			expectedError: notDoneError.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
 				s.UpdateAnnotationJSON(annotation, map[string]interface{}{fakeNSG.Name: map[string]string{securityRule1.Name: securityRule1.Description}})
@@ -167,6 +174,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			name:          "vnet is not managed, should skip reconcile",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
 		},
@@ -210,6 +218,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "delete multiple security groups succeeds, should return no error",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(nil)
@@ -221,6 +230,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "first security groups delete fails, should return an error",
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
@@ -232,6 +242,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "first security groups delete fails and second security groups create not done, should return an error",
 			expectedError: errFake.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG, &noRulesNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(errFake)
@@ -243,6 +254,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "security groups delete not done, should return not done error",
 			expectedError: notDoneError.Error(),
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.NSGSpecs().Return([]azure.ResourceSpecGetter{&fakeNSG})
 				r.DeleteResource(gomockinternal.AContext(), &fakeNSG, serviceName).Return(notDoneError)
@@ -253,6 +265,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			name:          "vnet is not managed, should skip delete",
 			expectedError: "",
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
 		},

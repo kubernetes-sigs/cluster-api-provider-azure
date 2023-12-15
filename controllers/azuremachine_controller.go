@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +48,7 @@ import (
 type AzureMachineReconciler struct {
 	client.Client
 	Recorder                  record.EventRecorder
-	ReconcileTimeout          time.Duration
+	Timeouts                  reconciler.Timeouts
 	WatchFilterValue          string
 	createAzureMachineService azureMachineServiceCreator
 }
@@ -57,11 +56,11 @@ type AzureMachineReconciler struct {
 type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
 // NewAzureMachineReconciler returns a new AzureMachineReconciler instance.
-func NewAzureMachineReconciler(client client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachineReconciler {
+func NewAzureMachineReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureMachineReconciler {
 	amr := &AzureMachineReconciler{
 		Client:           client,
 		Recorder:         recorder,
-		ReconcileTimeout: reconcileTimeout,
+		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
 	}
 
@@ -134,7 +133,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 
 // Reconcile idempotently gets, creates, and updates a machine.
 func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, amr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(
@@ -196,6 +195,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Client:       amr.Client,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Timeouts:     amr.Timeouts,
 	})
 	if err != nil {
 		amr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "Error creating the cluster scope", err.Error())

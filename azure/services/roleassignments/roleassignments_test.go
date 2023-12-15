@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var (
@@ -71,10 +72,10 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				m *mock_async.MockGetterMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -95,6 +96,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				m *mock_async.MockGetterMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -109,6 +111,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				m *mock_async.MockGetterMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return(fakeRoleAssignment1.MachineName)
@@ -169,6 +172,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
@@ -188,6 +192,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
 				s.ResourceGroup().Return("my-rg")
 				s.Name().Return("test-vmss")
@@ -202,6 +207,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HasSystemAssignedIdentity().Return(true)
 				s.RoleAssignmentSpecs(&fakePrincipalID).Return(fakeRoleAssignmentSpecs[1:2])
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)

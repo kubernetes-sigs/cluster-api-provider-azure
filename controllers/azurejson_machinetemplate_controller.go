@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +48,7 @@ import (
 type AzureJSONTemplateReconciler struct {
 	client.Client
 	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
 }
 
@@ -92,7 +91,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 
 // Reconcile reconciles Azure json secrets for Azure machine templates.
 func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, r.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureJSONTemplateReconciler.Reconcile",
@@ -158,6 +157,7 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Client:       r.Client,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Timeouts:     r.Timeouts,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")

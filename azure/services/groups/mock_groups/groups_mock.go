@@ -26,6 +26,7 @@ package mock_groups
 
 import (
 	reflect "reflect"
+	time "time"
 
 	v1api20200601 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	gomock "go.uber.org/mock/gomock"
@@ -70,6 +71,48 @@ func (m *MockGroupScope) ClusterName() string {
 func (mr *MockGroupScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockGroupScope)(nil).ClusterName))
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockGroupScope) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockGroupScopeMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockGroupScope)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockGroupScope) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockGroupScopeMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockGroupScope)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockGroupScope) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockGroupScopeMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockGroupScope)(nil).DefaultedReconcilerRequeue))
 }
 
 // DeleteLongRunningOperationState mocks base method.

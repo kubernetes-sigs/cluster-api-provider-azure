@@ -26,6 +26,7 @@ package mock_vmextensions
 
 import (
 	reflect "reflect"
+	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
@@ -111,6 +112,48 @@ func (m *MockVMExtensionScope) CloudEnvironment() string {
 func (mr *MockVMExtensionScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockVMExtensionScope)(nil).CloudEnvironment))
+}
+
+// DefaultedAzureCallTimeout mocks base method.
+func (m *MockVMExtensionScope) DefaultedAzureCallTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureCallTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureCallTimeout indicates an expected call of DefaultedAzureCallTimeout.
+func (mr *MockVMExtensionScopeMockRecorder) DefaultedAzureCallTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureCallTimeout", reflect.TypeOf((*MockVMExtensionScope)(nil).DefaultedAzureCallTimeout))
+}
+
+// DefaultedAzureServiceReconcileTimeout mocks base method.
+func (m *MockVMExtensionScope) DefaultedAzureServiceReconcileTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedAzureServiceReconcileTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedAzureServiceReconcileTimeout indicates an expected call of DefaultedAzureServiceReconcileTimeout.
+func (mr *MockVMExtensionScopeMockRecorder) DefaultedAzureServiceReconcileTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedAzureServiceReconcileTimeout", reflect.TypeOf((*MockVMExtensionScope)(nil).DefaultedAzureServiceReconcileTimeout))
+}
+
+// DefaultedReconcilerRequeue mocks base method.
+func (m *MockVMExtensionScope) DefaultedReconcilerRequeue() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultedReconcilerRequeue")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// DefaultedReconcilerRequeue indicates an expected call of DefaultedReconcilerRequeue.
+func (mr *MockVMExtensionScopeMockRecorder) DefaultedReconcilerRequeue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockVMExtensionScope)(nil).DefaultedReconcilerRequeue))
 }
 
 // DeleteLongRunningOperationState mocks base method.

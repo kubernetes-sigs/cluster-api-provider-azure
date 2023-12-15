@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +48,7 @@ import (
 type AzureManagedControlPlaneReconciler struct {
 	client.Client
 	Recorder                                 record.EventRecorder
-	ReconcileTimeout                         time.Duration
+	Timeouts                                 reconciler.Timeouts
 	WatchFilterValue                         string
 	getNewAzureManagedControlPlaneReconciler func(scope *scope.ManagedControlPlaneScope) (*azureManagedControlPlaneService, error)
 }
@@ -122,7 +121,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 
 // Reconcile idempotently gets, creates, and updates a managed control plane.
 func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amcpr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, amcpr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
@@ -185,6 +184,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 		Cluster:             cluster,
 		ControlPlane:        azureControlPlane,
 		ManagedMachinePools: pools,
+		Timeouts:            amcpr.Timeouts,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")

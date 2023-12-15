@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets/mock_availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var (
@@ -83,6 +84,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			name:          "create or update availability set",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil, nil)
 				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil)
@@ -92,6 +94,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			name:          "noop if no availability set spec returns nil",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(nil)
 			},
 		},
@@ -99,6 +102,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			name:          "missing required value in availability set spec",
 			expectedError: "some error with parameters",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(&fakeSetSpecMissing)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSetSpecMissing, serviceName).Return(nil, parameterError)
 				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, parameterError)
@@ -108,6 +112,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			name:          "error in creating availability set",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil, internalError)
 				s.UpdatePutStatus(infrav1.AvailabilitySetReadyCondition, serviceName, internalError)
@@ -155,6 +160,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(armcompute.AvailabilitySet{}, nil),
 					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
@@ -165,6 +171,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			name:          "noop if AvailabilitySetSpec returns nil",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(nil)
 			},
 		},
@@ -174,6 +181,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpecMissing)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpecMissing).Return(armcompute.AvailabilitySet{}, nil),
 					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpecMissing, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
@@ -186,6 +194,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(fakeSetWithVMs, nil),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
 				)
@@ -197,6 +206,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, notFoundError),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, nil),
 				)
@@ -208,6 +218,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(nil, internalError),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to get availability set test-as in resource group test-rg: #: Internal Server Error: StatusCode=500")),
 				)
@@ -219,6 +230,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return("not an availability set", nil),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, gomockinternal.ErrStrEq("string is not an armcompute.AvailabilitySet")),
 				)
@@ -230,6 +242,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					m.Get(gomockinternal.AContext(), &fakeSetSpec).Return(armcompute.AvailabilitySet{}, nil),
 					r.DeleteResource(gomockinternal.AContext(), &fakeSetSpec, serviceName).Return(internalError),
 					s.UpdateDeleteStatus(infrav1.AvailabilitySetReadyCondition, serviceName, internalError),

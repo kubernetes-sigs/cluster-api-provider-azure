@@ -69,7 +69,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 
 	Context("Reconcile an AzureCluster", func() {
 		It("should not error with minimal set up", func() {
-			reconciler := NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "")
+			reconciler := NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.Timeouts{}, "")
 			By("Calling reconcile")
 			name := test.RandomName("foo", 10)
 			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
@@ -276,7 +276,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 
 	recorder := record.NewFakeRecorder(1)
 
-	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.DefaultLoopTimeout, "")
+	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.Timeouts{}, "")
 	name := test.RandomName("paused", 10)
 	namespace := namespace
 

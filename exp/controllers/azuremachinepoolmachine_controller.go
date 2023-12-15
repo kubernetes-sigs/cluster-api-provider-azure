@@ -57,7 +57,7 @@ type (
 		client.Client
 		Scheme            *runtime.Scheme
 		Recorder          record.EventRecorder
-		ReconcileTimeout  time.Duration
+		Timeouts          reconciler.Timeouts
 		WatchFilterValue  string
 		reconcilerFactory azureMachinePoolMachineReconcilerFactory
 	}
@@ -69,11 +69,11 @@ type (
 )
 
 // NewAzureMachinePoolMachineController creates a new AzureMachinePoolMachineController to handle updates to Azure Machine Pool Machines.
-func NewAzureMachinePoolMachineController(c client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachinePoolMachineController {
+func NewAzureMachinePoolMachineController(c client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureMachinePoolMachineController {
 	return &AzureMachinePoolMachineController{
 		Client:            c,
 		Recorder:          recorder,
-		ReconcileTimeout:  reconcileTimeout,
+		Timeouts:          timeouts,
 		WatchFilterValue:  watchFilterValue,
 		reconcilerFactory: newAzureMachinePoolMachineReconciler,
 	}
@@ -146,7 +146,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 
 	logger = logger.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampmr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, ampmr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	azureMachine := &infrav1exp.AzureMachinePoolMachine{}
@@ -174,7 +174,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return ctrl.Result{}, nil
 	}
 
-	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampmr.Client, cluster)
+	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampmr.Client, cluster, ampmr.Timeouts)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}
