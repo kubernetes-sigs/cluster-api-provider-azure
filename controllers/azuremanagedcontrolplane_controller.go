@@ -231,11 +231,13 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 
 	log.Info("Reconciling AzureManagedControlPlane")
 
-	// Remove deprecated Cluster finalizer if it exists, if the AzureManagedControlPlane doesn't have our finalizer, add it.
+	// Remove deprecated Cluster finalizer if it exists
 	needsPatch := controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)
+	// Register our finalizer immediately to avoid orphaning Azure resources on delete
 	needsPatch = controllerutil.AddFinalizer(scope.ControlPlane, infrav1.ManagedClusterFinalizer) || needsPatch
+	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
+	needsPatch = AddBlockMoveAnnotation(scope.ControlPlane) || needsPatch
 	if needsPatch {
-		// Register the finalizer immediately to avoid orphaning Azure resources on delete
 		if err := scope.PatchObject(ctx); err != nil {
 			amcpr.Recorder.Eventf(scope.ControlPlane, corev1.EventTypeWarning, "AzureManagedControlPlane unavailable", "failed to patch resource: %s", err)
 			return reconcile.Result{}, err
@@ -290,6 +292,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcilePause(ctx context.Cont
 	if err := svc.Pause(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to pause control plane services")
 	}
+	RemoveBlockMoveAnnotation(scope.ControlPlane)
 
 	return reconcile.Result{}, nil
 }

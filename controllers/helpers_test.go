@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -1514,6 +1516,85 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 				panic("unimplemented event type")
 			}
 			NewGomegaWithT(t).Expect(actual).To(Equal(test.expect))
+		})
+	}
+}
+
+func TestAddBlockMoveAnnotation(t *testing.T) {
+	tests := []struct {
+		name                string
+		annotations         map[string]string
+		expectedAnnotations map[string]string
+		expected            bool
+	}{
+		{
+			name:                "annotation does not exist",
+			annotations:         nil,
+			expectedAnnotations: map[string]string{clusterctlv1.BlockMoveAnnotation: "true"},
+			expected:            true,
+		},
+		{
+			name:                "annotation already exists",
+			annotations:         map[string]string{clusterctlv1.BlockMoveAnnotation: "this value might be different but it doesn't matter"},
+			expectedAnnotations: map[string]string{clusterctlv1.BlockMoveAnnotation: "this value might be different but it doesn't matter"},
+			expected:            false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			obj := &metav1.ObjectMeta{
+				Annotations: test.annotations,
+			}
+			actual := AddBlockMoveAnnotation(obj)
+			if test.expected != actual {
+				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
+			if !maps.Equal(test.expectedAnnotations, obj.GetAnnotations()) {
+				t.Errorf("expected %v, got %v", test.expectedAnnotations, obj.GetAnnotations())
+			}
+		})
+	}
+}
+
+func TestRemoveBlockMoveAnnotation(t *testing.T) {
+	tests := []struct {
+		name        string
+		annotations map[string]string
+		expected    map[string]string
+	}{
+		{
+			name:        "nil",
+			annotations: nil,
+			expected:    nil,
+		},
+		{
+			name:        "annotation not present",
+			annotations: map[string]string{"another": "annotation"},
+			expected:    map[string]string{"another": "annotation"},
+		},
+		{
+			name: "annotation present",
+			annotations: map[string]string{
+				clusterctlv1.BlockMoveAnnotation: "any value",
+				"another":                        "annotation",
+			},
+			expected: map[string]string{
+				"another": "annotation",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			obj := &metav1.ObjectMeta{
+				Annotations: maps.Clone(test.annotations),
+			}
+			RemoveBlockMoveAnnotation(obj)
+			actual := obj.GetAnnotations()
+			if !maps.Equal(test.expected, actual) {
+				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
 		})
 	}
 }

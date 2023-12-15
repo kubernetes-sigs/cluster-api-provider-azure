@@ -251,9 +251,11 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 
 	log.Info("Reconciling AzureManagedMachinePool")
 
-	// If the AzureManagedMachinePool doesn't have our finalizer, add it.
-	if controllerutil.AddFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer) {
-		// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	needsPatch := controllerutil.AddFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
+	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
+	needsPatch = AddBlockMoveAnnotation(scope.InfraMachinePool) || needsPatch
+	if needsPatch {
 		if err := scope.PatchObject(ctx); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -311,6 +313,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcilePause(ctx context.Conte
 	if err := svc.Pause(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error pausing AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 	}
+	RemoveBlockMoveAnnotation(scope.InfraMachinePool)
 
 	return reconcile.Result{}, nil
 }
