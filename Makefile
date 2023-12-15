@@ -584,13 +584,14 @@ ifneq (,$(findstring -,$(RELEASE_TAG)))
     PRE_RELEASE=true
 endif
 FULL_VERSION := $(RELEASE_TAG:v%=%)
-MINOR_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v%.*}")
-PATCH_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v##*.}")
+MAJOR_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+)$$/\1/')
+MINOR_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+)$$/\2/')
+PATCH_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+)$$/\3/')
 # if the release tag is a .0 version, use the main branch
 ifeq ($(PATCH_VERSION),0)
 	RELEASE_BRANCH ?= main
 else
-	RELEASE_BRANCH ?= release-$(MINOR_VERSION)
+	RELEASE_BRANCH ?= release-$(MAJOR_VERSION).$(MINOR_VERSION)
 endif
 # the previous release tag, e.g., v0.3.9, excluding pre-release tags
 PREVIOUS_TAG ?= $(shell git tag --merged $(GIT_REMOTE_NAME)/$(RELEASE_BRANCH) -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1 2>/dev/null)
