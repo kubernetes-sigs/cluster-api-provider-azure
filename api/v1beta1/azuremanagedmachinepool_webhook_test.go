@@ -28,6 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1alpha3 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -1328,6 +1329,14 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 	deletionTime := metav1.Now()
 	finalizers := []string{"test"}
 	systemMachinePool := getManagedMachinePoolWithSystemMode()
+	systemMachinePoolWithDeletionAnnotation := getAzureManagedMachinePoolWithChanges(
+		// Add the DeleteForMoveAnnotation annotation to the AMMP
+		func(azureManagedMachinePool *AzureManagedMachinePool) {
+			azureManagedMachinePool.Annotations = map[string]string{
+				clusterctlv1alpha3.DeleteForMoveAnnotation: "true",
+			}
+		},
+	)
 	tests := []struct {
 		name    string
 		ammp    *AzureManagedMachinePool
@@ -1335,7 +1344,22 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test with paused cluster without deletion timestamp having one system pool node(valid delete:move operation)",
+			// AzureManagedMachinePool will be deleted since AMMP has DeleteForMoveAnnotation annotation
+			// Note that Owner Cluster's deletion timestamp is nil and Owner cluster being paused does not matter anymore.
+			name: "AzureManagedMachinePool (AMMP) should be deleted if this AMMP has the annotation 'cluster.x-k8s.io/move-to-delete' with the owner cluster being paused and 'No' deletion timestamp",
+			ammp: systemMachinePoolWithDeletionAnnotation,
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
+					Namespace:  systemMachinePool.Namespace,
+					Finalizers: finalizers,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			// AzureManagedMachinePool will be deleted since Owner Cluster has been marked for deletion
+			name: "AzureManagedMachinePool should be deleted since the Cluster is paused with a deletion timestamp",
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1344,30 +1368,11 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 					DeletionTimestamp: &deletionTime,
 					Finalizers:        finalizers,
 				},
-				Spec: clusterv1.ClusterSpec{
-					Paused: true,
-				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Test with paused cluster with deletion timestamp having one system pool node(valid delete)",
-			ammp: systemMachinePool,
-			cluster: &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
-					Namespace:         systemMachinePool.Namespace,
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        finalizers,
-				},
-				Spec: clusterv1.ClusterSpec{
-					Paused: true,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test with running cluster without deletion timestamp having one system pool node(invalid delete)",
+			name: "AzureManagedMachinePool should not be deleted without a deletion timestamp on Owner Cluster and having one system pool node(invalid delete)",
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1378,7 +1383,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Test with running cluster with deletion timestamp having one system pool node(valid delete)",
+			name: "AzureManagedMachinePool should be deleted when Cluster is set with a deletion timestamp having one system pool node(valid delete)",
 			ammp: systemMachinePool,
 			cluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1399,7 +1404,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			_ = AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.cluster, tc.ammp).Build()
-			err := validateLastSystemNodePool(fakeClient, tc.ammp.Spec.NodeLabels, tc.ammp.Namespace)
+			err := validateLastSystemNodePool(fakeClient, tc.ammp.Spec.NodeLabels, tc.ammp.Namespace, tc.ammp.Annotations)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1437,4 +1442,12 @@ func getManagedMachinePoolWithSystemMode() *AzureManagedMachinePool {
 			},
 		},
 	}
+}
+
+func getAzureManagedMachinePoolWithChanges(changes ...func(*AzureManagedMachinePool)) *AzureManagedMachinePool {
+	ammp := getManagedMachinePoolWithSystemMode().DeepCopy()
+	for _, change := range changes {
+		change(ammp)
+	}
+	return ammp
 }

@@ -199,7 +199,7 @@ func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateUpdate(ctx context.Co
 
 	if mp.Spec.Template.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Template.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
-		if err := validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace); err != nil {
+		if err := validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations); err != nil {
 			allErrs = append(allErrs, field.Forbidden(
 				field.NewPath("Spec", "Template", "Spec", "Mode"),
 				"Cannot change node pool mode to User, you must have at least one System node pool in your cluster"))
@@ -283,5 +283,5 @@ func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateDelete(ctx context.Co
 		return nil, nil
 	}
 
-	return nil, errors.Wrapf(validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
+	return nil, errors.Wrapf(validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
 }
