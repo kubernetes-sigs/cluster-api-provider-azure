@@ -90,19 +90,13 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
 	}
 
-	if params.ControlPlane.Spec.IdentityRef == nil {
-		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment); err != nil {
-			return nil, errors.Wrap(err, "failed to create Azure session")
-		}
-	} else {
-		credentialsProvider, err := NewManagedControlPlaneCredentialsProvider(ctx, params.Client, params.ControlPlane)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to init credentials provider")
-		}
+	credentialsProvider, err := NewManagedControlPlaneCredentialsProvider(ctx, params.Client, params.ControlPlane)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init credentials provider")
+	}
 
-		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider); err != nil {
-			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
-		}
+	if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider); err != nil {
+		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}
 
 	if params.Cache == nil {

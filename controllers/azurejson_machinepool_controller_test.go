@@ -77,6 +77,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
@@ -125,6 +130,18 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+		},
+	}
+
+	fakeSecret := &corev1.Secret{}
+
 	cases := map[string]struct {
 		objects []runtime.Object
 		fail    bool
@@ -136,6 +153,8 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				azureCluster,
 				machinePool,
 				azureMachinePool,
+				fakeIdentity,
+				fakeSecret,
 			},
 		},
 		"missing azure cluster should return error": {
@@ -143,6 +162,8 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				cluster,
 				machinePool,
 				azureMachinePool,
+				fakeIdentity,
+				fakeSecret,
 			},
 			fail: true,
 			err:  "failed to create cluster scope for cluster /my-cluster: azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
@@ -160,6 +181,8 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				azureCluster,
 				machinePool,
 				azureMachinePool,
+				fakeIdentity,
+				fakeSecret,
 			},
 			fail: false,
 		},
@@ -180,6 +203,8 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				azureCluster,
 				machinePool,
 				azureMachinePool,
+				fakeIdentity,
+				fakeSecret,
 			},
 			fail: true,
 			err:  "failed to create cluster scope for cluster /my-cluster: unsupported infrastructure type \"FooCluster\", should be AzureCluster or AzureManagedCluster",
@@ -292,6 +317,11 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
@@ -306,6 +336,20 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		},
 	}
 	apiVersion, kind := infrav1.GroupVersion.WithKind("AzureMachinePool").ToAPIVersionAndKind()
+
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+			ClientSecret: corev1.SecretReference{
+				Name:      azureMP.Name,
+				Namespace: "fake-ns",
+			},
+		},
+	}
 
 	sec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -325,7 +369,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(azureMP, ownerMP, cluster, azureCluster, sec).Build()
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(azureMP, ownerMP, cluster, azureCluster, sec, fakeIdentity).Build()
 	rec := AzureJSONMachinePoolReconciler{
 		Client:           client,
 		Recorder:         record.NewFakeRecorder(42),

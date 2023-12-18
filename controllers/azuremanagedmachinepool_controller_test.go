@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
@@ -144,15 +145,28 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					MockReconciler: mock_azure.NewMockReconciler(mockCtrl),
 					MockPauser:     mock_azure.NewMockPauser(mockCtrl),
 				}
-				agentpools = mock_agentpools.NewMockAgentPoolScope(mockCtrl)
-				nodelister = NewMockNodeLister(mockCtrl)
-				scheme     = func() *runtime.Scheme {
+				agentpools   = mock_agentpools.NewMockAgentPoolScope(mockCtrl)
+				nodelister   = NewMockNodeLister(mockCtrl)
+				fakeIdentity = &infrav1.AzureClusterIdentity{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "fake-identity",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureClusterIdentitySpec{
+						Type: infrav1.ServicePrincipal,
+					},
+				}
+				fakeSecret  = &corev1.Secret{}
+				initObjects = []runtime.Object{fakeIdentity, fakeSecret}
+				scheme      = func() *runtime.Scheme {
 					s := runtime.NewScheme()
 					for _, addTo := range []func(s *runtime.Scheme) error{
 						scheme.AddToScheme,
 						clusterv1.AddToScheme,
 						expv1.AddToScheme,
 						infrav1.AddToScheme,
+						corev1.AddToScheme,
+						aadpodv1.AddToScheme,
 					} {
 						g.Expect(addTo(s)).To(Succeed())
 					}
@@ -163,6 +177,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					WithStatusSubresource(
 						&infrav1.AzureManagedMachinePool{},
 					).
+					WithRuntimeObjects(initObjects...).
 					WithScheme(scheme)
 			)
 			defer mockCtrl.Finish()
@@ -225,6 +240,13 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Host: "foo.bar",
 				Port: 123,
+			},
+			AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 		},
 		Status: infrav1.AzureManagedControlPlaneStatus{

@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -90,6 +91,8 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 						expv1.AddToScheme,
 						infrav1.AddToScheme,
 						infrav1exp.AddToScheme,
+						corev1.AddToScheme,
+						aadpodv1.AddToScheme,
 					} {
 						g.Expect(addTo(s)).To(Succeed())
 					}
@@ -128,6 +131,11 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Obje
 		Spec: infrav1.AzureClusterSpec{
 			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 				SubscriptionID: "subID",
+				IdentityRef: &corev1.ObjectReference{
+					Name:      "fake-identity",
+					Namespace: "default",
+					Kind:      "AzureClusterIdentity",
+				},
 			},
 		},
 	}
@@ -222,11 +230,32 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Obje
 		},
 	}
 
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.ServicePrincipal,
+			ClientSecret: corev1.SecretReference{
+				Name:      "fooSecret",
+				Namespace: "default",
+			},
+		},
+	}
+
+	fakeSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fooSecret",
+			Namespace: "default",
+		},
+	}
+
 	if ampmIsDeleting {
 		ampm.DeletionTimestamp = &metav1.Time{
 			Time: time.Now(),
 		}
 	}
 
-	return []client.Object{cluster, azCluster, mp, amp, ma, ampm}
+	return []client.Object{cluster, azCluster, mp, amp, ma, ampm, fakeIdentity, fakeSecret}
 }
