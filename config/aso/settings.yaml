@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aso-controller-settings
+type: Opaque
+stringData:
+  AZURE_AUTHORITY_HOST: ${AZURE_AUTHORITY_HOST:=""}
+  AZURE_RESOURCE_MANAGER_ENDPOINT: ${AZURE_RESOURCE_MANAGER_ENDPOINT:=""}
+  AZURE_RESOURCE_MANAGER_AUDIENCE: ${AZURE_RESOURCE_MANAGER_AUDIENCE:=""}
+  AZURE_SYNC_PERIOD: ${AZURE_SYNC_PERIOD:=""}
+  # Per-resource Secrets will be created based on a Cluster's AzureClusterIdentity.
+  AZURE_SUBSCRIPTION_ID: ""
+  AZURE_TENANT_ID: ""
+  AZURE_CLIENT_ID: ""
