@@ -49,21 +49,13 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	if err != nil {
 		return nil, err
 	}
-	subnetsSvc, err := subnets.New(scope)
-	if err != nil {
-		return nil, err
-	}
-	virtualNetworksSvc, err := virtualnetworks.New(scope)
-	if err != nil {
-		return nil, err
-	}
 	return &azureManagedControlPlaneService{
 		kubeclient: scope.Client,
 		scope:      scope,
 		services: []azure.ServiceReconciler{
 			groups.New(scope),
-			virtualNetworksSvc,
-			subnetsSvc,
+			virtualnetworks.New(scope),
+			subnets.New(scope),
 			managedclusters.New(scope),
 			privateendpoints.New(scope),
 			resourceHealthSvc,

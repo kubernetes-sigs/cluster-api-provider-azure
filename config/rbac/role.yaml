@@ -319,6 +319,8 @@ rules:
   - bastionhosts
   - natgateways
   - privateendpoints
+  - virtualnetworks
+  - virtualnetworkssubnets
   verbs:
   - create
   - delete
@@ -333,6 +335,8 @@ rules:
   - bastionhosts/status
   - natgateways/status
   - privateendpoints/status
+  - virtualnetworks/status
+  - virtualnetworkssubnets/status
   verbs:
   - get
   - list
@@ -341,6 +345,8 @@ rules:
   - network.azure.com
   resources:
   - privateendpoints
+  - virtualnetworks
+  - virtualnetworkssubnets
   verbs:
   - create
   - delete
@@ -353,6 +359,8 @@ rules:
   - network.azure.com
   resources:
   - privateendpoints/status
+  - virtualnetworks/status
+  - virtualnetworkssubnets/status
   verbs:
   - get
   - list

@@ -22,6 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -53,6 +54,38 @@ func TestExtendedLocationToNetworkSDK(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ExtendedLocationToNetworkSDK(tt.args); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ExtendedLocationToNetworkSDK() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtendedLocationToNetworkASO(t *testing.T) {
+	tests := []struct {
+		name string
+		args *infrav1.ExtendedLocationSpec
+		want *asonetworkv1.ExtendedLocation
+	}{
+		{
+			name: "normal extendedLocation instance",
+			args: &infrav1.ExtendedLocationSpec{
+				Name: "value",
+				Type: "EdgeZone",
+			},
+			want: &asonetworkv1.ExtendedLocation{
+				Name: ptr.To("value"),
+				Type: ptr.To(asonetworkv1.ExtendedLocationType_EdgeZone),
+			},
+		},
+		{
+			name: "nil extendedLocation properties",
+			args: nil,
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtendedLocationToNetworkASO(tt.args); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ExtendedLocationToNetworkASO() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -24,7 +24,8 @@ import (
 	"testing"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
+	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -933,7 +934,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
-		want         []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]
+		want         []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]
 	}{
 		{
 			name: "returns nil if no subnets are specified",
@@ -998,7 +999,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -1080,7 +1081,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -1161,7 +1162,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
 					Name:           "fake-nat-gateway-1",
 					ResourceGroup:  "my-rg",
@@ -1193,7 +1194,7 @@ func TestSetNatGatewayIDInSubnets(t *testing.T) {
 	tests := []struct {
 		name          string
 		clusterScope  ClusterScope
-		asoNatgateway *asonetworkv1.NatGateway
+		asoNatgateway *asonetworkv1api20220701.NatGateway
 	}{
 		{
 			name: "sets nat gateway id in the matching subnet",
@@ -1233,11 +1234,11 @@ func TestSetNatGatewayIDInSubnets(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			asoNatgateway: &asonetworkv1.NatGateway{
+			asoNatgateway: &asonetworkv1api20220701.NatGateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fake-nat-gateway-1",
 				},
-				Status: asonetworkv1.NatGateway_STATUS{
+				Status: asonetworkv1api20220701.NatGateway_STATUS{
 					Id: ptr.To("dummy-id-1"),
 				},
 			},
@@ -1352,7 +1353,7 @@ func TestSubnetSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
-		want         []azure.ResourceSpecGetter
+		want         []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]
 	}{
 		{
 			name: "returns empty if no subnets are specified",
@@ -1366,7 +1367,7 @@ func TestSubnetSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{},
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{},
 		},
 		{
 			name: "returns specified subnet spec",
@@ -1431,7 +1432,7 @@ func TestSubnetSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{
 				&subnets.SubnetSpec{
 					Name:              "fake-subnet-1",
 					ResourceGroup:     "my-rg",
@@ -1442,7 +1443,6 @@ func TestSubnetSpecs(t *testing.T) {
 					IsVNetManaged:     false,
 					RouteTableName:    "fake-route-table-1",
 					SecurityGroupName: "fake-security-group-1",
-					Role:              infrav1.SubnetNode,
 					NatGatewayName:    "fake-natgateway-1",
 				},
 			},
@@ -1537,7 +1537,7 @@ func TestSubnetSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ResourceSpecGetter{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{
 				&subnets.SubnetSpec{
 					Name:              "fake-subnet-1",
 					ResourceGroup:     "my-rg",
@@ -1548,7 +1548,6 @@ func TestSubnetSpecs(t *testing.T) {
 					IsVNetManaged:     false,
 					RouteTableName:    "fake-route-table-1",
 					SecurityGroupName: "fake-security-group-1",
-					Role:              infrav1.SubnetNode,
 					NatGatewayName:    "fake-natgateway-1",
 				},
 				&subnets.SubnetSpec{
@@ -1561,7 +1560,6 @@ func TestSubnetSpecs(t *testing.T) {
 					IsVNetManaged:     false,
 					SecurityGroupName: "fake-bastion-security-group-1",
 					RouteTableName:    "fake-bastion-route-table-1",
-					Role:              infrav1.SubnetBastion,
 				},
 			},
 		},
@@ -1698,7 +1696,7 @@ func TestAzureBastionSpec(t *testing.T) {
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
-		want         azure.ASOResourceSpecGetter[*asonetworkv1.BastionHost]
+		want         azure.ASOResourceSpecGetter[*asonetworkv1api20220701.BastionHost]
 	}{
 		{
 			name: "returns nil if no subnets are specified",
@@ -3698,7 +3696,7 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
-		want         []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]
+		want         []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint]
 	}{
 		{
 			name: "returns empty private endpoints list if no subnets are specified",
@@ -3712,7 +3710,7 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint], 0),
 		},
 		{
 			name: "returns empty private endpoints list if no private endpoints are specified",
@@ -3732,7 +3730,7 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint], 0),
+			want: make([]azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint], 0),
 		},
 		{
 			name: "returns list of private endpoint specs if private endpoints are specified",
@@ -3837,7 +3835,7 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
-			want: []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]{
+			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateEndpoint]{
 				&privateendpoints.PrivateEndpointSpec{
 					Name:                       "my-private-endpoint",
 					Namespace:                  "dummy-ns",

@@ -16,8 +16,6 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //
-//go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_virtualnetworks -source ../client.go Getter
 //go:generate ../../../../hack/tools/bin/mockgen -destination virtualnetworks_mock.go -package mock_virtualnetworks -source ../virtualnetworks.go VNetScope
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt virtualnetworks_mock.go > _virtualnetworks_mock.go && mv _virtualnetworks_mock.go virtualnetworks_mock.go"
 package mock_virtualnetworks

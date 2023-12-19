@@ -23,6 +23,7 @@ import (
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -250,6 +251,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
+		asonetworkv1.AddToScheme,
 		corev1.AddToScheme,
 		aadpodv1.AddToScheme,
 	)
@@ -315,6 +317,12 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 				},
 			},
 			ResourceGroup: name,
+			NetworkSpec: infrav1.NetworkSpec{
+				Vnet: infrav1.VnetSpec{
+					Name:          name,
+					ResourceGroup: name,
+				},
+			},
 		},
 	}
 	g.Expect(c.Create(ctx, instance)).To(Succeed())
@@ -326,6 +334,14 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		},
 	}
 	g.Expect(c.Create(ctx, rg)).To(Succeed())
+
+	vnet := &asonetworkv1.VirtualNetwork{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	g.Expect(c.Create(ctx, vnet)).To(Succeed())
 
 	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 		NamespacedName: client.ObjectKey{

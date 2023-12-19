@@ -342,6 +342,11 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: resourceGroup,
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									ResourceGroup: resourceGroup,
+								},
+							},
 						},
 					},
 					Cluster: &clusterv1.Cluster{
