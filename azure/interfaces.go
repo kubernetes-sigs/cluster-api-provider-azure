@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
@@ -101,6 +102,14 @@ type AsyncStatusUpdater interface {
 	UpdatePutStatus(clusterv1.ConditionType, string, error)
 	UpdateDeleteStatus(clusterv1.ConditionType, string, error)
 	UpdatePatchStatus(clusterv1.ConditionType, string, error)
+	AsyncReconciler
+}
+
+// AsyncReconciler is an interface used to get the default timeouts and requeue time for a reconciler that reconciles services asynchronously.
+type AsyncReconciler interface {
+	DefaultedAzureCallTimeout() time.Duration
+	DefaultedAzureServiceReconcileTimeout() time.Duration
+	DefaultedReconcilerRequeue() time.Duration
 }
 
 // ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.
@@ -116,6 +125,7 @@ type ClusterScoper interface {
 type ManagedClusterScoper interface {
 	ClusterDescriber
 	NodeResourceGroup() string
+	AsyncReconciler
 }
 
 // ResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.

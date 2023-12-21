@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks/mock_disks"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var (
@@ -60,6 +61,7 @@ func TestDeleteDisk(t *testing.T) {
 			name:          "noop if no disk specs are found",
 			expectedError: "",
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.DiskSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -69,6 +71,7 @@ func TestDeleteDisk(t *testing.T) {
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(nil),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
@@ -81,6 +84,7 @@ func TestDeleteDisk(t *testing.T) {
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(nil),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, nil),
@@ -93,6 +97,7 @@ func TestDeleteDisk(t *testing.T) {
 			expect: func(s *mock_disks.MockDiskScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DiskSpecs().Return(fakeDiskSpecs)
 				gomock.InOrder(
+					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec1, serviceName).Return(internalError),
 					r.DeleteResource(gomockinternal.AContext(), &diskSpec2, serviceName).Return(nil),
 					s.UpdateDeleteStatus(infrav1.DisksReadyCondition, serviceName, internalError),

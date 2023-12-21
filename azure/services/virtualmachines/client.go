@@ -18,6 +18,7 @@ package virtualmachines
 
 import (
 	"context"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
@@ -25,7 +26,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -33,6 +33,7 @@ type (
 	// AzureClient contains the Azure go-sdk Client.
 	AzureClient struct {
 		virtualmachines *armcompute.VirtualMachinesClient
+		apiCallTimeout  time.Duration
 	}
 
 	// Client provides operations on Azure virtual machine resources.
@@ -46,7 +47,7 @@ type (
 var _ Client = &AzureClient{}
 
 // NewClient creates a VMs client from an authorizer.
-func NewClient(auth azure.Authorizer) (*AzureClient, error) {
+func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*AzureClient, error) {
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create virtualmachines client options")
@@ -55,7 +56,7 @@ func NewClient(auth azure.Authorizer) (*AzureClient, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armcompute client factory")
 	}
-	return &AzureClient{factory.NewVirtualMachinesClient()}, nil
+	return &AzureClient{factory.NewVirtualMachinesClient(), apiCallTimeout}, nil
 }
 
 // Get retrieves information about the model view or the instance view of a virtual machine.
@@ -88,7 +89,7 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	ctx, cancel := context.WithTimeout(ctx, ac.apiCallTimeout)
 	defer cancel()
 
 	pollOpts := &runtime.PollUntilDoneOptions{Frequency: async.DefaultPollerFrequency}
@@ -117,7 +118,7 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	ctx, cancel := context.WithTimeout(ctx, ac.apiCallTimeout)
 	defer cancel()
 
 	pollOpts := &runtime.PollUntilDoneOptions{Frequency: async.DefaultPollerFrequency}

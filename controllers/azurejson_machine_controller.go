@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -52,7 +51,7 @@ import (
 type AzureJSONMachineReconciler struct {
 	client.Client
 	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
 }
 
@@ -128,7 +127,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 
 // Reconcile reconciles the Azure json for a specific machine not in a machine deployment.
 func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, r.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(
@@ -198,6 +197,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		Client:       r.Client,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Timeouts:     r.Timeouts,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")

@@ -44,10 +44,10 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
-	Expect(NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "").
+	Expect(NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.Timeouts{}, "").
 		SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
-	Expect(NewAzureMachineReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "").
+	Expect(NewAzureMachineReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.Timeouts{}, "").
 		SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	Expect((&AzureManagedClusterReconciler{
@@ -61,7 +61,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+		reconciler.Timeouts{}, "").SetupWithManager(context.Background(), testEnv.Manager, Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

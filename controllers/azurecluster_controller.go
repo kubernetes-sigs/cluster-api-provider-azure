@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -48,7 +47,7 @@ import (
 type AzureClusterReconciler struct {
 	client.Client
 	Recorder                  record.EventRecorder
-	ReconcileTimeout          time.Duration
+	Timeouts                  reconciler.Timeouts
 	WatchFilterValue          string
 	createAzureClusterService azureClusterServiceCreator
 }
@@ -56,11 +55,11 @@ type AzureClusterReconciler struct {
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
 // NewAzureClusterReconciler returns a new AzureClusterReconciler instance.
-func NewAzureClusterReconciler(client client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
+func NewAzureClusterReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,
 		Recorder:         recorder,
-		ReconcileTimeout: reconcileTimeout,
+		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
 	}
 
@@ -118,7 +117,7 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 
 // Reconcile idempotently gets, creates, and updates a cluster.
 func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(acr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, acr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(
@@ -160,6 +159,7 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Client:       acr.Client,
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Timeouts:     acr.Timeouts,
 	})
 	if err != nil {
 		err = errors.Wrap(err, "failed to create scope")

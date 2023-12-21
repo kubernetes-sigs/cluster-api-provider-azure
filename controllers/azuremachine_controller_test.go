@@ -782,7 +782,7 @@ func TestConditions(t *testing.T) {
 			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity))
 			recorder := record.NewFakeRecorder(10)
 
-			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.DefaultLoopTimeout, "")
+			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.Timeouts{}, "")
 
 			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 				Client:       fakeClient,

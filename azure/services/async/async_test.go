@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 func TestServiceCreateOrUpdateResource(t *testing.T) {
@@ -86,6 +87,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
 					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
 				)
 			},
 		},
@@ -116,6 +118,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.Parameters(gomockinternal.AContext(), nil).Return(fakeParameters, nil),
 					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), "", gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
 				)
 			},
 		},
@@ -227,6 +230,7 @@ func TestServiceDeleteResource(t *testing.T) {
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture).Return(validDeleteFuture),
 					d.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), gomock.Any()).Return(fakePoller[MockDeleter](g, http.StatusAccepted), context.DeadlineExceeded),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
 				)
 			},
 		},

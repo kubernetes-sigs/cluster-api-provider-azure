@@ -48,19 +48,19 @@ import (
 type AzureManagedMachinePoolReconciler struct {
 	client.Client
 	Recorder                             record.EventRecorder
-	ReconcileTimeout                     time.Duration
+	Timeouts                             reconciler.Timeouts
 	WatchFilterValue                     string
 	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
 }
 
-type azureManagedMachinePoolServiceCreator func(managedMachinePoolScope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error)
+type azureManagedMachinePoolServiceCreator func(managedMachinePoolScope *scope.ManagedMachinePoolScope, apiCallTimeout time.Duration) (*azureManagedMachinePoolService, error)
 
 // NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
-func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
+func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureManagedMachinePoolReconciler {
 	ampr := &AzureManagedMachinePoolReconciler{
 		Client:           client,
 		Recorder:         recorder,
-		ReconcileTimeout: reconcileTimeout,
+		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
 	}
 
@@ -135,7 +135,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ammpr.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, ammpr.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
 
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
@@ -200,6 +200,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 		Client:       ammpr.Client,
 		ControlPlane: controlPlane,
 		Cluster:      ownerCluster,
+		Timeouts:     ammpr.Timeouts,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create ManagedControlPlane scope")
@@ -261,7 +262,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 		}
 	}
 
-	svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+	svc, err := ammpr.createAzureManagedMachinePoolService(scope, ammpr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
 	}
@@ -305,7 +306,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcilePause(ctx context.Conte
 
 	log.Info("Reconciling AzureManagedMachinePool pause")
 
-	svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+	svc, err := ammpr.createAzureManagedMachinePoolService(scope, ammpr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
 	}
@@ -329,7 +330,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	} else {
-		svc, err := ammpr.createAzureManagedMachinePoolService(scope)
+		svc, err := ammpr.createAzureManagedMachinePoolService(scope, ammpr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create an AzureManageMachinePoolService")
 		}

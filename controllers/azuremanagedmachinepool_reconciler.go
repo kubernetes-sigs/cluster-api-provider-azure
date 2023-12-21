@@ -74,12 +74,12 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 }
 
 // newAzureManagedMachinePoolService populates all the services based on input scope.
-func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
+func newAzureManagedMachinePoolService(scope *scope.ManagedMachinePoolScope, apiCallTimeout time.Duration) (*azureManagedMachinePoolService, error) {
 	scaleSetAuthorizer, err := scaleSetAuthorizer(scope)
 	if err != nil {
 		return nil, err
 	}
-	scaleSetsClient, err := scalesets.NewClient(scaleSetAuthorizer)
+	scaleSetsClient, err := scalesets.NewClient(scaleSetAuthorizer, apiCallTimeout)
 	if err != nil {
 		return nil, err
 	}

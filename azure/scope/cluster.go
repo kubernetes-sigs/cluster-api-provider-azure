@@ -61,6 +61,7 @@ type ClusterScopeParams struct {
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
 	Cache        *ClusterCache
+	Timeouts     azure.AsyncReconciler
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -95,12 +96,13 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	}
 
 	return &ClusterScope{
-		Client:       params.Client,
-		AzureClients: params.AzureClients,
-		Cluster:      params.Cluster,
-		AzureCluster: params.AzureCluster,
-		patchHelper:  helper,
-		cache:        params.Cache,
+		Client:          params.Client,
+		AzureClients:    params.AzureClients,
+		Cluster:         params.Cluster,
+		AzureCluster:    params.AzureCluster,
+		patchHelper:     helper,
+		cache:           params.Cache,
+		AsyncReconciler: params.Timeouts,
 	}, nil
 }
 
@@ -113,6 +115,7 @@ type ClusterScope struct {
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+	azure.AsyncReconciler
 }
 
 // ClusterCache stores ClusterCache data locally so we don't have to hit the API multiple times within the same reconcile loop.

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -125,6 +126,7 @@ func TestReconcilePublicIP(t *testing.T) {
 			name:          "noop if no public IPs",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -132,6 +134,7 @@ func TestReconcilePublicIP(t *testing.T) {
 			name:          "successfully create public IPs",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
@@ -144,6 +147,7 @@ func TestReconcilePublicIP(t *testing.T) {
 			name:          "fail to create a public IP",
 			expectedError: internalError.Error(),
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec1, serviceName).Return(nil, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePublicIPSpec2, serviceName).Return(nil, nil)
@@ -196,6 +200,7 @@ func TestDeletePublicIP(t *testing.T) {
 			name:          "noop if no public IPs",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{})
 			},
 		},
@@ -203,6 +208,7 @@ func TestDeletePublicIP(t *testing.T) {
 			name:          "successfully delete managed public IPs and ignore unmanaged public IPs",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
 				s.SubscriptionID().Return("123")
@@ -231,6 +237,7 @@ func TestDeletePublicIP(t *testing.T) {
 			name:          "noop if no managed public IPs",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
 				s.SubscriptionID().Return("123")
@@ -254,6 +261,7 @@ func TestDeletePublicIP(t *testing.T) {
 			name:          "fail to delete managed public IP",
 			expectedError: internalError.Error(),
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_async.MockTagsGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.PublicIPSpecs().Return([]azure.ResourceSpecGetter{&fakePublicIPSpec1, &fakePublicIPSpec2, &fakePublicIPSpec3, &fakePublicIPSpecIpv6})
 
 				s.SubscriptionID().Return("123")

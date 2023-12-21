@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	reconcilerutils "sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -183,8 +184,8 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler, agentpools.EXPECT(), nodelister.EXPECT())
-			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, 30*time.Second, "foo")
-			controller.createAzureManagedMachinePoolService = func(_ *scope.ManagedMachinePoolScope) (*azureManagedMachinePoolService, error) {
+			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo")
+			controller.createAzureManagedMachinePoolService = func(_ *scope.ManagedMachinePoolScope, _ time.Duration) (*azureManagedMachinePoolService, error) {
 				return &azureManagedMachinePoolService{
 					scope:         agentpools,
 					agentPoolsSvc: reconciler,
