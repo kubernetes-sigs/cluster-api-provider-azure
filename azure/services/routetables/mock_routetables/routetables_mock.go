@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination routetables_mock.go -package mock_routetables -source ../routetables.go RouteTableScope
 //
+
 // Package mock_routetables is a generated GoMock package.
 package mock_routetables
 

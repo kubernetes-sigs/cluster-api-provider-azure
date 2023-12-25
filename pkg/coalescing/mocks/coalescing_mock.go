@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination coalescing_mock.go -package mock_coalescing -source ../reconciler.go ReconcileCacher
 //
+
 // Package mock_coalescing is a generated GoMock package.
 package mock_coalescing
 

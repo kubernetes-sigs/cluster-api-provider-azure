@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -package mock_virtualmachineimages -destination client_mock.go -source ../client.go
 //
+
 // Package mock_virtualmachineimages is a generated GoMock package.
 package mock_virtualmachineimages
 

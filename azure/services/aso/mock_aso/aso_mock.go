@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination aso_mock.go -package mock_aso -source ../interfaces.go
 //
+
 // Package mock_aso is a generated GoMock package.
 package mock_aso
 

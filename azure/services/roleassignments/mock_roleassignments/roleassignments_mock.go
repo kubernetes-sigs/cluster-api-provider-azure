@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination roleassignments_mock.go -package mock_roleassignments -source ../roleassignments.go RoleAssignmentScope
 //
+
 // Package mock_roleassignments is a generated GoMock package.
 package mock_roleassignments
 

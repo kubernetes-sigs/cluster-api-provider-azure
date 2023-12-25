@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination privatedns_mock.go -package mock_privatedns -source ../privatedns.go Scope
 //
+
 // Package mock_privatedns is a generated GoMock package.
 package mock_privatedns
 

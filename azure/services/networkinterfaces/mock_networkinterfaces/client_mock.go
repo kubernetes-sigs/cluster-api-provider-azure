@@ -21,5 +21,6 @@ limitations under the License.
 //
 //	mockgen -destination client_mock.go -package mock_networkinterfaces -source ../client.go Client
 //
+
 // Package mock_networkinterfaces is a generated GoMock package.
 package mock_networkinterfaces

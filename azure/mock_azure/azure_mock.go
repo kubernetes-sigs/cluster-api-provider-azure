@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination azure_mock.go -package mock_azure -source ../interfaces.go
 //
+
 // Package mock_azure is a generated GoMock package.
 package mock_azure
 

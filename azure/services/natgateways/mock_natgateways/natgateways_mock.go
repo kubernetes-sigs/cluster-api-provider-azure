@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination natgateways_mock.go -package mock_natgateways -source ../natgateways.go NatGatewayScope
 //
+
 // Package mock_natgateways is a generated GoMock package.
 package mock_natgateways
 

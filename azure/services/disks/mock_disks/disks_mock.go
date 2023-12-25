@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination disks_mock.go -package mock_disks -source ../disks.go DiskScope
 //
+
 // Package mock_disks is a generated GoMock package.
 package mock_disks
 

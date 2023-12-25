@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination resourcehealth_mock.go -package mock_resourcehealth -source ../resourcehealth.go ResourceHealthScope,AvailabilityStatusFilterer
 //
+
 // Package mock_resourcehealth is a generated GoMock package.
 package mock_resourcehealth
 

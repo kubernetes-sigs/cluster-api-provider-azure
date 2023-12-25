@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination securitygroups_mock.go -package mock_securitygroups -source ../securitygroups.go NSGScope
 //
+
 // Package mock_securitygroups is a generated GoMock package.
 package mock_securitygroups
 

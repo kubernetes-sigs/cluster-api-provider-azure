@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination client_mock.go -package mock_identities -source ../client.go Client
 //
+
 // Package mock_identities is a generated GoMock package.
 package mock_identities
 

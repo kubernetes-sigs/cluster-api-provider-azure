@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination vnetpeerings_mock.go -package mock_vnetpeerings -source ../vnetpeerings.go VnetPeeringScope
 //
+
 // Package mock_vnetpeerings is a generated GoMock package.
 package mock_vnetpeerings
 

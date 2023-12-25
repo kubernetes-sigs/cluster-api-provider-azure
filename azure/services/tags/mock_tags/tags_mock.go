@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination tags_mock.go -package mock_tags -source ../tags.go TagScope
 //
+
 // Package mock_tags is a generated GoMock package.
 package mock_tags
 
