@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination inboundnatrules_mock.go -package mock_inboundnatrules -source ../inboundnatrules.go InboundNatScope
 //
+
 // Package mock_inboundnatrules is a generated GoMock package.
 package mock_inboundnatrules
 

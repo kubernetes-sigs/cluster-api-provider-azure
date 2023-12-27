@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination async_mock.go -package mock_async -source ../interfaces.go FutureHandler
 //
+
 // Package mock_async is a generated GoMock package.
 package mock_async
 

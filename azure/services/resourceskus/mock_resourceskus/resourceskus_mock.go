@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination resourceskus_mock.go -package mock_resourceskus -source ../client.go Client
 //
+
 // Package mock_resourceskus is a generated GoMock package.
 package mock_resourceskus
 

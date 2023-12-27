@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination reconciler_mock.go -package mock_coalescing sigs.k8s.io/controller-runtime/pkg/reconcile Reconciler
 //
+
 // Package mock_coalescing is a generated GoMock package.
 package mock_coalescing
 

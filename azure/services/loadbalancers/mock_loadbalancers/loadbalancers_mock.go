@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination loadbalancers_mock.go -package mock_loadbalancers -source ../loadbalancers.go LBScope
 //
+
 // Package mock_loadbalancers is a generated GoMock package.
 package mock_loadbalancers
 

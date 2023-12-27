@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination log_mock.go -package mock_log github.com/go-logr/logr LogSink
 //
+
 // Package mock_log is a generated GoMock package.
 package mock_log
 

@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination privateendpoints_mock.go -package mock_privateendpoints -source ../privateendpoints.go PrivateEndpointScope
 //
+
 // Package mock_privateendpoints is a generated GoMock package.
 package mock_privateendpoints
 

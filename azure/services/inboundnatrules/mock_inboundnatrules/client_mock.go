@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination client_mock.go -package mock_inboundnatrules -source ../client.go Client
 //
+
 // Package mock_inboundnatrules is a generated GoMock package.
 package mock_inboundnatrules
 

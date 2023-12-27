@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination client_mock.go -package mock_scalesetvms -source ../client.go client
 //
+
 // Package mock_scalesetvms is a generated GoMock package.
 package mock_scalesetvms
 

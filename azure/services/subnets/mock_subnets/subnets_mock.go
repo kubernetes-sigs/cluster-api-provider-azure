@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination subnets_mock.go -package mock_subnets -source ../subnets.go SubnetScope
 //
+
 // Package mock_subnets is a generated GoMock package.
 package mock_subnets
 

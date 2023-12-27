@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination virtualnetworks_mock.go -package mock_virtualnetworks -source ../virtualnetworks.go VNetScope
 //
+
 // Package mock_virtualnetworks is a generated GoMock package.
 package mock_virtualnetworks
 

@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination scalesets_mock.go -package mock_scalesets -source ../scalesets.go ScaleSetScope
 //
+
 // Package mock_scalesets is a generated GoMock package.
 package mock_scalesets
 

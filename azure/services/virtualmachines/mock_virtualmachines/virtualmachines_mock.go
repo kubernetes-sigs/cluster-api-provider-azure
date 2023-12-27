@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination virtualmachines_mock.go -package mock_virtualmachines -source ../virtualmachines.go VMScope
 //
+
 // Package mock_virtualmachines is a generated GoMock package.
 package mock_virtualmachines
 

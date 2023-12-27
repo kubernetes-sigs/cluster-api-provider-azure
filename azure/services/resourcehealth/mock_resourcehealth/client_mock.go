@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination client_mock.go -package mock_resourcehealth -source ../client.go Client
 //
+
 // Package mock_resourcehealth is a generated GoMock package.
 package mock_resourcehealth
 

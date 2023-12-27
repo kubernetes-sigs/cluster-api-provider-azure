@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination reconciler_mock.go -package mock_controllers sigs.k8s.io/cluster-api-provider-azure/azure Reconciler
 //
+
 // Package mock_controllers is a generated GoMock package.
 package mock_controllers
 

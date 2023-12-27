@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination availabilitysets_mock.go -package mock_availabilitysets -source ../availabilitysets.go AvailabilitySetScope
 //
+
 // Package mock_availabilitysets is a generated GoMock package.
 package mock_availabilitysets
 

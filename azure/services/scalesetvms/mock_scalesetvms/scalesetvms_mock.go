@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination scalesetvms_mock.go -package mock_scalesetvms -source ../scalesetvms.go ScaleSetVMScope
 //
+
 // Package mock_scalesetvms is a generated GoMock package.
 package mock_scalesetvms
 

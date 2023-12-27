@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination vmextensions_mock.go -package mock_vmextensions -source ../vmextensions.go VMExtensionScope
 //
+
 // Package mock_vmextensions is a generated GoMock package.
 package mock_vmextensions
 

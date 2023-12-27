@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination networkinterfaces_mock.go -package mock_networkinterfaces -source ../networkinterfaces.go NICScope
 //
+
 // Package mock_networkinterfaces is a generated GoMock package.
 package mock_networkinterfaces
 

@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination managedclusters_mock.go -package mock_managedclusters -source ../managedclusters.go ManagedClusterScope
 //
+
 // Package mock_managedclusters is a generated GoMock package.
 package mock_managedclusters
 

@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination groups_mock.go -package mock_groups -source ../groups.go GroupScope
 //
+
 // Package mock_groups is a generated GoMock package.
 package mock_groups
 

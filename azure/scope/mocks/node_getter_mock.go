@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination node_getter_mock.go -package mock_scope -source ../machinepoolmachine.go nodeGetter
 //
+
 // Package mock_scope is a generated GoMock package.
 package mock_scope
 

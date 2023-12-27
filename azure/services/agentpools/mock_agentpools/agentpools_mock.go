@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination agentpools_mock.go -package mock_agentpools -source ../agentpools.go AgentPoolScope
 //
+
 // Package mock_agentpools is a generated GoMock package.
 package mock_agentpools
 

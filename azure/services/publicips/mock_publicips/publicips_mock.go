@@ -21,6 +21,7 @@ limitations under the License.
 //
 //	mockgen -destination publicips_mock.go -package mock_publicips -source ../publicips.go PublicIPScope
 //
+
 // Package mock_publicips is a generated GoMock package.
 package mock_publicips
 
