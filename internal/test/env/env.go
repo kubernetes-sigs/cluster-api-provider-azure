@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var (
@@ -102,6 +103,9 @@ func NewTestEnvironment() *TestEnvironment {
 
 	mgr, err := manager.New(env.Config, manager.Options{
 		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: "0",
+		},
 	})
 	if err != nil {
 		klog.Fatalf("Failed to start testenv manager: %v", err)
