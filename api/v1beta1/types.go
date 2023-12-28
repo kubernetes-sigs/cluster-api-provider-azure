@@ -305,6 +305,8 @@ type SecurityRule struct {
 	// Source specifies the CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
 	// +optional
 	Source *string `json:"source,omitempty"`
+	// Sources specifies The CIDR or source IP ranges.
+	Sources []*string `json:"sources,omitempty"`
 	// Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
 	// +optional
 	Destination *string `json:"destination,omitempty"`

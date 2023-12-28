@@ -3147,6 +3147,17 @@ func (in *SecurityRule) DeepCopyInto(out *SecurityRule) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Sources != nil {
+		in, out := &in.Sources, &out.Sources
+		*out = make([]*string, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(string)
+				**out = **in
+			}
+		}
+	}
 	if in.Destination != nil {
 		in, out := &in.Destination, &out.Destination
 		*out = new(string)
