@@ -26,16 +26,13 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/server/routes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -83,18 +80,6 @@ func init() {
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
-
-	// Add aadpodidentity v1 to the scheme.
-	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.GroupName, Version: "v1"}
-	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
-		&aadpodv1.AzureIdentity{},
-		&aadpodv1.AzureIdentityList{},
-		&aadpodv1.AzureIdentityBinding{},
-		&aadpodv1.AzureIdentityBindingList{},
-		&aadpodv1.AzurePodIdentityException{},
-		&aadpodv1.AzurePodIdentityExceptionList{},
-	)
-	metav1.AddToGroupVersion(scheme, aadPodIdentityGroupVersion)
 }
 
 var (
@@ -404,16 +389,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
-		os.Exit(1)
-	}
-
-	if err := (&controllers.AzureIdentityReconciler{
-		Client:           mgr.GetClient(),
-		Recorder:         mgr.GetEventRecorderFor("azureidentity-reconciler"),
-		Timeouts:         timeouts,
-		WatchFilterValue: watchFilterValue,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AzureIdentity")
 		os.Exit(1)
 	}
 

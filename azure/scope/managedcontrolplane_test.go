@@ -21,7 +21,6 @@ import (
 	"reflect"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	. "github.com/onsi/gomega"
@@ -44,7 +43,6 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 	explicitOutboundType := infrav1.ManagedControlPlaneOutboundTypeUserDefinedRouting
 	cases := []struct {
 		Name     string
@@ -116,7 +114,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -135,7 +133,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -287,7 +284,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -309,7 +306,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -408,7 +404,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -426,7 +422,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -566,7 +561,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -588,7 +583,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -735,7 +729,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -752,7 +746,6 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -851,7 +844,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -870,7 +863,6 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -1001,7 +993,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -1020,7 +1012,6 @@ func TestIsAADEnabled(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -1116,7 +1107,7 @@ func TestIsAADEnabled(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
@@ -1133,7 +1124,6 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name     string
@@ -1267,7 +1257,7 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 

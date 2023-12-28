@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,10 +157,11 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type: infrav1.ServicePrincipal,
+			Type:     infrav1.ServicePrincipal,
+			TenantID: "fake-tenantid",
 		},
 	}
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	cases := map[string]struct {
 		objects []runtime.Object
@@ -260,7 +260,6 @@ func newScheme() (*runtime.Scheme, error) {
 		infrav1.AddToScheme,
 		clusterv1.AddToScheme,
 		infrav1exp.AddToScheme,
-		aadpodv1.AddToScheme,
 		expv1.AddToScheme,
 		corev1.AddToScheme,
 	}

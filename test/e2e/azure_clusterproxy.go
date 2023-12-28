@@ -32,14 +32,12 @@ import (
 	"strings"
 	"time"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/describe"
@@ -72,19 +70,6 @@ func initScheme() *runtime.Scheme {
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
 	Expect(expv1.AddToScheme(scheme)).To(Succeed())
-	// Add aadpodidentity v1 to the scheme.
-	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.GroupName, Version: "v1"}
-	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
-		&aadpodv1.AzureIdentity{},
-		&aadpodv1.AzureIdentityList{},
-		&aadpodv1.AzureIdentityBinding{},
-		&aadpodv1.AzureIdentityBindingList{},
-		&aadpodv1.AzureAssignedIdentity{},
-		&aadpodv1.AzureAssignedIdentityList{},
-		&aadpodv1.AzurePodIdentityException{},
-		&aadpodv1.AzurePodIdentityExceptionList{},
-	)
-	metav1.AddToGroupVersion(scheme, aadPodIdentityGroupVersion)
 	return scheme
 }
 

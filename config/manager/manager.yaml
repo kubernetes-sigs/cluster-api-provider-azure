@@ -5,8 +5,6 @@ metadata:
   namespace: system
   labels:
     control-plane: capz-controller-manager
-    #ToDo: (@sonasingh46): Remove this label as part of aad pod identity deprecation
-    aadpodidbinding: capz-controller-aadpodidentity-selector
 
 spec:
   selector:
@@ -17,7 +15,6 @@ spec:
     metadata:
       labels:
         control-plane: capz-controller-manager
-        aadpodidbinding: capz-controller-aadpodidentity-selector
         azure.workload.identity/use: "true"
       annotations:
         kubectl.kubernetes.io/default-container: manager

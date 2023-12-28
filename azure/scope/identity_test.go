@@ -18,16 +18,14 @@ package scope
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
-	aadpodid "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity"
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -135,186 +133,6 @@ func TestAllowedNamespaces(t *testing.T) {
 	}
 }
 
-func TestCreateAzureIdentityWithBindings(t *testing.T) {
-	g := NewWithT(t)
-	scheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
-
-	tests := []struct {
-		name                    string
-		identity                *infrav1.AzureClusterIdentity
-		identityType            aadpodv1.IdentityType
-		resourceManagerEndpoint string
-		activeDirectoryEndpoint string
-		clusterMeta             metav1.ObjectMeta
-		copiedIdentity          metav1.ObjectMeta
-		bindings                []metav1.ObjectMeta
-		expectedErr             bool
-	}{
-		{
-			name: "create service principal identity",
-			identity: &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-identity",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         infrav1.ServicePrincipal,
-					ResourceID:   "my-resource-id",
-					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
-					TenantID:     "my-tenant-id",
-				},
-			},
-			identityType:            aadpodv1.ServicePrincipal,
-			resourceManagerEndpoint: "public-cloud-endpoint",
-			activeDirectoryEndpoint: "active-directory-endpoint",
-			clusterMeta: metav1.ObjectMeta{
-				Name:      "cluster-name",
-				Namespace: "my-namespace",
-			},
-			copiedIdentity: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity",
-				Namespace: "capz-system",
-			},
-			bindings: []metav1.ObjectMeta{
-				{
-					Name:      "cluster-name-my-namespace-test-identity-binding",
-					Namespace: "capz-system",
-				},
-				{
-					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
-					Namespace: "capz-system",
-				},
-			},
-		},
-		{
-			name: "create UAMI identity",
-			identity: &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-identity",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         infrav1.UserAssignedMSI,
-					ResourceID:   "my-resource-id",
-					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
-					TenantID:     "my-tenant-id",
-				},
-			},
-			identityType:            aadpodv1.UserAssignedMSI,
-			resourceManagerEndpoint: "public-cloud-endpoint",
-			activeDirectoryEndpoint: "active-directory-endpoint",
-			clusterMeta: metav1.ObjectMeta{
-				Name:      "cluster-name",
-				Namespace: "my-namespace",
-			},
-			copiedIdentity: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity",
-				Namespace: "capz-system",
-			},
-			bindings: []metav1.ObjectMeta{
-				{
-					Name:      "cluster-name-my-namespace-test-identity-binding",
-					Namespace: "capz-system",
-				},
-				{
-					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
-					Namespace: "capz-system",
-				},
-			},
-		},
-		{
-			name: "create service principal with certificate identity",
-			identity: &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-identity",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         infrav1.ServicePrincipalCertificate,
-					ResourceID:   "my-resource-id",
-					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
-					TenantID:     "my-tenant-id",
-				},
-			},
-			identityType:            aadpodv1.IdentityType(aadpodid.ServicePrincipalCertificate),
-			resourceManagerEndpoint: "public-cloud-endpoint",
-			activeDirectoryEndpoint: "active-directory-endpoint",
-			clusterMeta: metav1.ObjectMeta{
-				Name:      "cluster-name",
-				Namespace: "my-namespace",
-			},
-			copiedIdentity: metav1.ObjectMeta{
-				Name:      "cluster-name-my-namespace-test-identity",
-				Namespace: "capz-system",
-			},
-			bindings: []metav1.ObjectMeta{
-				{
-					Name:      "cluster-name-my-namespace-test-identity-binding",
-					Namespace: "capz-system",
-				},
-				{
-					Name:      "cluster-name-my-namespace-test-identity-aso-binding",
-					Namespace: "capz-system",
-				},
-			},
-		},
-		{
-			name: "invalid identity type",
-			identity: &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-identity",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         "fooIdentity",
-					ResourceID:   "my-resource-id",
-					ClientID:     "my-client-id",
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
-					TenantID:     "my-tenant-id",
-				},
-			},
-			identityType: -1,
-			expectedErr:  true,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			initObjects := []runtime.Object{tc.identity}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			err := createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
-			if !tc.expectedErr {
-				g.Expect(err).To(BeNil())
-
-				resultIdentity := &aadpodv1.AzureIdentity{}
-				key := client.ObjectKey{Name: tc.copiedIdentity.Name, Namespace: tc.copiedIdentity.Namespace}
-				g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
-				g.Expect(resultIdentity.Spec.Type).To(Equal(tc.identityType))
-				g.Expect(resultIdentity.Spec.ResourceID).To(Equal(tc.identity.Spec.ResourceID))
-				g.Expect(resultIdentity.Spec.ClientID).To(Equal(tc.identity.Spec.ClientID))
-				g.Expect(resultIdentity.Spec.ClientPassword).To(Equal(tc.identity.Spec.ClientSecret))
-				g.Expect(resultIdentity.Spec.TenantID).To(Equal(tc.identity.Spec.TenantID))
-				g.Expect(resultIdentity.Spec.ADResourceID).To(Equal(tc.resourceManagerEndpoint))
-				g.Expect(resultIdentity.Spec.ADEndpoint).To(Equal(tc.activeDirectoryEndpoint))
-
-				for _, binding := range tc.bindings {
-					resultIdentityBinding := &aadpodv1.AzureIdentityBinding{}
-					key = client.ObjectKey{Name: binding.Name, Namespace: binding.Namespace}
-					g.Expect(fakeClient.Get(context.TODO(), key, resultIdentityBinding)).To(Succeed())
-				}
-
-				// no error if identity already exists
-				err = createAzureIdentityWithBindings(context.TODO(), tc.identity, tc.resourceManagerEndpoint, tc.activeDirectoryEndpoint, tc.clusterMeta, fakeClient)
-				g.Expect(err).To(BeNil())
-			} else {
-				g.Expect(err).NotTo(BeNil())
-			}
-		})
-	}
-}
-
 func TestHasClientSecret(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -349,7 +167,7 @@ func TestHasClientSecret(t *testing.T) {
 					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
 				},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "manual service principal",
@@ -370,6 +188,175 @@ func TestHasClientSecret(t *testing.T) {
 			if got := p.hasClientSecret(); got != tt.want {
 				t.Errorf("AzureCredentialsProvider.hasClientSecret() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestGetTokenCredential(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test cert data was generated with this command:
+	//    openssl req -x509 -noenc -days 3650 -newkey rsa:2048 --keyout - -subj /CN=localhost | base64
+	encodedCertData := "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRRGpyZEVyOVAwVGFVRVMKZHNwRTZjeW8yMk5VOHloUnJiWWxWOVZIMnZXdm5Qc1RoWGN4aG5kK2NVcWRORUJzd2h3Z0ZsVVFjZy9lU1Z4dwpyciszbmgrYkZUWldQY1krMUxRWXhmcEtHc3JDWFFmQjgyTERKSVpEWDRnSFlyV2YzWjI3MmpYTjFYZUZBS3RpCndES2dEWFh1UEg3cjVsSDd2QzNSWGVBZmZxTHdRSmhaZitOb0hOdHY5TUg5SWRVa1FmbURGWnRJL0NRekNyYjYKK3ZPUzZFbVVEL1EyRk5IQnpneENndUdxZ055QmNRYnhKOVFuZytaaklGdWhHWVhKbHN5UlV0ZXh5elRSNS92MApWTks4VXNaZ1JCRmhYcXJCdi9Sb0NDRyt4VkpZdG1kMFFzcnZOekRxRzZRbmpVQjIxelZYcXpLRWtXMmdSdGpYCmN3NHZZUWVoQWdNQkFBRUNnZ0VBUzZ4dGpnMG5Bb2trMGpTK1pPcEtsa01aQUZhemEzWnZ5SGlwa0hEejRQTXQKdGw3UmI1b1FaR3ZXVDJyYkVPcnhleTdCQmk3TEhHaEl1OEV4UXAvaFJHUG9CQUVUUDdYbHlDZ2hXUGtQdEV0RQpkVS9tWHhMb04wTnN6SHVmLzJzaTdwbUg4WXFHWjZRQjB0Z3IyMnV0NjBtYksrQUpGc0VFZjRhU3BCVXNwZXBKCjI4MDBzUUhzcVBFNkw2a1lrZloyR1JSWTFWOXZVcllFT0RLWnBXek1oTjNVQTluQUtIOVBCNnh2UDJPZHlNTmgKaEtnbVVVTU5JRnR3cjhwWmxKbjYwY2YwVXJXcmM1Q3ZxUUx1YUdZbHpEZ1VRR1Y0SkVWanFtOUY2bE1mRVBVdwplTjcwTVZlMXBjTGVMcTJyR0NWV1UzZ2FraC9IdkpxbFIvc2E1NDZIZ3dLQmdRRHlmMXZreVg0dzVzYm9pNkRKCmNsNWRNVUx0TU1ScEIxT2FNRlZPSmpJOWdaSjhtQ2RSanFYZFlvNWFTMktJcXhpZTh0R0c5K1NvaHhEQVdsNHQKbFNVdERzRTQ0ZlNtSUxxQzV6SWF3TlJRbm5rdjBYOEx3bVl1MFFkN1lBakpNbExUV3lEUnNqRDlYUnE0bnNSKwptSlZ3cnQ4NWlTcFM1VUZ5cnlFelBiRmowd0tCZ1FEd1d6cmFlTjBFY2NmMWlJWW1Rc1l5K3lNRUFsSE5SNXlpCmdQWHVBaFN5YnYySlJlUmhkVWIzOWhMci9Mdkt3MFplWGlMV1htWVVHcGJ5elB5WEltMHMrUEwzTFdsNjVHVEYKbCtjZlY1d2ZBZERrazZyQWRFUEVFMnB4Tjg1Q2h5YVBZUG9ZcjBvaG1WOTdWUWNZYzVGcVkrajF0TTZSMVJEdAovZldCU2E4aU93S0JnUUNwYTFkdFdXVERqNGdxVWRyc3d1MndtRWtVNDd4bFVJd1ZMbTE2NHU2NHovemk5WDZLCjJXbUNhV2ZoSjhmWWlnanlpOXpkT2ZYVDFFRmMwZ1g0UExvelo1cVJQalFwbUxZVjNLYkIwRFRGZW1KYWlUZ0UKcERXMXdhNURnUTNDVzFsSWR1TlAvZm1DR2ZrZ1FUUXc2ak9GL1hiUmdNWkVFZzJPclZJNXRZRm9wd0tCZ0VSOQppcWpFdGg1VkdlakNqWStMaVpUdmNVdnNLVWs0dGM2c3R1ZXFtaUU2ZFc3UGhzT3F1cDFmOW9aZWoxaTVDbTFMCm45dThMSlJmKzFHV3pnZDNIT3NxeVhsYjdHbkRlVi9BNkhCSzg4YjJLb05uL01rNG1ETGdZWDEvckh2U3JVOUEKRUNSR2x2WTZFVFpBeFhQWFFzR3hWS25uYXRHdGlGUjVBS05senMwUEFvR0FhNStYK0RVcUdoOWFFNUlEM3dydgpqa2p4UTJLTEZKQ05TcThmOUdTdXZwdmdYc3RIaDZ3S29NNnZNd0lTaGpnWHVVUkg4VWI0dWhSc1dueE1pbGRGCjdFRStRYVdVOWpuQ20ySFFZQXJmWHJBV3c2REJ1ZGlTa0JxZ0tjNkhqREh1bjVmWGxZVW84VWVzTk1RT3JnN2IKYnlkUVo1LzRWLzFvU1dQRVRrN2pTcjA9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURDVENDQWZHZ0F3SUJBZ0lVRlNudEVuK1R2NkhNMnhKUmVFQ0pwSmNDN2lVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZERVNNQkFHQTFVRUF3d0piRzlqWVd4b2IzTjBNQjRYRFRJME1ERXdPREU1TlRReE5Gb1hEVE0wTURFdwpOVEU1TlRReE5Gb3dGREVTTUJBR0ExVUVBd3dKYkc5allXeG9iM04wTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGCkFBT0NBUThBTUlJQkNnS0NBUUVBNDYzUksvVDlFMmxCRW5iS1JPbk1xTnRqVlBNb1VhMjJKVmZWUjlyMXI1ejcKRTRWM01ZWjNmbkZLblRSQWJNSWNJQlpWRUhJUDNrbGNjSzYvdDU0Zm14VTJWajNHUHRTMEdNWDZTaHJLd2wwSAp3Zk5pd3lTR1ExK0lCMksxbjkyZHU5bzF6ZFYzaFFDcllzQXlvQTExN2p4KzYrWlIrN3d0MFYzZ0gzNmk4RUNZCldYL2phQnpiYi9UQi9TSFZKRUg1Z3hXYlNQd2tNd3EyK3Zyemt1aEpsQS8wTmhUUndjNE1Rb0xocW9EY2dYRUcKOFNmVUo0UG1ZeUJib1JtRnlaYk1rVkxYc2NzMDBlZjc5RlRTdkZMR1lFUVJZVjZxd2IvMGFBZ2h2c1ZTV0xabgpkRUxLN3pjdzZodWtKNDFBZHRjMVY2c3loSkZ0b0ViWTEzTU9MMkVIb1FJREFRQUJvMU13VVRBZEJnTlZIUTRFCkZnUVVmcnkvS0R0YW13TWxSUXNGUGJCaHpkdjJVNWN3SHdZRFZSMGpCQmd3Rm9BVWZyeS9LRHRhbXdNbFJRc0YKUGJCaHpkdjJVNWN3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBeVlzdApWdmV3S1JScHVZUldjNFhHNlduWXBoVWR5WkxNb0lscTBzeVoxYWo2WWJxb0s5Tk1IQVlFbkN2U292NnpJWk9hCnRyaHVVY2Y5R0Z6NWUwaUoyeklsRGMzMTJJd3N2NDF4aUMvYnMxNmtFbjhZZi9TdWpFWGFzajd2bUEzSHJGV2YKd1pUSC95Rkw1YXpvL2YrbEExUTI4WXdxRnBIbWxlMHkwTzUzVXRoNHAwdG13bG51K0NyTzlmSHAza1RsYjdmRAo2bXFmazlOcnQ4dE9DNGFIWURvcXRZVWdaaHg1OHhzSE1PVGV0S2VSbHA4SE1GOW9ST3RyaXo0blltNkloVHdvCjVrMUExM1MzQmpheGtaQ3lQWENnWHNzdVhhZ05MYXNycjVRcStWZ2RiL25EaFZlaFY4K1o0SjBZbnp5OU1ac0UKSDFOMU5mTXRzQStQRXF0UFhBPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+	certPEM, err := base64.StdEncoding.DecodeString(encodedCertData)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	tests := []struct {
+		name                         string
+		cluster                      *infrav1.AzureCluster
+		secret                       *corev1.Secret
+		identity                     *infrav1.AzureClusterIdentity
+		ActiveDirectoryAuthorityHost string
+	}{
+		{
+			name: "workload identity",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.WorkloadIdentity,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			},
+		},
+		{
+			name: "manual service principal",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ManualServicePrincipal,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "test-identity-secret",
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity-secret",
+				},
+				Data: map[string][]byte{
+					"clientSecret": []byte("fooSecret"),
+				},
+			},
+			ActiveDirectoryAuthorityHost: "https://login.microsoftonline.com",
+		},
+		{
+			name: "service principal",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "test-identity-secret",
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity-secret",
+				},
+				Data: map[string][]byte{
+					"clientSecret": []byte("fooSecret"),
+				},
+			},
+			ActiveDirectoryAuthorityHost: "https://login.microsoftonline.com",
+		},
+		{
+			name: "service principal certificate",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "test-identity-secret",
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-identity-secret",
+				},
+				Data: map[string][]byte{
+					"clientSecret": certPEM,
+				},
+			},
+		},
+		{
+			name: "user-assigned identity",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.UserAssignedMSI,
+					TenantID: fakeTenantID,
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	_ = infrav1.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			initObjects := []runtime.Object{tt.cluster}
+			if tt.identity != nil {
+				initObjects = append(initObjects, tt.identity)
+			}
+			if tt.secret != nil {
+				initObjects = append(initObjects, tt.secret)
+			}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			provider, err := NewAzureClusterCredentialsProvider(context.Background(), fakeClient, tt.cluster)
+			g.Expect(err).NotTo(HaveOccurred())
+			cred, err := provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cred).NotTo(BeNil())
 		})
 	}
 }

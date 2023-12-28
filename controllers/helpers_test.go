@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -99,7 +98,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
@@ -316,10 +314,11 @@ func TestReconcileAzureSecret(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type: infrav1.ServicePrincipal,
+			Type:     infrav1.ServicePrincipal,
+			TenantID: "fake-tenantid",
 		},
 	}
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 	initObjects := []runtime.Object{fakeIdentity, fakeSecret}
 
 	scheme := setupScheme(g)
@@ -379,7 +378,6 @@ func setupScheme(g *WithT) *runtime.Scheme {
 	g.Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
-	g.Expect(aadpodv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
