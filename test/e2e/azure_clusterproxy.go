@@ -33,8 +33,8 @@ import (
 	"time"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +46,6 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
@@ -55,9 +54,9 @@ type (
 	AzureClusterProxy struct {
 		framework.ClusterProxy
 	}
-	// myEventData is used to be able to Marshal insights.EventData into JSON
+	// myEventData is used to be able to Marshal armmonitor.EventData into JSON
 	// see https://github.com/Azure/azure-sdk-for-go/issues/8224#issuecomment-614777550
-	myEventData insights.EventData
+	myEventData armmonitor.EventData
 )
 
 func NewAzureClusterProxy(name string, kubeconfigPath string, options ...framework.Option) *AzureClusterProxy {
@@ -224,13 +223,11 @@ func (acp *AzureClusterProxy) collectNodes(ctx context.Context, namespace string
 func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace, name, aboveMachinesPath string) {
 	timeoutctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	settings, err := auth.GetSettingsFromEnvironment()
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := azureutil.GetAuthorizer(settings)
+	activityLogsClient, err := armmonitor.NewActivityLogsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
-	activityLogsClient := insights.NewActivityLogsClient(subscriptionID)
-	activityLogsClient.Authorizer = authorizer
 
 	var groupName string
 	clusterClient := acp.GetClient()
@@ -255,12 +252,8 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	start := time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339)
 	end := time.Now().UTC().Format(time.RFC3339)
 
-	itr, err := activityLogsClient.ListComplete(timeoutctx, fmt.Sprintf("eventTimestamp ge '%s' and eventTimestamp le '%s' and resourceGroupName eq '%s'", start, end, groupName), "")
-	if err != nil {
-		// Failing to fetch logs should not cause the test to fail
-		Logf("Error fetching activity logs for resource group %s: %v", groupName, err)
-		return
-	}
+	filter := fmt.Sprintf("eventTimestamp ge '%s' and eventTimestamp le '%s' and resourceGroupName eq '%s'", start, end, groupName)
+	pager := activityLogsClient.NewListPager(filter, nil)
 
 	logFile := path.Join(aboveMachinesPath, activitylog, groupName+".log")
 	Expect(os.MkdirAll(filepath.Dir(logFile), 0o755)).To(Succeed())
@@ -275,19 +268,22 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	out := bufio.NewWriter(f)
 	defer out.Flush()
 
-	for ; itr.NotDone(); err = itr.NextWithContext(timeoutctx) {
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
 		if err != nil {
-			Logf("Got error while iterating over activity logs for resource group %s: %v", groupName, err)
+			// Failing to fetch logs should not cause the test to fail
+			Logf("Error getting pager for activity logs in resource group %s: %v", groupName, err)
 			return
 		}
-		event := itr.Value()
-		if ptr.Deref(event.Category.Value, "") != "Policy" {
-			b, err := json.MarshalIndent(myEventData(event), "", "    ")
-			if err != nil {
-				Logf("Got error converting activity logs data to json: %v", err)
-			}
-			if _, err = out.WriteString(string(b) + "\n"); err != nil {
-				Logf("Got error while writing activity logs for resource group %s: %v", groupName, err)
+		for _, event := range page.Value {
+			if ptr.Deref(event.Category.Value, "") != "Policy" {
+				b, err := json.MarshalIndent(myEventData(*event), "", "    ")
+				if err != nil {
+					Logf("Got error converting activity logs data to json: %v", err)
+				}
+				if _, err = out.WriteString(string(b) + "\n"); err != nil {
+					Logf("Got error while writing activity logs for resource group %s: %v", groupName, err)
+				}
 			}
 		}
 	}
