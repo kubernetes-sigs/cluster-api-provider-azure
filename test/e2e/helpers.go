@@ -751,7 +751,7 @@ func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Version
 
 	if version == "latest" {
 		semver.Sort(versions)
-		version = versions[0].String()
+		version = versions[len(versions)-1].String()
 	}
 
 	resolveVariable(config, varName, version)
