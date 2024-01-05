@@ -109,8 +109,7 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 				NodeRegistration: bootstrapv1.NodeRegistrationOptions{
 					Name: "{{ ds.meta_data[\"local_hostname\"] }}",
 					KubeletExtraArgs: map[string]string{
-						"cloud-provider":                  "external",
-						"azure-container-registry-config": "/etc/kubernetes/azure.json",
+						"cloud-provider": "external",
 					},
 				},
 			},
