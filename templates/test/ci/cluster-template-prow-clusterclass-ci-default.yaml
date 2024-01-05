@@ -420,13 +420,11 @@ spec:
         initConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              azure-container-registry-config: /etc/kubernetes/azure.json
               cloud-provider: external
             name: '{{ ds.meta_data["local_hostname"] }}'
         joinConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              azure-container-registry-config: /etc/kubernetes/azure.json
               cloud-provider: external
             name: '{{ ds.meta_data["local_hostname"] }}'
         mounts:
@@ -497,7 +495,6 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
@@ -541,7 +538,6 @@ spec:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
-            azure-container-registry-config: c:/k/azure.json
             cloud-provider: external
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS

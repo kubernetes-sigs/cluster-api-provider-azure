@@ -28,7 +28,6 @@ spec:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
             cloud-provider: external
-            azure-container-registry-config: 'c:/k/azure.json'
             v: "2"
             windows-priorityclass: "ABOVE_NORMAL_PRIORITY_CLASS"
       files:
