@@ -249,7 +249,6 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'

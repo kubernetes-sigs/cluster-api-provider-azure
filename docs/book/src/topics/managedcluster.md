@@ -455,7 +455,6 @@ spec:
         kubeConfigPath: /etc/kubernetes/admin.conf
     nodeRegistration:
       kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
         cloud-provider: external
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
