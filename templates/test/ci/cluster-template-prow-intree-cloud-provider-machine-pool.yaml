@@ -2,7 +2,6 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
@@ -60,14 +59,26 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
           v: "4"
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -102,13 +113,15 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           azure-container-registry-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -212,7 +225,8 @@ spec:
     nodeRegistration:
       kubeletExtraArgs:
         azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-provider: external
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -294,8 +308,9 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         azure-container-registry-config: c:/k/azure.json
-        cloud-provider: external
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
+        cloud-config: c:/k/azure.json
+        cloud-provider: azure
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
@@ -405,55 +420,6 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      logVerbosity: 4
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart-ci
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure-ci
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
-      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: ${CCM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CCM:-""}
-      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
-      replicas: ${CCM_COUNT:-1}
-      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
-    cloudNodeManager:
-      imageName: ${CNM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CNM:-""}
 ---
 apiVersion: v1
 data:

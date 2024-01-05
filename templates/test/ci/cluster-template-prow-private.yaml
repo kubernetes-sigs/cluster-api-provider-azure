@@ -254,20 +254,6 @@ spec:
   tenantID: ${AZURE_TENANT_ID}
   type: UserAssignedMSI
 ---
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-calico
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: ${CLUSTER_NAME}-calico
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-calico
-  strategy: ApplyOnce
----
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
 kind: HelmChartProxy
 metadata:
@@ -287,11 +273,14 @@ spec:
         type: Calico
       calicoNetwork:
         bgp: Disabled
+        windowsDataplane: HNS
         mtu: 1350
         ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
+        - cidr: {{ $cidr }}{{end}}
       registry: mcr.microsoft.com/oss
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:

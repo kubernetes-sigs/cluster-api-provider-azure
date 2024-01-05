@@ -234,11 +234,14 @@ spec:
         type: Calico
       calicoNetwork:
         bgp: Disabled
+        windowsDataplane: HNS
         mtu: 1350
         ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
+        - cidr: {{ $cidr }}{{end}}
       registry: mcr.microsoft.com/oss
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:

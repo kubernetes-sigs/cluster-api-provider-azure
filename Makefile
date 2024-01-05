@@ -321,7 +321,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	# Wait for the ClusterResourceSet CRD resource to be "installed" onto the mgmt cluster before installing CRS addons
 	timeout --foreground 300 bash -c "until $(KUBECTL) get clusterresourcesets -A; do sleep 3; done"
 
-	# install Windows Calico cluster resource set
+	# install Windows Calico cluster resource set for kube-proxy
 	$(KUBECTL) create configmap calico-windows-addon --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -
 	$(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml
 
@@ -496,11 +496,8 @@ generate-e2e-templates: $(KUSTOMIZE) ## Generate Azure infrastructure templates 
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in.yaml
 
 .PHONY: generate-addons
-generate-addons: fetch-calico-manifests ## Generate metric-server, calico, calico-ipv6, azure cni v1 addons.
+generate-addons: ## Generate metric-server, azure cni v1 addons.
 	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
-	$(KUSTOMIZE) build $(ADDONS_DIR)/calico > $(ADDONS_DIR)/calico.yaml
-	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-ipv6 > $(ADDONS_DIR)/calico-ipv6.yaml
-	$(KUSTOMIZE) build $(ADDONS_DIR)/calico-dual-stack > $(ADDONS_DIR)/calico-dual-stack.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/azure-cni-v1 > $(ADDONS_DIR)/azure-cni-v1.yaml
 
 .PHONY: generate-aso-crds
@@ -514,28 +511,10 @@ generate-aso-crds: $(YQ)
 		sed 's/\$$\$$/$$$$$$$$/g' \
 		> $(ASO_CRDS_PATH)
 
-# When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
-export CALICO_VERSION := v3.26.1
-# Where all downloaded Calico manifests are unpacked and stored.
-CALICO_RELEASES := $(ARTIFACTS)/calico
-# Path to manifests directory in a Calico release archive.
-CALICO_RELEASE_MANIFESTS_DIR := release-$(CALICO_VERSION)/manifests
-# Path where Calico manifests are stored which should be used for addons generation.
-CALICO_MANIFESTS_DIR := $(ARTIFACTS)/calico/$(CALICO_RELEASE_MANIFESTS_DIR)
-
+export CALICO_VERSION := v3.27.0
 .PHONY: get-calico-version
 get-calico-version: ## Print the Calico version used for CNI in the repo.
 	@echo $(CALICO_VERSION)
-
-.PHONY: fetch-calico-manifests
-fetch-calico-manifests: $(CALICO_MANIFESTS_DIR) ## Get Calico release manifests and unzip them.
-	cp $(CALICO_MANIFESTS_DIR)/calico-vxlan.yaml $(ADDONS_DIR)/calico
-	cp $(CALICO_MANIFESTS_DIR)/calico-policy-only.yaml $(ADDONS_DIR)/calico-ipv6
-
-$(CALICO_MANIFESTS_DIR):
-	mkdir -p $(ARTIFACTS)/calico
-	@echo "Fetching Calico release manifests from release artifacts, this might take a minute..."
-	wget -qO- https://github.com/projectcalico/calico/releases/download/$(CALICO_VERSION)/release-$(CALICO_VERSION).tgz | tar xz --directory $(CALICO_RELEASES) $(CALICO_RELEASE_MANIFESTS_DIR)
 
 .PHONY: modules
 modules: ## Runs go mod tidy to ensure proper vendoring.
