@@ -115,7 +115,7 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 
 	emptyTest.machine.Spec.SetIdentityDefaults(fakeSubscriptionID)
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
-	_, err := uuid.Parse(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name)
+	_, err := uuid.Validate(emptyTest.machine.Spec.SystemAssignedIdentityRole.Name)
 	g.Expect(err).To(Not(HaveOccurred()))
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
 	g.Expect(emptyTest.machine.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, ContributorRoleID)))

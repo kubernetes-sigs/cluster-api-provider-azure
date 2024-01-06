@@ -479,7 +479,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	err = ampw.Default(context.Background(), emptyTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
-	_, err = guuid.Parse(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
+	_, err = guuid.Validate(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
 	g.Expect(err).To(Not(HaveOccurred()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
