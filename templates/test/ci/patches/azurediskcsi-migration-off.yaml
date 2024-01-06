@@ -42,4 +42,3 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             feature-gates: CSIMigrationAzureDisk=false
-            azure-container-registry-config: /etc/kubernetes/azure.json
