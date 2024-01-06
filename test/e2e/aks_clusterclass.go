@@ -31,6 +31,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type AKSClusterClassInput struct {
@@ -102,6 +103,8 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 
 	By("Upgrading the cluster topology version")
 	Eventually(func(g Gomega) {
+		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(input.Cluster), input.Cluster)
+		g.Expect(err).NotTo(HaveOccurred())
 		input.Cluster.Spec.Topology.Version = input.KubernetesVersionUpgradeTo
 		g.Expect(mgmtClient.Update(ctx, input.Cluster)).To(Succeed())
 	}, inputGetter().WaitIntervals...).Should(Succeed())
