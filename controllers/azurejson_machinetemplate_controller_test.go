@@ -18,10 +18,8 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,10 +155,6 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 			fail: false,
 		},
 	}
-
-	os.Setenv(auth.ClientID, "fooClient")
-	os.Setenv(auth.ClientSecret, "fooSecret")
-	os.Setenv(auth.TenantID, "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

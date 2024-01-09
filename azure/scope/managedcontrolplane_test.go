@@ -24,7 +24,6 @@ import (
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1291,9 +1290,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns empty private endpoints list if no subnets are specified",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -1318,9 +1314,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns empty private endpoints list if no private endpoints are specified",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -1351,9 +1344,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns list of private endpoint specs if private endpoints are specified",
 			Input: ManagedControlPlaneScopeParams{
-				AzureClients: AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-cluster",

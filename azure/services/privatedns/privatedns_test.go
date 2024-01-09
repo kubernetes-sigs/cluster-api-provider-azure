@@ -18,10 +18,11 @@ package privatedns
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
@@ -92,7 +93,7 @@ var (
 
 	notDoneError  = azure.NewOperationNotDoneError(&infrav1.Future{Type: "resourceType", ResourceGroup: resourceGroup, Name: "resourceName"})
 	errFake       = errors.New("this is an error")
-	notFoundError = autorest.DetailedError{StatusCode: 404}
+	notFoundError = &azcore.ResponseError{StatusCode: http.StatusNotFound}
 )
 
 func TestReconcilePrivateDNS(t *testing.T) {

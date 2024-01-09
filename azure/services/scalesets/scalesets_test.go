@@ -18,11 +18,13 @@ package scalesets
 
 import (
 	"context"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -61,9 +63,17 @@ var (
 		},
 	}
 
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
-	notFoundError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusNotFound}, "Not Found")
+	notFoundError = &azcore.ResponseError{StatusCode: http.StatusNotFound}
 )
+
+func internalError() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
+}
 
 func init() {
 	_ = clusterv1.AddToScheme(scheme.Scheme)
@@ -138,26 +148,26 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "error getting existing vmss",
-			expectedError: "failed to get existing VMSS: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to get existing VMSS:.*#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				spec := getDefaultVMSSSpec()
 				// Validate spec
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(spec).AnyTimes()
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(nil, internalError)
+				m.Get(gomockinternal.AContext(), &defaultSpec).Return(nil, internalError())
 			},
 		},
 		{
 			name:          "failed to list instances",
-			expectedError: "failed to get existing VMSS instances: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to get existing VMSS instances:.*#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				spec := getDefaultVMSSSpec()
 				// Validate spec
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(spec).AnyTimes()
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(&resultVMSS, nil)
-				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, internalError)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing VMSS instances: #: Internal Server Error: StatusCode=500"))
+				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, internalError())
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing VMSS instances: "+internalError().Error()))
 			},
 		},
 		{
@@ -171,13 +181,13 @@ func TestReconcileVMSS(t *testing.T) {
 				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, nil)
 
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).
-					Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
+					Return(nil, internalError())
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError())
 			},
 		},
 		{
 			name:          "failed to reconcile replicas",
-			expectedError: "unable to reconcile VMSS replicas: #: Internal Server Error: StatusCode=500",
+			expectedError: "unable to reconcile VMSS replicas:.*#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				spec := getDefaultVMSSSpec()
@@ -188,7 +198,7 @@ func TestReconcileVMSS(t *testing.T) {
 				r.CreateOrUpdateResource(gomockinternal.AContext(), spec, serviceName).Return(getResultVMSS(), nil)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 
-				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedVMSS).Return(internalError)
+				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedVMSS).Return(internalError())
 			},
 		},
 		{
@@ -323,7 +333,7 @@ func TestReconcileVMSS(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError), err.Error())
+				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError), err.Error())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -375,8 +385,8 @@ func TestDeleteVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
-				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(internalError)
-				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
+				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(internalError())
+				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError())
 				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
@@ -404,7 +414,7 @@ func TestDeleteVMSS(t *testing.T) {
 			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

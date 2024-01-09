@@ -19,10 +19,12 @@ package vnetpeerings
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -101,9 +103,17 @@ var (
 	}
 	fakePeeringSpecs      = []azure.ResourceSpecGetter{&fakePeering1To2, &fakePeering2To1, &fakePeering1To3, &fakePeering3To1, &fakePeeringHubToSpoke, &fakePeeringSpokeToHub}
 	fakePeeringExtraSpecs = []azure.ResourceSpecGetter{&fakePeering1To2, &fakePeering2To1, &fakePeeringExtra}
-	internalError         = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 	notDoneError          = azure.NewOperationNotDoneError(&infrav1.Future{})
 )
+
+func internalError() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
+}
 
 func TestReconcileVnetPeerings(t *testing.T) {
 	testcases := []struct {
@@ -175,11 +185,11 @@ func TestReconcileVnetPeerings(t *testing.T) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(&fakePeering1To2, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(&fakePeering2To1, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(nil, internalError())
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(&fakePeering3To1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(&fakePeeringHubToSpoke, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(&fakePeeringSpokeToHub, nil)
-				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -189,12 +199,12 @@ func TestReconcileVnetPeerings(t *testing.T) {
 				p.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(&fakePeering1To2, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(nil, internalError())
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(nil, notDoneError)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(&fakePeering3To1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(&fakePeeringHubToSpoke, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(&fakePeeringSpokeToHub, nil)
-				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -206,10 +216,10 @@ func TestReconcileVnetPeerings(t *testing.T) {
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(&fakePeering1To2, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(&fakePeering2To1, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(nil, notDoneError)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(nil, internalError)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(nil, internalError())
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(&fakePeeringHubToSpoke, nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(&fakePeeringSpokeToHub, nil)
-				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdatePutStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -250,7 +260,7 @@ func TestReconcileVnetPeerings(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -328,11 +338,11 @@ func TestDeleteVnetPeerings(t *testing.T) {
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(internalError)
+				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(internalError())
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(nil)
-				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -342,12 +352,12 @@ func TestDeleteVnetPeerings(t *testing.T) {
 				p.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				p.VnetPeeringSpecs().Return(fakePeeringSpecs)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(nil)
-				r.DeleteResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(internalError)
+				r.DeleteResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(internalError())
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(notDoneError)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(nil)
-				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -359,10 +369,10 @@ func TestDeleteVnetPeerings(t *testing.T) {
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To2, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering2To1, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeering1To3, ServiceName).Return(notDoneError)
-				r.DeleteResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(internalError)
+				r.DeleteResource(gomockinternal.AContext(), &fakePeering3To1, ServiceName).Return(internalError())
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringHubToSpoke, ServiceName).Return(nil)
 				r.DeleteResource(gomockinternal.AContext(), &fakePeeringSpokeToHub, ServiceName).Return(nil)
-				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError)
+				p.UpdateDeleteStatus(infrav1.VnetPeeringReadyCondition, ServiceName, internalError())
 			},
 		},
 		{
@@ -405,7 +415,7 @@ func TestDeleteVnetPeerings(t *testing.T) {
 				fmt.Printf("\nExpected error:\t%s\n", tc.expectedError)
 				fmt.Printf("\nActual error:\t%s\n", err.Error())
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

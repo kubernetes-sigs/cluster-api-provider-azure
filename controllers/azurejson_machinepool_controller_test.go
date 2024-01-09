@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -211,9 +210,9 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	t.Setenv(auth.ClientID, "fooClient")
-	t.Setenv(auth.ClientSecret, "fooSecret")
-	t.Setenv(auth.TenantID, "fooTenant")
+	t.Setenv("AZURE_CLIENT_ID", "fooClient")
+	t.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
+	t.Setenv("AZURE_TENANT_ID", "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

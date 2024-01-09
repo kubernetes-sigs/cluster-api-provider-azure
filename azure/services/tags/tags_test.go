@@ -18,11 +18,13 @@ package tags
 
 import (
 	"context"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -30,6 +32,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags/mock_tags"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
+
+func internalError() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
+}
 
 func TestReconcileTags(t *testing.T) {
 	testcases := []struct {
@@ -183,7 +194,7 @@ func TestReconcileTags(t *testing.T) {
 		},
 		{
 			name:          "error getting existing tags",
-			expectedError: "failed to get existing tags: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to get existing tags:.*#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.TagsSpecs().Return([]azure.TagsSpec{
@@ -196,12 +207,12 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(armresources.TagsResource{}, internalError())
 			},
 		},
 		{
 			name:          "error updating tags",
-			expectedError: "cannot update tags: #: Internal Server Error: StatusCode=500",
+			expectedError: "cannot update tags:.*#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.TagsSpecs().Return([]azure.TagsSpec{
@@ -226,7 +237,7 @@ func TestReconcileTags(t *testing.T) {
 							"key": ptr.To("value"),
 						},
 					},
-				}).Return(armresources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error"))
+				}).Return(armresources.TagsResource{}, internalError())
 			},
 		},
 		{
@@ -275,7 +286,7 @@ func TestReconcileTags(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
