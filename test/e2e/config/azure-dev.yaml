@@ -16,8 +16,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/core-components.yaml"
+    - name: v1.5.4 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.4/core-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -39,8 +39,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/bootstrap-components.yaml"
+    - name: v1.5.4 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.4/bootstrap-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -61,8 +61,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v1.0.5 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/control-plane-components.yaml"
+    - name: v1.5.4 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.4/control-plane-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -83,13 +83,13 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v1.0.2 # earliest published release in the v1beta1 series; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.0.2/infrastructure-components.yaml
+    - name: v1.11.7 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.11.7/infrastructure-components.yaml
       type: url
       contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.0.2/cluster-template-prow.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.11.7/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
@@ -195,11 +195,6 @@ variables:
   CLUSTER_IDENTITY_NAME: "cluster-identity-sp"
   NODE_DRAIN_TIMEOUT: "60s"
   CI_VERSION: ""
-  # NOTE: INIT_WITH_BINARY and INIT_WITH_KUBERNETES_VERSION are only used by the clusterctl upgrade test to initialize
-  # the management cluster to be upgraded.
-  INIT_WITH_BINARY: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.5/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_PROVIDERS_CONTRACT: "v1beta1"
-  INIT_WITH_KUBERNETES_VERSION: "v1.23.13"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   SECURITY_SCAN_FAIL_THRESHOLD: "${SECURITY_SCAN_FAIL_THRESHOLD:-100}"
