@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -170,9 +169,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		},
 	}
 
-	os.Setenv(auth.ClientID, "fooClient")
-	os.Setenv(auth.ClientSecret, "fooSecret")
-	os.Setenv(auth.TenantID, "fooTenant")
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

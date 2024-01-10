@@ -18,10 +18,12 @@ package loadbalancers
 
 import (
 	"context"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -102,7 +104,12 @@ var (
 		},
 	}
 
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+	internalError = &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
 )
 
 func TestReconcileLoadBalancer(t *testing.T) {
@@ -194,7 +201,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -272,7 +279,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

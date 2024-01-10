@@ -18,11 +18,13 @@ package inboundnatrules
 
 import (
 	"context"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -69,7 +71,12 @@ var (
 		FrontendIPConfigurationID: ptr.To("frontend-ip-config-id-2"),
 	}
 
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+	internalError = &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
 )
 
 func getFakeNatSpecWithoutPort(spec InboundNatSpec) *InboundNatSpec {
@@ -150,7 +157,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 		},
 		{
 			name:          "fail to get existing rules",
-			expectedError: "failed to get existing NAT rules: #: Internal Server Error: StatusCode=500",
+			expectedError: `failed to get existing NAT rules:.*#: Internal Server Error: StatusCode=500`,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
@@ -159,7 +166,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.APIServerLBName().AnyTimes().Return("my-lb")
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing NAT rules: #: Internal Server Error: StatusCode=500"))
+				s.UpdatePutStatus(infrav1.InboundNATRulesReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to get existing NAT rules: "+internalError.Error()))
 			},
 		},
 		{
@@ -203,7 +210,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -281,7 +288,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

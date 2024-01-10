@@ -18,11 +18,9 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -226,10 +224,6 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			fail: false,
 		},
 	}
-
-	os.Setenv(auth.ClientID, "fooClient")
-	os.Setenv(auth.ClientSecret, "fooSecret")
-	os.Setenv(auth.TenantID, "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

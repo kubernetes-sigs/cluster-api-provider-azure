@@ -18,11 +18,13 @@ package scalesetvms
 
 import (
 	"context"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -62,9 +64,16 @@ var (
 	flexScaleSetVM = armcompute.VirtualMachine{
 		Name: &uniformScaleSetVMSpec.Name,
 	}
-
-	errInternal = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
 )
+
+func errInternal() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
+}
 
 func TestReconcileVMSS(t *testing.T) {
 	testcases := []struct {
@@ -111,7 +120,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(nil, errInternal)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(nil, errInternal())
 			},
 		},
 		{
@@ -119,7 +128,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
-				v.CreateOrUpdateResource(gomockinternal.AContext(), flexGetter, serviceName).Return(nil, errInternal)
+				v.CreateOrUpdateResource(gomockinternal.AContext(), flexGetter, serviceName).Return(nil, errInternal())
 			},
 		},
 	}
@@ -147,7 +156,7 @@ func TestReconcileVMSS(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError), err.Error())
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError), err.Error())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -184,7 +193,7 @@ func TestDeleteVMSS(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
-				r.DeleteResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(errInternal)
+				r.DeleteResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(errInternal())
 				s.SetVMSSVMState(infrav1.Deleting)
 			},
 		},
@@ -193,7 +202,7 @@ func TestDeleteVMSS(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
-				v.DeleteResource(gomockinternal.AContext(), flexGetter, serviceName).Return(errInternal)
+				v.DeleteResource(gomockinternal.AContext(), flexGetter, serviceName).Return(errInternal())
 				s.SetVMSSVMState(infrav1.Deleting)
 			},
 		},
@@ -222,7 +231,7 @@ func TestDeleteVMSS(t *testing.T) {
 			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError), err.Error())
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError), err.Error())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

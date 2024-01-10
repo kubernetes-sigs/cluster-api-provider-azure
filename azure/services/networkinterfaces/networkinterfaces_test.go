@@ -19,10 +19,12 @@ package networkinterfaces
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -71,7 +73,12 @@ var (
 		SKU:                   &fakeSku,
 		IPConfigs:             []IPConfig{{}, {}},
 	}
-	internalError = autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: http.StatusInternalServerError}, "Internal Server Error")
+	internalError = &azcore.ResponseError{
+		RawResponse: &http.Response{
+			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+			StatusCode: http.StatusInternalServerError,
+		},
+	}
 )
 
 func TestReconcileNetworkInterface(t *testing.T) {
