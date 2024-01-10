@@ -2,6 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
+    cloud-provider: azure-flatcar
     cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
@@ -307,3 +308,23 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-flatcar
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-flatcar
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |-
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+      caCertDir: /usr/share/ca-certificates

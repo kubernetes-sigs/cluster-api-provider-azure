@@ -3,4 +3,4 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    cni: calico
+    cloud-provider: azure-flatcar

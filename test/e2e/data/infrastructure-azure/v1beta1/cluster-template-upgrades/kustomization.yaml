@@ -2,7 +2,7 @@ resources:
   - ../bases/cluster-with-kcp.yaml
   - ../bases/md.yaml
   - ../bases/mp.yaml
-  - ../bases/azure-cluster-identity.yaml
+  - ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
 
 patchesStrategicMerge:
-  - ../patches/azurecluster-identity-ref.yaml
+  - ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml

@@ -5,7 +5,9 @@ resources:
   - ../../../flavors/flatcar/
   - ../../../addons/cluster-api-helm/calico.yaml
   - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure-flatcar.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-cloud-provider-azure-flatcar.yaml
