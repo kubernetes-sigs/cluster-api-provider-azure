@@ -13,6 +13,26 @@ patchesStrategicMerge:
   - ../patches/windows-addons-disabled.yaml
 patches:
   - target:
+      group: bootstrap.cluster.x-k8s.io
+      version: v1beta1
+      kind: KubeadmConfigTemplate
+      name: .*-md-0
+      namespace: default
+    path: ../prow-ci-version/patches/oot-credential-provider.yaml
+  - target:
+      group: bootstrap.cluster.x-k8s.io
+      version: v1beta1
+      kind: KubeadmConfigTemplate
+      name: .*-md-win
+      namespace: default
+    path: ../prow-ci-version/patches/oot-credential-provider-win.yaml
+  - target:
+      group: controlplane.cluster.x-k8s.io
+      version: v1beta1
+      kind: KubeadmControlPlane
+      name: .*-control-plane
+    path: ../prow-ci-version/patches/oot-credential-provider-kcp.yaml
+  - target:
       kind: HelmChartProxy
       name: calico
     patch: |
