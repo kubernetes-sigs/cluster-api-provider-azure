@@ -1,6 +1,9 @@
 installation:
   cni:
     type: Calico
+    ipam:
+      strictAffinity: true
+      type: Calico
   calicoNetwork:
     bgp: Disabled
     mtu: 1350
@@ -10,10 +13,11 @@ installation:
     windowsDataplane: HNS
   serviceCIDRs: 
     - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
-  registry: mcr.microsoft.com/oss
+  registry: docker.io/
 # Image and registry configuration for the tigera/operator pod.
 tigeraOperator:
-  image: tigera/operator
-  registry: mcr.microsoft.com/oss
+  image: tigera-operator
+  registry: jsturtevant
+  version: latest
 calicoctl:
   image: mcr.microsoft.com/oss/calico/ctl

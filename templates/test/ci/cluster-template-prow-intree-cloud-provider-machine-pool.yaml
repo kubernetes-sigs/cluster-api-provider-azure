@@ -382,6 +382,9 @@ spec:
     installation:
       cni:
         type: Calico
+        ipam:
+          strictAffinity: true
+          type: Calico
       calicoNetwork:
         bgp: Disabled
         windowsDataplane: HNS
@@ -391,12 +394,13 @@ spec:
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
       serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
-        - cidr: {{ $cidr }}{{end}}
-      registry: mcr.microsoft.com/oss
+        - {{ $cidr }}{{end}}
+      registry: docker.io/
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
-      image: tigera/operator
-      registry: mcr.microsoft.com/oss
+      image: tigera-operator
+      registry: jsturtevant
+      version: latest
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
   version: ${CALICO_VERSION}
