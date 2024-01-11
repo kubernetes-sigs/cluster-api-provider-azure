@@ -22,6 +22,15 @@ patches:
       version: v1
       kind: Deployment
       name: azureserviceoperator-controller-manager
+  - patch: |- # Add label for Azure workload identity webhook
+      - op: add
+        path: "/spec/template/metadata/labels/azure.workload.identity~1use"
+        value: "true"
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: azureserviceoperator-controller-manager
   - patch: |- # remove permissions to manage CRDs
       $patch: delete
       apiVersion: rbac.authorization.k8s.io/v1
