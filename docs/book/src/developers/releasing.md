@@ -44,28 +44,39 @@ Sometimes pull requests touch a large number of files and are more likely to cre
   - Open a PR in https://github.com/kubernetes/test-infra to change this [line](https://github.com/kubernetes/test-infra/blob/25db54eb9d52e08c16b3601726d8f154f8741025/config/prow/plugins.yaml#L344)
     - Example PR: https://github.com/kubernetes/test-infra/pull/16827
 
-### Update test capz provider metadata.yaml (skip for patch releases)
+### Update test provider versions (skip for patch releases)
+
+This can be done in parallel with release publishing and does not impact the release or its artifacts.
+
+#### Update test capz provider metadata.yaml
 
 Using that same next release version used to create a new milestone, update the the capz provider [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/data/shared/v1beta1_provider/metadata.yaml) that we use to run PR and periodic cluster E2E tests against the main branch templates.
 
-For example, if the latest stable API version of capz that we run E2E tests against is `v1beta`, and we're releasing `v1.4.0`, and our next release version is `v1.5.0`, then we want to ensure that the `metadata.yaml` defines a contract between `1.5` and `v1beta1`:
+For example, if the latest stable API version of capz that we run E2E tests against is `v1beta`, and we're releasing `v1.12.0`, and our next release version is `v1.13.0`, then we want to ensure that the `metadata.yaml` defines a contract between `v1.13.0` and `v1beta1`:
 
 ```yaml
 apiVersion: clusterctl.cluster.x-k8s.io/v1alpha3
 releaseSeries:
-  - major: 0
-    minor: 5
-    contract: v1alpha4
   - major: 1
-    minor: 5
+    minor: 11
+    contract: v1beta1
+  - major: 1
+    minor: 12
+    contract: v1beta1
+  - major: 1
+    minor: 13
     contract: v1beta1
 ```
 
-Additionally, we need to update the `type: InfrastructureProvider` spec in [azure-dev.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/config/azure-dev.yaml) to express that our intent is to test (using the above example) `1.5`. By convention we use a sentinel patch version "99" to express "any patch version". In this example we want to look for the `type: InfrastructureProvider` with a `name` value of `v1.4.99` and update it to `v1.5.99`:
+Additionally, we need to update the `type: InfrastructureProvider` spec in [azure-dev.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/test/e2e/config/azure-dev.yaml) to express that our intent is to test (using the above example) `1.5`. By convention we use a sentinel patch version "99" to express "any patch version". In this example we want to look for the `type: InfrastructureProvider` with a `name` value of `v1.12.99` and update it to `v1.13.99`:
 
 ```
-    - name: v1.5.99 # "vNext"; use manifests from local source files
+    - name: v1.13.99 # "vNext"; use manifests from local source files
 ```
+
+#### Update clusterctl API version upgrade tests
+
+Update the [API version upgrade tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v1.12.1/test/e2e/capi_test.go#L214) to use the oldest supported release versions of CAPI and CAPZ after the release is cut as "Init" provider versions. See [this PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4433) for more details.
 
 ### Create a tag
 
