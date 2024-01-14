@@ -28,8 +28,8 @@ import (
 // Reconciler is a generic interface used to perform reconciliation of Azure resources backed by ASO.
 type Reconciler[T genruntime.MetaObject] interface {
 	CreateOrUpdateResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (result T, err error)
-	DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error)
-	PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error)
+	DeleteResource(ctx context.Context, resource T, serviceName string) (err error)
+	PauseResource(ctx context.Context, resource T, serviceName string) (err error)
 }
 
 // TagsGetterSetter represents an object that supports tags.

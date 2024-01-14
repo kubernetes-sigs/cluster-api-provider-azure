@@ -960,17 +960,15 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
 
-		mockCtrl := gomock.NewController(t)
-		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		}).AnyTimes()
+		}
 
 		ctx := context.Background()
-		err := s.DeleteResource(ctx, specMock, "service")
+		err := s.DeleteResource(ctx, resource, "service")
 		g.Expect(err).To(BeNil())
 	})
 
@@ -984,17 +982,8 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
 
-		mockCtrl := gomock.NewController(t)
-		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-			},
-		}).AnyTimes()
-
 		ctx := context.Background()
-		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
@@ -1002,9 +991,10 @@ func TestDeleteResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 			},
-		})).To(Succeed())
+		}
+		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
-		err := s.DeleteResource(ctx, specMock, "service")
+		err := s.DeleteResource(ctx, resource, "service")
 		g.Expect(err).NotTo(BeNil())
 		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
 		var recerr azure.ReconcileError
@@ -1022,24 +1012,17 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](c, clusterName)
 
-		mockCtrl := gomock.NewController(t)
-		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		}).AnyTimes()
+		}
 
 		ctx := context.Background()
-		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-			},
-		})).To(Succeed())
+		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
-		err := s.DeleteResource(ctx, specMock, "service")
+		err := s.DeleteResource(ctx, resource, "service")
 		g.Expect(err).To(BeNil())
 	})
 
@@ -1053,24 +1036,17 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](ErroringGetClient{Client: c, err: errors.New("a get error")}, clusterName)
 
-		mockCtrl := gomock.NewController(t)
-		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
 			},
-		}).AnyTimes()
+		}
 
 		ctx := context.Background()
-		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-			},
-		})).To(Succeed())
+		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
-		err := s.DeleteResource(ctx, specMock, "service")
+		err := s.DeleteResource(ctx, resource, "service")
 		g.Expect(err).To(MatchError(ContainSubstring("a get error")))
 	})
 
@@ -1084,17 +1060,7 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](ErroringDeleteClient{Client: c, err: errors.New("an error")}, clusterName)
 
-		mockCtrl := gomock.NewController(t)
-		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-			},
-		}).AnyTimes()
-
-		ctx := context.Background()
-		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
@@ -1102,9 +1068,12 @@ func TestDeleteResource(t *testing.T) {
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
 			},
-		})).To(Succeed())
+		}
 
-		err := s.DeleteResource(ctx, specMock, "service")
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, resource)).To(Succeed())
+
+		err := s.DeleteResource(ctx, resource, "service")
 		g.Expect(err).NotTo(BeNil())
 		g.Expect(err.Error()).To(ContainSubstring("failed to delete resource"))
 	})
@@ -1113,20 +1082,18 @@ func TestDeleteResource(t *testing.T) {
 func TestPauseResource(t *testing.T) {
 	tests := []struct {
 		name          string
-		expect        func(*mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup])
+		resource      *asoresourcesv1.ResourceGroup
 		clientBuilder func(g Gomega) client.Client
 		expectedErr   string
-		verify        func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup])
+		verify        func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup)
 	}{
 		{
 			name: "success, not already paused",
-			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup]) {
-				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-					},
-				}).AnyTimes()
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
@@ -1147,23 +1114,21 @@ func TestPauseResource(t *testing.T) {
 					}).
 					Build()
 			},
-			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]) {
+			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
-				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicyManage)))
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
 			},
 		},
 		{
 			name: "success, already paused",
-			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup]) {
-				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-					},
-				}).AnyTimes()
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
@@ -1184,23 +1149,21 @@ func TestPauseResource(t *testing.T) {
 					}).
 					Build()
 			},
-			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]) {
+			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
-				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicySkip)))
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
 			},
 		},
 		{
 			name: "failure getting existing resource",
-			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup]) {
-				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-					},
-				}).AnyTimes()
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
@@ -1213,13 +1176,11 @@ func TestPauseResource(t *testing.T) {
 		},
 		{
 			name: "failure patching resource",
-			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup]) {
-				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-					},
-				}).AnyTimes()
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
@@ -1245,13 +1206,11 @@ func TestPauseResource(t *testing.T) {
 		},
 		{
 			name: "success, unmanaged resource",
-			expect: func(spec *mock_azure.MockASOResourceSpecGetterMockRecorder[*asoresourcesv1.ResourceGroup]) {
-				spec.ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "namespace",
-					},
-				}).AnyTimes()
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
 			},
 			clientBuilder: func(g Gomega) client.Client {
 				scheme := runtime.NewScheme()
@@ -1272,10 +1231,10 @@ func TestPauseResource(t *testing.T) {
 					}).
 					Build()
 			},
-			verify: func(g Gomega, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]) {
+			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
 				ctx := context.Background()
 				actual := &asoresourcesv1.ResourceGroup{}
-				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(spec.ResourceRef()), actual)).To(Succeed())
+				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).NotTo(HaveKey(prePauseReconcilePolicyAnnotation))
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
 			},
@@ -1291,20 +1250,16 @@ func TestPauseResource(t *testing.T) {
 
 			ctrlClient := test.clientBuilder(g)
 
-			mockCtrl := gomock.NewController(t)
-			spec := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-			test.expect(spec.EXPECT())
-
 			s := New[*asoresourcesv1.ResourceGroup](ctrlClient, clusterName)
 
-			err := s.PauseResource(ctx, spec, svcName)
+			err := s.PauseResource(ctx, test.resource, svcName)
 			if test.expectedErr != "" {
 				g.Expect(err.Error()).To(ContainSubstring(test.expectedErr))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 			if test.verify != nil {
-				test.verify(g, ctrlClient, spec)
+				test.verify(g, ctrlClient, test.resource)
 			}
 		})
 	}

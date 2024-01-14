@@ -110,7 +110,7 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	//   - no error (i.e. deleted)
 	var resultErr error
 	for _, spec := range s.Specs {
-		err := s.DeleteResource(ctx, spec, s.Name())
+		err := s.DeleteResource(ctx, spec.ResourceRef(), s.Name())
 		if err != nil && (!azure.IsOperationNotDoneError(err) || resultErr == nil) {
 			resultErr = err
 		}
@@ -131,8 +131,8 @@ func (s *Service[T, S]) Pause(ctx context.Context) error {
 	defer done()
 
 	for _, spec := range s.Specs {
-		if err := s.PauseResource(ctx, spec, s.Name()); err != nil {
-			ref := spec.ResourceRef()
+		ref := spec.ResourceRef()
+		if err := s.PauseResource(ctx, ref, s.Name()); err != nil {
 			return errors.Wrapf(err, "failed to pause ASO resource %s %s/%s", ref.GetObjectKind().GroupVersionKind(), ref.GetNamespace(), ref.GetName())
 		}
 	}
