@@ -31,7 +31,6 @@ const serviceName = "agentpools"
 
 // AgentPoolScope defines the scope interface for an agent pool.
 type AgentPoolScope interface {
-	azure.ClusterDescriber
 	aso.Scope
 
 	Name() string
