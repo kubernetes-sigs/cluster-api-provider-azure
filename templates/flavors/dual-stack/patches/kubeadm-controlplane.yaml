@@ -13,7 +13,6 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
       localAPIEndpoint:
         bindPort: 6443
@@ -21,7 +20,6 @@ spec:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
       controlPlane:
         localAPIEndpoint:
