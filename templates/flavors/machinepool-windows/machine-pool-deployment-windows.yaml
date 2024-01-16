@@ -58,7 +58,6 @@ spec:
       name: '{{ ds.meta_data["local_hostname"] }}'
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
-        azure-container-registry-config: 'c:/k/azure.json'
         cloud-provider: external
         pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.9"
   files:

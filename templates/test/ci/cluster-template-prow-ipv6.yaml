@@ -119,7 +119,6 @@ spec:
         bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
           cluster-dns: fd00::10
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -130,7 +129,6 @@ spec:
           bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
           cluster-dns: fd00::10
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -327,9 +325,7 @@ spec:
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
+        cloud-provider: external
         cluster-dns: '[fd00::10]'
       name: '{{ ds.meta_data["local_hostname"] }}'
 ---
