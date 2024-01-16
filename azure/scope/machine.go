@@ -499,7 +499,8 @@ func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
 // AvailabilitySet returns the availability set for this machine if available.
 func (m *MachineScope) AvailabilitySet() (string, bool) {
 	// AvailabilitySet service is not supported on EdgeZone currently.
-	if !m.AvailabilitySetEnabled() || m.ExtendedLocation() != nil {
+	// AvailabilitySet cannot be used with Spot instances.
+	if !m.AvailabilitySetEnabled() || m.AzureMachine.Spec.SpotVMOptions != nil || m.ExtendedLocation() != nil {
 		return "", false
 	}
 

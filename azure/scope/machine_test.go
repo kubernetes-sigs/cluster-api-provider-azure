@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -1205,7 +1206,8 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{},
+				Machine:      &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "",
 			wantAvailabilitySetExistence: false,
@@ -1231,6 +1233,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 				},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "cluster_control-plane-as",
 			wantAvailabilitySetExistence: true,
@@ -1256,9 +1259,39 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 				},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "cluster_foo-machine-deployment-as",
 			wantAvailabilitySetExistence: true,
+		},
+		{
+			name: "returns empty and false if machine is using spot instances",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					Spec: infrav1.AzureMachineSpec{
+						SpotVMOptions: &infrav1.SpotVMOptions{MaxPrice: resource.NewQuantity(-1, resource.DecimalSI)},
+					},
+				},
+			},
+			wantAvailabilitySetName:      "",
+			wantAvailabilitySetExistence: false,
 		},
 		{
 			name: "returns AvailabilitySet name and true if AvailabilitySet is enabled for worker machine which is part of machine set",
@@ -1281,6 +1314,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 				},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "cluster_foo-machine-set-as",
 			wantAvailabilitySetExistence: true,
@@ -1307,6 +1341,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 				},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "cluster_foo-machine-deployment-as",
 			wantAvailabilitySetExistence: true,
@@ -1330,6 +1365,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Labels: map[string]string{},
 					},
 				},
+				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "",
 			wantAvailabilitySetExistence: false,
