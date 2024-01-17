@@ -101,13 +101,11 @@ spec:
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
@@ -211,7 +209,6 @@ spec:
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
         cloud-provider: external
       name: '{{ ds.meta_data["local_hostname"] }}'
 ---
@@ -293,7 +290,6 @@ spec:
     nodeRegistration:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
-        azure-container-registry-config: c:/k/azure.json
         cloud-provider: external
         pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
