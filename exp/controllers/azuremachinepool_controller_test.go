@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -71,7 +70,6 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 		expv1.AddToScheme,
 		infrav1exp.AddToScheme,
 		corev1.AddToScheme,
-		aadpodv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -130,12 +128,16 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 				Name:      "fooSecret",
 				Namespace: "default",
 			},
+			TenantID: "fake-tenantid",
 		},
 	}
 	fakeSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fooSecret",
 			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"clientSecret": []byte("fooSecret"),
 		},
 	}
 	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())

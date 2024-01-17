@@ -135,11 +135,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type: infrav1.ServicePrincipal,
+			Type:     infrav1.ServicePrincipal,
+			TenantID: "fake-tenantid",
 		},
 	}
-
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	cases := map[string]struct {
 		objects []runtime.Object
@@ -347,6 +347,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 				Name:      azureMP.Name,
 				Namespace: "fake-ns",
 			},
+			TenantID: "fake-tenantid",
 		},
 	}
 
@@ -365,6 +366,9 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 					Controller: ptr.To(true),
 				},
 			},
+		},
+		Data: map[string][]byte{
+			"clientSecret": []byte("fooSecret"),
 		},
 	}
 

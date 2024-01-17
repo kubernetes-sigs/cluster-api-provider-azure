@@ -567,13 +567,6 @@ type UserAssignedIdentity struct {
 	ProviderID string `json:"providerID"`
 }
 
-const (
-	// AzureIdentityBindingSelector is the label used to match with the AzureIdentityBinding
-	// For the controller to match an identity binding, it needs a [label] with the key `aadpodidbinding`
-	// whose value is that of the `selector:` field in the `AzureIdentityBinding`.
-	AzureIdentityBindingSelector = "capz-controller-aadpodidentity-selector"
-)
-
 // IdentityType represents different types of identities.
 // +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate;WorkloadIdentity
 type IdentityType string

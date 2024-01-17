@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -253,7 +252,6 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		asoresourcesv1.AddToScheme,
 		asonetworkv1.AddToScheme,
 		corev1.AddToScheme,
-		aadpodv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -263,10 +261,11 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 			Namespace: namespace,
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type: infrav1.ServicePrincipal,
+			Type:     infrav1.ServicePrincipal,
+			TenantID: "fake-tenantid",
 		},
 	}
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	initObjects := []runtime.Object{fakeIdentity, fakeSecret}
 	c := fake.NewClientBuilder().
@@ -478,10 +477,11 @@ func getClusterReconcileInputs(tc TestClusterReconcileInput) (*AzureClusterRecon
 			Namespace: namespace,
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type: infrav1.ServicePrincipal,
+			Type:     infrav1.ServicePrincipal,
+			TenantID: "fake-tenantid",
 		},
 	}
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	objects := []runtime.Object{
 		cluster,

@@ -8,7 +8,6 @@ commonLabels:
 
 resources:
   - namespace.yaml
-  - aad-pod-identity-deployment.yaml  
 
 bases:
   - ../crd

@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -109,7 +108,6 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		asocontainerservicev1.AddToScheme,
 		asonetworkv1.AddToScheme,
 		corev1.AddToScheme,
-		aadpodv1.AddToScheme,
 	)
 	s := runtime.NewScheme()
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
@@ -151,12 +149,16 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 				Name:      "fooSecret",
 				Namespace: "default",
 			},
+			TenantID: "fake-tenantid",
 		},
 	}
 	fakeSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fooSecret",
 			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"clientSecret": []byte("fooSecret"),
 		},
 	}
 	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())

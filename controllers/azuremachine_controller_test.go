@@ -63,7 +63,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 	defaultAzureMachine := getFakeAzureMachine()
 	defaultMachine := getFakeMachine(defaultAzureMachine)
 	defaultAzureClusterIdentity := getFakeAzureClusterIdentity()
-	defaultSecret := &corev1.Secret{}
+	defaultSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	cases := map[string]struct {
 		objects []runtime.Object
@@ -386,7 +386,7 @@ func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineRecon
 				Namespace: "default",
 			},
 			Data: map[string][]byte{
-				"value": []byte("foo"),
+				"clientSecret": []byte("fooSecret"),
 			},
 		},
 	}
@@ -766,7 +766,7 @@ func TestConditions(t *testing.T) {
 				},
 			}
 			azureClusterIdentity := getFakeAzureClusterIdentity()
-			defaultSecret := &corev1.Secret{}
+			defaultSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{
 				cluster,

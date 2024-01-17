@@ -3,7 +3,6 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.20
 
 require (
-	github.com/Azure/aad-pod-identity v1.8.17
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0

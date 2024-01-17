@@ -21,7 +21,6 @@ import (
 	"os"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +46,6 @@ func TestASOSecretReconcile(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	defaultCluster := getASOCluster()
 	defaultAzureCluster := getASOAzureCluster()

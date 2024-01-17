@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -166,7 +165,6 @@ func TestAPIServerHost(t *testing.T) {
 		_ = clusterv1.AddToScheme(scheme)
 		_ = infrav1.AddToScheme(scheme)
 		_ = corev1.AddToScheme(scheme)
-		_ = aadpodv1.AddToScheme(scheme)
 
 		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -194,7 +192,7 @@ func TestAPIServerHost(t *testing.T) {
 				TenantID: fakeTenantID,
 			},
 		}
-		fakeSecret := &corev1.Secret{}
+		fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 		initObjects := []runtime.Object{cluster, &tc.azureCluster, fakeIdentity, fakeSecret}
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -216,7 +214,6 @@ func TestGettingSecurityRules(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-	_ = aadpodv1.AddToScheme(scheme)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -264,7 +261,7 @@ func TestGettingSecurityRules(t *testing.T) {
 			TenantID: fakeTenantID,
 		},
 	}
-	fakeSecret := &corev1.Secret{}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 	initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -808,7 +805,6 @@ func TestPublicIPSpecs(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -823,7 +819,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, tc.azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -1880,7 +1876,6 @@ func TestSubnet(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1916,7 +1911,7 @@ func TestSubnet(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -1990,7 +1985,6 @@ func TestControlPlaneRouteTable(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2026,7 +2020,7 @@ func TestControlPlaneRouteTable(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2070,7 +2064,6 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2106,7 +2099,7 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2147,7 +2140,6 @@ func TestAPIServerLBPoolName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2187,7 +2179,7 @@ func TestAPIServerLBPoolName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2278,7 +2270,6 @@ func TestOutboundLBName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2339,7 +2330,7 @@ func TestOutboundLBName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2409,7 +2400,6 @@ func TestBackendPoolName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2467,7 +2457,7 @@ func TestBackendPoolName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			if tc.customAPIServerBackendPoolName != "" {
 				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
@@ -2539,7 +2529,6 @@ func TestOutboundPoolName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2574,7 +2563,7 @@ func TestOutboundPoolName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			if tc.loadBalancerName != "" {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{
@@ -2638,7 +2627,6 @@ func TestGenerateFQDN(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2675,7 +2663,7 @@ func TestGenerateFQDN(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2738,7 +2726,6 @@ func TestAdditionalTags(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2774,7 +2761,7 @@ func TestAdditionalTags(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2826,7 +2813,6 @@ func TestAPIServerPort(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2864,7 +2850,7 @@ func TestAPIServerPort(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -2924,7 +2910,6 @@ func TestFailureDomains(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2960,7 +2945,7 @@ func TestFailureDomains(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -3238,7 +3223,6 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3253,7 +3237,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, tc.azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -3301,7 +3285,6 @@ func TestExtendedLocationName(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3341,7 +3324,7 @@ func TestExtendedLocationName(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -3389,7 +3372,6 @@ func TestExtendedLocationType(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3429,7 +3411,7 @@ func TestExtendedLocationType(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
@@ -3630,7 +3612,7 @@ func TestVNetPeerings(t *testing.T) {
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 			_ = corev1.AddToScheme(scheme)
-			_ = aadpodv1.AddToScheme(scheme)
+
 			clusterName := "my-cluster"
 			clusterNamespace := "default"
 
@@ -3675,7 +3657,7 @@ func TestVNetPeerings(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			}
-			fakeSecret := &corev1.Secret{}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
 
 			initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()

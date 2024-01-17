@@ -188,7 +188,6 @@ def observability():
     )
 
     k8s_resource(workload = "capz-controller-manager", labels = ["cluster-api"])
-    k8s_resource(workload = "capz-nmi", labels = ["cluster-api"])
     k8s_resource(workload = "azureserviceoperator-controller-manager", labels = ["cluster-api"])
 
 # Build CAPZ and add feature gates
