@@ -92,6 +92,11 @@ const (
 	flatcarCAPICommunityGallery     = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
 	defaultNamespace                = "default"
 	AzureCNIv1Manifest              = "AZURE_CNI_V1_MANIFEST_PATH"
+	OldProviderUpgradeVersion       = "OLD_PROVIDER_UPGRADE_VERSION"
+	LatestProviderUpgradeVersion    = "LATEST_PROVIDER_UPGRADE_VERSION"
+	OldCAPIUpgradeVersion           = "OLD_CAPI_UPGRADE_VERSION"
+	LatestCAPIUpgradeVersion        = "LATEST_CAPI_UPGRADE_VERSION"
+	KubernetesVersionAPIUpgradeFrom = "KUBERNETES_VERSION_API_UPGRADE_FROM"
 )
 
 func Byf(format string, a ...interface{}) {
