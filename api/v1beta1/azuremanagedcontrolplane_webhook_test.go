@@ -37,6 +37,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp := &AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fooName",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: "fooCluster",
+			},
 		},
 		Spec: AzureManagedControlPlaneSpec{
 			AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
@@ -80,6 +83,7 @@ func TestDefaultingWebhook(t *testing.T) {
 		Enabled: ptr.To(true),
 	}
 	amcp.Spec.DNSPrefix = ptr.To("test-prefix")
+	amcp.Spec.FleetsMember = &FleetsMember{}
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -94,6 +98,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
 	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal("test-prefix"))
+	g.Expect(amcp.Spec.FleetsMember.Name).To(Equal("fooCluster"))
+
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{

@@ -1000,6 +1000,18 @@ type AzureBastion struct {
 	EnableTunneling bool `json:"enableTunneling,omitempty"`
 }
 
+// FleetsMember defines the fleets member configuration.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/templates/microsoft.containerservice/2023-03-15-preview/fleets/members
+type FleetsMember struct {
+	// Name is the name of the member.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	FleetsMemberClassSpec `json:",inline"`
+}
+
 // BackendPool describes the backend pool of the load balancer.
 type BackendPool struct {
 	// Name specifies the name of backend pool for the load balancer. If not specified, the default name will

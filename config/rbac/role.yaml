@@ -88,6 +88,26 @@ rules:
 - apiGroups:
   - containerservice.azure.com
   resources:
+  - fleetsmembers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - containerservice.azure.com
+  resources:
+  - fleetsmembers/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - containerservice.azure.com
+  resources:
   - managedclusters
   verbs:
   - create

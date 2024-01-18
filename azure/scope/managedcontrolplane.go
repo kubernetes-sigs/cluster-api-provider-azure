@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/fleetsmembers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
@@ -204,6 +206,11 @@ func (s *ManagedControlPlaneScope) AdditionalTags() infrav1.Tags {
 	return tags
 }
 
+// AzureFleetMembership returns the cluster AzureFleetMembership.
+func (s *ManagedControlPlaneScope) AzureFleetMembership() *infrav1.FleetsMember {
+	return s.ControlPlane.Spec.FleetsMember
+}
+
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ManagedControlPlaneScope) SubscriptionID() string {
 	return s.AzureClients.SubscriptionID()
@@ -279,6 +286,23 @@ func (s *ManagedControlPlaneScope) VNetSpec() azure.ASOResourceSpecGetter[*asone
 		ClusterName:    s.ClusterName(),
 		AdditionalTags: s.AdditionalTags(),
 	}
+}
+
+// AzureFleetsMemberSpec returns the fleet spec.
+func (s *ManagedControlPlaneScope) AzureFleetsMemberSpec() []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.FleetsMember] {
+	if s.AzureFleetMembership() == nil {
+		return nil
+	}
+	return []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.FleetsMember]{&fleetsmembers.AzureFleetsMemberSpec{
+		Name:                 s.AzureFleetMembership().Name,
+		Namespace:            s.Cluster.Namespace,
+		ClusterName:          s.ClusterName(),
+		ClusterResourceGroup: s.ResourceGroup(),
+		Group:                s.AzureFleetMembership().Group,
+		SubscriptionID:       s.SubscriptionID(),
+		ManagerName:          s.AzureFleetMembership().ManagerName,
+		ManagerResourceGroup: s.AzureFleetMembership().ManagerResourceGroup,
+	}}
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.

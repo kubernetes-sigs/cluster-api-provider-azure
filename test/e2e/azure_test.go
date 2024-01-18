@@ -678,6 +678,15 @@ var _ = Describe("Workload cluster creation", func() {
 				}),
 			), result)
 
+			By("attaching the cluster to azure fleet", func() {
+				AKSFleetsMemberSpec(ctx, func() AKSFleetsMemberInput {
+					return AKSFleetsMemberInput{
+						Cluster:       result.Cluster,
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
+
 			By("Upgrading the Kubernetes version of the cluster", func() {
 				AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
 					return AKSUpgradeSpecInput{
