@@ -185,7 +185,6 @@ WIN_REPO_URL ?=
 LDFLAGS := $(shell hack/version.sh)
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
-MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
 
 export KIND_CLUSTER_NAME ?= capz
 
@@ -353,20 +352,6 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
 
 	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
-
-.PHONY: create-aks-cluster
-create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) ## Create a aks cluster.
-	# Create managed Cluster.
-	$(ENVSUBST) < $(TEMPLATES_DIR)/$(MANAGED_CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -
-
-	# Wait for the kubeconfig to become available.
-	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
-	# Get kubeconfig and store it locally.
-	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout --foreground 600 bash -c "while ! $(KUBECTL) --kubeconfig=./kubeconfig get nodes | grep control-plane; do sleep 1; done"
-
-	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
-
 
 .PHONY: create-cluster
 create-cluster: ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
