@@ -17,7 +17,6 @@ patchesStrategicMerge:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico-windows
     files:
-      - windows-cni=../../../addons/windows/calico/calico.yaml
       - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
   - name: csi-proxy-addon
     files:

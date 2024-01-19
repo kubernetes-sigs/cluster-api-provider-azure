@@ -2,7 +2,6 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
@@ -53,8 +52,6 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
-  annotations:
-    controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
@@ -62,20 +59,31 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
           v: "4"
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
           extraArgs:
             quota-backend-bytes: "8589934592"
-      kubernetesVersion: ci/${CI_VERSION}
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -94,58 +102,6 @@ spec:
         overwrite: false
         tableType: gpt
     files:
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-
-        systemctl stop kubelet
-        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-        for BINARY in "$${BINARIES[@]}"; do
-          echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
-        done
-        systemctl restart kubelet
-
-        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
-        # registry.k8s.io so kubeadm can fetch correct images no matter what
-        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
-        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-        IMAGE_REGISTRY_PREFIX=registry.k8s.io
-        for IMAGE in "$${IMAGES[@]}"; do
-          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$IMAGE:"${CI_VERSION//+/_}"
-          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$IMAGE:"${CI_VERSION//+/_}"
-        done
-
-        echo "kubeadm version: $(kubeadm version -o=short)"
-        echo "kubectl version: $(kubectl version --client=true)"
-        echo "kubelet version: $(kubelet --version)"
-      owner: root:root
-      path: /tmp/replace-k8s-binaries.sh
-      permissions: "0744"
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-
-        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
-        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
-        rm /tmp/yq_linux_amd64.tar.gz
-
-        export KUBECONFIG=/etc/kubernetes/admin.conf
-        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${KUBE_IMAGE_TAG}"
-        systemctl stop kubelet
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
-        systemctl restart kubelet
-      owner: root:root
-      path: /tmp/replace-k8s-components.sh
-      permissions: "0744"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -153,46 +109,25 @@ spec:
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-
-        echo "Use OOT credential provider"
-        mkdir -p /var/lib/kubelet/credential-provider
-        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
-        chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
-        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
-        chmod 644 /var/lib/kubelet/credential-provider-config.yaml
-      owner: root:root
-      path: /tmp/oot-cred-provider.sh
-      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          cloud-provider: external
-          image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
-          image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          cloud-provider: external
-          image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
-          image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - bash -c /tmp/replace-k8s-components.sh
-    preKubeadmCommands:
-    - bash -c /tmp/replace-k8s-binaries.sh
-    - bash -c /tmp/oot-cred-provider.sh
-    verbosity: 5
+    postKubeadmCommands: []
+    preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -213,12 +148,6 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      image:
-        marketplace:
-          offer: capi
-          publisher: cncf-upstream
-          sku: ubuntu-2204-gen1
-          version: latest
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -261,12 +190,6 @@ spec:
       maxUnavailable: 1
     type: RollingUpdate
   template:
-    image:
-      marketplace:
-        offer: capi
-        publisher: cncf-upstream
-        sku: ubuntu-2204-gen1
-        version: latest
     osDisk:
       diskSizeGB: 30
       managedDisk:
@@ -291,61 +214,20 @@ metadata:
   namespace: default
 spec:
   files:
-  - content: |
-      #!/bin/bash
-
-      set -o nounset
-      set -o pipefail
-      set -o errexit
-      [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-
-      echo "Use OOT credential provider"
-      mkdir -p /var/lib/kubelet/credential-provider
-      curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
-      chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
-      curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
-      chmod 644 /var/lib/kubelet/credential-provider-config.yaml
-    owner: root:root
-    path: /tmp/oot-cred-provider.sh
-    permissions: "0744"
-  - content: |
-      #!/bin/bash
-
-      set -o nounset
-      set -o pipefail
-      set -o errexit
-
-      systemctl stop kubelet
-      declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-      for BINARY in "$${BINARIES[@]}"; do
-        echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
-      done
-      systemctl restart kubelet
-
-      echo "kubeadm version: $(kubeadm version -o=short)"
-      echo "kubectl version: $(kubectl version --client=true)"
-      echo "kubelet version: $(kubelet --version)"
-    owner: root:root
-    path: /tmp/replace-k8s-binaries.sh
-    permissions: "0744"
   - contentFrom:
       secret:
-        key: control-plane-azure.json
-        name: ${CLUSTER_NAME}-control-plane-azure-json
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
-        cloud-provider: external
-        image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
-        image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
-  preKubeadmCommands:
-  - bash -c /tmp/oot-cred-provider.sh
-  - bash -c /tmp/replace-k8s-binaries.sh
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -396,12 +278,6 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   template:
-    image:
-      marketplace:
-        offer: capi-windows
-        publisher: cncf-upstream
-        sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
-        version: latest
     osDisk:
       diskSizeGB: 128
       managedDisk:
@@ -427,60 +303,20 @@ spec:
   - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
     path: C:/defender-exclude-calico.ps1
     permissions: "0744"
-  - content: |
-      $ErrorActionPreference = 'Stop'
-
-      Stop-Service kubelet -Force
-
-      $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
-      if($$KUBE_GIT_VERSION -ne "")
-      {
-        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
-        foreach ( $$binary in $$binaries )
-        {
-          echo "downloading binary: $$ci_url/$$binary.exe"
-          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
-        }
-      }
-
-      # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
-      # that is applied at at this stage (windows-kubeproxy-ci.yaml)
-      ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
-      ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
-
-      kubeadm.exe version -o=short
-      kubectl.exe version --client=true
-      kubelet.exe --version
-      kube-proxy.exe --version
-    path: C:/replace-pr-binaries.ps1
-    permissions: "0744"
-  - content: |
-      $ErrorActionPreference = 'Stop'
-
-      echo "Use OOT credential provider"
-      mkdir C:\var\lib\kubelet\credential-provider
-      curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
-      cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
-      curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
-    path: C:/oot-cred-provider.ps1
-    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
-        cloud-provider: external
-        image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
-        image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
+        azure-container-registry-config: c:/k/azure.json
+        cloud-config: c:/k/azure.json
+        cloud-provider: azure
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
   - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
-  - powershell C:/replace-pr-binaries.ps1
-  - powershell C:/oot-cred-provider.ps1
   users:
   - groups: Administrators
     name: capi
@@ -589,65 +425,8 @@ spec:
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
 ---
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      logVerbosity: 4
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart-ci
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure-ci
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
-      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: ${CCM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CCM:-""}
-      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
-      replicas: ${CCM_COUNT:-1}
-      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
-    cloudNodeManager:
-      imageName: ${CNM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CNM:-""}
----
 apiVersion: v1
 data:
-  kube-proxy-patch: |-
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: windows-kubeproxy-ci
-      namespace: kube-system
-    data:
-      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: |
     apiVersion: apps/v1
     kind: DaemonSet

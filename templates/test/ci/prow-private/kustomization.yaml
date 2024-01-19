@@ -3,7 +3,6 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/private
-  - cni-resource-set.yaml
   - ../../../addons/cluster-api-helm/calico.yaml
   - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
   - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
@@ -21,10 +20,6 @@ patches:
   - path: patches/user-assigned.yaml
     target:
       kind: AzureClusterIdentity
-configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    files:
-      - resources=../../../addons/calico.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
