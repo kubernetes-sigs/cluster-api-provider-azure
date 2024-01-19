@@ -29,7 +29,6 @@ const serviceName = "natgateways"
 
 // NatGatewayScope defines the scope interface for NAT gateway service.
 type NatGatewayScope interface {
-	azure.ClusterScoper
 	aso.Scope
 	SetNatGatewayIDInSubnets(natGatewayName string, natGatewayID string)
 	NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.NatGateway]

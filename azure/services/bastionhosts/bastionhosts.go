@@ -27,7 +27,6 @@ const serviceName = "bastionhosts"
 
 // BastionScope defines the scope interface for a bastion host service.
 type BastionScope interface {
-	azure.ClusterScoper
 	aso.Scope
 	AzureBastionSpec() azure.ASOResourceSpecGetter[*asonetworkv1.BastionHost]
 }
