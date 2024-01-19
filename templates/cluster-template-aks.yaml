@@ -9,15 +9,15 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
     kind: AzureManagedControlPlane
     name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
     kind: AzureManagedCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
 kind: AzureManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
@@ -27,18 +27,63 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
-  location: ${AZURE_LOCATION}
-  resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
-  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  asoRef:
+    apiGroup: containerservice.azure.com
+    kind: ManagedCluster
+    name: ${CLUSTER_NAME}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
 kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 ---
+apiVersion: resources.azure.com/v1api20200601storage
+kind: ResourceGroup
+metadata:
+  name: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  namespace: default
+---
+apiVersion: containerservice.azure.com/v1api20230201storage
+kind: ManagedCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+ownerReferences:
+  - apiVersion: resources.azure.com/v1api20200601storage
+    kind: ResourceGroup
+    name: ${CLUSTER_NAME}
+spec:
+  addonProfiles:
+    azurepolicy:
+      enabled: true
+  enableRBAC: true
+  identity:
+    type: SystemAssigned
+  kubernetesVersion: ${KUBERNETES_VERSION}
+  linuxProfile:
+    adminUsername: azureuser
+    ssh:
+      publicKeys:
+      - keyData: |
+          ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  location: ${AZURE_LOCATION}
+  oidcIssuerProfile:
+    enabled: false
+  operatorSpec:
+    secrets:
+      adminCredentials:
+        key: value
+        name: capz-e2e-d9m89h-aks-aso-kubeconfig
+  owner:
+    name: ${CLUSTER_NAME}
+  servicePrincipalProfile:
+    clientId: msi
+  sku:
+    name: Base
+    tier: Free
+---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
@@ -54,20 +99,51 @@ spec:
         dataSecretName: ""
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
         kind: AzureManagedMachinePool
         name: ${CLUSTER_NAME}-pool0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
 kind: AzureManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool0
   namespace: default
 spec:
+  asoRef:
+    apiGroup: containerservice.azure.com
+    kind: ManagedClustersAgentPool
+    name: ${CLUSTER_NAME}-pool0
+---
+apiVersion: containerservice.azure.com/v1api20230201storage
+kind: ManagedClustersAgentPool
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+ownerReferences:
+  - apiVersion: containerservice.azure.com/v1api20230201storage
+    kind: ManagedCluster
+    name: ${CLUSTER_NAME}
+spec:
+  availabilityZones:
+  - "1"
+  - "2"
+  azureName: pool0
+  count: 1
+  enableAutoScaling: false
+  enableNodePublicIP: false
+  enableUltraSSD: true
+  maxPods: 30
   mode: System
-  name: pool0
-  sku: ${AZURE_NODE_MACHINE_TYPE}
+  orchestratorVersion: ${KUBERNETES_VERSION}
+  osDiskSizeGB: 30
+  osDiskType: Managed
+  osType: Linux
+  owner:
+    name: ${CLUSTER_NAME}
+  scaleDownMode: Delete
+  type: VirtualMachineScaleSets
+  vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -84,20 +160,99 @@ spec:
         dataSecretName: ""
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
         kind: AzureManagedMachinePool
         name: ${CLUSTER_NAME}-pool1
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v2beta1
 kind: AzureManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool1
   namespace: default
 spec:
+  asoRef:
+    apiGroup: containerservice.azure.com
+    kind: ManagedClustersAgentPool
+    name: ${CLUSTER_NAME}-pool0
+---
+apiVersion: containerservice.azure.com/v1api20230201storage
+kind: ManagedClustersAgentPool
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+ownerReferences:
+  - apiVersion: containerservice.azure.com/v1api20230201storage
+    kind: ManagedCluster
+    name: ${CLUSTER_NAME}
+spec:
+  azureName: pool1
+  count: 1
+  enableAutoScaling: false
+  enableNodePublicIP: false
+  kubeletConfig:
+    allowedUnsafeSysctls:
+    - net.*
+    - kernel.msg*
+    containerLogMaxFiles: 50
+    containerLogMaxSizeMB: 500
+    cpuCfsQuota: true
+    cpuCfsQuotaPeriod: 110ms
+    cpuManagerPolicy: static
+    failSwapOn: false
+    imageGcHighThreshold: 70
+    imageGcLowThreshold: 50
+    podMaxPids: 2048
+    topologyManagerPolicy: best-effort
+  linuxOSConfig:
+    swapFileSizeMB: 1500
+    sysctls:
+      fsAioMaxNr: 65536
+      fsFileMax: 709620
+      fsInotifyMaxUserWatches: 1048576
+      fsNrOpen: 1048576
+      kernelThreadsMax: 55601
+      netCoreNetdevMaxBacklog: 1000
+      netCoreOptmemMax: 20480
+      netCoreRmemDefault: 212992
+      netCoreRmemMax: 212992
+      netCoreSomaxconn: 16384
+      netCoreWmemDefault: 212992
+      netCoreWmemMax: 212992
+      netIpv4IpLocalPortRange: 32768 60999
+      netIpv4NeighDefaultGcThresh1: 4096
+      netIpv4NeighDefaultGcThresh2: 8192
+      netIpv4NeighDefaultGcThresh3: 16384
+      netIpv4TcpFinTimeout: 60
+      netIpv4TcpKeepaliveProbes: 9
+      netIpv4TcpKeepaliveTime: 7200
+      netIpv4TcpMaxSynBacklog: 16384
+      netIpv4TcpMaxTwBuckets: 32768
+      netIpv4TcpTwReuse: false
+      netIpv4TcpkeepaliveIntvl: 75
+      netNetfilterNfConntrackBuckets: 65536
+      netNetfilterNfConntrackMax: 131072
+      vmMaxMapCount: 65530
+      vmSwappiness: 60
+      vmVfsCachePressure: 100
+    transparentHugePageDefrag: madvise
+    transparentHugePageEnabled: always
+  maxPods: 64
   mode: User
-  name: pool1
-  sku: ${AZURE_NODE_MACHINE_TYPE}
+  nodeLabels:
+    type: shared
+  nodeTaints:
+  - type=shared:NoSchedule
+  orchestratorVersion: ${KUBERNETES_VERSION}
+  osDiskSizeGB: 40
+  osDiskType: Ephemeral
+  osType: Linux
+  owner:
+    name: ${CLUSTER_NAME}
+  scaleDownMode: Delete
+  scaleSetPriority: Regular
+  type: VirtualMachineScaleSets
+  vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
