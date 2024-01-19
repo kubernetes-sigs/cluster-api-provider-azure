@@ -28,6 +28,8 @@ make envsubst
 
 export REGISTRY="${REGISTRY:-registry.local/fake}"
 
+export CLUSTER_CREATE_ATTEMPTS="${CLUSTER_CREATE_ATTEMPTS:-3}"
+
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-test}"
 export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
@@ -62,14 +64,28 @@ capz::util::generate_ssh_key
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build
 
-echo "================ MAKE CLEAN ==============="
-make clean
+setup() {
+    echo "================ MAKE CLEAN ==============="
+    make clean
 
-echo "================ KIND RESET ==============="
-make kind-reset
+    echo "================ KIND RESET ==============="
+    make kind-reset
 
-echo "================ INSTALL TOOLS ==============="
-make install-tools
+    echo "================ INSTALL TOOLS ==============="
+    make install-tools
+}
 
-echo "================ CREATE CLUSTER ==============="
-make create-cluster
+create_cluster() {
+    echo "================ CREATE CLUSTER ==============="
+    make create-cluster
+}
+
+setup
+
+retries=$CLUSTER_CREATE_ATTEMPTS
+while ((retries > 0)); do
+    create_cluster && break
+    setup
+    sleep 5
+    ((retries --))
+done
