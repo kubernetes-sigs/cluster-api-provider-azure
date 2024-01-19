@@ -807,7 +807,7 @@ $(MOCKGEN): ## Build mockgen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) go.uber.org/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
 
 $(KPROMO): ## Build kpromo from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/promo-tools/v3/cmd/kpromo $(KPROMO_BIN) $(KPROMO_VER)
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/promo-tools/v4/cmd/kpromo $(KPROMO_BIN) $(KPROMO_VER)
 
 $(RELEASE_NOTES): ## Build release notes from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/release/cmd/release-notes $(RELEASE_NOTES_BIN) $(RELEASE_NOTES_VER)
