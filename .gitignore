@@ -38,7 +38,8 @@ kubeconfig
 /out
 
 # Mdbook build directory
-bookout
+docs/book/bookout
+docs/book/src/reference/*.html
 
 # vscode
 .vscode
