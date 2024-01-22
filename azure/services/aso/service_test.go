@@ -263,12 +263,12 @@ func TestServiceDelete(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		deleteErr := errors.New("DeleteResource error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(deleteErr)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(deleteErr)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 		scope.EXPECT().DefaultedAzureServiceReconcileTimeout().Return(reconcilerutils.DefaultAzureServiceReconcileTimeout)
 
@@ -291,15 +291,15 @@ func TestServiceDelete(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2].ResourceRef(), serviceName).Return(nil)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, nil)
 		scope.EXPECT().DefaultedAzureServiceReconcileTimeout().Return(reconcilerutils.DefaultAzureServiceReconcileTimeout)
 
@@ -322,16 +322,16 @@ func TestServiceDelete(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		deleteErr := azure.NewOperationNotDoneError(&infrav1.Future{})
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(deleteErr)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1].ResourceRef(), serviceName).Return(deleteErr)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2].ResourceRef(), serviceName).Return(nil)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 		scope.EXPECT().DefaultedAzureServiceReconcileTimeout().Return(reconcilerutils.DefaultAzureServiceReconcileTimeout)
 
@@ -354,16 +354,16 @@ func TestServiceDelete(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		deleteErr := errors.New("non-not done error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1], serviceName).Return(deleteErr)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2], serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[1].ResourceRef(), serviceName).Return(deleteErr)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[2].ResourceRef(), serviceName).Return(azure.NewOperationNotDoneError(&infrav1.Future{}))
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, deleteErr)
 		scope.EXPECT().DefaultedAzureServiceReconcileTimeout().Return(reconcilerutils.DefaultAzureServiceReconcileTimeout)
 
@@ -386,13 +386,13 @@ func TestServiceDelete(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		deleteErr := errors.New("DeleteResource error")
 		postErr := errors.New("PostDeleteHook error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0], serviceName).Return(deleteErr)
+		reconciler.EXPECT().DeleteResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(deleteErr)
 		scope.EXPECT().UpdateDeleteStatus(conditionType, serviceName, postErr)
 		scope.EXPECT().DefaultedAzureServiceReconcileTimeout().Return(reconcilerutils.DefaultAzureServiceReconcileTimeout)
 
@@ -422,15 +422,15 @@ func TestServicePause(t *testing.T) {
 
 		scope := mock_aso.NewMockScope(mockCtrl)
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
-		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1], serviceName).Return(nil)
-		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[2], serviceName).Return(nil)
+		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[2].ResourceRef(), serviceName).Return(nil)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
 			Reconciler:    reconciler,
@@ -450,23 +450,21 @@ func TestServicePause(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 
 		scope := mock_aso.NewMockScope(mockCtrl)
-		failSpec := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-		failSpec.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name",
-				Namespace: "namespace",
-			},
-		})
 		specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
-			failSpec,
-			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
+			}),
+			mockSpecExpectingResourceRef(mockCtrl, &asoresourcesv1.ResourceGroup{}),
 		}
 
 		pauseErr := errors.New("Pause error")
 		reconciler := mock_aso.NewMockReconciler[*asoresourcesv1.ResourceGroup](mockCtrl)
-		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0], serviceName).Return(nil)
-		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1], serviceName).Return(pauseErr)
+		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[0].ResourceRef(), serviceName).Return(nil)
+		reconciler.EXPECT().PauseResource(gomockinternal.AContext(), specs[1].ResourceRef(), serviceName).Return(pauseErr)
 
 		s := &Service[*asoresourcesv1.ResourceGroup, *mock_aso.MockScope]{
 			Reconciler:    reconciler,
@@ -479,4 +477,10 @@ func TestServicePause(t *testing.T) {
 		err := s.Pause(context.Background())
 		g.Expect(err).To(MatchError(pauseErr))
 	})
+}
+
+func mockSpecExpectingResourceRef(ctrl *gomock.Controller, resource *asoresourcesv1.ResourceGroup) azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup] {
+	spec := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](ctrl)
+	spec.EXPECT().ResourceRef().Return(resource).AnyTimes()
+	return spec
 }

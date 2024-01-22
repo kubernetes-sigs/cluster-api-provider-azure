@@ -59,7 +59,7 @@ func New(scope GroupScope) *Service {
 func (s *Service) IsManaged(ctx context.Context) (bool, error) {
 	// Unless all resource groups are managed by CAPZ and reconciled by ASO, resources need to be deleted individually.
 	for _, spec := range s.Specs {
-		managed, err := aso.IsManaged(ctx, s.Scope.GetClient(), spec, s.Scope.ClusterName())
+		managed, err := aso.IsManaged(ctx, s.Scope.GetClient(), spec.ResourceRef(), s.Scope.ClusterName())
 		if err != nil || !managed {
 			return managed, err
 		}

@@ -241,17 +241,16 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.
-func (r *reconciler[T]) DeleteResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) (err error) {
+func (r *reconciler[T]) DeleteResource(ctx context.Context, resource T, serviceName string) (err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.DeleteResource")
 	defer done()
 
-	resource := spec.ResourceRef()
 	resourceName := resource.GetName()
 	resourceNamespace := resource.GetNamespace()
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
-	managed, err := IsManaged(ctx, r.Client, spec, r.clusterName)
+	managed, err := IsManaged(ctx, r.Client, resource, r.clusterName)
 	if apierrors.IsNotFound(err) {
 		// already deleted
 		log.V(2).Info("successfully deleted resource")
@@ -285,11 +284,10 @@ func (r *reconciler[T]) DeleteResource(ctx context.Context, spec azure.ASOResour
 
 // IsManaged returns whether the ASO resource referred to by spec was created by
 // CAPZ and therefore whether CAPZ should manage its lifecycle.
-func IsManaged[T genruntime.MetaObject](ctx context.Context, ctrlClient client.Client, spec azure.ASOResourceSpecGetter[T], clusterName string) (bool, error) {
+func IsManaged[T genruntime.MetaObject](ctx context.Context, ctrlClient client.Client, resource T, clusterName string) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.IsManaged")
 	defer done()
 
-	resource := spec.ResourceRef()
 	err := ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), resource)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting resource")
@@ -303,11 +301,10 @@ func ownedByCluster(labels map[string]string, clusterName string) bool {
 }
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.
-func (r *reconciler[T]) PauseResource(ctx context.Context, spec azure.ASOResourceSpecGetter[T], serviceName string) error {
+func (r *reconciler[T]) PauseResource(ctx context.Context, resource T, serviceName string) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.PauseResource")
 	defer done()
 
-	resource := spec.ResourceRef()
 	resourceName := resource.GetName()
 	resourceNamespace := resource.GetNamespace()
 
