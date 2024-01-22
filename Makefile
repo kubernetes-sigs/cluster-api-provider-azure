@@ -105,7 +105,7 @@ GO_APIDIFF_VER := v0.7.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
-GINKGO_VER := v2.14.0
+GINKGO_VER := $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
