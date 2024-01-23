@@ -1158,6 +1158,37 @@ func TestPauseResource(t *testing.T) {
 			},
 		},
 		{
+			name: "success, no patch needed",
+			resource: &asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "namespace",
+				},
+			},
+			clientBuilder: func(g Gomega) client.Client {
+				scheme := runtime.NewScheme()
+				g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
+				c := fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&asoresourcesv1.ResourceGroup{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "name",
+							Namespace: "namespace",
+							Annotations: map[string]string{
+								asoannotations.ReconcilePolicy:    string(asoannotations.ReconcilePolicySkip),
+								prePauseReconcilePolicyAnnotation: string(asoannotations.ReconcilePolicyManage),
+							},
+							Labels: map[string]string{
+								infrav1.OwnedByClusterLabelKey: clusterName,
+							},
+						},
+					}).
+					Build()
+				return ErroringPatchClient{Client: c, err: errors.New("patch shouldn't be called")}
+			},
+			expectedErr: "",
+		},
+		{
 			name: "failure getting existing resource",
 			resource: &asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{
