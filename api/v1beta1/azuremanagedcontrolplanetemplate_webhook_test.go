@@ -186,6 +186,68 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 			}),
 			wantErr: true,
 		},
+		{
+			name: "azuremanagedcontrolplanetemplate AKSExtension type and plan are immutable",
+			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Extensions = []AKSExtension{
+					{
+						Name:          "foo",
+						ExtensionType: ptr.To("foo-type"),
+						Plan: &ExtensionPlan{
+							Name:      "foo-name",
+							Product:   "foo-product",
+							Publisher: "foo-publisher",
+						},
+					},
+				}
+			}),
+			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Extensions = []AKSExtension{
+					{
+						Name:          "foo",
+						ExtensionType: ptr.To("bar"),
+						Plan: &ExtensionPlan{
+							Name:      "bar-name",
+							Product:   "bar-product",
+							Publisher: "bar-publisher",
+						},
+					},
+				}
+			}),
+			wantErr: true,
+		},
+		{
+			name: "azuremanagedcontrolplanetemplate AKSExtension autoUpgradeMinorVersion is mutable",
+			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Extensions = []AKSExtension{
+					{
+						Name:                    "foo",
+						ExtensionType:           ptr.To("foo"),
+						AutoUpgradeMinorVersion: ptr.To(true),
+						Plan: &ExtensionPlan{
+							Name:      "bar-name",
+							Product:   "bar-product",
+							Publisher: "bar-publisher",
+						},
+					},
+				}
+			}),
+			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.Extensions = []AKSExtension{
+					{
+						Name:                    "foo",
+						ExtensionType:           ptr.To("foo"),
+						AutoUpgradeMinorVersion: ptr.To(false),
+						Plan: &ExtensionPlan{
+							Name:      "bar-name",
+							Product:   "bar-product",
+							Publisher: "bar-publisher",
+						},
+					},
+				}
+			}),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

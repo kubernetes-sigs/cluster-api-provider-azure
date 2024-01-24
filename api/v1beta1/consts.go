@@ -132,6 +132,8 @@ const (
 	PrivateEndpointsReadyCondition clusterv1.ConditionType = "PrivateEndpointsReady"
 	// FleetReadyCondition means the Fleet exists and is ready to be used.
 	FleetReadyCondition clusterv1.ConditionType = "FleetReady"
+	// AKSExtensionsReadyCondition means the AKS Extensions exist and are ready to be used.
+	AKSExtensionsReadyCondition clusterv1.ConditionType = "AKSExtensionsReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

@@ -428,6 +428,52 @@ type OIDCIssuerProfile struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+// AKSExtension represents the configuration for an AKS cluster extension.
+// See also [AKS doc].
+//
+// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/cluster-extensions
+type AKSExtension struct {
+	// Name is the name of the extension.
+	Name string `json:"name"`
+
+	// AKSAssignedIdentityType is the type of the AKS assigned identity.
+	// +optional
+	AKSAssignedIdentityType AKSAssignedIdentity `json:"aksAssignedIdentityType,omitempty"`
+
+	// AutoUpgradeMinorVersion is a flag to note if this extension participates in auto upgrade of minor version, or not.
+	// +kubebuilder:default=true
+	// +optional
+	AutoUpgradeMinorVersion *bool `json:"autoUpgradeMinorVersion,omitempty"`
+
+	// ConfigurationSettings are the name-value pairs for configuring this extension.
+	// +optional
+	ConfigurationSettings map[string]string `json:"configurationSettings,omitempty"`
+
+	// ExtensionType is the type of the Extension of which this resource is an instance.
+	// It must be one of the Extension Types registered with Microsoft.KubernetesConfiguration by the Extension publisher.
+	ExtensionType *string `json:"extensionType"`
+
+	// Plan is the plan of the extension.
+	Plan *ExtensionPlan `json:"plan"`
+
+	// ReleaseTrain is the release train this extension participates in for auto-upgrade (e.g. Stable, Preview, etc.)
+	// This is only used if autoUpgradeMinorVersion is ‘true’.
+	// +optional
+	ReleaseTrain *string `json:"releaseTrain,omitempty"`
+
+	// Scope is the scope at which this extension is enabled.
+	// +optional
+	Scope *ExtensionScope `json:"scope,omitempty"`
+
+	// Version is the version of the extension.
+	// +optional
+	Version *string `json:"version,omitempty"`
+
+	// Identity is the identity type of the Extension resource in an AKS cluster.
+	// +optional
+	Identity ExtensionIdentity `json:"identity,omitempty"`
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
 // +kubebuilder:storageversion

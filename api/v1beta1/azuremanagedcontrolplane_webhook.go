@@ -95,6 +95,7 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 	m.setDefaultSubnet()
 	m.setDefaultOIDCIssuerProfile()
 	m.setDefaultDNSPrefix()
+	m.setDefaultAKSExtensions()
 
 	return nil
 }
@@ -265,6 +266,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := validateAKSExtensionsUpdate(old.Spec.Extensions, m.Spec.Extensions); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return nil, m.Validate(mw.Client)
 	}
@@ -313,6 +318,8 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	allErrs = append(allErrs, validateName(m.Name, field.NewPath("Name"))...)
 
 	allErrs = append(allErrs, validateAutoScalerProfile(m.Spec.AutoScalerProfile, field.NewPath("spec").Child("AutoScalerProfile"))...)
+
+	allErrs = append(allErrs, validateAKSExtensions(m.Spec.Extensions, field.NewPath("spec").Child("AKSExtensions"))...)
 
 	return allErrs.ToAggregate()
 }
@@ -711,12 +718,133 @@ func (m *AzureManagedControlPlane) validateFleetsMember(old *AzureManagedControl
 	return allErrs
 }
 
+// validateAKSExtensionsUpdate validates update to AKS extensions.
+func validateAKSExtensionsUpdate(old []AKSExtension, current []AKSExtension) field.ErrorList {
+	var allErrs field.ErrorList
+
+	oldAKSExtensionsMap := make(map[string]AKSExtension, len(old))
+	oldAKSExtensionsIndex := make(map[string]int, len(old))
+	for i, extension := range old {
+		oldAKSExtensionsMap[extension.Name] = extension
+		oldAKSExtensionsIndex[extension.Name] = i
+	}
+	for i, extension := range current {
+		oldExtension, ok := oldAKSExtensionsMap[extension.Name]
+		if !ok {
+			continue
+		}
+		if extension.Name != oldExtension.Name {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "Name"),
+					extension.Name,
+					"field is immutable",
+				),
+			)
+		}
+		if (oldExtension.ExtensionType != nil && extension.ExtensionType != nil) && *extension.ExtensionType != *oldExtension.ExtensionType {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "ExtensionType"),
+					extension.ExtensionType,
+					"field is immutable",
+				),
+			)
+		}
+		if (extension.Plan != nil && oldExtension.Plan != nil) && *extension.Plan != *oldExtension.Plan {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "Plan"),
+					extension.Plan,
+					"field is immutable",
+				),
+			)
+		}
+		if extension.Scope != oldExtension.Scope {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "Scope"),
+					extension.Scope,
+					"field is immutable",
+				),
+			)
+		}
+		if (extension.ReleaseTrain != nil && oldExtension.ReleaseTrain != nil) && *extension.ReleaseTrain != *oldExtension.ReleaseTrain {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "ReleaseTrain"),
+					extension.ReleaseTrain,
+					"field is immutable",
+				),
+			)
+		}
+		if (extension.Version != nil && oldExtension.Version != nil) && *extension.Version != *oldExtension.Version {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "Version"),
+					extension.Version,
+					"field is immutable",
+				),
+			)
+		}
+		if extension.Identity != oldExtension.Identity {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "Extensions", fmt.Sprintf("[%d]", i), "Identity"),
+					extension.Identity,
+					"field is immutable",
+				),
+			)
+		}
+	}
+
+	return allErrs
+}
+
 func validateName(name string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if lName := strings.ToLower(name); strings.Contains(lName, "microsoft") ||
 		strings.Contains(lName, "windows") {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("Name"), name,
 			"cluster name is invalid because 'MICROSOFT' and 'WINDOWS' can't be used as either a whole word or a substring in the name"))
+	}
+
+	return allErrs
+}
+
+// validateAKSExtensions validates the AKS extensions.
+func validateAKSExtensions(extensions []AKSExtension, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	for _, extension := range extensions {
+		if extension.Version != nil && (extension.AutoUpgradeMinorVersion == nil || (extension.AutoUpgradeMinorVersion != nil && *extension.AutoUpgradeMinorVersion)) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("Version"), "Version must not be given if AutoUpgradeMinorVersion is true (or not provided, as it is true by default)"))
+		}
+		if extension.Plan.Product == "" {
+			allErrs = append(allErrs, field.Required(fldPath.Child("Plan", "Product"), "Product must be provided"))
+		}
+		if extension.Plan.Publisher == "" {
+			allErrs = append(allErrs, field.Required(fldPath.Child("Plan", "Publisher"), "Publisher must be provided"))
+		}
+		if extension.AutoUpgradeMinorVersion == ptr.To(false) && extension.ReleaseTrain != nil {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("ReleaseTrain"), "ReleaseTrain must not be given if AutoUpgradeMinorVersion is false"))
+		}
+		if extension.Scope != nil {
+			if extension.Scope.ScopeType == ExtensionScopeCluster {
+				if extension.Scope.ReleaseNamespace == "" {
+					allErrs = append(allErrs, field.Required(fldPath.Child("Scope", "ReleaseNamespace"), "ReleaseNamespace must be provided if Scope is Cluster"))
+				}
+				if extension.Scope.TargetNamespace != "" {
+					allErrs = append(allErrs, field.Forbidden(fldPath.Child("Scope", "TargetNamespace"), "TargetNamespace can only be given if Scope is Namespace"))
+				}
+			} else if extension.Scope.ScopeType == ExtensionScopeNamespace {
+				if extension.Scope.TargetNamespace == "" {
+					allErrs = append(allErrs, field.Required(fldPath.Child("Scope", "TargetNamespace"), "TargetNamespace must be provided if Scope is Namespace"))
+				}
+				if extension.Scope.ReleaseNamespace != "" {
+					allErrs = append(allErrs, field.Forbidden(fldPath.Child("Scope", "ReleaseNamespace"), "ReleaseNamespace can only be given if Scope is Cluster"))
+				}
+			}
+		}
 	}
 
 	return allErrs

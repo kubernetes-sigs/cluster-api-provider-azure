@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +32,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aksextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -1423,6 +1425,110 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 			}
 			if got := s.PrivateEndpointSpecs(); !reflect.DeepEqual(got, c.Expected) {
 				t.Errorf("PrivateEndpointSpecs() = %s, want %s", specArrayToString(got), specArrayToString(c.Expected))
+			}
+		})
+	}
+}
+
+func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Input    ManagedControlPlaneScopeParams
+		Expected []azure.ASOResourceSpecGetter[*asokubernetesconfigurationv1.Extension]
+		Err      string
+	}{
+		{
+			Name: "returns empty AKS extensions list if no extensions are specified",
+			Input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "dummy-ns",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{},
+					},
+				},
+			},
+		},
+		{
+			Name: "returns list of AKS extensions if extensions are specified",
+			Input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-cluster",
+						Namespace: "dummy-ns",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							Extensions: []infrav1.AKSExtension{
+								{
+									Name:                    "my-extension",
+									AutoUpgradeMinorVersion: ptr.To(true),
+									ConfigurationSettings: map[string]string{
+										"my-key": "my-value",
+									},
+									ExtensionType: ptr.To("my-extension-type"),
+									ReleaseTrain:  ptr.To("my-release-train"),
+									Version:       ptr.To("my-version"),
+									Plan: &infrav1.ExtensionPlan{
+										Name:      "my-plan-name",
+										Product:   "my-product",
+										Publisher: "my-publisher",
+									},
+									AKSAssignedIdentityType: infrav1.AKSAssignedIdentitySystemAssigned,
+									Identity:                infrav1.ExtensionIdentitySystemAssigned,
+								},
+							},
+						},
+					},
+				},
+			},
+			Expected: []azure.ASOResourceSpecGetter[*asokubernetesconfigurationv1.Extension]{
+				&aksextensions.AKSExtensionSpec{
+					Name:                    "my-extension",
+					Namespace:               "dummy-ns",
+					AutoUpgradeMinorVersion: ptr.To(true),
+					ConfigurationSettings: map[string]string{
+						"my-key": "my-value",
+					},
+					ExtensionType: ptr.To("my-extension-type"),
+					ReleaseTrain:  ptr.To("my-release-train"),
+					Version:       ptr.To("my-version"),
+					Owner:         "/subscriptions//resourceGroups//providers/Microsoft.ContainerService/managedClusters/my-cluster",
+					Plan: infrav1.ExtensionPlan{
+						Name:      "my-plan-name",
+						Product:   "my-product",
+						Publisher: "my-publisher",
+					},
+					AKSAssignedIdentityType: infrav1.AKSAssignedIdentitySystemAssigned,
+					ExtensionIdentity:       infrav1.ExtensionIdentitySystemAssigned,
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			s := &ManagedControlPlaneScope{
+				ControlPlane: c.Input.ControlPlane,
+				Cluster:      c.Input.Cluster,
+			}
+			if got := s.AKSExtensionSpecs(); !reflect.DeepEqual(got, c.Expected) {
+				t.Errorf("AKSExtensionSpecs() = %s, want %s", specArrayToString(got), specArrayToString(c.Expected))
 			}
 		})
 	}
