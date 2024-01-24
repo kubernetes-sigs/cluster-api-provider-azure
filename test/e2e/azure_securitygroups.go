@@ -109,12 +109,14 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 			securityGroup, err := securityGroupsClient.Get(ctx, azureCluster.Spec.ResourceGroup, expectedSubnet.SecurityGroup.Name, nil)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			var securityRules []*armnetwork.SecurityRule
+			var securityRules []string
 			pager := securityRulesClient.NewListPager(azureCluster.Spec.ResourceGroup, *securityGroup.Name, nil)
 			for pager.More() {
 				nextResult, err := pager.NextPage(ctx)
-				Expect(err).NotTo(HaveOccurred())
-				securityRules = append(securityRules, nextResult.Value...)
+				g.Expect(err).NotTo(HaveOccurred())
+				for _, securityRule := range nextResult.Value {
+					securityRules = append(securityRules, *securityRule.Name)
+				}
 			}
 
 			var expectedSecurityRuleNames []string
@@ -122,9 +124,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 				expectedSecurityRuleNames = append(expectedSecurityRuleNames, expectedSecurityRule.Name)
 			}
 
-			for _, securityRule := range securityRules {
-				g.Expect(expectedSecurityRuleNames).To(ContainElement(*securityRule.Name))
-			}
+			g.Expect(securityRules).To(ConsistOf(expectedSecurityRuleNames))
 		}
 	}
 
