@@ -4,10 +4,15 @@ on:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
 name: release
 
 jobs:
   build:
+    permissions:
+      contents: write  # for softprops/action-gh-release to create GitHub release
     name: tag release
     runs-on: ubuntu-latest
     steps:
