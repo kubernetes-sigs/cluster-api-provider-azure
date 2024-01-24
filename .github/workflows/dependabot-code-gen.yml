@@ -9,11 +9,13 @@ on:
       - dependabot/**
   workflow_dispatch:
 
-permissions:
-  contents: write # Allow to update the PR.
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
 
 jobs:
   build:
+    permissions:
+      contents: write  # for EndBug/add-and-commit
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +23,6 @@ jobs:
       uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
       with:
         egress-policy: audit
-
     - name: Set up Go 1.x
       uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
       with:
