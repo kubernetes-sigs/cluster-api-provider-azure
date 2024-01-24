@@ -41,9 +41,6 @@ type ManagedClusterSpec struct {
 	// Name is the name of this AKS Cluster.
 	Name string
 
-	// Namespace is the namespace of the ASO ManagedCluster.
-	Namespace string
-
 	// ResourceGroup is the name of the Azure resource group for this AKS Cluster.
 	ResourceGroup string
 
@@ -255,8 +252,7 @@ type OIDCIssuerProfile struct {
 func (s *ManagedClusterSpec) ResourceRef() *asocontainerservicev1.ManagedCluster {
 	return &asocontainerservicev1.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

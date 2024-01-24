@@ -60,9 +60,6 @@ type AgentPoolSpec struct {
 	// Name is the name of the ASO ManagedClustersAgentPool resource.
 	Name string
 
-	// Namespace is the namespace of the ASO ManagedClustersAgentPool resource.
-	Namespace string
-
 	// AzureName is the name of the agentpool resource in Azure.
 	AzureName string
 
@@ -158,8 +155,7 @@ type AgentPoolSpec struct {
 func (s *AgentPoolSpec) ResourceRef() *asocontainerservicev1.ManagedClustersAgentPool {
 	return &asocontainerservicev1.ManagedClustersAgentPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

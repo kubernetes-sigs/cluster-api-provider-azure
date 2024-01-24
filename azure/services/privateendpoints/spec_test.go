@@ -31,7 +31,6 @@ import (
 var (
 	fakePrivateEndpoint = PrivateEndpointSpec{
 		Name:                       "test_private_endpoint_1",
-		Namespace:                  "test_ns",
 		ResourceGroup:              "test_rg",
 		Location:                   "test_location",
 		CustomNetworkInterfaceName: "test_if_name",
@@ -57,8 +56,7 @@ var (
 
 	fakeASOPrivateEndpoint = asonetworkv1.PrivateEndpoint{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fakePrivateEndpoint.Name,
-			Namespace: fakePrivateEndpoint.Namespace,
+			Name: fakePrivateEndpoint.Name,
 		},
 		Spec: asonetworkv1.PrivateEndpoint_Spec{
 			ApplicationSecurityGroups: []asonetworkv1.ApplicationSecurityGroupSpec_PrivateEndpoint_SubResourceEmbedded{

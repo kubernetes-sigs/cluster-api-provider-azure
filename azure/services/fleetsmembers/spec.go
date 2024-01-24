@@ -29,7 +29,6 @@ import (
 // AzureFleetsMemberSpec defines the specification for an Azure Fleets Member.
 type AzureFleetsMemberSpec struct {
 	Name                 string
-	Namespace            string
 	ClusterName          string
 	ClusterResourceGroup string
 	Group                string
@@ -42,8 +41,7 @@ type AzureFleetsMemberSpec struct {
 func (s *AzureFleetsMemberSpec) ResourceRef() *asocontainerservicev1.FleetsMember {
 	return &asocontainerservicev1.FleetsMember{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

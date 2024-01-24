@@ -40,7 +40,6 @@ func TestParameters(t *testing.T) {
 			spec: VNetSpec{
 				ResourceGroup: "rg",
 				Name:          "name",
-				Namespace:     "namespace",
 				CIDRs:         []string{"cidr"},
 				Location:      "location",
 				ExtendedLocation: &infrav1.ExtendedLocationSpec{
@@ -78,7 +77,6 @@ func TestParameters(t *testing.T) {
 			spec: VNetSpec{
 				ResourceGroup: "rg",
 				Name:          "name",
-				Namespace:     "namespace",
 				CIDRs:         []string{"cidr"},
 				Location:      "location",
 				ExtendedLocation: &infrav1.ExtendedLocationSpec{

@@ -38,7 +38,6 @@ type PrivateLinkServiceConnection struct {
 // PrivateEndpointSpec defines the specification for a private endpoint.
 type PrivateEndpointSpec struct {
 	Name                          string
-	Namespace                     string
 	ResourceGroup                 string
 	Location                      string
 	CustomNetworkInterfaceName    string
@@ -55,8 +54,7 @@ type PrivateEndpointSpec struct {
 func (s *PrivateEndpointSpec) ResourceRef() *asonetworkv1.PrivateEndpoint {
 	return &asonetworkv1.PrivateEndpoint{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

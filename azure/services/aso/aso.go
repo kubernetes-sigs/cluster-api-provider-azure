@@ -28,11 +28,14 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -58,13 +61,15 @@ type reconciler[T deepCopier[T]] struct {
 	client.Client
 
 	clusterName string
+	owner       client.Object
 }
 
 // New creates a new ASO reconciler.
-func New[T deepCopier[T]](ctrlClient client.Client, clusterName string) Reconciler[T] {
+func New[T deepCopier[T]](ctrlClient client.Client, clusterName string, owner client.Object) Reconciler[T] {
 	return &reconciler[T]{
 		Client:      ctrlClient,
 		clusterName: clusterName,
+		owner:       owner,
 	}
 }
 
@@ -75,6 +80,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	defer done()
 
 	resource := spec.ResourceRef()
+	resource.SetNamespace(r.owner.GetNamespace())
 	resourceName := resource.GetName()
 	resourceNamespace := resource.GetNamespace()
 
@@ -95,7 +101,9 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		resourceExists = true
 		log.V(2).Info("successfully got existing resource")
 
-		if !ownedByCluster(existing.GetLabels(), r.clusterName) {
+		if isOwned, err := isOwnedBy(resource, r.owner, r.Scheme()); err != nil {
+			return zero, err
+		} else if !isOwned && !hasLegacyOwnedByLabel(resource.GetLabels(), r.clusterName) {
 			log.V(4).Info("skipping reconcile for unmanaged resource")
 			return existing, nil
 		}
@@ -150,6 +158,10 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	parameters.SetName(resourceName)
 	parameters.SetNamespace(resourceNamespace)
 
+	if err := controllerutil.SetControllerReference(r.owner, parameters, r.Client.Scheme()); err != nil {
+		return zero, errors.Wrap(err, "failed to set owner ref")
+	}
+
 	if t, ok := spec.(TagsGetterSetter[T]); ok {
 		if err := reconcileTags(t, existing, resourceExists, parameters); err != nil {
 			if azure.IsOperationNotDoneError(err) && readyErr != nil {
@@ -173,7 +185,6 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		delete(annotations, prePauseReconcilePolicyAnnotation)
 	}
 	if !resourceExists {
-		labels[infrav1.OwnedByClusterLabelKey] = r.clusterName
 		// Create the ASO resource with "skip" in case a matching resource
 		// already exists in Azure, in which case CAPZ will assume it is managed
 		// by the user and ASO should not actively reconcile changes to the ASO
@@ -243,12 +254,13 @@ func (r *reconciler[T]) DeleteResource(ctx context.Context, resource T, serviceN
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.DeleteResource")
 	defer done()
 
+	resource.SetNamespace(r.owner.GetNamespace())
 	resourceName := resource.GetName()
 	resourceNamespace := resource.GetNamespace()
 
 	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
 
-	managed, err := IsManaged(ctx, r.Client, resource, r.clusterName)
+	managed, err := IsManaged(ctx, r.Client, resource, r.owner)
 	if apierrors.IsNotFound(err) {
 		// already deleted
 		log.V(2).Info("successfully deleted resource")
@@ -282,19 +294,34 @@ func (r *reconciler[T]) DeleteResource(ctx context.Context, resource T, serviceN
 
 // IsManaged returns whether the ASO resource referred to by spec was created by
 // CAPZ and therefore whether CAPZ should manage its lifecycle.
-func IsManaged[T genruntime.MetaObject](ctx context.Context, ctrlClient client.Client, resource T, clusterName string) (bool, error) {
+func IsManaged[T genruntime.MetaObject](ctx context.Context, ctrlClient client.Client, resource T, owner client.Object) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.IsManaged")
 	defer done()
+
+	resource.SetNamespace(owner.GetNamespace())
 
 	err := ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), resource)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting resource")
 	}
 
-	return ownedByCluster(resource.GetLabels(), clusterName), nil
+	return isOwnedBy(resource, owner, ctrlClient.Scheme())
 }
 
-func ownedByCluster(labels map[string]string, clusterName string) bool {
+func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Scheme) (bool, error) {
+	ownerGVK, err := apiutil.GVKForObject(owner, scheme)
+	if err != nil {
+		return false, err
+	}
+	existingOwner := metav1.GetControllerOf(resource)
+	return existingOwner != nil &&
+		existingOwner.APIVersion == ownerGVK.GroupVersion().String() &&
+		existingOwner.Kind == ownerGVK.Kind &&
+		existingOwner.Name == owner.GetName(), nil
+}
+
+func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
+	//nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
 	return labels[infrav1.OwnedByClusterLabelKey] == clusterName
 }
 
@@ -303,15 +330,16 @@ func (r *reconciler[T]) PauseResource(ctx context.Context, resource T, serviceNa
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "services.aso.PauseResource")
 	defer done()
 
-	resourceName := resource.GetName()
-	resourceNamespace := resource.GetNamespace()
+	resource.SetNamespace(r.owner.GetNamespace())
 
-	log = log.WithValues("service", serviceName, "resource", resourceName, "namespace", resourceNamespace)
+	log = log.WithValues("service", serviceName, "resource", resource.GetName(), "namespace", resource.GetNamespace())
 
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
 		return err
 	}
-	if !ownedByCluster(resource.GetLabels(), r.clusterName) {
+	if isOwned, err := isOwnedBy(resource, r.owner, r.Scheme()); err != nil {
+		return err
+	} else if !isOwned {
 		log.V(4).Info("Skipping pause of unmanaged resource")
 		return nil
 	}

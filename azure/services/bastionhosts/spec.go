@@ -31,7 +31,6 @@ import (
 // AzureBastionSpec defines the specification for azure bastion feature.
 type AzureBastionSpec struct {
 	Name            string
-	Namespace       string
 	ResourceGroup   string
 	Location        string
 	ClusterName     string
@@ -45,8 +44,7 @@ type AzureBastionSpec struct {
 func (s *AzureBastionSpec) ResourceRef() *asonetworkv1.BastionHost {
 	return &asonetworkv1.BastionHost{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

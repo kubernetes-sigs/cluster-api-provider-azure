@@ -31,7 +31,6 @@ import (
 type VNetSpec struct {
 	ResourceGroup    string
 	Name             string
-	Namespace        string
 	CIDRs            []string
 	Location         string
 	ExtendedLocation *infrav1.ExtendedLocationSpec
@@ -43,8 +42,7 @@ type VNetSpec struct {
 func (s *VNetSpec) ResourceRef() *asonetworkv1.VirtualNetwork {
 	return &asonetworkv1.VirtualNetwork{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: s.Namespace,
+			Name: s.Name,
 		},
 	}
 }

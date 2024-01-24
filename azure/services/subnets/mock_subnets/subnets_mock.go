@@ -60,6 +60,20 @@ func (m *MockSubnetScope) EXPECT() *MockSubnetScopeMockRecorder {
 	return m.recorder
 }
 
+// ASOOwner mocks base method.
+func (m *MockSubnetScope) ASOOwner() client.Object {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ASOOwner")
+	ret0, _ := ret[0].(client.Object)
+	return ret0
+}
+
+// ASOOwner indicates an expected call of ASOOwner.
+func (mr *MockSubnetScopeMockRecorder) ASOOwner() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ASOOwner", reflect.TypeOf((*MockSubnetScope)(nil).ASOOwner))
+}
+
 // ClusterName mocks base method.
 func (m *MockSubnetScope) ClusterName() string {
 	m.ctrl.T.Helper()

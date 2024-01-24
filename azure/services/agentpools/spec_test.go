@@ -35,7 +35,6 @@ func TestParameters(t *testing.T) {
 
 		spec := &AgentPoolSpec{
 			Name:                 "name",
-			Namespace:            "namespace",
 			AzureName:            "azure name",
 			ResourceGroup:        "rg",
 			Cluster:              "cluster",

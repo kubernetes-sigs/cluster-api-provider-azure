@@ -45,4 +45,5 @@ type Scope interface {
 	azure.AsyncStatusUpdater
 	GetClient() client.Client
 	ClusterName() string
+	ASOOwner() client.Object
 }

@@ -41,20 +41,9 @@ func TestParameters(t *testing.T) {
 				Location:       "location",
 				ClusterName:    "cluster",
 				AdditionalTags: infrav1.Tags{"some": "tags"},
-				Namespace:      "namespace",
-				Owner: metav1.OwnerReference{
-					Kind: "kind",
-				},
 			},
 			existing: nil,
 			expected: &asoresourcesv1.ResourceGroup{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind: "kind",
-						},
-					},
-				},
 				Spec: asoresourcesv1.ResourceGroup_Spec{
 					Location: ptr.To("location"),
 					Tags: map[string]string{

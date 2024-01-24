@@ -129,6 +129,11 @@ func (s *ManagedMachinePoolScope) GetClient() client.Client {
 	return s.Client
 }
 
+// ASOOwner implements aso.Scope.
+func (s *ManagedMachinePoolScope) ASOOwner() client.Object {
+	return s.InfraMachinePool
+}
+
 // Name returns the name of the infra machine pool.
 func (s *ManagedMachinePoolScope) Name() string {
 	return s.InfraMachinePool.Name
@@ -167,7 +172,6 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 
 	agentPoolSpec := &agentpools.AgentPoolSpec{
 		Name:          managedMachinePool.Name,
-		Namespace:     managedMachinePool.Namespace,
 		AzureName:     ptr.Deref(managedMachinePool.Spec.Name, ""),
 		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
 		Cluster:       managedControlPlane.Name,
