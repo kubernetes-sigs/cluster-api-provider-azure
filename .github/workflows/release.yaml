@@ -7,11 +7,14 @@ on:
     paths:
       - 'CHANGELOG/*.md'
 
-permissions:
-  contents: write # Allow to push a tag, create a release branch and publish a draft release.
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
 
 jobs:
   push_release_tag:
+    permissions:
+      pull-requests: read  # for tj-actions/changed-files
+      contents: write  # for "Create Release Tag" step
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.release-version.outputs.release_version }}
@@ -20,7 +23,7 @@ jobs:
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
         with:
           egress-policy: audit
-      - name: Checkout code 
+      - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4.1.1
         with:
           fetch-depth: 0
@@ -80,6 +83,8 @@ jobs:
           git push origin ${RELEASE_VERSION}
           echo "Created tag $RELEASE_VERSION"
   release:
+    permissions:
+      contents: write  # for softprops/action-gh-release to create GitHub release
     name: create draft release
     runs-on: ubuntu-latest
     needs: push_release_tag
