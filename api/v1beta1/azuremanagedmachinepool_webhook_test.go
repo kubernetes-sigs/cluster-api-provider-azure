@@ -736,11 +736,11 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			errorLen: 1,
 		},
 		{
-			name: "invalid subnetname",
+			name: "invalid subnetname with versioning",
 			ammp: &AzureManagedMachinePool{
 				Spec: AzureManagedMachinePoolSpec{
 					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
-						SubnetName: ptr.To("E-a_b-c"),
+						SubnetName: ptr.To("workload-ampt-v0.1.0."),
 					},
 				},
 			},
@@ -789,6 +789,17 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 				Spec: AzureManagedMachinePoolSpec{
 					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
 						SubnetName: ptr.To("3DgIb8EZMkLs0KlyPaTcNxoJU9ufmW6jvXrweqz1hVp5nS4RtH2QY7AFOiC5nS4RtH2QY7AFOiC3DgIb"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid subnetname with versioning",
+			ammp: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
+						SubnetName: ptr.To("workload-ampt-v0.1.0"),
 					},
 				},
 			},
