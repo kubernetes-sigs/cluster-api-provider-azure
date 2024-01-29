@@ -23,10 +23,7 @@ jobs:
       with:
         go-version: '1.20'
     - run: "PATH=/usr/local/go/bin:$PATH make test-cover"
-    - uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # v1.3.0 Retry codecov upload. It is flaky due to a known issue https://community.codecov.com/t/upload-issues-unable-to-locate-build-via-github-actions-api/3954
+    - uses: codecov/codecov-action@4fe8c5f003fae66aa5ebb77cfd3e7bfbbda0b6b0 # v3.1.5
       with:
-        attempt_limit: 20
-        action: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
-        with: |
-          file: ./coverage.out
-          fail_ci_if_error: true
+        files: ./coverage.out
+        fail_ci_if_error: true
