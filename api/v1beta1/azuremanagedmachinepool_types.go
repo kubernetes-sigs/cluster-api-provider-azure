@@ -464,7 +464,7 @@ type AzureManagedMachinePoolStatus struct {
 	// can be added as events to the Machine object and/or logged in the
 	// controller's output.
 	// +optional
-	ErrorReason *capierrors.MachineStatusError `json:"errorReason,omitempty"`
+	ErrorReason *capierrors.MachineSetStatusError `json:"errorReason,omitempty"`
 
 	// Any transient errors that occur during the reconciliation of Machines
 	// can be added as events to the Machine object and/or logged in the

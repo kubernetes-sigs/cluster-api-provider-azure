@@ -391,7 +391,7 @@ func (in *AzureMachinePoolStatus) DeepCopyInto(out *AzureMachinePoolStatus) {
 	}
 	if in.FailureReason != nil {
 		in, out := &in.FailureReason, &out.FailureReason
-		*out = new(errors.MachineStatusError)
+		*out = new(errors.MachineSetStatusError)
 		**out = **in
 	}
 	if in.FailureMessage != nil {

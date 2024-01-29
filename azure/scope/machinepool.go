@@ -617,7 +617,7 @@ func (m *MachinePoolScope) SetFailureMessage(v error) {
 }
 
 // SetFailureReason sets the AzureMachinePool status failure reason.
-func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
+func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineSetStatusError) {
 	m.AzureMachinePool.Status.FailureReason = &v
 }
 
