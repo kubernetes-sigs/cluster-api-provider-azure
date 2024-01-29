@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Service provides operations on Azure resources.
@@ -31,6 +32,10 @@ type Service[T deepCopier[T], S Scope] struct {
 
 	Scope S
 	Specs []azure.ASOResourceSpecGetter[T]
+	// ListFunc is used to enumerate ASO existent resources. Currently this interface is designed only to aid
+	// discovery of ASO resources that no longer have a CAPZ reference, and can thus be deleted. This behavior
+	// may be skipped for a service by leaving this field nil.
+	ListFunc func(ctx context.Context, client client.Client, opts ...client.ListOption) (resources []T, err error)
 
 	ConditionType                  clusterv1.ConditionType
 	PostCreateOrUpdateResourceHook func(ctx context.Context, scope S, result T, err error) error
@@ -62,10 +67,6 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())
 	defer cancel()
 
-	if len(s.Specs) == 0 {
-		return nil
-	}
-
 	// We go through the list of Specs to reconcile each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	// Order of precedence (highest -> lowest) is:
@@ -73,6 +74,28 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	//   - operationNotDoneError (i.e. creating in progress)
 	//   - no error (i.e. created)
 	var resultErr error
+
+	if s.ListFunc != nil {
+		toReconcile := map[string]struct{}{}
+		for _, spec := range s.Specs {
+			toReconcile[spec.ResourceRef().GetName()] = struct{}{}
+		}
+		list, err := s.ListFunc(ctx, s.Scope.GetClient(), client.InNamespace(s.Scope.ASOOwner().GetNamespace()))
+		if err != nil {
+			resultErr = err
+		} else {
+			for _, existing := range list {
+				if _, exists := toReconcile[existing.GetName()]; exists {
+					continue
+				}
+				err := s.Reconciler.DeleteResource(ctx, existing, s.Name())
+				if err != nil && (!azure.IsOperationNotDoneError(err) || resultErr == nil) {
+					resultErr = err
+				}
+			}
+		}
+	}
+
 	for _, spec := range s.Specs {
 		result, err := s.CreateOrUpdateResource(ctx, spec, s.Name())
 		if s.PostCreateOrUpdateResourceHook != nil {

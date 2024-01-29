@@ -138,11 +138,11 @@ func AKSFleetsMemberSpec(ctx context.Context, inputGetter func() AKSFleetsMember
 		g.Expect(aks.ManagedCluster.Properties.ProvisioningState).NotTo(Equal(ptr.To("Updating")))
 	}, input.WaitIntervals...).Should(Succeed())
 
-	By("Deleting the fleets member")
-	fleetsMemberPoller, err := fleetsMemberClient.BeginDelete(ctx, groupName, fleetName, input.Cluster.Name, nil)
-	Expect(err).NotTo(HaveOccurred())
-	_, err = fleetsMemberPoller.PollUntilDone(ctx, nil)
-	Expect(err).NotTo(HaveOccurred())
+	By("Waiting for the FleetsMember to be deleted")
+	Eventually(func(g Gomega) {
+		_, err := fleetsMemberClient.Get(ctx, groupName, fleetName, input.Cluster.Name, nil)
+		g.Expect(azure.ResourceNotFound(err)).To(BeTrue(), "expected err to be 'not found', got %v", err)
+	}, input.WaitIntervals...).Should(Succeed())
 
 	Logf("Deleting the fleet manager resource group %q", groupName)
 	grpPoller, err := groupClient.BeginDelete(ctx, groupName, nil)

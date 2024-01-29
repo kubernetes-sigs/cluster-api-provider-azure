@@ -17,10 +17,14 @@ limitations under the License.
 package bastionhosts
 
 import (
+	"context"
+
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const serviceName = "bastionhosts"
@@ -38,6 +42,13 @@ func New(scope BastionScope) *aso.Service[*asonetworkv1.BastionHost, BastionScop
 	if spec != nil {
 		svc.Specs = []azure.ASOResourceSpecGetter[*asonetworkv1.BastionHost]{spec}
 	}
+	svc.ListFunc = list
 	svc.ConditionType = infrav1.BastionHostReadyCondition
 	return svc
+}
+
+func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asonetworkv1.BastionHost, error) {
+	list := &asonetworkv1.BastionHostList{}
+	err := client.List(ctx, list, opts...)
+	return slice.ToPtrs(list.Items), err
 }

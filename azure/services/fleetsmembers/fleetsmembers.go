@@ -17,10 +17,14 @@ limitations under the License.
 package fleetsmembers
 
 import (
+	"context"
+
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const serviceName = "fleetsmember"
@@ -34,7 +38,14 @@ type FleetsMemberScope interface {
 // New creates a new service.
 func New(scope FleetsMemberScope) *aso.Service[*asocontainerservicev1.FleetsMember, FleetsMemberScope] {
 	svc := aso.NewService[*asocontainerservicev1.FleetsMember, FleetsMemberScope](serviceName, scope)
+	svc.ListFunc = list
 	svc.Specs = scope.AzureFleetsMemberSpec()
 	svc.ConditionType = infrav1.FleetReadyCondition
 	return svc
+}
+
+func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asocontainerservicev1.FleetsMember, error) {
+	list := &asocontainerservicev1.FleetsMemberList{}
+	err := client.List(ctx, list, opts...)
+	return slice.ToPtrs(list.Items), err
 }
