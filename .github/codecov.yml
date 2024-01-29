@@ -10,3 +10,22 @@ coverage:
         target: auto
         threshold: 1%
         informational: true
+ignore:
+  - go.mod
+  - go.sum
+  - docs/**
+  - hack/**
+  - scripts/**
+  - templates/**
+  - test/e2e/**
+  - tilt_modules/**
+  - "*.yaml"
+  - "*.md"
+  - "*.json"
+  - Makefile
+  - "*.mk"
+  - Dockerfile
+  - "*.toml"
+  - OWNERS*
+  - PROJECT
+  - Tiltfile
