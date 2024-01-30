@@ -1351,6 +1351,11 @@ func (in *AzureManagedControlPlaneClassSpec) DeepCopyInto(out *AzureManagedContr
 		*out = new(string)
 		**out = **in
 	}
+	if in.NetworkDataplane != nil {
+		in, out := &in.NetworkDataplane, &out.NetworkDataplane
+		*out = new(NetworkDataplaneType)
+		**out = **in
+	}
 	if in.OutboundType != nil {
 		in, out := &in.OutboundType, &out.OutboundType
 		*out = new(ManagedControlPlaneOutboundType)

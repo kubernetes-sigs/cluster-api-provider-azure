@@ -1250,6 +1250,36 @@ func TestValidatingWebhook(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name: "Valid NetworkDataplane: cilium",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version:           "v1.17.8",
+						NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
+						NetworkDataplane:  ptr.To(NetworkDataplaneTypeCilium),
+						NetworkPolicy:     ptr.To("cilium"),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid NetworkDataplane: cilium dataplane requires overlay network plugin mode",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version:           "v1.17.8",
+						NetworkPluginMode: nil,
+						NetworkDataplane:  ptr.To(NetworkDataplaneTypeCilium),
+						NetworkPolicy:     ptr.To("cilium"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
 			name: "Test valid AzureKeyVaultKms",
 			amcp: AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
@@ -1291,6 +1321,36 @@ func TestValidatingWebhook(t *testing.T) {
 				},
 			},
 			expectErr: false,
+		},
+		{
+			name: "Testing invalid NetworkDataplane: cilium dataplane requires network policy to be cilium",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version:           "v1.17.8",
+						NetworkPluginMode: nil,
+						NetworkDataplane:  ptr.To(NetworkDataplaneTypeCilium),
+						NetworkPolicy:     ptr.To("azure"),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid NetworkPolicy: cilium network policy can only be used with cilium network dataplane",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version:           "v1.17.8",
+						NetworkPluginMode: nil,
+						NetworkDataplane:  ptr.To(NetworkDataplaneTypeAzure),
+						NetworkPolicy:     ptr.To("cilium"),
+					},
+				},
+			},
+			expectErr: true,
 		},
 	}
 
@@ -2091,6 +2151,49 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 						DNSServiceIP:  ptr.To("192.168.0.10"),
 						NetworkPolicy: ptr.To("azure"),
 						Version:       "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP: ptr.To("192.168.0.10"),
+						Version:      "v1.18.0",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkPolicy is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:     ptr.To("192.168.0.10"),
+						NetworkDataplane: ptr.To(NetworkDataplaneTypeCilium),
+						Version:          "v1.18.0",
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:     ptr.To("192.168.0.10"),
+						NetworkDataplane: ptr.To(NetworkDataplaneTypeAzure),
+						Version:          "v1.18.0",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkDataplane is immutable, unsetting is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DNSServiceIP:     ptr.To("192.168.0.10"),
+						NetworkDataplane: ptr.To(NetworkDataplaneTypeCilium),
+						Version:          "v1.18.0",
 					},
 				},
 			},

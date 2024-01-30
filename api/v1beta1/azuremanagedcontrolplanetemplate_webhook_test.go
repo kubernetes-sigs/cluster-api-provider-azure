@@ -249,6 +249,16 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "azuremanagedcontrolplanetemplate networkDataplane is immutable",
+			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.NetworkDataplane = ptr.To(NetworkDataplaneTypeAzure)
+			}),
+			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.NetworkDataplane = ptr.To(NetworkDataplaneTypeCilium)
+			}),
+			wantErr: true,
+		},
+		{
 			name: "AzureManagedControlPlane invalid version downgrade change",
 			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.Version = "v1.18.0"

@@ -547,6 +547,13 @@ spec:
                   the AzureManagedControlPlaneTemplate, this field is used only to
                   fulfill the CAPI contract.
                 type: object
+              networkDataplane:
+                description: NetworkDataplane is the dataplane used for building the
+                  Kubernetes network.
+                enum:
+                - azure
+                - cilium
+                type: string
               networkPlugin:
                 description: NetworkPlugin used for building Kubernetes network.
                 enum:
@@ -565,6 +572,7 @@ spec:
                 enum:
                 - azure
                 - calico
+                - cilium
                 type: string
               nodeResourceGroupName:
                 description: NodeResourceGroupName is the name of the resource group

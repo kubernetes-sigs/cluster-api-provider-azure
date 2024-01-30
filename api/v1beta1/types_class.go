@@ -120,9 +120,14 @@ type AzureManagedControlPlaneClassSpec struct {
 	NetworkPluginMode *NetworkPluginMode `json:"networkPluginMode,omitempty"`
 
 	// NetworkPolicy used for building Kubernetes network.
-	// +kubebuilder:validation:Enum=azure;calico
+	// +kubebuilder:validation:Enum=azure;calico;cilium
 	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
+
+	// NetworkDataplane is the dataplane used for building the Kubernetes network.
+	// +kubebuilder:validation:Enum=azure;cilium
+	// +optional
+	NetworkDataplane *NetworkDataplaneType `json:"networkDataplane,omitempty"`
 
 	// Outbound configuration used by Nodes.
 	// +kubebuilder:validation:Enum=loadBalancer;managedNATGateway;userAssignedNATGateway;userDefinedRouting

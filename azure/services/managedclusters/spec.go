@@ -72,8 +72,11 @@ type ManagedClusterSpec struct {
 	// NetworkPluginMode is the mode the network plugin should use.
 	NetworkPluginMode *infrav1.NetworkPluginMode
 
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'.
+	// NetworkPolicy used for building Kubernetes network. Possible values include: 'azure', 'calico', 'cilium'.
 	NetworkPolicy string
+
+	// NetworkDataplane used for building Kubernetes network. Possible values include: 'azure', 'cilium'.
+	NetworkDataplane *infrav1.NetworkDataplaneType
 
 	// OutboundType used for building Kubernetes network. Possible values include: 'loadBalancer', 'managedNATGateway', 'userAssignedNATGateway', 'userDefinedRouting'.
 	OutboundType *infrav1.ManagedControlPlaneOutboundType
@@ -422,6 +425,9 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.NetworkPlugin](&s.NetworkPlugin),
 		LoadBalancerSku: azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku](&s.LoadBalancerSKU),
 		NetworkPolicy:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy](&s.NetworkPolicy),
+	}
+	if s.NetworkDataplane != nil {
+		managedCluster.Spec.NetworkProfile.NetworkDataplane = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkDataplane(*s.NetworkDataplane))
 	}
 	managedCluster.Spec.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)
 
