@@ -18,7 +18,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
   - ../patches/controller-manager.yaml
-  - ../patches/machine-deployment-worker-counts.yaml
+  - ../patches/windows-machine-deployment-replicas.yaml
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
   - ../patches/azuremachinetemplate-vmextension.yaml
   - ../patches/windows-feature-gates.yaml

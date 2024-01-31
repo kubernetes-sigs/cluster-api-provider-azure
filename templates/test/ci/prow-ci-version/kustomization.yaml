@@ -9,7 +9,7 @@ patchesStrategicMerge:
   - ../patches/controller-manager.yaml
   - ../patches/windows-feature-gates.yaml
   - ../patches/windows-containerd-labels.yaml
-  - ../patches/machine-deployment-worker-counts.yaml
+  - ../patches/windows-machine-deployment-replicas.yaml
   - patches/machine-deployment-ci-version.yaml
   - patches/machine-deployment-ci-version-windows.yaml
   - ../patches/metrics-server-enabled-cluster.yaml
