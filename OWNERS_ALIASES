@@ -18,8 +18,8 @@ aliases:
     - jackfrancis
     - mboersma
     - nojnhuh
-  cluster-api-azure-reviewers:
     - Jont828
+  cluster-api-azure-reviewers:
     - jsturtevant
     - marosset
     - nawazkh
