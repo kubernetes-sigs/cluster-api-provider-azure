@@ -124,6 +124,20 @@ spec:
                             - None
                             type: string
                         type: object
+                      autoUpgradeProfile:
+                        description: AutoUpgradeProfile defines the auto upgrade configuration.
+                        properties:
+                          upgradeChannel:
+                            description: UpgradeChannel determines the type of upgrade
+                              channel for automatically upgrading the cluster.
+                            enum:
+                            - node-image
+                            - none
+                            - patch
+                            - rapid
+                            - stable
+                            type: string
+                        type: object
                       autoscalerProfile:
                         description: AutoscalerProfile is the parameters to be applied
                           to the cluster-autoscaler when enabled

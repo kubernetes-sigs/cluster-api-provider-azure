@@ -38,7 +38,7 @@ func TestParameters(t *testing.T) {
 			AzureName:            "azure name",
 			ResourceGroup:        "rg",
 			Cluster:              "cluster",
-			Version:              ptr.To("version"),
+			Version:              ptr.To("1.26.6"),
 			SKU:                  "sku",
 			Replicas:             1,
 			OSDiskSizeGB:         2,
@@ -90,7 +90,7 @@ func TestParameters(t *testing.T) {
 				Mode:                   ptr.To(asocontainerservicev1.AgentPoolMode("mode")),
 				NodeLabels:             map[string]string{"node": "labels"},
 				NodeTaints:             []string{"node taints"},
-				OrchestratorVersion:    ptr.To("version"),
+				OrchestratorVersion:    ptr.To("1.26.6"),
 				OsDiskSizeGB:           ptr.To(asocontainerservicev1.ContainerServiceOSDisk(2)),
 				OsDiskType:             ptr.To(asocontainerservicev1.OSDiskType("disk type")),
 				OsType:                 ptr.To(asocontainerservicev1.OSType("os type")),
@@ -132,6 +132,7 @@ func TestParameters(t *testing.T) {
 			AzureName:         "managed by CAPZ",
 			Replicas:          3,
 			EnableAutoScaling: true,
+			Version:           ptr.To("1.26.6"),
 		}
 		existing := &asocontainerservicev1.ManagedClustersAgentPool{
 			Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
@@ -139,6 +140,7 @@ func TestParameters(t *testing.T) {
 				PowerState: &asocontainerservicev1.PowerState{
 					Code: ptr.To(asocontainerservicev1.PowerState_Code("set by the user")),
 				},
+				OrchestratorVersion: ptr.To("1.27.2"),
 			},
 			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				Count: ptr.To(1212),
@@ -151,5 +153,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.AzureName).To(Equal("managed by CAPZ"))
 		g.Expect(actual.Spec.Count).To(Equal(ptr.To(1212)))
 		g.Expect(actual.Spec.PowerState.Code).To(Equal(ptr.To(asocontainerservicev1.PowerState_Code("set by the user"))))
+		g.Expect(actual.Spec.OrchestratorVersion).ToNot(BeNil())
+		g.Expect(*actual.Spec.OrchestratorVersion).To(Equal("1.27.2"))
 	})
 }

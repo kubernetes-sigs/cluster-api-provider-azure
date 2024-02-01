@@ -898,6 +898,122 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	}
 }
 
+func Test_getManagedMachinePoolVersion(t *testing.T) {
+	cases := []struct {
+		name                string
+		managedControlPlane *infrav1.AzureManagedControlPlane
+		machinePool         *expv1.MachinePool
+		expected            *string
+	}{
+		{
+			name:                "Empty configs",
+			managedControlPlane: nil,
+			machinePool:         nil,
+			expected:            nil,
+		},
+		{
+			name:                "Empty mp",
+			managedControlPlane: &infrav1.AzureManagedControlPlane{},
+			machinePool:         nil,
+			expected:            nil,
+		},
+		{
+			name:                "Only machine pool is available",
+			managedControlPlane: nil,
+			machinePool: &expv1.MachinePool{
+				Spec: expv1.MachinePoolSpec{
+					Template: clusterv1.MachineTemplateSpec{
+						Spec: clusterv1.MachineSpec{
+							Version: ptr.To("v1.15.0"),
+						},
+					},
+				},
+			},
+			expected: ptr.To("1.15.0"),
+		},
+		{
+			name:                "Only machine pool is available and cp is nil",
+			managedControlPlane: nil,
+			machinePool: &expv1.MachinePool{
+				Spec: expv1.MachinePoolSpec{
+					Template: clusterv1.MachineTemplateSpec{
+						Spec: clusterv1.MachineSpec{
+							Version: ptr.To("v1.15.0"),
+						},
+					},
+				},
+			},
+			expected: ptr.To("1.15.0"),
+		},
+		{
+			name: "mcp.status.autoUpgradeVersion > mp.spec.template.spec.version",
+			managedControlPlane: &infrav1.AzureManagedControlPlane{
+				Status: infrav1.AzureManagedControlPlaneStatus{
+					AutoUpgradeVersion: "1.20.3",
+				},
+			},
+			machinePool: &expv1.MachinePool{
+				Spec: expv1.MachinePoolSpec{
+					Template: clusterv1.MachineTemplateSpec{
+						Spec: clusterv1.MachineSpec{
+							Version: ptr.To("v1.15.0"),
+						},
+					},
+				},
+			},
+			expected: ptr.To("1.20.3"),
+		},
+		{
+			name: "suffix + mcp.status.autoUpgradeVersion > mp.spec.template.spec.version",
+			managedControlPlane: &infrav1.AzureManagedControlPlane{
+				Status: infrav1.AzureManagedControlPlaneStatus{
+					AutoUpgradeVersion: "v1.20.3",
+				},
+			},
+			machinePool: &expv1.MachinePool{
+				Spec: expv1.MachinePoolSpec{
+					Template: clusterv1.MachineTemplateSpec{
+						Spec: clusterv1.MachineSpec{
+							Version: ptr.To("v1.15.0"),
+						},
+					},
+				},
+			},
+			expected: ptr.To("1.20.3"),
+		},
+		{
+			name: "mcp.status.autoUpgradeVersion < mp.spec.template.spec.version",
+			managedControlPlane: &infrav1.AzureManagedControlPlane{
+				Status: infrav1.AzureManagedControlPlaneStatus{
+					AutoUpgradeVersion: "v1.20.3",
+				},
+			},
+			machinePool: &expv1.MachinePool{
+				Spec: expv1.MachinePoolSpec{
+					Template: clusterv1.MachineTemplateSpec{
+						Spec: clusterv1.MachineSpec{
+							Version: ptr.To("v1.21.0"),
+						},
+					},
+				},
+			},
+			expected: ptr.To("1.21.0"),
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			g := NewWithT(t)
+			v := getManagedMachinePoolVersion(c.managedControlPlane, c.machinePool)
+			if c.expected != nil {
+				g.Expect(*v).To(Equal(*c.expected))
+			} else {
+				g.Expect(v).To(BeNil())
+			}
+		})
+	}
+}
+
 func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureManagedMachinePool {
 	return &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{

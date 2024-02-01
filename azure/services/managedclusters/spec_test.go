@@ -87,6 +87,9 @@ func TestParameters(t *testing.T) {
 			AutoScalerProfile: &AutoScalerProfile{
 				Expander: ptr.To("expander"),
 			},
+			AutoUpgradeProfile: &ManagedClusterAutoUpgradeProfile{
+				UpgradeChannel: ptr.To(infrav1.UpgradeChannelRapid),
+			},
 			Identity: &infrav1.Identity{
 				Type:                           infrav1.ManagedControlPlaneIdentityType(asocontainerservicev1.ManagedClusterIdentity_Type_UserAssigned),
 				UserAssignedIdentityResourceID: "user assigned id id",
@@ -129,6 +132,9 @@ func TestParameters(t *testing.T) {
 				},
 				AutoScalerProfile: &asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile{
 					Expander: ptr.To(asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile_Expander("expander")),
+				},
+				AutoUpgradeProfile: &asocontainerservicev1.ManagedClusterAutoUpgradeProfile{
+					UpgradeChannel: ptr.To(asocontainerservicev1.ManagedClusterAutoUpgradeProfile_UpgradeChannel_Rapid),
 				},
 				AzureName:            "name",
 				DisableLocalAccounts: ptr.To(true),
@@ -241,6 +247,7 @@ func TestParameters(t *testing.T) {
 		spec := &ManagedClusterSpec{
 			DNSPrefix: ptr.To("managed by CAPZ"),
 			Tags:      map[string]string{"additional": "tags"},
+			Version:   "1.25.9",
 		}
 		existing := &asocontainerservicev1.ManagedCluster{
 			Spec: asocontainerservicev1.ManagedCluster_Spec{
@@ -248,8 +255,9 @@ func TestParameters(t *testing.T) {
 				EnablePodSecurityPolicy: ptr.To(true), // set by the user
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
-				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{},
-				Tags:              map[string]string{},
+				AgentPoolProfiles:        []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{},
+				Tags:                     map[string]string{},
+				CurrentKubernetesVersion: ptr.To("1.26.6"),
 			},
 		}
 
@@ -260,5 +268,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.Tags).To(BeNil())
 		g.Expect(actual.Spec.DnsPrefix).To(Equal(ptr.To("managed by CAPZ")))
 		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
+		g.Expect(actual.Spec.KubernetesVersion).ToNot(BeNil())
+		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
 }

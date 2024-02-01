@@ -18,6 +18,7 @@ package managedclusters
 
 import (
 	"context"
+	"fmt"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/pkg/errors"
@@ -58,6 +59,9 @@ type ManagedClusterScope interface {
 	SetOIDCIssuerProfileStatus(*infrav1.OIDCIssuerProfileStatus)
 	MakeClusterCA() *corev1.Secret
 	StoreClusterInfo(context.Context, []byte) error
+	SetAutoUpgradeVersionStatus(version string)
+	SetVersionStatus(version string)
+	IsManagedVersionUpgrade() bool
 }
 
 // New creates a new service.
@@ -104,6 +108,13 @@ func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterSco
 			IssuerURL: managedCluster.Status.OidcIssuerProfile.IssuerURL,
 		})
 	}
+	if managedCluster.Status.CurrentKubernetesVersion != nil {
+		currentKubernetesVersion := fmt.Sprintf("v%s", *managedCluster.Status.CurrentKubernetesVersion)
+		scope.SetVersionStatus(currentKubernetesVersion)
+		if scope.IsManagedVersionUpgrade() {
+			scope.SetAutoUpgradeVersionStatus(currentKubernetesVersion)
+		}
+	}
 
 	return nil
 }
@@ -111,11 +122,11 @@ func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterSco
 // reconcileKubeconfig will reconcile admin kubeconfig and user kubeconfig.
 /*
   Returns the admin kubeconfig and user kubeconfig
-  If aad is enabled a user kubeconfig will also get generated and stored in the secret <cluster-name>-kubeconfig-user
-  If we disable local accounts for aad clusters we do not have access to admin kubeconfig, hence we need to create
+  If AAD is enabled a user kubeconfig will also get generated and stored in the secret <cluster-name>-kubeconfig-user
+  If we disable local accounts for AAD clusters we do not have access to admin kubeconfig, hence we need to create
   the admin kubeconfig by authenticating with the user credentials and retrieving the token for kubeconfig.
   The token is used to create the admin kubeconfig.
-  The user needs to ensure to provide service principle with admin aad privileges.
+  The user needs to ensure to provide service principal with admin AAD privileges.
 */
 func reconcileKubeconfig(ctx context.Context, scope ManagedClusterScope, namespace string) (adminKubeConfigData []byte, userKubeConfigData []byte, err error) {
 	if scope.IsAADEnabled() {

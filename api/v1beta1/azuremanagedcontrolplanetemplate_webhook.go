@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -175,6 +176,9 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 	if errs := validateAKSExtensionsUpdate(old.Spec.Template.Spec.Extensions, mcp.Spec.Template.Spec.Extensions); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
+	if errs := mcp.validateK8sVersionUpdate(old); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
 
 	if len(allErrs) == 0 {
 		return nil, mcp.validateManagedControlPlaneTemplate(mcpw.Client)
@@ -215,6 +219,17 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateDelete(ctx context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
+}
+
+// validateK8sVersionUpdate validates K8s version.
+func (mcp *AzureManagedControlPlaneTemplate) validateK8sVersionUpdate(old *AzureManagedControlPlaneTemplate) field.ErrorList {
+	var allErrs field.ErrorList
+	if hv := versions.GetHigherK8sVersion(mcp.Spec.Template.Spec.Version, old.Spec.Template.Spec.Version); hv != mcp.Spec.Template.Spec.Version {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "Template", "Spec", "Version"),
+			mcp.Spec.Template.Spec.Version, "field version cannot be downgraded"),
+		)
+	}
+	return allErrs
 }
 
 // validateVirtualNetworkTemplateUpdate validates update to VirtualNetworkTemplate.

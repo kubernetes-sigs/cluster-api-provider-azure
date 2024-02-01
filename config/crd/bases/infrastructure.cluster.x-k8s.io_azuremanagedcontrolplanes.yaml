@@ -133,6 +133,20 @@ spec:
                     - None
                     type: string
                 type: object
+              autoUpgradeProfile:
+                description: AutoUpgradeProfile defines the auto upgrade configuration.
+                properties:
+                  upgradeChannel:
+                    description: UpgradeChannel determines the type of upgrade channel
+                      for automatically upgrading the cluster.
+                    enum:
+                    - node-image
+                    - none
+                    - patch
+                    - rapid
+                    - stable
+                    type: string
+                type: object
               autoscalerProfile:
                 description: AutoscalerProfile is the parameters to be applied to
                   the cluster-autoscaler when enabled
@@ -742,6 +756,11 @@ spec:
             description: AzureManagedControlPlaneStatus defines the observed state
               of AzureManagedControlPlane.
             properties:
+              autoUpgradeVersion:
+                description: AutoUpgradeVersion is the Kubernetes version populated
+                  after auto-upgrade based on the upgrade channel.
+                minLength: 2
+                type: string
               conditions:
                 description: Conditions defines current service state of the AzureManagedControlPlane.
                 items:

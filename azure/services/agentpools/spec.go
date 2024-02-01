@@ -27,6 +27,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 )
 
 // KubeletConfig defines the set of kubelet configurations for nodes in pools.
@@ -160,6 +161,21 @@ func (s *AgentPoolSpec) ResourceRef() *asocontainerservicev1.ManagedClustersAgen
 	}
 }
 
+// getManagedMachinePoolVersion gets the desired managed Kubernetes version.
+// If the auto upgrade channel is set to patch, stable or rapid, clusters can be upgraded to a higher version by AKS.
+// If auto upgrade is triggered, the existing Kubernetes version will be higher than the user's desired Kubernetes version.
+// CAPZ should honour the upgrade and it should not downgrade to the lower desired version.
+func (s *AgentPoolSpec) getManagedMachinePoolVersion(existing *asocontainerservicev1.ManagedClustersAgentPool) *string {
+	if existing == nil || existing.Spec.OrchestratorVersion == nil {
+		return s.Version
+	}
+	if s.Version == nil {
+		return existing.Spec.OrchestratorVersion
+	}
+	v := versions.GetHigherK8sVersion(*s.Version, *existing.Spec.OrchestratorVersion)
+	return ptr.To(v)
+}
+
 // Parameters returns the parameters for the agent pool.
 func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerservicev1.ManagedClustersAgentPool) (params *asocontainerservicev1.ManagedClustersAgentPool, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "agentpools.Service.Parameters")
@@ -185,7 +201,6 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 	agentPool.Spec.Mode = ptr.To(asocontainerservicev1.AgentPoolMode(s.Mode))
 	agentPool.Spec.NodeLabels = s.NodeLabels
 	agentPool.Spec.NodeTaints = s.NodeTaints
-	agentPool.Spec.OrchestratorVersion = s.Version
 	agentPool.Spec.OsDiskSizeGB = ptr.To(asocontainerservicev1.ContainerServiceOSDisk(s.OSDiskSizeGB))
 	agentPool.Spec.OsDiskType = azure.AliasOrNil[asocontainerservicev1.OSDiskType](s.OsDiskType)
 	agentPool.Spec.OsType = azure.AliasOrNil[asocontainerservicev1.OSType](s.OSType)
@@ -196,6 +211,9 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 	agentPool.Spec.Tags = s.AdditionalTags
 	agentPool.Spec.EnableFIPS = s.EnableFIPS
 	agentPool.Spec.EnableEncryptionAtHost = s.EnableEncryptionAtHost
+	if kubernetesVersion := s.getManagedMachinePoolVersion(existing); kubernetesVersion != nil {
+		agentPool.Spec.OrchestratorVersion = kubernetesVersion
+	}
 
 	if s.KubeletConfig != nil {
 		agentPool.Spec.KubeletConfig = &asocontainerservicev1.KubeletConfig{

@@ -222,6 +222,17 @@ type AzureManagedControlPlaneClassSpec struct {
 	// Extensions is a list of AKS extensions to be installed on the cluster.
 	// +optional
 	Extensions []AKSExtension `json:"extensions,omitempty"`
+	// AutoUpgradeProfile defines the auto upgrade configuration.
+	// +optional
+	AutoUpgradeProfile *ManagedClusterAutoUpgradeProfile `json:"autoUpgradeProfile,omitempty"`
+}
+
+// ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.
+type ManagedClusterAutoUpgradeProfile struct {
+	// UpgradeChannel determines the type of upgrade channel for automatically upgrading the cluster.
+	// +kubebuilder:validation:Enum=node-image;none;patch;rapid;stable
+	// +optional
+	UpgradeChannel *UpgradeChannel `json:"upgradeChannel,omitempty"`
 }
 
 // AzureManagedMachinePoolClassSpec defines the AzureManagedMachinePool properties that may be shared across several Azure managed machinepools.

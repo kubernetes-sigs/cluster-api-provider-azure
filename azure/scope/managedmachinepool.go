@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -159,11 +160,7 @@ func getAgentPoolSubnet(controlPlane *infrav1.AzureManagedControlPlane, infraMac
 func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 	machinePool *expv1.MachinePool,
 	managedMachinePool *infrav1.AzureManagedMachinePool) azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool] {
-	var normalizedVersion *string
-	if machinePool.Spec.Template.Spec.Version != nil {
-		v := strings.TrimPrefix(*machinePool.Spec.Template.Spec.Version, "v")
-		normalizedVersion = &v
-	}
+	normalizedVersion := getManagedMachinePoolVersion(managedControlPlane, machinePool)
 
 	replicas := int32(1)
 	if machinePool.Spec.Replicas != nil {
@@ -346,4 +343,20 @@ func (s *ManagedMachinePoolScope) RemoveCAPIMachinePoolAnnotation(key string) {
 func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (success bool, value string) {
 	val, ok := s.MachinePool.Annotations[key]
 	return ok, val
+}
+
+func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedControlPlane, machinePool *expv1.MachinePool) *string {
+	var v, av string
+	if machinePool != nil {
+		v = ptr.Deref(machinePool.Spec.Template.Spec.Version, "")
+	}
+	if managedControlPlane != nil {
+		av = managedControlPlane.Status.AutoUpgradeVersion
+	}
+	higherVersion := versions.GetHigherK8sVersion(v, av)
+	if higherVersion == "" {
+		// When both mp.Version and mcp.Status.AutoUpgradeVersion are not set we return nil
+		return nil
+	}
+	return ptr.To(strings.TrimPrefix(higherVersion, "v"))
 }

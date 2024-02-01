@@ -87,10 +87,19 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
 			IssuerURL: ptr.To("oidc"),
 		})
+		scope.EXPECT().SetVersionStatus("v1.19.0")
+		scope.EXPECT().IsManagedVersionUpgrade().Return(true)
+		scope.EXPECT().SetAutoUpgradeVersionStatus("v1.19.0")
 
 		managedCluster := &asocontainerservicev1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
+			},
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				KubernetesVersion: ptr.To("1.19.0"),
+				AutoUpgradeProfile: &asocontainerservicev1.ManagedClusterAutoUpgradeProfile{
+					UpgradeChannel: ptr.To(asocontainerservicev1.ManagedClusterAutoUpgradeProfile_UpgradeChannel_Stable),
+				},
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
 				Fqdn:        ptr.To("fdqn"),
@@ -98,6 +107,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 				OidcIssuerProfile: &asocontainerservicev1.ManagedClusterOIDCIssuerProfile_STATUS{
 					IssuerURL: ptr.To("oidc"),
 				},
+				CurrentKubernetesVersion: ptr.To("1.19.0"),
 			},
 		}
 

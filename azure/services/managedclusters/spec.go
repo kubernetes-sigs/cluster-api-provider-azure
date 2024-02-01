@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	"sigs.k8s.io/cluster-api/util/secret"
 )
 
@@ -127,6 +128,15 @@ type ManagedClusterSpec struct {
 
 	// DisableLocalAccounts disables getting static credentials for this cluster when set. Expected to only be used for AAD clusters.
 	DisableLocalAccounts *bool
+
+	// AutoUpgradeProfile defines auto upgrade configuration.
+	AutoUpgradeProfile *ManagedClusterAutoUpgradeProfile
+}
+
+// ManagedClusterAutoUpgradeProfile auto upgrade profile for a managed cluster.
+type ManagedClusterAutoUpgradeProfile struct {
+	// UpgradeChannel defines the channel for auto upgrade configuration.
+	UpgradeChannel *infrav1.UpgradeChannel
 }
 
 // HTTPProxyConfig is the HTTP proxy configuration for the cluster.
@@ -288,6 +298,17 @@ func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *asocontainers
 	return mcAutoScalerProfile
 }
 
+// getManagedClusterVersion gets the desired managed k8s version.
+// If autoupgrade channels is set to patch, stable or rapid, clusters can be upgraded to higher version by AKS.
+// If autoupgrade is triggered, existing kubernetes version will be higher than the user desired kubernetes version.
+// CAPZ should honour the upgrade and it should not downgrade to the lower desired version.
+func (s *ManagedClusterSpec) getManagedClusterVersion(existing *asocontainerservicev1.ManagedCluster) string {
+	if existing == nil || existing.Status.CurrentKubernetesVersion == nil {
+		return s.Version
+	}
+	return versions.GetHigherK8sVersion(s.Version, *existing.Status.CurrentKubernetesVersion)
+}
+
 // Parameters returns the parameters for the managed clusters.
 //
 //nolint:gocyclo // Function requires a lot of nil checks that raise complexity.
@@ -321,7 +342,11 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 	managedCluster.Spec.NodeResourceGroup = &s.NodeResourceGroup
 	managedCluster.Spec.EnableRBAC = ptr.To(true)
 	managedCluster.Spec.DnsPrefix = s.DNSPrefix
-	managedCluster.Spec.KubernetesVersion = &s.Version
+
+	if kubernetesVersion := s.getManagedClusterVersion(existing); kubernetesVersion != "" {
+		managedCluster.Spec.KubernetesVersion = &kubernetesVersion
+	}
+
 	managedCluster.Spec.ServicePrincipalProfile = &asocontainerservicev1.ManagedClusterServicePrincipalProfile{
 		ClientId: ptr.To("msi"),
 	}
@@ -339,6 +364,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			return nil, errors.Wrap(err, "failed to decode SSHPublicKey")
 		}
 	}
+
 	if decodedSSHPublicKey != nil {
 		managedCluster.Spec.LinuxProfile = &asocontainerservicev1.ContainerServiceLinuxProfile{
 			AdminUsername: ptr.To(azure.DefaultAKSUserName),
@@ -484,6 +510,12 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 	if s.OIDCIssuerProfile != nil {
 		managedCluster.Spec.OidcIssuerProfile = &asocontainerservicev1.ManagedClusterOIDCIssuerProfile{
 			Enabled: s.OIDCIssuerProfile.Enabled,
+		}
+	}
+
+	if s.AutoUpgradeProfile != nil {
+		managedCluster.Spec.AutoUpgradeProfile = &asocontainerservicev1.ManagedClusterAutoUpgradeProfile{
+			UpgradeChannel: (*asocontainerservicev1.ManagedClusterAutoUpgradeProfile_UpgradeChannel)(s.AutoUpgradeProfile.UpgradeChannel),
 		}
 	}
 

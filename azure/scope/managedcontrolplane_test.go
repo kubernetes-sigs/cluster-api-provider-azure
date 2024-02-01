@@ -1533,3 +1533,89 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    ManagedControlPlaneScopeParams
+		expected *managedclusters.ManagedClusterAutoUpgradeProfile
+	}{
+		{
+			name: "Without AutoUpgradeProfile",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "With AutoUpgradeProfile UpgradeChannelNodeImage",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+							AutoUpgradeProfile: &infrav1.ManagedClusterAutoUpgradeProfile{
+								UpgradeChannel: ptr.To(infrav1.UpgradeChannelNodeImage),
+							},
+						},
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+					},
+				},
+			},
+			expected: &managedclusters.ManagedClusterAutoUpgradeProfile{
+				UpgradeChannel: ptr.To(infrav1.UpgradeChannelNodeImage),
+			},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			g := NewWithT(t)
+			s := &ManagedControlPlaneScope{
+				ControlPlane: c.input.ControlPlane,
+				Cluster:      c.input.Cluster,
+			}
+			managedClusterGetter := s.ManagedClusterSpec()
+			managedCluster, ok := managedClusterGetter.(*managedclusters.ManagedClusterSpec)
+			g.Expect(ok).To(BeTrue())
+			g.Expect(managedCluster.AutoUpgradeProfile).To(Equal(c.expected))
+		})
+	}
+}
