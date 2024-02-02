@@ -442,6 +442,99 @@ func TestSubnetsTemplateDefaults(t *testing.T) {
 			},
 		},
 		{
+			name: "cluster subnet with custom attributes",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetCluster,
+											CIDRBlocks: []string{"10.1.0.16/24"},
+										},
+										NatGateway: NatGatewayClassSpec{
+											Name: "foo-natgw",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetCluster,
+											CIDRBlocks: []string{"10.1.0.16/24"},
+										},
+										NatGateway: NatGatewayClassSpec{Name: "foo-natgw"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets specified",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role: SubnetCluster,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								Subnets: SubnetTemplatesSpec{
+									{
+										SubnetClassSpec: SubnetClassSpec{
+											Role:       SubnetCluster,
+											CIDRBlocks: []string{DefaultClusterSubnetCIDR},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "only node subnet specified",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{

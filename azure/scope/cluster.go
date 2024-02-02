@@ -610,7 +610,7 @@ func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 func (s *ClusterScope) NodeSubnets() []infrav1.SubnetSpec {
 	subnets := []infrav1.SubnetSpec{}
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		if subnet.Role == infrav1.SubnetNode {
+		if subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster {
 			subnets = append(subnets, subnet)
 		}
 	}

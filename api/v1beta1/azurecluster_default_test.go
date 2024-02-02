@@ -480,6 +480,108 @@ func TestSubnetDefaults(t *testing.T) {
 			},
 		},
 		{
+			name: "cluster subnet with custom attributes",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetCluster,
+									CIDRBlocks: []string{"10.0.0.16/24"},
+									Name:       "my-subnet",
+								},
+								NatGateway: NatGateway{
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "foo-natgw",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetCluster,
+									CIDRBlocks: []string{"10.0.0.16/24"},
+									Name:       "my-subnet",
+								},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
+								NatGateway: NatGateway{
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "foo-natgw",
+									},
+									NatGatewayIP: PublicIPSpec{
+										Name: "pip-foo-natgw",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cluster subnet with subnets specified",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetCluster,
+									Name: "cluster-test-subnet",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetCluster,
+									CIDRBlocks: []string{DefaultClusterSubnetCIDR},
+									Name:       "cluster-test-subnet",
+								},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
+								NatGateway: NatGateway{
+									NatGatewayClassSpec: NatGatewayClassSpec{
+										Name: "cluster-test-natgw",
+									},
+									NatGatewayIP: PublicIPSpec{
+										Name: "pip-cluster-test-natgw",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "subnets route tables specified",
 			cluster: &AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
