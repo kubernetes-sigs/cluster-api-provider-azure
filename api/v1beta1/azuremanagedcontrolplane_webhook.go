@@ -279,6 +279,10 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := m.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfileUpdate(&old.Spec.AzureManagedControlPlaneClassSpec); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return nil, m.Validate(mw.Client)
 	}
@@ -330,6 +334,8 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 
 	allErrs = append(allErrs, validateAKSExtensions(m.Spec.Extensions, field.NewPath("spec").Child("AKSExtensions"))...)
 
+	allErrs = append(allErrs, m.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfile()...)
+
 	return allErrs.ToAggregate()
 }
 
@@ -351,6 +357,62 @@ func (m *AzureManagedControlPlane) validateDNSPrefix(_ client.Client) field.Erro
 		field.Invalid(field.NewPath("Spec", "DNSPrefix"), *m.Spec.DNSPrefix, "DNSPrefix is invalid, does not match regex: "+pattern),
 	}
 	return allErrs
+}
+
+// validateSecurityProfile validates SecurityProfile.
+func (m *AzureManagedControlPlaneClassSpec) validateSecurityProfile() field.ErrorList {
+	allErrs := field.ErrorList{}
+	if err := m.validateAzureKeyVaultKms(); err != nil {
+		allErrs = append(allErrs, err...)
+	}
+	if err := m.validateWorkloadIdentity(); err != nil {
+		allErrs = append(allErrs, err...)
+	}
+	return allErrs
+}
+
+// validateAzureKeyVaultKms validates AzureKeyVaultKms.
+func (m *AzureManagedControlPlaneClassSpec) validateAzureKeyVaultKms() field.ErrorList {
+	if m.SecurityProfile != nil && m.SecurityProfile.AzureKeyVaultKms != nil {
+		if !m.isUserManagedIdentityEnabled() {
+			allErrs := field.ErrorList{
+				field.Invalid(field.NewPath("Spec", "SecurityProfile", "AzureKeyVaultKms", "KeyVaultResourceID"),
+					m.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID,
+					"Spec.SecurityProfile.AzureKeyVaultKms can be set only when Spec.Identity.Type is UserAssigned"),
+			}
+			return allErrs
+		}
+		keyVaultNetworkAccess := ptr.Deref(m.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess, KeyVaultNetworkAccessTypesPublic)
+		keyVaultResourceID := ptr.Deref(m.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID, "")
+		if keyVaultNetworkAccess == KeyVaultNetworkAccessTypesPrivate && keyVaultResourceID == "" {
+			allErrs := field.ErrorList{
+				field.Invalid(field.NewPath("Spec", "SecurityProfile", "AzureKeyVaultKms", "KeyVaultResourceID"),
+					m.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID,
+					"Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID cannot be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Private"),
+			}
+			return allErrs
+		}
+		if keyVaultNetworkAccess == KeyVaultNetworkAccessTypesPublic && keyVaultResourceID != "" {
+			allErrs := field.ErrorList{
+				field.Invalid(field.NewPath("Spec", "SecurityProfile", "AzureKeyVaultKms", "KeyVaultResourceID"), m.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID,
+					"Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID should be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Public"),
+			}
+			return allErrs
+		}
+	}
+	return nil
+}
+
+// validateWorkloadIdentity validates WorkloadIdentity.
+func (m *AzureManagedControlPlaneClassSpec) validateWorkloadIdentity() field.ErrorList {
+	if m.SecurityProfile != nil && m.SecurityProfile.WorkloadIdentity != nil && !m.isOIDCEnabled() {
+		allErrs := field.ErrorList{
+			field.Invalid(field.NewPath("Spec", "SecurityProfile", "WorkloadIdentity"), m.SecurityProfile.WorkloadIdentity,
+				"Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled"),
+		}
+		return allErrs
+	}
+	return nil
 }
 
 // validateDisableLocalAccounts disabling local accounts for AAD based clusters.
@@ -725,10 +787,78 @@ func (m *AzureManagedControlPlane) validateAADProfileUpdateAndLocalAccounts(old 
 	return allErrs
 }
 
+// validateSecurityProfileUpdate validates a SecurityProfile update.
+func (m *AzureManagedControlPlaneClassSpec) validateSecurityProfileUpdate(old *AzureManagedControlPlaneClassSpec) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.SecurityProfile != nil {
+		if errAzureKeyVaultKms := m.validateAzureKeyVaultKmsUpdate(old); errAzureKeyVaultKms != nil {
+			allErrs = append(allErrs, errAzureKeyVaultKms...)
+		}
+		if errWorkloadIdentity := m.validateWorkloadIdentityUpdate(old); errWorkloadIdentity != nil {
+			allErrs = append(allErrs, errWorkloadIdentity...)
+		}
+		if errWorkloadIdentity := m.validateImageCleanerUpdate(old); errWorkloadIdentity != nil {
+			allErrs = append(allErrs, errWorkloadIdentity...)
+		}
+		if errWorkloadIdentity := m.validateDefender(old); errWorkloadIdentity != nil {
+			allErrs = append(allErrs, errWorkloadIdentity...)
+		}
+	}
+	return allErrs
+}
+
+// validateAzureKeyVaultKmsUpdate validates AzureKeyVaultKmsUpdate profile.
+func (m *AzureManagedControlPlaneClassSpec) validateAzureKeyVaultKmsUpdate(old *AzureManagedControlPlaneClassSpec) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.SecurityProfile.AzureKeyVaultKms != nil {
+		if m.SecurityProfile == nil || m.SecurityProfile.AzureKeyVaultKms == nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SecurityProfile", "AzureKeyVaultKms"),
+				nil, "cannot unset Spec.SecurityProfile.AzureKeyVaultKms profile to disable the profile please set Spec.SecurityProfile.AzureKeyVaultKms.Enabled to false"))
+			return allErrs
+		}
+	}
+	return allErrs
+}
+
+// validateWorkloadIdentityUpdate validates WorkloadIdentityUpdate profile.
+func (m *AzureManagedControlPlaneClassSpec) validateWorkloadIdentityUpdate(old *AzureManagedControlPlaneClassSpec) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.SecurityProfile.WorkloadIdentity != nil {
+		if m.SecurityProfile == nil || m.SecurityProfile.WorkloadIdentity == nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SecurityProfile", "WorkloadIdentity"),
+				nil, "cannot unset Spec.SecurityProfile.WorkloadIdentity, to disable workloadIdentity please set Spec.SecurityProfile.WorkloadIdentity.Enabled to false"))
+		}
+	}
+	return allErrs
+}
+
+// validateImageCleanerUpdate validates ImageCleanerUpdate profile.
+func (m *AzureManagedControlPlaneClassSpec) validateImageCleanerUpdate(old *AzureManagedControlPlaneClassSpec) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.SecurityProfile.ImageCleaner != nil {
+		if m.SecurityProfile == nil || m.SecurityProfile.ImageCleaner == nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SecurityProfile", "ImageCleaner"),
+				nil, "cannot unset Spec.SecurityProfile.ImageCleaner, to disable imageCleaner please set Spec.SecurityProfile.ImageCleaner.Enabled to false"))
+		}
+	}
+	return allErrs
+}
+
+// validateDefender validates defender profile.
+func (m *AzureManagedControlPlaneClassSpec) validateDefender(old *AzureManagedControlPlaneClassSpec) field.ErrorList {
+	var allErrs field.ErrorList
+	if old.SecurityProfile.Defender != nil {
+		if m.SecurityProfile == nil || m.SecurityProfile.Defender == nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SecurityProfile", "Defender"),
+				nil, "cannot unset Spec.SecurityProfile.Defender, to disable defender please set Spec.SecurityProfile.Defender.SecurityMonitoring.Enabled to false"))
+		}
+	}
+	return allErrs
+}
+
 // validateOIDCIssuerProfile validates an OIDCIssuerProfile.
 func (m *AzureManagedControlPlane) validateOIDCIssuerProfileUpdate(old *AzureManagedControlPlane) field.ErrorList {
 	var allErrs field.ErrorList
-
 	if m.Spec.OIDCIssuerProfile != nil && old.Spec.OIDCIssuerProfile != nil {
 		if m.Spec.OIDCIssuerProfile.Enabled != nil && old.Spec.OIDCIssuerProfile.Enabled != nil &&
 			!*m.Spec.OIDCIssuerProfile.Enabled && *old.Spec.OIDCIssuerProfile.Enabled {
@@ -740,7 +870,6 @@ func (m *AzureManagedControlPlane) validateOIDCIssuerProfileUpdate(old *AzureMan
 			)
 		}
 	}
-
 	return allErrs
 }
 
@@ -1072,4 +1201,26 @@ func (m *AzureManagedControlPlane) validateNetworkPluginMode(_ client.Client) fi
 	}
 
 	return nil
+}
+
+// isOIDCEnabled return true if OIDC issuer is enabled.
+func (m *AzureManagedControlPlaneClassSpec) isOIDCEnabled() bool {
+	if m.OIDCIssuerProfile == nil {
+		return false
+	}
+	if m.OIDCIssuerProfile.Enabled == nil {
+		return false
+	}
+	return *m.OIDCIssuerProfile.Enabled
+}
+
+// isUserManagedIdentityEnabled checks if user assigned identity is set.
+func (m *AzureManagedControlPlaneClassSpec) isUserManagedIdentityEnabled() bool {
+	if m.Identity == nil {
+		return false
+	}
+	if m.Identity.Type != ManagedControlPlaneIdentityTypeUserAssigned {
+		return false
+	}
+	return true
 }

@@ -222,9 +222,14 @@ type AzureManagedControlPlaneClassSpec struct {
 	// Extensions is a list of AKS extensions to be installed on the cluster.
 	// +optional
 	Extensions []AKSExtension `json:"extensions,omitempty"`
+
 	// AutoUpgradeProfile defines the auto upgrade configuration.
 	// +optional
 	AutoUpgradeProfile *ManagedClusterAutoUpgradeProfile `json:"autoUpgradeProfile,omitempty"`
+
+	// SecurityProfile defines the security profile for cluster.
+	// +optional
+	SecurityProfile *ManagedClusterSecurityProfile `json:"securityProfile,omitempty"`
 }
 
 // ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.

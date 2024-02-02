@@ -213,6 +213,8 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 
 	allErrs = append(allErrs, validateAKSExtensions(mcp.Spec.Template.Spec.Extensions, field.NewPath("spec").Child("Extensions"))...)
 
+	allErrs = append(allErrs, mcp.Spec.Template.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfile()...)
+
 	return allErrs.ToAggregate()
 }
 
@@ -269,6 +271,10 @@ func (mcp *AzureManagedControlPlaneTemplate) validateVirtualNetworkTemplateUpdat
 				field.NewPath("Spec", "Template", "Spec", "VirtualNetwork.Subnet.CIDRBlock"),
 				mcp.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock,
 				"Subnet CIDRBlock is immutable"))
+	}
+
+	if errs := mcp.Spec.Template.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfileUpdate(&old.Spec.Template.Spec.AzureManagedControlPlaneClassSpec); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
 	}
 
 	return allErrs

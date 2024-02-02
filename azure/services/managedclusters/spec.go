@@ -131,6 +131,9 @@ type ManagedClusterSpec struct {
 
 	// AutoUpgradeProfile defines auto upgrade configuration.
 	AutoUpgradeProfile *ManagedClusterAutoUpgradeProfile
+
+	// SecurityProfile defines the security profile for the cluster.
+	SecurityProfile *ManagedClusterSecurityProfile
 }
 
 // ManagedClusterAutoUpgradeProfile auto upgrade profile for a managed cluster.
@@ -265,6 +268,71 @@ func (s *ManagedClusterSpec) ResourceRef() *asocontainerservicev1.ManagedCluster
 			Name: s.Name,
 		},
 	}
+}
+
+// ManagedClusterSecurityProfile defines the security profile for the cluster.
+type ManagedClusterSecurityProfile struct {
+	// AzureKeyVaultKms defines Azure Key Vault key management service settings for the security profile.
+	AzureKeyVaultKms *AzureKeyVaultKms
+
+	// Defender defines Microsoft Defender settings for the security profile.
+	Defender *ManagedClusterSecurityProfileDefender
+
+	// ImageCleaner settings for the security profile.
+	ImageCleaner *ManagedClusterSecurityProfileImageCleaner
+
+	// Workloadidentity enables Kubernetes applications to access Azure cloud resources securely with Azure AD.
+	WorkloadIdentity *ManagedClusterSecurityProfileWorkloadIdentity
+}
+
+// ManagedClusterSecurityProfileDefender defines Microsoft Defender settings for the security profile.
+type ManagedClusterSecurityProfileDefender struct {
+	// LogAnalyticsWorkspaceResourceID is the ID of the Log Analytics workspace that has to be associated with Microsoft Defender.
+	// When Microsoft Defender is enabled, this field is required and must be a valid workspace resource ID.
+	LogAnalyticsWorkspaceResourceID *string
+
+	// SecurityMonitoring profile defines the Microsoft Defender threat detection for Cloud settings for the security profile.
+	SecurityMonitoring *ManagedClusterSecurityProfileDefenderSecurityMonitoring
+}
+
+// ManagedClusterSecurityProfileDefenderSecurityMonitoring settings for the security profile threat detection.
+type ManagedClusterSecurityProfileDefenderSecurityMonitoring struct {
+	// Enabled enables Defender threat detection
+	Enabled *bool
+}
+
+// ManagedClusterSecurityProfileImageCleaner removes unused images from nodes, freeing up disk space and helping to reduce attack surface area.
+type ManagedClusterSecurityProfileImageCleaner struct {
+	// Enabled enables Image Cleaner on AKS cluster.
+	Enabled *bool
+
+	// Image Cleaner scanning interval in hours.
+	IntervalHours *int
+}
+
+// ManagedClusterSecurityProfileWorkloadIdentity defines Workload identity settings for the security profile.
+type ManagedClusterSecurityProfileWorkloadIdentity struct {
+	// Enabled enables workload identity.
+	Enabled *bool
+}
+
+// AzureKeyVaultKms Azure Key Vault key management service settings for the security profile.
+type AzureKeyVaultKms struct {
+	// Enabled enables Azure Key Vault key management service. The default is false.
+	Enabled *bool
+
+	// KeyID defines the Identifier of Azure Key Vault key.
+	// When Azure Key Vault key management service is enabled, this field is required and must be a valid key identifier.
+	KeyID *string
+
+	// KeyVaultNetworkAccess defines the network access of key vault.
+	// The possible values are Public and Private.
+	// Public means the key vault allows public access from all networks.
+	// Private means the key vault disables public access and enables private link. The default value is Public.
+	KeyVaultNetworkAccess *infrav1.KeyVaultNetworkAccessTypes
+
+	// KeyVaultResourceID is the Resource ID of key vault. When keyVaultNetworkAccess is Private, this field is required and must be a valid resource ID.
+	KeyVaultResourceID *string
 }
 
 // buildAutoScalerProfile builds the AutoScalerProfile for the ManagedClusterProperties.
@@ -517,6 +585,49 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		managedCluster.Spec.AutoUpgradeProfile = &asocontainerservicev1.ManagedClusterAutoUpgradeProfile{
 			UpgradeChannel: (*asocontainerservicev1.ManagedClusterAutoUpgradeProfile_UpgradeChannel)(s.AutoUpgradeProfile.UpgradeChannel),
 		}
+	}
+
+	if s.SecurityProfile != nil {
+		securityProfile := &asocontainerservicev1.ManagedClusterSecurityProfile{}
+		if s.SecurityProfile.AzureKeyVaultKms != nil {
+			securityProfile.AzureKeyVaultKms = &asocontainerservicev1.AzureKeyVaultKms{
+				Enabled: s.SecurityProfile.AzureKeyVaultKms.Enabled,
+				KeyId:   s.SecurityProfile.AzureKeyVaultKms.KeyID,
+			}
+			if s.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess != nil {
+				keyVaultNetworkAccess := string(*s.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess)
+				securityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess = ptr.To(asocontainerservicev1.AzureKeyVaultKms_KeyVaultNetworkAccess(keyVaultNetworkAccess))
+			}
+			if s.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID != nil {
+				securityProfile.AzureKeyVaultKms.KeyVaultResourceReference = &genruntime.ResourceReference{
+					ARMID: *s.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID,
+				}
+			}
+		}
+		if s.SecurityProfile.Defender != nil {
+			securityProfile.Defender = &asocontainerservicev1.ManagedClusterSecurityProfileDefender{
+				LogAnalyticsWorkspaceResourceReference: &genruntime.ResourceReference{
+					ARMID: *s.SecurityProfile.Defender.LogAnalyticsWorkspaceResourceID,
+				},
+			}
+			if s.SecurityProfile.Defender.SecurityMonitoring != nil {
+				securityProfile.Defender.SecurityMonitoring = &asocontainerservicev1.ManagedClusterSecurityProfileDefenderSecurityMonitoring{
+					Enabled: s.SecurityProfile.Defender.SecurityMonitoring.Enabled,
+				}
+			}
+		}
+		if s.SecurityProfile.ImageCleaner != nil {
+			securityProfile.ImageCleaner = &asocontainerservicev1.ManagedClusterSecurityProfileImageCleaner{
+				Enabled:       s.SecurityProfile.ImageCleaner.Enabled,
+				IntervalHours: s.SecurityProfile.ImageCleaner.IntervalHours,
+			}
+		}
+		if s.SecurityProfile.WorkloadIdentity != nil {
+			securityProfile.WorkloadIdentity = &asocontainerservicev1.ManagedClusterSecurityProfileWorkloadIdentity{
+				Enabled: s.SecurityProfile.WorkloadIdentity.Enabled,
+			}
+		}
+		managedCluster.Spec.SecurityProfile = securityProfile
 	}
 
 	// Only include AgentPoolProfiles during initial cluster creation. Agent pools are managed solely by the
