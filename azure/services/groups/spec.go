@@ -86,11 +86,6 @@ func (*GroupSpec) GetDesiredTags(resource *asoresourcesv1.ResourceGroup) infrav1
 	return resource.Spec.Tags
 }
 
-// GetActualTags implements aso.TagsGetterSetter.
-func (*GroupSpec) GetActualTags(resource *asoresourcesv1.ResourceGroup) infrav1.Tags {
-	return resource.Status.Tags
-}
-
 // SetTags implements aso.TagsGetterSetter.
 func (*GroupSpec) SetTags(resource *asoresourcesv1.ResourceGroup, tags infrav1.Tags) {
 	resource.Spec.Tags = tags
