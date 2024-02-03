@@ -740,11 +740,6 @@ func (*ManagedClusterSpec) GetDesiredTags(resource *asocontainerservicev1.Manage
 	return resource.Spec.Tags
 }
 
-// GetActualTags implements aso.TagsGetterSetter.
-func (*ManagedClusterSpec) GetActualTags(resource *asocontainerservicev1.ManagedCluster) infrav1.Tags {
-	return resource.Status.Tags
-}
-
 // SetTags implements aso.TagsGetterSetter.
 func (*ManagedClusterSpec) SetTags(resource *asocontainerservicev1.ManagedCluster, tags infrav1.Tags) {
 	resource.Spec.Tags = tags

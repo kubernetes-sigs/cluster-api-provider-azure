@@ -36,7 +36,6 @@ type Reconciler[T genruntime.MetaObject] interface {
 type TagsGetterSetter[T genruntime.MetaObject] interface {
 	GetAdditionalTags() infrav1.Tags
 	GetDesiredTags(resource T) infrav1.Tags
-	GetActualTags(resource T) infrav1.Tags
 	SetTags(resource T, tags infrav1.Tags)
 }
 
