@@ -553,7 +553,7 @@ func TestClusterSubnetsValid(t *testing.T) {
 			g := NewWithT(t)
 			errs := validateSubnets(tc.subnets, createValidVnet(),
 				field.NewPath("spec").Child("networkSpec").Child("subnets"))
-			g.Expect(errs).To(Equal(tc.err))
+			g.Expect(errs).To(ConsistOf(tc.err))
 		})
 	}
 }
