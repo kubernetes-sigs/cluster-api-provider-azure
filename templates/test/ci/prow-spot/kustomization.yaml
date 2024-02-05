@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../../flavors/default
+  - ../prow/mhc.yaml
+  - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+patchesStrategicMerge:
+  - ../patches/tags.yaml
+  - ../patches/mhc.yaml
+  - ../patches/controller-manager.yaml
+  - patches/spot-vm-options.yaml
+  - ../patches/uami-md-0.yaml
+  - ../patches/uami-control-plane.yaml
+  - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-cloud-provider-azure.yaml
