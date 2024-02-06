@@ -197,6 +197,7 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 		LinuxOSConfig:          managedMachinePool.Spec.LinuxOSConfig,
 		EnableFIPS:             managedMachinePool.Spec.EnableFIPS,
 		EnableEncryptionAtHost: managedMachinePool.Spec.EnableEncryptionAtHost,
+		Patches:                managedMachinePool.Spec.ASOManagedClustersAgentPoolPatches,
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {

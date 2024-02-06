@@ -923,6 +923,125 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(updated.Annotations).NotTo(HaveKey(prePauseReconcilePolicyAnnotation))
 		g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
 	})
+
+	t.Run("patches applied on create", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
+
+		mockCtrl := gomock.NewController(t)
+		specMock := struct {
+			*mock_azure.MockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
+			*mock_aso.MockPatcher
+		}{
+			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mock_aso.NewMockPatcher(mockCtrl),
+		}
+		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "name",
+			},
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return &asoresourcesv1.ResourceGroup{
+				Spec: asoresourcesv1.ResourceGroup_Spec{
+					Location: ptr.To("location-from-parameters"),
+				},
+			}, nil
+		})
+
+		specMock.MockPatcher.EXPECT().ExtraPatches().Return([]string{
+			`{"metadata": {"labels": {"extra-patch": "not-this-value"}}}`,
+			`{"metadata": {"labels": {"extra-patch": "this-value"}}}`,
+			`{"metadata": {"labels": {"another": "label"}}}`,
+		})
+
+		ctx := context.Background()
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue(), "expected not done error, got %v", err)
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Labels).To(HaveKeyWithValue("extra-patch", "this-value"))
+		g.Expect(updated.Labels).To(HaveKeyWithValue("another", "label"))
+		g.Expect(*updated.Spec.Location).To(Equal("location-from-parameters"))
+	})
+
+	t.Run("patches applied on update", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			Build()
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
+
+		mockCtrl := gomock.NewController(t)
+		specMock := struct {
+			*mock_azure.MockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
+			*mock_aso.MockPatcher
+		}{
+			mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl),
+			mock_aso.NewMockPatcher(mockCtrl),
+		}
+		specMock.MockASOResourceSpecGetter.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "name",
+			},
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			group.Spec.Location = ptr.To("location-from-parameters")
+			return group, nil
+		})
+		specMock.MockASOResourceSpecGetter.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+		specMock.MockPatcher.EXPECT().ExtraPatches().Return([]string{
+			`{"metadata": {"labels": {"extra-patch": "not-this-value"}}}`,
+			`{"metadata": {"labels": {"extra-patch": "this-value"}}}`,
+			`{"metadata": {"labels": {"another": "label"}}}`,
+		})
+
+		ctx := context.Background()
+		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "name",
+				Namespace:       "namespace",
+				OwnerReferences: ownerRefs(),
+				Annotations: map[string]string{
+					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+				},
+			},
+			Spec: asoresourcesv1.ResourceGroup_Spec{
+				Location: ptr.To("location"),
+			},
+			Status: asoresourcesv1.ResourceGroup_STATUS{
+				Conditions: []conditions.Condition{
+					{
+						Type:   conditions.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+					},
+				},
+			},
+		})).To(Succeed())
+
+		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(result).To(BeNil())
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue(), "expected not done error, got %v", err)
+
+		updated := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+		g.Expect(updated.Labels).To(HaveKeyWithValue("extra-patch", "this-value"))
+		g.Expect(updated.Labels).To(HaveKeyWithValue("another", "label"))
+		g.Expect(*updated.Spec.Location).To(Equal("location-from-parameters"))
+	})
 }
 
 // TestDeleteResource tests the DeleteResource function.

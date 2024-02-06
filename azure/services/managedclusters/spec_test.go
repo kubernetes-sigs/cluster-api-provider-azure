@@ -57,6 +57,7 @@ func TestParameters(t *testing.T) {
 						Replicas:  5,
 						Mode:      "mode",
 						AzureName: "agentpool",
+						Patches:   []string{`{"spec": {"tags": {"from": "patches"}}}`},
 					},
 				}, nil
 			},
@@ -145,6 +146,7 @@ func TestParameters(t *testing.T) {
 						Name:              ptr.To("agentpool"),
 						OsDiskSizeGB:      ptr.To(asocontainerservicev1.ContainerServiceOSDisk(0)),
 						Type:              ptr.To(asocontainerservicev1.AgentPoolType_VirtualMachineScaleSets),
+						Tags:              map[string]string{"from": "patches"},
 					},
 				},
 				ApiServerAccessProfile: &asocontainerservicev1.ManagedClusterAPIServerAccessProfile{

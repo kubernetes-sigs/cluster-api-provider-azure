@@ -133,6 +133,16 @@ spec:
                     - None
                     type: string
                 type: object
+              asoManagedClusterPatches:
+                description: 'ASOManagedClusterPatches defines JSON merge patches
+                  to be applied to the generated ASO ManagedCluster resource. WARNING:
+                  This is meant to be used sparingly to enable features for development
+                  and testing that are not otherwise represented in the CAPZ API.
+                  Misconfiguration that conflicts with CAPZ''s normal mode of operation
+                  is possible.'
+                items:
+                  type: string
+                type: array
               autoUpgradeProfile:
                 description: AutoUpgradeProfile defines the auto upgrade configuration.
                 properties:
