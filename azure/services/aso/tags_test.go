@@ -18,16 +18,13 @@ package aso
 
 import (
 	"encoding/json"
-	"errors"
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 )
 
@@ -97,7 +94,6 @@ func TestReconcileTags(t *testing.T) {
 					tagsLastAppliedAnnotation: string(lastAppliedTagsJSON),
 				})
 			}
-			tag.EXPECT().GetActualTags(existing).Return(test.existingTags)
 			tag.EXPECT().GetDesiredTags(existing).Return(test.existingTags)
 			tag.EXPECT().GetAdditionalTags().Return(test.additionalTagsSpec)
 
@@ -127,28 +123,5 @@ func TestReconcileTags(t *testing.T) {
 
 		err := reconcileTags[*asoresourcesv1.ResourceGroup](tag, existing, existing != nil, nil)
 		g.Expect(err).To(HaveOccurred())
-	})
-
-	t.Run("existing tags not up to date", func(t *testing.T) {
-		g := NewWithT(t)
-
-		mockCtrl := gomock.NewController(t)
-		tag := mock_aso.NewMockTagsGetterSetter[*asoresourcesv1.ResourceGroup](mockCtrl)
-
-		existing := &asoresourcesv1.ResourceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
-				},
-			},
-		}
-		tag.EXPECT().GetActualTags(existing).Return(infrav1.Tags{"new": "value"})
-		tag.EXPECT().GetDesiredTags(existing).Return(infrav1.Tags{"old": "tag"})
-
-		err := reconcileTags[*asoresourcesv1.ResourceGroup](tag, existing, existing != nil, nil)
-		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
-		var recerr azure.ReconcileError
-		g.Expect(errors.As(err, &recerr)).To(BeTrue())
-		g.Expect(recerr.IsTransient()).To(BeTrue())
 	})
 }

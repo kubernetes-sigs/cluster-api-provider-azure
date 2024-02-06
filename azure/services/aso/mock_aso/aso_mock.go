@@ -127,20 +127,6 @@ func (m *MockTagsGetterSetter[T]) EXPECT() *MockTagsGetterSetterMockRecorder[T] 
 	return m.recorder
 }
 
-// GetActualTags mocks base method.
-func (m *MockTagsGetterSetter[T]) GetActualTags(resource T) v1beta1.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetActualTags", resource)
-	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
-}
-
-// GetActualTags indicates an expected call of GetActualTags.
-func (mr *MockTagsGetterSetterMockRecorder[T]) GetActualTags(resource any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActualTags", reflect.TypeOf((*MockTagsGetterSetter[T])(nil).GetActualTags), resource)
-}
-
 // GetAdditionalTags mocks base method.
 func (m *MockTagsGetterSetter[T]) GetAdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
