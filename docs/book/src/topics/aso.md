@@ -56,13 +56,26 @@ Cluster API.
 
 ### Installing more CRDs
 
-CAPZ's installation of ASO configures only the ASO CRDs that are required by CAPZ. To make more resource types
-available, install their corresponding CRDs. ASO publishes a manifest containing all CRDs for each
-[release](https://github.com/Azure/azure-service-operator/releases). Extract only the ones you need using tool
-like [`yq`](https://mikefarah.gitbook.io/yq/), then make the following modifications to each CRD to account
-for CAPZ installing ASO in the `capz-system` namespace:
+#### For a fresh installation
+Before performing a `clusterctl init`, users can specify additional ASO CRDs to be installed in the management cluster by exporting `ADDITIONAL_ASO_CRDS` variable.
+For example, to install all the CRDs of `cache.azure.com` and `MongodbDatabase.documentdb.azure.com`:
+- `export ADDITIONAL_ASO_CRDS="cache.azure.com/*;documentdb.azure.com/MongodbDatabase"`
+- continue with the installation of CAPZ as specified here [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html).
 
-- Change `metadata.annotations."cert-manager.io/inject-ca-from"` to `capz-system/azureserviceoperator-serving-cert`
-- Change `spec.conversion.webhook.clientConfig.service.namespace` to `capz-system`
+#### For an existing CAPZ installation being upgraded to v1.14.0(or beyond)
+CAPZ's installation of ASO configures only the ASO CRDs that are required by CAPZ. To make more resource types available, export `ADDITIONAL_ASO_CRDS` and then upgrade CAPZ.
+For example, to install the all CRDs of `cache.azure.com` and `MongodbDatabase.documentdb.azure.com`, follow these steps:
+- `export ADDITIONAL_ASO_CRDS="cache.azure.com/*;documentdb.azure.com/MongodbDatabase"`
+- continue with the upgrade of CAPZ as specified [here](https://cluster-api.sigs.k8s.io/tasks/upgrading-cluster-api-versions.html?highlight=upgrade#when-to-upgrade]
+
+You will see that the `--crd-pattern` in Azure Service Operator's Deployment (in the `capz-system` namespace) looks like below:
+   ```
+   .
+   - --crd-names=cache.azure.com/*;documentdb.azure.com/MongodbDatabase
+   .
+   ```
 
 More details about how ASO manages CRDs can be found [here](https://azure.github.io/azure-service-operator/guide/crd-management/).
+
+**Note:** To install the resource for the newly installed CRDs, make sure that the ASO operator has the authentication to install the resources. Refer [authentication in ASO](https://azure.github.io/azure-service-operator/guide/authentication/) for more details.
+An example configuration file and demo for `Azure Cache for Redis` can be found [here](https://github.com/Azure-Samples/azure-service-operator-samples/tree/master/azure-votes-redis).
