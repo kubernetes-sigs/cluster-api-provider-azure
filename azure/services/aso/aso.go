@@ -18,17 +18,22 @@ package aso
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
@@ -53,6 +58,7 @@ const (
 type deepCopier[T any] interface {
 	genruntime.MetaObject
 	DeepCopy() T
+	SetGroupVersionKind(schema.GroupVersionKind)
 }
 
 // reconciler is an implementation of the Reconciler interface. It handles creation
@@ -150,7 +156,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 
 	// Construct parameters using the resource spec and information from the existing resource, if there is one.
-	parameters, err := spec.Parameters(ctx, existing.DeepCopy())
+	parameters, err := PatchedParameters(ctx, r.Scheme(), spec, existing.DeepCopy())
 	if err != nil {
 		return zero, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", resourceNamespace, resourceName, serviceName)
 	}
@@ -220,11 +226,64 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		log.V(2).Info("resource up to date")
 		return existing, nil
 	}
-	log.V(2).Info("creating or updating resource", "diff", cmp.Diff(existing, parameters))
+	log.V(2).Info("creating or updating resource", "diff", diff)
 	return r.createOrUpdateResource(ctx, existing, parameters, resourceExists, serviceName)
 }
 
-func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters T, resourceExists bool, serviceName string) (T, error) {
+// PatchedParameters returns the Parameters of spec with patches applied.
+func PatchedParameters[T deepCopier[T]](ctx context.Context, scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], existing T) (T, error) {
+	var zero T // to be returned with non-nil errors
+	parameters, err := spec.Parameters(ctx, existing)
+	if err != nil {
+		return zero, err
+	}
+	return applyPatches(scheme, spec, parameters)
+}
+
+func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], parameters T) (T, error) {
+	p, ok := spec.(Patcher)
+	if !ok {
+		return parameters, nil
+	}
+
+	var zero T // to be returned with non-nil errors
+
+	gvk, err := apiutil.GVKForObject(parameters, scheme)
+	if err != nil {
+		return zero, errors.Wrap(err, "failed to get GroupVersionKind for object")
+	}
+	parameters.SetGroupVersionKind(gvk)
+	paramData, err := json.Marshal(parameters)
+	if err != nil {
+		return zero, errors.Wrap(err, "failed to marshal JSON for patch")
+	}
+
+	for i, extraPatch := range p.ExtraPatches() {
+		jsonPatch, err := yaml.ToJSON([]byte(extraPatch))
+		if err != nil {
+			return zero, errors.Wrapf(err, "failed to convert patch at index %d to JSON", i)
+		}
+		paramData, err = jsonpatch.MergePatch(paramData, jsonPatch)
+		if err != nil {
+			return zero, errors.Wrapf(err, "failed to apply patch at index %d", i)
+		}
+	}
+
+	decoder := serializer.NewCodecFactory(scheme).UniversalDeserializer()
+	obj, _, err := decoder.Decode(paramData, nil, nil)
+	if err != nil {
+		return zero, errors.Wrap(err, "failed to decode object")
+	}
+
+	t, ok := obj.(T)
+	if !ok {
+		return zero, fmt.Errorf("decoded patched object is %T, not %T", obj, parameters)
+	}
+
+	return t, nil
+}
+
+func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters client.Object, resourceExists bool, serviceName string) (T, error) {
 	var zero T
 	var err error
 	var logMessageVerbPrefix string
