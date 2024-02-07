@@ -124,6 +124,13 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 	}
 
 	if err := webhookutils.ValidateImmutable(
+		field.NewPath("Spec", "Template", "Spec", "NetworkDataplane"),
+		old.Spec.Template.Spec.NetworkDataplane,
+		mcp.Spec.Template.Spec.NetworkDataplane); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "Template", "Spec", "LoadBalancerSKU"),
 		old.Spec.Template.Spec.LoadBalancerSKU,
 		mcp.Spec.Template.Spec.LoadBalancerSKU); err != nil {
@@ -214,6 +221,10 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 	allErrs = append(allErrs, validateAKSExtensions(mcp.Spec.Template.Spec.Extensions, field.NewPath("spec").Child("Extensions"))...)
 
 	allErrs = append(allErrs, mcp.Spec.Template.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfile()...)
+
+	allErrs = append(allErrs, validateNetworkPolicy(mcp.Spec.Template.Spec.NetworkPolicy, mcp.Spec.Template.Spec.NetworkDataplane, field.NewPath("spec").Child("template").Child("spec").Child("NetworkPolicy"))...)
+
+	allErrs = append(allErrs, validateNetworkDataplane(mcp.Spec.Template.Spec.NetworkDataplane, mcp.Spec.Template.Spec.NetworkPolicy, mcp.Spec.Template.Spec.NetworkPluginMode, field.NewPath("spec").Child("template").Child("spec").Child("NetworkDataplane"))...)
 
 	return allErrs.ToAggregate()
 }

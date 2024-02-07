@@ -133,81 +133,29 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
 
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "SubscriptionID"),
-		old.Spec.SubscriptionID,
-		m.Spec.SubscriptionID); err != nil {
-		allErrs = append(allErrs, err)
+	immutableFields := []struct {
+		path *field.Path
+		old  interface{}
+		new  interface{}
+	}{
+		{field.NewPath("Spec", "SubscriptionID"), old.Spec.SubscriptionID, m.Spec.SubscriptionID},
+		{field.NewPath("Spec", "ResourceGroupName"), old.Spec.ResourceGroupName, m.Spec.ResourceGroupName},
+		{field.NewPath("Spec", "NodeResourceGroupName"), old.Spec.NodeResourceGroupName, m.Spec.NodeResourceGroupName},
+		{field.NewPath("Spec", "Location"), old.Spec.Location, m.Spec.Location},
+		{field.NewPath("Spec", "SSHPublicKey"), old.Spec.SSHPublicKey, m.Spec.SSHPublicKey},
+		{field.NewPath("Spec", "DNSServiceIP"), old.Spec.DNSServiceIP, m.Spec.DNSServiceIP},
+		{field.NewPath("Spec", "NetworkPlugin"), old.Spec.NetworkPlugin, m.Spec.NetworkPlugin},
+		{field.NewPath("Spec", "NetworkPolicy"), old.Spec.NetworkPolicy, m.Spec.NetworkPolicy},
+		{field.NewPath("Spec", "NetworkDataplane"), old.Spec.NetworkDataplane, m.Spec.NetworkDataplane},
+		{field.NewPath("Spec", "LoadBalancerSKU"), old.Spec.LoadBalancerSKU, m.Spec.LoadBalancerSKU},
+		{field.NewPath("Spec", "HTTPProxyConfig"), old.Spec.HTTPProxyConfig, m.Spec.HTTPProxyConfig},
+		{field.NewPath("Spec", "AzureEnvironment"), old.Spec.AzureEnvironment, m.Spec.AzureEnvironment},
 	}
 
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "ResourceGroupName"),
-		old.Spec.ResourceGroupName,
-		m.Spec.ResourceGroupName); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NodeResourceGroupName"),
-		old.Spec.NodeResourceGroupName,
-		m.Spec.NodeResourceGroupName); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "Location"),
-		old.Spec.Location,
-		m.Spec.Location); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "SSHPublicKey"),
-		old.Spec.SSHPublicKey,
-		m.Spec.SSHPublicKey); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "DNSServiceIP"),
-		old.Spec.DNSServiceIP,
-		m.Spec.DNSServiceIP); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkPlugin"),
-		old.Spec.NetworkPlugin,
-		m.Spec.NetworkPlugin); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkPolicy"),
-		old.Spec.NetworkPolicy,
-		m.Spec.NetworkPolicy); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "LoadBalancerSKU"),
-		old.Spec.LoadBalancerSKU,
-		m.Spec.LoadBalancerSKU); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "HTTPProxyConfig"),
-		old.Spec.HTTPProxyConfig,
-		m.Spec.HTTPProxyConfig); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "AzureEnvironment"),
-		old.Spec.AzureEnvironment,
-		m.Spec.AzureEnvironment); err != nil {
-		allErrs = append(allErrs, err)
+	for _, f := range immutableFields {
+		if err := webhookutils.ValidateImmutable(f.path, f.old, f.new); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	// This nil check is only to streamline tests from having to define this correctly in every test case.
@@ -335,6 +283,10 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	allErrs = append(allErrs, validateAKSExtensions(m.Spec.Extensions, field.NewPath("spec").Child("AKSExtensions"))...)
 
 	allErrs = append(allErrs, m.Spec.AzureManagedControlPlaneClassSpec.validateSecurityProfile()...)
+
+	allErrs = append(allErrs, validateNetworkPolicy(m.Spec.NetworkPolicy, m.Spec.NetworkDataplane, field.NewPath("spec").Child("NetworkPolicy"))...)
+
+	allErrs = append(allErrs, validateNetworkDataplane(m.Spec.NetworkDataplane, m.Spec.NetworkPolicy, m.Spec.NetworkPluginMode, field.NewPath("spec").Child("NetworkDataplane"))...)
 
 	return allErrs.ToAggregate()
 }
@@ -1019,6 +971,39 @@ func validateAKSExtensions(extensions []AKSExtension, fldPath *field.Path) field
 				}
 			}
 		}
+	}
+
+	return allErrs
+}
+
+// validateNetworkPolicy validates the networkPolicy.
+func validateNetworkPolicy(networkPolicy *string, networkDataplane *NetworkDataplaneType, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if networkPolicy == nil {
+		return nil
+	}
+
+	if *networkPolicy == "cilium" && networkDataplane != nil && *networkDataplane != NetworkDataplaneTypeCilium {
+		allErrs = append(allErrs, field.Invalid(fldPath, networkPolicy, "cilium network policy can only be used with cilium network dataplane"))
+	}
+
+	return allErrs
+}
+
+// validateNetworkDataplane validates the NetworkDataplane.
+func validateNetworkDataplane(networkDataplane *NetworkDataplaneType, networkPolicy *string, networkPluginMode *NetworkPluginMode, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if networkDataplane == nil {
+		return nil
+	}
+
+	if *networkDataplane == NetworkDataplaneTypeCilium && (networkPluginMode == nil || *networkPluginMode != NetworkPluginModeOverlay) {
+		allErrs = append(allErrs, field.Invalid(fldPath, networkDataplane, "cilium network dataplane can only be used with overlay network plugin mode"))
+	}
+	if *networkDataplane == NetworkDataplaneTypeCilium && (networkPolicy == nil || *networkPolicy != "cilium") {
+		allErrs = append(allErrs, field.Invalid(fldPath, networkDataplane, "cilium dataplane requires network policy cilium."))
 	}
 
 	return allErrs

@@ -558,6 +558,9 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 	if s.ControlPlane.Spec.NetworkPolicy != nil {
 		managedClusterSpec.NetworkPolicy = *s.ControlPlane.Spec.NetworkPolicy
 	}
+	if s.ControlPlane.Spec.NetworkDataplane != nil {
+		managedClusterSpec.NetworkDataplane = s.ControlPlane.Spec.NetworkDataplane
+	}
 	if s.ControlPlane.Spec.LoadBalancerSKU != nil {
 		// CAPZ accepts Standard/Basic, Azure accepts standard/basic
 		managedClusterSpec.LoadBalancerSKU = strings.ToLower(*s.ControlPlane.Spec.LoadBalancerSKU)

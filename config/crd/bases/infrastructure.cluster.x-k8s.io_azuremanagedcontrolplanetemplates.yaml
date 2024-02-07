@@ -537,6 +537,13 @@ spec:
                           plane. For the AzureManagedControlPlaneTemplate, this field
                           is used only to fulfill the CAPI contract.
                         type: object
+                      networkDataplane:
+                        description: NetworkDataplane is the dataplane used for building
+                          the Kubernetes network.
+                        enum:
+                        - azure
+                        - cilium
+                        type: string
                       networkPlugin:
                         description: NetworkPlugin used for building Kubernetes network.
                         enum:
@@ -555,6 +562,7 @@ spec:
                         enum:
                         - azure
                         - calico
+                        - cilium
                         type: string
                       oidcIssuerProfile:
                         description: OIDCIssuerProfile is the OIDC issuer profile

@@ -105,6 +105,16 @@ const (
 	NetworkPluginModeOverlay NetworkPluginMode = "overlay"
 )
 
+// NetworkDataplaneType is the type of network dataplane to use.
+type NetworkDataplaneType string
+
+const (
+	// NetworkDataplaneTypeAzure is the Azure network dataplane type.
+	NetworkDataplaneTypeAzure NetworkDataplaneType = "azure"
+	// NetworkDataplaneTypeCilium is the Cilium network dataplane type.
+	NetworkDataplaneTypeCilium NetworkDataplaneType = "cilium"
+)
+
 const (
 	// LoadBalancerSKUStandard is the Standard load balancer SKU.
 	LoadBalancerSKUStandard = "Standard"
