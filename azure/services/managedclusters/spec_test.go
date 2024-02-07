@@ -313,4 +313,35 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.KubernetesVersion).ToNot(BeNil())
 		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
+	t.Run("updating existing managed cluster to a non nil DNS Service IP", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		spec := &ManagedClusterSpec{
+			DNSPrefix:    ptr.To("managed by CAPZ"),
+			Tags:         map[string]string{"additional": "tags"},
+			ServiceCIDR:  "123.200.198.0/10",
+			DNSServiceIP: ptr.To("123.200.198.99"),
+		}
+		existing := &asocontainerservicev1.ManagedCluster{
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				DnsPrefix:               ptr.To("set by the user"),
+				EnablePodSecurityPolicy: ptr.To(true), // set by the user
+
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{},
+				Tags:              map[string]string{},
+			},
+		}
+
+		actual, err := spec.Parameters(context.Background(), existing)
+
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
+		g.Expect(actual.Spec.Tags).To(BeNil())
+		g.Expect(actual.Spec.DnsPrefix).To(Equal(ptr.To("managed by CAPZ")))
+		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
+		g.Expect(actual.Spec.NetworkProfile.DnsServiceIP).To(Equal(ptr.To("123.200.198.99")))
+		g.Expect(actual.Spec.NetworkProfile.ServiceCidr).To(Equal(ptr.To("123.200.198.0/10")))
+	})
 }
