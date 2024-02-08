@@ -488,6 +488,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			},
 		},
 	}
+
 	if s.AADProfile != nil {
 		managedCluster.Spec.AadProfile = &asocontainerservicev1.ManagedClusterAADProfile{
 			Managed:             &s.AADProfile.Managed,
@@ -584,6 +585,14 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 	if s.OIDCIssuerProfile != nil {
 		managedCluster.Spec.OidcIssuerProfile = &asocontainerservicev1.ManagedClusterOIDCIssuerProfile{
 			Enabled: s.OIDCIssuerProfile.Enabled,
+		}
+		if ptr.Deref(s.OIDCIssuerProfile.Enabled, false) {
+			managedCluster.Spec.OperatorSpec.ConfigMaps = &asocontainerservicev1.ManagedClusterOperatorConfigMaps{
+				OIDCIssuerProfile: &genruntime.ConfigMapDestination{
+					Name: oidcIssuerURLConfigMapName(s.ClusterName),
+					Key:  oidcIssuerProfileURL,
+				},
+			}
 		}
 	}
 
@@ -722,6 +731,10 @@ func getIdentity(identity *infrav1.Identity) (managedClusterIdentity *asocontain
 
 func adminKubeconfigSecretName(clusterName string) string {
 	return secret.Name(clusterName+"-aso", secret.Kubeconfig)
+}
+
+func oidcIssuerURLConfigMapName(clusterName string) string {
+	return secret.Name(clusterName+"-aso", "oidc-issuer-profile")
 }
 
 func userKubeconfigSecretName(clusterName string) string {

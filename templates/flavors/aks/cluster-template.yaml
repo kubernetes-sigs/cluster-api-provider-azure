@@ -33,6 +33,8 @@ spec:
   location: "${AZURE_LOCATION}"
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   version: "${KUBERNETES_VERSION}"
+  oidcIssuerProfile:
+    enabled: true
 ---
 # Due to the nature of managed Kubernetes and the control plane implementation,
 # the infrastructure provider for AKS cluster is basically a no-op.
