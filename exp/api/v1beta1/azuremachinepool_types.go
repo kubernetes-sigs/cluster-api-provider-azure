@@ -160,6 +160,15 @@ type (
 		// OrchestrationMode specifies the orchestration mode for the Virtual Machine Scale Set
 		// +kubebuilder:default=Uniform
 		OrchestrationMode infrav1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
+
+		// PlatformFaultDomainCount specifies the number of fault domains that the Virtual Machine Scale Set can use.
+		// The count determines the spreading algorithm of the Azure fault domain.
+		// +optional
+		PlatformFaultDomainCount *int32 `json:"platformFaultDomainCount,omitempty"`
+
+		// ZoneBalane dictates whether to force strictly even Virtual Machine distribution cross x-zones in case there is zone outage.
+		// +optional
+		ZoneBalance *bool `json:"zoneBalance,omitempty"`
 	}
 
 	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of

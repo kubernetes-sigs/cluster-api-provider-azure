@@ -107,6 +107,12 @@ spec:
                 - Flexible
                 - Uniform
                 type: string
+              platformFaultDomainCount:
+                description: PlatformFaultDomainCount specifies the number of fault
+                  domains that the Virtual Machine Scale Set can use. The count determines
+                  the spreading algorithm of the Azure fault domain.
+                format: int32
+                type: integer
               providerID:
                 description: ProviderID is the identification ID of the Virtual Machine
                   Scale Set
@@ -782,6 +788,10 @@ spec:
                   - providerID
                   type: object
                 type: array
+              zoneBalance:
+                description: ZoneBalane dictates whether to force strictly even Virtual
+                  Machine distribution cross x-zones in case there is zone outage.
+                type: boolean
             required:
             - location
             - template
