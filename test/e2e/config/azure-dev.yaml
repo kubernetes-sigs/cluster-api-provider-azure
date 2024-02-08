@@ -159,6 +159,8 @@ providers:
         targetName: "cluster-template-edgezone.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azure-cni-v1.yaml"
         targetName: "cluster-template-azure-cni-v1.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-spot.yaml"
+        targetName: "cluster-template-spot.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
