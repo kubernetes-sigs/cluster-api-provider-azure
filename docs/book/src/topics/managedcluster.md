@@ -249,7 +249,7 @@ https://github.com/Azure/azure-rest-api-specs/pull/18232
 
 ### Disable Local Accounts in AKS when using Azure Active Directory
 
-When deploying an AKS cluster, local accounts are enabled by default. 
+When deploying an AKS cluster, local accounts are enabled by default.
 Even when you enable RBAC or Azure AD integration,
 --admin access still exists as a non-auditable backdoor option.
 Disabling local accounts closes the backdoor access to the cluster
@@ -265,16 +265,16 @@ spec:
     managed: true
     adminGroupObjectIDs:
     -  00000000-0000-0000-0000-000000000000 # group object id created in azure.
-  disableLocalAccounts: true  
+  disableLocalAccounts: true
   ...
 ```
 
-Note: CAPZ and CAPI requires access to the target cluster to maintain and manage the cluster. 
-Disabling local accounts will cut off direct access to the target cluster. 
-CAPZ and CAPI can access target cluster only via the Service Principal, 
-hence the user has to provide appropriate access to the Service Principal to access the target cluster. 
-User can do that by adding the Service Principal to the appropriate group defined in Azure and 
-add the corresponding group ID in `spec.aadProfile.adminGroupObjectIDs`. 
+Note: CAPZ and CAPI requires access to the target cluster to maintain and manage the cluster.
+Disabling local accounts will cut off direct access to the target cluster.
+CAPZ and CAPI can access target cluster only via the Service Principal,
+hence the user has to provide appropriate access to the Service Principal to access the target cluster.
+User can do that by adding the Service Principal to the appropriate group defined in Azure and
+add the corresponding group ID in `spec.aadProfile.adminGroupObjectIDs`.
 CAPI and CAPZ will be able to authenticate via AAD while accessing the target cluster.
 
 ### AKS Fleet Integration
@@ -292,7 +292,7 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  fleetsMember: 
+  fleetsMember:
     group: fleet-update-group
     managerName: fleet-manager-name
     managerResourceGroup: fleet-manager-resource-group
@@ -304,7 +304,7 @@ When the `fleetMember` field is included, CAPZ will create an AKS fleet member r
 
 ### AKS Extensions
 
-CAPZ supports enabling AKS extensions on your managed AKS clusters. Cluster extensions provide an Azure Resource Manager driven experience for installation and lifecycle management of services like Azure Machine Learning or Kubernetes applications on an AKS cluster. For more documentation on AKS extensions, refer [AKS Docs](https://learn.microsoft.com/azure/aks/cluster-extensions). 
+CAPZ supports enabling AKS extensions on your managed AKS clusters. Cluster extensions provide an Azure Resource Manager driven experience for installation and lifecycle management of services like Azure Machine Learning or Kubernetes applications on an AKS cluster. For more documentation on AKS extensions, refer [AKS Docs](https://learn.microsoft.com/azure/aks/cluster-extensions).
 
 You can either provision official AKS extensions or Kubernetes applications through Marketplace. Please refer to [AKS Docs](https://learn.microsoft.com/en-us/azure/aks/cluster-extensions#currently-available-extensions) for the list of currently available extensions.
 
@@ -320,7 +320,7 @@ spec:
   extensions:
   - name: my-extension
     extensionType: "TraefikLabs.TraefikProxy"
-    plan: 
+    plan:
       name: "traefik-proxy"
       product: "traefik-proxy"
       publisher: "containous"
@@ -347,22 +347,31 @@ spec:
   identity:
     type: UserAssigned
     userAssignedIdentityResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
-  oidcIssuerProfile:                                                                                              
+  oidcIssuerProfile:
     enabled: true
-  securityProfile:                                                                                                
-    workloadIdentity:                                                                                             
+  securityProfile:
+    workloadIdentity:
       enabled: true
     imageCleaner:
       enabled: true
       intervalHours: 48
     azureKeyVaultKms:
       enabled: true
-      keyID: https://key-vault.vault.azure.net/keys/secret-key/00000000000000000 
+      keyID: https://key-vault.vault.azure.net/keys/secret-key/00000000000000000
     defender:
       logAnalyticsWorkspaceResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
       securityMonitoring:
-        enabled: true  
+        enabled: true
 ```
+
+#### OIDC Issuer on AKS
+
+Setting `AzureManagedControlPlane.Spec.oidcIssuerProfile.enabled` to `true` will enable OIDC issuer profile for the `AzureManagedControlPlane`. Once enabled, you will see a configmap named `<cluster-name>-aso-oidc-issuer-profile` in the same namespace as the `AzureManagedControlPlane` resource. This configmap will contain the OIDC issuer profile url under the `oidc-issuer-profile-url` key.
+
+Once OIDC issuer is enabled on the cluster, it's not supported to disable it.
+
+To learn more about OIDC and AKS refer [AKS Docs on OIDC issuer](https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer).
+
 
 ## Features
 
@@ -535,7 +544,7 @@ spec:
         name: ${CLUSTER_NAME}-kubeconfig
     owner: root:root
     path: /etc/kubernetes/admin.conf
-    permissions: "0644"  
+    permissions: "0644"
   joinConfiguration:
     discovery:
       file:
@@ -553,7 +562,7 @@ spec:
 In order for the nodes to become ready, you'll need to install Cloud Provider Azure and a CNI.
 
 AKS will install Cloud Provider Azure on the self-managed nodes as long as they have the appropriate labels. You can add the required label on the nodes by running the following command on the AKS cluster:
-  
+
 ```bash
 kubectl label node <node name> kubernetes.azure.com/cluster=<nodeResourceGroupName>
 ```

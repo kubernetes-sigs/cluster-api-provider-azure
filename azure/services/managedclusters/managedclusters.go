@@ -41,6 +41,9 @@ const (
 	// The aadResourceID is the application-id used by the server side. The access token accessing AKS clusters need to be issued for this app.
 	// Refer: https://azure.github.io/kubelogin/concepts/aks.html?highlight=6dae42f8-4368-4678-94ff-3960e28e3630#azure-kubernetes-service-aad-server
 	aadResourceID = "6dae42f8-4368-4678-94ff-3960e28e3630"
+
+	// oidcIssuerProfileUrl is a constant representing the key name for the oidc-issuer-profile-url config map.
+	oidcIssuerProfileURL = "oidc-issuer-profile-url"
 )
 
 // ManagedClusterScope defines the scope interface for a managed cluster.

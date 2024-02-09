@@ -232,8 +232,14 @@ func TestParameters(t *testing.T) {
 				OperatorSpec: &asocontainerservicev1.ManagedClusterOperatorSpec{
 					Secrets: &asocontainerservicev1.ManagedClusterOperatorSecrets{
 						UserCredentials: &genruntime.SecretDestination{
-							Name: "cluster-user-aso-kubeconfig",
+							Name: userKubeconfigSecretName("cluster"),
 							Key:  secret.KubeconfigDataName,
+						},
+					},
+					ConfigMaps: &asocontainerservicev1.ManagedClusterOperatorConfigMaps{
+						OIDCIssuerProfile: &genruntime.ConfigMapDestination{
+							Name: oidcIssuerURLConfigMapName("cluster"),
+							Key:  oidcIssuerProfileURL,
 						},
 					},
 				},
@@ -343,5 +349,16 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
 		g.Expect(actual.Spec.NetworkProfile.DnsServiceIP).To(Equal(ptr.To("123.200.198.99")))
 		g.Expect(actual.Spec.NetworkProfile.ServiceCidr).To(Equal(ptr.To("123.200.198.0/10")))
+	})
+}
+
+func TestOIDCIssuerURLConfigMap(t *testing.T) {
+	t.Run("get oidc issuer profile", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		clusterName := "my-cluster"
+		actualOIDCIssuerConfigMapName := oidcIssuerURLConfigMapName(clusterName)
+
+		g.Expect(actualOIDCIssuerConfigMapName).To(Equal("my-cluster-aso-oidc-issuer-profile"))
 	})
 }
