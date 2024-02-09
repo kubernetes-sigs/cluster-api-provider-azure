@@ -731,6 +731,8 @@ func newDefaultVMSSSpec() ScaleSetSpec {
 				ResourceGroup: "my-rg",
 			},
 		},
+		PlatformFaultDomainCount: ptr.To(int32(1)),
+		ZoneBalance:              ptr.To(true),
 	}
 }
 
@@ -867,6 +869,8 @@ func newDefaultVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
 					},
 				},
 			},
+			PlatformFaultDomainCount: ptr.To(int32(1)),
+			ZoneBalance:              ptr.To(true),
 			// AdditionalCapabilities: &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)},
 		},
 	}

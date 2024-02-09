@@ -209,6 +209,13 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		HasReplicasExternallyManaged: m.HasReplicasExternallyManaged(ctx),
 		ClusterName:                  m.ClusterName(),
 		AdditionalTags:               m.AzureMachinePool.Spec.AdditionalTags,
+		PlatformFaultDomainCount:     m.AzureMachinePool.Spec.PlatformFaultDomainCount,
+		ZoneBalance:                  m.AzureMachinePool.Spec.ZoneBalance,
+	}
+
+	if m.AzureMachinePool.Spec.ZoneBalance != nil && len(m.MachinePool.Spec.FailureDomains) <= 1 {
+		log.V(4).Info("zone balance is enabled but one or less failure domains are specified, zone balance will be disabled")
+		spec.ZoneBalance = nil
 	}
 
 	if m.cache != nil {
