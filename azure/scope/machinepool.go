@@ -69,7 +69,7 @@ type (
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
-	MachinePoolScope struct {
+		MachinePoolScope struct {
 		azure.ClusterScoper
 		AzureMachinePool           *infrav1exp.AzureMachinePool
 		MachinePool                *expv1.MachinePool
@@ -617,7 +617,7 @@ func (m *MachinePoolScope) SetFailureMessage(v error) {
 }
 
 // SetFailureReason sets the AzureMachinePool status failure reason.
-func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineSetStatusError) {
+func (m *MachinePoolScope) SetFailureReason(v capierrors.MachinePoolStatusFailure) {
 	m.AzureMachinePool.Status.FailureReason = &v
 }
 

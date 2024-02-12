@@ -264,7 +264,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 
 	log.Info("Reconciling AzureMachinePool")
 
-	// If the AzureMachine is in an error state, return early.
+	// If the AzureMachinePool is in an error state, return early.
 	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil {
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
@@ -294,13 +294,13 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 
 	var reconcileError azure.ReconcileError
 
-	// Initialize the cache to be used by the AzureMachine services.
+	// Initialize the cache to be used by the AzureMachinePool services.
 	err := machinePoolScope.InitMachinePoolCache(ctx)
 	if err != nil {
 		if errors.As(err, &reconcileError) && reconcileError.IsTerminal() {
 			ampr.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machinepool cache").Error())
 			log.Error(err, "Failed to initialize machinepool cache")
-			machinePoolScope.SetFailureReason(capierrors.InvalidConfigurationMachineSetError)
+			machinePoolScope.SetFailureReason(capierrors.InvalidConfigurationMachinePoolError)
 			machinePoolScope.SetFailureMessage(err)
 			machinePoolScope.SetNotReady()
 			return reconcile.Result{}, nil
