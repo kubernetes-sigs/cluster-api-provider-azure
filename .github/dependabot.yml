@@ -39,6 +39,7 @@ updates:
     - dependency-name: "k8s.io/*"
     - dependency-name: "go.etcd.io/*"
     - dependency-name: "google.golang.org/grpc"
+    - dependency-name: "sigs.k8s.io/cloud-provider-azure"
     # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
     - dependency-name: "go.opentelemetry.io/contrib/*"
     - dependency-name: "go.opentelemetry.io/otel/exporters/*"
@@ -93,9 +94,7 @@ updates:
     prefix: "dependabot"
     include: scope
   ignore:
-  - dependency-name: '*golang*'
-    update-types:
-    - version-update:semver-major
+  - dependency-name: 'golang'
   labels:
     - "ok-to-test"
     - "kind/cleanup"
