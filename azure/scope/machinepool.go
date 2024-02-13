@@ -69,7 +69,7 @@ type (
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
-		MachinePoolScope struct {
+	MachinePoolScope struct {
 		azure.ClusterScoper
 		AzureMachinePool           *infrav1exp.AzureMachinePool
 		MachinePool                *expv1.MachinePool
@@ -78,6 +78,7 @@ type (
 		capiMachinePoolPatchHelper *patch.Helper
 		vmssState                  *azure.VMSS
 		cache                      *MachinePoolCache
+		VMSkuResolver              func(scope *MachinePoolScope, context context.Context) (resourceskus.SKU, error)
 	}
 
 	// NodeStatus represents the status of a Kubernetes node.
@@ -128,6 +129,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		patchHelper:                helper,
 		capiMachinePoolPatchHelper: capiMachinePoolPatchHelper,
 		ClusterScoper:              params.ClusterScope,
+		VMSkuResolver:              ResolveVMSKU,
 	}, nil
 }
 
@@ -160,19 +162,21 @@ func (m *MachinePoolScope) InitMachinePoolCache(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
-		skuCache, err := resourceskus.GetCache(m, m.Location())
-		if err != nil {
-			return err
-		}
-
-		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachinePool.Spec.Template.VMSize, resourceskus.VirtualMachines)
+		m.cache.VMSKU, err = m.VMSkuResolver(m, ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachinePool.Spec.Template.VMSize)
 		}
 	}
-
 	return nil
+}
+
+// ResolveVMSKU get VM SKU from cached information about the machine pool to be used in the scope.
+func ResolveVMSKU(m *MachinePoolScope, ctx context.Context) (resourceskus.SKU, error) {
+	skuCache, err := resourceskus.GetCache(m, m.Location())
+	if err != nil {
+		return resourceskus.SKU{}, err
+	}
+	return skuCache.Get(ctx, m.AzureMachinePool.Spec.Template.VMSize, resourceskus.VirtualMachines)
 }
 
 // ScaleSetSpec returns the scale set spec.
@@ -324,12 +328,12 @@ func (m *MachinePoolScope) NeedsRequeue() bool {
 }
 
 // DesiredReplicas returns the replica count on machine pool or 0 if machine pool replicas is nil.
-func (m MachinePoolScope) DesiredReplicas() int32 {
+func (m *MachinePoolScope) DesiredReplicas() int32 {
 	return ptr.Deref[int32](m.MachinePool.Spec.Replicas, 0)
 }
 
 // MaxSurge returns the number of machines to surge, or 0 if the deployment strategy does not support surge.
-func (m MachinePoolScope) MaxSurge() (int, error) {
+func (m *MachinePoolScope) MaxSurge() (int, error) {
 	if surger, ok := m.getDeploymentStrategy().(machinepool.Surger); ok {
 		surgeCount, err := surger.Surge(int(m.DesiredReplicas()))
 		if err != nil {
