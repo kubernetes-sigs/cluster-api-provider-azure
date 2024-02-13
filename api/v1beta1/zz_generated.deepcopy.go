@@ -1893,7 +1893,7 @@ func (in *AzureManagedMachinePoolStatus) DeepCopyInto(out *AzureManagedMachinePo
 	*out = *in
 	if in.ErrorReason != nil {
 		in, out := &in.ErrorReason, &out.ErrorReason
-		*out = new(errors.MachineSetStatusError)
+		*out = new(errors.MachinePoolStatusFailure)
 		**out = **in
 	}
 	if in.ErrorMessage != nil {
