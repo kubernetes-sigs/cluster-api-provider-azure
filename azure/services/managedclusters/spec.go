@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"net"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,10 +37,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ManagedClusterSpec contains properties to create a managed cluster.
 type ManagedClusterSpec struct {
+	Preview bool
 	// Name is the name of this AKS Cluster.
 	Name string
 
@@ -383,7 +387,7 @@ func (s *ManagedClusterSpec) getManagedClusterVersion(existing *asocontainerserv
 // Parameters returns the parameters for the managed clusters.
 //
 //nolint:gocyclo // Function requires a lot of nil checks that raise complexity.
-func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontainerservicev1.ManagedCluster) (params *asocontainerservicev1.ManagedCluster, err error) {
+func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontainerservicev1.ManagedCluster) (params client.Object, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Parameters")
 	defer done()
 
@@ -665,6 +669,20 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
 			managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
 		}
+	}
+
+	if s.Preview {
+		hub := &asocontainerservicehub.ManagedCluster{}
+		err := managedCluster.ConvertTo(hub)
+		if err != nil {
+			return nil, err
+		}
+		prev := &asocontainerservicev1preview.ManagedCluster{}
+		err = prev.ConvertFrom(hub)
+		if err != nil {
+			return nil, err
+		}
+		return prev, nil
 	}
 
 	return managedCluster, nil

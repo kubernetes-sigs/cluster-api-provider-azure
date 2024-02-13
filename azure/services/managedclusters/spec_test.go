@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
@@ -309,7 +310,8 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(context.Background(), existing)
+		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
@@ -319,6 +321,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.KubernetesVersion).ToNot(BeNil())
 		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
+
 	t.Run("updating existing managed cluster to a non nil DNS Service IP", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -340,7 +343,8 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(context.Background(), existing)
+		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
@@ -350,6 +354,25 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.NetworkProfile.DnsServiceIP).To(Equal(ptr.To("123.200.198.99")))
 		g.Expect(actual.Spec.NetworkProfile.ServiceCidr).To(Equal(ptr.To("123.200.198.0/10")))
 	})
+
+	t.Run("preview", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		spec := &ManagedClusterSpec{
+			Preview: true,
+			Name:    "name",
+			GetAllAgentPools: func() ([]azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool], error) {
+				return nil, nil
+			},
+		}
+
+		actualObj, err := spec.Parameters(context.Background(), nil)
+		actual := actualObj.(*asocontainerservicev1preview.ManagedCluster)
+
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(actual.Spec.AzureName).To(Equal("name"))
+	})
+
 }
 
 func TestOIDCIssuerURLConfigMap(t *testing.T) {
