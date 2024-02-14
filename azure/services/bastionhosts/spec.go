@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AzureBastionSpec defines the specification for azure bastion feature.
@@ -50,7 +51,7 @@ func (s *AzureBastionSpec) ResourceRef() *asonetworkv1.BastionHost {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *AzureBastionSpec) Parameters(ctx context.Context, existingBastionHost *asonetworkv1.BastionHost) (parameters *asonetworkv1.BastionHost, err error) {
+func (s *AzureBastionSpec) Parameters(ctx context.Context, existingBastionHost *asonetworkv1.BastionHost) (parameters client.Object, err error) {
 	bastionHost := &asonetworkv1.BastionHost{}
 	if existingBastionHost != nil {
 		bastionHost = existingBastionHost

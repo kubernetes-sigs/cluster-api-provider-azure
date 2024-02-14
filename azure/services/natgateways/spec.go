@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NatGatewaySpec defines the specification for a NAT gateway.
@@ -49,7 +50,7 @@ func (s *NatGatewaySpec) ResourceRef() *asonetworkv1.NatGateway {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *NatGatewaySpec) Parameters(ctx context.Context, existingNatGateway *asonetworkv1.NatGateway) (params *asonetworkv1.NatGateway, err error) {
+func (s *NatGatewaySpec) Parameters(ctx context.Context, existingNatGateway *asonetworkv1.NatGateway) (params client.Object, err error) {
 	natGateway := &asonetworkv1.NatGateway{}
 	natGateway.Spec = asonetworkv1.NatGateway_Spec{}
 

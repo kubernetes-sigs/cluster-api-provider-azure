@@ -139,7 +139,8 @@ func TestParameters(t *testing.T) {
 			t.Parallel()
 
 			result, _ := tc.spec.Parameters(context.TODO(), tc.existingSpec.DeepCopy())
-			tc.expect(g, tc.existingSpec, result)
+			actualResult := result.(*asonetworkv1.NatGateway)
+			tc.expect(g, tc.existingSpec, actualResult)
 		})
 	}
 }

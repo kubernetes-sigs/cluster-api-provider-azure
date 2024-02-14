@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // PrivateLinkServiceConnection defines the specification for a private link service connection associated with a private endpoint.
@@ -60,7 +61,7 @@ func (s *PrivateEndpointSpec) ResourceRef() *asonetworkv1.PrivateEndpoint {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existingPrivateEndpoint *asonetworkv1.PrivateEndpoint) (*asonetworkv1.PrivateEndpoint, error) {
+func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existingPrivateEndpoint *asonetworkv1.PrivateEndpoint) (client.Object, error) {
 	privateEndpoint := &asonetworkv1.PrivateEndpoint{}
 	if existingPrivateEndpoint != nil {
 		privateEndpoint = existingPrivateEndpoint

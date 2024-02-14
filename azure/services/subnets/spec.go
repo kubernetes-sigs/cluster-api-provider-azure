@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // SubnetSpec defines the specification for a Subnet.
@@ -55,7 +56,7 @@ func (s *SubnetSpec) ResourceRef() *asonetworkv1.VirtualNetworksSubnet {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetworksSubnet) (parameters *asonetworkv1.VirtualNetworksSubnet, err error) {
+func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetworksSubnet) (parameters client.Object, err error) {
 	subnet := existing
 	if subnet == nil {
 		subnet = &asonetworkv1.VirtualNetworksSubnet{}

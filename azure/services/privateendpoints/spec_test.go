@@ -234,7 +234,8 @@ func TestParameters(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
-			tc.expect(g, *result)
+			actualResult := result.(*asonetworkv1.PrivateEndpoint)
+			tc.expect(g, *actualResult)
 		})
 	}
 }

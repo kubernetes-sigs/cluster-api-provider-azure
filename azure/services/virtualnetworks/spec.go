@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // VNetSpec defines the specification for a Virtual Network.
@@ -48,7 +49,7 @@ func (s *VNetSpec) ResourceRef() *asonetworkv1.VirtualNetwork {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *VNetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetwork) (*asonetworkv1.VirtualNetwork, error) {
+func (s *VNetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetwork) (client.Object, error) {
 	vnet := existing
 	if existing == nil {
 		vnet = &asonetworkv1.VirtualNetwork{

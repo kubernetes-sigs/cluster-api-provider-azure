@@ -194,7 +194,8 @@ func TestAzureBastionSpec_Parameters(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
-			tc.expect(g, *result)
+			actualResult := result.(*asonetworkv1.BastionHost)
+			tc.expect(g, *actualResult)
 		})
 	}
 }
