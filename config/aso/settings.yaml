@@ -8,6 +8,7 @@ stringData:
   AZURE_RESOURCE_MANAGER_ENDPOINT: ${AZURE_RESOURCE_MANAGER_ENDPOINT:=""}
   AZURE_RESOURCE_MANAGER_AUDIENCE: ${AZURE_RESOURCE_MANAGER_AUDIENCE:=""}
   AZURE_SYNC_PERIOD: ${AZURE_SYNC_PERIOD:="1h"}
+  AZURE_USER_AGENT_SUFFIX: cluster-api-provider-azure/main
   # Per-resource Secrets will be created based on a Cluster's AzureClusterIdentity.
   AZURE_SUBSCRIPTION_ID: ""
   AZURE_TENANT_ID: ""

@@ -3,3 +3,21 @@ resources:
 
 components:
   - ../aso
+
+replacements:
+  - source:
+      kind: Deployment
+      name: capz-controller-manager
+      fieldPath: spec.template.spec.containers.[name=manager].image
+      options:
+        delimiter: ':'
+        index: 1
+    targets:
+      - select:
+          kind: Secret
+          name: aso-controller-settings
+        fieldPaths:
+          - stringData.AZURE_USER_AGENT_SUFFIX
+        options:
+          delimiter: '/'
+          index: 1
