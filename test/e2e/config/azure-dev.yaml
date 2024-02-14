@@ -9,7 +9,7 @@ images:
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.6.1
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.1.0-alpha.10
+  - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.1.1-alpha.1
     loadBehavior: tryLoad
 
 providers:
@@ -174,6 +174,15 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+    - name: v0.1.1-alpha.1
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.1.1-alpha.1/addon-components.yaml
+      type: url
+      contract: v1beta1
+      files:
+      - sourcePath: "../data/shared/v1beta1_addon_provider/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
 
 variables:
   AKS_KUBERNETES_VERSION: "latest"
@@ -214,6 +223,8 @@ variables:
   LATEST_CAPI_UPGRADE_VERSION: "v1.5.4"
   OLD_PROVIDER_UPGRADE_VERSION: "v1.12.2"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.13.0"
+  OLD_CAAPH_UPGRADE_VERSION: "v0.1.0-alpha.10"
+  LATEST_CAAPH_UPGRADE_VERSION: "v0.1.1-alpha.1"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
