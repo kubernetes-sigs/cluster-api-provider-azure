@@ -127,7 +127,8 @@ func TestAzureFleetsMemberSpec_Parameters(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
-			tc.expect(g, *result)
+			actualResult := result.(*asocontainerservicev1.FleetsMember)
+			tc.expect(g, *actualResult)
 		})
 	}
 }

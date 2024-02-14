@@ -43,6 +43,7 @@ type AgentPoolScope interface {
 	SetCAPIMachinePoolAnnotation(key, value string)
 	RemoveCAPIMachinePoolAnnotation(key string)
 	SetSubnetName()
+	GetEnablePreviewFeatures() bool
 }
 
 // New creates a new service.

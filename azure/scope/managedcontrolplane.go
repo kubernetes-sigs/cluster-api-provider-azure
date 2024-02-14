@@ -669,6 +669,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 		managedClusterSpec.SecurityProfile = s.getManagedClusterSecurityProfile()
 	}
 
+	if s.ControlPlane.Spec.EnablePreviewFeatures != nil {
+		managedClusterSpec.Preview = *s.ControlPlane.Spec.EnablePreviewFeatures
+	}
+
 	return &managedClusterSpec
 }
 

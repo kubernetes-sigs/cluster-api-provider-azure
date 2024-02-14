@@ -235,6 +235,10 @@ type AzureManagedControlPlaneClassSpec struct {
 	// SecurityProfile defines the security profile for cluster.
 	// +optional
 	SecurityProfile *ManagedClusterSecurityProfile `json:"securityProfile,omitempty"`
+
+	// EnablePreviewFeatures enables preview features for the cluster.
+	// +optional
+	EnablePreviewFeatures *bool `json:"enablePreviewFeatures,omitempty"`
 }
 
 // ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.

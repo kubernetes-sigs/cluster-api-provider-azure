@@ -239,7 +239,19 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 		}
 	}
 
+	if managedControlPlane.Spec.EnablePreviewFeatures != nil {
+		agentPoolSpec.Preview = *managedControlPlane.Spec.EnablePreviewFeatures
+	}
+
 	return agentPoolSpec
+}
+
+// GetEnablePreviewFeatures returns the value of the EnablePreviewFeatures field from the AzureManagedControlPlane.
+func (s *ManagedMachinePoolScope) GetEnablePreviewFeatures() bool {
+	if s.ControlPlane.Spec.EnablePreviewFeatures == nil {
+		return false
+	}
+	return *s.ControlPlane.Spec.EnablePreviewFeatures
 }
 
 // SetAgentPoolProviderIDList sets a list of agent pool's Azure VM IDs.

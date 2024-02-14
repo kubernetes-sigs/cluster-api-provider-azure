@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AKSExtensionSpec defines the specification for an AKS Extension.
@@ -54,7 +55,7 @@ func (s *AKSExtensionSpec) ResourceRef() *asokubernetesconfigurationv1.Extension
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *AKSExtensionSpec) Parameters(ctx context.Context, existingAKSExtension *asokubernetesconfigurationv1.Extension) (parameters *asokubernetesconfigurationv1.Extension, err error) {
+func (s *AKSExtensionSpec) Parameters(ctx context.Context, existingAKSExtension *asokubernetesconfigurationv1.Extension) (parameters client.Object, err error) {
 	aksExtension := &asokubernetesconfigurationv1.Extension{}
 	if existingAKSExtension != nil {
 		aksExtension = existingAKSExtension

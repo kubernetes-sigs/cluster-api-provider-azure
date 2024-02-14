@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AzureFleetsMemberSpec defines the specification for an Azure Fleets Member.
@@ -47,7 +48,7 @@ func (s *AzureFleetsMemberSpec) ResourceRef() *asocontainerservicev1.FleetsMembe
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *AzureFleetsMemberSpec) Parameters(ctx context.Context, existingFleetsMember *asocontainerservicev1.FleetsMember) (parameters *asocontainerservicev1.FleetsMember, err error) {
+func (s *AzureFleetsMemberSpec) Parameters(ctx context.Context, existingFleetsMember *asocontainerservicev1.FleetsMember) (parameters client.Object, err error) {
 	fleetsMember := &asocontainerservicev1.FleetsMember{}
 	if existingFleetsMember != nil {
 		fleetsMember = existingFleetsMember

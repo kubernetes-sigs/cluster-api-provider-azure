@@ -149,7 +149,8 @@ func TestAzureAKSExtensionSpec_Parameters(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
-			tc.expect(g, *result)
+			actualResult := result.(*asokubernetesconfigurationv1.Extension)
+			tc.expect(g, *actualResult)
 		})
 	}
 }
