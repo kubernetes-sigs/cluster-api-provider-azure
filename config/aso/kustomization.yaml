@@ -13,27 +13,18 @@ patches:
       kind: Namespace
       metadata:
         name: azureserviceoperator-system
-  - patch: |- # CAPZ will manage ASO's CRDs
+  - patch: |-
       - op: test
         path: /spec/template/spec/containers/0/args/4
         value: --crd-pattern=
+      - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
+        path: /spec/template/spec/containers/0/args/4
+        value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
     target:
       group: apps
       version: v1
       kind: Deployment
       name: azureserviceoperator-controller-manager
-  - patch: |- # remove permissions to manage CRDs
-      $patch: delete
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRole
-      metadata:
-        name: azureserviceoperator-crd-manager-role
-  - patch: |-
-      $patch: delete
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
-      metadata:
-        name: azureserviceoperator-crd-manager-rolebinding
 
 replacements:
   - source:
