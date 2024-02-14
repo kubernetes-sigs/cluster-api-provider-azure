@@ -163,7 +163,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 
 	if t, ok := spec.(TagsGetterSetter[T]); ok {
-		if err := reconcileTags(t, existing, resourceExists, parameters); err != nil {
+		if err := reconcileTags(t, existing, resourceExists, parameters.(T)); err != nil {
 			return zero, errors.Wrap(err, "failed to reconcile tags")
 		}
 	}
@@ -221,7 +221,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		return existing, nil
 	}
 	log.V(2).Info("creating or updating resource", "diff", cmp.Diff(existing, parameters))
-	return r.createOrUpdateResource(ctx, existing, parameters, resourceExists, serviceName)
+	return r.createOrUpdateResource(ctx, existing, parameters.(T), resourceExists, serviceName)
 }
 
 func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters T, resourceExists bool, serviceName string) (T, error) {

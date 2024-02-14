@@ -19,7 +19,9 @@ package agentpools
 import (
 	"context"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // KubeletConfig defines the set of kubelet configurations for nodes in pools.
@@ -58,6 +61,8 @@ type KubeletConfig struct {
 
 // AgentPoolSpec contains agent pool specification details.
 type AgentPoolSpec struct {
+	Preview bool
+
 	// Name is the name of the ASO ManagedClustersAgentPool resource.
 	Name string
 
@@ -177,7 +182,7 @@ func (s *AgentPoolSpec) getManagedMachinePoolVersion(existing *asocontainerservi
 }
 
 // Parameters returns the parameters for the agent pool.
-func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerservicev1.ManagedClustersAgentPool) (params *asocontainerservicev1.ManagedClustersAgentPool, err error) {
+func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerservicev1.ManagedClustersAgentPool) (params client.Object, err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "agentpools.Service.Parameters")
 	defer done()
 
@@ -296,6 +301,20 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 	// on difference in count.
 	if s.EnableAutoScaling && agentPool.Status.Count != nil {
 		agentPool.Spec.Count = agentPool.Status.Count
+	}
+
+	if s.Preview {
+		hub := &asocontainerservicehub.ManagedClustersAgentPool{}
+		err := agentPool.ConvertTo(hub)
+		if err != nil {
+			return nil, err
+		}
+		prev := &asocontainerservicev1preview.ManagedClustersAgentPool{}
+		err = prev.ConvertFrom(hub)
+		if err != nil {
+			return nil, err
+		}
+		return prev, nil
 	}
 
 	return agentPool, nil

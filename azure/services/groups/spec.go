@@ -24,6 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // GroupSpec defines the specification for a Resource Group.
@@ -44,7 +45,7 @@ func (s *GroupSpec) ResourceRef() *asoresourcesv1.ResourceGroup {
 }
 
 // Parameters implements aso.ResourceSpecGetter.
-func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.ResourceGroup) (client.Object, error) {
 	if existing != nil {
 		return existing, nil
 	}
