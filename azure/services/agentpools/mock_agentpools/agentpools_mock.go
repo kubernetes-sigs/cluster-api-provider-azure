@@ -170,6 +170,20 @@ func (mr *MockAgentPoolScopeMockRecorder) GetClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockAgentPoolScope)(nil).GetClient))
 }
 
+// GetEnablePreviewFeatures mocks base method.
+func (m *MockAgentPoolScope) GetEnablePreviewFeatures() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEnablePreviewFeatures")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GetEnablePreviewFeatures indicates an expected call of GetEnablePreviewFeatures.
+func (mr *MockAgentPoolScopeMockRecorder) GetEnablePreviewFeatures() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnablePreviewFeatures", reflect.TypeOf((*MockAgentPoolScope)(nil).GetEnablePreviewFeatures))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockAgentPoolScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
 	m.ctrl.T.Helper()

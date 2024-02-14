@@ -2249,10 +2249,10 @@ func (m *MockASOResourceSpecGetter[T]) EXPECT() *MockASOResourceSpecGetterMockRe
 }
 
 // Parameters mocks base method.
-func (m *MockASOResourceSpecGetter[T]) Parameters(ctx context.Context, existing T) (T, error) {
+func (m *MockASOResourceSpecGetter[T]) Parameters(ctx context.Context, existing T) (client.Object, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parameters", ctx, existing)
-	ret0, _ := ret[0].(T)
+	ret0, _ := ret[0].(client.Object)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -293,6 +293,10 @@ spec:
                   DNS service. It must be within the Kubernetes service address range
                   specified in serviceCidr. Immutable.
                 type: string
+              enablePreviewFeatures:
+                description: EnablePreviewFeatures enables preview features for the
+                  cluster.
+                type: boolean
               extensions:
                 description: Extensions is a list of AKS extensions to be installed
                   on the cluster.
