@@ -214,6 +214,7 @@ func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (pa
 	case armcompute.OrchestrationModeFlexible: // VMSS Flex, VMs are treated as individual virtual machines
 		vmss.Properties.VirtualMachineProfile.NetworkProfile.NetworkAPIVersion =
 			ptr.To(armcompute.NetworkAPIVersionTwoThousandTwenty1101)
+		vmss.Properties.PlatformFaultDomainCount = ptr.To[int32](1)
 	}
 
 	if s.PlatformFaultDomainCount != nil {
