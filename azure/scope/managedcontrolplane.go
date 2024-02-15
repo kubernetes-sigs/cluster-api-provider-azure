@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"strings"
 	"time"
 
@@ -524,8 +525,15 @@ func isManagedVersionUpgrade(managedControlPlane *infrav1.AzureManagedControlPla
 			*managedControlPlane.Spec.AutoUpgradeProfile.UpgradeChannel != infrav1.UpgradeChannelNodeImage)
 }
 
+func ManagedClusterSpec[T aso.DeepCopier[T]](s *ManagedControlPlaneScope) azure.ASOResourceSpecGetter[T] {
+	if Preview {
+		return s.ManagedClusterSpec_Normal()
+	}
+	return ManagedClusterSpec_Preview()
+}
+
 // ManagedClusterSpec returns the managed cluster spec.
-func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
+func (s *ManagedControlPlaneScope) ManagedClusterSpec_Normal() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
 		Name:              s.ControlPlane.Name,
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
