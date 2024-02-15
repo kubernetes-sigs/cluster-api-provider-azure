@@ -248,7 +248,6 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 	var allErrs field.ErrorList
 	validators := []func(client client.Client) field.ErrorList{
 		m.validateSSHKey,
-		m.validateAPIServerAccessProfile,
 		m.validateIdentity,
 		m.validateNetworkPluginMode,
 		m.validateDNSPrefix,
@@ -288,6 +287,7 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 
 	allErrs = append(allErrs, validateNetworkDataplane(m.Spec.NetworkDataplane, m.Spec.NetworkPolicy, m.Spec.NetworkPluginMode, field.NewPath("spec").Child("NetworkDataplane"))...)
 
+	allErrs = append(allErrs, validateAPIServerAccessProfile(m.Spec.APIServerAccessProfile, field.NewPath("spec").Child("APIServerAccessProfile"))...)
 	return allErrs.ToAggregate()
 }
 
@@ -440,19 +440,52 @@ func validateLoadBalancerProfile(loadBalancerProfile *LoadBalancerProfile, fldPa
 }
 
 // validateAPIServerAccessProfile validates an APIServerAccessProfile.
-func (m *AzureManagedControlPlane) validateAPIServerAccessProfile(_ client.Client) field.ErrorList {
-	if m.Spec.APIServerAccessProfile != nil {
-		var allErrs field.ErrorList
-		for _, ipRange := range m.Spec.APIServerAccessProfile.AuthorizedIPRanges {
+func validateAPIServerAccessProfile(apiServerAccessProfile *APIServerAccessProfile, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if apiServerAccessProfile != nil {
+		for _, ipRange := range apiServerAccessProfile.AuthorizedIPRanges {
 			if _, _, err := net.ParseCIDR(ipRange); err != nil {
-				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "APIServerAccessProfile", "AuthorizedIPRanges"), ipRange, "invalid CIDR format"))
+				allErrs = append(allErrs, field.Invalid(fldPath, ipRange, "invalid CIDR format"))
 			}
 		}
-		if len(allErrs) > 0 {
-			return allErrs
+
+		// privateDNSZone should either be "System" or "None" or the private dns zone name should be in either of these
+		// formats: 'private.<location>.azmk8s.io,privatelink.<location>.azmk8s.io,[a-zA-Z0-9-]{1,32}.private.<location>.azmk8s.io,
+		// [a-zA-Z0-9-]{1,32}.privatelink.<location>.azmk8s.io'. The validation below follows the guidelines mentioned at
+		// https://learn.microsoft.com/azure/aks/private-clusters?tabs=azure-portal#configure-a-private-dns-zone.
+		// Performing a lower case comparison to avoid case sensitivity.
+		if apiServerAccessProfile.PrivateDNSZone != nil {
+			privateDNSZone := strings.ToLower(ptr.Deref(apiServerAccessProfile.PrivateDNSZone, ""))
+			if !strings.EqualFold(strings.ToLower(privateDNSZone), "system") &&
+				!strings.EqualFold(strings.ToLower(privateDNSZone), "none") {
+				// Extract substring starting from "privatednszones/"
+				startIndex := strings.Index(strings.ToLower(privateDNSZone), "privatednszones/")
+				if startIndex == -1 {
+					allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZone, "invalid private DNS zone"))
+					return allErrs
+				}
+
+				// Private DNS Zones can only be used by private clusters.
+				if !ptr.Deref(apiServerAccessProfile.EnablePrivateCluster, false) {
+					allErrs = append(allErrs, field.Invalid(fldPath, apiServerAccessProfile.EnablePrivateCluster, "Private Cluster should be enabled to use PrivateDNSZone"))
+					return allErrs
+				}
+
+				extractedPrivateDNSZone := privateDNSZone[startIndex+len("privatednszones/"):]
+
+				patternWithLocation := `^(privatelink|private)\.[a-zA-Z0-9]+\.(azmk8s\.io)$`
+				locationRegex := regexp.MustCompile(patternWithLocation)
+				patternWithSubzone := `^[a-zA-Z0-9-]{1,32}\.(privatelink|private)\.[a-zA-Z0-9]+\.(azmk8s\.io)$`
+				subzoneRegex := regexp.MustCompile(patternWithSubzone)
+
+				// check if privateDNSZone is a valid resource ID
+				if !locationRegex.MatchString(extractedPrivateDNSZone) && !subzoneRegex.MatchString(extractedPrivateDNSZone) {
+					allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZone, "invalid privateDnsZone resource ID. Each label the private dns zone name should be in either of these formats: 'private.<location>.azmk8s.io,privatelink.<location>.azmk8s.io,[a-zA-Z0-9-]{1,32}.private.<location>.azmk8s.io,[a-zA-Z0-9-]{1,32}.privatelink.<location>.azmk8s.io'"))
+				}
+			}
 		}
 	}
-	return nil
+	return allErrs
 }
 
 // validateManagedClusterNetwork validates the Cluster network values.

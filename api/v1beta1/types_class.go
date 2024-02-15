@@ -410,7 +410,6 @@ type APIServerAccessProfileClassSpec struct {
 	EnablePrivateCluster *bool `json:"enablePrivateCluster,omitempty"`
 
 	// PrivateDNSZone enables private dns zone mode for private cluster.
-	// +kubebuilder:validation:Enum=System;None
 	// +optional
 	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
 
