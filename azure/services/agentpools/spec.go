@@ -18,6 +18,7 @@ package agentpools
 
 import (
 	"context"
+	"fmt"
 
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -61,6 +62,7 @@ type KubeletConfig struct {
 
 // AgentPoolSpec contains agent pool specification details.
 type AgentPoolSpec struct {
+	// Preview indicates whether the agent pool is using a preview version of ASO.
 	Preview bool
 
 	// Name is the name of the ASO ManagedClustersAgentPool resource.
@@ -304,6 +306,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 	}
 
 	if s.Preview {
+		fmt.Println("WILLIE convert agent pool to preview")
 		hub := &asocontainerservicehub.ManagedClustersAgentPool{}
 		err := agentPool.ConvertTo(hub)
 		if err != nil {

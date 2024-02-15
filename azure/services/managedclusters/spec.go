@@ -42,7 +42,9 @@ import (
 
 // ManagedClusterSpec contains properties to create a managed cluster.
 type ManagedClusterSpec struct {
+	// Preview indicates whether the managed cluster is using a preview version of ASO.
 	Preview bool
+
 	// Name is the name of this AKS Cluster.
 	Name string
 
@@ -651,6 +653,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 
 	var prev *asocontainerservicev1preview.ManagedCluster
 	if s.Preview {
+		fmt.Println("WILLIE Convert to preview")
 		hub := &asocontainerservicehub.ManagedCluster{}
 		err := managedCluster.ConvertTo(hub)
 		if err != nil {
@@ -680,6 +683,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			}
 			agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
 			if s.Preview {
+				fmt.Printf("WILLIE Convert to preview %s\n", agentPoolSpecTyped.AzureName)
 				agentPoolTyped := agentPool.(*asocontainerservicev1preview.ManagedClustersAgentPool)
 				agentPoolTyped.Spec.AzureName = agentPoolSpecTyped.AzureName
 				profile := converters.AgentPoolToManagedClusterAgentPoolProfilePreview(agentPoolTyped)

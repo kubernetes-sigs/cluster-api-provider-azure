@@ -157,8 +157,12 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	parameters.SetName(resourceName)
 	parameters.SetNamespace(resourceNamespace)
+	_, ok := parameters.(T)
+	if !ok {
+		return zero, errors.Errorf("failed to cast parameters from %T to %T", parameters, zero)
+	}
 
-	if err := controllerutil.SetControllerReference(r.owner, parameters, r.Client.Scheme()); err != nil {
+	if err := controllerutil.SetControllerReference(r.owner, parameters.(T), r.Client.Scheme()); err != nil {
 		return zero, errors.Wrap(err, "failed to set owner ref")
 	}
 
