@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -47,10 +48,10 @@ const (
 )
 
 // ManagedClusterScope defines the scope interface for a managed cluster.
-type ManagedClusterScope interface {
+type ManagedClusterScope[T aso.DeepCopier[T]] interface {
 	aso.Scope
 	azure.Authorizer
-	ManagedClusterSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster]
+	ManagedClusterSpec() azure.ASOResourceSpecGetter[T]
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetAdminKubeconfigData() []byte
@@ -67,10 +68,27 @@ type ManagedClusterScope interface {
 	IsManagedVersionUpgrade() bool
 }
 
+func New[T aso.DeepCopier[T], S ManagedClusterScope[T]](name string, scope S) *aso.Service[T, S] {
+	return newPreview(scope)
+	// if preview {
+	// 	return newPreview(scope)
+	// }
+	// return new(scope)
+}
+
 // New creates a new service.
-func New(scope ManagedClusterScope) *aso.Service[*asocontainerservicev1.ManagedCluster, ManagedClusterScope] {
+func new(scope ManagedClusterScope[*asocontainerservicev1.ManagedCluster]) *aso.Service[*asocontainerservicev1.ManagedCluster, ManagedClusterScope[*asocontainerservicev1.ManagedCluster]] {
 	svc := aso.NewService[*asocontainerservicev1.ManagedCluster](serviceName, scope)
 	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster]{scope.ManagedClusterSpec()}
+	svc.ConditionType = infrav1.ManagedClusterRunningCondition
+	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
+	return svc
+}
+
+// New creates a new service.
+func newPreview(scope ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]) *aso.Service[*asocontainerservicev1preview.ManagedCluster, ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]] {
+	svc := aso.NewService[*asocontainerservicev1preview.ManagedCluster](serviceName, scope)
+	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.ManagedCluster]{scope.ManagedClusterSpec()}
 	svc.ConditionType = infrav1.ManagedClusterRunningCondition
 	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
 	return svc
