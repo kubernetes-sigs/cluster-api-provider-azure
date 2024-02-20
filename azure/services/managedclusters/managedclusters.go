@@ -68,8 +68,8 @@ type ManagedClusterScope[T aso.DeepCopier[T]] interface {
 	IsManagedVersionUpgrade() bool
 }
 
-func New[T aso.DeepCopier[T], S ManagedClusterScope[T]](name string, scope S) *aso.Service[T, S] {
-	return newPreview(scope)
+func New[T aso.DeepCopier[T], S ManagedClusterScope[T]](scope S) *aso.Service[T, S] {
+	return newPreview[T](scope).(*aso.Service[T, S])
 	// if preview {
 	// 	return newPreview(scope)
 	// }
@@ -77,24 +77,71 @@ func New[T aso.DeepCopier[T], S ManagedClusterScope[T]](name string, scope S) *a
 }
 
 // New creates a new service.
-func new(scope ManagedClusterScope[*asocontainerservicev1.ManagedCluster]) *aso.Service[*asocontainerservicev1.ManagedCluster, ManagedClusterScope[*asocontainerservicev1.ManagedCluster]] {
-	svc := aso.NewService[*asocontainerservicev1.ManagedCluster](serviceName, scope)
-	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster]{scope.ManagedClusterSpec()}
-	svc.ConditionType = infrav1.ManagedClusterRunningCondition
-	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
-	return svc
-}
+// func new(scope ManagedClusterScope[*asocontainerservicev1.ManagedCluster]) *aso.Service[*asocontainerservicev1.ManagedCluster, ManagedClusterScope[*asocontainerservicev1.ManagedCluster]] {
+// 	svc := aso.NewService[*asocontainerservicev1.ManagedCluster](serviceName, scope)
+// 	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster]{scope.ManagedClusterSpec()}
+// 	svc.ConditionType = infrav1.ManagedClusterRunningCondition
+// 	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
+// 	return svc
+// }
 
 // New creates a new service.
-func newPreview(scope ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]) *aso.Service[*asocontainerservicev1preview.ManagedCluster, ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]] {
-	svc := aso.NewService[*asocontainerservicev1preview.ManagedCluster](serviceName, scope)
-	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.ManagedCluster]{scope.ManagedClusterSpec()}
+func newPreview[T aso.DeepCopier[T]](scope ManagedClusterScope[T]) interface{} {
+	managedClusterScope := scope.(ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster])
+	svc := aso.NewService[*asocontainerservicev1preview.ManagedCluster, ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]](serviceName, managedClusterScope)
+	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.ManagedCluster]{managedClusterScope.ManagedClusterSpec()}
 	svc.ConditionType = infrav1.ManagedClusterRunningCondition
-	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
+	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHookPreview
 	return svc
 }
 
-func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterScope, managedCluster *asocontainerservicev1.ManagedCluster, err error) error {
+func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterScope[*asocontainerservicev1.ManagedCluster], managedCluster *asocontainerservicev1.ManagedCluster, err error) error {
+	if err != nil {
+		return err
+	}
+
+	// Update control plane endpoint.
+	endpoint := clusterv1.APIEndpoint{
+		Host: ptr.Deref(managedCluster.Status.Fqdn, ""),
+		Port: 443,
+	}
+	if managedCluster.Status.ApiServerAccessProfile != nil &&
+		ptr.Deref(managedCluster.Status.ApiServerAccessProfile.EnablePrivateCluster, false) &&
+		!ptr.Deref(managedCluster.Status.ApiServerAccessProfile.EnablePrivateClusterPublicFQDN, false) {
+		endpoint = clusterv1.APIEndpoint{
+			Host: ptr.Deref(managedCluster.Status.PrivateFQDN, ""),
+			Port: 443,
+		}
+	}
+	scope.SetControlPlaneEndpoint(endpoint)
+
+	// Update kubeconfig data
+	// Always fetch credentials in case of rotation
+	adminKubeConfigData, userKubeConfigData, err := reconcileKubeconfig(ctx, scope, managedCluster.Namespace)
+	if err != nil {
+		return errors.Wrap(err, "error while reconciling kubeconfigs")
+	}
+	scope.SetAdminKubeconfigData(adminKubeConfigData)
+	scope.SetUserKubeconfigData(userKubeConfigData)
+
+	scope.SetOIDCIssuerProfileStatus(nil)
+	if managedCluster.Status.OidcIssuerProfile != nil && managedCluster.Status.OidcIssuerProfile.IssuerURL != nil {
+		scope.SetOIDCIssuerProfileStatus(&infrav1.OIDCIssuerProfileStatus{
+			IssuerURL: managedCluster.Status.OidcIssuerProfile.IssuerURL,
+		})
+	}
+	if managedCluster.Status.CurrentKubernetesVersion != nil {
+		currentKubernetesVersion := fmt.Sprintf("v%s", *managedCluster.Status.CurrentKubernetesVersion)
+		scope.SetVersionStatus(currentKubernetesVersion)
+		if scope.IsManagedVersionUpgrade() {
+			scope.SetAutoUpgradeVersionStatus(currentKubernetesVersion)
+		}
+	}
+
+	return nil
+}
+
+func postCreateOrUpdateResourceHookPreview(ctx context.Context, scope ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster], managedCluster *asocontainerservicev1preview.ManagedCluster, err error) error {
 	if err != nil {
 		return err
 	}
@@ -149,7 +196,7 @@ func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterSco
   The token is used to create the admin kubeconfig.
   The user needs to ensure to provide service principal with admin AAD privileges.
 */
-func reconcileKubeconfig(ctx context.Context, scope ManagedClusterScope, namespace string) (adminKubeConfigData []byte, userKubeConfigData []byte, err error) {
+func reconcileKubeconfig[T aso.DeepCopier[T], S ManagedClusterScope[T]](ctx context.Context, scope S, namespace string) (adminKubeConfigData []byte, userKubeConfigData []byte, err error) {
 	if scope.IsAADEnabled() {
 		if userKubeConfigData, err = getUserKubeconfigData(ctx, scope, namespace); err != nil {
 			return nil, nil, errors.Wrap(err, "error while trying to get user kubeconfig")
@@ -181,7 +228,7 @@ func reconcileKubeconfig(ctx context.Context, scope ManagedClusterScope, namespa
 }
 
 // getUserKubeconfigData gets user kubeconfig when aad is enabled for the aad clusters.
-func getUserKubeconfigData(ctx context.Context, scope ManagedClusterScope, namespace string) ([]byte, error) {
+func getUserKubeconfigData[T aso.DeepCopier[T], S ManagedClusterScope[T]](ctx context.Context, scope S, namespace string) ([]byte, error) {
 	asoSecret := &corev1.Secret{}
 	err := scope.GetClient().Get(
 		ctx,
