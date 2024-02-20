@@ -226,6 +226,8 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 
 	allErrs = append(allErrs, validateNetworkDataplane(mcp.Spec.Template.Spec.NetworkDataplane, mcp.Spec.Template.Spec.NetworkPolicy, mcp.Spec.Template.Spec.NetworkPluginMode, field.NewPath("spec").Child("template").Child("spec").Child("NetworkDataplane"))...)
 
+	allErrs = append(allErrs, validateAPIServerAccessProfile(mcp.Spec.Template.Spec.APIServerAccessProfile, field.NewPath("spec").Child("template").Child("spec").Child("APIServerAccessProfile"))...)
+
 	return allErrs.ToAggregate()
 }
 

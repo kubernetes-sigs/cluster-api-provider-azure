@@ -128,9 +128,6 @@ spec:
                   privateDNSZone:
                     description: PrivateDNSZone enables private dns zone mode for
                       private cluster.
-                    enum:
-                    - System
-                    - None
                     type: string
                 type: object
               autoUpgradeProfile:

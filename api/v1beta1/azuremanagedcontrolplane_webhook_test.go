@@ -3854,3 +3854,152 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAPIServerAccessProfile(t *testing.T) {
+	tests := []struct {
+		name      string
+		profile   *APIServerAccessProfile
+		expectErr bool
+	}{
+		{
+			name: "Testing valid PrivateDNSZone:System",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					PrivateDNSZone: ptr.To("System"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid PrivateDNSZone:None",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					PrivateDNSZone: ptr.To("None"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid PrivateDNSZone:With privatelink region",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/privatelink.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid PrivateDNSZone:With private region",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/private.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid EnablePrivateCluster and valid PrivateDNSZone",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(false),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/private.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing valid PrivateDNSZone:With privatelink region and sub-region",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/sublocation2.privatelink.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing valid PrivateDNSZone:With private region and sub-region",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/sublocation2.private.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: privatelink region: len(sub-region) > 32 characters",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/thissublocationismorethan32characters.privatelink.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: private region: len(sub-region) > 32 characters",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/thissublocationismorethan32characters.private.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: random string",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("WrongPrivateDNSZone"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: subzone has an invalid char %",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/subzone%1.privatelink.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: subzone has an invalid char _",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/subzone_1.privatelink.eastus.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Testing invalid PrivateDNSZone: region has invalid char",
+			profile: &APIServerAccessProfile{
+				APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+					EnablePrivateCluster: ptr.To(true),
+					PrivateDNSZone:       ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/subzone1.privatelink.location@1.azmk8s.io"),
+				},
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := validateAPIServerAccessProfile(tc.profile, field.NewPath("profile"))
+			if tc.expectErr {
+				g.Expect(len(err)).To(BeNumerically("==", 1))
+			} else {
+				g.Expect(err).To(BeNil())
+			}
+		})
+	}
+}
