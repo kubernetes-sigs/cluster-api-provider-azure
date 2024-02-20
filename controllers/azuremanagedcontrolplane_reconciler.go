@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
@@ -52,19 +53,28 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	if err != nil {
 		return nil, err
 	}
+
+	services := []azure.ServiceReconciler{
+		groups.New(scope),
+		virtualnetworks.New(scope),
+		subnets.New(scope),
+		managedclusters.New[*asocontainerservicev1.ManagedCluster, managedclusters.ManagedClusterScope[*asocontainerservicev1.ManagedCluster]](scope),
+		privateendpoints.New(scope),
+		fleetsmembers.New(scope),
+		aksextensions.New(scope),
+		resourceHealthSvc,
+	}
+
+	if scope.ControlPlane.Spec.EnablePreviewFeatures != nil && *scope.ControlPlane.Spec.EnablePreviewFeatures {
+		services = append(services, managedclusters.New[*asocontainerservicev1preview.ManagedCluster, managedclusters.ManagedClusterScope[*asocontainerservicev1preview.ManagedCluster]](scope))
+	} else {
+		services = append(services, managedclusters.New[*asocontainerservicev1.ManagedCluster, managedclusters.ManagedClusterScope[*asocontainerservicev1.ManagedCluster]](scope))
+	}
+
 	return &azureManagedControlPlaneService{
 		kubeclient: scope.Client,
 		scope:      scope,
-		services: []azure.ServiceReconciler{
-			groups.New(scope),
-			virtualnetworks.New(scope),
-			subnets.New(scope),
-			managedclusters.New[*asocontainerservicev1.ManagedCluster, managedclusters.ManagedClusterScope[*asocontainerservicev1.ManagedCluster]](scope),
-			privateendpoints.New(scope),
-			fleetsmembers.New(scope),
-			aksextensions.New(scope),
-			resourceHealthSvc,
-		},
+		services:   services,
 	}, nil
 }
 
