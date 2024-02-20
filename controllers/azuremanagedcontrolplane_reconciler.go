@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -41,7 +42,7 @@ import (
 // azureManagedControlPlaneService contains the services required by the cluster controller.
 type azureManagedControlPlaneService struct {
 	kubeclient client.Client
-	scope      managedclusters.ManagedClusterScope
+	scope      managedclusters.ManagedClusterScope[*asocontainerservicev1.ManagedCluster]
 	services   []azure.ServiceReconciler
 }
 
@@ -58,7 +59,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 			groups.New(scope),
 			virtualnetworks.New(scope),
 			subnets.New(scope),
-			managedclusters.New(scope),
+			managedclusters.New[*asocontainerservicev1.ManagedCluster, managedclusters.ManagedClusterScope[*asocontainerservicev1.ManagedCluster]](scope),
 			privateendpoints.New(scope),
 			fleetsmembers.New(scope),
 			aksextensions.New(scope),

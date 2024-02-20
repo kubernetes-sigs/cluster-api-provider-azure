@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	asocontainerservicev1preview2 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
@@ -42,7 +41,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aksextensions"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/fleetsmembers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
@@ -526,15 +524,8 @@ func isManagedVersionUpgrade(managedControlPlane *infrav1.AzureManagedControlPla
 			*managedControlPlane.Spec.AutoUpgradeProfile.UpgradeChannel != infrav1.UpgradeChannelNodeImage)
 }
 
-func ManagedClusterSpec[T aso.DeepCopier[T]](s *ManagedControlPlaneScope) azure.ASOResourceSpecGetter[T] {
-	if s.ControlPlane.Spec.EnablePreviewFeatures != nil && *s.ControlPlane.Spec.EnablePreviewFeatures {
-		return s.ManagedClusterSpecPreview().(azure.ASOResourceSpecGetter[T])
-	}
-	return s.ManagedClusterSpecStable().(azure.ASOResourceSpecGetter[T])
-}
-
 // ManagedClusterSpec returns the managed cluster spec.
-func (s *ManagedControlPlaneScope) ManagedClusterSpecStable() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
+func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedCluster] {
 	managedClusterSpec := managedclusters.ManagedClusterSpec{
 		Name:              s.ControlPlane.Name,
 		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
@@ -676,162 +667,6 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpecStable() azure.ASOResourceS
 
 	if s.ControlPlane.Spec.SecurityProfile != nil {
 		managedClusterSpec.SecurityProfile = s.getManagedClusterSecurityProfile()
-	}
-
-	if s.ControlPlane.Spec.EnablePreviewFeatures != nil {
-		managedClusterSpec.Preview = *s.ControlPlane.Spec.EnablePreviewFeatures
-	}
-
-	return &managedClusterSpec
-}
-
-// ManagedClusterSpec returns the managed cluster spec.
-func (s *ManagedControlPlaneScope) ManagedClusterSpecPreview() azure.ASOResourceSpecGetter[*asocontainerservicev1preview2.ManagedCluster] {
-	managedClusterSpec := managedclusters.ManagedClusterSpec{
-		Name:              s.ControlPlane.Name,
-		ResourceGroup:     s.ControlPlane.Spec.ResourceGroupName,
-		NodeResourceGroup: s.ControlPlane.Spec.NodeResourceGroupName,
-		ClusterName:       s.ClusterName(),
-		Location:          s.ControlPlane.Spec.Location,
-		Tags:              s.ControlPlane.Spec.AdditionalTags,
-		Version:           strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
-		DNSServiceIP:      s.ControlPlane.Spec.DNSServiceIP,
-		VnetSubnetID: azure.SubnetID(
-			s.ControlPlane.Spec.SubscriptionID,
-			s.Vnet().ResourceGroup,
-			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-		),
-		GetAllAgentPools:            s.GetAllAgentPoolSpecs,
-		OutboundType:                s.ControlPlane.Spec.OutboundType,
-		Identity:                    s.ControlPlane.Spec.Identity,
-		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
-		NetworkPluginMode:           s.ControlPlane.Spec.NetworkPluginMode,
-		DNSPrefix:                   s.ControlPlane.Spec.DNSPrefix,
-	}
-
-	if s.ControlPlane.Spec.SSHPublicKey != nil {
-		managedClusterSpec.SSHPublicKey = *s.ControlPlane.Spec.SSHPublicKey
-	}
-	if s.ControlPlane.Spec.NetworkPlugin != nil {
-		managedClusterSpec.NetworkPlugin = *s.ControlPlane.Spec.NetworkPlugin
-	}
-	if s.ControlPlane.Spec.NetworkPolicy != nil {
-		managedClusterSpec.NetworkPolicy = *s.ControlPlane.Spec.NetworkPolicy
-	}
-	if s.ControlPlane.Spec.NetworkDataplane != nil {
-		managedClusterSpec.NetworkDataplane = s.ControlPlane.Spec.NetworkDataplane
-	}
-	if s.ControlPlane.Spec.LoadBalancerSKU != nil {
-		// CAPZ accepts Standard/Basic, Azure accepts standard/basic
-		managedClusterSpec.LoadBalancerSKU = strings.ToLower(*s.ControlPlane.Spec.LoadBalancerSKU)
-	}
-
-	if clusterNetwork := s.Cluster.Spec.ClusterNetwork; clusterNetwork != nil {
-		if clusterNetwork.Services != nil && len(clusterNetwork.Services.CIDRBlocks) == 1 {
-			managedClusterSpec.ServiceCIDR = clusterNetwork.Services.CIDRBlocks[0]
-		}
-		if clusterNetwork.Pods != nil && len(clusterNetwork.Pods.CIDRBlocks) == 1 {
-			managedClusterSpec.PodCIDR = clusterNetwork.Pods.CIDRBlocks[0]
-		}
-	}
-
-	if s.ControlPlane.Spec.AADProfile != nil {
-		managedClusterSpec.AADProfile = &managedclusters.AADProfile{
-			Managed:             s.ControlPlane.Spec.AADProfile.Managed,
-			EnableAzureRBAC:     s.ControlPlane.Spec.AADProfile.Managed,
-			AdminGroupObjectIDs: s.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs,
-		}
-		if s.ControlPlane.Spec.DisableLocalAccounts != nil {
-			managedClusterSpec.DisableLocalAccounts = s.ControlPlane.Spec.DisableLocalAccounts
-		}
-	}
-
-	if s.ControlPlane.Spec.AddonProfiles != nil {
-		for _, profile := range s.ControlPlane.Spec.AddonProfiles {
-			managedClusterSpec.AddonProfiles = append(managedClusterSpec.AddonProfiles, managedclusters.AddonProfile{
-				Name:    profile.Name,
-				Enabled: profile.Enabled,
-				Config:  profile.Config,
-			})
-		}
-	}
-
-	if s.ControlPlane.Spec.SKU != nil {
-		managedClusterSpec.SKU = &managedclusters.SKU{
-			Tier: string(s.ControlPlane.Spec.SKU.Tier),
-		}
-	}
-
-	if s.ControlPlane.Spec.LoadBalancerProfile != nil {
-		managedClusterSpec.LoadBalancerProfile = &managedclusters.LoadBalancerProfile{
-			ManagedOutboundIPs:     s.ControlPlane.Spec.LoadBalancerProfile.ManagedOutboundIPs,
-			OutboundIPPrefixes:     s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPPrefixes,
-			OutboundIPs:            s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPs,
-			AllocatedOutboundPorts: s.ControlPlane.Spec.LoadBalancerProfile.AllocatedOutboundPorts,
-			IdleTimeoutInMinutes:   s.ControlPlane.Spec.LoadBalancerProfile.IdleTimeoutInMinutes,
-		}
-	}
-
-	if s.ControlPlane.Spec.APIServerAccessProfile != nil {
-		managedClusterSpec.APIServerAccessProfile = &managedclusters.APIServerAccessProfile{
-			AuthorizedIPRanges:             s.ControlPlane.Spec.APIServerAccessProfile.AuthorizedIPRanges,
-			EnablePrivateCluster:           s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateCluster,
-			PrivateDNSZone:                 s.ControlPlane.Spec.APIServerAccessProfile.PrivateDNSZone,
-			EnablePrivateClusterPublicFQDN: s.ControlPlane.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
-		}
-	}
-
-	if s.ControlPlane.Spec.AutoScalerProfile != nil {
-		managedClusterSpec.AutoScalerProfile = &managedclusters.AutoScalerProfile{
-			BalanceSimilarNodeGroups:      (*string)(s.ControlPlane.Spec.AutoScalerProfile.BalanceSimilarNodeGroups),
-			Expander:                      (*string)(s.ControlPlane.Spec.AutoScalerProfile.Expander),
-			MaxEmptyBulkDelete:            s.ControlPlane.Spec.AutoScalerProfile.MaxEmptyBulkDelete,
-			MaxGracefulTerminationSec:     s.ControlPlane.Spec.AutoScalerProfile.MaxGracefulTerminationSec,
-			MaxNodeProvisionTime:          s.ControlPlane.Spec.AutoScalerProfile.MaxNodeProvisionTime,
-			MaxTotalUnreadyPercentage:     s.ControlPlane.Spec.AutoScalerProfile.MaxTotalUnreadyPercentage,
-			NewPodScaleUpDelay:            s.ControlPlane.Spec.AutoScalerProfile.NewPodScaleUpDelay,
-			OkTotalUnreadyCount:           s.ControlPlane.Spec.AutoScalerProfile.OkTotalUnreadyCount,
-			ScanInterval:                  s.ControlPlane.Spec.AutoScalerProfile.ScanInterval,
-			ScaleDownDelayAfterAdd:        s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterAdd,
-			ScaleDownDelayAfterDelete:     s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterDelete,
-			ScaleDownDelayAfterFailure:    s.ControlPlane.Spec.AutoScalerProfile.ScaleDownDelayAfterFailure,
-			ScaleDownUnneededTime:         s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUnneededTime,
-			ScaleDownUnreadyTime:          s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUnreadyTime,
-			ScaleDownUtilizationThreshold: s.ControlPlane.Spec.AutoScalerProfile.ScaleDownUtilizationThreshold,
-			SkipNodesWithLocalStorage:     (*string)(s.ControlPlane.Spec.AutoScalerProfile.SkipNodesWithLocalStorage),
-			SkipNodesWithSystemPods:       (*string)(s.ControlPlane.Spec.AutoScalerProfile.SkipNodesWithSystemPods),
-		}
-	}
-
-	if s.ControlPlane.Spec.HTTPProxyConfig != nil {
-		managedClusterSpec.HTTPProxyConfig = &managedclusters.HTTPProxyConfig{
-			HTTPProxy:  s.ControlPlane.Spec.HTTPProxyConfig.HTTPProxy,
-			HTTPSProxy: s.ControlPlane.Spec.HTTPProxyConfig.HTTPSProxy,
-			NoProxy:    s.ControlPlane.Spec.HTTPProxyConfig.NoProxy,
-			TrustedCA:  s.ControlPlane.Spec.HTTPProxyConfig.TrustedCA,
-		}
-	}
-
-	if s.ControlPlane.Spec.OIDCIssuerProfile != nil {
-		managedClusterSpec.OIDCIssuerProfile = &managedclusters.OIDCIssuerProfile{
-			Enabled: s.ControlPlane.Spec.OIDCIssuerProfile.Enabled,
-		}
-	}
-
-	if s.ControlPlane.Spec.AutoUpgradeProfile != nil {
-		managedClusterSpec.AutoUpgradeProfile = &managedclusters.ManagedClusterAutoUpgradeProfile{}
-		if s.ControlPlane.Spec.AutoUpgradeProfile.UpgradeChannel != nil {
-			managedClusterSpec.AutoUpgradeProfile.UpgradeChannel = s.ControlPlane.Spec.AutoUpgradeProfile.UpgradeChannel
-		}
-	}
-
-	if s.ControlPlane.Spec.SecurityProfile != nil {
-		managedClusterSpec.SecurityProfile = s.getManagedClusterSecurityProfile()
-	}
-
-	if s.ControlPlane.Spec.EnablePreviewFeatures != nil {
-		managedClusterSpec.Preview = *s.ControlPlane.Spec.EnablePreviewFeatures
 	}
 
 	return &managedClusterSpec
