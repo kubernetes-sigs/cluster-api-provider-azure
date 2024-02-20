@@ -77,7 +77,7 @@ CONVERSION_GEN_VER := v0.28.0
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := v2.0.0-20210730161058-179042472c46
+ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v2)
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
@@ -121,7 +121,7 @@ YQ_VER := v4.14.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
-KIND_VER := v0.21.0
+KIND_VER := $(shell go list -m -f '{{.Version}}' sigs.k8s.io/kind)
 KIND_BIN := kind
 KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
