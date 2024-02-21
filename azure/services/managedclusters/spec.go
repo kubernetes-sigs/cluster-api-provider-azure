@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"net"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +42,7 @@ import (
 
 // ManagedClusterSpec contains properties to create a managed cluster.
 type ManagedClusterSpec struct {
+	Preview bool
 	// Name is the name of this AKS Cluster.
 	Name string
 
@@ -772,9 +775,28 @@ func (*ManagedClusterSpec) SetTags(resource *asocontainerservicev1.ManagedCluste
 	resource.Spec.Tags = tags
 }
 
-var _ aso.Patcher = (*ManagedClusterSpec)(nil)
+var _ aso.Converter[*asocontainerservicev1.ManagedCluster] = (*ManagedClusterSpec)(nil)
 
 // ExtraPatches implements aso.Patcher.
 func (s *ManagedClusterSpec) ExtraPatches() []string {
 	return s.Patches
+}
+
+// ConvertTo implements aso.Converter.
+func (s *ManagedClusterSpec) ConvertTo(stable *asocontainerservicev1.ManagedCluster) (genruntime.MetaObject, error) {
+	if !s.Preview {
+		return stable, nil
+	}
+
+	hub := &asocontainerservicev1hub.ManagedCluster{}
+	err := stable.ConvertTo(hub)
+	if err != nil {
+		return nil, err
+	}
+	preview := &asocontainerservicev1preview.ManagedCluster{}
+	err = preview.ConvertFrom(hub)
+	if err != nil {
+		return nil, err
+	}
+	return preview, nil
 }

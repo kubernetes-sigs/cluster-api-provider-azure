@@ -58,7 +58,6 @@ const (
 type deepCopier[T any] interface {
 	genruntime.MetaObject
 	DeepCopy() T
-	SetGroupVersionKind(schema.GroupVersionKind)
 }
 
 // reconciler is an implementation of the Reconciler interface. It handles creation
@@ -156,7 +155,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 
 	// Construct parameters using the resource spec and information from the existing resource, if there is one.
-	parameters, err := PatchedParameters(ctx, r.Scheme(), spec, existing.DeepCopy())
+	parameters, err := spec.Parameters(ctx, existing.DeepCopy())
 	if err != nil {
 		return zero, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", resourceNamespace, resourceName, serviceName)
 	}
@@ -216,7 +215,20 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 	parameters.SetAnnotations(annotations)
 
-	diff := cmp.Diff(existing, parameters)
+	patchedParams, err := applyPatches(r.Scheme(), spec, parameters)
+	if err != nil {
+		return zero, errors.Wrap(err, "failed to apply patches")
+	}
+
+	// existing's type has to match parameters for the diff to be correct
+	var convertedExisting genruntime.MetaObject = existing
+	if converter, ok := spec.(Converter[T]); ok {
+		convertedExisting, err = converter.ConvertTo(existing)
+		if err != nil {
+			return zero, errors.Wrap(err, "failed to convert existing")
+		}
+	}
+	diff := cmp.Diff(convertedExisting, patchedParams)
 	if diff == "" {
 		if readyErr != nil {
 			// Only return this error when the resource is up to date in order to permit updates from
@@ -224,14 +236,15 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			return zero, readyErr
 		}
 		log.V(2).Info("resource up to date")
-		return existing, nil
+		return existing /*non-converted*/, nil
 	}
+
 	log.V(2).Info("creating or updating resource", "diff", diff)
-	return r.createOrUpdateResource(ctx, existing, parameters, resourceExists, serviceName)
+	return r.createOrUpdateResource(ctx, existing, patchedParams, resourceExists, serviceName)
 }
 
 // PatchedParameters returns the Parameters of spec with patches applied.
-func PatchedParameters[T deepCopier[T]](ctx context.Context, scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], existing T) (T, error) {
+func PatchedParameters[T deepCopier[T]](ctx context.Context, scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], existing T) (genruntime.MetaObject, error) {
 	var zero T // to be returned with non-nil errors
 	parameters, err := spec.Parameters(ctx, existing)
 	if err != nil {
@@ -240,19 +253,29 @@ func PatchedParameters[T deepCopier[T]](ctx context.Context, scheme *runtime.Sch
 	return applyPatches(scheme, spec, parameters)
 }
 
-func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], parameters T) (T, error) {
+func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourceSpecGetter[T], unconvertedParameters T) (genruntime.MetaObject, error) {
 	p, ok := spec.(Patcher)
 	if !ok {
-		return parameters, nil
+		return unconvertedParameters, nil
 	}
 
 	var zero T // to be returned with non-nil errors
+
+	var parameters genruntime.MetaObject = unconvertedParameters
+	converter, needsConversion := spec.(Converter[T])
+	if needsConversion {
+		var err error
+		parameters, err = converter.ConvertTo(unconvertedParameters)
+		if err != nil {
+			return zero, err
+		}
+	}
 
 	gvk, err := apiutil.GVKForObject(parameters, scheme)
 	if err != nil {
 		return zero, errors.Wrap(err, "failed to get GroupVersionKind for object")
 	}
-	parameters.SetGroupVersionKind(gvk)
+	parameters.(interface{ SetGroupVersionKind(schema.GroupVersionKind) }).SetGroupVersionKind(gvk)
 	paramData, err := json.Marshal(parameters)
 	if err != nil {
 		return zero, errors.Wrap(err, "failed to marshal JSON for patch")
@@ -275,12 +298,7 @@ func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourc
 		return zero, errors.Wrap(err, "failed to decode object")
 	}
 
-	t, ok := obj.(T)
-	if !ok {
-		return zero, fmt.Errorf("decoded patched object is %T, not %T", obj, parameters)
-	}
-
-	return t, nil
+	return obj.(genruntime.MetaObject), nil
 }
 
 func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters client.Object, resourceExists bool, serviceName string) (T, error) {

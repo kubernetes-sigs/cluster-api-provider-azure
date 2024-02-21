@@ -44,6 +44,14 @@ type Patcher interface {
 	ExtraPatches() []string
 }
 
+// Converter specifies a type that can convert T to some other object, presumably a different API version of
+// the same resource kind. Implementing azure.ASOResourceSpecGetters must continue to return the canonical
+// type from Parameters() and supply changes to the new resource through patches.
+type Converter[T genruntime.MetaObject] interface {
+	Patcher
+	ConvertTo(T) (genruntime.MetaObject, error)
+}
+
 // Scope represents the common functionality related to all scopes needed for ASO services.
 type Scope interface {
 	azure.AsyncStatusUpdater

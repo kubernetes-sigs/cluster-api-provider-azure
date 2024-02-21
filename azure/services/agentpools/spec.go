@@ -19,7 +19,9 @@ package agentpools
 import (
 	"context"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,6 +61,7 @@ type KubeletConfig struct {
 
 // AgentPoolSpec contains agent pool specification details.
 type AgentPoolSpec struct {
+	Preview bool
 	// Name is the name of the ASO ManagedClustersAgentPool resource.
 	Name string
 
@@ -311,9 +314,28 @@ func (s *AgentPoolSpec) WasManaged(resource *asocontainerservicev1.ManagedCluste
 	return true
 }
 
-var _ aso.Patcher = (*AgentPoolSpec)(nil)
+var _ aso.Converter[*asocontainerservicev1.ManagedClustersAgentPool] = (*AgentPoolSpec)(nil)
 
 // ExtraPatches implements aso.Patcher.
 func (s *AgentPoolSpec) ExtraPatches() []string {
 	return s.Patches
+}
+
+// ConvertTo implements aso.Converter.
+func (s *AgentPoolSpec) ConvertTo(stable *asocontainerservicev1.ManagedClustersAgentPool) (genruntime.MetaObject, error) {
+	if !s.Preview {
+		return stable, nil
+	}
+
+	hub := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+	err := stable.ConvertTo(hub)
+	if err != nil {
+		return nil, err
+	}
+	preview := &asocontainerservicev1preview.ManagedClustersAgentPool{}
+	err = preview.ConvertFrom(hub)
+	if err != nil {
+		return nil, err
+	}
+	return preview, nil
 }
