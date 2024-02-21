@@ -343,6 +343,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	return reconcile.Result{}, nil
 }
 
+//nolint:unparam // Always returns an empty struct for reconcile.Result
 func (amr *AzureMachineReconciler) reconcilePause(ctx context.Context, machineScope *scope.MachineScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachine.reconcilePause")
 	defer done()

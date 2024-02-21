@@ -79,7 +79,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 				},
 			})
 
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(result.RequeueAfter).To(BeZero())
 		})
 	})
@@ -349,7 +349,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		},
 	})
 
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(result.RequeueAfter).To(BeZero())
 
 	g.Eventually(recorder.Events).Should(Receive(Equal("Normal ClusterPaused AzureCluster or linked Cluster is marked as paused. Won't reconcile normally")))

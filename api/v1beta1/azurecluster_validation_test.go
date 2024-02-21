@@ -121,7 +121,7 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			_, err := tc.cluster.validateCluster(nil)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }
@@ -148,7 +148,7 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
 		_, err := testCase.cluster.validateCluster(nil)
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 	})
 }
 
@@ -176,7 +176,7 @@ func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			_, err := tc.cluster.validateCluster(nil)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }
@@ -228,7 +228,7 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
-		g.Expect(len(errs)).To(BeNumerically(">", 0))
+		g.Expect(errs).NotTo(BeEmpty())
 	})
 }
 
@@ -271,7 +271,7 @@ func TestClusterSpecWithoutIdentityRefInvalid(t *testing.T) {
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
-		g.Expect(len(errs)).To(BeNumerically(">", 0))
+		g.Expect(errs).NotTo(BeEmpty())
 	})
 }
 
@@ -292,7 +292,7 @@ func TestClusterSpecWithWrongKindInvalid(t *testing.T) {
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
 		errs := testCase.cluster.validateClusterSpec(nil)
-		g.Expect(len(errs)).To(BeNumerically(">", 0))
+		g.Expect(errs).NotTo(BeEmpty())
 	})
 }
 
@@ -404,7 +404,7 @@ func TestResourceGroupValid(t *testing.T) {
 		g := NewWithT(t)
 		err := validateResourceGroup(testCase.resourceGroup,
 			field.NewPath("spec").Child("networkSpec").Child("vnet").Child("resourceGroup"))
-		g.Expect(err).To(BeNil())
+		g.Expect(err).NotTo(HaveOccurred())
 	})
 }
 
@@ -664,7 +664,7 @@ func TestSubnetNameValid(t *testing.T) {
 		g := NewWithT(t)
 		err := validateSubnetName(testCase.subnetName,
 			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("name"))
-		g.Expect(err).To(BeNil())
+		g.Expect(err).NotTo(HaveOccurred())
 	})
 }
 
@@ -815,16 +815,16 @@ func TestValidateSecurityRule(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			err := validateSecurityRule(
+			errs := validateSecurityRule(
 				testCase.validRule,
 				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("securityRules").Index(0),
 			)
 			if testCase.wantErr {
-				g.Expect(err).NotTo(BeNil())
-				g.Expect(len(err)).To(Equal(1))
+				g.Expect(errs).NotTo(BeNil())
+				g.Expect(errs).To(HaveLen(1))
 			} else {
-				g.Expect(err).To(BeNil())
-				g.Expect(len(err)).To(Equal(0))
+				g.Expect(errs).To(BeNil())
+				g.Expect(errs).To(BeEmpty())
 			}
 		})
 	}

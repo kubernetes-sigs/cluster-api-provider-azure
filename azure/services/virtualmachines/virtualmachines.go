@@ -39,6 +39,7 @@ import (
 )
 
 const serviceName = "virtualmachine"
+const vmMissingUAI = "VM is missing expected user assigned identity with client ID: "
 
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
@@ -191,7 +192,7 @@ func (s *Service) checkUserAssignedIdentities(ctx context.Context, specIdentitie
 	for expectedKey := range expectedMap {
 		_, exists := actualMap[expectedKey]
 		if !exists {
-			s.Scope.SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, "VM is missing expected user assigned identity with client ID: "+expectedKey)
+			s.Scope.SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI+expectedKey)
 			return nil
 		}
 	}

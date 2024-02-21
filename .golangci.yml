@@ -9,17 +9,20 @@ linters:
   enable:
     - asasalint
     - asciicheck
+    - bidichk
     - bodyclose
     - containedctx
     - decorder
-    - depguard
     - dogsled
+    - dupword
+    - durationcheck
     - errcheck
     - errchkjson
     - errorlint
     - execinquery
     - exportloopref
     - gci
+    - ginkgolinter
     - goconst
     - gocritic
     - gocyclo
@@ -32,6 +35,7 @@ linters:
     - govet
     - importas
     - ineffassign
+    - loggercheck
     - misspell
     - nakedret
     - nilerr

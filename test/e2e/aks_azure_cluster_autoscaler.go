@@ -108,7 +108,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name, nil)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(aks.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
-		g.Expect(aks.Properties.AutoScalerProfile).ToNot(BeNil())
+		g.Expect(aks.Properties.AutoScalerProfile).NotTo(BeNil())
 		g.Expect(aks.Properties.AutoScalerProfile.Expander).To(Equal(&expectedAksExpander))
 	}, input.WaitIntervals...).Should(Succeed())
 

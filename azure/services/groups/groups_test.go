@@ -159,7 +159,7 @@ func TestIsManaged(t *testing.T) {
 			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
 
 			scheme := runtime.NewScheme()
-			g.Expect(asoresourcesv1.AddToScheme(scheme))
+			g.Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 			ctrlClient := fakeclient.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(test.objects...).

@@ -60,7 +60,7 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			Name:         "Should return a system assigned identity when identity is system assigned",
 			identityType: infrav1.VMIdentitySystemAssigned,
 			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(m).Should(Equal(&armcompute.VirtualMachineIdentity{
 					Type: ptr.To(armcompute.ResourceIdentityTypeSystemAssigned),
 				}))
@@ -71,7 +71,7 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			identityType: infrav1.VMIdentityUserAssigned,
 			uami:         []infrav1.UserAssignedIdentity{{ProviderID: "my-uami-1"}, {ProviderID: "my-uami-2"}},
 			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(m).Should(Equal(&armcompute.VirtualMachineIdentity{
 					Type: ptr.To(armcompute.ResourceIdentityTypeUserAssigned),
 					UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
@@ -93,7 +93,7 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			Name:         "Should return nil if no known identity is specified",
 			identityType: "",
 			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(m).Should(BeNil())
 			},
 		},
@@ -120,7 +120,7 @@ func Test_UserAssignedIdentitiesToVMSDK(t *testing.T) {
 			Name:           "ShouldPopulateWithData",
 			SubjectFactory: sampleSubjectFactory,
 			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(m).Should(Equal(expectedVMSDKObject))
 			},
 		},
@@ -155,7 +155,7 @@ func Test_UserAssignedIdentitiesToVMSSSDK(t *testing.T) {
 			Name:           "ShouldPopulateWithData",
 			SubjectFactory: sampleSubjectFactory,
 			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(m).Should(Equal(expectedVMSSSDKObject))
 			},
 		},

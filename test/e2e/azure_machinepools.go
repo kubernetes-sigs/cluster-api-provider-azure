@@ -143,7 +143,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	selector := labels.NewSelector().Add(*workloadNodeRequirement)
 	nodeList, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(len(nodeList.Items)).NotTo(BeZero())
+	Expect(nodeList.Items).NotTo(BeEmpty())
 	for _, node := range nodeList.Items {
 		for _, taint := range node.Spec.Taints {
 			Expect(taint.Effect).NotTo(BeElementOf(

@@ -250,7 +250,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "fake-machine-pool", Namespace: "fake-ns"}}
 	ctx := context.Background()
 	scheme, err := newScheme()
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	azureMP := &infrav1exp.AzureMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -386,5 +386,5 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 	}
 
 	_, err = rec.Reconcile(ctx, req)
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 }

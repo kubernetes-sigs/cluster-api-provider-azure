@@ -72,7 +72,7 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 				LogWarning(err.Error())
 			}
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(len(input.Cluster.Status.FailureDomains)).To(Equal(len(zones)))
+			g.Expect(input.Cluster.Status.FailureDomains).To(HaveLen(len(zones)))
 			for _, z := range zones {
 				g.Expect(input.Cluster.Status.FailureDomains[z]).NotTo(BeNil())
 			}

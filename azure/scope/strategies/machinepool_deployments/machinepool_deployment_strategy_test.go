@@ -299,7 +299,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			}),
 		},
 		{
-			name:            "if over-provisioned and has delete machine annotation, select those machines machines first followed by newest",
+			name:            "if over-provisioned and has delete machine annotation, select those machines first followed by newest",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.NewestDeletePolicyType}),
 			desiredReplicas: 2,
 			input: map[string]infrav1exp.AzureMachinePoolMachine{

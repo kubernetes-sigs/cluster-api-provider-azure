@@ -361,7 +361,7 @@ func TestParameters(t *testing.T) {
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.OSType).To(Equal(ptr.To(armcompute.OperatingSystemTypesWindows)))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.AdminPassword).Should(HaveLen(123))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.AdminUsername).Should(Equal("capi"))
-				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(BeFalse())
 			},
 			expectedError: "",
 		},
@@ -408,7 +408,7 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
-				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.EncryptionAtHost).To(Equal(true))
+				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.EncryptionAtHost).To(BeTrue())
 			},
 			expectedError: "",
 		},
