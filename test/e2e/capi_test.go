@@ -260,10 +260,10 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 						},
 						InitWithKubernetesVersion:       "v1.26.12",
-						InitWithBinary:                  "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.5/clusterctl-{OS}-{ARCH}",
-						InitWithCoreProvider:            "cluster-api:v1.5.5",
-						InitWithBootstrapProviders:      []string{"kubeadm:v1.5.5"},
-						InitWithControlPlaneProviders:   []string{"kubeadm:v1.5.5"},
+						InitWithBinary:                  "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.6/clusterctl-{OS}-{ARCH}",
+						InitWithCoreProvider:            "cluster-api:v1.5.6",
+						InitWithBootstrapProviders:      []string{"kubeadm:v1.5.6"},
+						InitWithControlPlaneProviders:   []string{"kubeadm:v1.5.6"},
 						InitWithInfrastructureProviders: []string{"azure:v1.10.8"},
 					}
 				})
