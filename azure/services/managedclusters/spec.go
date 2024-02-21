@@ -671,10 +671,20 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get agent pool parameters for managed cluster %s", s.Name)
 			}
-			agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
-			agentPool.Spec.AzureName = agentPoolSpecTyped.AzureName
-			profile := converters.AgentPoolToManagedClusterAgentPoolProfile(agentPool)
-			managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
+			switch a := agentPool.(type) {
+			case *asocontainerservicev1.ManagedClustersAgentPool:
+				agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
+				a.Spec.AzureName = agentPoolSpecTyped.AzureName
+				profile := converters.AgentPoolToManagedClusterAgentPoolProfile(a)
+				managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
+			case *asocontainerservicev1preview.ManagedClustersAgentPool:
+				// convert managedCluster to preview
+				agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
+				a.Spec.AzureName = agentPoolSpecTyped.AzureName
+				profile := converters.AgentPoolToManagedClusterAgentPoolPreviewProfile(a)
+				managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
+				// convert managedCluster to stable
+			}
 		}
 	}
 
@@ -784,6 +794,24 @@ func (s *ManagedClusterSpec) ExtraPatches() []string {
 
 // ConvertTo implements aso.Converter.
 func (s *ManagedClusterSpec) ConvertTo(stable *asocontainerservicev1.ManagedCluster) (genruntime.MetaObject, error) {
+	if !s.Preview {
+		return stable, nil
+	}
+
+	hub := &asocontainerservicev1hub.ManagedCluster{}
+	err := stable.ConvertTo(hub)
+	if err != nil {
+		return nil, err
+	}
+	preview := &asocontainerservicev1preview.ManagedCluster{}
+	err = preview.ConvertFrom(hub)
+	if err != nil {
+		return nil, err
+	}
+	return preview, nil
+}
+
+func (s *ManagedClusterSpec) ConvertFrom(preview genruntime.MetaObject) (*asocontainerservicev1.ManagedCluster, error) {
 	if !s.Preview {
 		return stable, nil
 	}

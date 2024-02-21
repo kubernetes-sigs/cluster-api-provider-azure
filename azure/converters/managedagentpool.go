@@ -17,6 +17,7 @@ limitations under the License.
 package converters
 
 import (
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"k8s.io/utils/ptr"
 )
@@ -56,6 +57,44 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1.Manag
 	}
 	if properties.KubeletConfig != nil {
 		agentPool.KubeletConfig = properties.KubeletConfig
+	}
+	return agentPool
+}
+
+func AgentPoolToManagedClusterAgentPoolPreviewProfile(pool *asocontainerservicev1preview.ManagedClustersAgentPool) asocontainerservicev1preview.ManagedClusterAgentPoolProfile {
+	properties := pool.Spec
+	agentPool := asocontainerservicev1preview.ManagedClusterAgentPoolProfile{
+		Name:                        ptr.To(pool.AzureName()),
+		VmSize:                      properties.VmSize,
+		OsType:                      properties.OsType,
+		OsDiskSizeGB:                properties.OsDiskSizeGB,
+		Count:                       properties.Count,
+		Type:                        properties.Type,
+		OrchestratorVersion:         properties.OrchestratorVersion,
+		VnetSubnetReference:         properties.VnetSubnetReference,
+		Mode:                        properties.Mode,
+		EnableAutoScaling:           properties.EnableAutoScaling,
+		MaxCount:                    properties.MaxCount,
+		MinCount:                    properties.MinCount,
+		NodeTaints:                  properties.NodeTaints,
+		AvailabilityZones:           properties.AvailabilityZones,
+		MaxPods:                     properties.MaxPods,
+		OsDiskType:                  properties.OsDiskType,
+		NodeLabels:                  properties.NodeLabels,
+		EnableUltraSSD:              properties.EnableUltraSSD,
+		EnableNodePublicIP:          properties.EnableNodePublicIP,
+		NodePublicIPPrefixReference: properties.NodePublicIPPrefixReference,
+		ScaleSetPriority:            properties.ScaleSetPriority,
+		ScaleDownMode:               properties.ScaleDownMode,
+		SpotMaxPrice:                properties.SpotMaxPrice,
+		Tags:                        properties.Tags,
+		KubeletDiskType:             properties.KubeletDiskType,
+		LinuxOSConfig:               properties.LinuxOSConfig,
+		EnableFIPS:                  properties.EnableFIPS,
+		EnableEncryptionAtHost:      properties.EnableEncryptionAtHost,
+	}
+	if properties.KubeletConfig != nil {
+		// agentPool.KubeletConfig = properties.KubeletConfig
 	}
 	return agentPool
 }
