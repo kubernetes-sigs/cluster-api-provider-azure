@@ -74,7 +74,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
-	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
+	g.Expect(amcp.Spec.DNSPrefix).NotTo(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal(amcp.Name))
 	g.Expect(amcp.Spec.Extensions[0].Plan.Name).To(Equal("fooName-test-product"))
 
@@ -118,16 +118,16 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(StandardManagedControlPlaneTier))
 	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeTrue())
-	g.Expect(amcp.Spec.DNSPrefix).ToNot(BeNil())
+	g.Expect(amcp.Spec.DNSPrefix).NotTo(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal("test-prefix"))
 	g.Expect(amcp.Spec.FleetsMember.Name).To(Equal("fooCluster"))
-	g.Expect(amcp.Spec.AutoUpgradeProfile).ToNot(BeNil())
-	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).ToNot(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile).NotTo(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).NotTo(BeNil())
 	g.Expect(*amcp.Spec.AutoUpgradeProfile.UpgradeChannel).To(Equal(UpgradeChannelPatch))
-	g.Expect(amcp.Spec.SecurityProfile).ToNot(BeNil())
-	g.Expect(amcp.Spec.SecurityProfile.AzureKeyVaultKms).ToNot(BeNil())
-	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner).ToNot(BeNil())
-	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).ToNot(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile).NotTo(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.AzureKeyVaultKms).NotTo(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner).NotTo(BeNil())
+	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).NotTo(BeNil())
 	g.Expect(*amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).To(Equal(48))
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
@@ -163,8 +163,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDRForOverlay))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDRForOverlay))
-	g.Expect(amcp.Spec.AutoUpgradeProfile).ToNot(BeNil())
-	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).ToNot(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile).NotTo(BeNil())
+	g.Expect(amcp.Spec.AutoUpgradeProfile.UpgradeChannel).NotTo(BeNil())
 	g.Expect(*amcp.Spec.AutoUpgradeProfile.UpgradeChannel).To(Equal(UpgradeChannelRapid))
 }
 
@@ -3994,11 +3994,11 @@ func TestValidateAPIServerAccessProfile(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			err := validateAPIServerAccessProfile(tc.profile, field.NewPath("profile"))
+			errs := validateAPIServerAccessProfile(tc.profile, field.NewPath("profile"))
 			if tc.expectErr {
-				g.Expect(len(err)).To(BeNumerically("==", 1))
+				g.Expect(errs).To(HaveLen(1))
 			} else {
-				g.Expect(err).To(BeNil())
+				g.Expect(errs).To(BeEmpty())
 			}
 		})
 	}

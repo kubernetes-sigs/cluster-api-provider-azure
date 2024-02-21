@@ -118,7 +118,7 @@ func TestGetSpotVMOptions(t *testing.T) {
 			g.Expect(result.vmPriorityTypes).To(Equal(tt.want.vmPriorityTypes), fmt.Sprintf("got: %v, want: %v", result.vmPriorityTypes, tt.want.vmPriorityTypes))
 			g.Expect(result.vmEvictionPolicyTypes).To(Equal(tt.want.vmEvictionPolicyTypes), fmt.Sprintf("got: %v, want: %v", result.vmEvictionPolicyTypes, tt.want.vmEvictionPolicyTypes))
 			g.Expect(result.billingProfile).To(Equal(tt.want.billingProfile), fmt.Sprintf("got: %v, want: %v", result.billingProfile, tt.want.billingProfile))
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }

@@ -173,7 +173,7 @@ var _ = Describe("Conformance Tests", func() {
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 
 		if isWindows(kubetestConfigFilePath) {
-			// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
+			// Windows requires a taint on control nodes since not all conformance tests have ability to run
 			options := metav1.ListOptions{
 				LabelSelector: "kubernetes.io/os=linux",
 			}

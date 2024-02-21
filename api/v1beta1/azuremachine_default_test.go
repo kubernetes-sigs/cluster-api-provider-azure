@@ -46,11 +46,11 @@ func TestAzureMachineSpec_SetDefaultSSHPublicKey(t *testing.T) {
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
 
 	err := publicKeyExistTest.machine.Spec.SetDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
 	err = publicKeyNotExistTest.machine.Spec.SetDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 }
 

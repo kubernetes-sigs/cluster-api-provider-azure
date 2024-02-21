@@ -93,7 +93,7 @@ func TestParameters(t *testing.T) {
 			},
 			Identity: &infrav1.Identity{
 				Type:                           infrav1.ManagedControlPlaneIdentityType(asocontainerservicev1.ManagedClusterIdentity_Type_UserAssigned),
-				UserAssignedIdentityResourceID: "user assigned id id",
+				UserAssignedIdentityResourceID: "user assigned id",
 			},
 			KubeletUserAssignedIdentity: "kubelet id",
 			HTTPProxyConfig: &HTTPProxyConfig{
@@ -170,7 +170,7 @@ func TestParameters(t *testing.T) {
 					UserAssignedIdentities: []asocontainerservicev1.UserAssignedIdentityDetails{
 						{
 							Reference: genruntime.ResourceReference{
-								ARMID: "user assigned id id",
+								ARMID: "user assigned id",
 							},
 						},
 					},
@@ -318,7 +318,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.Tags).To(BeNil())
 		g.Expect(actual.Spec.DnsPrefix).To(Equal(ptr.To("managed by CAPZ")))
 		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
-		g.Expect(actual.Spec.KubernetesVersion).ToNot(BeNil())
+		g.Expect(actual.Spec.KubernetesVersion).NotTo(BeNil())
 		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
 	t.Run("updating existing managed cluster to a non nil DNS Service IP", func(t *testing.T) {

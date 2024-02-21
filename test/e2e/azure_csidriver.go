@@ -68,13 +68,13 @@ func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecIn
 		By("Deploying persistent volume claim")
 		pvcName = "dd-managed-hdd-5g" + util.RandomString(6)
 		pvcBuilder, err := e2e_pvc.Create(pvcName, "5Gi")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		annotations := map[string]string{
 			"volume.beta.kubernetes.io/storage-class": scName,
 		}
 		pvcBuilder.WithAnnotations(annotations)
 		err = pvcBuilder.DeployPVC(clientset)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 	} else {
 		By("[External]Deploying storage class and pvc")
 		By("Deploying managed disk storage class")
@@ -86,10 +86,10 @@ func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecIn
 		By("Deploying persistent volume claim")
 		pvcName = "oot-dd-managed-hdd-5g" + util.RandomString(6)
 		pvcBuilder, err := e2e_pvc.Create(pvcName, "5Gi")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		pvcBuilder.WithStorageClass(scName)
 		err = pvcBuilder.DeployPVC(clientset)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	By("creating a deployment that uses pvc")

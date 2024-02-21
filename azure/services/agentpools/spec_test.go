@@ -153,7 +153,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.AzureName).To(Equal("managed by CAPZ"))
 		g.Expect(actual.Spec.Count).To(Equal(ptr.To(1212)))
 		g.Expect(actual.Spec.PowerState.Code).To(Equal(ptr.To(asocontainerservicev1.PowerState_Code("set by the user"))))
-		g.Expect(actual.Spec.OrchestratorVersion).ToNot(BeNil())
+		g.Expect(actual.Spec.OrchestratorVersion).NotTo(BeNil())
 		g.Expect(*actual.Spec.OrchestratorVersion).To(Equal("1.27.2"))
 	})
 }

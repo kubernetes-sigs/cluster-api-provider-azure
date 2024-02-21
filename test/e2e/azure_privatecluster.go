@@ -170,7 +170,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		Expect(err).NotTo(HaveOccurred())
 
 		azureBastionClient, err := armnetwork.NewBastionHostsClient(getSubscriptionID(Default), cred, nil)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		groupName := os.Getenv(AzureResourceGroup)
 		azureBastionName := fmt.Sprintf("%s-azure-bastion", clusterName)
@@ -200,7 +200,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		}
 		err = wait.ExponentialBackoff(backoff, retryFn)
 
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 	}
 }
 
@@ -229,7 +229,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			"creationTimestamp": ptr.To(os.Getenv(Timestamp)),
 		},
 	}, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	By("creating a network security group")
 	nsgName := "control-plane-nsg"
@@ -269,9 +269,9 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			SecurityRules: securityRules,
 		},
 	}, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	_, err = nsgPoller.PollUntilDone(ctx, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	By("creating a node security group")
 	nsgNodeName := "node-nsg"
@@ -282,9 +282,9 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 			SecurityRules: securityRulesNode,
 		},
 	}, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	_, err = nsgNodePoller.PollUntilDone(ctx, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	By("creating a node routetable")
 	routeTableName := "node-routetable"
@@ -293,9 +293,9 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		Properties: &armnetwork.RouteTablePropertiesFormat{},
 	}
 	routetablePoller, err := routetableClient.BeginCreateOrUpdate(ctx, groupName, routeTableName, routeTable, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	_, err = routetablePoller.PollUntilDone(ctx, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	By("creating a virtual network")
 	var subnets []*armnetwork.Subnet
@@ -345,9 +345,9 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	if err != nil {
 		fmt.Print(err.Error())
 	}
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	_, err = vnetPoller.PollUntilDone(ctx, nil)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	return func() {
 		Logf("deleting an existing virtual network %q", os.Getenv(AzureCustomVNetName))

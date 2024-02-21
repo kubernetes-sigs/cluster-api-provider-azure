@@ -922,7 +922,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			g := NewWithT(t)
 			err := ValidateNetwork(test.subnetName, test.acceleratedNetworking, test.networkInterfaces, field.NewPath("networkInterfaces"))
 			if test.wantErr {
-				g.Expect(err).ToNot(BeEmpty())
+				g.Expect(err).NotTo(BeEmpty())
 			} else {
 				g.Expect(err).To(BeEmpty())
 			}

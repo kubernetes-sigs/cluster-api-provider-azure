@@ -74,7 +74,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 					Name:      instance.Name,
 				},
 			})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(result.RequeueAfter).To(BeZero())
 		})
 
@@ -285,6 +285,6 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 		},
 	})
 
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(result.RequeueAfter).To(BeZero())
 }

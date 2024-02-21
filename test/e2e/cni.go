@@ -57,7 +57,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 
 	cniYaml, err := os.ReadFile(input.CNIManifestPath)
-	Expect(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	Expect(workloadCluster.Apply(ctx, cniYaml)).To(Succeed())
 }
