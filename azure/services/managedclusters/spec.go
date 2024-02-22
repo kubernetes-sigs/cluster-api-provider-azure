@@ -679,11 +679,26 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 				managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
 			case *asocontainerservicev1preview.ManagedClustersAgentPool:
 				// convert managedCluster to preview
+				hub := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+				err := managedCluster.ConvertTo(hub)
+				if err != nil {
+					return nil, err
+				}
+				prev := &asocontainerservicev1preview.ManagedCluster{}
+				err = prev.ConvertFrom(hub)
+				if err != nil {
+					return nil, err
+				}
+
 				agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
 				a.Spec.AzureName = agentPoolSpecTyped.AzureName
 				profile := converters.AgentPoolToManagedClusterAgentPoolPreviewProfile(a)
-				managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
+				prev.Spec.AgentPoolProfiles = append(prev.Spec.AgentPoolProfiles, profile)
 				// convert managedCluster to stable
+				managedCluster, err = s.ConvertFrom(prev)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -813,18 +828,19 @@ func (s *ManagedClusterSpec) ConvertTo(stable *asocontainerservicev1.ManagedClus
 
 func (s *ManagedClusterSpec) ConvertFrom(preview genruntime.MetaObject) (*asocontainerservicev1.ManagedCluster, error) {
 	if !s.Preview {
-		return stable, nil
+		return nil, errors.New("cannot convert from preview to stable if preview is not enabled")
 	}
 
 	hub := &asocontainerservicev1hub.ManagedCluster{}
-	err := stable.ConvertTo(hub)
+	previewTyped := preview.(*asocontainerservicev1preview.ManagedCluster)
+	err := previewTyped.ConvertTo(hub)
 	if err != nil {
 		return nil, err
 	}
-	preview := &asocontainerservicev1preview.ManagedCluster{}
-	err = preview.ConvertFrom(hub)
+	stable := &asocontainerservicev1.ManagedCluster{}
+	err = stable.ConvertFrom(hub)
 	if err != nil {
 		return nil, err
 	}
-	return preview, nil
+	return stable, nil
 }
