@@ -96,7 +96,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	// Front end Prod
 	frontendProdDeploymentName := fmt.Sprintf("frontend-prod-%v", randInt)
 	Log("starting to create frontend-prod deployments")
-	frontEndProd := deploymentBuilder.Create("library/nginx:1.21.1", frontendProdDeploymentName, namespaceProd.GetName())
+	frontEndProd := deploymentBuilder.Create("library/nginx:1.21.1", frontendProdDeploymentName, namespaceProd.GetName(), int32(1))
 	frontEndProd.AddLabels(frontendLabels)
 	frontendProdDeployment, err := frontEndProd.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
@@ -104,7 +104,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	// Front end Dev
 	frontendDevDeploymentName := fmt.Sprintf("frontend-dev-%v", randInt+100000)
 	Log("starting to create frontend-dev deployments")
-	frontEndDev := deploymentBuilder.Create("library/nginx:1.21.1", frontendDevDeploymentName, namespaceDev.GetName())
+	frontEndDev := deploymentBuilder.Create("library/nginx:1.21.1", frontendDevDeploymentName, namespaceDev.GetName(), int32(1))
 	frontEndDev.AddLabels(frontendLabels)
 	frontendDevDeployment, err := frontEndDev.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
@@ -113,7 +113,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	backendDeploymentName := fmt.Sprintf("backend-%v", randInt+200000)
 	backendLabels := map[string]string{"app": "webapp", "role": "backend"}
 	Log("starting to create backend deployments")
-	backendDev := deploymentBuilder.Create("library/nginx:1.21.1", backendDeploymentName, namespaceDev.GetName())
+	backendDev := deploymentBuilder.Create("library/nginx:1.21.1", backendDeploymentName, namespaceDev.GetName(), int32(1))
 	backendDev.AddLabels(backendLabels)
 	backendDeployment, err := backendDev.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
@@ -122,7 +122,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	nwpolicyDeploymentName := fmt.Sprintf("network-policy-%v", randInt+300000)
 	nwpolicyLabels := map[string]string{"app": "webapp", "role": "any"}
 	Log("starting to create network-policy deployments")
-	nwpolicy := deploymentBuilder.Create("library/nginx:1.21.1", nwpolicyDeploymentName, namespaceDev.GetName())
+	nwpolicy := deploymentBuilder.Create("library/nginx:1.21.1", nwpolicyDeploymentName, namespaceDev.GetName(), int32(1))
 	nwpolicy.AddLabels(nwpolicyLabels)
 	nwpolicyDeployment, err := nwpolicy.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())

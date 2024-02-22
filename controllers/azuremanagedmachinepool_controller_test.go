@@ -69,6 +69,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				agentpools.SetSubnetName()
 				agentpools.AgentPoolSpec().Return(&fakeAgentPoolSpec)
 				agentpools.NodeResourceGroup().Return("fake-rg")
+				agentpools.ReconcileReplicas(gomock2.AContext(), 1)
 				agentpools.SetAgentPoolProviderIDList(providerIDs)
 				agentpools.SetAgentPoolReplicas(int32(len(providerIDs))).Return()
 				agentpools.SetAgentPoolReady(true).Return()

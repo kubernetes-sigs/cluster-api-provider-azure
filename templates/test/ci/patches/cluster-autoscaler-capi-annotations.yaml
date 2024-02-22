@@ -1,0 +1,8 @@
+- op: add
+  path: /metadata/annotations
+  value:
+    "cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size": "1"
+    "cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size": "5"
+    "capacity.cluster-autoscaler.kubernetes.io/memory": "4Gi"
+    "capacity.cluster-autoscaler.kubernetes.io/cpu": "2"
+    "capacity.cluster-autoscaler.kubernetes.io/ephemeral-disk": "128Gi"

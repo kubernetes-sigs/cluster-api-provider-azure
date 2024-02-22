@@ -164,6 +164,9 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 		providerIDs[i] = providerID
 	}
 
+	if err := s.scope.ReconcileReplicas(ctx, len(instances)); err != nil {
+		return errors.Wrap(err, "unable to reconcile VMSS replicas")
+	}
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
 	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
 	s.scope.SetAgentPoolReady(true)

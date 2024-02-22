@@ -100,6 +100,11 @@ const (
 	OldAddonProviderUpgradeVersion    = "OLD_CAAPH_UPGRADE_VERSION"
 	LatestAddonProviderUpgradeVersion = "LATEST_CAAPH_UPGRADE_VERSION"
 	KubernetesVersionAPIUpgradeFrom   = "KUBERNETES_VERSION_API_UPGRADE_FROM"
+	ClusterAutoscalerImageRepo        = "CLUSTER_AUTOSCALER_IMAGE_REPO"
+	ClusterAutoscalerImageTag         = "CLUSTER_AUTOSCALER_IMAGE_TAG"
+	ClusterAutoscalerExternalMinNodes = "CLUSTER_AUTOSCALER_EXTERNAL_MIN_NODES"
+	ClusterAutoscalerExternalMaxNodes = "CLUSTER_AUTOSCALER_EXTERNAL_MAX_NODES"
+	ClusterAutoscalerScaleDownPolicy  = "CLUSTER_AUTOSCALER_SCALE_DOWN_POLICY"
 )
 
 func Byf(format string, a ...interface{}) {

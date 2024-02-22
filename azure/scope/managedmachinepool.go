@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -366,4 +367,19 @@ func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedContr
 		return nil
 	}
 	return ptr.To(strings.TrimPrefix(higherVersion, "v"))
+}
+
+// ReconcileReplicas ensures MachinePool replicas match VMSS capacity if replicas are externally managed by an autoscaler.
+func (s *ManagedMachinePoolScope) ReconcileReplicas(ctx context.Context, vmssReplicas int) error {
+	if !annotations.ReplicasManagedByExternalAutoscaler(s.MachinePool) {
+		return nil
+	}
+
+	if s.MachinePool.Spec.Replicas != nil {
+		if vmssReplicas != int(*s.MachinePool.Spec.Replicas) {
+			s.MachinePool.Spec.Replicas = ptr.To(int32(vmssReplicas))
+		}
+	}
+
+	return nil
 }

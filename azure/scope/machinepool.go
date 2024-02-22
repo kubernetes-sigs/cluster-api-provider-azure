@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -930,7 +931,7 @@ func (m *MachinePoolScope) HasReplicasExternallyManaged(ctx context.Context) boo
 }
 
 // ReconcileReplicas ensures MachinePool replicas match VMSS capacity if replicas are externally managed by an autoscaler.
-func (m *MachinePoolScope) ReconcileReplicas(ctx context.Context, vmss *azure.VMSS) error {
+func (m *MachinePoolScope) ReconcileReplicas(ctx context.Context, vmss *armcompute.VirtualMachineScaleSet, scaleSetSpec *scalesets.ScaleSetSpec) error {
 	if !m.HasReplicasExternallyManaged(ctx) {
 		return nil
 	}
@@ -940,8 +941,10 @@ func (m *MachinePoolScope) ReconcileReplicas(ctx context.Context, vmss *azure.VM
 		replicas = *m.MachinePool.Spec.Replicas
 	}
 
-	if capacity := int32(vmss.Capacity); capacity != replicas {
+	capacity := int32(ptr.Deref[int64](vmss.SKU.Capacity, 0))
+	if capacity != replicas {
 		m.UpdateCAPIMachinePoolReplicas(ctx, &capacity)
+		scaleSetSpec.Capacity = int64(capacity)
 	}
 
 	return nil

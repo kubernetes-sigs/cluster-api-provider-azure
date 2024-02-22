@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../../flavors/aks
+patches:
+- target:
+    group: cluster.x-k8s.io
+    version: v1beta1
+    kind: MachinePool
+    name: ".*-pool1"
+  path: ../patches/cluster-autoscaler-external-annotations.yaml
+patchesStrategicMerge:
+  - ../patches/tags-aks.yaml
+  - patches/aks-pool0.yaml
+  - patches/aks-pool1.yaml
+  - patches/addons.yaml

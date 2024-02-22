@@ -46,6 +46,7 @@ type AgentPoolScope interface {
 	RemoveCAPIMachinePoolAnnotation(key string)
 	SetSubnetName()
 	IsPreviewEnabled() bool
+	ReconcileReplicas(ctx context.Context, vmssReplicas int) error
 }
 
 // New creates a new service.
@@ -70,8 +71,6 @@ func postCreateOrUpdateResourceHook(ctx context.Context, scope AgentPoolScope, o
 	if ptr.Deref(agentPool.Status.EnableAutoScaling, false) {
 		scope.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
 		scope.SetCAPIMachinePoolReplicas(agentPool.Status.Count)
-	} else { // Otherwise, remove the annotation.
-		scope.RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
 	}
 	return nil
 }

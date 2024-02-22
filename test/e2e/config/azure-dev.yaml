@@ -163,6 +163,12 @@ providers:
         targetName: "cluster-template-azure-cni-v1.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-spot.yaml"
         targetName: "cluster-template-spot.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-cluster-autoscaler-capi.yaml"
+        targetName: "cluster-template-cluster-autoscaler-capi.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-cluster-autoscaler-external.yaml"
+        targetName: "cluster-template-cluster-autoscaler-external.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-cluster-autoscaler.yaml"
+        targetName: "cluster-template-aks-cluster-autoscaler.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
@@ -232,6 +238,11 @@ variables:
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.15.1"
   OLD_CAAPH_UPGRADE_VERSION: "v0.1.0-alpha.10"
   LATEST_CAAPH_UPGRADE_VERSION: "v0.1.1-alpha.1"
+  CLUSTER_AUTOSCALER_IMAGE_REPO: "${CLUSTER_AUTOSCALER_IMAGE_REPO:-}"
+  CLUSTER_AUTOSCALER_IMAGE_TAG: "${CLUSTER_AUTOSCALER_IMAGE_TAG:-}"
+  CLUSTER_AUTOSCALER_EXTERNAL_MIN_NODES: "${CLUSTER_AUTOSCALER_EXTERNAL_MIN_NODES:-0}"
+  CLUSTER_AUTOSCALER_EXTERNAL_MAX_NODES: "${CLUSTER_AUTOSCALER_EXTERNAL_MAX_NODES:-5}"
+  CLUSTER_AUTOSCALER_SCALE_DOWN_POLICY: "${CLUSTER_AUTOSCALER_SCALE_DOWN_POLICY:-Delete}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
@@ -253,6 +264,8 @@ intervals:
   default/wait-service: ["15m", "10s"]
   default/wait-machine-pool-nodes: ["30m", "10s"]
   default/wait-nsg-update: ["20m", "10s"]
+  default/wait-autoscale-out: ["15m", "10s"]
+  default/wait-autoscale-in: ["30m", "1m"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]

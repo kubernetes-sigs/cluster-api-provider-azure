@@ -1,0 +1,11 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-pool1"
+spec:
+  osDiskType: "Ephemeral"
+  osDiskSizeGB: 40
+  enableNodePublicIP: false
+  scaleSetPriority: Regular
+  name: pool1
+  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"

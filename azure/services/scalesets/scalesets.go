@@ -45,7 +45,7 @@ type (
 		SetAnnotation(string, string)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
-		ReconcileReplicas(context.Context, *azure.VMSS) error
+		ReconcileReplicas(context.Context, *armcompute.VirtualMachineScaleSet, *ScaleSetSpec) error
 	}
 
 	// Service provides operations on Azure resources.
@@ -96,9 +96,13 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		return errors.Errorf("%T is not of type ScaleSetSpec", spec)
 	}
 
-	_, err := s.Client.Get(ctx, spec)
+	result, err := s.Client.Get(ctx, spec)
+	vmss, ok := result.(armcompute.VirtualMachineScaleSet)
+	// Local updates if the  VMSS already exists
 	if err == nil {
-		// We can only get the existing instances if the VMSS already exists
+		if err := s.Scope.ReconcileReplicas(ctx, &vmss, scaleSetSpec); err != nil {
+			return errors.Wrap(err, "unable to reconcile VMSS replicas")
+		}
 		scaleSetSpec.VMSSInstances, err = s.Client.ListInstances(ctx, spec.ResourceGroupName(), spec.ResourceName())
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get existing VMSS instances")
@@ -109,20 +113,11 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		return errors.Wrapf(err, "failed to get existing VMSS")
 	}
 
-	result, err := s.CreateOrUpdateResource(ctx, scaleSetSpec, serviceName)
+	_, err = s.CreateOrUpdateResource(ctx, scaleSetSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, err)
 
-	if err == nil && result != nil {
-		vmss, ok := result.(armcompute.VirtualMachineScaleSet)
-		if !ok {
-			return errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", result)
-		}
-
+	if err == nil {
 		fetchedVMSS := converters.SDKToVMSS(vmss, scaleSetSpec.VMSSInstances)
-		if err := s.Scope.ReconcileReplicas(ctx, &fetchedVMSS); err != nil {
-			return errors.Wrap(err, "unable to reconcile VMSS replicas")
-		}
-
 		// Transform the VMSS resource representation to conform to the cloud-provider-azure representation
 		providerID, err := azprovider.ConvertResourceGroupNameToLower(azureutil.ProviderIDPrefix + fetchedVMSS.ID)
 		if err != nil {

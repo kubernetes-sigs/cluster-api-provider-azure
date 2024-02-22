@@ -26,6 +26,7 @@ limitations under the License.
 package mock_agentpools
 
 import (
+	context "context"
 	reflect "reflect"
 	time "time"
 
@@ -224,6 +225,20 @@ func (m *MockAgentPoolScope) NodeResourceGroup() string {
 func (mr *MockAgentPoolScopeMockRecorder) NodeResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockAgentPoolScope)(nil).NodeResourceGroup))
+}
+
+// ReconcileReplicas mocks base method.
+func (m *MockAgentPoolScope) ReconcileReplicas(ctx context.Context, vmssReplicas int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReconcileReplicas", ctx, vmssReplicas)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReconcileReplicas indicates an expected call of ReconcileReplicas.
+func (mr *MockAgentPoolScopeMockRecorder) ReconcileReplicas(ctx, vmssReplicas any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconcileReplicas", reflect.TypeOf((*MockAgentPoolScope)(nil).ReconcileReplicas), ctx, vmssReplicas)
 }
 
 // RemoveCAPIMachinePoolAnnotation mocks base method.

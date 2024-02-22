@@ -45,8 +45,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
 
-		scope.EXPECT().RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
-
 		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
 			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				EnableAutoScaling: ptr.To(false),

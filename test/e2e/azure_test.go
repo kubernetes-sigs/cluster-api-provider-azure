@@ -227,7 +227,7 @@ var _ = Describe("Workload cluster creation", func() {
 		fmt.Fprintf(GinkgoWriter, "INFO: skipping test requires pushing container images to external repository")
 	}
 
-	Context("Creating a highly available cluster [REQUIRED]", func() {
+	Context("Creating a highly available cluster [REQUIRED]", Ordered, func() {
 		It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ha")
 
@@ -326,7 +326,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	When("Creating a highly available cluster with Azure CNI v1 [REQUIRED]", Label("Azure CNI v1"), func() {
+	When("Creating a cluster with Azure CNI v1 [REQUIRED]", Label("Azure CNI v1"), func() {
 		It("can create 3 control-plane nodes and 2 Linux worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "azcni-v1")
 
@@ -1199,6 +1199,153 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 
 			By("Workload identity test PASSED!")
+		})
+	})
+
+	Context("Creating a cluster with CAPI cluster-autoscaler annotations [SIG AUTOSCALING]", Ordered, func() {
+		It("With 1 control-plane nodes and 2 Linux nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "cas-capi")
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("cluster-autoscaler-capi"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(2),
+				withControlPlaneInterval(specName, "wait-control-plane"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+					InstallClusterAutoscaler(ctx, func() ClusterAutoscalerInstallInput {
+						return ClusterAutoscalerInstallInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+							E2EConfig:             e2eConfig,
+						}
+					})
+				}),
+			), result)
+
+			By("Scaling out via cluster-autoscaler", func() {
+				AzureAutoscalerSpec(ctx, func() AzureAutoscalerSpecInput {
+					return AzureAutoscalerSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating a cluster with external cluster-autoscaler annotation [SIG AUTOSCALING]", Ordered, func() {
+		It("With 1 control-plane nodes and 2 Linux nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "cas-external")
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("cluster-autoscaler-external"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(2),
+				withControlPlaneInterval(specName, "wait-control-plane"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+					InstallClusterAutoscaler(ctx, func() ClusterAutoscalerInstallInput {
+						return ClusterAutoscalerInstallInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+							E2EConfig:             e2eConfig,
+						}
+					})
+				}),
+			), result)
+
+			By("Scaling out via cluster-autoscaler", func() {
+				AzureAutoscalerSpec(ctx, func() AzureAutoscalerSpecInput {
+					return AzureAutoscalerSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating an AKS cluster with cluster-autoscaler [SIG AUTOSCALING]", Ordered, func() {
+		It("With 1 control-plane nodes and 2 Linux nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "cas-aks")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).ToNot(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-cluster-autoscaler"),
+				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withMachineDeploymentInterval(specName, ""),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("installing cluster-autoscaler", func() {
+				InstallClusterAutoscaler(ctx, func() ClusterAutoscalerInstallInput {
+					return ClusterAutoscalerInstallInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+					}
+				})
+			})
+
+			By("Scaling out via cluster-autoscaler", func() {
+				AzureAutoscalerSpec(ctx, func() AzureAutoscalerSpecInput {
+					return AzureAutoscalerSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+					}
+				})
+			})
+
+			By("PASSED!")
 		})
 	})
 })

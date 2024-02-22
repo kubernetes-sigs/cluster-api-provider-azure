@@ -1,0 +1,139 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  addonProfiles:
+  - enabled: true
+    name: azurepolicy
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+  location: ${AZURE_LOCATION}
+  oidcIssuerProfile:
+    enabled: true
+  resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: ${CLUSTER_NAME}-pool0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  availabilityZones:
+  - "1"
+  - "2"
+  enableNodePublicIP: false
+  enableUltraSSD: true
+  maxPods: 30
+  mode: System
+  name: pool0
+  osDiskSizeGB: 30
+  osDiskType: Managed
+  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  annotations:
+    cluster.x-k8s.io/replicas-managed-by: cluster-autoscaler
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: ${CLUSTER_NAME}-pool1
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  enableNodePublicIP: false
+  mode: User
+  name: pool1
+  osDiskSizeGB: 40
+  osDiskType: Ephemeral
+  scaleSetPriority: Regular
+  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal

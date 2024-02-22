@@ -1,0 +1,61 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "${CLUSTER_NAME}-mp-1"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT:=1}
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-mp-1"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-mp-1"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-mp-1"
+spec:
+  location: ${AZURE_LOCATION}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+      deletePolicy: Oldest
+  template:
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    osDisk:
+      osType: "Linux"
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: "Premium_LRS"
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: "${CLUSTER_NAME}-mp-1"
+spec:
+  joinConfiguration:
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      kubeletExtraArgs:
+        cloud-provider: external
+  files:
+  - contentFrom:
+      secret:
+        name: ${CLUSTER_NAME}-mp-1-azure-json
+        key: worker-node-azure.json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"

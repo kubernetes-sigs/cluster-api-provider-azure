@@ -43,7 +43,7 @@ import (
 const (
 	AzureMachinePoolsSpecName = "azure-machinepools"
 	regexpFlexibleVM          = `^azure:\/\/\/subscriptions\/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/resourceGroups\/.+\/providers\/Microsoft.Compute\/virtualMachines\/.+$`
-	regexpUniformInstance     = `^azure:\/\/\/subscriptions\/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/resourceGroups\/.+\/providers\/Microsoft.Compute\/virtualMachineScaleSets\/.+\/virtualMachines\/\d+$`
+	regexpUniformInstance     = `^azure:\/\/\/subscriptions\/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/resourceGroups\/(.+)\/providers\/Microsoft.Compute\/virtualMachineScaleSets\/(.+)\/virtualMachines\/\d+$`
 )
 
 // AzureMachinePoolsSpecInput is the input for AzureMachinePoolsSpec.
