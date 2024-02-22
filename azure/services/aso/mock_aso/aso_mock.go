@@ -204,6 +204,58 @@ func (mr *MockPatcherMockRecorder) ExtraPatches() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtraPatches", reflect.TypeOf((*MockPatcher)(nil).ExtraPatches))
 }
 
+// MockConverter is a mock of Converter interface.
+type MockConverter[T genruntime.MetaObject] struct {
+	ctrl     *gomock.Controller
+	recorder *MockConverterMockRecorder[T]
+}
+
+// MockConverterMockRecorder is the mock recorder for MockConverter.
+type MockConverterMockRecorder[T genruntime.MetaObject] struct {
+	mock *MockConverter[T]
+}
+
+// NewMockConverter creates a new mock instance.
+func NewMockConverter[T genruntime.MetaObject](ctrl *gomock.Controller) *MockConverter[T] {
+	mock := &MockConverter[T]{ctrl: ctrl}
+	mock.recorder = &MockConverterMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConverter[T]) EXPECT() *MockConverterMockRecorder[T] {
+	return m.recorder
+}
+
+// ConvertTo mocks base method.
+func (m *MockConverter[T]) ConvertTo(arg0 T) (genruntime.MetaObject, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConvertTo", arg0)
+	ret0, _ := ret[0].(genruntime.MetaObject)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConvertTo indicates an expected call of ConvertTo.
+func (mr *MockConverterMockRecorder[T]) ConvertTo(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertTo", reflect.TypeOf((*MockConverter[T])(nil).ConvertTo), arg0)
+}
+
+// ExtraPatches mocks base method.
+func (m *MockConverter[T]) ExtraPatches() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtraPatches")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// ExtraPatches indicates an expected call of ExtraPatches.
+func (mr *MockConverterMockRecorder[T]) ExtraPatches() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtraPatches", reflect.TypeOf((*MockConverter[T])(nil).ExtraPatches))
+}
+
 // MockScope is a mock of Scope interface.
 type MockScope struct {
 	ctrl     *gomock.Controller

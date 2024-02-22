@@ -240,6 +240,10 @@ func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
 		}
 	}
 
+	if managedControlPlane.Spec.EnablePreviewFeatures != nil {
+		agentPoolSpec.Preview = *managedControlPlane.Spec.EnablePreviewFeatures
+	}
+
 	return agentPoolSpec
 }
 

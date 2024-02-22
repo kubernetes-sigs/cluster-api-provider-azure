@@ -666,6 +666,10 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		if err := asocontainerservicev1.AddToScheme(scheme); err != nil {
 			return nil, errors.Wrap(err, "error constructing scheme")
 		}
+		fmt.Printf("Willie adding scheme")
+		if err := asocontainerservicev1preview.AddToScheme(scheme); err != nil {
+			return nil, errors.Wrap(err, "error constructing scheme")
+		}
 		for _, agentPoolSpec := range agentPoolSpecs {
 			agentPool, err := aso.PatchedParameters(ctx, scheme, agentPoolSpec, nil)
 			if err != nil {
@@ -679,7 +683,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 				managedCluster.Spec.AgentPoolProfiles = append(managedCluster.Spec.AgentPoolProfiles, profile)
 			case *asocontainerservicev1preview.ManagedClustersAgentPool:
 				// convert managedCluster to preview
-				hub := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+				hub := &asocontainerservicev1hub.ManagedCluster{}
 				err := managedCluster.ConvertTo(hub)
 				if err != nil {
 					return nil, err
