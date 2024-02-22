@@ -167,6 +167,43 @@ func (mr *MockTagsGetterSetterMockRecorder[T]) SetTags(resource, tags any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTags", reflect.TypeOf((*MockTagsGetterSetter[T])(nil).SetTags), resource, tags)
 }
 
+// MockPatcher is a mock of Patcher interface.
+type MockPatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockPatcherMockRecorder
+}
+
+// MockPatcherMockRecorder is the mock recorder for MockPatcher.
+type MockPatcherMockRecorder struct {
+	mock *MockPatcher
+}
+
+// NewMockPatcher creates a new mock instance.
+func NewMockPatcher(ctrl *gomock.Controller) *MockPatcher {
+	mock := &MockPatcher{ctrl: ctrl}
+	mock.recorder = &MockPatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPatcher) EXPECT() *MockPatcherMockRecorder {
+	return m.recorder
+}
+
+// ExtraPatches mocks base method.
+func (m *MockPatcher) ExtraPatches() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtraPatches")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// ExtraPatches indicates an expected call of ExtraPatches.
+func (mr *MockPatcherMockRecorder) ExtraPatches() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtraPatches", reflect.TypeOf((*MockPatcher)(nil).ExtraPatches))
+}
+
 // MockScope is a mock of Scope interface.
 type MockScope struct {
 	ctrl     *gomock.Controller

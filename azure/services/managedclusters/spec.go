@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -137,6 +138,9 @@ type ManagedClusterSpec struct {
 
 	// SecurityProfile defines the security profile for the cluster.
 	SecurityProfile *ManagedClusterSecurityProfile
+
+	// Patches are extra patches to be applied to the ASO resource.
+	Patches []string
 }
 
 // ManagedClusterAutoUpgradeProfile auto upgrade profile for a managed cluster.
@@ -655,8 +659,12 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 			return nil, errors.Wrapf(err, "failed to get agent pool specs for managed cluster %s", s.Name)
 		}
 
+		scheme := runtime.NewScheme()
+		if err := asocontainerservicev1.AddToScheme(scheme); err != nil {
+			return nil, errors.Wrap(err, "error constructing scheme")
+		}
 		for _, agentPoolSpec := range agentPoolSpecs {
-			agentPool, err := agentPoolSpec.Parameters(ctx, nil)
+			agentPool, err := aso.PatchedParameters(ctx, scheme, agentPoolSpec, nil)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get agent pool parameters for managed cluster %s", s.Name)
 			}
@@ -762,4 +770,11 @@ func (*ManagedClusterSpec) GetDesiredTags(resource *asocontainerservicev1.Manage
 // SetTags implements aso.TagsGetterSetter.
 func (*ManagedClusterSpec) SetTags(resource *asocontainerservicev1.ManagedCluster, tags infrav1.Tags) {
 	resource.Spec.Tags = tags
+}
+
+var _ aso.Patcher = (*ManagedClusterSpec)(nil)
+
+// ExtraPatches implements aso.Patcher.
+func (s *ManagedClusterSpec) ExtraPatches() []string {
+	return s.Patches
 }

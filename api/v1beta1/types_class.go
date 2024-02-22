@@ -235,6 +235,13 @@ type AzureManagedControlPlaneClassSpec struct {
 	// SecurityProfile defines the security profile for cluster.
 	// +optional
 	SecurityProfile *ManagedClusterSecurityProfile `json:"securityProfile,omitempty"`
+
+	// ASOManagedClusterPatches defines JSON merge patches to be applied to the generated ASO ManagedCluster resource.
+	// WARNING: This is meant to be used sparingly to enable features for development and testing that are not
+	// otherwise represented in the CAPZ API. Misconfiguration that conflicts with CAPZ's normal mode of
+	// operation is possible.
+	// +optional
+	ASOManagedClusterPatches []string `json:"asoManagedClusterPatches,omitempty"`
 }
 
 // ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.
@@ -393,6 +400,13 @@ type AzureManagedMachinePoolClassSpec struct {
 	// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/enable-host-encryption
 	// +optional
 	EnableEncryptionAtHost *bool `json:"enableEncryptionAtHost,omitempty"`
+
+	// ASOManagedClustersAgentPoolPatches defines JSON merge patches to be applied to the generated ASO ManagedClustersAgentPool resource.
+	// WARNING: This is meant to be used sparingly to enable features for development and testing that are not
+	// otherwise represented in the CAPZ API. Misconfiguration that conflicts with CAPZ's normal mode of
+	// operation is possible.
+	// +optional
+	ASOManagedClustersAgentPoolPatches []string `json:"asoManagedClustersAgentPoolPatches,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetworkClassSpec defines the ManagedControlPlaneVirtualNetwork properties that may be shared across several managed control plane vnets.

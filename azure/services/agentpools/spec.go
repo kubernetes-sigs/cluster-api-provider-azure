@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 )
@@ -150,6 +151,9 @@ type AgentPoolSpec struct {
 
 	// EnableEncryptionAtHost indicates whether host encryption is enabled on the node pool
 	EnableEncryptionAtHost *bool
+
+	// Patches are extra patches to be applied to the ASO resource.
+	Patches []string
 }
 
 // ResourceRef implements azure.ASOResourceSpecGetter.
@@ -305,4 +309,11 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 func (s *AgentPoolSpec) WasManaged(resource *asocontainerservicev1.ManagedClustersAgentPool) bool {
 	// CAPZ has never supported BYO agent pools.
 	return true
+}
+
+var _ aso.Patcher = (*AgentPoolSpec)(nil)
+
+// ExtraPatches implements aso.Patcher.
+func (s *AgentPoolSpec) ExtraPatches() []string {
+	return s.Patches
 }

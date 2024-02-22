@@ -39,6 +39,11 @@ type TagsGetterSetter[T genruntime.MetaObject] interface {
 	SetTags(resource T, tags infrav1.Tags)
 }
 
+// Patcher supplies extra patches to be applied to an ASO resource.
+type Patcher interface {
+	ExtraPatches() []string
+}
+
 // Scope represents the common functionality related to all scopes needed for ASO services.
 type Scope interface {
 	azure.AsyncStatusUpdater

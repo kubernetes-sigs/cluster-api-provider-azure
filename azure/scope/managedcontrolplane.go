@@ -547,6 +547,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 		KubeletUserAssignedIdentity: s.ControlPlane.Spec.KubeletUserAssignedIdentity,
 		NetworkPluginMode:           s.ControlPlane.Spec.NetworkPluginMode,
 		DNSPrefix:                   s.ControlPlane.Spec.DNSPrefix,
+		Patches:                     s.ControlPlane.Spec.ASOManagedClusterPatches,
 	}
 
 	if s.ControlPlane.Spec.SSHPublicKey != nil {
