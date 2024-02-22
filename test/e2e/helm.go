@@ -70,7 +70,6 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 	// Install the chart and retry if needed
 	Eventually(func() error {
 		cmd := exec.Command(helm, args...)
-		Logf("Helm command: %s", cmd.String())
 		output, err := cmd.CombinedOutput()
 		Logf("Helm install output: %s", string(output))
 		return err

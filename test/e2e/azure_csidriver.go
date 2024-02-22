@@ -94,7 +94,7 @@ func AzureDiskCSISpec(ctx context.Context, inputGetter func() AzureDiskCSISpecIn
 
 	By("creating a deployment that uses pvc")
 	deploymentName := "stateful" + util.RandomString(6)
-	statefulDeployment := deploymentBuilder.Create("nginx", deploymentName, corev1.NamespaceDefault).AddPVC(pvcName)
+	statefulDeployment := deploymentBuilder.Create("nginx", deploymentName, corev1.NamespaceDefault, int32(1)).AddPVC(pvcName)
 	deployment, err := statefulDeployment.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
 	waitForDeploymentAvailable(ctx, deployment, clientset, specName)

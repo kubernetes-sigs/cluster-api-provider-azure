@@ -61,6 +61,14 @@ capz::util::should_build_ccm() {
     echo "false"
 }
 
+capz::util::should_build_cluster_autoscaler() {
+    # TEST_CLUSTER_AUTOSCALER is an environment variable set by a prow job to indicate that the cluster-autoscaler runtime should be built and tested.
+    if [[ -n "${TEST_CLUSTER_AUTOSCALER:-}" ]]; then
+        echo "true" && return
+    fi
+    echo "false"
+}
+
 # all test regions must support AvailabilityZones
 capz::util::get_random_region() {
     local REGIONS=("canadacentral" "eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2" "westus3")
