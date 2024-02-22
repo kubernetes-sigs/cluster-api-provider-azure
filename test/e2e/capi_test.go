@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -212,7 +211,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		Context("API Version Upgrade", func() {
-			var e2eConfigNoAddons *clusterctl.E2EConfig
 			BeforeEach(func() {
 				// Unset resource group and vnet env variables, since the upgrade test creates 2 clusters,
 				// and will result in both the clusters using the same vnet and resource group.
@@ -223,33 +221,12 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
 
 				Expect(os.Setenv("K8S_FEATURE_GATES", "WindowsHostProcessContainers=true")).To(Succeed())
-
-				e2eConfigNoAddons = &clusterctl.E2EConfig{}
-				e2eConfig.ManagementClusterName = e2eConfigNoAddons.ManagementClusterName
-				e2eConfigNoAddons.Variables = e2eConfig.Variables
-				e2eConfigNoAddons.Intervals = e2eConfig.Intervals
-
-				providers := []clusterctl.ProviderConfig{}
-				for _, provider := range e2eConfig.Providers {
-					if provider.Type != "AddonProvider" {
-						providers = append(providers, provider)
-					}
-				}
-				e2eConfigNoAddons.Providers = providers
-
-				images := []clusterctl.ContainerImage{}
-				for _, image := range e2eConfig.Images {
-					if !strings.Contains(image.Name, "cluster-api-helm") {
-						images = append(images, image)
-					}
-				}
-				e2eConfigNoAddons.Images = images
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfigNoAddons,
+						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
 						BootstrapClusterProxy:     bootstrapClusterProxy,
 						ArtifactFolder:            artifactFolder,
@@ -265,6 +242,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariable(OldCAPIUpgradeVersion)},
 						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariable(OldCAPIUpgradeVersion)},
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariable(OldProviderUpgradeVersion)},
+						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariable(OldAddonProviderUpgradeVersion)},
 					}
 				})
 			})
@@ -272,7 +250,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			Context("upgrade from the latest version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfigNoAddons,
+						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
 						BootstrapClusterProxy:     bootstrapClusterProxy,
 						ArtifactFolder:            artifactFolder,
@@ -288,6 +266,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariable(LatestCAPIUpgradeVersion)},
 						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariable(LatestCAPIUpgradeVersion)},
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariable(LatestProviderUpgradeVersion)},
+						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariable(LatestAddonProviderUpgradeVersion)},
 					}
 				})
 			})
