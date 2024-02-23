@@ -475,7 +475,7 @@ spec:
       cloud-provider: azure
   releaseName: cloud-provider-azure-oot
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
+  valuesTemplate: |
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
@@ -494,23 +494,23 @@ spec:
       cloud-provider: azure-ci
   releaseName: cloud-provider-azure-oot
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
+  valuesTemplate: |
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
       cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
       cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: ${CCM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CCM:-""}
+      imageName: "${CCM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CCM:-""}"
       logVerbosity: ${CCM_LOG_VERBOSITY:-4}
       replicas: ${CCM_COUNT:-1}
       enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
     cloudNodeManager:
-      imageName: ${CNM_IMAGE_NAME:-""}
-      imageRepository: ${IMAGE_REGISTRY:-""}
-      imageTag: ${IMAGE_TAG_CNM:-""}
+      imageName: "${CNM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CNM:-""}"
 ---
 apiVersion: v1
 data:
