@@ -319,7 +319,7 @@ spec:
       cloud-provider: azure-flatcar
   releaseName: cloud-provider-azure-oot
   repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |-
+  valuesTemplate: |
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
