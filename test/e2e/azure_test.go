@@ -92,7 +92,7 @@ var _ = Describe("Workload cluster creation", func() {
 		}
 		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(defaultNamespace).Get(ctx, secret.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
-			Expect(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		}
 		if err != nil {
 			Logf("Creating cluster identity secret \"%s\"", secret.Name)
@@ -694,10 +694,10 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
 			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
 			Byf("Upgrading from k8s version %s", kubernetesVersionUpgradeFrom)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
 			Byf("Upgrading to k8s version %s", kubernetesVersion)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
@@ -761,7 +761,7 @@ var _ = Describe("Workload cluster creation", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "pool")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
@@ -885,10 +885,10 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterName = getClusterName(clusterNamePrefix, "cc")
 			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
 			Byf("Upgrading from k8s version %s", kubernetesVersionUpgradeFrom)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
 			Byf("Upgrading to k8s version %s", kubernetesVersion)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			// Create a cluster using the cluster class created above
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(

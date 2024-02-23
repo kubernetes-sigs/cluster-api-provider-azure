@@ -215,5 +215,5 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 		}
 
 		return false
-	}, intervals...).Should(Equal(true), "System machine pools not detected")
+	}, intervals...).Should(BeTrue(), "System machine pools not detected")
 }

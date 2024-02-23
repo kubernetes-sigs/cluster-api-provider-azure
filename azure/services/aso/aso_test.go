@@ -128,7 +128,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("ready status unknown"))
 	})
 
@@ -158,7 +158,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
@@ -223,7 +223,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("resource is not Ready"))
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
@@ -325,7 +325,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("resource is not Ready"))
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
@@ -354,7 +354,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		ctx := context.Background()
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("failed to get existing resource"))
 	})
 
@@ -400,7 +400,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 	})
 
 	t.Run("adopt managed resource in not found state", func(t *testing.T) {
@@ -448,7 +448,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
@@ -503,7 +503,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
@@ -561,7 +561,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 
 		updated := &asoresourcesv1.ResourceGroup{}
 		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
@@ -610,7 +610,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("parameters error"))
 	})
 
@@ -650,7 +650,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).NotTo(BeNil())
-		g.Expect(err).To(BeNil())
+		g.Expect(err).NotTo(HaveOccurred())
 	})
 
 	t.Run("resource up to date", func(t *testing.T) {
@@ -701,7 +701,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).NotTo(BeNil())
-		g.Expect(err).To(BeNil())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		g.Expect(result.GetName()).To(Equal("name"))
 		g.Expect(result.GetNamespace()).To(Equal("namespace"))
@@ -750,7 +750,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("failed to update resource"))
 	})
 
@@ -1063,8 +1063,7 @@ func TestDeleteResource(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		err := s.DeleteResource(ctx, resource, "service")
-		g.Expect(err).To(BeNil())
+		g.Expect(s.DeleteResource(ctx, resource, "service")).To(Succeed())
 	})
 
 	t.Run("delete in progress", func(t *testing.T) {
@@ -1088,7 +1087,7 @@ func TestDeleteResource(t *testing.T) {
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
 		err := s.DeleteResource(ctx, resource, "service")
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
 		var recerr azure.ReconcileError
 		g.Expect(errors.As(err, &recerr)).To(BeTrue())
@@ -1115,8 +1114,7 @@ func TestDeleteResource(t *testing.T) {
 		ctx := context.Background()
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
-		err := s.DeleteResource(ctx, resource, "service")
-		g.Expect(err).To(BeNil())
+		g.Expect(s.DeleteResource(ctx, resource, "service")).To(Succeed())
 	})
 
 	t.Run("error checking if resource is managed", func(t *testing.T) {
@@ -1165,7 +1163,7 @@ func TestDeleteResource(t *testing.T) {
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
 		err := s.DeleteResource(ctx, resource, "service")
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("failed to delete resource"))
 	})
 }

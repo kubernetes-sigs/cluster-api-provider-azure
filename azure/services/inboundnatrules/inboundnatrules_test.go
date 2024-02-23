@@ -111,7 +111,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			},
 		},
 		{
-			name:          "NAT rule successfully created with with no existing rules",
+			name:          "NAT rule successfully created with no existing rules",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
@@ -129,7 +129,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			},
 		},
 		{
-			name:          "NAT rule successfully created with with existing rules",
+			name:          "NAT rule successfully created with existing rules",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,

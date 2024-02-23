@@ -76,9 +76,9 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 	Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
 
 	input = inputGetter()
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-	Expect(input.Namespace).ToNot(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
-	Expect(input.ClusterName).ToNot(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 
 	By("creating a Kubernetes client to the workload cluster")
 	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
@@ -154,7 +154,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 	Eventually(checkSubnets, input.WaitForUpdate...).Should(Succeed())
 
 	By("Creating new security rule for the subnet")
-	Expect(len(expectedSubnets)).To(Not(Equal(0)))
+	Expect(expectedSubnets).NotTo(BeEmpty())
 	testSubnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{testSecurityRule, testSecurityRule2}
 	expectedSubnets = originalSubnets
 	expectedSubnets = append(expectedSubnets, testSubnet)
@@ -166,7 +166,7 @@ func AzureSecurityGroupsSpec(ctx context.Context, inputGetter func() AzureSecuri
 	Eventually(checkSubnets, input.WaitForUpdate...).Should(Succeed())
 
 	By("Deleting security rule from the subnet")
-	Expect(len(expectedSubnets)).To(Not(Equal(0)))
+	Expect(expectedSubnets).NotTo(BeEmpty())
 	testSubnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{testSecurityRule2}
 	expectedSubnets = originalSubnets
 	expectedSubnets = append(expectedSubnets, testSubnet)

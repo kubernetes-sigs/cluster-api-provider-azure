@@ -34,7 +34,7 @@ const (
 func TestNew(t *testing.T) {
 	g := NewWithT(t)
 	subject, err := New(128, defaultCacheDuration)
-	g.Expect(err).Should(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(subject).ShouldNot(BeNil())
 }
 
@@ -44,7 +44,7 @@ func TestCache_Add(t *testing.T) {
 	mockCache := mockttllru.NewMockCacher(mockCtrl)
 	defer mockCtrl.Finish()
 	subject, err := newCache(defaultCacheDuration, mockCache)
-	g.Expect(err).Should(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	key, value := "foo", "bar"
 	mockCache.EXPECT().Add(gomock.Eq(key), gomockinternal.CustomMatcher(
@@ -155,7 +155,7 @@ func TestCache_Get(t *testing.T) {
 			mockCache := mockttllru.NewMockCacher(mockCtrl)
 			defer mockCtrl.Finish()
 			subject, err := newCache(defaultCacheDuration, mockCache)
-			g.Expect(err).Should(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 			c.TestCase(g, subject, mockCache)
 		})
 	}

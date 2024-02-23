@@ -178,7 +178,7 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 			Images: config.Images,
 		}
 		err := bootstrap.LoadImagesToKindCluster(context.TODO(), imagesInput)
-		Expect(err).To(BeNil(), "Failed to load images to the bootstrap cluster: %s", err)
+		Expect(err).NotTo(HaveOccurred(), "Failed to load images to the bootstrap cluster: %s", err)
 	}
 	clusterProxy := NewAzureClusterProxy("bootstrap", kubeconfigPath)
 	Expect(clusterProxy).NotTo(BeNil(), "Failed to get a bootstrap cluster proxy")

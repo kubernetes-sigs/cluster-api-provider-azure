@@ -263,6 +263,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 	return reconcile.Result{}, nil
 }
 
+//nolint:unparam // Always returns an empty struct for reconcile.Result
 func (acr *AzureClusterReconciler) reconcilePause(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcilePause")
 	defer done()

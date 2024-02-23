@@ -116,6 +116,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 				defaultAzureCluster,
 				defaultAzureMachine,
 				defaultMachine,
+				defaultAzureClusterIdentity,
 			},
 			event: "Unable to get cluster from metadata",
 		},
@@ -124,6 +125,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 				defaultCluster,
 				defaultAzureMachine,
 				defaultMachine,
+				defaultAzureClusterIdentity,
 			},
 			event: "AzureCluster unavailable",
 		},
@@ -141,7 +143,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 
 			resultIdentity := &infrav1.AzureClusterIdentity{}
 			key := client.ObjectKey{Name: defaultAzureClusterIdentity.Name, Namespace: defaultAzureClusterIdentity.Namespace}
-			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity))
+			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
 
 			reconciler := &AzureMachineReconciler{
 				Client:   fakeClient,
@@ -251,7 +253,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 				g.Expect(machineScope.AzureMachine.Status.Ready).To(BeTrue())
 			}
 			if tc.machineScopeFailureReason != "" {
-				g.Expect(machineScope.AzureMachine.Status.FailureReason).ToNot(BeNil())
+				g.Expect(machineScope.AzureMachine.Status.FailureReason).NotTo(BeNil())
 				g.Expect(*machineScope.AzureMachine.Status.FailureReason).To(Equal(tc.machineScopeFailureReason))
 			}
 			if tc.expectedErr != "" {
@@ -779,7 +781,7 @@ func TestConditions(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 			resultIdentity := &infrav1.AzureClusterIdentity{}
 			key := client.ObjectKey{Name: azureClusterIdentity.Name, Namespace: azureClusterIdentity.Namespace}
-			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity))
+			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
 			recorder := record.NewFakeRecorder(10)
 
 			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.Timeouts{}, "")
@@ -803,7 +805,7 @@ func TestConditions(t *testing.T) {
 			_, err = reconciler.reconcileNormal(context.TODO(), machineScope, clusterScope)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			g.Expect(len(machineScope.AzureMachine.GetConditions())).To(Equal(len(tc.expectedConditions)))
+			g.Expect(machineScope.AzureMachine.GetConditions()).To(HaveLen(len(tc.expectedConditions)))
 			for i, c := range machineScope.AzureMachine.GetConditions() {
 				g.Expect(conditionsMatch(c, tc.expectedConditions[i])).To(BeTrue())
 			}

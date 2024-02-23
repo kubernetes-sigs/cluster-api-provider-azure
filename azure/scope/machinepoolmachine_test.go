@@ -306,6 +306,7 @@ func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		c := c
 		t.Run(c.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -349,7 +350,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(Equal(true))
+				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeTrue())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
@@ -364,7 +365,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(Equal(false))
+				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeFalse())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
@@ -401,7 +402,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(Equal(true))
+				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeTrue())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",

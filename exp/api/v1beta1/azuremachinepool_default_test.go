@@ -44,11 +44,11 @@ func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
 	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey("")}
 
 	err := publicKeyExistTest.amp.SetDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
 	err = publicKeyNotExistTest.amp.SetDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
@@ -280,7 +280,7 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 		machinePool *AzureMachinePool
 	}
 
-	// test to Ensure the the default policy is set to Deallocate if EvictionPolicy is nil
+	// test to Ensure the default policy is set to Deallocate if EvictionPolicy is nil
 	defaultEvictionPolicy := infrav1.SpotEvictionPolicyDeallocate
 	nilDiffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
@@ -294,7 +294,7 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 	nilDiffDiskSettingsPolicy.machinePool.SetSpotEvictionPolicyDefaults()
 	g.Expect(nilDiffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&defaultEvictionPolicy))
 
-	// test to Ensure the the default policy is set to Delete if diffDiskSettings option is set to "Local"
+	// test to Ensure the default policy is set to Delete if diffDiskSettings option is set to "Local"
 	expectedEvictionPolicy := infrav1.SpotEvictionPolicyDelete
 	diffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{

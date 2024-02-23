@@ -252,7 +252,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		},
 	})
 
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(result.RequeueAfter).To(BeZero())
 }
 
@@ -275,7 +275,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 		},
 	}
 	scheme, err := newScheme()
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(cp).WithStatusSubresource(cp).Build()
 	amcpr := &AzureManagedControlPlaneReconciler{
@@ -283,7 +283,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 	}
 
 	helper, err := patch.NewHelper(cp, client)
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).NotTo(HaveOccurred())
 
 	scopes := &scope.ManagedControlPlaneScope{
 		Cluster: &clusterv1.Cluster{

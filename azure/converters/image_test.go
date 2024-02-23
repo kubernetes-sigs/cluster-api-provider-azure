@@ -165,7 +165,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
@@ -183,7 +183,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
@@ -199,7 +199,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					CommunityGalleryImageID: ptr.To("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
 				}))
@@ -212,7 +212,7 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				SharedGallery:  nil,
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).ShouldNot(BeNil())
+				g.Expect(err).Should(HaveOccurred())
 			},
 		},
 	}
@@ -246,7 +246,7 @@ func Test_ImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
@@ -264,7 +264,7 @@ func Test_ImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("/subscriptions/my-subscription-id/resourceGroups/my-resourcegroup/providers/Microsoft.Compute/galleries/my-gallery/images/my-image/versions/my-version"),
 				}))
@@ -280,7 +280,7 @@ func Test_ImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					CommunityGalleryImageID: ptr.To("/CommunityGalleries/my-gallery/Images/my-image/Versions/my-version"),
 				}))
@@ -293,7 +293,7 @@ func Test_ImageToSDK(t *testing.T) {
 				SharedGallery:  nil,
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).ShouldNot(BeNil())
+				g.Expect(err).Should(HaveOccurred())
 			},
 		},
 		{
@@ -302,7 +302,7 @@ func Test_ImageToSDK(t *testing.T) {
 				ID: ptr.To("my-image-id"),
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					ID: ptr.To("my-image-id"),
 				}))
@@ -321,7 +321,7 @@ func Test_ImageToSDK(t *testing.T) {
 				},
 			},
 			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
-				g.Expect(err).Should(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(&armcompute.ImageReference{
 					Offer:     ptr.To("my-offer"),
 					Publisher: ptr.To("my-publisher"),

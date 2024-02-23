@@ -35,11 +35,11 @@ func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
 	publicKeyNotExistTest := test{m: createAzureManagedControlPlaneWithSSHPublicKey("")}
 
 	err := publicKeyExistTest.m.setDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*publicKeyExistTest.m.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
 	err = publicKeyNotExistTest.m.setDefaultSSHPublicKey()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*publicKeyNotExistTest.m.Spec.SSHPublicKey).NotTo(BeEmpty())
 }
 

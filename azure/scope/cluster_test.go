@@ -160,6 +160,7 @@ func TestAPIServerHost(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		g := NewWithT(t)
 		scheme := runtime.NewScheme()
 		_ = clusterv1.AddToScheme(scheme)
@@ -277,7 +278,7 @@ func TestGettingSecurityRules(t *testing.T) {
 
 	subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(len(subnet.SecurityGroup.SecurityRules)).To(Equal(2))
+	g.Expect(subnet.SecurityGroup.SecurityRules).To(HaveLen(2))
 }
 
 func TestPublicIPSpecs(t *testing.T) {
@@ -2482,7 +2483,7 @@ func TestBackendPoolName(t *testing.T) {
 			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			g.Expect(err).NotTo(HaveOccurred())
 			got := clusterScope.LBSpecs()
-			g.Expect(len(got)).To(Equal(3))
+			g.Expect(got).To(HaveLen(3))
 
 			// API server backend pool name
 			apiServerLBSpec := got[0].(*loadbalancers.LBSpec)
