@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -228,8 +229,9 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			return zero, errors.Wrap(err, "failed to convert existing")
 		}
 	}
-	diff := cmp.Diff(convertedExisting, patchedParams)
+	diff := cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(metav1.TypeMeta{}, "APIVersion", "Kind"))
 	if diff == "" {
+		fmt.Printf("WILLIE Diff is empty: %v\n", diff)
 		if readyErr != nil {
 			// Only return this error when the resource is up to date in order to permit updates from
 			// Parameters which may fix the resource's current state.
@@ -238,9 +240,13 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		log.V(2).Info("resource up to date")
 		return existing /*non-converted*/, nil
 	}
+	fmt.Printf("WILLIE Diff exists: %v\n", diff)
+	fmt.Printf("WILLIE Existing type: %T\n", existing)
+	testDiff := cmp.Diff(existing, patchedParams, cmpopts.IgnoreFields(metav1.TypeMeta{}, "APIVersion", "Kind"))
+	fmt.Printf("WILLIE Test diff: %v\n", testDiff)
 
 	log.V(2).Info("creating or updating resource", "diff", diff)
-	return r.createOrUpdateResource(ctx, existing, patchedParams, resourceExists, serviceName)
+	return r.createOrUpdateResource(ctx, convertedExisting, patchedParams, resourceExists, serviceName)
 }
 
 // PatchedParameters returns the Parameters of spec with patches applied.
@@ -263,6 +269,7 @@ func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourc
 
 	var parameters genruntime.MetaObject = unconvertedParameters
 	converter, needsConversion := spec.(Converter[T])
+	fmt.Printf("WILLIE Needs conversion: %v\n", needsConversion)
 	if needsConversion {
 		var err error
 		parameters, err = converter.ConvertTo(unconvertedParameters)
@@ -301,7 +308,7 @@ func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourc
 	return obj.(genruntime.MetaObject), nil
 }
 
-func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, parameters client.Object, resourceExists bool, serviceName string) (T, error) {
+func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing client.Object, parameters client.Object, resourceExists bool, serviceName string) (T, error) {
 	var zero T
 	var err error
 	var logMessageVerbPrefix string

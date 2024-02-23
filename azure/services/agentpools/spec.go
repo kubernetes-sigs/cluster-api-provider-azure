@@ -323,7 +323,7 @@ func (s *AgentPoolSpec) ExtraPatches() []string {
 
 // ConvertTo implements aso.Converter.
 func (s *AgentPoolSpec) ConvertTo(stable *asocontainerservicev1.ManagedClustersAgentPool) (genruntime.MetaObject, error) {
-	if !s.Preview {
+	if !s.Preview || stable == nil {
 		return stable, nil
 	}
 

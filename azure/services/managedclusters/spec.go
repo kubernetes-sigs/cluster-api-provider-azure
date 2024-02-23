@@ -666,7 +666,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		if err := asocontainerservicev1.AddToScheme(scheme); err != nil {
 			return nil, errors.Wrap(err, "error constructing scheme")
 		}
-		fmt.Printf("Willie adding scheme")
+		fmt.Printf("Willie adding scheme\n")
 		if err := asocontainerservicev1preview.AddToScheme(scheme); err != nil {
 			return nil, errors.Wrap(err, "error constructing scheme")
 		}
@@ -703,6 +703,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 				if err != nil {
 					return nil, err
 				}
+				fmt.Printf("WILLIE success convert agentpools\n")
 			}
 		}
 	}
@@ -813,7 +814,8 @@ func (s *ManagedClusterSpec) ExtraPatches() []string {
 
 // ConvertTo implements aso.Converter.
 func (s *ManagedClusterSpec) ConvertTo(stable *asocontainerservicev1.ManagedCluster) (genruntime.MetaObject, error) {
-	if !s.Preview {
+	fmt.Printf("WILLIE in converto preview\n")
+	if !s.Preview || stable == nil {
 		return stable, nil
 	}
 
@@ -827,10 +829,13 @@ func (s *ManagedClusterSpec) ConvertTo(stable *asocontainerservicev1.ManagedClus
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("WILLIE success converto preview\n")
 	return preview, nil
 }
 
 func (s *ManagedClusterSpec) ConvertFrom(preview genruntime.MetaObject) (*asocontainerservicev1.ManagedCluster, error) {
+	fmt.Printf("WILLIE in convertfrom preview\n")
 	if !s.Preview {
 		return nil, errors.New("cannot convert from preview to stable if preview is not enabled")
 	}
@@ -846,5 +851,6 @@ func (s *ManagedClusterSpec) ConvertFrom(preview genruntime.MetaObject) (*asocon
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("WILLIE success convertfrom preview\n")
 	return stable, nil
 }
