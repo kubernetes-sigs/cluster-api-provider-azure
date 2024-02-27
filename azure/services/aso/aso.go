@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
@@ -27,7 +28,6 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -228,8 +228,16 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		if err != nil {
 			return zero, errors.Wrap(err, "failed to convert existing")
 		}
+		v := reflect.ValueOf(existing)
+		if !v.IsNil() {
+			gvk, err := apiutil.GVKForObject(convertedExisting, r.Scheme())
+			if err != nil {
+				return zero, errors.Wrap(err, "failed to get GroupVersionKind for object")
+			}
+			convertedExisting.(interface{ SetGroupVersionKind(schema.GroupVersionKind) }).SetGroupVersionKind(gvk)
+		}
 	}
-	diff := cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(metav1.TypeMeta{}, "APIVersion", "Kind"))
+	diff := cmp.Diff(convertedExisting, patchedParams)
 	if diff == "" {
 		fmt.Printf("WILLIE Diff is empty: %v\n", diff)
 		if readyErr != nil {
@@ -242,8 +250,6 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 	fmt.Printf("WILLIE Diff exists: %v\n", diff)
 	fmt.Printf("WILLIE Existing type: %T\n", existing)
-	testDiff := cmp.Diff(existing, patchedParams, cmpopts.IgnoreFields(metav1.TypeMeta{}, "APIVersion", "Kind"))
-	fmt.Printf("WILLIE Test diff: %v\n", testDiff)
 
 	log.V(2).Info("creating or updating resource", "diff", diff)
 	return r.createOrUpdateResource(ctx, convertedExisting, patchedParams, resourceExists, serviceName)
@@ -314,6 +320,10 @@ func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing cli
 	var logMessageVerbPrefix string
 	if resourceExists {
 		logMessageVerbPrefix = "updat"
+		data, _ := json.MarshalIndent(parameters.(genruntime.MetaObject), "", "  ")
+		fmt.Printf("WILLIE: updating resource with parameters: %v\n", string(data))
+		diff := cmp.Diff(existing, parameters)
+		fmt.Printf("WILLIE: creatoerupdate diff: %v\n", diff)
 		err = r.Client.Patch(ctx, parameters, client.MergeFrom(existing))
 	} else {
 		logMessageVerbPrefix = "creat"
