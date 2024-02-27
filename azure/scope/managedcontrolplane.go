@@ -270,14 +270,25 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 
 // GroupSpecs returns the resource group spec.
 func (s *ManagedControlPlaneScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup] {
-	return []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+	specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 		&groups.GroupSpec{
 			Name:           s.ResourceGroup(),
+			AzureName:      s.ResourceGroup(),
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
 		},
 	}
+	if s.Vnet().ResourceGroup != "" && s.Vnet().ResourceGroup != s.ResourceGroup() {
+		specs = append(specs, &groups.GroupSpec{
+			Name:           azure.GetNormalizedKubernetesName(s.Vnet().ResourceGroup),
+			AzureName:      s.Vnet().ResourceGroup,
+			Location:       s.Location(),
+			ClusterName:    s.ClusterName(),
+			AdditionalTags: s.AdditionalTags(),
+		})
+	}
+	return specs
 }
 
 // VNetSpec returns the virtual network spec.

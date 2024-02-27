@@ -24,6 +24,7 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aksextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -1616,6 +1618,165 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 			managedCluster, ok := managedClusterGetter.(*managedclusters.ManagedClusterSpec)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(managedCluster.AutoUpgradeProfile).To(Equal(c.expected))
+		})
+	}
+}
+
+func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    ManagedControlPlaneScopeParams
+		expected []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
+	}{
+		{
+			name: "virtualNetwork belongs to a different resource group",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster1",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: "dummy-rg",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ResourceGroup: "different-rg",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&groups.GroupSpec{
+					Name:           "different-rg",
+					AzureName:      "different-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork belongs to a same resource group",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster1",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: "dummy-rg",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ResourceGroup: "dummy-rg",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork resource group not specified",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: "dummy-rg",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Name: "vnet1",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork belongs to different resource group with non-k8s name",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: "dummy-rg",
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								ResourceGroup: "my_custom_rg",
+								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+									Name: "vnet1",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&groups.GroupSpec{
+					Name:           "my-custom-rg",
+					AzureName:      "my_custom_rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			s := &ManagedControlPlaneScope{
+				ControlPlane: c.input.ControlPlane,
+				Cluster:      c.input.Cluster,
+			}
+			if got := s.GroupSpecs(); !reflect.DeepEqual(got, c.expected) {
+				t.Errorf("GroupSpecs() = %s, want %s", specArrayToString(got), specArrayToString(c.expected))
+			}
 		})
 	}
 }

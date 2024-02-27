@@ -25,6 +25,7 @@ import (
 
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -35,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
@@ -3984,6 +3986,161 @@ func TestSetFailureDomain(t *testing.T) {
 			}
 
 			g.Expect(c.AzureCluster.Status.FailureDomains).To(BeEmpty())
+		})
+	}
+}
+
+func TestGroupSpecs(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    ClusterScope
+		expected []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]
+	}{
+		{
+			name: "virtualNetwork belongs to a different resource group",
+			input: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster1",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "dummy-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "different-rg",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&groups.GroupSpec{
+					Name:           "different-rg",
+					AzureName:      "different-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork belongs to a same resource group",
+			input: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster1",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "dummy-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "dummy-rg",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork resource group not specified",
+			input: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "dummy-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								Name: "vnet1",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+		{
+			name: "virtualNetwork belongs to different resource group with non-k8s name",
+			input: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						ResourceGroup: "dummy-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "my_custom_rg",
+								Name:          "vnet1",
+							},
+						},
+					},
+				},
+			},
+			expected: []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
+				&groups.GroupSpec{
+					Name:           "dummy-rg",
+					AzureName:      "dummy-rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+				&groups.GroupSpec{
+					Name:           "my-custom-rg",
+					AzureName:      "my_custom_rg",
+					ClusterName:    "cluster1",
+					Location:       "",
+					AdditionalTags: make(infrav1.Tags, 0),
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			s := &ClusterScope{
+				AzureCluster: c.input.AzureCluster,
+				Cluster:      c.input.Cluster,
+			}
+			if got := s.GroupSpecs(); !reflect.DeepEqual(got, c.expected) {
+				t.Errorf("GroupSpecs() = %s, want %s", specArrayToString(got), specArrayToString(c.expected))
+			}
 		})
 	}
 }

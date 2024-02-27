@@ -277,3 +277,79 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeAzureName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "should return lower case",
+			input:    "Test",
+			expected: "test",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens",
+			input:    "Test Name",
+			expected: "test-name",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test Name 1",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test-Name-1-",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test-Name-1-@",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test-Name-1-@-",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with spaces replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test-Name-1-@-@",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with underscores replaced by hyphens and non-alphanumeric characters removed",
+			input:    "Test_Name_1-@-@",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with underscores replaced by hyphens and non-alphanumeric characters removed",
+			input:    "0_Test_Name_1-@-@",
+			expected: "0-test-name-1",
+		},
+		{
+			name:     "should return lower case with underscores replaced by hyphens and non-alphanumeric characters removed",
+			input:    "_Test_Name_1-@-@",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should return lower case with name without hyphens",
+			input:    "_Test_Name_1---",
+			expected: "test-name-1",
+		},
+		{
+			name:     "should not change the input since input is valid k8s name",
+			input:    "test-name-1",
+			expected: "test-name-1",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			normalizedNamed := GetNormalizedKubernetesName(tc.input)
+			g.Expect(normalizedNamed).To(Equal(tc.expected))
+		})
+	}
+}
