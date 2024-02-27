@@ -228,6 +228,8 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 
 	allErrs = append(allErrs, validateAPIServerAccessProfile(mcp.Spec.Template.Spec.APIServerAccessProfile, field.NewPath("spec").Child("template").Child("spec").Child("APIServerAccessProfile"))...)
 
+	allErrs = append(allErrs, validateAMCPVirtualNetwork(mcp.Spec.Template.Spec.VirtualNetwork, field.NewPath("spec").Child("template").Child("spec").Child("VirtualNetwork"))...)
+
 	return allErrs.ToAggregate()
 }
 
