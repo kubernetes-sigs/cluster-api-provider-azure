@@ -236,9 +236,9 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			return zero, errors.Wrapf(err, "failed to get existing as %s", gvk)
 		}
 		convertedExisting = convertedExistingVersioned.(genruntime.MetaObject)
-		statusField := reflect.ValueOf(patchedParams).Elem().FieldByName("Status")
-		fmt.Printf("WILLIE Status field type: %T\n", statusField.Interface())
-		diff = cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(statusField.Interface()))
+		objectValue := reflect.ValueOf(patchedParams).Elem()
+		fmt.Printf("WILLIE object value type: %T\n", objectValue.Interface())
+		diff = cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(objectValue.Interface(), "Status"))
 	}
 	if diff == "" {
 		fmt.Printf("WILLIE Diff is empty: %v\n", diff)
