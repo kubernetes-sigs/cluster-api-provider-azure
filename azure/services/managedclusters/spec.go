@@ -708,6 +708,9 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existing *asocontai
 		}
 	}
 
+	// ignore status fields for diff comparison.
+	managedCluster.Status = asocontainerservicev1.ManagedCluster_STATUS{}
+
 	return managedCluster, nil
 }
 
@@ -810,6 +813,16 @@ var _ aso.Converter[*asocontainerservicev1.ManagedCluster] = (*ManagedClusterSpe
 // ExtraPatches implements aso.Patcher.
 func (s *ManagedClusterSpec) ExtraPatches() []string {
 	return s.Patches
+}
+
+// SetStatusEmpty implements aso.Converter.
+func (*ManagedClusterSpec) SetStatusEmpty(preview genruntime.MetaObject) (genruntime.MetaObject, error) {
+	previewTyped, ok := preview.(*asocontainerservicev1preview.ManagedCluster)
+	if !ok {
+		return nil, errors.New("cannot set status to empty for non-preview object")
+	}
+	previewTyped.Status = asocontainerservicev1preview.ManagedCluster_STATUS{}
+	return preview, nil
 }
 
 // ConvertTo implements aso.Converter.

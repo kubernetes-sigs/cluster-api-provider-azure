@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
@@ -28,7 +27,6 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -224,7 +222,6 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	// existing's type has to match parameters for the diff to be correct
 	var convertedExisting genruntime.MetaObject = existing
-	diff := cmp.Diff(existing, patchedParams)
 	if _, ok := spec.(Converter[T]); ok && resourceExists {
 		gvk := patchedParams.GetObjectKind().GroupVersionKind()
 		convertedExistingVersioned, err := r.Scheme().New(gvk)
@@ -236,10 +233,12 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			return zero, errors.Wrapf(err, "failed to get existing as %s", gvk)
 		}
 		convertedExisting = convertedExistingVersioned.(genruntime.MetaObject)
-		objectValue := reflect.ValueOf(patchedParams).Elem()
-		fmt.Printf("WILLIE object value type: %T\n", objectValue.Interface())
-		diff = cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(objectValue.Interface(), "Status"))
+		convertedExisting, err = spec.(Converter[T]).SetStatusEmpty(convertedExisting)
+		if err != nil {
+			return zero, errors.Wrap(err, "failed to set status empty")
+		}
 	}
+	diff := cmp.Diff(convertedExisting, patchedParams)
 	if diff == "" {
 		fmt.Printf("WILLIE Diff is empty: %v\n", diff)
 		if readyErr != nil {

@@ -18,6 +18,7 @@ package agentpools
 
 import (
 	"context"
+	"errors"
 
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -319,6 +320,16 @@ var _ aso.Converter[*asocontainerservicev1.ManagedClustersAgentPool] = (*AgentPo
 // ExtraPatches implements aso.Patcher.
 func (s *AgentPoolSpec) ExtraPatches() []string {
 	return s.Patches
+}
+
+// SetStatusEmpty implements aso.Converter.
+func (s *AgentPoolSpec) SetStatusEmpty(preview genruntime.MetaObject) (genruntime.MetaObject, error) {
+	previewTyped, ok := preview.(*asocontainerservicev1preview.ManagedClustersAgentPool)
+	if !ok {
+		return nil, errors.New("cannot set status to empty for non-preview object")
+	}
+	previewTyped.Status = asocontainerservicev1preview.ManagedClusters_AgentPool_STATUS{}
+	return preview, nil
 }
 
 // ConvertTo implements aso.Converter.
