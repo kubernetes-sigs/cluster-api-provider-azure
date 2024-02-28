@@ -233,10 +233,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			return zero, errors.Wrapf(err, "failed to get existing as %s", gvk)
 		}
 		convertedExisting = convertedExistingVersioned.(genruntime.MetaObject)
-		convertedExisting, err = spec.(Converter[T]).SetStatusEmpty(convertedExisting)
-		if err != nil {
-			return zero, errors.Wrap(err, "failed to set status empty")
-		}
+		convertedExisting = spec.(Converter[T]).SetStatusEmpty(convertedExisting)
 	}
 	diff := cmp.Diff(convertedExisting, patchedParams)
 	if diff == "" {

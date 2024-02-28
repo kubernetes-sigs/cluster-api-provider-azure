@@ -816,13 +816,14 @@ func (s *ManagedClusterSpec) ExtraPatches() []string {
 }
 
 // SetStatusEmpty implements aso.Converter.
-func (*ManagedClusterSpec) SetStatusEmpty(preview genruntime.MetaObject) (genruntime.MetaObject, error) {
-	previewTyped, ok := preview.(*asocontainerservicev1preview.ManagedCluster)
+func (*ManagedClusterSpec) SetStatusEmpty(managedCluster genruntime.MetaObject) genruntime.MetaObject {
+	// Only remove status if it is a preview version.
+	managedClusterTyped, ok := managedCluster.(*asocontainerservicev1preview.ManagedCluster)
 	if !ok {
-		return nil, errors.New("cannot set status to empty for non-preview object")
+		return managedCluster
 	}
-	previewTyped.Status = asocontainerservicev1preview.ManagedCluster_STATUS{}
-	return preview, nil
+	managedClusterTyped.Status = asocontainerservicev1preview.ManagedCluster_STATUS{}
+	return managedCluster
 }
 
 // ConvertTo implements aso.Converter.

@@ -50,7 +50,7 @@ type Patcher interface {
 type Converter[T genruntime.MetaObject] interface {
 	Patcher
 	ConvertTo(T) (genruntime.MetaObject, error)
-	SetStatusEmpty(genruntime.MetaObject) (genruntime.MetaObject, error)
+	SetStatusEmpty(genruntime.MetaObject) genruntime.MetaObject
 }
 
 // Scope represents the common functionality related to all scopes needed for ASO services.
