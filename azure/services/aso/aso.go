@@ -28,6 +28,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -223,21 +224,22 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 
 	// existing's type has to match parameters for the diff to be correct
 	var convertedExisting genruntime.MetaObject = existing
-	if converter, ok := spec.(Converter[T]); ok {
-		convertedExisting, err = converter.ConvertTo(existing)
+	diff := cmp.Diff(existing, patchedParams)
+	if _, ok := spec.(Converter[T]); ok && resourceExists {
+		gvk := patchedParams.GetObjectKind().GroupVersionKind()
+		convertedExistingVersioned, err := r.Scheme().New(gvk)
 		if err != nil {
-			return zero, errors.Wrap(err, "failed to convert existing")
+			return zero, errors.Wrapf(err, "failed to create new %s", gvk)
 		}
-		v := reflect.ValueOf(existing)
-		if !v.IsNil() {
-			gvk, err := apiutil.GVKForObject(convertedExisting, r.Scheme())
-			if err != nil {
-				return zero, errors.Wrap(err, "failed to get GroupVersionKind for object")
-			}
-			convertedExisting.(interface{ SetGroupVersionKind(schema.GroupVersionKind) }).SetGroupVersionKind(gvk)
+		err = r.Get(ctx, client.ObjectKeyFromObject(convertedExisting), convertedExistingVersioned.(client.Object))
+		if err != nil {
+			return zero, errors.Wrapf(err, "failed to get existing as %s", gvk)
 		}
+		convertedExisting = convertedExistingVersioned.(genruntime.MetaObject)
+		statusField := reflect.ValueOf(patchedParams).Elem().FieldByName("Status")
+		fmt.Printf("WILLIE Status field type: %T\n", statusField.Interface())
+		diff = cmp.Diff(convertedExisting, patchedParams, cmpopts.IgnoreFields(statusField.Interface()))
 	}
-	diff := cmp.Diff(convertedExisting, patchedParams)
 	if diff == "" {
 		fmt.Printf("WILLIE Diff is empty: %v\n", diff)
 		if readyErr != nil {
@@ -275,7 +277,6 @@ func applyPatches[T deepCopier[T]](scheme *runtime.Scheme, spec azure.ASOResourc
 
 	var parameters genruntime.MetaObject = unconvertedParameters
 	converter, needsConversion := spec.(Converter[T])
-	fmt.Printf("WILLIE Needs conversion: %v\n", needsConversion)
 	if needsConversion {
 		var err error
 		parameters, err = converter.ConvertTo(unconvertedParameters)
@@ -320,10 +321,6 @@ func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing cli
 	var logMessageVerbPrefix string
 	if resourceExists {
 		logMessageVerbPrefix = "updat"
-		data, _ := json.MarshalIndent(parameters.(genruntime.MetaObject), "", "  ")
-		fmt.Printf("WILLIE: updating resource with parameters: %v\n", string(data))
-		diff := cmp.Diff(existing, parameters)
-		fmt.Printf("WILLIE: creatoerupdate diff: %v\n", diff)
 		err = r.Client.Patch(ctx, parameters, client.MergeFrom(existing))
 	} else {
 		logMessageVerbPrefix = "creat"
