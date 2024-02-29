@@ -305,6 +305,9 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existing *asocontainerse
 		agentPool.Spec.Count = agentPool.Status.Count
 	}
 
+	// ignore status fields for diff comparison.
+	agentPool.Status = asocontainerservicev1.ManagedClusters_AgentPool_STATUS{}
+
 	return agentPool, nil
 }
 
