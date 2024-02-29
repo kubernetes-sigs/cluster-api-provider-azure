@@ -242,6 +242,10 @@ type AzureManagedControlPlaneClassSpec struct {
 	// operation is possible.
 	// +optional
 	ASOManagedClusterPatches []string `json:"asoManagedClusterPatches,omitempty"`
+
+	// EnablePreviewFeatures enables preview features for the cluster.
+	// +optional
+	EnablePreviewFeatures *bool `json:"enablePreviewFeatures,omitempty"`
 }
 
 // ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.
