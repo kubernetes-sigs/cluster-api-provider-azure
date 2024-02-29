@@ -15,3 +15,4 @@ spec:
   tenantID: {{ $.Values.identity.tenantID }}
   type: {{ $.Values.identity.type }}
   resourceID: {{ $.Values.identity.resourceID }}
+  

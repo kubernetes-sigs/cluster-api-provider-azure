@@ -1,10 +1,10 @@
-{{- range $agentpools := .Values.agentpools }}
+{{- range $agentpoolsname, $agentpools := .Values.agentpools }}
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
-  name: {{ $agentpools.name }}
+  name: {{ $agentpoolsname }}
 spec:
-  name: {{ $agentpools.name }}
+  name: {{ $agentpoolsname }}
   scaling:
     minSize: {{ $agentpools.scaling.minSize }}
     maxSize: {{ $agentpools.scaling.maxSize }}
@@ -16,7 +16,7 @@ spec:
   sku: {{ $agentpools.sku }}
   availabilityZones:
       {{- range $agentpools.availabilityZones }}
-      - {{ .  | quote }}
+      - {{ . | quote }}
       {{- end }}    
   nodeLabels: 
    {{- range $nodeLabels := $agentpools.nodeLabels }}
@@ -50,7 +50,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
-  name: {{ $agentpools.name }}
+  name: {{ $agentpoolsname }}
 spec:
   clusterName: {{ $.Values.cluster.name }}
   replicas: {{ $agentpools.nodecount }}
@@ -63,7 +63,7 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
-        name: {{ $agentpools.name }}
+        name: {{ $agentpoolsname }}
         namespace: {{ $.Release.Namespace }}
       version: {{ $.Values.controlplane.kubernetes_version }}
 ---

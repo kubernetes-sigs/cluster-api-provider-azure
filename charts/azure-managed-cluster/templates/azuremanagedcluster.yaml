@@ -4,5 +4,5 @@ metadata:
   name: {{ .Values.cluster.name }}
 spec:
   controlPlaneEndpoint: 
-      host: sigs.k8s.io/cluster-api/api/v1beta1.APIEndpoint
-      port: 443
+    host: sigs.k8s.io/cluster-api/api/v1beta1.APIEndpoint
+    port: 443

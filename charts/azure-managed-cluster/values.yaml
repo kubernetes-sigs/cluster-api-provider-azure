@@ -1,6 +1,7 @@
 # Default values for azure-managed-cluster.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+# This follow a aks production economy configuration
 
 ## AKS cluster configuration
 
@@ -41,7 +42,7 @@ controlplane:
   ## SSH public key (must be valid)
   
   ## Kubernetes version
-  kubernetes_version: "v1.28.3"
+  kubernetes_version: "v1.29.2"
 
   ## Network policy, "calico" (for kubenet and azurecni) or "azure" (for azureCNI)
   networkPolicy: "calico"
@@ -107,69 +108,38 @@ controlplane:
   disableLocalAccounts: false
 #Only 1 Nodepool of mode System is allowed  
 agentpools: 
- - name: agentpool0
-   mode: System
-   sku: Standard_D4d_v5
-   nodecount: 5
-   osDiskSizeGB: 100
-   additionalTags:
-    - key: test
-      value: test
-  #  availabilityZones: 
-  #   - "1"
-  #   - "2"
-  #   - "3"
-   nodeLabels:
-    - key: test
-      value: test 
-   taints: {}
-   scaling:
-      minSize: 1
-      maxSize: 5
-   maxPods: 110
-   osDiskType : "Ephemeral"
-   enableUltraSSD : false
-   osType : "Linux"
-   enableNodePublicIP : false
-   nodePublicIPPrefixID : ""
-   scaleSetPriority : "Regular"
-   scaleDownMode : "Delete"
-   spotMaxPrice : ""
-   kubeletConfig : ""
-   kubeletDiskType : "OS"
-   linuxOSConfig : "" 
-   subnetName : ""
-   enableFIPS : false
-   enableEncryptionAtHost : false 
- - name : agentpool1
-   mode: User
-   sku: Standard_D4d_v5
-   nodecount: 5
-   osDiskSizeGB: 100
-   additionalTags:
-    - key: test
-      value: test
-  #  availabilityZones: 
-  #   - "1"
-  #   - "2"
-  #   - "3"
-   nodeLabels:
-    - key: test
-      value: test 
-   taints: {}
-   scaling:
-      minSize: 1
-      maxSize: 5
-   maxPods: 110
-   osDiskType : "Ephemeral"
-   enableUltraSSD : false
-   osType : "Linux"
-   enableNodePublicIP : false
-   nodePublicIPPrefixID : ""
-   scaleSetPriority : "Regular"
-   scaleDownMode : "Delete"
-   spotMaxPrice : ""
-   kubeletConfig : ""
-   kubeletDiskType : "OS"
-   linuxOSConfig : "" 
-   subnetName : ""    
+  agentpool0:
+    mode: System
+    sku: Standard_DS2_v2
+    nodecount: 5
+    osDiskSizeGB: 100
+    additionalTags:
+     - key: test
+       value: test
+   #  To enable availability zones, uncomment the following lines and set the availability zones
+   #  availabilityZones: 
+   #   - "1"
+   #   - "2"
+   #   - "3"
+    nodeLabels:
+     - key: test
+       value: test 
+    taints: {}
+    scaling:
+       minSize: 1
+       maxSize: 5
+    maxPods: 110
+    osDiskType : "Ephemeral"
+    enableUltraSSD : false
+    osType : "Linux"
+    enableNodePublicIP : false
+    nodePublicIPPrefixID : ""
+    scaleSetPriority : "Regular"
+    scaleDownMode : "Delete"
+    spotMaxPrice : ""
+    kubeletConfig : ""
+    kubeletDiskType : "OS"
+    linuxOSConfig : "" 
+    subnetName : ""
+    enableFIPS : false
+    enableEncryptionAtHost : false 

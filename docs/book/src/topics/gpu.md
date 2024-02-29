@@ -104,7 +104,7 @@ default            nvidia-operator-validator-kjr6m                              
 You should see all pods in either a state of `Running` or `Completed`. If that is the case, then you know the driver installation and GPU node configuration is successful.
 
 Then run the following commands against the workload cluster to verify that the
-[NVIDIA device plugin](https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/master/nvidia-device-plugin.yml)
+[NVIDIA device plugin](https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/main/deployments/static/nvidia-device-plugin.yml)
 has initialized and the `nvidia.com/gpu` resource is available:
 
 ```bash
