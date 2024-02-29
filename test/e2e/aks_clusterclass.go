@@ -80,8 +80,10 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 				Name:      clusterClass.Spec.Workers.MachinePools[i].Template.Infrastructure.Ref.Name,
 			}, ammpt)
 			Expect(err).NotTo(HaveOccurred())
-			ammpt.Spec.Template.Spec.ScaleDownMode = ptr.To("Deallocate")
-			g.Expect(mgmtClient.Update(ctx, ammpt)).To(Succeed())
+			if ammpt.Spec.Template.Spec.OsDiskType != nil && *ammpt.Spec.Template.Spec.OsDiskType != "Ephemeral" {
+				ammpt.Spec.Template.Spec.ScaleDownMode = ptr.To("Deallocate")
+				g.Expect(mgmtClient.Update(ctx, ammpt)).To(Succeed())
+			}
 		}
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 
@@ -93,7 +95,9 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 			Name:      input.MachinePool.Spec.Template.Spec.InfrastructureRef.Name,
 		}, ammp)
 		Expect(err).NotTo(HaveOccurred())
-		g.Expect(ammp.Spec.ScaleDownMode).To(Equal(ptr.To("Deallocate")))
+		if ammp.Spec.OsDiskType != nil && *ammp.Spec.OsDiskType != "Ephemeral" {
+			g.Expect(ammp.Spec.ScaleDownMode).To(Equal(ptr.To("Deallocate")))
+		}
 	}, inputGetter().WaitIntervals...).Should(Succeed())
 
 	Eventually(func(g Gomega) {

@@ -72,6 +72,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				agentpools.SetAgentPoolProviderIDList(providerIDs)
 				agentpools.SetAgentPoolReplicas(int32(len(providerIDs))).Return()
 				agentpools.SetAgentPoolReady(true).Return()
+				agentpools.IsPreviewEnabled().Return(false)
 
 				nodelister.List(gomock2.AContext(), "fake-rg").Return(fakeVirtualMachineScaleSet, nil)
 				nodelister.ListInstances(gomock2.AContext(), "fake-rg", "vmssName").Return(fakeVirtualMachineScaleSetVM, nil)

@@ -19,7 +19,10 @@ package agentpools
 import (
 	"context"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -35,7 +38,7 @@ type AgentPoolScope interface {
 
 	Name() string
 	NodeResourceGroup() string
-	AgentPoolSpec() azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]
+	AgentPoolSpec() azure.ASOResourceSpecGetter[genruntime.MetaObject]
 	SetAgentPoolProviderIDList([]string)
 	SetAgentPoolReplicas(int32)
 	SetAgentPoolReady(bool)
@@ -43,21 +46,39 @@ type AgentPoolScope interface {
 	SetCAPIMachinePoolAnnotation(key, value string)
 	RemoveCAPIMachinePoolAnnotation(key string)
 	SetSubnetName()
+	IsPreviewEnabled() bool
 }
 
 // New creates a new service.
-func New(scope AgentPoolScope) *aso.Service[*asocontainerservicev1.ManagedClustersAgentPool, AgentPoolScope] {
-	svc := aso.NewService[*asocontainerservicev1.ManagedClustersAgentPool](serviceName, scope)
-	svc.Specs = []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]{scope.AgentPoolSpec()}
+func New(scope AgentPoolScope) *aso.Service[genruntime.MetaObject, AgentPoolScope] {
+	svc := aso.NewService[genruntime.MetaObject](serviceName, scope)
+	svc.Specs = []azure.ASOResourceSpecGetter[genruntime.MetaObject]{scope.AgentPoolSpec()}
 	svc.ConditionType = infrav1.AgentPoolsReadyCondition
 	svc.PostCreateOrUpdateResourceHook = postCreateOrUpdateResourceHook
 	return svc
 }
 
-func postCreateOrUpdateResourceHook(ctx context.Context, scope AgentPoolScope, agentPool *asocontainerservicev1.ManagedClustersAgentPool, err error) error {
+func postCreateOrUpdateResourceHook(ctx context.Context, scope AgentPoolScope, obj genruntime.MetaObject, err error) error {
 	if err != nil {
 		return err
 	}
+	var existing *asocontainerservicev1.ManagedClustersAgentPool
+	if scope.IsPreviewEnabled() {
+		existingPreview := obj.(*asocontainerservicev1preview.ManagedClustersAgentPool)
+		hub := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+		if err := existingPreview.ConvertTo(hub); err != nil {
+			return err
+		}
+		stable := &asocontainerservicev1.ManagedClustersAgentPool{}
+		if err := stable.ConvertFrom(hub); err != nil {
+			return err
+		}
+		existing = stable
+	} else {
+		existing = obj.(*asocontainerservicev1.ManagedClustersAgentPool)
+	}
+	agentPool := existing
+
 	// When autoscaling is set, add the annotation to the machine pool and update the replica count.
 	if ptr.Deref(agentPool.Status.EnableAutoScaling, false) {
 		scope.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")

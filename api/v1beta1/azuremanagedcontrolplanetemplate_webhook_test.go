@@ -41,6 +41,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDR))
 	g.Expect(amcpt.Spec.Template.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
+	g.Expect(*amcpt.Spec.Template.Spec.EnablePreviewFeatures).To(BeFalse())
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -53,6 +54,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	amcpt.Spec.Template.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
 	amcpt.Spec.Template.Spec.SKU.Tier = PaidManagedControlPlaneTier
+	amcpt.Spec.Template.Spec.EnablePreviewFeatures = ptr.To(true)
 
 	err = mcptw.Default(context.Background(), amcpt)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -63,6 +65,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 	g.Expect(amcpt.Spec.Template.Spec.SKU.Tier).To(Equal(StandardManagedControlPlaneTier))
+	g.Expect(*amcpt.Spec.Template.Spec.EnablePreviewFeatures).To(BeTrue())
 }
 
 func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {

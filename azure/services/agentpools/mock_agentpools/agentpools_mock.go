@@ -29,7 +29,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	v1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -75,10 +75,10 @@ func (mr *MockAgentPoolScopeMockRecorder) ASOOwner() *gomock.Call {
 }
 
 // AgentPoolSpec mocks base method.
-func (m *MockAgentPoolScope) AgentPoolSpec() azure.ASOResourceSpecGetter[*v1api20231001.ManagedClustersAgentPool] {
+func (m *MockAgentPoolScope) AgentPoolSpec() azure.ASOResourceSpecGetter[genruntime.MetaObject] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AgentPoolSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20231001.ManagedClustersAgentPool])
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[genruntime.MetaObject])
 	return ret0
 }
 
@@ -182,6 +182,20 @@ func (m *MockAgentPoolScope) GetLongRunningOperationState(arg0, arg1, arg2 strin
 func (mr *MockAgentPoolScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockAgentPoolScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
+}
+
+// IsPreviewEnabled mocks base method.
+func (m *MockAgentPoolScope) IsPreviewEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsPreviewEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsPreviewEnabled indicates an expected call of IsPreviewEnabled.
+func (mr *MockAgentPoolScopeMockRecorder) IsPreviewEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPreviewEnabled", reflect.TypeOf((*MockAgentPoolScope)(nil).IsPreviewEnabled))
 }
 
 // Name mocks base method.
