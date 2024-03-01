@@ -79,14 +79,14 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
-			name: "azuremanagedcontrolplanetemplate subscriptionID is immutable",
+			name: "azuremanagedcontrolplanetemplate subscriptionID is mutable",
 			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.SubscriptionID = "foo"
 			}),
 			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.SubscriptionID = "bar"
 			}),
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "azuremanagedcontrolplanetemplate location is immutable",

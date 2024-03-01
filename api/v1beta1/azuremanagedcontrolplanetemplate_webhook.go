@@ -88,12 +88,6 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "Template", "Spec", "SubscriptionID"),
-		old.Spec.Template.Spec.SubscriptionID,
-		mcp.Spec.Template.Spec.SubscriptionID); err != nil {
-		allErrs = append(allErrs, err)
-	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "Template", "Spec", "Location"),

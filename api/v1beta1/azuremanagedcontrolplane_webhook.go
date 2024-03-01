@@ -138,7 +138,6 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 		old  interface{}
 		new  interface{}
 	}{
-		{field.NewPath("Spec", "SubscriptionID"), old.Spec.SubscriptionID, m.Spec.SubscriptionID},
 		{field.NewPath("Spec", "ResourceGroupName"), old.Spec.ResourceGroupName, m.Spec.ResourceGroupName},
 		{field.NewPath("Spec", "NodeResourceGroupName"), old.Spec.NodeResourceGroupName, m.Spec.NodeResourceGroupName},
 		{field.NewPath("Spec", "Location"), old.Spec.Location, m.Spec.Location},

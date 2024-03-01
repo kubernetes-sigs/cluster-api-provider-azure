@@ -1930,7 +1930,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "AzureManagedControlPlane SubscriptionID is immutable",
+			name: "AzureManagedControlPlane SubscriptionID is mutable",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
@@ -1949,7 +1949,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "AzureManagedControlPlane ResourceGroupName is immutable",
