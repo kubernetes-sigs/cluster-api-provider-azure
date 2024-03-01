@@ -318,7 +318,7 @@ That's it! You should now have a CAPZ cluster running Mariner Linux.
 [image-builder]: https://github.com/kubernetes-sigs/image-builder
 [image-builder-azure]: https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure
 [kubeadm-preflight-checks]: https://github.com/kubernetes/kubeadm/blob/master/docs/design/design_v1.10.md#preflight-checks
-[mariner]: https://microsoft.github.io/CBL-Mariner/docs/
+[mariner]: https://microsoft.github.io/azurelinux/docs/
 [replication-recommendations]: https://learn.microsoft.com/azure/virtual-machines/linux/shared-image-galleries#scaling
 [supported-capi]: https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions
 [supported-k8s]: https://kubernetes.io/releases/version-skew-policy/#supported-versions
