@@ -100,7 +100,7 @@ type NetworkSpec struct {
 
 	// APIServerLB is the configuration for the control-plane load balancer.
 	// +optional
-	APIServerLB LoadBalancerSpec `json:"apiServerLB,omitempty"`
+	APIServerLB *LoadBalancerSpec `json:"apiServerLB,omitempty"`
 
 	// NodeOutboundLB is the configuration for the node outbound load balancer.
 	// +optional
