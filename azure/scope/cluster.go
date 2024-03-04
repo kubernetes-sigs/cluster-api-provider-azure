@@ -425,14 +425,16 @@ func (s *ClusterScope) GroupSpecs() []azure.ASOResourceSpecGetter[*asoresourcesv
 	specs := []azure.ASOResourceSpecGetter[*asoresourcesv1.ResourceGroup]{
 		&groups.GroupSpec{
 			Name:           s.ResourceGroup(),
+			AzureName:      s.ResourceGroup(),
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
 		},
 	}
-	if s.Vnet().ResourceGroup != s.ResourceGroup() {
+	if s.Vnet().ResourceGroup != "" && s.Vnet().ResourceGroup != s.ResourceGroup() {
 		specs = append(specs, &groups.GroupSpec{
-			Name:           s.Vnet().ResourceGroup,
+			Name:           azure.GetNormalizedKubernetesName(s.Vnet().ResourceGroup),
+			AzureName:      s.Vnet().ResourceGroup,
 			Location:       s.Location(),
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),

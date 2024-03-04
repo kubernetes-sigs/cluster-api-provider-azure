@@ -29,6 +29,7 @@ import (
 // GroupSpec defines the specification for a Resource Group.
 type GroupSpec struct {
 	Name           string
+	AzureName      string
 	Location       string
 	ClusterName    string
 	AdditionalTags infrav1.Tags
@@ -49,7 +50,7 @@ func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.Res
 		return existing, nil
 	}
 
-	return &asoresourcesv1.ResourceGroup{
+	resourceGroup := &asoresourcesv1.ResourceGroup{
 		Spec: asoresourcesv1.ResourceGroup_Spec{
 			Location: ptr.To(s.Location),
 			Tags: infrav1.Build(infrav1.BuildParams{
@@ -60,7 +61,11 @@ func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.Res
 				Additional:  s.AdditionalTags,
 			}),
 		},
-	}, nil
+	}
+	if s.AzureName != "" {
+		resourceGroup.Spec.AzureName = s.AzureName
+	}
+	return resourceGroup, nil
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
