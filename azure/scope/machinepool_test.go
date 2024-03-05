@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
@@ -800,6 +801,7 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 					Name:          "role-assignment-name",
 					ResourceGroup: "my-rg",
 					PrincipalID:   ptr.To("fakePrincipalID"),
+					PrincipalType: armauthorization.PrincipalTypeServicePrincipal,
 				},
 			},
 		},
@@ -847,6 +849,7 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 					Scope:            "scope",
 					RoleDefinitionID: "role-definition-id",
 					PrincipalID:      ptr.To("fakePrincipalID"),
+					PrincipalType:    armauthorization.PrincipalTypeServicePrincipal,
 				},
 			},
 		},

@@ -24,6 +24,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -798,6 +799,7 @@ func (m *MachinePoolScope) RoleAssignmentSpecs(principalID *string) []azure.Reso
 			Scope:            m.SystemAssignedIdentityScope(),
 			RoleDefinitionID: m.SystemAssignedIdentityDefinitionID(),
 			PrincipalID:      principalID,
+			PrincipalType:    armauthorization.PrincipalTypeServicePrincipal,
 		}
 		return roles
 	}
