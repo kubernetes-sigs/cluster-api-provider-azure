@@ -2,13 +2,19 @@
 
 ## Release Cadence
 
-CAPZ minor versions (that is, 1.**5**.0 versus 1.**4**.x) are released every two months.
+CAPZ minor versions (that is, 1.**5**.0 versus 1.**4**.x) are typically released every two months. In order to be practical and flexible, we will consider a more rapid minor release (for example, earlier than two months following the latest minor release) if any of the following conditions are true:
+
+- Significant set of well-tested features introduced since the last release.
+  - The guiding principle here is to avoid minor releases that introduce excess feature changes, to aid release testing and validation, and to allow users the option of adopting fewer changes when upgrading.
+- User demand for rapid adoption of a specific feature or feature.
+
+Additionally, we will consider delaying a minor release if no significant features have landed during the normal two-month release cycle.
 
 CAPZ patch versions (for example, 1.5.**2** versus 1.5.**1**) are released as often as weekly. Each week at the open office hours meeting, maintainers decide whether or not a patch release is called for based on community input. A patch release may bypass this cadence if circumstances warrant.
 
 ## Release Support
 
-The two most recent minor releases of CAPZ will be supported with bug fixes. Since minor releases arrive every two months, each minor release receives fixes for four months.
+The two most recent minor releases of CAPZ will be supported with bug fixes. Assuming minor releases arrive every two months on average, each minor release will receive fixes for four months.
 
 For example, let's assume CAPZ v1.4.2 is the current release, and v1.3.2 is the latest in the previous minor release line. When v1.5.0 is released, it becomes the current release. v1.4.2 becomes the previous release line and remains supported. And v1.3.2 reaches end-of-life and no longer receives support through bug fixes.
 
