@@ -1,0 +1,18 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-flatcar-sysext
+spec:
+  clusterSelector:
+    matchLabels:
+      cloud-provider: "azure-flatcar-sysext"
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  chartName: cloud-provider-azure
+  releaseName: cloud-provider-azure-oot
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+      caCertDir: /usr/share/ca-certificates

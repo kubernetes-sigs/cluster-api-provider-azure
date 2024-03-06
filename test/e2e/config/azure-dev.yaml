@@ -164,6 +164,8 @@ providers:
         targetName: "cluster-template-topology.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar.yaml"
         targetName: "cluster-template-flatcar.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar-sysext.yaml"
+        targetName: "cluster-template-flatcar-sysext.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-edgezone.yaml"
         targetName: "cluster-template-edgezone.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azure-cni-v1.yaml"
