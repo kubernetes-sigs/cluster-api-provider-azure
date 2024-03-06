@@ -1,0 +1,175 @@
+# Default values for azure-managed-cluster.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## AKS cluster configuration
+
+## The subscription ID
+subscriptionID: ''
+identity:
+  clientID: ''
+  tenantID: ''
+  clusterIdentityName: cluster-identity
+  clusterIdentitySecretName: cluster-identity-secret
+  clusterIdentitySecretNamespace: default
+  resourceID: ""
+  type: UserAssignedMSI
+
+cluster:
+  ## The resource group for the AKS cluster object
+  resourceGroupName: aksclusters
+
+  ## The resource group name for the nodes
+  nodeResourceGroupName: base
+
+  ## The location of the cluster
+  location: eastus
+
+  ## The name of the cluster
+  name: aks-cluster-api
+
+  ## the subnet 
+  cidrBlocks:
+  - 192.168.0.0/16
+
+  ## The sku of the control plane
+  sku: Standard
+
+
+controlplane:
+
+  ## SSH public key (must be valid)
+  
+  ## Kubernetes version
+  kubernetes_version: "v1.28.3"
+
+  ## Network policy, "calico" (for kubenet and azurecni) or "azure" (for azureCNI)
+  networkPolicy: "calico"
+
+  ## Network Plugin "kubenet" or "azure"
+  networkPlugin: "azure"
+  networkPluginMode: "overlay"
+  sshPublicKey: ""
+  outboundType: "loadBalancer"
+  dnsServiceIP:  ""
+  loadBalancerSKU: "Standard"
+  sku:
+    tier: Standard
+  addonProfiles : 
+    - name: azurepolicy
+      enabled: false
+      config: {}
+    - name: httpApplicationRouting
+      enabled: false
+      config: {}
+    - name: virtual-node
+      enabled: true
+      config: {}
+  loadBalancerProfile:
+    managedOutboundIPs: 1
+    outboundIPs: ""
+    outboundIPPrefixes: ""
+    allocatedOutboundPorts: 0
+    idleTimeoutInMinutes: 30
+  apiServerAccessProfile: 
+    authorizedIPRanges: []
+    spec: 
+      enablePrivateCluster: false
+      privateDNSZone: ""
+      enablePrivateClusterPublicFQDN: false
+  autoscalerProfile: 
+    balanceSimilarNodeGroups: "false"
+    expander: "random"
+    maxEmptyBulkDelete: "10"
+    maxGracefulTerminationSec: "600"
+    maxNodeProvisionTime: "15m"
+    maxTotalUnreadyPercentage: "45"
+    newPodScaleUpDelay: "0s"
+    okTotalUnreadyCount: "3"
+    scanInterval: "10s"
+    scaleDownDelayAfterAdd: "10m"
+    scaleDownDelayAfterDelete: "0s"
+    scaleDownDelayAfterFailure: "3m"
+    scaleDownUnneededTime: "10m"
+    scaleDownUnreadyTime: "20m"
+    scaleDownUtilizationThreshold: "0.5"
+    skipNodesWithLocalStorage: "false"
+    skipNodesWithSystemPods: "false"
+  azureEnvironment: "AzurePublicCloud"
+  kubeletUserAssignedIdentity: ""
+  oidcIssuerProfile: ""
+  # disableLocalAccounts: false
+  additionalTags:
+     - key: test
+       value: test
+  dnsPrefix : ""
+  virtualNetwork: {}
+  disableLocalAccounts: false
+#Only 1 Nodepool of mode System is allowed  
+agentpools: 
+ - name: agentpool0
+   mode: System
+   sku: Standard_D4d_v5
+   nodecount: 5
+   osDiskSizeGB: 100
+   additionalTags:
+    - key: test
+      value: test
+  #  availabilityZones: 
+  #   - "1"
+  #   - "2"
+  #   - "3"
+   nodeLabels:
+    - key: test
+      value: test 
+   taints: {}
+   scaling:
+      minSize: 1
+      maxSize: 5
+   maxPods: 110
+   osDiskType : "Ephemeral"
+   enableUltraSSD : false
+   osType : "Linux"
+   enableNodePublicIP : false
+   nodePublicIPPrefixID : ""
+   scaleSetPriority : "Regular"
+   scaleDownMode : "Delete"
+   spotMaxPrice : ""
+   kubeletConfig : ""
+   kubeletDiskType : "OS"
+   linuxOSConfig : "" 
+   subnetName : ""
+   enableFIPS : false
+   enableEncryptionAtHost : false 
+ - name : agentpool1
+   mode: User
+   sku: Standard_D4d_v5
+   nodecount: 5
+   osDiskSizeGB: 100
+   additionalTags:
+    - key: test
+      value: test
+  #  availabilityZones: 
+  #   - "1"
+  #   - "2"
+  #   - "3"
+   nodeLabels:
+    - key: test
+      value: test 
+   taints: {}
+   scaling:
+      minSize: 1
+      maxSize: 5
+   maxPods: 110
+   osDiskType : "Ephemeral"
+   enableUltraSSD : false
+   osType : "Linux"
+   enableNodePublicIP : false
+   nodePublicIPPrefixID : ""
+   scaleSetPriority : "Regular"
+   scaleDownMode : "Delete"
+   spotMaxPrice : ""
+   kubeletConfig : ""
+   kubeletDiskType : "OS"
+   linuxOSConfig : "" 
+   subnetName : ""    

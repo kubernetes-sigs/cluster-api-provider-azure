@@ -1,0 +1,71 @@
+{{- range $agentpools := .Values.agentpools }}
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: {{ $agentpools.name }}
+spec:
+  name: {{ $agentpools.name }}
+  scaling:
+    minSize: {{ $agentpools.scaling.minSize }}
+    maxSize: {{ $agentpools.scaling.maxSize }}
+  additionalTags:  
+    {{- range $additionalTags := $agentpools.additionalTags }}
+    {{ $additionalTags.key }}: {{ $additionalTags.value }}
+    {{- end }}
+  osDiskSizeGB: {{ $agentpools.osDiskSizeGB }}
+  sku: {{ $agentpools.sku }}
+  availabilityZones:
+      {{- range $agentpools.availabilityZones }}
+      - {{ .  | quote }}
+      {{- end }}    
+  nodeLabels: 
+   {{- range $nodeLabels := $agentpools.nodeLabels }}
+    {{ $nodeLabels.key }}: {{ $nodeLabels.value }}
+   {{- end }}
+  taints: 
+   {{- range $taints := $agentpools.taints }}
+    - key: {{ $taints.key }}
+      value: {{ $taints.value }}
+      effect: {{ $taints.effect }}
+   {{- end }}
+  mode: {{ $agentpools.mode }}
+  maxPods: {{ $agentpools.maxPods }}
+  osDiskType : {{ $agentpools.osDiskType }}
+  enableUltraSSD : {{ $agentpools.enableUltraSSD }}
+  osType : {{ $agentpools.osType }}
+  enableNodePublicIP : {{ $agentpools.enableNodePublicIP }}
+  nodePublicIPPrefixID : {{ $agentpools.nodePublicIPPrefixID }}
+  scaleSetPriority : {{ $agentpools.scaleSetPriority }}
+  scaleDownMode : {{ $agentpools.scaleDownMode }}
+  spotMaxPrice : {{ $agentpools.spotMaxPrice }}
+  kubeletConfig : {{ $agentpools.kubeletConfig }}
+  kubeletDiskType : {{ $agentpools.kubeletDiskType }}
+  linuxOSConfig : {{ $agentpools.linuxOSConfig }}
+  subnetName : {{ $agentpools.subnetName }}
+  enableFIPS : {{ $agentpools.enableFIPS }}
+  enableEncryptionAtHost : {{ $agentpools.enableEncryptionAtHost }}
+
+  
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: {{ $agentpools.name }}
+spec:
+  clusterName: {{ $.Values.cluster.name }}
+  replicas: {{ $agentpools.nodecount }}
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: {{ $.Values.cluster.name }}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: {{ $agentpools.name }}
+        namespace: {{ $.Release.Namespace }}
+      version: {{ $.Values.controlplane.kubernetes_version }}
+---
+{{- end }}
+
