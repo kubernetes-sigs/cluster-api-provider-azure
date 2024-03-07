@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
@@ -51,8 +52,8 @@ func TestParameters(t *testing.T) {
 			NetworkPolicy:     "network policy",
 			OutboundType:      ptr.To(infrav1.ManagedControlPlaneOutboundType("outbound type")),
 			SSHPublicKey:      base64.StdEncoding.EncodeToString([]byte("ssh")),
-			GetAllAgentPools: func() ([]azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool], error) {
-				return []azure.ASOResourceSpecGetter[*asocontainerservicev1.ManagedClustersAgentPool]{
+			GetAllAgentPools: func() ([]azure.ASOResourceSpecGetter[genruntime.MetaObject], error) {
+				return []azure.ASOResourceSpecGetter[genruntime.MetaObject]{
 					&agentpools.AgentPoolSpec{
 						Replicas:  5,
 						Mode:      "mode",
@@ -291,6 +292,31 @@ func TestParameters(t *testing.T) {
 		g.Expect(cmp.Diff(actual, expected)).To(BeEmpty())
 	})
 
+	t.Run("no existing preview managed cluster", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		spec := &ManagedClusterSpec{
+			Name:    "name",
+			Preview: true,
+			GetAllAgentPools: func() ([]azure.ASOResourceSpecGetter[genruntime.MetaObject], error) {
+				return []azure.ASOResourceSpecGetter[genruntime.MetaObject]{
+					&agentpools.AgentPoolSpec{
+						Replicas:  5,
+						Mode:      "mode",
+						AzureName: "agentpool",
+						Patches:   []string{`{"spec": {"tags": {"from": "patches"}}}`},
+						Preview:   true,
+					},
+				}, nil
+			},
+		}
+
+		actual, err := spec.Parameters(context.Background(), nil)
+		g.Expect(err).NotTo(HaveOccurred())
+		_, ok := actual.(*asocontainerservicev1preview.ManagedCluster)
+		g.Expect(ok).To(BeTrue())
+	})
+
 	t.Run("with existing managed cluster", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -311,7 +337,8 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(context.Background(), existing)
+		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
@@ -321,6 +348,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.KubernetesVersion).NotTo(BeNil())
 		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
+
 	t.Run("updating existing managed cluster to a non nil DNS Service IP", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -342,7 +370,8 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(context.Background(), existing)
+		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
