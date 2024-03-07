@@ -33,19 +33,17 @@ jobs:
       - name: Get release version
         id: release-version
         run: |
-            if [[ ${{ steps.changed-files.outputs.all_changed_files_count }} != 1 ]]; then
-              echo "1 release notes file should be changed to create a release tag, found ${{ steps.changed-files.outputs.all_changed_files_count }}"
-              exit 1
-            fi
             for changed_file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-              export RELEASE_VERSION=$(echo "${changed_file}" | grep -oP '(?<=/)[^/]+(?=\.md)')
-              echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-              echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-              if [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
-                echo "Valid semver: $RELEASE_VERSION"
-              else
-                echo "Invalid semver: $RELEASE_VERSION"
-                exit 1
+              if [[ $changed_file =~ CHANGELOG/.*\.md ]]; then
+                export RELEASE_VERSION=$(echo "${changed_file}" | grep -oP '(?<=/)[^/]+(?=\.md)')
+                echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+                echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+                if [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+                  echo "Valid semver: $RELEASE_VERSION"
+                else
+                  echo "Invalid semver: $RELEASE_VERSION"
+                  exit 1
+                fi
               fi
             done
       - name: Determine the release branch to use
