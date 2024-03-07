@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'CHANGELOG/*.md'
-  workflow_dispatch:
 
 permissions:  # added using https://github.com/step-security/secure-repo
   contents: read
@@ -31,20 +30,25 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@800a2825992141ddde1a8bca8ad394cec34d3188 # tag=v42.0.5
+        with:
+          files: |
+            'CHANGELOG/**.md'
       - name: Get release version
         id: release-version
         run: |
+            if [[ ${{ steps.changed-files.outputs.all_changed_files_count }} != 1 ]]; then
+              echo "1 release notes file should be changed to create a release tag, found ${{ steps.changed-files.outputs.all_changed_files_count }}"
+              exit 1
+            fi
             for changed_file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-              if [[ $changed_file =~ CHANGELOG/.*\.md ]]; then
-                export RELEASE_VERSION=$(echo "${changed_file}" | grep -oP '(?<=/)[^/]+(?=\.md)')
-                echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-                echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-                if [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
-                  echo "Valid semver: $RELEASE_VERSION"
-                else
-                  echo "Invalid semver: $RELEASE_VERSION"
-                  exit 1
-                fi
+              export RELEASE_VERSION=$(echo "${changed_file}" | grep -oP '(?<=/)[^/]+(?=\.md)')
+              echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+              echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+              if [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+                echo "Valid semver: $RELEASE_VERSION"
+              else
+                echo "Invalid semver: $RELEASE_VERSION"
+                exit 1
               fi
             done
       - name: Determine the release branch to use
