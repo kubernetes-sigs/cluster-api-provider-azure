@@ -44,7 +44,7 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 		// response may include spaces (e.g. "Customer Initiated")
 		words := strings.Split(*availStatus.Properties.ReasonType, " ")
 		for _, word := range words {
-			if len(word) > 0 {
+			if word != "" {
 				reason.WriteString(strings.ToTitle(word[:1]))
 			}
 			if len(word) > 1 {

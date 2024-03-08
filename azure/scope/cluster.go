@@ -708,7 +708,7 @@ func (s *ClusterScope) APIServerPrivateIP() string {
 
 // GetPrivateDNSZoneName returns the Private DNS Zone from the spec or generate it from cluster name.
 func (s *ClusterScope) GetPrivateDNSZoneName() string {
-	if len(s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName) > 0 {
+	if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName != "" {
 		return s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName
 	}
 	return azure.GeneratePrivateDNSZoneName(s.ClusterName())

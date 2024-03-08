@@ -596,6 +596,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	// If existing is preview, convert to stable then back to preview at the end of the function.
 	var existing *asocontainerservicev1.ManagedCluster
 	var existingStatus asocontainerservicev1preview.ManagedCluster_STATUS
+
 	if existingObj != nil {
 		if s.Preview {
 			existingPreview := existingObj.(*asocontainerservicev1preview.ManagedCluster)
@@ -649,19 +650,19 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 		ClientId: ptr.To("msi"),
 	}
 
-	networkProfile, err := s.buildManagedClusterNetworkProfile()
-	if err != nil {
+	if networkProfile, err := s.buildManagedClusterNetworkProfile(); err == nil {
+		managedCluster.Spec.NetworkProfile = networkProfile
+	} else {
 		return nil, err
 	}
-	managedCluster.Spec.NetworkProfile = networkProfile
 
 	managedCluster.Spec.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)
 
-	linuxProfile, err := s.buildManagedClusterLinuxSSHProfile()
-	if err != nil {
+	if linuxProfile, err := s.buildManagedClusterLinuxSSHProfile(); err == nil {
+		managedCluster.Spec.LinuxProfile = linuxProfile
+	} else {
 		return nil, err
 	}
-	managedCluster.Spec.LinuxProfile = linuxProfile
 
 	managedCluster.Spec.OperatorSpec = s.buildManagedClusterOperatorSpec()
 
@@ -751,12 +752,15 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 		if err := asocontainerservicev1preview.AddToScheme(scheme); err != nil {
 			return nil, errors.Wrap(err, "error constructing scheme")
 		}
+		var agentPoolTyped []agentpools.AgentPoolSpec
 		for _, agentPoolSpec := range agentPoolSpecs {
 			agentPool, err := aso.PatchedParameters(ctx, scheme, agentPoolSpec, nil)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get agent pool parameters for managed cluster %s", s.Name)
 			}
 			agentPoolSpecTyped := agentPoolSpec.(*agentpools.AgentPoolSpec)
+			agentPoolTyped = append(agentPoolTyped, *agentPoolSpecTyped)
+
 			if s.Preview {
 				agentPoolTyped := agentPool.(*asocontainerservicev1preview.ManagedClustersAgentPool)
 				agentPoolTyped.Spec.AzureName = agentPoolSpecTyped.AzureName
