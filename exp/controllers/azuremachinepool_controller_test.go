@@ -84,12 +84,12 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 			requiredObjects := [3]client.Object{secret, cluster, azureMachinePool}
 			for _, obj := range requiredObjects {
 				err := testEnv.Create(context.Background(), obj)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			}
 
 			machinePoolScope, _ := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 				Client:           testEnv.GetClient(),
-				MachinePool:      getMachinePool(name, namespace, secretName),
+				MachinePool:      constructMachinePool(name, namespace, secretName),
 				AzureMachinePool: azureMachinePool,
 			})
 			machinePoolScope.VMSkuResolver = func(scope *scope.MachinePoolScope, context context.Context) (resourceskus.SKU, error) {
@@ -101,7 +101,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 			cluster.Status.InfrastructureReady = true
 			result, err := reconciler.reconcileNormal(context.Background(), machinePoolScope, cluster)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(result.Requeue).Should(BeFalse())
 			Expect(*machinePoolScope.AzureMachinePool.Status.FailureReason).Should(Equal(capierrors.InvalidConfigurationMachinePoolError))
 		})
@@ -113,7 +113,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 
 			machinePoolScope, _ := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 				Client:           testEnv.GetClient(),
-				MachinePool:      getMachinePool(name, namespace, secretName),
+				MachinePool:      constructMachinePool(name, namespace, secretName),
 				AzureMachinePool: azureMachinePool,
 			})
 			reconciler := NewAzureMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
@@ -121,7 +121,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 
 			By("reconciler.reconcileNormal ")
 			result, err := reconciler.reconcileNormal(context.Background(), machinePoolScope, getValidCluster(azureMachinePool.Name, azureMachinePool.Namespace))
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(result.RequeueAfter).To(BeZero(), "should not be re-queued since terminal failure")
 		})
 	})
@@ -144,7 +144,7 @@ func getValidCluster(name, namespace string) *clusterv1.Cluster {
 	}
 }
 
-func getMachinePool(name, namespace, secretName string) *expv1.MachinePool {
+func constructMachinePool(name, namespace, secretName string) *expv1.MachinePool {
 	return &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -272,7 +272,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())
 	g.Expect(c.Create(ctx, fakeSecret)).To(Succeed())
 
-	mp := getMachinePool(name, namespace, secretName)
+	mp := constructMachinePool(name, namespace, secretName)
 	g.Expect(c.Create(ctx, mp)).To(Succeed())
 
 	instance := getAzureMachinePool(name, namespace, mp.Name)
