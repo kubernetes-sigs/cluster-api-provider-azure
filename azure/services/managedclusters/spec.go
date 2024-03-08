@@ -396,9 +396,53 @@ func (s *ManagedClusterSpec) ResourceRef() genruntime.MetaObject {
 	}
 }
 
+func (s *ManagedClusterSpec) constructManagedClusterNetworkProfile() (*asocontainerservicev1.ContainerServiceNetworkProfile, error) {
+	networkProfile := &asocontainerservicev1.ContainerServiceNetworkProfile{
+		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.NetworkPlugin](&s.NetworkPlugin),
+		LoadBalancerSku: azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku](&s.LoadBalancerSKU),
+		NetworkPolicy:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy](&s.NetworkPolicy),
+	}
+	if s.NetworkDataplane != nil {
+		networkProfile.NetworkDataplane = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkDataplane(*s.NetworkDataplane))
+	}
+
+	if s.NetworkPluginMode != nil {
+		networkProfile.NetworkPluginMode = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPluginMode(*s.NetworkPluginMode))
+	}
+
+	if s.PodCIDR != "" {
+		networkProfile.PodCidr = &s.PodCIDR
+	}
+
+	if s.ServiceCIDR != "" {
+		networkProfile.ServiceCidr = &s.ServiceCIDR
+		networkProfile.DnsServiceIP = s.DNSServiceIP
+		if s.DNSServiceIP == nil {
+			ip, _, err := net.ParseCIDR(s.ServiceCIDR)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse service cidr: %w", err)
+			}
+			// HACK: set the last octet of the IP to .10
+			// This ensures the dns IP is valid in the service cidr without forcing the user
+			// to specify it in both the Capi cluster and the Azure control plane.
+			// https://golang.org/src/net/ip.go#L48
+			ip[15] = byte(10)
+			dnsIP := ip.String()
+			networkProfile.DnsServiceIP = &dnsIP
+		}
+	}
+
+	if s.LoadBalancerProfile != nil {
+		networkProfile.LoadBalancerProfile = s.GetLoadBalancerProfile()
+	}
+
+	if s.OutboundType != nil {
+		networkProfile.OutboundType = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_OutboundType(*s.OutboundType))
+	}
+	return networkProfile, nil
+}
+
 // Parameters returns the parameters for the managed clusters.
-//
-//nolint:gocyclo // Function requires a lot of nil checks that raise complexity.
 func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genruntime.MetaObject) (params genruntime.MetaObject, err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Parameters")
 	defer done()
@@ -458,14 +502,13 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	managedCluster.Spec.ServicePrincipalProfile = &asocontainerservicev1.ManagedClusterServicePrincipalProfile{
 		ClientId: ptr.To("msi"),
 	}
-	managedCluster.Spec.NetworkProfile = &asocontainerservicev1.ContainerServiceNetworkProfile{
-		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.NetworkPlugin](&s.NetworkPlugin),
-		LoadBalancerSku: azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku](&s.LoadBalancerSKU),
-		NetworkPolicy:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy](&s.NetworkPolicy),
+
+	networkProfile, err := s.constructManagedClusterNetworkProfile()
+	if err != nil {
+		return nil, err
 	}
-	if s.NetworkDataplane != nil {
-		managedCluster.Spec.NetworkProfile.NetworkDataplane = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkDataplane(*s.NetworkDataplane))
-	}
+	managedCluster.Spec.NetworkProfile = networkProfile
+
 	managedCluster.Spec.AutoScalerProfile = buildAutoScalerProfile(s.AutoScalerProfile)
 
 	var decodedSSHPublicKey []byte
@@ -486,32 +529,6 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 					},
 				},
 			},
-		}
-	}
-
-	if s.NetworkPluginMode != nil {
-		managedCluster.Spec.NetworkProfile.NetworkPluginMode = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPluginMode(*s.NetworkPluginMode))
-	}
-
-	if s.PodCIDR != "" {
-		managedCluster.Spec.NetworkProfile.PodCidr = &s.PodCIDR
-	}
-
-	if s.ServiceCIDR != "" {
-		managedCluster.Spec.NetworkProfile.ServiceCidr = &s.ServiceCIDR
-		managedCluster.Spec.NetworkProfile.DnsServiceIP = s.DNSServiceIP
-		if s.DNSServiceIP == nil {
-			ip, _, err := net.ParseCIDR(s.ServiceCIDR)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse service cidr: %w", err)
-			}
-			// HACK: set the last octet of the IP to .10
-			// This ensures the dns IP is valid in the service cidr without forcing the user
-			// to specify it in both the Capi cluster and the Azure control plane.
-			// https://golang.org/src/net/ip.go#L48
-			ip[15] = byte(10)
-			dnsIP := ip.String()
-			managedCluster.Spec.NetworkProfile.DnsServiceIP = &dnsIP
 		}
 	}
 
@@ -570,10 +587,6 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 		}
 	}
 
-	if s.LoadBalancerProfile != nil {
-		managedCluster.Spec.NetworkProfile.LoadBalancerProfile = s.GetLoadBalancerProfile()
-	}
-
 	if s.APIServerAccessProfile != nil {
 		managedCluster.Spec.ApiServerAccessProfile = &asocontainerservicev1.ManagedClusterAPIServerAccessProfile{
 			EnablePrivateCluster:           s.APIServerAccessProfile.EnablePrivateCluster,
@@ -584,10 +597,6 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 		if s.APIServerAccessProfile.AuthorizedIPRanges != nil {
 			managedCluster.Spec.ApiServerAccessProfile.AuthorizedIPRanges = s.APIServerAccessProfile.AuthorizedIPRanges
 		}
-	}
-
-	if s.OutboundType != nil {
-		managedCluster.Spec.NetworkProfile.OutboundType = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_OutboundType(*s.OutboundType))
 	}
 
 	if s.Identity != nil {
