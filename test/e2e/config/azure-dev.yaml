@@ -100,7 +100,7 @@ providers:
       contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.13.2/cluster-template-prow.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.14.0/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
