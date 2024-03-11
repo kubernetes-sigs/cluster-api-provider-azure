@@ -402,12 +402,13 @@ func (s *ManagedClusterSpec) ResourceRef() genruntime.MetaObject {
 	}
 }
 
-func (s *ManagedClusterSpec) buildManagedClusterNetworkProfile(managedCluster *asocontainerservicev1.ManagedCluster) error {
+func (s *ManagedClusterSpec) buildNetworkProfile(managedCluster *asocontainerservicev1.ManagedCluster) error {
 	networkProfile := &asocontainerservicev1.ContainerServiceNetworkProfile{
 		NetworkPlugin:   azure.AliasOrNil[asocontainerservicev1.NetworkPlugin](&s.NetworkPlugin),
 		LoadBalancerSku: azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku](&s.LoadBalancerSKU),
 		NetworkPolicy:   azure.AliasOrNil[asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy](&s.NetworkPolicy),
 	}
+
 	if s.NetworkDataplane != nil {
 		networkProfile.NetworkDataplane = ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkDataplane(*s.NetworkDataplane))
 	}
@@ -582,6 +583,7 @@ func (s *ManagedClusterSpec) buildHTTPProxyConfig(managedCluster *asocontainerse
 	if s.HTTPProxyConfig == nil {
 		return
 	}
+
 	httpProxyConfig := &asocontainerservicev1.ManagedClusterHTTPProxyConfig{
 		HttpProxy:  s.HTTPProxyConfig.HTTPProxy,
 		HttpsProxy: s.HTTPProxyConfig.HTTPSProxy,
@@ -595,12 +597,14 @@ func (s *ManagedClusterSpec) buildHTTPProxyConfig(managedCluster *asocontainerse
 }
 
 func (s *ManagedClusterSpec) buildSKU(managedCluster *asocontainerservicev1.ManagedCluster) {
-	if s.SKU != nil {
-		tierName := asocontainerservicev1.ManagedClusterSKU_Tier(s.SKU.Tier)
-		managedCluster.Spec.Sku = &asocontainerservicev1.ManagedClusterSKU{
-			Name: ptr.To(asocontainerservicev1.ManagedClusterSKU_Name("Base")),
-			Tier: ptr.To(tierName),
-		}
+	if s.SKU == nil {
+		return
+	}
+
+	tierName := asocontainerservicev1.ManagedClusterSKU_Tier(s.SKU.Tier)
+	managedCluster.Spec.Sku = &asocontainerservicev1.ManagedClusterSKU{
+		Name: ptr.To(asocontainerservicev1.ManagedClusterSKU_Name("Base")),
+		Tier: ptr.To(tierName),
 	}
 }
 
@@ -643,10 +647,15 @@ func (s *ManagedClusterSpec) buildAADProfile(managedCluster *asocontainerservice
 	if s.AADProfile == nil {
 		return
 	}
+
 	managedCluster.Spec.AadProfile = &asocontainerservicev1.ManagedClusterAADProfile{
 		Managed:             &s.AADProfile.Managed,
 		EnableAzureRBAC:     &s.AADProfile.EnableAzureRBAC,
 		AdminGroupObjectIDs: s.AADProfile.AdminGroupObjectIDs,
+	}
+
+	if s.DisableLocalAccounts != nil {
+		managedCluster.Spec.DisableLocalAccounts = s.DisableLocalAccounts
 	}
 }
 
@@ -682,6 +691,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	// If existing is preview, convert to stable then back to preview at the end of the function.
 	var existing *asocontainerservicev1.ManagedCluster
 	var existingStatus asocontainerservicev1preview.ManagedCluster_STATUS
+
 	if existingObj != nil {
 		if s.Preview {
 			existingPreview := existingObj.(*asocontainerservicev1preview.ManagedCluster)
@@ -715,13 +725,15 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	managedCluster.Spec.Owner = &genruntime.KnownResourceReference{
 		Name: s.ResourceGroup,
 	}
-	managedCluster.Spec.Identity = &asocontainerservicev1.ManagedClusterIdentity{
-		Type: ptr.To(asocontainerservicev1.ManagedClusterIdentity_Type_SystemAssigned),
+
+	if err = s.buildIdentity(managedCluster); err != nil {
+		return nil, errors.Wrapf(err, "Identity is not valid: %s", err)
 	}
+	s.buildIdentityProfile(managedCluster)
+
 	managedCluster.Spec.Location = &s.Location
 	managedCluster.Spec.NodeResourceGroup = &s.NodeResourceGroup
 	managedCluster.Spec.DnsPrefix = s.DNSPrefix
-
 	managedCluster.Spec.EnableRBAC = ptr.To(true)
 	managedCluster.Spec.ServicePrincipalProfile = &asocontainerservicev1.ManagedClusterServicePrincipalProfile{
 		ClientId: ptr.To("msi"),
@@ -732,26 +744,13 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	s.buildAddonProfiles(managedCluster)
 	s.buildAPIServerAccessProfile(managedCluster)
 	s.buildSKU(managedCluster)
-	if err := s.buildManagedClusterNetworkProfile(managedCluster); err != nil {
+	if err := s.buildNetworkProfile(managedCluster); err != nil {
 		return nil, err
 	}
-
 	if err := s.buildLinuxSSHProfile(managedCluster); err != nil {
 		return nil, err
 	}
-
 	s.buildAADProfile(managedCluster)
-	if s.AADProfile != nil {
-		if s.DisableLocalAccounts != nil {
-			managedCluster.Spec.DisableLocalAccounts = s.DisableLocalAccounts
-		}
-	}
-
-	if err = s.getIdentity(managedCluster); err != nil {
-		return nil, errors.Wrapf(err, "Identity is not valid: %s", err)
-	}
-
-	s.buildIdentityProfile(managedCluster)
 	s.buildHTTPProxyConfig(managedCluster)
 	s.buildSecurityProfile(managedCluster)
 
@@ -806,17 +805,17 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	}
 
 	if s.Preview {
-		prev, err := convertV1ToPreview(managedCluster)
+		preview, err := convertV1ToPreview(managedCluster)
 		if err != nil {
 			return nil, err
 		}
 		if existing != nil {
-			prev.Status = existingStatus
+			preview.Status = existingStatus
 		}
 		if prevAgentPoolProfiles != nil {
-			prev.Spec.AgentPoolProfiles = prevAgentPoolProfiles
+			preview.Spec.AgentPoolProfiles = prevAgentPoolProfiles
 		}
-		return prev, nil
+		return preview, nil
 	}
 
 	return managedCluster, nil
@@ -857,14 +856,18 @@ func convertToResourceReferences(resources []string) []asocontainerservicev1.Res
 	return resourceReferences
 }
 
-func (s *ManagedClusterSpec) getIdentity(managedCluster *asocontainerservicev1.ManagedCluster) error {
-	if s.Identity != nil || s.Identity.Type == "" {
+func (s *ManagedClusterSpec) buildIdentity(managedCluster *asocontainerservicev1.ManagedCluster) error {
+	if s.Identity == nil || s.Identity.Type == "" {
+		managedCluster.Spec.Identity = &asocontainerservicev1.ManagedClusterIdentity{
+			Type: ptr.To(asocontainerservicev1.ManagedClusterIdentity_Type_SystemAssigned),
+		}
 		return nil
 	}
 
 	managedClusterIdentity := &asocontainerservicev1.ManagedClusterIdentity{
 		Type: ptr.To(asocontainerservicev1.ManagedClusterIdentity_Type(s.Identity.Type)),
 	}
+
 	if ptr.Deref(managedClusterIdentity.Type, "") == asocontainerservicev1.ManagedClusterIdentity_Type_UserAssigned {
 		if s.Identity.UserAssignedIdentityResourceID == "" {
 			return errors.Errorf("Identity is set to \"UserAssigned\" but no UserAssignedIdentityResourceID is present")
