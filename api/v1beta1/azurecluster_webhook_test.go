@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -234,7 +235,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "azurecluster subscription ID is immutable",
+			name: "azurecluster subscription ID is immutable without annotation",
 			oldCluster: &AzureCluster{
 				Spec: AzureClusterSpec{
 					AzureClusterClassSpec: AzureClusterClassSpec{
@@ -251,6 +252,30 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "azurecluster subscription ID is mutable with annotation",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						SubscriptionID: "212ec1q8",
+					},
+				},
+			},
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						AzureClusterAllowMutateSubscriptionIDAnnotation: "",
+					},
+				},
+				Spec: AzureClusterSpec{
+					AzureClusterClassSpec: AzureClusterClassSpec{
+						SubscriptionID: "212ec1q9",
+					},
+				},
+			},
+			wantErr: true,
+		},
+
 		{
 			name: "azurecluster location is immutable",
 			oldCluster: &AzureCluster{
