@@ -20,12 +20,9 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
-	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
-	capifeature "sigs.k8s.io/cluster-api/feature"
 )
 
 func TestAzureMachinePool_Validate(t *testing.T) {
@@ -213,9 +210,6 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			// Don't add t.Parallel() here or the test will fail.
-			// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
-			// must prevent creating new objects in case the feature flag is disabled.
-			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 			g := gomega.NewGomegaWithT(t)
 			amp := c.Factory(g)
 			actualErr := amp.Validate(nil, nil)

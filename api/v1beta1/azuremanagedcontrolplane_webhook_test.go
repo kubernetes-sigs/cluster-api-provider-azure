@@ -476,9 +476,6 @@ func TestValidateAutoScalerProfile(t *testing.T) {
 }
 
 func TestValidatingWebhook(t *testing.T) {
-	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
-	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	tests := []struct {
 		name      string
 		amcp      AzureManagedControlPlane
@@ -1379,10 +1376,6 @@ func TestValidatingWebhook(t *testing.T) {
 }
 
 func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
-	// NOTE: AzureManageControlPlane is behind AKS feature gate flag; the webhook
-	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-
 	tests := []struct {
 		name     string
 		amcp     *AzureManagedControlPlane
@@ -1637,19 +1630,22 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 
 func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 	tests := []struct {
-		name      string
-		amcp      *AzureManagedControlPlane
-		deferFunc func()
+		name        string
+		amcp        *AzureManagedControlPlane
+		deferFunc   func()
+		expectError bool
 	}{
 		{
-			name:      "feature gate explicitly disabled",
-			amcp:      getKnownValidAzureManagedControlPlane(),
-			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
+			name:        "feature gate explicitly disabled",
+			amcp:        getKnownValidAzureManagedControlPlane(),
+			deferFunc:   utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
+			expectError: true,
 		},
 		{
-			name:      "feature gate implicitly disabled",
-			amcp:      getKnownValidAzureManagedControlPlane(),
-			deferFunc: func() {},
+			name:        "feature gate implicitly enabled",
+			amcp:        getKnownValidAzureManagedControlPlane(),
+			deferFunc:   func() {},
+			expectError: false,
 		},
 	}
 	client := mockClient{ReturnError: false}
@@ -1661,7 +1657,11 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 				Client: client,
 			}
 			_, err := mcpw.ValidateCreate(context.Background(), tc.amcp)
-			g.Expect(err).To(HaveOccurred())
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
@@ -3219,7 +3219,6 @@ func getAMCPMetaData() metav1.ObjectMeta {
 }
 
 func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	testsCreate := []struct {
 		name    string
 		amcp    *AzureManagedControlPlane

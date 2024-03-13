@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -42,7 +41,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -110,7 +108,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		azureCluster               *infrav1.AzureCluster
 		identityType               infrav1.VMIdentity
 		identityID                 string
-		machinePoolFeature         bool
 		expectedControlPlaneConfig string
 		expectedWorkerNodeConfig   string
 	}{
@@ -161,7 +158,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			cluster:                    cluster,
 			azureCluster:               azureCluster,
 			identityType:               infrav1.VMIdentityNone,
-			machinePoolFeature:         true,
 			expectedControlPlaneConfig: vmssCloudConfig,
 			expectedWorkerNodeConfig:   vmssCloudConfig,
 		},
@@ -173,9 +169,6 @@ func TestGetCloudProviderConfig(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			if tc.machinePoolFeature {
-				defer utilfeature.SetFeatureGateDuringTest(t, capifeature.Gates, capifeature.MachinePool, true)()
-			}
 			fakeIdentity := &infrav1.AzureClusterIdentity{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "fake-identity",
@@ -532,7 +525,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 	//nolint:gosec // Ignore "G101: Potential hardcoded credentials" check.
 	spWorkerNodeCloudConfig = `{
@@ -554,7 +548,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 
 	systemAssignedControlPlaneCloudConfig = `{
@@ -574,7 +569,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 	systemAssignedWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
@@ -593,7 +589,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 
 	userAssignedControlPlaneCloudConfig = `{
@@ -614,6 +611,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true,
     "userAssignedIdentityID": "foobar"
 }`
 	userAssignedWorkerNodeCloudConfig = `{
@@ -634,6 +632,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true,
     "userAssignedIdentityID": "foobar"
 }`
 	spCustomVnetControlPlaneCloudConfig = `{
@@ -655,7 +654,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 	spCustomVnetWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
@@ -676,7 +676,8 @@ const (
     "loadBalancerName": "",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
+    "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true
 }`
 	rateLimitsControlPlaneCloudConfig = `{
     "cloud": "AzurePublicCloud",
@@ -698,6 +699,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true,
     "cloudProviderRateLimit": true,
     "cloudProviderRateLimitQPS": 1.2,
     "loadBalancerRateLimit": {
@@ -724,6 +726,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true,
     "cloudProviderRateLimit": true,
     "cloudProviderRateLimitQPS": 1.2,
     "loadBalancerRateLimit": {
@@ -750,6 +753,7 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true,
+    "enableVmssFlexNodes": true,
     "cloudProviderBackoff": true,
     "cloudProviderBackoffRetries": 1,
     "cloudProviderBackoffExponent": 1.2000000000000002,
