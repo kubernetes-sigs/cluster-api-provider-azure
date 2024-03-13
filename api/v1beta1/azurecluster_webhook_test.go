@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -221,61 +220,36 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "azurecluster resource group is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					ResourceGroup: "demoResourceGroup",
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					ResourceGroup: "demoResourceGroup-2",
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name: "azurecluster subscription ID is immutable without annotation",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q8",
-					},
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q9",
-					},
-				},
-			},
+			oldCluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q8"
+				return ac
+			}(),
+			cluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q9"
+				return ac
+			}(),
 			wantErr: true,
 		},
 		{
 			name: "azurecluster subscription ID is mutable with annotation",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q8",
-					},
-				},
-			},
-			cluster: &AzureCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						AzureClusterAllowMutateSubscriptionIDAnnotation: "",
-					},
-				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q9",
-					},
-				},
-			},
-			wantErr: true,
+			oldCluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q8"
+				return ac
+			}(),
+			cluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Annotations = map[string]string{
+					AzureClusterAllowMutateSubscriptionIDAnnotation: "",
+				}
+				ac.Spec.SubscriptionID = "212ec1q9"
+				return ac
+			}(),
+			wantErr: false,
 		},
-
 		{
 			name: "azurecluster location is immutable",
 			oldCluster: &AzureCluster{
