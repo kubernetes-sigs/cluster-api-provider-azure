@@ -28,16 +28,18 @@ jobs:
         with:
           fetch-depth: 0
       - name: Get changed files
-        id: changed-files
+        id: changed-markdown-files
         uses: tj-actions/changed-files@aa08304bd477b800d468db44fe10f6c61f7f7b11 # tag=v42.1.0
+        with:
+          files: CHANGELOG/**.md
       - name: Get release version
         id: release-version
         run: |
-            if [[ ${{ steps.changed-files.outputs.all_changed_files_count }} != 1 ]]; then
-              echo "1 release notes file should be changed to create a release tag, found ${{ steps.changed-files.outputs.all_changed_files_count }}"
+            if [[ ${{ steps.changed-markdown-files.outputs.all_changed_files_count }} != 1 ]]; then
+              echo "1 release notes file should be changed to create a release tag, found ${{ steps.changed-markdown-files.outputs.all_changed_files_count }}"
               exit 1
             fi
-            for changed_file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            for changed_file in ${{ steps.changed-markdown-files.outputs.all_changed_files }}; do
               export RELEASE_VERSION=$(echo "${changed_file}" | grep -oP '(?<=/)[^/]+(?=\.md)')
               echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
               echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_OUTPUT
