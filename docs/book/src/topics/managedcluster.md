@@ -364,6 +364,36 @@ spec:
         enabled: true
 ```
 
+### Enabling Preview API Features for ManagedClusters
+
+#### :warning: WARNING: This is meant to be used sparingly to enable features for development and testing that are not otherwise represented in the CAPZ API. Misconfiguration that conflicts with CAPZ's normal mode of operation is possible.
+
+To enable preview features for managed clusters, you can use the `enablePreviewFeatures` field in the `AzureManagedControlPlane` resource spec. To use any of the new fields included in the preview API version, use the `asoManagedClusterPatches` field in the `AzureManagedControlPlane` resource spec and the `asoManagedClustersAgentPoolPatches` field in the `AzureManagedMachinePool` resource spec to patch in the new fields.
+
+Please refer to the [ASO Docs](https://azure.github.io/azure-service-operator/reference/containerservice/) for the ContainerService API reference for the latest preview fields and their usage.
+
+Example for enabling preview features for managed clusters:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  enablePreviewFeatures: true
+  asoManagedClusterPatches:
+  - '{"spec": {"enableNamespaceResources": true}}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  ...
+spec:
+  asoManagedClustersAgentPoolPatches:
+  - '{"spec": {"enableCustomCATrust": true}}'
+```
+
 #### OIDC Issuer on AKS
 
 Setting `AzureManagedControlPlane.Spec.oidcIssuerProfile.enabled` to `true` will enable OIDC issuer profile for the `AzureManagedControlPlane`. Once enabled, you will see a configmap named `<cluster-name>-aso-oidc-issuer-profile` in the same namespace as the `AzureManagedControlPlane` resource. This configmap will contain the OIDC issuer profile url under the `oidc-issuer-profile-url` key.

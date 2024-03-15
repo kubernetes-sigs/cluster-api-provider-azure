@@ -19,6 +19,7 @@ package aso
 import (
 	"context"
 
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -27,7 +28,7 @@ import (
 )
 
 // Service provides operations on Azure resources.
-type Service[T deepCopier[T], S Scope] struct {
+type Service[T genruntime.MetaObject, S Scope] struct {
 	Reconciler[T]
 
 	Scope S
@@ -46,7 +47,7 @@ type Service[T deepCopier[T], S Scope] struct {
 }
 
 // NewService creates a new Service.
-func NewService[T deepCopier[T], S Scope](name string, scope S) *Service[T, S] {
+func NewService[T genruntime.MetaObject, S Scope](name string, scope S) *Service[T, S] {
 	return &Service[T, S]{
 		Reconciler: New[T](scope.GetClient(), scope.ClusterName(), scope.ASOOwner()),
 		Scope:      scope,

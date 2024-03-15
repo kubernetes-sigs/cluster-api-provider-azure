@@ -77,6 +77,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.DNSPrefix).NotTo(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal(amcp.Name))
 	g.Expect(amcp.Spec.Extensions[0].Plan.Name).To(Equal("fooName-test-product"))
+	g.Expect(amcp.Spec.EnablePreviewFeatures).NotTo(BeNil())
+	g.Expect(*amcp.Spec.EnablePreviewFeatures).To(BeFalse())
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -106,6 +108,7 @@ func TestDefaultingWebhook(t *testing.T) {
 			IntervalHours: ptr.To(48),
 		},
 	}
+	amcp.Spec.EnablePreviewFeatures = ptr.To(true)
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -129,6 +132,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner).NotTo(BeNil())
 	g.Expect(amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).NotTo(BeNil())
 	g.Expect(*amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).To(Equal(48))
+	g.Expect(amcp.Spec.EnablePreviewFeatures).NotTo(BeNil())
+	g.Expect(*amcp.Spec.EnablePreviewFeatures).To(BeTrue())
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{

@@ -81,6 +81,7 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 	setDefault[*Identity](&m.Spec.Identity, &Identity{
 		Type: ManagedControlPlaneIdentityTypeSystemAssigned,
 	})
+	setDefault[*bool](&m.Spec.EnablePreviewFeatures, ptr.To(false))
 	m.Spec.Version = setDefaultVersion(m.Spec.Version)
 	m.Spec.SKU = setDefaultSku(m.Spec.SKU)
 	m.Spec.AutoScalerProfile = setDefaultAutoScalerProfile(m.Spec.AutoScalerProfile)

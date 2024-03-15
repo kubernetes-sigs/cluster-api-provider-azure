@@ -31,7 +31,7 @@ import (
 	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	v1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -313,6 +313,20 @@ func (mr *MockManagedClusterScopeMockRecorder) IsManagedVersionUpgrade() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsManagedVersionUpgrade", reflect.TypeOf((*MockManagedClusterScope)(nil).IsManagedVersionUpgrade))
 }
 
+// IsPreviewEnabled mocks base method.
+func (m *MockManagedClusterScope) IsPreviewEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsPreviewEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsPreviewEnabled indicates an expected call of IsPreviewEnabled.
+func (mr *MockManagedClusterScopeMockRecorder) IsPreviewEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPreviewEnabled", reflect.TypeOf((*MockManagedClusterScope)(nil).IsPreviewEnabled))
+}
+
 // MakeClusterCA mocks base method.
 func (m *MockManagedClusterScope) MakeClusterCA() *v1.Secret {
 	m.ctrl.T.Helper()
@@ -342,10 +356,10 @@ func (mr *MockManagedClusterScopeMockRecorder) MakeEmptyKubeConfigSecret() *gomo
 }
 
 // ManagedClusterSpec mocks base method.
-func (m *MockManagedClusterScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[*v1api20231001.ManagedCluster] {
+func (m *MockManagedClusterScope) ManagedClusterSpec() azure.ASOResourceSpecGetter[genruntime.MetaObject] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ManagedClusterSpec")
-	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[*v1api20231001.ManagedCluster])
+	ret0, _ := ret[0].(azure.ASOResourceSpecGetter[genruntime.MetaObject])
 	return ret0
 }
 

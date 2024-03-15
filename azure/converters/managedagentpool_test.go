@@ -19,6 +19,7 @@ package converters
 import (
 	"testing"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
@@ -103,6 +104,89 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
 			result := AgentPoolToManagedClusterAgentPoolProfile(c.pool)
+			c.expect(g, result)
+		})
+	}
+}
+
+func Test_AgentPoolToManagedClusterAgentPoolPreviewProfile(t *testing.T) {
+	cases := []struct {
+		name   string
+		pool   *asocontainerservicev1preview.ManagedClustersAgentPool
+		expect func(*GomegaWithT, asocontainerservicev1preview.ManagedClusterAgentPoolProfile)
+	}{
+		{
+			name: "Should set all values correctly",
+			pool: &asocontainerservicev1preview.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1preview.ManagedClusters_AgentPool_Spec{
+					AzureName:           "agentpool1",
+					VmSize:              ptr.To("Standard_D2s_v3"),
+					OsType:              ptr.To(asocontainerservicev1preview.OSType_Linux),
+					OsDiskSizeGB:        ptr.To[asocontainerservicev1preview.ContainerServiceOSDisk](100),
+					Count:               ptr.To(2),
+					Type:                ptr.To(asocontainerservicev1preview.AgentPoolType_VirtualMachineScaleSets),
+					OrchestratorVersion: ptr.To("1.22.6"),
+					VnetSubnetReference: &genruntime.ResourceReference{
+						ARMID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
+					},
+					Mode:              ptr.To(asocontainerservicev1preview.AgentPoolMode_User),
+					EnableAutoScaling: ptr.To(true),
+					MaxCount:          ptr.To(5),
+					MinCount:          ptr.To(2),
+					NodeTaints:        []string{"key1=value1:NoSchedule"},
+					AvailabilityZones: []string{"zone1"},
+					MaxPods:           ptr.To(60),
+					OsDiskType:        ptr.To(asocontainerservicev1preview.OSDiskType_Managed),
+					NodeLabels: map[string]string{
+						"custom": "default",
+					},
+					Tags: map[string]string{
+						"custom": "default",
+					},
+					EnableFIPS:             ptr.To(true),
+					EnableEncryptionAtHost: ptr.To(true),
+				},
+			},
+
+			expect: func(g *GomegaWithT, result asocontainerservicev1preview.ManagedClusterAgentPoolProfile) {
+				g.Expect(result).To(Equal(asocontainerservicev1preview.ManagedClusterAgentPoolProfile{
+					Name:                ptr.To("agentpool1"),
+					VmSize:              ptr.To("Standard_D2s_v3"),
+					OsType:              ptr.To(asocontainerservicev1preview.OSType_Linux),
+					OsDiskSizeGB:        ptr.To[asocontainerservicev1preview.ContainerServiceOSDisk](100),
+					Count:               ptr.To(2),
+					Type:                ptr.To(asocontainerservicev1preview.AgentPoolType_VirtualMachineScaleSets),
+					OrchestratorVersion: ptr.To("1.22.6"),
+					VnetSubnetReference: &genruntime.ResourceReference{
+						ARMID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-123/providers/Microsoft.Network/virtualNetworks/vnet-123/subnets/subnet-123",
+					},
+					Mode:              ptr.To(asocontainerservicev1preview.AgentPoolMode_User),
+					EnableAutoScaling: ptr.To(true),
+					MaxCount:          ptr.To(5),
+					MinCount:          ptr.To(2),
+					NodeTaints:        []string{"key1=value1:NoSchedule"},
+					AvailabilityZones: []string{"zone1"},
+					MaxPods:           ptr.To(60),
+					OsDiskType:        ptr.To(asocontainerservicev1preview.OSDiskType_Managed),
+					NodeLabels: map[string]string{
+						"custom": "default",
+					},
+					Tags: map[string]string{
+						"custom": "default",
+					},
+					EnableFIPS:             ptr.To(true),
+					EnableEncryptionAtHost: ptr.To(true),
+				}))
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+			result := AgentPoolToManagedClusterAgentPoolPreviewProfile(c.pool)
 			c.expect(g, result)
 		})
 	}
