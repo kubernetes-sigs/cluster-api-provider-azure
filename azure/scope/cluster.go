@@ -165,6 +165,19 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					AdditionalTags:   s.AdditionalTags(),
 				})
 			}
+			for _, ip := range s.ControlPlaneOutboundLB().OutboundIPs {
+				controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
+					Name:             ip.Name,
+					ResourceGroup:    s.ResourceGroup(),
+					ClusterName:      s.ClusterName(),
+					DNSName:          "",    // Set to default value
+					IsIPv6:           false, // Set to default value
+					Location:         s.Location(),
+					ExtendedLocation: s.ExtendedLocation(),
+					FailureDomains:   s.FailureDomains(),
+					AdditionalTags:   s.AdditionalTags(),
+				})
+			}
 		}
 	} else {
 		controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
@@ -249,6 +262,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 		publicIPSpecs = append(publicIPSpecs, azureBastionPublicIP)
 	}
 
+	// TODO: why are API Server LB outbound IPs not included here?
 	return publicIPSpecs
 }
 
