@@ -46,6 +46,7 @@ type LBSpec struct {
 	APIServerPort        int32
 	IdleTimeoutInMinutes *int32
 	AdditionalTags       map[string]string
+	OutboundIPs          []infrav1.PublicIPSpec
 }
 
 // ResourceName returns the name of the load balancer.
@@ -190,6 +191,26 @@ func getFrontendIPConfigs(lbSpec LBSpec) ([]*armnetwork.FrontendIPConfiguration,
 			ID: ptr.To(azure.FrontendIPConfigID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, ipConfig.Name)),
 		})
 	}
+
+	// CAPZ should create frontendIPConfigurations for each of the OutboundIPs.
+	// OutboundIPs are only supported for infrav1.Public, aka "Public", LBs.
+	if lbSpec.Type == infrav1.Public {
+		for _, ip := range lbSpec.OutboundIPs {
+			properties := armnetwork.FrontendIPConfigurationPropertiesFormat{
+				PublicIPAddress: &armnetwork.PublicIPAddress{
+					ID: ptr.To(azure.PublicIPID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, ip.Name)),
+				},
+			}
+			frontendIPConfigurations = append(frontendIPConfigurations, &armnetwork.FrontendIPConfiguration{
+				Properties: &properties,
+				Name:       ptr.To(ip.Name),
+			})
+			frontendIDs = append(frontendIDs, &armnetwork.SubResource{
+				ID: ptr.To(azure.FrontendIPConfigID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, ip.Name)),
+			})
+		}
+	}
+
 	return frontendIPConfigurations, frontendIDs
 }
 
