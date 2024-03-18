@@ -274,6 +274,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
+			OutboundIPs:          s.APIServerLB().OutboundIPs,
 		},
 	}
 
@@ -295,6 +296,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
+			OutboundIPs:          s.APIServerLB().OutboundIPs,
 		})
 	}
 
@@ -316,6 +318,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.ControlPlaneOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
+			OutboundIPs:          s.APIServerLB().OutboundIPs,
 		})
 	}
 
