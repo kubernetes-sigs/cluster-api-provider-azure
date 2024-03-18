@@ -342,6 +342,7 @@ type LoadBalancerSpec struct {
 	BackendPool BackendPool `json:"backendPool,omitempty"`
 	// OutboundIPs describes the outbound IP configuration for the load balancer.
 	// +optional
+	// TODO: should OutboundIPs moved to LoadBalancerClassSpec for AzureClusterTemplate?
 	OutboundIPs []PublicIPSpec `json:"outboundIPs,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`

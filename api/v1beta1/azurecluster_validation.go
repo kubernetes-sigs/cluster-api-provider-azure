@@ -430,6 +430,8 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		}
 	}
 
+	// TODO: should OutboundIPs be mutable?
+
 	return allErrs
 }
 

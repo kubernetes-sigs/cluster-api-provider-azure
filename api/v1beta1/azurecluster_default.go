@@ -284,6 +284,8 @@ func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 
 	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
 	c.SetNodeOutboundLBBackendPoolNameDefault()
+
+	// TODO: should there be a default for the outboundIPs? Most likely no.
 }
 
 // SetControlPlaneOutboundLBDefaults sets the default values for the control plane's outbound LB.
