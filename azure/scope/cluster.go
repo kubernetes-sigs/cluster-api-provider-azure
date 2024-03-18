@@ -199,6 +199,19 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				AdditionalTags:   s.AdditionalTags(),
 			})
 		}
+		for _, ip := range s.NodeOutboundLB().OutboundIPs {
+			publicIPSpecs = append(publicIPSpecs, &publicips.PublicIPSpec{
+				Name:             ip.Name,
+				ResourceGroup:    s.ResourceGroup(),
+				ClusterName:      s.ClusterName(),
+				DNSName:          "",    // Set to default value
+				IsIPv6:           false, // Set to default value
+				Location:         s.Location(),
+				ExtendedLocation: s.ExtendedLocation(),
+				FailureDomains:   s.FailureDomains(),
+				AdditionalTags:   s.AdditionalTags(),
+			})
+		}
 	}
 
 	// Public IP specs for node NAT gateways

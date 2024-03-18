@@ -340,6 +340,9 @@ type LoadBalancerSpec struct {
 	// BackendPool describes the backend pool of the load balancer.
 	// +optional
 	BackendPool BackendPool `json:"backendPool,omitempty"`
+	// OutboundIPs describes the outbound IP configuration for the load balancer.
+	// +optional
+	OutboundIPs []PublicIPSpec `json:"outboundIPs,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`
 }
