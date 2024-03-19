@@ -375,11 +375,12 @@ func (s *ManagedClusterSpec) buildAutoScalerProfile(managedCluster *asocontainer
 // If autoupgrade is triggered, existing kubernetes version will be higher than the user desired kubernetes version.
 // CAPZ should honour the upgrade and it should not downgrade to the lower desired version.
 func (s *ManagedClusterSpec) buildManagedClusterVersion(managedCluster, existing *asocontainerservicev1.ManagedCluster) {
+	var kubernetesVersion string
 	if existing == nil || existing.Status.CurrentKubernetesVersion == nil {
-		return
+		kubernetesVersion = s.Version
+	} else {
+		kubernetesVersion = versions.GetHigherK8sVersion(s.Version, *existing.Status.CurrentKubernetesVersion)
 	}
-
-	kubernetesVersion := versions.GetHigherK8sVersion(s.Version, *existing.Status.CurrentKubernetesVersion)
 
 	if kubernetesVersion != "" {
 		managedCluster.Spec.KubernetesVersion = &kubernetesVersion
