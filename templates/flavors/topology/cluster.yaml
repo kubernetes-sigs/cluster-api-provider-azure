@@ -15,9 +15,9 @@ spec:
     class: ${CLUSTER_CLASS_NAME}
     version: ${KUBERNETES_VERSION}
     controlPlane:
-      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
     workers:
       machineDeployments:
       - class: ${CLUSTER_NAME}-worker
         name: md-0
-        replicas: ${WORKER_MACHINE_COUNT}
+        replicas: ${WORKER_MACHINE_COUNT:=2}
