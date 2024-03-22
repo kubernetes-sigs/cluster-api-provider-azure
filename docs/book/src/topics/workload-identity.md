@@ -111,32 +111,13 @@ export AZURE_LOCATION="eastus"
 # need to set them for the sake of generating the workload cluster YAML configuration
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
 export CLUSTER_IDENTITY_NAME="cluster-identity"
+export CLUSTER_IDENTITY_TYPE="WorkloadIdentity"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 ```
 - Generate a workload cluster template using the following command.
 
 ```bash
 clusterctl generate cluster azwi-quickstart --kubernetes-version v1.27.3  --worker-machine-count=3 > azwi-quickstart.yaml
-```
-
-- Edit the generated `azwi-quickstart.yaml` to make the following changes for
-  workload identity to the `AzureClusterIdentity` object.
-  - Change the type to `WorkloadIdentity`.
-  - Remove the `clientSecret` spec.
-
-The AzureClusterIdentity specification should look like the following.
-```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  name: cluster-identity
-spec:
-  type: WorkloadIdentity
-  allowedNamespaces:
-    list:
-    - <cluster-namespace>
-  tenantID: <your-tenant-id>
-  clientID: <your-client-id>
 ```
 
 - Change the `AzureMachineTemplate` for both control plane and worker to include user-assigned-identity by

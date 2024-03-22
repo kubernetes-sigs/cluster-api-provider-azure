@@ -205,4 +205,4 @@ spec:
     name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
+  type: ${CLUSTER_IDENTITY_TYPE:=ServicePrincipal}
