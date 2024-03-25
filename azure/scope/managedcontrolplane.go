@@ -1030,7 +1030,7 @@ func (s *ManagedControlPlaneScope) AKSExtensionSpecs() []azure.ASOResourceSpecGe
 			ReleaseTrain:            extension.ReleaseTrain,
 			Version:                 extension.Version,
 			Owner:                   azure.ManagedClusterID(s.SubscriptionID(), s.ResourceGroup(), s.ControlPlane.Name),
-			Plan:                    *extension.Plan,
+			Plan:                    extension.Plan,
 			AKSAssignedIdentityType: extension.AKSAssignedIdentityType,
 			ExtensionIdentity:       extension.Identity,
 		}
