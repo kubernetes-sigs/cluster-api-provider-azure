@@ -53,6 +53,7 @@ type VMSpec struct {
 	AdditionalTags             infrav1.Tags
 	AdditionalCapabilities     *infrav1.AdditionalCapabilities
 	DiagnosticsProfile         *infrav1.Diagnostics
+	DisableExtensionOperations bool
 	CapacityReservationGroupID string
 	SKU                        resourceskus.SKU
 	Image                      *infrav1.Image
@@ -263,9 +264,10 @@ func (s *VMSpec) generateOSProfile() (*armcompute.OSProfile, error) {
 	}
 
 	osProfile := &armcompute.OSProfile{
-		ComputerName:  ptr.To(s.Name),
-		AdminUsername: ptr.To(azure.DefaultUserName),
-		CustomData:    ptr.To(s.BootstrapData),
+		ComputerName:             ptr.To(s.Name),
+		AdminUsername:            ptr.To(azure.DefaultUserName),
+		CustomData:               ptr.To(s.BootstrapData),
+		AllowExtensionOperations: ptr.To(!s.DisableExtensionOperations),
 	}
 
 	switch s.OSDisk.OSType {

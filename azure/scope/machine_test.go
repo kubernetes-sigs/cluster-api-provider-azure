@@ -599,6 +599,44 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			},
 		},
 		{
+			name: "If OS type is Linux and cloud is AzurePublicCloud and DisableExtensionOperations is true, it returns empty",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						DisableExtensionOperations: ptr.To(true),
+						OSDisk: infrav1.OSDisk{
+							OSType: "Linux",
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Environment: azureautorest.Environment{
+								Name: azureautorest.PublicCloud.Name,
+							},
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
+			},
+			want: []azure.ResourceSpecGetter{},
+		},
+		{
 			name: "If OS type is Linux and cloud is not AzurePublicCloud, it returns empty",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
