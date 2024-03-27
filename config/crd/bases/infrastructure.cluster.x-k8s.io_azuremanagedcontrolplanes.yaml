@@ -367,9 +367,6 @@ spec:
                         version:
                           description: Version is the version of the plan.
                           type: string
-                      required:
-                      - product
-                      - publisher
                       type: object
                     releaseTrain:
                       description: ReleaseTrain is the release train this extension
@@ -405,7 +402,6 @@ spec:
                   required:
                   - extensionType
                   - name
-                  - plan
                   type: object
                 type: array
               fleetsMember:
