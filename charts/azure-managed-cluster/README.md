@@ -140,43 +140,7 @@ Test the cluster!
 kubectl --kubeconfig=aks1.kubeconfig cluster-info
 ```
 
-Deploy a second cluster
-Create second namespace
-```bash
-kubectl create namespace default2
-```
 
-```bash
-helm install capz2 charts/azure-managed-cluster/  \
---namespace default2 \
---set subscriptionID="${AZURE_SUBSCRIPTION_ID}" \
---set identity.clientID="${AZURE_CLIENT_ID}" \
---set identity.tenantID="${AZURE_TENANT_ID}" \]=
---set cluster.resourceGroupName=aksclusters \
---set cluster.nodeResourceGroupName=capz2 \
---set cluster.name=aks2 \
---set agentpools.agentpool0.name=capz2np0 \
---set agentpools.agentpool0.nodecount=1 \
---set agentpools.agentpool0.sku=Standard_B4ms \
---set agentpools.agentpool0.osDiskSizeGB=100 \
---set agentpools.agentpool0.mode=System \
---set agentpools.agentpool1.name=capz2np1 \
---set agentpools.agentpool1.nodecount=1 \
---set agentpools.agentpool1.sku=Standard_B4ms \
---set agentpools.agentpool1.osDiskSizeGB=10 \
---set agentpools.agentpool1.mode=User 
-```
-
-or more simply (after you edit the values file with your own values):
-
-```bash
-helm install capz2 charts/azure-managed-cluster/ --values aks2.yaml \
---namespace default2 \
---set controlplane.sshPublicKey="$(cat ~/.ssh/id_rsa.pub)" \
---set subscriptionID="${AZURE_SUBSCRIPTION_ID}" \
---set identity.clientID="${AZURE_CLIENT_ID}" \
---set identity.tenantID"${AZURE_TENANT_ID}" 
-```
 
 Clean up:
 
