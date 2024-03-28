@@ -1,0 +1,8 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedCluster
+metadata:
+  name: {{ .Values.cluster.name }}
+spec:
+  controlPlaneEndpoint: 
+      host: sigs.k8s.io/cluster-api/api/v1beta1.APIEndpoint
+      port: 443

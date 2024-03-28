@@ -1,0 +1,19 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    {{- include "azure-managed-cluster.labels" . | nindent 4 }}
+  name: {{ .Values.cluster.name }}
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks:
+        {{- toYaml .Values.cluster.cidrBlocks | nindent 6 }}
+  controlPlaneRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedControlPlane
+    name: {{ .Values.cluster.name }}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedCluster
+    name: {{ .Values.cluster.name }}
