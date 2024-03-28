@@ -29,10 +29,6 @@ spec:
           image: controller:latest
           imagePullPolicy: Always
           name: manager
-          volumeMounts:
-            - mountPath: /var/run/secrets/azure/tokens
-              name: azure-identity-token
-              readOnly: true
           ports:
             - containerPort: 9440
               name: healthz
@@ -83,12 +79,3 @@ spec:
           key: node-role.kubernetes.io/master
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
-      volumes:
-      - name: azure-identity-token
-        projected:
-          defaultMode: 420
-          sources:
-          - serviceAccountToken:
-              audience: api://AzureADTokenExchange
-              expirationSeconds: 3600
-              path: azure-identity-token
