@@ -112,7 +112,7 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIde
 	allErrs := field.ErrorList{}
 
 	if identityType == VMIdentitySystemAssigned {
-		if _, err := uuid.Parse(newIdentity); err != nil {
+		if _, err := uuid.Validate(newIdentity); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath, newIdentity, "Role assignment name must be a valid GUID. It is optional and will be auto-generated when not specified."))
 		}
 		if oldIdentity != "" && oldIdentity != newIdentity {
