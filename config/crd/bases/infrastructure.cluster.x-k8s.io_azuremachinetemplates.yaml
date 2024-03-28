@@ -282,6 +282,7 @@ spec:
                         - None
                         - SystemAssigned
                         - UserAssigned
+                        - WorkloadIdentity
                         type: string
                       image:
                         description: Image is used to provide details of an image
