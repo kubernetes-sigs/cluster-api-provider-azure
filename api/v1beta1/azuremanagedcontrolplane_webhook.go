@@ -1002,12 +1002,6 @@ func validateAKSExtensions(extensions []AKSExtension, fldPath *field.Path) field
 		if extension.Version != nil && (extension.AutoUpgradeMinorVersion == nil || (extension.AutoUpgradeMinorVersion != nil && *extension.AutoUpgradeMinorVersion)) {
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("Version"), "Version must not be given if AutoUpgradeMinorVersion is true (or not provided, as it is true by default)"))
 		}
-		if extension.Plan.Product == "" {
-			allErrs = append(allErrs, field.Required(fldPath.Child("Plan", "Product"), "Product must be provided"))
-		}
-		if extension.Plan.Publisher == "" {
-			allErrs = append(allErrs, field.Required(fldPath.Child("Plan", "Publisher"), "Publisher must be provided"))
-		}
 		if extension.AutoUpgradeMinorVersion == ptr.To(false) && extension.ReleaseTrain != nil {
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("ReleaseTrain"), "ReleaseTrain must not be given if AutoUpgradeMinorVersion is false"))
 		}

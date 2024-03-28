@@ -1119,14 +1119,16 @@ type ExtensionPlan struct {
 	Name string `json:"name,omitempty"`
 
 	// Product is the name of the 3rd Party artifact that is being procured.
-	Product string `json:"product"`
+	// +optional
+	Product string `json:"product,omitempty"`
 
 	// PromotionCode is a publisher-provided promotion code as provisioned in Data Market for the said product/artifact.
 	// +optional
 	PromotionCode string `json:"promotionCode,omitempty"`
 
 	// Publisher is the name of the publisher of the 3rd Party Artifact that is being bought.
-	Publisher string `json:"publisher"`
+	// +optional
+	Publisher string `json:"publisher,omitempty"`
 
 	// Version is the version of the plan.
 	// +optional

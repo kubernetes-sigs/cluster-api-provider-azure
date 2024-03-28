@@ -1510,7 +1510,7 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 					ReleaseTrain:  ptr.To("my-release-train"),
 					Version:       ptr.To("my-version"),
 					Owner:         "/subscriptions//resourceGroups//providers/Microsoft.ContainerService/managedClusters/my-cluster",
-					Plan: infrav1.ExtensionPlan{
+					Plan: &infrav1.ExtensionPlan{
 						Name:      "my-plan-name",
 						Product:   "my-product",
 						Publisher: "my-publisher",

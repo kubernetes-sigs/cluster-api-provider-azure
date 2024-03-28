@@ -68,7 +68,7 @@ var (
 		ReleaseTrain:  ptr.To("fake-release-train"),
 		Version:       ptr.To("fake-version"),
 		Owner:         "fake-owner",
-		Plan: infrav1.ExtensionPlan{
+		Plan: &infrav1.ExtensionPlan{
 			Name: "fake-plan-name",
 		},
 		ExtensionIdentity: "SystemAssigned",

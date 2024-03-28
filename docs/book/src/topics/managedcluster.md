@@ -326,7 +326,13 @@ spec:
       publisher: "containous"
 ```
 
-To find the `extensionType` and plan details for your desired extension, refer to the [az k8s-extension cli reference](https://learn.microsoft.com/cli/azure/k8s-extension).
+To list all of the available extensions for your cluster as well as its plan details, use the following az cli command:
+
+```bash
+az k8s-extension extension-types list-by-cluster --resource-group my-resource-group --cluster-name mycluster --cluster-type managedClusters
+```
+
+For more details, please refer to the [az k8s-extension cli reference](https://learn.microsoft.com/cli/azure/k8s-extension).
 
 
 ### Security Profile for AKS clusters.

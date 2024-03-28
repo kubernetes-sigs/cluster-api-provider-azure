@@ -608,7 +608,8 @@ type AKSExtension struct {
 	ExtensionType *string `json:"extensionType"`
 
 	// Plan is the plan of the extension.
-	Plan *ExtensionPlan `json:"plan"`
+	// +optional
+	Plan *ExtensionPlan `json:"plan,omitempty"`
 
 	// ReleaseTrain is the release train this extension participates in for auto-upgrade (e.g. Stable, Preview, etc.)
 	// This is only used if autoUpgradeMinorVersion is ‘true’.
