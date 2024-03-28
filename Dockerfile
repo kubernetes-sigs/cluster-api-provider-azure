@@ -25,22 +25,8 @@ WORKDIR /workspace
 ARG goproxy=https://proxy.golang.org
 ENV GOPROXY=$goproxy
 
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
-
-# Cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
-
 # Copy the sources
 COPY ./ ./
-
-# Cache the go build into the the Go’s compiler cache folder so we take benefits of compiler caching across docker build calls
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    go build .
 
 # Build
 ARG package=.
