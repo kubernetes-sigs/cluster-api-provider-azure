@@ -105,7 +105,7 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.15.99 # "vNext"; use manifests from local source files
+    - name: v1.16.99 # "vNext"; use manifests from local source files
       value: "${PWD}/config/default"
       contract: v1beta1
       files:
@@ -155,6 +155,8 @@ providers:
         targetName: "cluster-template-topology.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar.yaml"
         targetName: "cluster-template-flatcar.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar-sysext.yaml"
+        targetName: "cluster-template-flatcar-sysext.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-edgezone.yaml"
         targetName: "cluster-template-edgezone.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azure-cni-v1.yaml"
