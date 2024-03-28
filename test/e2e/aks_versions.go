@@ -169,6 +169,10 @@ func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscription
 			if patch[:1] != "v" && !ptr.Deref(minor.IsPreview, false) {
 				version = "v" + patch
 			}
+			// v1.29.0 is broken for our pool1 configuration.
+			if version == "v1.29.0" {
+				continue
+			}
 			orchestratorversions = append(orchestratorversions, version)
 		}
 	}
