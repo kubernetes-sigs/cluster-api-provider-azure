@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -25,14 +25,19 @@ spec:
           API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -68,9 +73,9 @@ spec:
                       additionalTags:
                         additionalProperties:
                           type: string
-                        description: AdditionalTags is an optional set of tags to
-                          add to Azure resources managed by the Azure provider, in
-                          addition to the ones added by default.
+                        description: |-
+                          AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
+                          ones added by default.
                         type: object
                       addonProfiles:
                         description: AddonProfiles are the profiles of managed cluster
@@ -98,8 +103,9 @@ spec:
                           type: object
                         type: array
                       apiServerAccessProfile:
-                        description: APIServerAccessProfile is the access profile
-                          for AKS API server. Immutable except for `authorizedIPRanges`.
+                        description: |-
+                          APIServerAccessProfile is the access profile for AKS API server.
+                          Immutable except for `authorizedIPRanges`.
                         properties:
                           authorizedIPRanges:
                             description: AuthorizedIPRanges - Authorized IP Ranges
@@ -122,13 +128,11 @@ spec:
                             type: string
                         type: object
                       asoManagedClusterPatches:
-                        description: 'ASOManagedClusterPatches defines JSON merge
-                          patches to be applied to the generated ASO ManagedCluster
-                          resource. WARNING: This is meant to be used sparingly to
-                          enable features for development and testing that are not
-                          otherwise represented in the CAPZ API. Misconfiguration
-                          that conflicts with CAPZ''s normal mode of operation is
-                          possible.'
+                        description: |-
+                          ASOManagedClusterPatches defines JSON merge patches to be applied to the generated ASO ManagedCluster resource.
+                          WARNING: This is meant to be used sparingly to enable features for development and testing that are not
+                          otherwise represented in the CAPZ API. Misconfiguration that conflicts with CAPZ's normal mode of
+                          operation is possible.
                         items:
                           type: string
                         type: array
@@ -258,19 +262,27 @@ spec:
                             type: string
                         type: object
                       azureEnvironment:
-                        description: "AzureEnvironment is the name of the AzureCloud
-                          to be used. The default value that would be used by most
-                          users is \"AzurePublicCloud\", other values are: - ChinaCloud:
-                          \"AzureChinaCloud\" - PublicCloud: \"AzurePublicCloud\"
-                          - USGovernmentCloud: \"AzureUSGovernmentCloud\" \n Note
-                          that values other than the default must also be accompanied
-                          by corresponding changes to the aso-controller-settings
-                          Secret to configure ASO to refer to the non-Public cloud.
-                          ASO currently does not support referring to multiple different
-                          clouds in a single installation. The following fields must
-                          be defined in the Secret: - AZURE_AUTHORITY_HOST - AZURE_RESOURCE_MANAGER_ENDPOINT
-                          - AZURE_RESOURCE_MANAGER_AUDIENCE \n See the [ASO docs]
-                          for more details. \n [ASO docs]: https://azure.github.io/azure-service-operator/guide/aso-controller-settings-options/"
+                        description: |-
+                          AzureEnvironment is the name of the AzureCloud to be used.
+                          The default value that would be used by most users is "AzurePublicCloud", other values are:
+                          - ChinaCloud: "AzureChinaCloud"
+                          - PublicCloud: "AzurePublicCloud"
+                          - USGovernmentCloud: "AzureUSGovernmentCloud"
+
+
+                          Note that values other than the default must also be accompanied by corresponding changes to the
+                          aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
+                          not support referring to multiple different clouds in a single installation. The following fields must
+                          be defined in the Secret:
+                          - AZURE_AUTHORITY_HOST
+                          - AZURE_RESOURCE_MANAGER_ENDPOINT
+                          - AZURE_RESOURCE_MANAGER_AUDIENCE
+
+
+                          See the [ASO docs] for more details.
+
+
+                          [ASO docs]: https://azure.github.io/azure-service-operator/guide/aso-controller-settings-options/
                         type: string
                       disableLocalAccounts:
                         description: DisableLocalAccounts disables getting static
@@ -278,9 +290,10 @@ spec:
                           be used for AAD clusters.
                         type: boolean
                       dnsServiceIP:
-                        description: DNSServiceIP is an IP address assigned to the
-                          Kubernetes DNS service. It must be within the Kubernetes
-                          service address range specified in serviceCidr. Immutable.
+                        description: |-
+                          DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
+                          It must be within the Kubernetes service address range specified in serviceCidr.
+                          Immutable.
                         type: string
                       enablePreviewFeatures:
                         description: EnablePreviewFeatures enables preview features
@@ -290,9 +303,12 @@ spec:
                         description: Extensions is a list of AKS extensions to be
                           installed on the cluster.
                         items:
-                          description: "AKSExtension represents the configuration
-                            for an AKS cluster extension. See also [AKS doc]. \n [AKS
-                            doc]: https://learn.microsoft.com/en-us/azure/aks/cluster-extensions"
+                          description: |-
+                            AKSExtension represents the configuration for an AKS cluster extension.
+                            See also [AKS doc].
+
+
+                            [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/cluster-extensions
                           properties:
                             aksAssignedIdentityType:
                               description: AKSAssignedIdentityType is the type of
@@ -314,10 +330,9 @@ spec:
                                 pairs for configuring this extension.
                               type: object
                             extensionType:
-                              description: ExtensionType is the type of the Extension
-                                of which this resource is an instance. It must be
-                                one of the Extension Types registered with Microsoft.KubernetesConfiguration
-                                by the Extension publisher.
+                              description: |-
+                                ExtensionType is the type of the Extension of which this resource is an instance.
+                                It must be one of the Extension Types registered with Microsoft.KubernetesConfiguration by the Extension publisher.
                               type: string
                             identity:
                               description: Identity is the identity type of the Extension
@@ -353,19 +368,18 @@ spec:
                                   type: string
                               type: object
                             releaseTrain:
-                              description: ReleaseTrain is the release train this
-                                extension participates in for auto-upgrade (e.g. Stable,
-                                Preview, etc.) This is only used if autoUpgradeMinorVersion
-                                is ‘true’.
+                              description: |-
+                                ReleaseTrain is the release train this extension participates in for auto-upgrade (e.g. Stable, Preview, etc.)
+                                This is only used if autoUpgradeMinorVersion is ‘true’.
                               type: string
                             scope:
                               description: Scope is the scope at which this extension
                                 is enabled.
                               properties:
                                 releaseNamespace:
-                                  description: ReleaseNamespace is the namespace where
-                                    the extension Release must be placed, for a Cluster-scoped
-                                    extension. Required for Cluster-scoped extensions.
+                                  description: |-
+                                    ReleaseNamespace is the namespace where the extension Release must be placed, for a Cluster-scoped extension.
+                                    Required for Cluster-scoped extensions.
                                   type: string
                                 scopeType:
                                   description: ScopeType is the scope of the extension.
@@ -376,9 +390,9 @@ spec:
                                   - Namespace
                                   type: string
                                 targetNamespace:
-                                  description: TargetNamespace is the namespace where
-                                    the extension will be created for a Namespace-scoped
-                                    extension. Required for Namespace-scoped extensions.
+                                  description: |-
+                                    TargetNamespace is the namespace where the extension will be created for a Namespace-scoped extension.
+                                    Required for Namespace-scoped extensions.
                                   type: string
                               required:
                               - scopeType
@@ -392,9 +406,12 @@ spec:
                           type: object
                         type: array
                       fleetsMember:
-                        description: "FleetsMember is the spec for the fleet this
-                          cluster is a member of. See also [AKS doc]. \n [AKS doc]:
-                          https://learn.microsoft.com/en-us/azure/templates/microsoft.containerservice/2023-03-15-preview/fleets/members"
+                        description: |-
+                          FleetsMember is the spec for the fleet this cluster is a member of.
+                          See also [AKS doc].
+
+
+                          [AKS doc]: https://learn.microsoft.com/en-us/azure/templates/microsoft.containerservice/2023-03-15-preview/fleets/members
                         properties:
                           group:
                             description: Group is the group this member belongs to
@@ -412,8 +429,9 @@ spec:
                         - managerResourceGroup
                         type: object
                       httpProxyConfig:
-                        description: HTTPProxyConfig is the HTTP proxy configuration
-                          for the cluster. Immutable.
+                        description: |-
+                          HTTPProxyConfig is the HTTP proxy configuration for the cluster.
+                          Immutable.
                         properties:
                           httpProxy:
                             description: HTTPProxy is the HTTP proxy server endpoint
@@ -457,41 +475,47 @@ spec:
                             description: API version of the referent.
                             type: string
                           fieldPath:
-                            description: 'If referring to a piece of an object instead
-                              of an entire object, this string should contain a valid
-                              JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                              For example, if the object reference is to a container
-                              within a pod, this would take on a value like: "spec.containers{name}"
-                              (where "name" refers to the name of the container that
-                              triggered the event) or if no container name is specified
-                              "spec.containers[2]" (container with index 2 in this
-                              pod). This syntax is chosen only to have some well-defined
-                              way of referencing a part of an object. TODO: this design
-                              is not final and this field is subject to change in
-                              the future.'
+                            description: |-
+                              If referring to a piece of an object instead of an entire object, this string
+                              should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container within a pod, this would take on a value like:
+                              "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                              the event) or if no container name is specified "spec.containers[2]" (container with
+                              index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                              referencing a part of an object.
+                              TODO: this design is not final and this field is subject to change in the future.
                             type: string
                           kind:
-                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            description: |-
+                              Kind of the referent.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
                             type: string
                           name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                             type: string
                           namespace:
-                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                            description: |-
+                              Namespace of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
                             type: string
                           resourceVersion:
-                            description: 'Specific resourceVersion to which this reference
-                              is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                            description: |-
+                              Specific resourceVersion to which this reference is made, if any.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
                             type: string
                           uid:
-                            description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                            description: |-
+                              UID of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       kubeletUserAssignedIdentity:
-                        description: KubeletUserAssignedIdentity is the user-assigned
-                          identity for kubelet. For authentication with Azure Container
-                          Registry.
+                        description: |-
+                          KubeletUserAssignedIdentity is the user-assigned identity for kubelet.
+                          For authentication with Azure Container Registry.
                         type: string
                       loadBalancerProfile:
                         description: LoadBalancerProfile is the profile of the cluster
@@ -529,8 +553,9 @@ spec:
                         type: object
                       loadBalancerSKU:
                         default: Standard
-                        description: LoadBalancerSKU is the SKU of the loadBalancer
-                          to be provisioned. Immutable.
+                        description: |-
+                          LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
+                          Immutable.
                         enum:
                         - Basic
                         - Standard
@@ -540,10 +565,11 @@ spec:
                           Azure region names. Examples: "westus2", "eastus".'
                         type: string
                       machineTemplate:
-                        description: MachineTemplate contains information about how
-                          machines should be shaped when creating or updating a control
-                          plane. For the AzureManagedControlPlaneTemplate, this field
-                          is used only to fulfill the CAPI contract.
+                        description: |-
+                          MachineTemplate contains information about how machines
+                          should be shaped when creating or updating a control plane.
+                          For the AzureManagedControlPlaneTemplate, this field is used
+                          only to fulfill the CAPI contract.
                         type: object
                       networkDataplane:
                         description: NetworkDataplane is the dataplane used for building
@@ -560,8 +586,9 @@ spec:
                         - none
                         type: string
                       networkPluginMode:
-                        description: NetworkPluginMode is the mode the network plugin
-                          should use. Allowed value is "overlay".
+                        description: |-
+                          NetworkPluginMode is the mode the network plugin should use.
+                          Allowed value is "overlay".
                         enum:
                         - overlay
                         type: string
@@ -601,19 +628,17 @@ spec:
                                   management service. The default is false.
                                 type: boolean
                               keyID:
-                                description: KeyID defines the Identifier of Azure
-                                  Key Vault key. When Azure Key Vault key management
-                                  service is enabled, this field is required and must
-                                  be a valid key identifier.
+                                description: |-
+                                  KeyID defines the Identifier of Azure Key Vault key.
+                                  When Azure Key Vault key management service is enabled, this field is required and must be a valid key identifier.
                                 type: string
                               keyVaultNetworkAccess:
                                 default: Public
-                                description: KeyVaultNetworkAccess defines the network
-                                  access of key vault. The possible values are Public
-                                  and Private. Public means the key vault allows public
-                                  access from all networks. Private means the key
-                                  vault disables public access and enables private
-                                  link. The default value is Public.
+                                description: |-
+                                  KeyVaultNetworkAccess defines the network access of key vault.
+                                  The possible values are Public and Private.
+                                  Public means the key vault allows public access from all networks.
+                                  Private means the key vault disables public access and enables private link. The default value is Public.
                                 type: string
                               keyVaultResourceID:
                                 description: KeyVaultResourceID is the Resource ID
@@ -629,11 +654,9 @@ spec:
                             description: Defender settings for the security profile.
                             properties:
                               logAnalyticsWorkspaceResourceID:
-                                description: LogAnalyticsWorkspaceResourceID is the
-                                  ID of the Log Analytics workspace that has to be
-                                  associated with Microsoft Defender. When Microsoft
-                                  Defender is enabled, this field is required and
-                                  must be a valid workspace resource ID.
+                                description: |-
+                                  LogAnalyticsWorkspaceResourceID is the ID of the Log Analytics workspace that has to be associated with Microsoft Defender.
+                                  When Microsoft Defender is enabled, this field is required and must be a valid workspace resource ID.
                                 type: string
                               securityMonitoring:
                                 description: SecurityMonitoring profile defines the
@@ -745,22 +768,19 @@ spec:
                                         create the private endpoint.
                                       type: string
                                     manualApproval:
-                                      description: ManualApproval specifies if the
-                                        connection approval needs to be done manually
-                                        or not. Set it true when the network admin
-                                        does not have access to approve connections
-                                        to the remote resource. Defaults to false.
+                                      description: |-
+                                        ManualApproval specifies if the connection approval needs to be done manually or not.
+                                        Set it true when the network admin does not have access to approve connections to the remote resource.
+                                        Defaults to false.
                                       type: boolean
                                     name:
                                       description: Name specifies the name of the
                                         private endpoint.
                                       type: string
                                     privateIPAddresses:
-                                      description: PrivateIPAddresses specifies the
-                                        IP addresses for the network interface associated
-                                        with the private endpoint. They have to be
-                                        part of the subnet where the private endpoint
-                                        is linked.
+                                      description: |-
+                                        PrivateIPAddresses specifies the IP addresses for the network interface associated with the private endpoint.
+                                        They have to be part of the subnet where the private endpoint is linked.
                                       items:
                                         type: string
                                       type: array
