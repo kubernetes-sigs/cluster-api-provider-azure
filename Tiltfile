@@ -34,7 +34,7 @@ settings = {
 }
 
 # Auth keys that need to be loaded from the environment
-keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
+keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_ID"]
 
 # Get global settings from tilt-settings.yaml or tilt-settings.json
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
@@ -249,6 +249,9 @@ def capz():
     k8s_yaml(blob(yaml))
 
 def create_identity_secret():
+    if not os.getenv("AZURE_CLIENT_SECRET"):
+        return
+
     #create secret for identity password
     local(kubectl_cmd + " delete secret cluster-identity-secret --ignore-not-found=true")
 
