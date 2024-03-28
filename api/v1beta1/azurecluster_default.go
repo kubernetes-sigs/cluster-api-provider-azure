@@ -17,7 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"k8s.io/utils/ptr"
 )
@@ -54,13 +57,26 @@ func (c *AzureCluster) setDefaults() {
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
+	logger := log.FromContext(context.TODO())
+	logger.Info(fmt.Sprintf("Was ist hier los %v", c.Spec.ControlPlaneEnabled))
 	c.setVnetDefaults()
 	c.setBastionDefaults()
 	c.setSubnetDefaults()
 	c.setVnetPeeringDefaults()
-	c.setAPIServerLBDefaults()
+	if c.Spec.ControlPlaneEnabled {
+		logger.Info("dont call me setAPIServerLBDefaults")
+		c.setAPIServerLBDefaults()
+	}
 	c.SetNodeOutboundLBDefaults()
-	c.SetControlPlaneOutboundLBDefaults()
+	if c.Spec.ControlPlaneEnabled {
+		logger.Info("dont call me SetControlPlaneOutboundLBDefaults")
+		c.SetControlPlaneOutboundLBDefaults()
+	}
+	if c.Spec.ControlPlaneEnabled {
+		c.Spec.NetworkSpec.APIServerLB = nil
+	}
+	bolB, _ := json.Marshal(c.Spec)
+	logger.Info(fmt.Sprintf("Was ist hier los %s", string(bolB)))
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -93,16 +109,18 @@ func (c *AzureCluster) setSubnetDefaults() {
 		c.Spec.NetworkSpec.UpdateSubnet(clusterSubnet, SubnetCluster)
 	}
 
-	/* if there is a cp subnet set defaults
-	   if no cp subnet and cluster subnet create a default cp subnet */
-	cpSubnet, errcp := c.Spec.NetworkSpec.GetSubnet(SubnetControlPlane)
-	if errcp == nil {
-		cpSubnet.setControlPlaneSubnetDefaults(c.ObjectMeta.Name)
-		c.Spec.NetworkSpec.UpdateSubnet(cpSubnet, SubnetControlPlane)
-	} else if !clusterSubnetExists {
-		cpSubnet = SubnetSpec{SubnetClassSpec: SubnetClassSpec{Role: SubnetControlPlane}}
-		cpSubnet.setControlPlaneSubnetDefaults(c.ObjectMeta.Name)
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
+	if c.Spec.ControlPlaneEnabled {
+		/* if there is a cp subnet set defaults
+		   if no cp subnet and cluster subnet create a default cp subnet */
+		cpSubnet, errcp := c.Spec.NetworkSpec.GetSubnet(SubnetControlPlane)
+		if errcp == nil {
+			cpSubnet.setControlPlaneSubnetDefaults(c.ObjectMeta.Name)
+			c.Spec.NetworkSpec.UpdateSubnet(cpSubnet, SubnetControlPlane)
+		} else if !clusterSubnetExists {
+			cpSubnet = SubnetSpec{SubnetClassSpec: SubnetClassSpec{Role: SubnetControlPlane}}
+			cpSubnet.setControlPlaneSubnetDefaults(c.ObjectMeta.Name)
+			c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
+		}
 	}
 
 	var nodeSubnetFound bool
@@ -210,7 +228,7 @@ func (c *AzureCluster) setVnetPeeringDefaults() {
 }
 
 func (c *AzureCluster) setAPIServerLBDefaults() {
-	lb := &c.Spec.NetworkSpec.APIServerLB
+	lb := c.Spec.NetworkSpec.APIServerLB
 
 	lb.LoadBalancerClassSpec.setAPIServerLBDefaults()
 
@@ -249,7 +267,7 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 // SetNodeOutboundLBDefaults sets the default values for the NodeOutboundLB.
 func (c *AzureCluster) SetNodeOutboundLBDefaults() {
 	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
-		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
+		if !c.Spec.ControlPlaneEnabled || c.Spec.NetworkSpec.APIServerLB.Type == Internal {
 			return
 		}
 
@@ -314,7 +332,7 @@ func (c *AzureCluster) SetBackendPoolNameDefault() {
 
 // SetAPIServerLBBackendPoolNameDefault defaults the name of the backend pool for apiserver LB.
 func (c *AzureCluster) SetAPIServerLBBackendPoolNameDefault() {
-	apiServerLB := &c.Spec.NetworkSpec.APIServerLB
+	apiServerLB := c.Spec.NetworkSpec.APIServerLB
 	if apiServerLB.BackendPool.Name == "" {
 		apiServerLB.BackendPool.Name = generateBackendAddressPoolName(apiServerLB.Name)
 	}

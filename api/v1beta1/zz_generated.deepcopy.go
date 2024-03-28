@@ -3087,7 +3087,11 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	in.APIServerLB.DeepCopyInto(&out.APIServerLB)
+	if in.APIServerLB != nil {
+		in, out := &in.APIServerLB, &out.APIServerLB
+		*out = new(LoadBalancerSpec)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.NodeOutboundLB != nil {
 		in, out := &in.NodeOutboundLB, &out.NodeOutboundLB
 		*out = new(LoadBalancerSpec)

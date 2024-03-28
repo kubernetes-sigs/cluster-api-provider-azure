@@ -316,7 +316,7 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	for _, test := range testCase {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			errs := validateNetworkSpec(test.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+			errs := validateNetworkSpec(true, test.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 			g.Expect(errs).To(BeNil())
 		})
 	}
@@ -338,7 +338,7 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
@@ -361,7 +361,7 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.vnet.resourceGroup"))
@@ -384,7 +384,7 @@ func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
