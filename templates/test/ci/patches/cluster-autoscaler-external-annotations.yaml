@@ -1,0 +1,4 @@
+- op: add
+  path: /metadata/annotations
+  value:
+    "cluster.x-k8s.io/replicas-managed-by": "cluster-autoscaler"

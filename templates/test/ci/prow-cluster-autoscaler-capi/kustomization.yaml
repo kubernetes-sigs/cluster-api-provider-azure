@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../../flavors/base
+  - ../../../flavors/default/machine-deployment.yaml
+  - ../../../azure-cluster-identity
+  - ../../../addons/cluster-api-helm/calico.yaml
+  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+patchesStrategicMerge:
+  - ../patches/tags.yaml
+  - ../patches/controller-manager.yaml
+  - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
+  - ../patches/cluster-label-calico.yaml
+  - ../patches/cluster-label-cloud-provider-azure.yaml
+patches:
+- target:
+    group: cluster.x-k8s.io
+    version: v1beta1
+    kind: MachineDeployment
+    name: ".*-md-0"
+  path: ../patches/cluster-autoscaler-capi-annotations.yaml

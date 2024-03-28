@@ -54,7 +54,7 @@ type (
 )
 
 // Create will create a deployment for a given image with a name in a namespace
-func Create(image, name, namespace string) *Builder {
+func Create(image, name, namespace string, replicas int32) *Builder {
 	e2eDeployment := &Builder{
 		deployment: &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
@@ -63,7 +63,7 @@ func Create(image, name, namespace string) *Builder {
 				Labels:    map[string]string{},
 			},
 			Spec: appsv1.DeploymentSpec{
-				Replicas: ptr.To[int32](1),
+				Replicas: ptr.To[int32](replicas),
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"app": name,

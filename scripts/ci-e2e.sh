@@ -42,7 +42,7 @@ source "${REPO_ROOT}/hack/util.sh"
 capz::util::ensure_azure_envs
 
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
-export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-${LOCAL_ONLY}} 
+export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-${LOCAL_ONLY}}
 export BUILD_MANAGER_IMAGE=${BUILD_MANAGER_IMAGE:-"true"}
 
 if [[ "${USE_LOCAL_KIND_REGISTRY}" == "false" ]]; then
@@ -64,7 +64,12 @@ if [[ "$(capz::util::should_build_ccm)" == "true" ]]; then
   echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM} cloud-node-manager image for external cloud-provider-azure cluster"
 fi
 
-export GINKGO_NODES=10
+if [[ "$(capz::util::should_build_cluster_autoscaler)" == "true" ]]; then
+  # shellcheck source=scripts/ci-build-cluster-autoscaler.sh
+  source "${REPO_ROOT}/scripts/ci-build-cluster-autoscaler.sh"
+fi
+
+export GINKGO_NODES=${GINKGO_NODES:-10}
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
 export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
