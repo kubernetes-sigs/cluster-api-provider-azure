@@ -17,7 +17,7 @@ spec:
   topology:
     class: ${CLUSTER_CLASS_NAME}
     controlPlane:
-      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
     variables:
     - name: subscriptionID
       value: ${AZURE_SUBSCRIPTION_ID}
