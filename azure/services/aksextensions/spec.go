@@ -39,7 +39,7 @@ type AKSExtensionSpec struct {
 	Version                 *string
 	Owner                   string
 	OwnerRef                metav1.OwnerReference
-	Plan                    infrav1.ExtensionPlan
+	Plan                    *infrav1.ExtensionPlan
 	Scope                   infrav1.ExtensionScope
 }
 
@@ -70,11 +70,14 @@ func (s *AKSExtensionSpec) Parameters(ctx context.Context, existingAKSExtension 
 	aksExtension.Spec.Owner = &genruntime.ArbitraryOwnerReference{
 		ARMID: s.Owner,
 	}
-	aksExtension.Spec.Plan = &asokubernetesconfigurationv1.Plan{
-		Name:      ptr.To(s.Plan.Name),
-		Product:   ptr.To(s.Plan.Product),
-		Publisher: ptr.To(s.Plan.Publisher),
-		Version:   ptr.To(s.Plan.Version),
+
+	if s.Plan != nil {
+		aksExtension.Spec.Plan = &asokubernetesconfigurationv1.Plan{
+			Name:      ptr.To(s.Plan.Name),
+			Product:   ptr.To(s.Plan.Product),
+			Publisher: ptr.To(s.Plan.Publisher),
+			Version:   ptr.To(s.Plan.Version),
+		}
 	}
 	if s.ExtensionIdentity != "" {
 		aksExtension.Spec.Identity = &asokubernetesconfigurationv1.Identity{

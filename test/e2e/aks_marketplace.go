@@ -43,7 +43,8 @@ type AKSMarketplaceExtensionSpecInput struct {
 }
 
 const (
-	extensionName = "aks-marketplace-extension"
+	extensionName         = "aks-marketplace-extension"
+	officialExtensionName = "official-aks-extension"
 )
 
 func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMarketplaceExtensionSpecInput) {
@@ -127,7 +128,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	}, input.WaitIntervals...).Should(Succeed())
 	Eventually(checkTaints, input.WaitIntervals...).Should(Succeed())
 
-	By("Adding an AKS Marketplace Extension to the AzureManagedControlPlane")
+	By("Adding an official AKS Extension & AKS Marketplace Extension to the AzureManagedControlPlane")
 	var infraControlPlane = &infrav1.AzureManagedControlPlane{}
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, client.ObjectKey{
@@ -145,6 +146,10 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 					Publisher: "containous",
 				},
 			},
+			{
+				Name:          officialExtensionName,
+				ExtensionType: ptr.To("microsoft.flux"),
+			},
 		}
 		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
 	}, input.WaitIntervals...).Should(Succeed())
@@ -157,16 +162,8 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Ensuring the AKS Marketplace Extension is added to the AzureManagedControlPlane")
-	Eventually(func(g Gomega) {
-		resp, err := extensionClient.Get(ctx, amcp.Spec.ResourceGroupName, "Microsoft.ContainerService", "managedClusters", input.Cluster.Name, extensionName, nil)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To(armkubernetesconfiguration.ProvisioningStateSucceeded)))
-		extension := resp.Extension
-		g.Expect(extension.Properties).NotTo(BeNil())
-		g.Expect(extension.Name).To(Equal(ptr.To(extensionName)))
-		g.Expect(extension.Properties.AutoUpgradeMinorVersion).To(Equal(ptr.To(true)))
-		g.Expect(extension.Properties.ExtensionType).To(Equal(ptr.To("TraefikLabs.TraefikProxy")))
-	}, input.WaitIntervals...).Should(Succeed())
+	ensureAKSExtensionAdded(ctx, input, extensionName, "TraefikLabs.TraefikProxy", extensionClient, amcp)
+	ensureAKSExtensionAdded(ctx, input, officialExtensionName, "microsoft.flux", extensionClient, amcp)
 
 	By("Restoring initial taints for Windows machine pool")
 	expectedTaints = initialTaints
@@ -176,4 +173,17 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 		g.Expect(mgmtClient.Update(ctx, ammp)).To(Succeed())
 	}, input.WaitIntervals...).Should(Succeed())
 	Eventually(checkTaints, input.WaitIntervals...).Should(Succeed())
+}
+
+func ensureAKSExtensionAdded(ctx context.Context, input AKSMarketplaceExtensionSpecInput, extensionName, extensionType string, extensionClient *armkubernetesconfiguration.ExtensionsClient, amcp *infrav1.AzureManagedControlPlane) {
+	Eventually(func(g Gomega) {
+		resp, err := extensionClient.Get(ctx, amcp.Spec.ResourceGroupName, "Microsoft.ContainerService", "managedClusters", input.Cluster.Name, extensionName, nil)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To(armkubernetesconfiguration.ProvisioningStateSucceeded)))
+		extension := resp.Extension
+		g.Expect(extension.Properties).NotTo(BeNil())
+		g.Expect(extension.Name).To(Equal(ptr.To(extensionName)))
+		g.Expect(extension.Properties.AutoUpgradeMinorVersion).To(Equal(ptr.To(true)))
+		g.Expect(extension.Properties.ExtensionType).To(Equal(ptr.To(extensionType)))
+	}, input.WaitIntervals...).Should(Succeed())
 }
