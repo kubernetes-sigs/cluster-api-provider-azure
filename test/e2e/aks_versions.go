@@ -22,7 +22,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
@@ -169,10 +168,6 @@ func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscription
 			// semver comparisons require a "v" prefix
 			if patch[:1] != "v" && !ptr.Deref(minor.IsPreview, false) {
 				version = "v" + patch
-			}
-			// v1.29 is broken for our pool1 configuration.
-			if strings.HasPrefix(version, "v1.29.") {
-				continue
 			}
 			orchestratorversions = append(orchestratorversions, version)
 		}

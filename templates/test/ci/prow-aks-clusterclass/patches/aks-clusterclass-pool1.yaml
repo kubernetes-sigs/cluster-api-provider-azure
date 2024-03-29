@@ -24,7 +24,6 @@ spec:
         cpuCfsQuotaPeriod: "110ms"
         imageGcHighThreshold: 70
         imageGcLowThreshold: 50
-        topologyManagerPolicy: "best-effort"
         allowedUnsafeSysctls:
           - "net.*"
           - "kernel.msg*"
