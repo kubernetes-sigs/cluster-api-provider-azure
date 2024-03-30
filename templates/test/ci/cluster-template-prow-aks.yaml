@@ -126,7 +126,6 @@ spec:
     imageGcHighThreshold: 70
     imageGcLowThreshold: 50
     podMaxPids: 2048
-    topologyManagerPolicy: best-effort
   linuxOSConfig:
     swapFileSizeMB: 1500
     sysctls:
