@@ -49,7 +49,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		g := NewGomegaWithT(t)
 		namespace := "default"
 		scope := setupMockScope(t)
-		scope.EXPECT().IsPreviewEnabled().Return(false)
 
 		managedCluster := &asocontainerservicev1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -79,8 +78,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		g := NewGomegaWithT(t)
 		namespace := "default"
 		scope := setupMockScope(t)
-
-		scope.EXPECT().IsPreviewEnabled().Return(true)
 
 		managedCluster := &asocontainerservicev1preview.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -123,7 +120,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		})
 		scope.EXPECT().ClusterName().Return(clusterName).AnyTimes()
 		scope.EXPECT().IsAADEnabled().Return(true)
-		scope.EXPECT().IsPreviewEnabled().Return(false)
 
 		managedCluster := &asocontainerservicev1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{

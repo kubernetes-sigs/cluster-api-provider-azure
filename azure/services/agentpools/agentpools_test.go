@@ -46,7 +46,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
 
 		scope.EXPECT().RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
-		scope.EXPECT().IsPreviewEnabled().Return(false)
 
 		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
 			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
@@ -65,7 +64,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 
 		scope.EXPECT().SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
 		scope.EXPECT().SetCAPIMachinePoolReplicas(ptr.To(1234))
-		scope.EXPECT().IsPreviewEnabled().Return(false)
 
 		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
 			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
@@ -85,7 +83,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 
 		scope.EXPECT().SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
 		scope.EXPECT().SetCAPIMachinePoolReplicas(ptr.To(1234))
-		scope.EXPECT().IsPreviewEnabled().Return(true)
 
 		agentPool := &asocontainerservicev1preview.ManagedClustersAgentPool{
 			Status: asocontainerservicev1preview.ManagedClusters_AgentPool_STATUS{

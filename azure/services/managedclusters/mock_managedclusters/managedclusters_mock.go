@@ -313,20 +313,6 @@ func (mr *MockManagedClusterScopeMockRecorder) IsManagedVersionUpgrade() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsManagedVersionUpgrade", reflect.TypeOf((*MockManagedClusterScope)(nil).IsManagedVersionUpgrade))
 }
 
-// IsPreviewEnabled mocks base method.
-func (m *MockManagedClusterScope) IsPreviewEnabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPreviewEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsPreviewEnabled indicates an expected call of IsPreviewEnabled.
-func (mr *MockManagedClusterScopeMockRecorder) IsPreviewEnabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPreviewEnabled", reflect.TypeOf((*MockManagedClusterScope)(nil).IsPreviewEnabled))
-}
-
 // MakeClusterCA mocks base method.
 func (m *MockManagedClusterScope) MakeClusterCA() *v1.Secret {
 	m.ctrl.T.Helper()
