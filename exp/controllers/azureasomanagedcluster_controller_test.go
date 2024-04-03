@@ -19,12 +19,16 @@ package controllers
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -34,6 +38,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
 		infrav1exp.AddToScheme,
+		clusterv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -52,6 +57,112 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Client: c,
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "doesn't", Name: "exist"}})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
+	t.Run("Cluster does not exist", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedCluster := &infrav1exp.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: "ns",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       "cluster",
+					},
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+		}
+		_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
+		g.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("successfully reconciles normally", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedCluster := &infrav1exp.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: "ns",
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
+	t.Run("successfully reconciles pause", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				Paused: true,
+			},
+		}
+		asoManagedCluster := &infrav1exp.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
+	t.Run("successfully reconciles delete", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedCluster := &infrav1exp.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: "ns",
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
 	})
