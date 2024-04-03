@@ -20,6 +20,8 @@ import (
 	"context"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -27,12 +29,20 @@ import (
 // AzureASOManagedControlPlaneReconciler reconciles a AzureASOManagedControlPlane object.
 type AzureASOManagedControlPlaneReconciler struct {
 	client.Client
+	WatchFilterValue string
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	_, log, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureASOManagedControlPlaneReconciler.SetupWithManager",
+		tele.KVP("controller", infrav1exp.AzureASOManagedControlPlaneKind),
+	)
+	defer done()
+
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1exp.AzureASOManagedControlPlane{}).
+		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
 		return err
