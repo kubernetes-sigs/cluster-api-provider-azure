@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -31,8 +32,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+var errInvalidControlPlaneKind = errors.New("AzureASOManagedCluster cannot be used without AzureASOManagedControlPlane")
 
 // AzureASOManagedClusterReconciler reconciles a AzureASOManagedCluster object.
 type AzureASOManagedClusterReconciler struct {
@@ -120,7 +125,6 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	return r.reconcileNormal(ctx, asoManagedCluster, cluster)
 }
 
-//nolint:unparam // these parameters will be used soon enough
 func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1exp.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
@@ -128,6 +132,21 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	)
 	defer done()
 	log.V(4).Info("reconciling normally")
+
+	if cluster == nil {
+		log.V(4).Info("Cluster Controller has not yet set OwnerRef")
+		return ctrl.Result{}, nil
+	}
+	if cluster.Spec.ControlPlaneRef == nil ||
+		cluster.Spec.ControlPlaneRef.APIVersion != infrav1exp.GroupVersion.Identifier() ||
+		cluster.Spec.ControlPlaneRef.Kind != infrav1exp.AzureASOManagedControlPlaneKind {
+		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
+	}
+
+	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
+	if needsPatch {
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -153,5 +172,6 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	defer done()
 	log.V(4).Info("reconciling delete")
 
+	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }

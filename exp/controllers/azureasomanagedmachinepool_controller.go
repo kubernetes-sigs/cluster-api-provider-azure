@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -172,6 +173,11 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	defer done()
 	log.V(4).Info("reconciling normally")
 
+	needsPatch := controllerutil.AddFinalizer(asoManagedMachinePool, clusterv1.ClusterFinalizer)
+	if needsPatch {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -196,5 +202,6 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Conte
 	defer done()
 	log.V(4).Info("reconciling delete")
 
+	controllerutil.RemoveFinalizer(asoManagedMachinePool, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }

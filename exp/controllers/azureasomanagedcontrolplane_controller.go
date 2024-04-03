@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -31,8 +32,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+var errInvalidClusterKind = errors.New("AzureASOManagedControlPlane cannot be used without AzureASOManagedCluster")
 
 // AzureASOManagedControlPlaneReconciler reconciles a AzureASOManagedControlPlane object.
 type AzureASOManagedControlPlaneReconciler struct {
@@ -125,7 +130,6 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 	return r.reconcileNormal(ctx, asoManagedControlPlane, cluster)
 }
 
-//nolint:unparam // these parameters will be used soon enough
 func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
@@ -133,6 +137,21 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	)
 	defer done()
 	log.V(4).Info("reconciling normally")
+
+	if cluster == nil {
+		log.V(4).Info("Cluster Controller has not yet set OwnerRef")
+		return ctrl.Result{}, nil
+	}
+	if cluster.Spec.InfrastructureRef == nil ||
+		cluster.Spec.InfrastructureRef.APIVersion != infrav1exp.GroupVersion.Identifier() ||
+		cluster.Spec.InfrastructureRef.Kind != infrav1exp.AzureASOManagedClusterKind {
+		return ctrl.Result{}, reconcile.TerminalError(errInvalidClusterKind)
+	}
+
+	needsPatch := controllerutil.AddFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
+	if needsPatch {
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -158,5 +177,6 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 	defer done()
 	log.V(4).Info("reconciling delete")
 
+	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
 	return ctrl.Result{}, nil
 }
