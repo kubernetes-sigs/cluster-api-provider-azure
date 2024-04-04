@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	utilexp "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util"
@@ -42,6 +44,8 @@ import (
 type AzureASOManagedMachinePoolReconciler struct {
 	client.Client
 	WatchFilterValue string
+
+	newResourceReconciler func(*infrav1exp.AzureASOManagedMachinePool, []*unstructured.Unstructured) resourceReconciler
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -57,7 +61,7 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 		return fmt.Errorf("failed to get Cluster to AzureASOManagedMachinePool mapper: %w", err)
 	}
 
-	_, err = ctrl.NewControllerManagedBy(mgr).
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1exp.AzureASOManagedMachinePool{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		Watches(
@@ -83,6 +87,20 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 		Build(r)
 	if err != nil {
 		return err
+	}
+
+	externalTracker := &external.ObjectTracker{
+		Cache:      mgr.GetCache(),
+		Controller: c,
+	}
+
+	r.newResourceReconciler = func(asoManagedCluster *infrav1exp.AzureASOManagedMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
+		return &ResourceReconciler{
+			Client:    r.Client,
+			resources: resources,
+			owner:     asoManagedCluster,
+			watcher:   externalTracker,
+		}
 	}
 
 	return nil
@@ -178,6 +196,16 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	us, err := resourcesToUnstructured(asoManagedMachinePool.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, us)
+	err = resourceReconciler.Reconcile(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -193,14 +221,27 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcilePause(ctx context.Contex
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // these parameters will be used soon enough
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedMachinePoolReconciler.reconcileDelete",
 	)
 	defer done()
 	log.V(4).Info("reconciling delete")
+
+	// If the entire cluster is being deleted, this ASO ManagedClustersAgentPool will be deleted with the rest
+	// of the ManagedCluster.
+	if cluster.DeletionTimestamp.IsZero() {
+		us, err := resourcesToUnstructured(asoManagedMachinePool.Spec.Resources)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, us)
+		err = resourceReconciler.Delete(ctx)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+		}
+	}
 
 	controllerutil.RemoveFinalizer(asoManagedMachinePool, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil

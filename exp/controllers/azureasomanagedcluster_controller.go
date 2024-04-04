@@ -21,10 +21,13 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -43,6 +46,18 @@ var errInvalidControlPlaneKind = errors.New("AzureASOManagedCluster cannot be us
 type AzureASOManagedClusterReconciler struct {
 	client.Client
 	WatchFilterValue string
+
+	newResourceReconciler func(*infrav1exp.AzureASOManagedCluster, []*unstructured.Unstructured) resourceReconciler
+}
+
+type resourceReconciler interface {
+	// Reconcile reconciles resources defined by this object and updates this object's status to reflect the
+	// state of the specified resources.
+	Reconcile(context.Context) error
+
+	// Delete begins deleting the specified resources and updates the object's status to reflect the state of
+	// the specified resources.
+	Delete(context.Context) error
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -53,7 +68,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	)
 	defer done()
 
-	_, err := ctrl.NewControllerManagedBy(mgr).
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1exp.AzureASOManagedCluster{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
@@ -71,6 +86,20 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		Build(r)
 	if err != nil {
 		return err
+	}
+
+	externalTracker := &external.ObjectTracker{
+		Cache:      mgr.GetCache(),
+		Controller: c,
+	}
+
+	r.newResourceReconciler = func(asoManagedCluster *infrav1exp.AzureASOManagedCluster, resources []*unstructured.Unstructured) resourceReconciler {
+		return &ResourceReconciler{
+			Client:    r.Client,
+			resources: resources,
+			owner:     asoManagedCluster,
+			watcher:   externalTracker,
+		}
 	}
 
 	return nil
@@ -126,7 +155,6 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 }
 
 func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1exp.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileNormal",
 	)
@@ -148,6 +176,16 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	us, err := resourcesToUnstructured(asoManagedCluster.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, us)
+	err = resourceReconciler.Reconcile(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -163,15 +201,36 @@ func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // these parameters will be used soon enough
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, asoManagedCluster *infrav1exp.AzureASOManagedCluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileDelete",
 	)
 	defer done()
 	log.V(4).Info("reconciling delete")
 
+	us, err := resourcesToUnstructured(asoManagedCluster.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, us)
+	err = resourceReconciler.Delete(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
+
 	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
+}
+
+func resourcesToUnstructured(resources []runtime.RawExtension) ([]*unstructured.Unstructured, error) {
+	var us []*unstructured.Unstructured
+	for _, resource := range resources {
+		u := &unstructured.Unstructured{}
+		if err := u.UnmarshalJSON(resource.Raw); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal resource JSON: %w", err)
+		}
+		us = append(us, u)
+	}
+	return us, nil
 }

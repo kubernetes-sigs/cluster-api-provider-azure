@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
@@ -224,6 +225,13 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())
@@ -325,6 +333,13 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					deleteFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())

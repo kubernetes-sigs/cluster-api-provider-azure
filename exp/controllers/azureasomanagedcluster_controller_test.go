@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
@@ -33,6 +34,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+type fakeResourceReconciler struct {
+	owner         client.Object
+	reconcileFunc func(context.Context, client.Object) error
+	deleteFunc    func(context.Context, client.Object) error
+}
+
+func (r *fakeResourceReconciler) Reconcile(ctx context.Context) error {
+	if r.reconcileFunc == nil {
+		return nil
+	}
+	return r.reconcileFunc(ctx, r.owner)
+}
+
+func (r *fakeResourceReconciler) Delete(ctx context.Context) error {
+	if r.deleteFunc == nil {
+		return nil
+	}
+	return r.deleteFunc(ctx, r.owner)
+}
 
 func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	ctx := context.Background()
@@ -167,6 +188,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
 		g.Expect(err).NotTo(HaveOccurred())
@@ -227,6 +255,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					deleteFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
 		g.Expect(err).NotTo(HaveOccurred())

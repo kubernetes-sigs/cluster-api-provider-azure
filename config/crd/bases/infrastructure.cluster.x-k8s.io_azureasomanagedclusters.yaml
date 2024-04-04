@@ -39,6 +39,14 @@ spec:
             type: object
           spec:
             description: AzureASOManagedClusterSpec defines the desired state of AzureASOManagedCluster.
+            properties:
+              resources:
+                description: Resources are embedded ASO resources to be managed by
+                  this resource.
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                type: array
             type: object
           status:
             description: AzureASOManagedClusterStatus defines the observed state of

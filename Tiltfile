@@ -255,9 +255,11 @@ def create_identity_secret():
     os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
     os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", "default")
     os.putenv("CLUSTER_IDENTITY_NAME", "cluster-identity")
+    os.putenv("ASO_CREDENTIAL_SECRET_NAME", "aso-credentials")
 
     os.putenv("AZURE_CLIENT_SECRET_B64", base64_encode(os.environ.get("AZURE_CLIENT_SECRET")))
     local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet = True, echo_off = True)
+    local("cat templates/flavors/aks-aso/credentials.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet = True, echo_off = True)
     os.unsetenv("AZURE_CLIENT_SECRET_B64")
 
 def create_crs():

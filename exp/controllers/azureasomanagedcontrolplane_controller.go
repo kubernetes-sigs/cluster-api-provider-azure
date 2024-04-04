@@ -21,10 +21,12 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -43,6 +45,8 @@ var errInvalidClusterKind = errors.New("AzureASOManagedControlPlane cannot be us
 type AzureASOManagedControlPlaneReconciler struct {
 	client.Client
 	WatchFilterValue string
+
+	newResourceReconciler func(*infrav1exp.AzureASOManagedControlPlane, []*unstructured.Unstructured) resourceReconciler
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -53,7 +57,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 	)
 	defer done()
 
-	_, err := ctrl.NewControllerManagedBy(mgr).
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1exp.AzureASOManagedControlPlane{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		Watches(&clusterv1.Cluster{},
@@ -66,6 +70,20 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 		Build(r)
 	if err != nil {
 		return err
+	}
+
+	externalTracker := &external.ObjectTracker{
+		Cache:      mgr.GetCache(),
+		Controller: c,
+	}
+
+	r.newResourceReconciler = func(asoManagedCluster *infrav1exp.AzureASOManagedControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
+		return &ResourceReconciler{
+			Client:    r.Client,
+			resources: resources,
+			owner:     asoManagedCluster,
+			watcher:   externalTracker,
+		}
 	}
 
 	return nil
@@ -131,7 +149,6 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 }
 
 func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileNormal",
 	)
@@ -153,6 +170,16 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	us, err := resourcesToUnstructured(asoManagedControlPlane.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, us)
+	err = resourceReconciler.Reconcile(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -168,14 +195,23 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Cont
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // these parameters will be used soon enough
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileDelete",
 	)
 	defer done()
 	log.V(4).Info("reconciling delete")
+
+	us, err := resourcesToUnstructured(asoManagedControlPlane.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, us)
+	err = resourceReconciler.Delete(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
 
 	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
 	return ctrl.Result{}, nil
