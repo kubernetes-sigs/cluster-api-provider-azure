@@ -42,7 +42,6 @@ linters:
     - noctx
     - nolintlint
     - nosprintfhostport
-    - prealloc
     - predeclared
     - reassign
     - revive
