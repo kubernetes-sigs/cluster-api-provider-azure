@@ -30,6 +30,8 @@ type AzureASOManagedControlPlaneSpec struct {
 
 // AzureASOManagedControlPlaneStatus defines the observed state of AzureASOManagedControlPlane.
 type AzureASOManagedControlPlaneStatus struct {
+	//+optional
+	Resources []ResourceStatus `json:"resources,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -42,6 +44,11 @@ type AzureASOManagedControlPlane struct {
 
 	Spec   AzureASOManagedControlPlaneSpec   `json:"spec,omitempty"`
 	Status AzureASOManagedControlPlaneStatus `json:"status,omitempty"`
+}
+
+// SetResourceStatuses returns the status of resources.
+func (a *AzureASOManagedControlPlane) SetResourceStatuses(r []ResourceStatus) {
+	a.Status.Resources = r
 }
 
 //+kubebuilder:object:root=true

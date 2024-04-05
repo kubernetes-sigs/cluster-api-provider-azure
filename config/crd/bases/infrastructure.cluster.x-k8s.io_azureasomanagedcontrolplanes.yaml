@@ -52,6 +52,35 @@ spec:
           status:
             description: AzureASOManagedControlPlaneStatus defines the observed state
               of AzureASOManagedControlPlane.
+            properties:
+              resources:
+                items:
+                  description: ResourceStatus represents the status of a resource.
+                  properties:
+                    ready:
+                      type: boolean
+                    resource:
+                      description: StatusResource is a handle to a resource.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - name
+                      - version
+                      type: object
+                  required:
+                  - ready
+                  - resource
+                  type: object
+                type: array
             type: object
         type: object
     served: true

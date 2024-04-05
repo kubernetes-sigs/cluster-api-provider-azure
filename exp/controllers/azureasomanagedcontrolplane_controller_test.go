@@ -131,6 +131,61 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(asoManagedControlPlane.GetFinalizers()).To(ContainElement(infrav1exp.AzureASOManagedControlPlaneFinalizer))
 	})
 
+	t.Run("reconciles resources that are not ready", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				InfrastructureRef: &corev1.ObjectReference{
+					APIVersion: infrav1exp.GroupVersion.Identifier(),
+					Kind:       infrav1exp.AzureASOManagedClusterKind,
+				},
+			},
+		}
+		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+				Finalizers: []string{
+					infrav1exp.AzureASOManagedControlPlaneFinalizer,
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedControlPlane).
+			Build()
+		r := &AzureASOManagedControlPlaneReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					owner: asoManagedControlPlane,
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						asoManagedControlPlane.SetResourceStatuses([]infrav1exp.ResourceStatus{
+							{Ready: true},
+							{Ready: false},
+							{Ready: true},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 

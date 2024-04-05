@@ -35,6 +35,22 @@ type AzureASOManagedClusterSpec struct {
 
 // AzureASOManagedClusterStatus defines the observed state of AzureASOManagedCluster.
 type AzureASOManagedClusterStatus struct {
+	//+optional
+	Resources []ResourceStatus `json:"resources,omitempty"`
+}
+
+// ResourceStatus represents the status of a resource.
+type ResourceStatus struct {
+	Resource StatusResource `json:"resource"`
+	Ready    bool           `json:"ready"`
+}
+
+// StatusResource is a handle to a resource.
+type StatusResource struct {
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
+	Name    string `json:"name"`
 }
 
 //+kubebuilder:object:root=true
@@ -47,6 +63,11 @@ type AzureASOManagedCluster struct {
 
 	Spec   AzureASOManagedClusterSpec   `json:"spec,omitempty"`
 	Status AzureASOManagedClusterStatus `json:"status,omitempty"`
+}
+
+// SetResourceStatuses returns the status of resources.
+func (a *AzureASOManagedCluster) SetResourceStatuses(r []ResourceStatus) {
+	a.Status.Resources = r
 }
 
 //+kubebuilder:object:root=true

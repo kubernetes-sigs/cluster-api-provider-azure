@@ -20,11 +20,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,7 +49,7 @@ type watcher interface {
 
 type resourceStatusObject interface {
 	client.Object
-	// methods will be added here which help track the status of resources.
+	SetResourceStatuses([]infrav1exp.ResourceStatus)
 }
 
 // Reconcile creates or updates the specified resources.
@@ -54,6 +57,8 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Reconcile")
 	defer done()
 	log.V(4).Info("reconciling resources")
+
+	var newResourceStatuses []infrav1exp.ResourceStatus
 
 	for _, spec := range r.resources {
 		gvk := spec.GroupVersionKind()
@@ -74,7 +79,23 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to apply resource: %w", err)
 		}
+
+		ready, err := readyStatus(ctx, spec)
+		if err != nil {
+			return fmt.Errorf("failed to get ready status: %w", err)
+		}
+		newResourceStatuses = append(newResourceStatuses, infrav1exp.ResourceStatus{
+			Resource: infrav1exp.StatusResource{
+				Group:   gvk.Group,
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+				Name:    spec.GetName(),
+			},
+			Ready: ready,
+		})
 	}
+
+	r.owner.SetResourceStatuses(newResourceStatuses)
 
 	return nil
 }
@@ -84,6 +105,8 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Delete")
 	defer done()
 	log.V(4).Info("deleting resources")
+
+	var newResourceStatuses []infrav1exp.ResourceStatus
 
 	for _, spec := range r.resources {
 		spec.SetNamespace(r.owner.GetNamespace())
@@ -100,7 +123,73 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to delete resource: %w", err)
 		}
+
+		err = r.Client.Get(ctx, client.ObjectKeyFromObject(spec), spec)
+		if apierrors.IsNotFound(err) {
+			log.V(4).Info("resource has been deleted")
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("failed to get resource: %w", err)
+		}
+		ready, err := readyStatus(ctx, spec)
+		if err != nil {
+			return fmt.Errorf("failed to get ready status: %w", err)
+		}
+		newResourceStatuses = append(newResourceStatuses, infrav1exp.ResourceStatus{
+			Resource: infrav1exp.StatusResource{
+				Group:   gvk.Group,
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+				Name:    spec.GetName(),
+			},
+			Ready: ready,
+		})
 	}
 
+	r.owner.SetResourceStatuses(newResourceStatuses)
+
 	return nil
+}
+
+func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error) {
+	_, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.readyStatus")
+	defer done()
+
+	statusConditions, found, err := unstructured.NestedSlice(u.Object, "status", "conditions")
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+
+	for _, el := range statusConditions {
+		condition, ok := el.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		condType, found, err := unstructured.NestedString(condition, "type")
+		if !found || err != nil || condType != conditions.ConditionTypeReady {
+			continue
+		}
+
+		observedGen, _, err := unstructured.NestedInt64(condition, "observedGeneration")
+		if err != nil {
+			return false, err
+		}
+		if observedGen < u.GetGeneration() {
+			log.V(4).Info("waiting for ASO to reconcile the resource")
+			return false, nil
+		}
+
+		readyStatus, _, err := unstructured.NestedString(condition, "status")
+		if err != nil {
+			return false, err
+		}
+		return readyStatus == string(metav1.ConditionTrue), nil
+	}
+
+	// no ready condition is set
+	return false, nil
 }

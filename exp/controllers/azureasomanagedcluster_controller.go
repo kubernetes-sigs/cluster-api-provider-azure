@@ -185,6 +185,11 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
+	for _, status := range asoManagedCluster.Status.Resources {
+		if !status.Ready {
+			return ctrl.Result{}, nil
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -217,6 +222,9 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	err = resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
+	}
+	if len(asoManagedCluster.Status.Resources) > 0 {
+		return ctrl.Result{}, nil
 	}
 
 	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
