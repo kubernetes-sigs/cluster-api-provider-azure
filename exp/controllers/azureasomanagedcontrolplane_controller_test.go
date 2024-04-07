@@ -18,9 +18,11 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +45,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1exp.AddToScheme,
 		clusterv1.AddToScheme,
+		asocontainerservicev1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
@@ -161,6 +165,19 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					infrav1exp.AzureASOManagedControlPlaneFinalizer,
 				},
 			},
+			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mc",
+								},
+							}),
+						},
+					},
+				},
+			},
 		}
 		c := fakeClientBuilder().
 			WithObjects(cluster, asoManagedControlPlane).
@@ -201,6 +218,15 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 		}
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: cluster.Namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				Fqdn: ptr.To("endpoint"),
+			},
+		}
 		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
@@ -216,9 +242,22 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					infrav1exp.AzureASOManagedControlPlaneFinalizer,
 				},
 			},
+			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: managedCluster.Name,
+								},
+							}),
+						},
+					},
+				},
+			},
 		}
 		c := fakeClientBuilder().
-			WithObjects(cluster, asoManagedControlPlane).
+			WithObjects(cluster, asoManagedControlPlane, managedCluster).
 			Build()
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: c,
@@ -233,6 +272,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(asoManagedControlPlane.Status.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
@@ -304,4 +346,69 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		err = c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	})
+}
+
+func TestGetControlPlaneEndpoint(t *testing.T) {
+	tests := []struct {
+		name           string
+		managedCluster *asocontainerservicev1.ManagedCluster
+		expected       clusterv1.APIEndpoint
+	}{
+		{
+			name:           "empty",
+			managedCluster: &asocontainerservicev1.ManagedCluster{},
+			expected:       clusterv1.APIEndpoint{},
+		},
+		{
+			name: "public fqdn",
+			managedCluster: &asocontainerservicev1.ManagedCluster{
+				Status: asocontainerservicev1.ManagedCluster_STATUS{
+					Fqdn: ptr.To("fqdn"),
+				},
+			},
+			expected: clusterv1.APIEndpoint{
+				Host: "fqdn",
+				Port: 443,
+			},
+		},
+		{
+			name: "private fqdn",
+			managedCluster: &asocontainerservicev1.ManagedCluster{
+				Status: asocontainerservicev1.ManagedCluster_STATUS{
+					PrivateFQDN: ptr.To("fqdn"),
+				},
+			},
+			expected: clusterv1.APIEndpoint{
+				Host: "fqdn",
+				Port: 443,
+			},
+		},
+		{
+			name: "public and private fqdn",
+			managedCluster: &asocontainerservicev1.ManagedCluster{
+				Status: asocontainerservicev1.ManagedCluster_STATUS{
+					PrivateFQDN: ptr.To("private"),
+					Fqdn:        ptr.To("public"),
+				},
+			},
+			expected: clusterv1.APIEndpoint{
+				Host: "private",
+				Port: 443,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			g.Expect(getControlPlaneEndpoint(test.managedCluster)).To(Equal(test.expected))
+		})
+	}
+}
+
+func mcJSON(g Gomega, mc *asocontainerservicev1.ManagedCluster) []byte {
+	mc.SetGroupVersionKind(asocontainerservicev1.GroupVersion.WithKind("ManagedCluster"))
+	j, err := json.Marshal(mc)
+	g.Expect(err).NotTo(HaveOccurred())
+	return j
 }

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
@@ -174,6 +175,19 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	var managedClusterName string
+	for _, resource := range us {
+		if resource.GroupVersionKind().Group == asocontainerservicev1.GroupVersion.Group &&
+			resource.GroupVersionKind().Kind == "ManagedCluster" {
+			managedClusterName = resource.GetName()
+			break
+		}
+	}
+	if managedClusterName == "" {
+		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1.GroupVersion.Group))
+	}
+
 	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, us)
 	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
@@ -184,6 +198,14 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 			return ctrl.Result{}, nil
 		}
 	}
+
+	managedCluster := &asocontainerservicev1.ManagedCluster{}
+	err = r.Get(ctx, client.ObjectKey{Namespace: asoManagedControlPlane.Namespace, Name: managedClusterName}, managedCluster)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting ManagedCluster: %w", err)
+	}
+
+	asoManagedControlPlane.Status.ControlPlaneEndpoint = getControlPlaneEndpoint(managedCluster)
 
 	return ctrl.Result{}, nil
 }
@@ -223,4 +245,20 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 
 	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
 	return ctrl.Result{}, nil
+}
+
+func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1.APIEndpoint {
+	if managedCluster.Status.PrivateFQDN != nil {
+		return clusterv1.APIEndpoint{
+			Host: *managedCluster.Status.PrivateFQDN,
+			Port: 443,
+		}
+	}
+	if managedCluster.Status.Fqdn != nil {
+		return clusterv1.APIEndpoint{
+			Host: *managedCluster.Status.Fqdn,
+			Port: 443,
+		}
+	}
+	return clusterv1.APIEndpoint{}
 }

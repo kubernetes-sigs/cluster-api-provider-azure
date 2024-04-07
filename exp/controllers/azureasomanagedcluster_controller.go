@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -36,7 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -83,6 +86,25 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 				infracontroller.ClusterUpdatePauseChange(log),
 			),
 		).
+		Watches(
+			&infrav1exp.AzureASOManagedControlPlane{},
+			handler.EnqueueRequestsFromMapFunc(asoManagedControlPlaneToManagedClusterMap(r.Client)),
+			builder.WithPredicates(
+				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+				predicate.Funcs{
+					CreateFunc: func(ev event.CreateEvent) bool {
+						controlPlane := ev.Object.(*infrav1exp.AzureASOManagedControlPlane)
+						return !controlPlane.Status.ControlPlaneEndpoint.IsZero()
+					},
+					UpdateFunc: func(ev event.UpdateEvent) bool {
+						oldControlPlane := ev.ObjectOld.(*infrav1exp.AzureASOManagedControlPlane)
+						newControlPlane := ev.ObjectNew.(*infrav1exp.AzureASOManagedControlPlane)
+						return oldControlPlane.Status.ControlPlaneEndpoint !=
+							newControlPlane.Status.ControlPlaneEndpoint
+					},
+				},
+			),
+		).
 		Build(r)
 	if err != nil {
 		return err
@@ -103,6 +125,33 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	}
 
 	return nil
+}
+
+func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
+		asoManagedControlPlane := o.(*infrav1exp.AzureASOManagedControlPlane)
+
+		cluster, err := util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
+		if err != nil {
+			return nil
+		}
+
+		if cluster == nil ||
+			cluster.Spec.InfrastructureRef == nil ||
+			cluster.Spec.InfrastructureRef.APIVersion != infrav1exp.GroupVersion.Identifier() ||
+			cluster.Spec.InfrastructureRef.Kind != infrav1exp.AzureASOManagedClusterKind {
+			return nil
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: client.ObjectKey{
+					Namespace: cluster.Spec.InfrastructureRef.Namespace,
+					Name:      cluster.Spec.InfrastructureRef.Name,
+				},
+			},
+		}
+	}
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters,verbs=get;list;watch;create;update;patch;delete
@@ -190,6 +239,18 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 			return ctrl.Result{}, nil
 		}
 	}
+
+	asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+			Name:      cluster.Spec.ControlPlaneRef.Name,
+		},
+	}
+	err = r.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)
+	if client.IgnoreNotFound(err) != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get AzureASOManagedControlPlane %s/%s: %w", asoManagedControlPlane.Namespace, asoManagedControlPlane.Name, err)
+	}
+	asoManagedCluster.Spec.ControlPlaneEndpoint = asoManagedControlPlane.Status.ControlPlaneEndpoint
 
 	return ctrl.Result{}, nil
 }
