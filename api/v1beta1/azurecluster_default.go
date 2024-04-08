@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"fmt"
+
 	"k8s.io/utils/ptr"
 )
 
@@ -64,7 +65,7 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 	if c.Spec.ControlPlaneEnabled {
 		c.SetControlPlaneOutboundLBDefaults()
 	}
-	if c.Spec.ControlPlaneEnabled {
+	if !c.Spec.ControlPlaneEnabled {
 		c.Spec.NetworkSpec.APIServerLB = nil
 	}
 }
@@ -218,6 +219,14 @@ func (c *AzureCluster) setVnetPeeringDefaults() {
 }
 
 func (c *AzureCluster) setAPIServerLBDefaults() {
+	if c.Spec.NetworkSpec.APIServerLB == nil {
+		lbSpec := LoadBalancerSpec{
+			LoadBalancerClassSpec: LoadBalancerClassSpec{
+				Type: "Public",
+			},
+		}
+		c.Spec.NetworkSpec.APIServerLB = &lbSpec
+	}
 	lb := c.Spec.NetworkSpec.APIServerLB
 
 	lb.LoadBalancerClassSpec.setAPIServerLBDefaults()

@@ -17,9 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,15 +43,11 @@ var _ webhook.Defaulter = &AzureCluster{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (c *AzureCluster) Default() {
-	logger := log.FromContext(context.TODO())
-	logger.Info("Defaulter")
 	c.setDefaults()
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (c *AzureCluster) ValidateCreate() (admission.Warnings, error) {
-	logger := log.FromContext(context.TODO())
-	logger.Info("ValidateCreate")
 	return c.validateCluster(nil)
 }
 

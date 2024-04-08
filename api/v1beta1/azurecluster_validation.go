@@ -17,12 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"reflect"
 	"regexp"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	valid "github.com/asaskevich/govalidator"
 	corev1 "k8s.io/api/core/v1"
@@ -87,14 +85,11 @@ func (c *AzureCluster) validateCluster(old *AzureCluster) (admission.Warnings, e
 
 // validateClusterSpec validates a ClusterSpec.
 func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
-	logger := log.FromContext(context.TODO())
 	var allErrs field.ErrorList
 	var oldNetworkSpec NetworkSpec
 	if old != nil {
 		oldNetworkSpec = old.Spec.NetworkSpec
 	}
-
-	logger.Info(fmt.Sprintf("ControlPlaneEnabled: %v", c.Spec.ControlPlaneEnabled))
 
 	allErrs = append(allErrs, validateNetworkSpec(c.Spec.ControlPlaneEnabled, c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
 

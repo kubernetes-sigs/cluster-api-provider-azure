@@ -87,6 +87,7 @@ func TestAPIServerHost(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
@@ -115,6 +116,7 @@ func TestAPIServerHost(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
@@ -143,6 +145,7 @@ func TestAPIServerHost(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						NetworkClassSpec: infrav1.NetworkClassSpec{
 							PrivateDNSZoneName: "example.private",
@@ -241,6 +244,7 @@ func TestGettingSecurityRules(t *testing.T) {
 					Kind: infrav1.AzureClusterIdentityKind,
 				},
 			},
+			ControlPlaneEnabled: true,
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
@@ -352,7 +356,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "centralIndia",
@@ -399,7 +404,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "centralIndia",
@@ -469,7 +475,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "centralIndia",
@@ -577,7 +584,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "centralIndia",
@@ -644,7 +652,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						Location:       "centralIndia",
@@ -714,7 +723,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					BastionSpec: infrav1.BastionSpec{
 						AzureBastion: &infrav1.AzureBastion{
 							PublicIP: infrav1.PublicIPSpec{
@@ -2291,6 +2301,7 @@ func TestOutboundLBName(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						IdentityRef: &corev1.ObjectReference{
@@ -2427,6 +2438,7 @@ func TestBackendPoolName(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							{
@@ -2549,6 +2561,7 @@ func TestOutboundPoolName(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "123",
 						IdentityRef: &corev1.ObjectReference{
@@ -2986,7 +2999,8 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
-					ResourceGroup: "my-rg",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: infrav1.VnetSpec{
 							Name:          "my-vnet",
@@ -3160,7 +3174,8 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
-					ResourceGroup: "my-rg",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: infrav1.VnetSpec{
 							Name:          "my-vnet",

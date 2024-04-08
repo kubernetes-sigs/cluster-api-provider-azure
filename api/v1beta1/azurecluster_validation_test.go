@@ -316,7 +316,21 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	for _, test := range testCase {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			errs := validateNetworkSpec(true, test.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+			errs := validateNetworkSpec(true, test.networkSpec, NetworkSpec{
+				Vnet:    VnetSpec{},
+				Subnets: nil,
+				APIServerLB: &LoadBalancerSpec{
+					ID:                    "",
+					Name:                  "",
+					FrontendIPs:           nil,
+					FrontendIPsCount:      nil,
+					BackendPool:           BackendPool{},
+					LoadBalancerClassSpec: LoadBalancerClassSpec{},
+				},
+				NodeOutboundLB:         nil,
+				ControlPlaneOutboundLB: nil,
+				NetworkClassSpec:       NetworkClassSpec{},
+			}, field.NewPath("spec").Child("networkSpec"))
 			g.Expect(errs).To(BeNil())
 		})
 	}
@@ -338,7 +352,21 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{
+			Vnet:    VnetSpec{},
+			Subnets: nil,
+			APIServerLB: &LoadBalancerSpec{
+				ID:                    "",
+				Name:                  "",
+				FrontendIPs:           nil,
+				FrontendIPsCount:      nil,
+				BackendPool:           BackendPool{},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{},
+			},
+			NodeOutboundLB:         nil,
+			ControlPlaneOutboundLB: nil,
+			NetworkClassSpec:       NetworkClassSpec{},
+		}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
@@ -361,7 +389,21 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{
+			Vnet:    VnetSpec{},
+			Subnets: nil,
+			APIServerLB: &LoadBalancerSpec{
+				ID:                    "",
+				Name:                  "",
+				FrontendIPs:           nil,
+				FrontendIPsCount:      nil,
+				BackendPool:           BackendPool{},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{},
+			},
+			NodeOutboundLB:         nil,
+			ControlPlaneOutboundLB: nil,
+			NetworkClassSpec:       NetworkClassSpec{},
+		}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.vnet.resourceGroup"))
@@ -384,7 +426,21 @@ func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(true, testCase.networkSpec, NetworkSpec{
+			Vnet:    VnetSpec{},
+			Subnets: nil,
+			APIServerLB: &LoadBalancerSpec{
+				ID:                    "",
+				Name:                  "",
+				FrontendIPs:           nil,
+				FrontendIPsCount:      nil,
+				BackendPool:           BackendPool{},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{},
+			},
+			NodeOutboundLB:         nil,
+			ControlPlaneOutboundLB: nil,
+			NetworkClassSpec:       NetworkClassSpec{},
+		}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
@@ -1457,7 +1513,8 @@ func createValidClusterWithClusterSubnet() *AzureCluster {
 			Name: "test-cluster",
 		},
 		Spec: AzureClusterSpec{
-			NetworkSpec: createValidNetworkSpecWithClusterSubnet(),
+			ControlPlaneEnabled: true,
+			NetworkSpec:         createValidNetworkSpecWithClusterSubnet(),
 			AzureClusterClassSpec: AzureClusterClassSpec{
 				IdentityRef: &corev1.ObjectReference{
 					Kind: "AzureClusterIdentity",
@@ -1473,7 +1530,8 @@ func createValidCluster() *AzureCluster {
 			Name: "test-cluster",
 		},
 		Spec: AzureClusterSpec{
-			NetworkSpec: createValidNetworkSpec(),
+			ControlPlaneEnabled: true,
+			NetworkSpec:         createValidNetworkSpec(),
 			AzureClusterClassSpec: AzureClusterClassSpec{
 				IdentityRef: &corev1.ObjectReference{
 					Kind: AzureClusterIdentityKind,
