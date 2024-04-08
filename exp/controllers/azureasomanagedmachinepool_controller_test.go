@@ -308,6 +308,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					Name: asoManagedCluster.Name,
 				},
 			},
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
+				Count: ptr.To(3),
+			},
 		}
 		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -396,6 +399,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
 		g.Expect(asoManagedMachinePool.Spec.ProviderIDList).To(ConsistOf("azure://node1", "azure://node2"))
+		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
