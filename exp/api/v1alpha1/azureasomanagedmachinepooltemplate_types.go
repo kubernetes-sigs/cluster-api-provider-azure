@@ -33,6 +33,10 @@ type AzureASOManagedMachinePoolResource struct {
 
 // AzureASOManagedMachinePoolTemplateResourceSpec defines the desired state of the templated resource.
 type AzureASOManagedMachinePoolTemplateResourceSpec struct {
+	// ProviderIDList is the list of cloud provider IDs for the instances. It fulfills Cluster API's machine
+	// pool infrastructure provider contract.
+	ProviderIDList []string `json:"providerIDList,omitempty"`
+
 	// Resources are embedded ASO resources to be managed by this resource.
 	//+optional
 	Resources []runtime.RawExtension `json:"resources,omitempty"`

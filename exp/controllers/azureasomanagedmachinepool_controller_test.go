@@ -18,15 +18,19 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -34,6 +38,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+type FakeClusterTracker struct {
+	getClientFunc func(context.Context, types.NamespacedName) (client.Client, error)
+}
+
+func (c *FakeClusterTracker) GetClient(ctx context.Context, name types.NamespacedName) (client.Client, error) {
+	if c.getClientFunc == nil {
+		return nil, nil
+	}
+	return c.getClientFunc(ctx, name)
+}
 
 func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	ctx := context.Background()
@@ -43,6 +58,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		infrav1exp.AddToScheme,
 		clusterv1.AddToScheme,
 		expv1.AddToScheme,
+		asocontainerservicev1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
@@ -210,6 +226,19 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterv1.ClusterFinalizer,
 				},
 			},
+			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "ap",
+								},
+							}),
+						},
+					},
+				},
+			},
 		}
 		machinePool := &expv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -259,6 +288,27 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 		}
+		asoManagedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: cluster.Namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				NodeResourceGroup: ptr.To("MC_rg"),
+			},
+		}
+		asoAgentPool := &asocontainerservicev1.ManagedClustersAgentPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ap",
+				Namespace: cluster.Namespace,
+			},
+			Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+				AzureName: "pool1",
+				Owner: &genruntime.KnownResourceReference{
+					Name: asoManagedCluster.Name,
+				},
+			},
+		}
 		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
@@ -274,6 +324,15 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterv1.ClusterFinalizer,
 				},
 			},
+			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: apJSON(g, asoAgentPool),
+						},
+					},
+				},
+			},
 		}
 		machinePool := &expv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -285,7 +344,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 		}
 		c := fakeClientBuilder().
-			WithObjects(asoManagedMachinePool, machinePool, cluster).
+			WithObjects(asoManagedMachinePool, machinePool, cluster, asoAgentPool, asoManagedCluster).
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
@@ -296,10 +355,47 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				}
 			},
+			Tracker: &FakeClusterTracker{
+				getClientFunc: func(_ context.Context, _ types.NamespacedName) (client.Client, error) {
+					return fakeclient.NewClientBuilder().
+						WithObjects(
+							&corev1.Node{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:   "node1",
+									Labels: expectedNodeLabels(asoAgentPool.AzureName(), *asoManagedCluster.Status.NodeResourceGroup),
+								},
+								Spec: corev1.NodeSpec{
+									ProviderID: "azure://node1",
+								},
+							},
+							&corev1.Node{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:   "node2",
+									Labels: expectedNodeLabels(asoAgentPool.AzureName(), *asoManagedCluster.Status.NodeResourceGroup),
+								},
+								Spec: corev1.NodeSpec{
+									ProviderID: "azure://node2",
+								},
+							},
+							&corev1.Node{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "no-labels",
+								},
+								Spec: corev1.NodeSpec{
+									ProviderID: "azure://node3",
+								},
+							},
+						).
+						Build(), nil
+				},
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.Spec.ProviderIDList).To(ConsistOf("azure://node1", "azure://node2"))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
@@ -409,4 +505,11 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
 	})
+}
+
+func apJSON(g Gomega, ap *asocontainerservicev1.ManagedClustersAgentPool) []byte {
+	ap.SetGroupVersionKind(asocontainerservicev1.GroupVersion.WithKind("ManagedClustersAgentPool"))
+	j, err := json.Marshal(ap)
+	g.Expect(err).NotTo(HaveOccurred())
+	return j
 }
