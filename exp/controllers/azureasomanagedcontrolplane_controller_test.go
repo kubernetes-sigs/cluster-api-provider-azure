@@ -23,6 +23,7 @@ import (
 	"time"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -46,6 +48,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		infrav1exp.AddToScheme,
 		clusterv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
+		corev1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
@@ -218,10 +221,29 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 		}
+		kubeconfig := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+				Namespace: cluster.Namespace,
+			},
+			Data: map[string][]byte{
+				"some other key": []byte("some data"),
+			},
+		}
 		managedCluster := &asocontainerservicev1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mc",
 				Namespace: cluster.Namespace,
+			},
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				OperatorSpec: &asocontainerservicev1.ManagedClusterOperatorSpec{
+					Secrets: &asocontainerservicev1.ManagedClusterOperatorSecrets{
+						UserCredentials: &genruntime.SecretDestination{
+							Name: secret.Name(cluster.Name, secret.Kubeconfig),
+							Key:  "some other key",
+						},
+					},
+				},
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
 				Fqdn:                     ptr.To("endpoint"),
@@ -258,10 +280,19 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 		}
 		c := fakeClientBuilder().
-			WithObjects(cluster, asoManagedControlPlane, managedCluster).
+			WithObjects(cluster, asoManagedControlPlane, managedCluster, kubeconfig).
 			Build()
+		kubeConfigPatched := false
 		r := &AzureASOManagedControlPlaneReconciler{
-			Client: c,
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+					kubeconfig := obj.(*corev1.Secret)
+					g.Expect(kubeconfig.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
+					kubeConfigPatched = true
+					return nil
+				},
+			},
 			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
@@ -277,6 +308,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
 		g.Expect(asoManagedControlPlane.Status.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
 		g.Expect(asoManagedControlPlane.Status.Version).To(Equal("vCurrent"))
+		g.Expect(kubeConfigPatched).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
