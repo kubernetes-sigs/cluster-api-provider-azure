@@ -551,7 +551,7 @@ func TestClusterSubnetsValid(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			errs := validateSubnets(tc.subnets, createValidVnet(),
+			errs := validateSubnets(true, tc.subnets, createValidVnet(),
 				field.NewPath("spec").Child("networkSpec").Child("subnets"))
 			g.Expect(errs).To(ConsistOf(tc.err))
 		})
@@ -571,7 +571,7 @@ func TestSubnetsValid(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateSubnets(testCase.subnets, createValidVnet(),
+		errs := validateSubnets(true, testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(BeNil())
 	})
@@ -592,7 +592,7 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateSubnets(testCase.subnets, createValidVnet(),
+		errs := validateSubnets(true, testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
@@ -616,7 +616,7 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateSubnets(testCase.subnets, createValidVnet(),
+		errs := validateSubnets(true, testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
@@ -641,7 +641,7 @@ func TestSubnetNamesNotUnique(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		g := NewWithT(t)
-		errs := validateSubnets(testCase.subnets, createValidVnet(),
+		errs := validateSubnets(true, testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeDuplicate))
@@ -1034,7 +1034,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
+			err := validateAPIServerLB(&test.lb, &test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
@@ -1092,7 +1092,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 				NetworkClassSpec: NetworkClassSpec{
 					PrivateDNSZoneName: "good.dns.io",
 				},
-				APIServerLB: LoadBalancerSpec{
+				APIServerLB: &LoadBalancerSpec{
 					Name: "my-lb",
 					LoadBalancerClassSpec: LoadBalancerClassSpec{
 						Type: Public,
@@ -1114,7 +1114,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			err := validatePrivateDNSZoneName(test.network.PrivateDNSZoneName, test.network.APIServerLB.Type, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
+			err := validatePrivateDNSZoneName(test.network.PrivateDNSZoneName, true, test.network.APIServerLB.Type, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
@@ -1271,7 +1271,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
+			err := validateNodeOutboundLB(test.lb, test.old, &test.apiServerLB, field.NewPath("nodeOutboundLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
@@ -1351,7 +1351,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			err := validateControlPlaneOutboundLB(test.lb, test.apiServerLB, field.NewPath("controlPlaneOutboundLB"))
+			err := validateControlPlaneOutboundLB(test.lb, &test.apiServerLB, field.NewPath("controlPlaneOutboundLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
@@ -1560,8 +1560,8 @@ func createValidVnet() VnetSpec {
 	}
 }
 
-func createValidAPIServerLB() LoadBalancerSpec {
-	return LoadBalancerSpec{
+func createValidAPIServerLB() *LoadBalancerSpec {
+	return &LoadBalancerSpec{
 		Name: "my-lb",
 		FrontendIPs: []FrontendIP{
 			{
@@ -1585,8 +1585,8 @@ func createValidNodeOutboundLB() *LoadBalancerSpec {
 	}
 }
 
-func createValidAPIServerInternalLB() LoadBalancerSpec {
-	return LoadBalancerSpec{
+func createValidAPIServerInternalLB() *LoadBalancerSpec {
+	return &LoadBalancerSpec{
 		Name: "my-lb",
 		FrontendIPs: []FrontendIP{
 			{

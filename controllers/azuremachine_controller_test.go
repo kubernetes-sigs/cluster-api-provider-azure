@@ -569,7 +569,7 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 						},
 					},
 				},
-				APIServerLB: infrav1.LoadBalancerSpec{
+				APIServerLB: &infrav1.LoadBalancerSpec{
 					Name: "my-cluster-public-lb",
 					FrontendIPs: []infrav1.FrontendIP{
 						{

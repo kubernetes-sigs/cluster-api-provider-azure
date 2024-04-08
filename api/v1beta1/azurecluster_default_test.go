@@ -122,7 +122,7 @@ func TestVnetDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "my-lb",
 							FrontendIPs: []FrontendIP{
 								{
@@ -1227,7 +1227,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
 							FrontendIPs: []FrontendIP{
 								{
@@ -1259,7 +1259,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1273,7 +1273,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
@@ -1304,7 +1304,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1321,7 +1321,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
@@ -1457,7 +1457,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1503,7 +1503,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1520,7 +1520,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1568,7 +1568,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1603,7 +1603,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1667,7 +1667,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1702,7 +1702,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1780,7 +1780,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1797,7 +1797,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1881,7 +1881,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1916,7 +1916,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 					},
 				},
 			},
@@ -1926,7 +1926,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1943,7 +1943,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						NodeOutboundLB: &LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
 							BackendPool: BackendPool{
@@ -1962,7 +1962,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -2005,7 +2005,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "user-defined-name",
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
@@ -2062,7 +2062,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "user-defined-name",
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
@@ -2123,7 +2123,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 					},
 				},
 			},
@@ -2133,7 +2133,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -2150,7 +2150,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 					},
 				},
 			},
@@ -2160,7 +2160,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -2177,7 +2177,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
@@ -2193,7 +2193,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -2236,7 +2236,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							BackendPool: BackendPool{
 								Name: "custom-outbound-lb",
@@ -2254,7 +2254,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},

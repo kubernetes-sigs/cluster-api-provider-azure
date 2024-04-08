@@ -88,7 +88,7 @@ func TestAPIServerHost(t *testing.T) {
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -116,7 +116,7 @@ func TestAPIServerHost(t *testing.T) {
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -147,7 +147,7 @@ func TestAPIServerHost(t *testing.T) {
 						NetworkClassSpec: infrav1.NetworkClassSpec{
 							PrivateDNSZoneName: "example.private",
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -321,7 +321,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -368,7 +368,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](0),
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -424,7 +424,7 @@ func TestPublicIPSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -506,7 +506,7 @@ func TestPublicIPSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -593,7 +593,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 							FrontendIPs: []infrav1.FrontendIP{
 								{
@@ -663,7 +663,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -754,7 +754,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -2161,7 +2161,7 @@ func TestAPIServerLBPoolName(t *testing.T) {
 				},
 				Spec: infrav1.AzureClusterSpec{
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: tc.lbName,
 						},
 					},
@@ -2311,7 +2311,7 @@ func TestOutboundLBName(t *testing.T) {
 			}
 
 			if tc.apiServerLB != nil {
-				azureCluster.Spec.NetworkSpec.APIServerLB = *tc.apiServerLB
+				azureCluster.Spec.NetworkSpec.APIServerLB = tc.apiServerLB
 			}
 
 			if tc.controlPlaneOutboundLB != nil {
@@ -2436,7 +2436,7 @@ func TestBackendPoolName(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "APIServerLBName",
 						},
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
@@ -3006,7 +3006,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "api-server-lb",
 							BackendPool: infrav1.BackendPool{
 								Name: "api-server-lb-backend-pool",
@@ -3180,7 +3180,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "api-server-lb",
 							BackendPool: infrav1.BackendPool{
 								Name: "api-server-lb-backend-pool",

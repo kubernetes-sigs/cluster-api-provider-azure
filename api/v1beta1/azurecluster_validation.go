@@ -202,7 +202,7 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old 
 	if controlPlaneEnabled {
 		allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
 	}
-	var lbType LBType = Internal
+	var lbType = Internal
 	if networkSpec.APIServerLB != nil {
 		lbType = networkSpec.APIServerLB.Type
 	}

@@ -17,11 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	"k8s.io/utils/ptr"
 )
 
@@ -57,26 +53,20 @@ func (c *AzureCluster) setDefaults() {
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
-	logger := log.FromContext(context.TODO())
-	logger.Info(fmt.Sprintf("Was ist hier los %v", c.Spec.ControlPlaneEnabled))
 	c.setVnetDefaults()
 	c.setBastionDefaults()
 	c.setSubnetDefaults()
 	c.setVnetPeeringDefaults()
 	if c.Spec.ControlPlaneEnabled {
-		logger.Info("dont call me setAPIServerLBDefaults")
 		c.setAPIServerLBDefaults()
 	}
 	c.SetNodeOutboundLBDefaults()
 	if c.Spec.ControlPlaneEnabled {
-		logger.Info("dont call me SetControlPlaneOutboundLBDefaults")
 		c.SetControlPlaneOutboundLBDefaults()
 	}
 	if c.Spec.ControlPlaneEnabled {
 		c.Spec.NetworkSpec.APIServerLB = nil
 	}
-	bolB, _ := json.Marshal(c.Spec)
-	logger.Info(fmt.Sprintf("Was ist hier los %s", string(bolB)))
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
