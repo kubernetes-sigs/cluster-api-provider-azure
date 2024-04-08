@@ -60,6 +60,11 @@ spec:
             description: AzureASOManagedMachinePoolStatus defines the observed state
               of AzureASOManagedMachinePool.
             properties:
+              ready:
+                description: |-
+                  Ready represents whether or not the infrastructure is ready to be used. It fulfills Cluster API's
+                  machine pool infrastructure provider contract.
+                type: boolean
               replicas:
                 description: |-
                   Replicas is the current number of provisioned replicas. It fulfills Cluster API's machine pool

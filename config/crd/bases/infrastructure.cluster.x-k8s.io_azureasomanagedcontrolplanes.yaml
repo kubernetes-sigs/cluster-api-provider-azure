@@ -73,6 +73,16 @@ spec:
                 - host
                 - port
                 type: object
+              initialized:
+                description: |-
+                  Initialized represents whether or not the API server has been provisioned. It fulfills Cluster API's
+                  control plane provider contract. For AKS, this is equivalent to `ready`.
+                type: boolean
+              ready:
+                description: |-
+                  Ready represents whether or not the API server is ready to receive requests. It fulfills Cluster API's
+                  control plane provider contract. For AKS, this is equivalent to `initialized`.
+                type: boolean
               resources:
                 items:
                   description: ResourceStatus represents the status of a resource.

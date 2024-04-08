@@ -181,6 +181,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 			},
+			Status: infrav1exp.AzureASOManagedControlPlaneStatus{
+				Ready: true,
+			},
 		}
 		c := fakeClientBuilder().
 			WithObjects(cluster, asoManagedControlPlane).
@@ -204,6 +207,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
 	})
 
 	t.Run("successfully reconciles normally", func(t *testing.T) {
@@ -278,6 +284,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 			},
+			Status: infrav1exp.AzureASOManagedControlPlaneStatus{
+				Ready: false,
+			},
 		}
 		c := fakeClientBuilder().
 			WithObjects(cluster, asoManagedControlPlane, managedCluster, kubeconfig).
@@ -309,6 +318,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(asoManagedControlPlane.Status.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
 		g.Expect(asoManagedControlPlane.Status.Version).To(Equal("vCurrent"))
 		g.Expect(kubeConfigPatched).To(BeTrue())
+		g.Expect(asoManagedControlPlane.Status.Ready).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
