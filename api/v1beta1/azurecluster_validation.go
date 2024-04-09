@@ -393,7 +393,11 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 	var allErrs field.ErrorList
 
 	lbClassSpec := lb.LoadBalancerClassSpec
-	olLBClassSpec := old.LoadBalancerClassSpec
+	var olLBClassSpec LoadBalancerClassSpec
+	if old != nil {
+		olLBClassSpec = old.LoadBalancerClassSpec
+	}
+
 	allErrs = append(allErrs, validateClassSpecForAPIServerLB(lbClassSpec, &olLBClassSpec, fldPath)...)
 
 	// Name should be valid.
@@ -401,7 +405,7 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 		allErrs = append(allErrs, err)
 	}
 	// Name should be immutable.
-	if old.Name != "" && old.Name != lb.Name {
+	if old != nil && old.Name != "" && old.Name != lb.Name {
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
 	}
 

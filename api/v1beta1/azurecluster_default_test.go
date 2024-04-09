@@ -95,6 +95,7 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "custom-vnet",
@@ -158,7 +159,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
 							Kind: AzureClusterIdentityKind,
@@ -171,7 +173,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -196,7 +199,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -216,7 +220,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -241,7 +246,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -261,7 +267,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -308,7 +315,8 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{},
+					ControlPlaneEnabled: true,
+					NetworkSpec:         NetworkSpec{},
 				},
 			},
 			output: &AzureCluster{
@@ -316,6 +324,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -352,6 +361,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -382,6 +392,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -422,6 +433,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -445,6 +457,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -486,6 +499,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -509,6 +523,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -540,6 +555,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -557,6 +573,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -588,6 +605,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -614,6 +632,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -654,6 +673,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -671,6 +691,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -712,6 +733,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -742,6 +764,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -779,6 +802,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -838,6 +862,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -913,6 +938,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -948,6 +974,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1005,6 +1032,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1030,6 +1058,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
