@@ -224,7 +224,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
-				Fqdn: ptr.To("endpoint"),
+				Fqdn:                     ptr.To("endpoint"),
+				CurrentKubernetesVersion: ptr.To("Current"),
 			},
 		}
 		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
@@ -275,6 +276,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
 		g.Expect(asoManagedControlPlane.Status.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
+		g.Expect(asoManagedControlPlane.Status.Version).To(Equal("vCurrent"))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
