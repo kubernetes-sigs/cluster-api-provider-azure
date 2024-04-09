@@ -51,6 +51,19 @@ func NewClient(auth azure.Authorizer) (Client, error) {
 	return &AzureClient{factory.NewUserAssignedIdentitiesClient()}, nil
 }
 
+// NewClientBySub creates a new MSI client with a given subscriptionID.
+func NewClientBySub(auth azure.Authorizer, subscriptionID string) (Client, error) {
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create identities client options")
+	}
+	factory, err := armmsi.NewClientFactory(subscriptionID, auth.Token(), opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create armmsi client factory")
+	}
+	return &AzureClient{factory.NewUserAssignedIdentitiesClient()}, nil
+}
+
 // Get returns a managed service identity.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.AzureClient.Get")

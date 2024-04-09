@@ -30,6 +30,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -175,11 +176,22 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Construct secret for this machine template
 	userAssignedIdentityIfExists := ""
 	if len(azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities) > 0 {
-		idsClient, err := identities.NewClient(clusterScope)
+		var identitiesClient identities.Client
+		identitiesClient, err := identities.NewClient(clusterScope)
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create identities client")
 		}
-		userAssignedIdentityIfExists, err = idsClient.GetClientID(
+		parsed, err := azureutil.ParseResourceID(azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "failed to parse ProviderID %s", azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID)
+		}
+		if parsed.SubscriptionID != clusterScope.SubscriptionID() {
+			identitiesClient, err = identities.NewClientBySub(clusterScope, parsed.SubscriptionID)
+			if err != nil {
+				return reconcile.Result{}, errors.Wrapf(err, "failed to create identities client from subscription ID %s", parsed.SubscriptionID)
+			}
+		}
+		userAssignedIdentityIfExists, err = identitiesClient.GetClientID(
 			ctx, azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID)
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to get user-assigned identity ClientID")
