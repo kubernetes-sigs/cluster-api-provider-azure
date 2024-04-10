@@ -97,8 +97,6 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.Virt
 		}
 	}
 
-	//nolint:prealloc // pre-allocating this slice isn't going to make any meaningful performance difference
-	// and makes it harder to keep this value nil when s.ServiceEndpoints is empty as is necessary.
 	var serviceEndpoints []asonetworkv1.ServiceEndpointPropertiesFormat
 	for _, se := range s.ServiceEndpoints {
 		serviceEndpoints = append(serviceEndpoints, asonetworkv1.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: se.Locations})
