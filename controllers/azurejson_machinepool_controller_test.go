@@ -271,7 +271,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		Spec: infrav1exp.AzureMachinePoolSpec{
 			UserAssignedIdentities: []infrav1.UserAssignedIdentity{
 				{
-					ProviderID: "fake-id",
+					ProviderID: "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id",
 				},
 			},
 		},
@@ -378,7 +378,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		Recorder: record.NewFakeRecorder(42),
 		Timeouts: reconciler.Timeouts{},
 	}
-	id := "fake-id"
+	id := "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id"
 	getClient = func(auth azure.Authorizer) (identities.Client, error) {
 		mockClient := mock_identities.NewMockClient(ctrlr)
 		mockClient.EXPECT().GetClientID(gomock.Any(), gomock.Any()).Return(id, nil)
