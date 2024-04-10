@@ -176,7 +176,18 @@ func (s *Service) checkUserAssignedIdentities(ctx context.Context, specIdentitie
 
 	// Create a map of the expected identities. The ProviderID is converted to match the format of the VM identity.
 	for _, expectedIdentity := range specIdentities {
-		expectedClientID, err := s.identitiesGetter.GetClientID(ctx, expectedIdentity.ProviderID)
+		identitiesClient := s.identitiesGetter
+		parsed, err := azureutil.ParseResourceID(expectedIdentity.ProviderID)
+		if err != nil {
+			return err
+		}
+		if parsed.SubscriptionID != s.Scope.SubscriptionID() {
+			identitiesClient, err = identities.NewClientBySub(s.Scope, parsed.SubscriptionID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create identities client from subscription ID %s", parsed.SubscriptionID)
+			}
+		}
+		expectedClientID, err := identitiesClient.GetClientID(ctx, expectedIdentity.ProviderID)
 		if err != nil {
 			return errors.Wrap(err, "failed to get client ID")
 		}
