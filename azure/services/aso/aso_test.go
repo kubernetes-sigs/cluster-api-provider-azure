@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -122,6 +123,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{},
 		})).To(Succeed())
@@ -206,6 +210,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -259,6 +266,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -308,6 +318,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
 				},
@@ -387,6 +400,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -431,6 +447,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
@@ -487,6 +506,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
 				},
@@ -542,6 +564,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
 					//nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
 					infrav1.OwnedByClusterLabelKey: clusterName,
 				},
@@ -597,6 +620,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -637,6 +663,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -681,6 +710,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
 					asoannotations.PerResourceSecret: "cluster-aso-secret",
@@ -737,6 +769,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 			},
 			Status: asoresourcesv1.ResourceGroup_STATUS{
 				Conditions: []conditions.Condition{
@@ -792,6 +827,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 				},
@@ -848,6 +886,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 					tagsLastAppliedAnnotation:      "{",
@@ -896,6 +937,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					prePauseReconcilePolicyAnnotation: string(asoannotations.ReconcilePolicyManage),
 					asoannotations.ReconcilePolicy:    string(asoannotations.ReconcilePolicySkip),
@@ -1015,6 +1059,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:            "name",
 				Namespace:       "namespace",
 				OwnerReferences: ownerRefs(),
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: clusterName,
+				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
 				},
