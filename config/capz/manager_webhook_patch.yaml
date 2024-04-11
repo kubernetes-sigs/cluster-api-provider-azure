@@ -20,4 +20,4 @@ spec:
         - name: cert
           secret:
             defaultMode: 420
-            secretName: $(SERVICE_NAME)-cert
+            secretName: SERVICE_NAME_PLACEHOLDER-cert

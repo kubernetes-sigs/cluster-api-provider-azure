@@ -148,7 +148,8 @@ metadata:
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
-  selector: {}
+  selector:
+    matchLabels: null
   template:
     metadata:
       labels:
