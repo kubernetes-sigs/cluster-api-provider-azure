@@ -55,18 +55,18 @@ func TestDefaultingWebhook(t *testing.T) {
 					},
 				},
 			},
-			ResourceGroupName: "fooRg",
-			SSHPublicKey:      ptr.To(""),
+			SSHPublicKey: ptr.To(""),
 		},
 	}
 	mcpw := &azureManagedControlPlaneWebhook{}
 	err := mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(amcp.Spec.ResourceGroupName).To(Equal("fooCluster"))
 	g.Expect(amcp.Spec.NetworkPlugin).To(Equal(ptr.To(AzureNetworkPluginName)))
 	g.Expect(amcp.Spec.LoadBalancerSKU).To(Equal(ptr.To("Standard")))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
-	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
+	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooCluster_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
@@ -87,6 +87,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.NetworkPolicy = &netPol
 	amcp.Spec.Version = "9.99.99"
 	amcp.Spec.SSHPublicKey = nil
+	amcp.Spec.ResourceGroupName = "fooRg"
 	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
 	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
@@ -116,6 +117,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
 	g.Expect(amcp.Spec.SSHPublicKey).To(BeNil())
+	g.Expect(amcp.Spec.ResourceGroupName).To(Equal("fooRg"))
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
@@ -142,6 +144,7 @@ func TestDefaultingWebhook(t *testing.T) {
 		},
 		Spec: AzureManagedControlPlaneSpec{
 			AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+				ResourceGroupName: "fooRg",
 				Location:          "fooLocation",
 				Version:           "1.17.5",
 				NetworkPluginMode: ptr.To(NetworkPluginModeOverlay),
@@ -160,8 +163,7 @@ func TestDefaultingWebhook(t *testing.T) {
 					},
 				},
 			},
-			ResourceGroupName: "fooRg",
-			SSHPublicKey:      ptr.To(""),
+			SSHPublicKey: ptr.To(""),
 		},
 	}
 	err = mcpw.Default(context.Background(), amcp)
@@ -1991,19 +1993,19 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-						DNSServiceIP: ptr.To("192.168.0.10"),
-						Version:      "v1.18.0",
+						DNSServiceIP:      ptr.To("192.168.0.10"),
+						Version:           "v1.18.0",
+						ResourceGroupName: "hello-1",
 					},
-					ResourceGroupName: "hello-1",
 				},
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-						DNSServiceIP: ptr.To("192.168.0.10"),
-						Version:      "v1.18.0",
+						DNSServiceIP:      ptr.To("192.168.0.10"),
+						Version:           "v1.18.0",
+						ResourceGroupName: "hello-2",
 					},
-					ResourceGroupName: "hello-2",
 				},
 			},
 			wantErr: true,
@@ -4054,8 +4056,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg1",
 							Name:          "vnet1",
@@ -4082,8 +4084,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",
@@ -4110,8 +4112,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",
@@ -4138,8 +4140,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",
@@ -4165,8 +4167,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",
@@ -4192,8 +4194,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",
@@ -4220,8 +4222,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
-					ResourceGroupName: "rg1",
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						ResourceGroupName: "rg1",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
 							Name:          "vnet1",

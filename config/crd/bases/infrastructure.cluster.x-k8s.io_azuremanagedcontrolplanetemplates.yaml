@@ -615,6 +615,11 @@ spec:
                         - userAssignedNATGateway
                         - userDefinedRouting
                         type: string
+                      resourceGroupName:
+                        description: |-
+                          ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+                          Immutable.
+                        type: string
                       securityProfile:
                         description: SecurityProfile defines the security profile
                           for cluster.
@@ -860,6 +865,7 @@ spec:
                     required:
                     - identityRef
                     - location
+                    - resourceGroupName
                     - version
                     type: object
                 required:

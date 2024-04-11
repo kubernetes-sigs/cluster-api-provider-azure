@@ -88,6 +88,10 @@ type AzureManagedControlPlaneClassSpec struct {
 	// +optional
 	MachineTemplate *AzureManagedControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
 
+	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	// Immutable.
+	ResourceGroupName string `json:"resourceGroupName"`
+
 	// Version defines the desired Kubernetes version.
 	// +kubebuilder:validation:MinLength:=2
 	Version string `json:"version"`
