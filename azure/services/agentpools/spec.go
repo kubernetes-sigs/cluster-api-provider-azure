@@ -166,13 +166,13 @@ func (s *AgentPoolSpec) ResourceRef() genruntime.MetaObject {
 	if s.Preview {
 		return &asocontainerservicev1preview.ManagedClustersAgentPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: s.Name,
+				Name: azure.GetNormalizedKubernetesName(s.Name),
 			},
 		}
 	}
 	return &asocontainerservicev1.ManagedClustersAgentPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: s.Name,
+			Name: azure.GetNormalizedKubernetesName(s.Name),
 		},
 	}
 }

@@ -43,7 +43,7 @@ type AKSMarketplaceExtensionSpecInput struct {
 }
 
 const (
-	extensionName         = "aks-marketplace-extension"
+	extensionName         = "AKS-marketplace-extension" // Test that upper case name is allowed
 	officialExtensionName = "official-aks-extension"
 )
 
