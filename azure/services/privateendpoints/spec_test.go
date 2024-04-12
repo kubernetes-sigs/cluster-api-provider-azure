@@ -31,7 +31,7 @@ import (
 var (
 	fakePrivateEndpoint = PrivateEndpointSpec{
 		Name:                       "test_private_endpoint_1",
-		ResourceGroup:              "test_rg",
+		ResourceGroup:              "test-rg",
 		Location:                   "test_location",
 		CustomNetworkInterfaceName: "test_if_name",
 		PrivateIPAddresses:         []string{"1.2.3.4", "5.6.7.8"},

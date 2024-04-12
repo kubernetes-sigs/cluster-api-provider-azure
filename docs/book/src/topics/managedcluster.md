@@ -35,6 +35,8 @@ export AZURE_LOCATION="southcentralus"
 export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
 ```
 
+***NOTE***: `${CLUSTER_NAME}` should adhere to the RFC 1123 standard. This means that it must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
+
 Create a new service principal and save to a local file:
 
 ```bash
