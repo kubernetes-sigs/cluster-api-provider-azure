@@ -1,0 +1,17 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: AzureASOManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  template:
+    spec: {}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: AzureASOManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  template:
+    spec: {}

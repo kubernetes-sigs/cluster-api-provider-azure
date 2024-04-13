@@ -44,6 +44,7 @@ import (
 	"k8s.io/klog/v2"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infrav1expalpha "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -75,6 +76,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1expalpha.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
@@ -497,6 +499,29 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 	}
+
+	if feature.Gates.Enabled(feature.ASOAPI) {
+		if err := (&infrav1controllersexp.AzureASOManagedClusterReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1controllersexp.AzureASOManagedControlPlaneReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedControlPlane")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1controllersexp.AzureASOManagedMachinePoolReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
+			os.Exit(1)
+		}
+	}
 }
 
 func registerWebhooks(mgr manager.Manager) {
@@ -564,6 +589,21 @@ func registerWebhooks(mgr manager.Manager) {
 
 	if err := infrav1.SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlaneTemplate")
+		os.Exit(1)
+	}
+
+	if err := infrav1expalpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedCluster")
+		os.Exit(1)
+	}
+
+	if err := infrav1expalpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedControlPlane")
+		os.Exit(1)
+	}
+
+	if err := infrav1expalpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedMachinePool")
 		os.Exit(1)
 	}
 

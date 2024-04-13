@@ -1,8 +1,6 @@
 # This kustomization.yaml is not intended to be run by itself,
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/
-commonLabels:
-  cluster.x-k8s.io/v1beta1: v1beta1
 
 resources:
   - bases/infrastructure.cluster.x-k8s.io_azuremachines.yaml
@@ -18,6 +16,12 @@ resources:
   - bases/infrastructure.cluster.x-k8s.io_azuremanagedclustertemplates.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremanagedcontrolplanetemplates.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremanagedmachinepooltemplates.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedclusters.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedclustertemplates.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedcontrolplanes.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedcontrolplanetemplates.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedmachinepools.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureasomanagedmachinepooltemplates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 
@@ -49,6 +53,26 @@ patchesStrategicMerge:
   # - patches/cainjection_in_azuremanagedclusters.yaml
   # - patches/cainjection_in_azuremanagedcontrolplanes.yaml
   # +kubebuilder:scaffold:crdkustomizecainjectionpatch
+
+  - patches/capicontract_in_azuremachines.yaml
+  - patches/capicontract_in_azureclusters.yaml
+  - patches/capicontract_in_azureclustertemplates.yaml
+  - patches/capicontract_in_azuremachinetemplates.yaml
+  - patches/capicontract_in_azureclusteridentities.yaml
+  - patches/capicontract_in_azuremachinepools.yaml
+  - patches/capicontract_in_azuremanagedmachinepools.yaml
+  - patches/capicontract_in_azuremanagedclusters.yaml
+  - patches/capicontract_in_azuremanagedcontrolplanes.yaml
+  - patches/capicontract_in_azuremachinepoolmachines.yaml
+  - patches/capicontract_in_azuremanagedclustertemplates.yaml
+  - patches/capicontract_in_azuremanagedcontrolplanetemplates.yaml
+  - patches/capicontract_in_azuremanagedmachinepooltemplates.yaml
+  - patches/capicontract_in_azureasomanagedclusters.yaml
+  - patches/capicontract_in_azureasomanagedclustertemplates.yaml
+  - patches/capicontract_in_azureasomanagedcontrolplanes.yaml
+  - patches/capicontract_in_azureasomanagedcontrolplanetemplates.yaml
+  - patches/capicontract_in_azureasomanagedmachinepools.yaml
+  - patches/capicontract_in_azureasomanagedmachinepooltemplates.yaml
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 configurations:
