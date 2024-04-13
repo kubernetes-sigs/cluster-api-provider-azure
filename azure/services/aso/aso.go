@@ -31,7 +31,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -250,7 +249,7 @@ func applyPatches[T genruntime.MetaObject](scheme *runtime.Scheme, spec azure.AS
 		return zero, errors.Wrap(err, "failed to get GroupVersionKind for object")
 	}
 
-	(genruntime.MetaObject)(parameters).(interface{ SetGroupVersionKind(schema.GroupVersionKind) }).SetGroupVersionKind(gvk)
+	parameters.GetObjectKind().SetGroupVersionKind(gvk)
 	paramData, err := json.Marshal(parameters)
 	if err != nil {
 		return zero, errors.Wrap(err, "failed to marshal JSON for patch")
