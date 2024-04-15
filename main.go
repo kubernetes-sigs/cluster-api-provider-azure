@@ -502,21 +502,24 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 
 	if feature.Gates.Enabled(feature.ASOAPI) {
 		if err := (&infrav1controllersexp.AzureASOManagedClusterReconciler{
-			Client: mgr.GetClient(),
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedCluster")
 			os.Exit(1)
 		}
 
 		if err := (&infrav1controllersexp.AzureASOManagedControlPlaneReconciler{
-			Client: mgr.GetClient(),
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedControlPlane")
 			os.Exit(1)
 		}
 
 		if err := (&infrav1controllersexp.AzureASOManagedMachinePoolReconciler{
-			Client: mgr.GetClient(),
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)
