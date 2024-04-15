@@ -182,8 +182,8 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 			AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 				SubscriptionID: "something",
 				VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+					Name: name,
 					ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-						Name: name,
 						Subnet: infrav1.ManagedControlPlaneSubnet{
 							Name: "subnet",
 						},

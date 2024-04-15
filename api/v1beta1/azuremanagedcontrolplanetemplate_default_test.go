@@ -51,47 +51,6 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Name:      "test-cluster-template",
-										CIDRBlock: defaultAKSVnetCIDR,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "custom name",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Name: "custom-vnet-name",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-cluster-template",
-				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Name:      "custom-vnet-name",
 										CIDRBlock: defaultAKSVnetCIDR,
 									},
 								},
@@ -131,7 +90,6 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Name:      "test-cluster-template",
 										CIDRBlock: "10.0.0.16/24",
 									},
 								},

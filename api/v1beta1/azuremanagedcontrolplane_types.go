@@ -379,6 +379,9 @@ type ManagedControlPlaneVirtualNetwork struct {
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
+	// Name is the name of the virtual network.
+	Name string `json:"name"`
+
 	ManagedControlPlaneVirtualNetworkClassSpec `json:",inline"`
 }
 

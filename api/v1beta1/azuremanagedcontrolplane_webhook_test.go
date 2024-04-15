@@ -2445,8 +2445,8 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 						DNSServiceIP: ptr.To("192.168.0.10"),
 						Version:      "v1.18.0",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							Name: "test-network",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "test-network",
 								CIDRBlock: "10.0.0.0/8",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "test-subnet",
@@ -2493,8 +2493,8 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 						DNSServiceIP: ptr.To("192.168.0.10"),
 						Version:      "v1.18.0",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							Name: "test-network",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "test-network",
 								CIDRBlock: "10.0.0.0/8",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "test-subnet",
@@ -2519,8 +2519,8 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 						DNSServiceIP: ptr.To("192.168.0.10"),
 						Version:      "v1.18.0",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							Name: "test-network",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "test-network",
 								CIDRBlock: "10.0.0.0/8",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "test-subnet",
@@ -2541,8 +2541,8 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 						DNSServiceIP: ptr.To("192.168.0.10"),
 						Version:      "v1.18.0",
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							Name: "test-network",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "test-network",
 								CIDRBlock: "10.0.0.0/8",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "test-subnet",
@@ -4029,8 +4029,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg1",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "vnet1",
 								CIDRBlock: defaultAKSVnetCIDR,
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
@@ -4057,8 +4057,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "vnet1",
 								CIDRBlock: defaultAKSVnetCIDR,
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
@@ -4085,8 +4085,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "vnet1",
 								CIDRBlock: "10.1.0.0/16",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
@@ -4113,8 +4113,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "vnet1",
 								CIDRBlock: "10.1.0.0/16",
 								Subnet: ManagedControlPlaneSubnet{
 									Name: "subnet1",
@@ -4140,8 +4140,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name: "vnet1",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
 									CIDRBlock: "11.0.0.0/24",
@@ -4167,8 +4167,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name:      "vnet1",
 								CIDRBlock: "invalid_vnet_CIDR",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
@@ -4195,8 +4195,8 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
 							ResourceGroup: "rg2",
+							Name:          "vnet1",
 							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Name: "vnet1",
 								Subnet: ManagedControlPlaneSubnet{
 									Name:      "subnet1",
 									CIDRBlock: "invalid_subnet_CIDR",
