@@ -142,6 +142,11 @@ type AzureMachineSpec struct {
 	// The primary interface will be the first networkInterface specified (index 0) in the list.
 	// +optional
 	NetworkInterfaces []NetworkInterface `json:"networkInterfaces,omitempty"`
+
+	// CapacityReservationGroupID specifies the capacity reservation group resource id that should be
+	// used for allocating the virtual machine.
+	// +optional
+	CapacityReservationGroupID *string `json:"capacityReservationGroupID,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.

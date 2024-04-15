@@ -215,6 +215,21 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, "", false, true, false),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with empty capacity reservation group id",
+			machine: createMachineWithCapacityReservaionGroupID(""),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with valid capacity reservation group id",
+			machine: createMachineWithCapacityReservaionGroupID("azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/capacityReservationGroups/capacity-reservation-group-name"),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with invalid capacity reservation group id",
+			machine: createMachineWithCapacityReservaionGroupID("invalid-capacity-group-id"),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -805,6 +820,62 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "invalidTest: azuremachine.spec.capacityReservationGroupID is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-2"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: updating azuremachine.spec.capacityReservationGroupID from empty to non-empty",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: nil,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: updating azuremachine.spec.capacityReservationGroupID from non-empty to empty",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: nil,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.capacityReservationGroupID is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -1065,6 +1136,21 @@ func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncrypt
 			SSHPublicKey:    validSSHPublicKey,
 			OSDisk:          osDisk,
 			SecurityProfile: securityProfile,
+		},
+	}
+}
+
+func createMachineWithCapacityReservaionGroupID(capacityReservationGroupID string) *AzureMachine {
+	var strPtr *string
+	if capacityReservationGroupID != "" {
+		strPtr = ptr.To(capacityReservationGroupID)
+	}
+
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:               validSSHPublicKey,
+			OSDisk:                     validOSDisk,
+			CapacityReservationGroupID: strPtr,
 		},
 	}
 }
