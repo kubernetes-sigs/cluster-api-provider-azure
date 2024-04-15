@@ -28,6 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -208,13 +209,13 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	us, err := resourcesToUnstructured(asoManagedMachinePool.Spec.Resources)
+	resources, err := mutators.ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	var agentPoolName string
-	for _, resource := range us {
+	for _, resource := range resources {
 		if resource.GroupVersionKind().Group == asocontainerservicev1.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == "ManagedClustersAgentPool" {
 			agentPoolName = resource.GetName()
@@ -225,7 +226,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedClustersAgentPools defined in AzureASOManagedMachinePool spec.resources", asocontainerservicev1.GroupVersion.Group))
 	}
 
-	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, us)
+	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
 	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
@@ -311,11 +312,11 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Conte
 	// If the entire cluster is being deleted, this ASO ManagedClustersAgentPool will be deleted with the rest
 	// of the ManagedCluster.
 	if cluster.DeletionTimestamp.IsZero() {
-		us, err := resourcesToUnstructured(asoManagedMachinePool.Spec.Resources)
+		resources, err := mutators.ToUnstructured(ctx, asoManagedMachinePool.Spec.Resources)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, us)
+		resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
 		err = resourceReconciler.Delete(ctx)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
