@@ -1345,6 +1345,48 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name: "creates a vm and associate it with a capacity reservation group",
+			spec: &VMSpec{
+				Name:                       "my-vm",
+				Role:                       infrav1.Node,
+				NICIDs:                     []string{"my-nic"},
+				SSHKeyData:                 "fakesshpublickey",
+				Size:                       "Standard_D2v3",
+				Location:                   "test-location",
+				Zone:                       "1",
+				Image:                      &infrav1.Image{ID: ptr.To("fake-image-id")},
+				CapacityReservationGroupID: "my-crg-id",
+				SKU:                        validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.CapacityReservation.CapacityReservationGroup.ID).To(Equal(ptr.To("my-crg-id")))
+			},
+			expectedError: "",
+		},
+		{
+			name: "creates a vm without capacity reservation group",
+			spec: &VMSpec{
+				Name:                       "my-vm",
+				Role:                       infrav1.Node,
+				NICIDs:                     []string{"my-nic"},
+				SSHKeyData:                 "fakesshpublickey",
+				Size:                       "Standard_D2v3",
+				Location:                   "test-location",
+				Zone:                       "1",
+				Image:                      &infrav1.Image{ID: ptr.To("fake-image-id")},
+				CapacityReservationGroupID: "",
+				SKU:                        validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.CapacityReservation).To(BeNil())
+			},
+			expectedError: "",
+		},
 	}
 	for _, tc := range testcases {
 		tc := tc

@@ -3066,3 +3066,48 @@ func TestDiskSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestMachineScope_GetCapacityReservationGroupID(t *testing.T) {
+	tests := []struct {
+		name         string
+		machineScope MachineScope
+		want         string
+	}{
+		{
+			name: "returns the entire capacity reservation group ID",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						CapacityReservationGroupID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/capacityReservationGroups/capacity-reservation-group-name"),
+					},
+				},
+			},
+			want: "azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/capacityReservationGroups/capacity-reservation-group-name",
+		},
+		{
+			name: "returns empty if capacity reservation group ID is empty",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						CapacityReservationGroupID: ptr.To(""),
+					},
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.machineScope.GetCapacityReservationGroupID()
+			if got != tt.want {
+				t.Errorf("MachineScope.GetCapacityReservationGroupID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

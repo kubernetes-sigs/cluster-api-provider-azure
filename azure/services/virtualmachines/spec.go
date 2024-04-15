@@ -33,30 +33,31 @@ import (
 
 // VMSpec defines the specification for a Virtual Machine.
 type VMSpec struct {
-	Name                   string
-	ResourceGroup          string
-	Location               string
-	ExtendedLocation       *infrav1.ExtendedLocationSpec
-	ClusterName            string
-	Role                   string
-	NICIDs                 []string
-	SSHKeyData             string
-	Size                   string
-	AvailabilitySetID      string
-	Zone                   string
-	Identity               infrav1.VMIdentity
-	OSDisk                 infrav1.OSDisk
-	DataDisks              []infrav1.DataDisk
-	UserAssignedIdentities []infrav1.UserAssignedIdentity
-	SpotVMOptions          *infrav1.SpotVMOptions
-	SecurityProfile        *infrav1.SecurityProfile
-	AdditionalTags         infrav1.Tags
-	AdditionalCapabilities *infrav1.AdditionalCapabilities
-	DiagnosticsProfile     *infrav1.Diagnostics
-	SKU                    resourceskus.SKU
-	Image                  *infrav1.Image
-	BootstrapData          string
-	ProviderID             string
+	Name                       string
+	ResourceGroup              string
+	Location                   string
+	ExtendedLocation           *infrav1.ExtendedLocationSpec
+	ClusterName                string
+	Role                       string
+	NICIDs                     []string
+	SSHKeyData                 string
+	Size                       string
+	AvailabilitySetID          string
+	Zone                       string
+	Identity                   infrav1.VMIdentity
+	OSDisk                     infrav1.OSDisk
+	DataDisks                  []infrav1.DataDisk
+	UserAssignedIdentities     []infrav1.UserAssignedIdentity
+	SpotVMOptions              *infrav1.SpotVMOptions
+	SecurityProfile            *infrav1.SecurityProfile
+	AdditionalTags             infrav1.Tags
+	AdditionalCapabilities     *infrav1.AdditionalCapabilities
+	DiagnosticsProfile         *infrav1.Diagnostics
+	CapacityReservationGroupID string
+	SKU                        resourceskus.SKU
+	Image                      *infrav1.Image
+	BootstrapData              string
+	ProviderID                 string
 }
 
 // ResourceName returns the name of the virtual machine.
@@ -137,10 +138,11 @@ func (s *VMSpec) Parameters(ctx context.Context, existing interface{}) (params i
 			NetworkProfile: &armcompute.NetworkProfile{
 				NetworkInterfaces: s.generateNICRefs(),
 			},
-			Priority:           priority,
-			EvictionPolicy:     evictionPolicy,
-			BillingProfile:     billingProfile,
-			DiagnosticsProfile: converters.GetDiagnosticsProfile(s.DiagnosticsProfile),
+			Priority:            priority,
+			EvictionPolicy:      evictionPolicy,
+			BillingProfile:      billingProfile,
+			DiagnosticsProfile:  converters.GetDiagnosticsProfile(s.DiagnosticsProfile),
+			CapacityReservation: s.getCapacityReservationProfile(),
 		},
 		Identity: identity,
 		Zones:    s.getZones(),
@@ -437,4 +439,14 @@ func (s *VMSpec) getZones() []*string {
 		zones = []*string{ptr.To(s.Zone)}
 	}
 	return zones
+}
+
+func (s *VMSpec) getCapacityReservationProfile() *armcompute.CapacityReservationProfile {
+	var crf *armcompute.CapacityReservationProfile
+	if s.CapacityReservationGroupID != "" {
+		crf = &armcompute.CapacityReservationProfile{
+			CapacityReservationGroup: &armcompute.SubResource{ID: &s.CapacityReservationGroupID},
+		}
+	}
+	return crf
 }
