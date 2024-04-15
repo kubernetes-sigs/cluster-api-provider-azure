@@ -724,6 +724,7 @@ spec:
                   cidrBlock:
                     type: string
                   name:
+                    description: Name is the name of the virtual network.
                     type: string
                   resourceGroup:
                     description: ResourceGroup is the name of the Azure resource group

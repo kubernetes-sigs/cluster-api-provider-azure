@@ -711,8 +711,8 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								Name: "my-vnet",
 								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-									Name: "my-vnet",
 									Subnet: infrav1.ManagedControlPlaneSubnet{
 										Name: "my-vnet-subnet",
 									},
@@ -755,8 +755,8 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+								Name: "my-vnet",
 								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-									Name: "my-vnet",
 									Subnet: infrav1.ManagedControlPlaneSubnet{
 										Name: "my-vnet-subnet",
 									},

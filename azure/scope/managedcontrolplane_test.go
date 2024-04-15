@@ -1349,8 +1349,8 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 							SubscriptionID: "00000000-0000-0000-0000-000000000001",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								ResourceGroup: "dummy-rg",
+								Name:          "vnet1",
 								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-									Name: "vnet1",
 									Subnet: infrav1.ManagedControlPlaneSubnet{
 										Name: "subnet1",
 										PrivateEndpoints: infrav1.PrivateEndpoints{
@@ -1707,9 +1707,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 						ResourceGroupName: "dummy-rg",
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
-								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-									Name: "vnet1",
-								},
+								Name: "vnet1",
 							},
 						},
 					},
@@ -1740,9 +1738,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								ResourceGroup: "my_custom_rg",
-								ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
-									Name: "vnet1",
-								},
+								Name:          "vnet1",
 							},
 						},
 					},

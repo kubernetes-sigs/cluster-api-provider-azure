@@ -48,6 +48,14 @@ spec:
 
 Deploying an AKS cluster with ClusterClass is similar to deploying a self-managed cluster. However, both an AzureManagedClusterTemplate and AzureManagedControlPlaneTemplate must be used instead of the AzureClusterTemplate. Due to the nature of managed Kubernetes and the control plane implementation, the infrastructure provider (and therefore the AzureManagedClusterTemplate) for AKS cluster is basically a no-op. The AzureManagedControlPlaneTemplate is used to define the AKS cluster configuration, such as the Kubernetes version and the number of nodes. Finally, the AzureManagedMachinePoolTemplate defines the worker nodes (agentpools) for the AKS cluster.
 
+<aside class="note warning">
+
+<h1> Warning </h1>
+
+The field `virtualNetwork.Name` should not be set in the AzureManagedControlPlaneTemplate. Setting this field will result in an error with conflicting vnet names when creating multiple clusters with one template. To prevent a breaking API change, this field is not removed from the API, but it should not be used.
+
+</aside>
+
 The following example shows a basic AzureManagedClusterTemplate, AzureManagedControlPlaneTemplate, and AzureManagedMachinePoolTemplate resource:
 
 ```yaml
