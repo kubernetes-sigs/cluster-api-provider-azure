@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -34,7 +35,7 @@ var (
 )
 
 // SetManagedClusterDefaults propagates values defined by Cluster API to an ASO ManagedCluster.
-func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane) ResourcesMutator {
+func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetManagedClusterDefaults")
 		defer done()
@@ -54,6 +55,14 @@ func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManage
 		}
 
 		if err := setManagedClusterKubernetesVersion(ctx, asoManagedControlPlane, managedClusterPath, managedCluster); err != nil {
+			return err
+		}
+
+		if err := setManagedClusterServiceCIDR(ctx, cluster, managedClusterPath, managedCluster); err != nil {
+			return err
+		}
+
+		if err := setManagedClusterPodCIDR(ctx, cluster, managedClusterPath, managedCluster); err != nil {
 			return err
 		}
 
@@ -89,4 +98,70 @@ func setManagedClusterKubernetesVersion(ctx context.Context, asoManagedControlPl
 	}
 	logMutation(log, setK8sVersion)
 	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capzK8sVersion, k8sVersionPath...)
+}
+
+func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterServiceCIDR")
+	defer done()
+
+	if cluster.Spec.ClusterNetwork == nil ||
+		cluster.Spec.ClusterNetwork.Services == nil ||
+		len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) == 0 {
+		return nil
+	}
+
+	capiCIDR := cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
+
+	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural serviceCidrs field.
+	svcCIDRPath := []string{"spec", "networkProfile", "serviceCidr"}
+	userSvcCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), svcCIDRPath...)
+	if err != nil {
+		return err
+	}
+	setSvcCIDR := mutation{
+		location: managedClusterPath + "." + strings.Join(svcCIDRPath, "."),
+		val:      capiCIDR,
+		reason:   fmt.Sprintf("because spec.clusterNetwork.services.cidrBlocks[0] in Cluster %s/%s is set to %s", cluster.Namespace, cluster.Name, capiCIDR),
+	}
+	if found && userSvcCIDR != capiCIDR {
+		return Incompatible{
+			mutation: setSvcCIDR,
+			userVal:  userSvcCIDR,
+		}
+	}
+	logMutation(log, setSvcCIDR)
+	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capiCIDR, svcCIDRPath...)
+}
+
+func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterPodCIDR")
+	defer done()
+
+	if cluster.Spec.ClusterNetwork == nil ||
+		cluster.Spec.ClusterNetwork.Pods == nil ||
+		len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {
+		return nil
+	}
+
+	capiCIDR := cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
+
+	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural podCidrs field.
+	podCIDRPath := []string{"spec", "networkProfile", "podCidr"}
+	userPodCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), podCIDRPath...)
+	if err != nil {
+		return err
+	}
+	setPodCIDR := mutation{
+		location: managedClusterPath + "." + strings.Join(podCIDRPath, "."),
+		val:      capiCIDR,
+		reason:   fmt.Sprintf("because spec.clusterNetwork.pods.cidrBlocks[0] in Cluster %s/%s is set to %s", cluster.Namespace, cluster.Name, capiCIDR),
+	}
+	if found && userPodCIDR != capiCIDR {
+		return Incompatible{
+			mutation: setPodCIDR,
+			userVal:  userPodCIDR,
+		}
+	}
+	logMutation(log, setPodCIDR)
+	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capiCIDR, podCIDRPath...)
 }

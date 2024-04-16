@@ -180,7 +180,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(asoManagedControlPlane))
+	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(asoManagedControlPlane, cluster))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
