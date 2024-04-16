@@ -28,10 +28,6 @@ import (
 )
 
 func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
-	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-
 	tests := []struct {
 		name    string
 		oldAMC  *AzureManagedCluster
@@ -95,10 +91,6 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 }
 
 func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
-	// must prevent creating new objects in case the feature flag is disabled.
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
-
 	tests := []struct {
 		name    string
 		oldAMC  *AzureManagedCluster
@@ -143,19 +135,22 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 
 func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 	tests := []struct {
-		name      string
-		amc       *AzureManagedCluster
-		deferFunc func()
+		name        string
+		amc         *AzureManagedCluster
+		deferFunc   func()
+		expectError bool
 	}{
 		{
-			name:      "feature gate explicitly disabled",
-			amc:       getKnownValidAzureManagedCluster(),
-			deferFunc: utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
+			name:        "feature gate explicitly disabled",
+			amc:         getKnownValidAzureManagedCluster(),
+			deferFunc:   utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
+			expectError: true,
 		},
 		{
-			name:      "feature gate implicitly disabled",
-			amc:       getKnownValidAzureManagedCluster(),
-			deferFunc: func() {},
+			name:        "feature gate implicitly enabled",
+			amc:         getKnownValidAzureManagedCluster(),
+			deferFunc:   func() {},
+			expectError: false,
 		},
 	}
 	for _, tc := range tests {
@@ -163,7 +158,11 @@ func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 			defer tc.deferFunc()
 			g := NewWithT(t)
 			_, err := tc.amc.ValidateCreate()
-			g.Expect(err).To(HaveOccurred())
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
