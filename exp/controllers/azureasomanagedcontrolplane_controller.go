@@ -180,7 +180,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources)
+	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(asoManagedControlPlane))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -194,7 +194,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		}
 	}
 	if managedClusterName == "" {
-		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1.GroupVersion.Group))
+		return ctrl.Result{}, reconcile.TerminalError(mutators.ErrNoManagedClusterDefined)
 	}
 
 	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, resources)

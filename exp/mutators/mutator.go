@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -35,6 +36,10 @@ type mutation struct {
 	location string
 	val      any
 	reason   string
+}
+
+func logMutation(log logr.Logger, mutation mutation) {
+	log.V(4).Info(fmt.Sprintf("setting %s to %v %s", mutation.location, mutation.val, mutation.reason))
 }
 
 // Incompatible describes an error where a piece of user-defined configuration does not match what CAPZ
