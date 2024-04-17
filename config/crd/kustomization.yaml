@@ -25,54 +25,54 @@ resources:
 # +kubebuilder:scaffold:crdkustomizeresource
 
 
-patchesStrategicMerge:
+patches:
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
   # patches here are for enabling the conversion webhook for each CRD
-  - patches/webhook_in_azuremachines.yaml
-  - patches/webhook_in_azureclusters.yaml
-  - patches/webhook_in_azureclustertemplates.yaml
-  - patches/webhook_in_azureclusteridentities.yaml
-  - patches/webhook_in_azuremachinetemplates.yaml
-  - patches/webhook_in_azuremachinepools.yaml
-  - patches/webhook_in_azuremachinepoolmachines.yaml
-  # - patches/webhook_in_azuremanagedmachinepools.yaml
-  # - patches/webhook_in_azuremanagedclusters.yaml
-  # - patches/webhook_in_azuremanagedcontrolplanes.yaml
+  - path: patches/webhook_in_azuremachines.yaml
+  - path: patches/webhook_in_azureclusters.yaml
+  - path: patches/webhook_in_azureclustertemplates.yaml
+  - path: patches/webhook_in_azureclusteridentities.yaml
+  - path: patches/webhook_in_azuremachinetemplates.yaml
+  - path: patches/webhook_in_azuremachinepools.yaml
+  - path: patches/webhook_in_azuremachinepoolmachines.yaml
+  # - path: patches/webhook_in_azuremanagedmachinepools.yaml
+  # - path: patches/webhook_in_azuremanagedclusters.yaml
+  # - path: patches/webhook_in_azuremanagedcontrolplanes.yaml
   # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
   # [CERTMANAGER] To enable webhook, uncomment all the sections with [CERTMANAGER] prefix.
   # patches here are for enabling the CA injection for each CRD
-  - patches/cainjection_in_azuremachines.yaml
-  - patches/cainjection_in_azureclusters.yaml
-  - patches/cainjection_in_azureclustertemplates.yaml
-  - patches/cainjection_in_azureclusteridentities.yaml
-  - patches/cainjection_in_azuremachinetemplates.yaml
-  - patches/cainjection_in_azuremachinepools.yaml
-  - patches/cainjection_in_azuremachinepoolmachines.yaml
-  # - patches/cainjection_in_azuremanagedmachinepools.yaml
-  # - patches/cainjection_in_azuremanagedclusters.yaml
-  # - patches/cainjection_in_azuremanagedcontrolplanes.yaml
+  - path: patches/cainjection_in_azuremachines.yaml
+  - path: patches/cainjection_in_azureclusters.yaml
+  - path: patches/cainjection_in_azureclustertemplates.yaml
+  - path: patches/cainjection_in_azureclusteridentities.yaml
+  - path: patches/cainjection_in_azuremachinetemplates.yaml
+  - path: patches/cainjection_in_azuremachinepools.yaml
+  - path: patches/cainjection_in_azuremachinepoolmachines.yaml
+  # - path: patches/cainjection_in_azuremanagedmachinepools.yaml
+  # - path: patches/cainjection_in_azuremanagedclusters.yaml
+  # - path: patches/cainjection_in_azuremanagedcontrolplanes.yaml
   # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
-  - patches/capicontract_in_azuremachines.yaml
-  - patches/capicontract_in_azureclusters.yaml
-  - patches/capicontract_in_azureclustertemplates.yaml
-  - patches/capicontract_in_azuremachinetemplates.yaml
-  - patches/capicontract_in_azureclusteridentities.yaml
-  - patches/capicontract_in_azuremachinepools.yaml
-  - patches/capicontract_in_azuremanagedmachinepools.yaml
-  - patches/capicontract_in_azuremanagedclusters.yaml
-  - patches/capicontract_in_azuremanagedcontrolplanes.yaml
-  - patches/capicontract_in_azuremachinepoolmachines.yaml
-  - patches/capicontract_in_azuremanagedclustertemplates.yaml
-  - patches/capicontract_in_azuremanagedcontrolplanetemplates.yaml
-  - patches/capicontract_in_azuremanagedmachinepooltemplates.yaml
-  - patches/capicontract_in_azureasomanagedclusters.yaml
-  - patches/capicontract_in_azureasomanagedclustertemplates.yaml
-  - patches/capicontract_in_azureasomanagedcontrolplanes.yaml
-  - patches/capicontract_in_azureasomanagedcontrolplanetemplates.yaml
-  - patches/capicontract_in_azureasomanagedmachinepools.yaml
-  - patches/capicontract_in_azureasomanagedmachinepooltemplates.yaml
+  - path: patches/capicontract_in_azuremachines.yaml
+  - path: patches/capicontract_in_azureclusters.yaml
+  - path: patches/capicontract_in_azureclustertemplates.yaml
+  - path: patches/capicontract_in_azuremachinetemplates.yaml
+  - path: patches/capicontract_in_azureclusteridentities.yaml
+  - path: patches/capicontract_in_azuremachinepools.yaml
+  - path: patches/capicontract_in_azuremanagedmachinepools.yaml
+  - path: patches/capicontract_in_azuremanagedclusters.yaml
+  - path: patches/capicontract_in_azuremanagedcontrolplanes.yaml
+  - path: patches/capicontract_in_azuremachinepoolmachines.yaml
+  - path: patches/capicontract_in_azuremanagedclustertemplates.yaml
+  - path: patches/capicontract_in_azuremanagedcontrolplanetemplates.yaml
+  - path: patches/capicontract_in_azuremanagedmachinepooltemplates.yaml
+  - path: patches/capicontract_in_azureasomanagedclusters.yaml
+  - path: patches/capicontract_in_azureasomanagedclustertemplates.yaml
+  - path: patches/capicontract_in_azureasomanagedcontrolplanes.yaml
+  - path: patches/capicontract_in_azureasomanagedcontrolplanetemplates.yaml
+  - path: patches/capicontract_in_azureasomanagedmachinepools.yaml
+  - path: patches/capicontract_in_azureasomanagedmachinepooltemplates.yaml
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 configurations:

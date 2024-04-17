@@ -3,52 +3,119 @@ namespace: capz-system
 namePrefix: capz-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  cluster.x-k8s.io/provider: "infrastructure-azure"
+labels:
+- includeSelectors: true
+  pairs:
+    cluster.x-k8s.io/provider: infrastructure-azure
 
 resources:
-  - namespace.yaml
+- namespace.yaml
+- ../crd
+- ../rbac
+- ../manager
+- ../webhook
+- ../certmanager
 
-bases:
-  - ../crd
-  - ../rbac
-  - ../manager
-  - ../webhook
-  - ../certmanager
-
-patchesStrategicMerge:
-  - manager_image_patch.yaml
-  - manager_pull_policy.yaml
-  - manager_webhook_patch.yaml
-  - webhookcainjection_patch.yaml
-
-vars:
-  - name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
-    objref:
-      kind: Certificate
-      group: cert-manager.io
-      version: v1
-      name: serving-cert # this name should match the one in certificate.yaml
-    fieldref:
-      fieldpath: metadata.namespace
-  - name: CERTIFICATE_NAME
-    objref:
-      kind: Certificate
-      group: cert-manager.io
-      version: v1
-      name: serving-cert # this name should match the one in certificate.yaml
-  - name: SERVICE_NAMESPACE # namespace of the service
-    objref:
-      kind: Service
-      version: v1
-      name: webhook-service
-    fieldref:
-      fieldpath: metadata.namespace
-  - name: SERVICE_NAME
-    objref:
-      kind: Service
-      version: v1
-      name: webhook-service
+patches:
+- path: manager_image_patch.yaml
+- path: manager_pull_policy.yaml
+- path: manager_webhook_patch.yaml
+- path: validatingwebhookcainjection_patch.yaml
+- path: mutatingwebhookcainjection_patch.yaml
 
 configurations:
-  - kustomizeconfig.yaml
+- kustomizeconfig.yaml
+
+replacements:
+- source: # CERTIFICATE_NAMESPACE
+    fieldPath: metadata.namespace
+    kind: Certificate
+    name: serving-cert
+  targets:
+  - fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+    select:
+      annotationSelector: cert-manager.io/inject-ca-from
+- source: # CERTIFICATE_NAME
+    kind: Certificate
+    name: serving-cert
+  targets:
+  - fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+      index: 1
+    select:
+      annotationSelector: cert-manager.io/inject-ca-from
+
+- source: # SERVICE_NAMESPACE
+    fieldPath: metadata.namespace
+    kind: Service
+    name: webhook-service
+  targets:
+  - fieldPaths:
+    - spec.dnsNames.0
+    options:
+      delimiter: .
+      index: 1
+    select:
+      group: cert-manager.io
+      kind: Certificate
+      name: serving-cert
+      namespace: system
+      version: v1
+  - fieldPaths:
+    - spec.dnsNames.1
+    options:
+      delimiter: .
+      index: 1
+    select:
+      group: cert-manager.io
+      kind: Certificate
+      name: serving-cert
+      namespace: system
+      version: v1
+
+- source: # SERVICE_NAME
+    kind: Service
+    name: webhook-service
+  targets:
+  - fieldPaths:
+    - spec.dnsNames.0
+    options:
+      delimiter: .
+    select:
+      group: cert-manager.io
+      kind: Certificate
+      name: serving-cert
+      namespace: system
+      version: v1
+  - fieldPaths:
+    - spec.dnsNames.1
+    options:
+      delimiter: .
+    select:
+      group: cert-manager.io
+      kind: Certificate
+      name: serving-cert
+      namespace: system
+      version: v1
+  - fieldPaths:
+    - spec.secretName
+    options:
+      delimiter: '-'
+    select:
+      group: cert-manager.io
+      kind: Certificate
+      name: serving-cert
+      namespace: system
+      version: v1
+  - fieldPaths:
+    - spec.template.spec.volumes.0.secret.secretName
+    options:
+      delimiter: '-'
+    select:
+      name: controller-manager
+      namespace: system

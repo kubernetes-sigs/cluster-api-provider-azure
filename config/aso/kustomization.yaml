@@ -6,19 +6,17 @@ resources:
 - crds.yaml
 - settings.yaml
 
-patchesStrategicMerge:
-- patches/visualizer_label_in_bastionhosts.yaml
-- patches/visualizer_label_in_extensions.yaml
-- patches/visualizer_label_in_fleetmembers.yaml
-- patches/visualizer_label_in_managedclusteragentpools.yaml
-- patches/visualizer_label_in_managed_clusters.yaml
-- patches/visualizer_label_in_natgateways.yaml
-- patches/visualizer_label_in_privateendpoints.yaml
-- patches/visualizer_label_in_resourcegroups.yaml
-- patches/visualizer_label_in_subnets.yaml
-- patches/visualizer_label_in_virtualnetworks.yaml
-
 patches:
+  - path: patches/visualizer_label_in_bastionhosts.yaml
+  - path: patches/visualizer_label_in_extensions.yaml
+  - path: patches/visualizer_label_in_fleetmembers.yaml
+  - path: patches/visualizer_label_in_managedclusteragentpools.yaml
+  - path: patches/visualizer_label_in_managed_clusters.yaml
+  - path: patches/visualizer_label_in_natgateways.yaml
+  - path: patches/visualizer_label_in_privateendpoints.yaml
+  - path: patches/visualizer_label_in_resourcegroups.yaml
+  - path: patches/visualizer_label_in_subnets.yaml
+  - path: patches/visualizer_label_in_virtualnetworks.yaml
   - patch: |- # default kustomization includes a namespace already
       $patch: delete
       apiVersion: v1
@@ -48,6 +46,7 @@ replacements:
     targets:
       - select:
           version: v1
+          annotationSelector: cert-manager.io/inject-ca-from
         fieldPaths:
           - metadata.annotations.cert-manager\.io/inject-ca-from
         options:
