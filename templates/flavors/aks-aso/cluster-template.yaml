@@ -43,13 +43,6 @@ spec:
           adminCredentials:
             name: ${CLUSTER_NAME}-kubeconfig
             key: value
-      # This agent pool only exists to avoid having to aggregate definitions
-      # from AzureASOManagedMachinePools. That will be done soon.
-      agentPoolProfiles:
-      - name: stub
-        vmSize: ${AZURE_NODE_MACHINE_TYPE}
-        mode: System
-        count: 1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedCluster

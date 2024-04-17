@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -30,6 +31,8 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 func TestSetManagedClusterDefaults(t *testing.T) {
@@ -98,7 +101,14 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
 
-			mutator := SetManagedClusterDefaults(test.asoManagedControlPlane, test.cluster)
+			s := runtime.NewScheme()
+			g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
+			g.Expect(infrav1exp.AddToScheme(s)).To(Succeed())
+			c := fakeclient.NewClientBuilder().
+				WithScheme(s).
+				Build()
+
+			mutator := SetManagedClusterDefaults(c, test.asoManagedControlPlane, test.cluster)
 			actual, err := ApplyMutators(ctx, test.asoManagedControlPlane.Spec.Resources, mutator)
 			if test.expectedErr != nil {
 				g.Expect(err).To(MatchError(test.expectedErr))
@@ -478,8 +488,276 @@ func TestSetManagedClusterPodCIDR(t *testing.T) {
 	}
 }
 
+func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
+	g := NewGomegaWithT(t)
+	ctx := context.Background()
+	s := runtime.NewScheme()
+	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
+	g.Expect(infrav1exp.AddToScheme(s)).To(Succeed())
+	fakeClientBuilder := func() *fakeclient.ClientBuilder {
+		return fakeclient.NewClientBuilder().WithScheme(s)
+	}
+
+	t.Run("agent pools should not be defined on user's ManagedCluster", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		umc := mcUnstructured(g, &asocontainerservicev1.ManagedCluster{
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile{{}},
+			},
+		})
+
+		err := setManagedClusterAgentPoolProfiles(ctx, nil, "", nil, "", umc)
+		g.Expect(err).To(MatchError(Incompatible{
+			mutation: mutation{
+				location: ".spec.agentPoolProfiles",
+				val:      "nil",
+				reason:   "because agent pool definitions must be inherited from AzureASOManagedMachinePools",
+			},
+			userVal: "<slice of length 1>",
+		}))
+	})
+
+	t.Run("agent pool profiles already created", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		namespace := "ns"
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{{}},
+			},
+		}
+		umc := mcUnstructured(g, managedCluster)
+
+		c := fakeClientBuilder().
+			WithObjects(managedCluster).
+			Build()
+
+		err := setManagedClusterAgentPoolProfiles(ctx, c, namespace, nil, "", umc)
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("agent pool profiles derived from managed machine pools", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		namespace := "ns"
+		clusterName := "cluster"
+		managedCluster := &asocontainerservicev1.ManagedCluster{}
+		umc := mcUnstructured(g, managedCluster)
+
+		asoManagedMachinePools := &infrav1exp.AzureASOManagedMachinePoolList{
+			Items: []infrav1exp.AzureASOManagedMachinePool{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "wrong-label",
+						Namespace: namespace,
+						Labels: map[string]string{
+							clusterv1.ClusterNameLabel: "not-" + clusterName,
+						},
+					},
+					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+							Resources: []runtime.RawExtension{
+								{
+									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+											AzureName: "no",
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "wrong-namespace",
+						Namespace: "not-" + namespace,
+						Labels: map[string]string{
+							clusterv1.ClusterNameLabel: clusterName,
+						},
+					},
+					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+							Resources: []runtime.RawExtension{
+								{
+									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+											AzureName: "no",
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pool0",
+						Namespace: namespace,
+						Labels: map[string]string{
+							clusterv1.ClusterNameLabel: clusterName,
+						},
+					},
+					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+							Resources: []runtime.RawExtension{
+								{
+									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+											AzureName: "azpool0",
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pool1",
+						Namespace: namespace,
+						Labels: map[string]string{
+							clusterv1.ClusterNameLabel: clusterName,
+						},
+					},
+					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+							Resources: []runtime.RawExtension{
+								{
+									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+											AzureName: "azpool1",
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		expected := &asocontainerservicev1.ManagedCluster{
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile{
+					{Name: ptr.To("azpool0")},
+					{Name: ptr.To("azpool1")},
+				},
+			},
+		}
+
+		c := fakeClientBuilder().
+			WithLists(asoManagedMachinePools).
+			Build()
+
+		cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: clusterName}}
+		err := setManagedClusterAgentPoolProfiles(ctx, c, namespace, cluster, "", umc)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(s.Convert(umc, managedCluster, nil)).To(Succeed())
+		g.Expect(cmp.Diff(expected, managedCluster)).To(BeEmpty())
+	})
+}
+
+func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
+	t.Run("stable with no pools", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		mc := &asocontainerservicev1.ManagedCluster{}
+		var pools []conversion.Convertible
+		var expected []asocontainerservicev1.ManagedClusterAgentPoolProfile
+
+		err := setAgentPoolProfilesFromAgentPools(mc, pools)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cmp.Diff(expected, mc.Spec.AgentPoolProfiles)).To(BeEmpty())
+	})
+
+	t.Run("stable with pools", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		mc := &asocontainerservicev1.ManagedCluster{}
+		pools := []conversion.Convertible{
+			&asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					AzureName: "pool0",
+					MaxCount:  ptr.To(1),
+				},
+			},
+			// Not all pools have to be the same version, or the same version as the cluster.
+			&asocontainerservicev1preview.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1preview.ManagedClusters_AgentPool_Spec{
+					AzureName:           "pool1",
+					MinCount:            ptr.To(2),
+					EnableCustomCATrust: ptr.To(true),
+				},
+			},
+		}
+		expected := []asocontainerservicev1.ManagedClusterAgentPoolProfile{
+			{
+				Name:     ptr.To("pool0"),
+				MaxCount: ptr.To(1),
+			},
+			{
+				Name:     ptr.To("pool1"),
+				MinCount: ptr.To(2),
+				// EnableCustomCATrust is a preview-only feature that can't be represented here, so it should be lost.
+			},
+		}
+
+		err := setAgentPoolProfilesFromAgentPools(mc, pools)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cmp.Diff(expected, mc.Spec.AgentPoolProfiles)).To(BeEmpty())
+	})
+
+	t.Run("preview with pools", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		mc := &asocontainerservicev1preview.ManagedCluster{}
+		pools := []conversion.Convertible{
+			&asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					AzureName: "pool0",
+					MaxCount:  ptr.To(1),
+				},
+			},
+			&asocontainerservicev1preview.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1preview.ManagedClusters_AgentPool_Spec{
+					AzureName:           "pool1",
+					MinCount:            ptr.To(2),
+					EnableCustomCATrust: ptr.To(true),
+				},
+			},
+		}
+		expected := []asocontainerservicev1preview.ManagedClusterAgentPoolProfile{
+			{
+				Name:     ptr.To("pool0"),
+				MaxCount: ptr.To(1),
+			},
+			{
+				Name:                ptr.To("pool1"),
+				MinCount:            ptr.To(2),
+				EnableCustomCATrust: ptr.To(true),
+			},
+		}
+
+		err := setAgentPoolProfilesFromAgentPools(mc, pools)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cmp.Diff(expected, mc.Spec.AgentPoolProfiles)).To(BeEmpty())
+	})
+}
+
 func mcJSON(g Gomega, mc *asocontainerservicev1.ManagedCluster) []byte {
 	mc.SetGroupVersionKind(asocontainerservicev1.GroupVersion.WithKind("ManagedCluster"))
+	j, err := json.Marshal(mc)
+	g.Expect(err).NotTo(HaveOccurred())
+	return j
+}
+
+func apJSON(g Gomega, mc *asocontainerservicev1.ManagedClustersAgentPool) []byte {
+	mc.SetGroupVersionKind(asocontainerservicev1.GroupVersion.WithKind("ManagedClustersAgentPool"))
 	j, err := json.Marshal(mc)
 	g.Expect(err).NotTo(HaveOccurred())
 	return j

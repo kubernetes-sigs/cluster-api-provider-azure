@@ -73,6 +73,12 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(log),
 			),
 		).
+		// User errors that CAPZ passes through agentPoolProfiles on create must be fixed in the
+		// AzureASOManagedMachinePool, so trigger a reconciliation to consume those fixes.
+		Watches(
+			&infrav1exp.AzureASOManagedMachinePool{},
+			handler.EnqueueRequestsFromMapFunc(r.azureASOManagedMachinePoolToAzureASOManagedControlPlane),
+		).
 		Owns(&corev1.Secret{}).
 		Build(r)
 	if err != nil {
@@ -104,6 +110,19 @@ func clusterToAzureASOManagedControlPlane(_ context.Context, o client.Object) []
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
 	}
 	return nil
+}
+
+func (r *AzureASOManagedControlPlaneReconciler) azureASOManagedMachinePoolToAzureASOManagedControlPlane(ctx context.Context, o client.Object) []ctrl.Request {
+	asoManagedMachinePool := o.(*infrav1exp.AzureASOManagedMachinePool)
+	clusterName := asoManagedMachinePool.Labels[clusterv1.ClusterNameLabel]
+	if clusterName == "" {
+		return nil
+	}
+	cluster, err := util.GetClusterByName(ctx, r.Client, asoManagedMachinePool.Namespace, clusterName)
+	if client.IgnoreNotFound(err) != nil || cluster == nil {
+		return nil
+	}
+	return clusterToAzureASOManagedControlPlane(ctx, cluster)
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedcontrolplanes,verbs=get;list;watch;create;update;patch;delete
@@ -180,7 +199,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(asoManagedControlPlane, cluster))
+	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(r.Client, asoManagedControlPlane, cluster))
 	if err != nil {
 		return ctrl.Result{}, err
 	}

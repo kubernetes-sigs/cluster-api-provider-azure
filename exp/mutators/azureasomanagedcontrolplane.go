@@ -18,24 +18,32 @@ package mutators
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var (
 	// ErrNoManagedClusterDefined describes an AzureASOManagedControlPlane without a ManagedCluster.
-	ErrNoManagedClusterDefined = fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1.GroupVersion.Group)
+	ErrNoManagedClusterDefined = fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1hub.GroupVersion.Group)
+
+	// ErrNoAzureASOManagedMachinePools means no AzureASOManagedMachinePools exist for an AzureASOManagedControlPlane.
+	ErrNoAzureASOManagedMachinePools = errors.New("no AzureASOManagedMachinePools found for AzureASOManagedControlPlane")
 )
 
 // SetManagedClusterDefaults propagates values defined by Cluster API to an ASO ManagedCluster.
-func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
+func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetManagedClusterDefaults")
 		defer done()
@@ -43,7 +51,7 @@ func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManage
 		var managedCluster *unstructured.Unstructured
 		var managedClusterPath string
 		for i, u := range us {
-			if u.GroupVersionKind().Group == asocontainerservicev1.GroupVersion.Group &&
+			if u.GroupVersionKind().Group == asocontainerservicev1hub.GroupVersion.Group &&
 				u.GroupVersionKind().Kind == "ManagedCluster" {
 				managedCluster = u
 				managedClusterPath = fmt.Sprintf("spec.resources[%d]", i)
@@ -63,6 +71,10 @@ func SetManagedClusterDefaults(asoManagedControlPlane *infrav1exp.AzureASOManage
 		}
 
 		if err := setManagedClusterPodCIDR(ctx, cluster, managedClusterPath, managedCluster); err != nil {
+			return err
+		}
+
+		if err := setManagedClusterAgentPoolProfiles(ctx, ctrlClient, asoManagedControlPlane.Namespace, cluster, managedClusterPath, managedCluster); err != nil {
 			return err
 		}
 
@@ -164,4 +176,173 @@ func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, m
 	}
 	logMutation(log, setPodCIDR)
 	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capiCIDR, podCIDRPath...)
+}
+
+func setManagedClusterAgentPoolProfiles(ctx context.Context, ctrlClient client.Client, namespace string, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterAgentPoolProfiles")
+	defer done()
+
+	agentPoolProfilesPath := []string{"spec", "agentPoolProfiles"}
+	userAgentPoolProfiles, agentPoolProfilesFound, err := unstructured.NestedSlice(managedCluster.UnstructuredContent(), agentPoolProfilesPath...)
+	if err != nil {
+		return err
+	}
+	setAgentPoolProfiles := mutation{
+		location: managedClusterPath + "." + strings.Join(agentPoolProfilesPath, "."),
+		val:      "nil",
+		reason:   "because agent pool definitions must be inherited from AzureASOManagedMachinePools",
+	}
+	if agentPoolProfilesFound {
+		return Incompatible{
+			mutation: setAgentPoolProfiles,
+			userVal:  fmt.Sprintf("<slice of length %d>", len(userAgentPoolProfiles)),
+		}
+	}
+
+	// AKS requires ManagedClusters to be created with agent pools: https://github.com/Azure/azure-service-operator/issues/2791
+	getMC := &asocontainerservicev1.ManagedCluster{}
+	err = ctrlClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: managedCluster.GetName()}, getMC)
+	if client.IgnoreNotFound(err) != nil {
+		return err
+	}
+	if len(getMC.Status.AgentPoolProfiles) != 0 {
+		return nil
+	}
+
+	log.V(4).Info("gathering agent pool profiles to include in ManagedCluster create")
+	agentPools, err := agentPoolsFromManagedMachinePools(ctx, ctrlClient, cluster.Name, namespace)
+	if err != nil {
+		return err
+	}
+	mc, err := ctrlClient.Scheme().New(managedCluster.GroupVersionKind())
+	if err != nil {
+		return err
+	}
+	err = ctrlClient.Scheme().Convert(managedCluster, mc, nil)
+	if err != nil {
+		return err
+	}
+	setAgentPoolProfiles.val = fmt.Sprintf("<slice of length %d>", len(agentPools))
+	logMutation(log, setAgentPoolProfiles)
+	err = setAgentPoolProfilesFromAgentPools(mc.(conversion.Convertible), agentPools)
+	if err != nil {
+		return err
+	}
+	err = ctrlClient.Scheme().Convert(mc, managedCluster, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Client, clusterName string, namespace string) ([]conversion.Convertible, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.agentPoolsFromManagedMachinePools")
+	defer done()
+
+	asoManagedMachinePools := &infrav1exp.AzureASOManagedMachinePoolList{}
+	err := ctrlClient.List(ctx, asoManagedMachinePools,
+		client.InNamespace(namespace),
+		client.MatchingLabels{
+			clusterv1.ClusterNameLabel: clusterName,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list AzureASOManagedMachinePools: %w", err)
+	}
+
+	var agentPools []conversion.Convertible
+	for _, asoManagedMachinePool := range asoManagedMachinePools.Items {
+		resources, err := ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, u := range resources {
+			if u.GroupVersionKind().Group != asocontainerservicev1hub.GroupVersion.Group ||
+				u.GroupVersionKind().Kind != "ManagedClustersAgentPool" {
+				continue
+			}
+
+			agentPool, err := ctrlClient.Scheme().New(u.GroupVersionKind())
+			if err != nil {
+				return nil, fmt.Errorf("error creating new %v: %w", u.GroupVersionKind(), err)
+			}
+			err = ctrlClient.Scheme().Convert(u, agentPool, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			agentPools = append(agentPools, agentPool.(conversion.Convertible))
+			break
+		}
+	}
+
+	return agentPools, nil
+}
+
+func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, agentPools []conversion.Convertible) error {
+	hubMC := &asocontainerservicev1hub.ManagedCluster{}
+	err := managedCluster.ConvertTo(hubMC)
+	if err != nil {
+		return err
+	}
+	hubMC.Spec.AgentPoolProfiles = nil
+
+	for _, agentPool := range agentPools {
+		hubPool := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+		err := agentPool.ConvertTo(hubPool)
+		if err != nil {
+			return err
+		}
+
+		profile := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+			AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
+			CapacityReservationGroupReference: hubPool.Spec.CapacityReservationGroupReference,
+			Count:                             hubPool.Spec.Count,
+			CreationData:                      hubPool.Spec.CreationData,
+			EnableAutoScaling:                 hubPool.Spec.EnableAutoScaling,
+			EnableEncryptionAtHost:            hubPool.Spec.EnableEncryptionAtHost,
+			EnableFIPS:                        hubPool.Spec.EnableFIPS,
+			EnableNodePublicIP:                hubPool.Spec.EnableNodePublicIP,
+			EnableUltraSSD:                    hubPool.Spec.EnableUltraSSD,
+			GpuInstanceProfile:                hubPool.Spec.GpuInstanceProfile,
+			HostGroupReference:                hubPool.Spec.HostGroupReference,
+			KubeletConfig:                     hubPool.Spec.KubeletConfig,
+			KubeletDiskType:                   hubPool.Spec.KubeletDiskType,
+			LinuxOSConfig:                     hubPool.Spec.LinuxOSConfig,
+			MaxCount:                          hubPool.Spec.MaxCount,
+			MaxPods:                           hubPool.Spec.MaxPods,
+			MinCount:                          hubPool.Spec.MinCount,
+			Mode:                              hubPool.Spec.Mode,
+			Name:                              azure.AliasOrNil[string](&hubPool.Spec.AzureName),
+			NetworkProfile:                    hubPool.Spec.NetworkProfile,
+			NodeLabels:                        hubPool.Spec.NodeLabels,
+			NodePublicIPPrefixReference:       hubPool.Spec.NodePublicIPPrefixReference,
+			NodeTaints:                        hubPool.Spec.NodeTaints,
+			OrchestratorVersion:               hubPool.Spec.OrchestratorVersion,
+			OsDiskSizeGB:                      hubPool.Spec.OsDiskSizeGB,
+			OsDiskType:                        hubPool.Spec.OsDiskType,
+			OsSKU:                             hubPool.Spec.OsSKU,
+			OsType:                            hubPool.Spec.OsType,
+			PodSubnetReference:                hubPool.Spec.PodSubnetReference,
+			PowerState:                        hubPool.Spec.PowerState,
+			PropertyBag:                       hubPool.Spec.PropertyBag,
+			ProximityPlacementGroupReference:  hubPool.Spec.ProximityPlacementGroupReference,
+			ScaleDownMode:                     hubPool.Spec.ScaleDownMode,
+			ScaleSetEvictionPolicy:            hubPool.Spec.ScaleSetEvictionPolicy,
+			ScaleSetPriority:                  hubPool.Spec.ScaleSetPriority,
+			SpotMaxPrice:                      hubPool.Spec.SpotMaxPrice,
+			Tags:                              hubPool.Spec.Tags,
+			Type:                              hubPool.Spec.Type,
+			UpgradeSettings:                   hubPool.Spec.UpgradeSettings,
+			VmSize:                            hubPool.Spec.VmSize,
+			VnetSubnetReference:               hubPool.Spec.VnetSubnetReference,
+			WorkloadRuntime:                   hubPool.Spec.WorkloadRuntime,
+		}
+
+		hubMC.Spec.AgentPoolProfiles = append(hubMC.Spec.AgentPoolProfiles, profile)
+	}
+
+	return managedCluster.ConvertFrom(hubMC)
 }
