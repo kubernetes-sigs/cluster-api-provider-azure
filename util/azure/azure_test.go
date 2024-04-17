@@ -21,15 +21,11 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	utilfeature "k8s.io/component-base/featuregate/testing"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestFindParentMachinePool(t *testing.T) {
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	client := mockClient{}
 
 	tests := []struct {
@@ -64,7 +60,6 @@ func TestFindParentMachinePool(t *testing.T) {
 }
 
 func TestFindParentMachinePoolWithRetry(t *testing.T) {
-	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, true)()
 	client := mockClient{}
 
 	tests := []struct {
