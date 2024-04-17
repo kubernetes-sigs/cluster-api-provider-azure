@@ -2712,3 +2712,222 @@ func getAMCPMetaData() metav1.ObjectMeta {
 		Namespace: "default",
 	}
 }
+
+func TestValidateAMCPVirtualNetwork(t *testing.T) {
+	tests := []struct {
+		name    string
+		amcp    *AzureManagedControlPlane
+		wantErr string
+	}{
+		{
+			name: "Testing valid VirtualNetwork in same resource group",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg1",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name:      "vnet1",
+								CIDRBlock: defaultAKSVnetCIDR,
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: defaultAKSNodeSubnetCIDR,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "Testing valid VirtualNetwork in different resource group",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name:      "vnet1",
+								CIDRBlock: defaultAKSVnetCIDR,
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: defaultAKSNodeSubnetCIDR,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
+		{
+			name: "Testing invalid VirtualNetwork in different resource group: invalid subnet CIDR",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name:      "vnet1",
+								CIDRBlock: "10.1.0.0/16",
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: "10.0.0.0/24",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "pre-existing virtual networks CIDR block should contain the subnet CIDR block",
+		},
+		{
+			name: "Testing invalid VirtualNetwork in different resource group: no subnet CIDR",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name:      "vnet1",
+								CIDRBlock: "10.1.0.0/16",
+								Subnet: ManagedControlPlaneSubnet{
+									Name: "subnet1",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "pre-existing virtual networks CIDR block should contain the subnet CIDR block",
+		},
+		{
+			name: "Testing invalid VirtualNetwork in different resource group: no VNet CIDR",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name: "vnet1",
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: "11.0.0.0/24",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "pre-existing virtual networks CIDR block should contain the subnet CIDR block",
+		},
+		{
+			name: "Testing invalid VirtualNetwork in different resource group: invalid VNet CIDR",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name:      "vnet1",
+								CIDRBlock: "invalid_vnet_CIDR",
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: "11.0.0.0/24",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "pre-existing virtual networks CIDR block is invalid",
+		},
+		{
+			name: "Testing invalid VirtualNetwork in different resource group: invalid Subnet CIDR",
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fooName",
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel: "fooCluster",
+					},
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					ResourceGroupName: "rg1",
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+							ResourceGroup: "rg2",
+							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+								Name: "vnet1",
+								Subnet: ManagedControlPlaneSubnet{
+									Name:      "subnet1",
+									CIDRBlock: "invalid_subnet_CIDR",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: "pre-existing subnets CIDR block is invalid",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			mcpw := &azureManagedControlPlaneWebhook{}
+			err := mcpw.Default(context.Background(), tc.amcp)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			errs := validateAMCPVirtualNetwork(tc.amcp.Spec.VirtualNetwork, field.NewPath("spec", "VirtualNetwork"))
+			if tc.wantErr != "" {
+				g.Expect(errs).ToNot(BeEmpty())
+				g.Expect(errs[0].Detail).To(Equal(tc.wantErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
