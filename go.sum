@@ -728,8 +728,8 @@ golang.org/x/net v0.0.0-20220722155237-a158d28d115b/go.mod h1:XRhObCWvk6IyKnWLug
 golang.org/x/net v0.1.0/go.mod h1:Cx3nUiGt4eDBEyega/BKRp+/AlGL8hYe7U9odMt2Cco=
 golang.org/x/net v0.2.0/go.mod h1:KqCZLdyyvdV855qA2rE3GC2aiw5xGR5TEjj8smXukLY=
 golang.org/x/net v0.6.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
-golang.org/x/net v0.22.0 h1:9sGLhx7iRIHEiX0oAJ3MRZMUCElJgy7Br1nO+AMN3Tc=
-golang.org/x/net v0.22.0/go.mod h1:JKghWKKOSdJwpW2GEx0Ja7fmaKnMsbu+MWVZTokSYmg=
+golang.org/x/net v0.23.0 h1:7EYJ93RZ9vYSZAIb2x3lnuvqO5zneoD6IvWjuhfxjTs=
+golang.org/x/net v0.23.0/go.mod h1:JKghWKKOSdJwpW2GEx0Ja7fmaKnMsbu+MWVZTokSYmg=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
@@ -1057,10 +1057,10 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 h1:trsWhjU5jZrx6U
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2/go.mod h1:+qG7ISXqCDVVcyO8hLn12AKVYYUjM7ftlqsqmrhMZE0=
 sigs.k8s.io/cloud-provider-azure v1.28.4 h1:TG/N0fjnZT+T53ymdoHvl3ft6QXvHcx8U7b6lcC1tC0=
 sigs.k8s.io/cloud-provider-azure v1.28.4/go.mod h1:xtm6ROi1sIRLF8otWohSfrwAkVHCOk+dJ9xvB4QAXUU=
-sigs.k8s.io/cluster-api v1.6.3 h1:VOlPNg92PQLlhBVLc5pg+cbAuPvGOOBujeFLk9zgnoo=
-sigs.k8s.io/cluster-api v1.6.3/go.mod h1:4FzfgPPiYaFq8X9F9j2SvmggH/4OOLEDgVJuWDqKLig=
-sigs.k8s.io/cluster-api/test v1.6.3 h1:ZCboLCTpKWzSbf+f7MpQT7EN8aeH9DNhJC1T9/vAuAM=
-sigs.k8s.io/cluster-api/test v1.6.3/go.mod h1:AKs25dgW6AnyGaQBoWuXfWnBs+FT7vJmAI/aox64DEI=
+sigs.k8s.io/cluster-api v1.6.4 h1:O3J+Dm/wBMAQSyTtdkEPcWbv4KyY4yqv8Q8g6pJVefM=
+sigs.k8s.io/cluster-api v1.6.4/go.mod h1:az1S/g/6umDjmh3ZWpjJWm23peUZOqEt3vv2FuOIZ3s=
+sigs.k8s.io/cluster-api/test v1.6.4 h1:eNs1FtKEQqWKxBB19/cQ/1IAgb4nHT0qbh0w7T9yqZ4=
+sigs.k8s.io/cluster-api/test v1.6.4/go.mod h1:QimdqQoykUpYpUKkpIabhj8R34wAzw7akMwlCc65xeA=
 sigs.k8s.io/controller-runtime v0.16.5 h1:yr1cEJbX08xsTW6XEIzT13KHHmIyX8Umvme2cULvFZw=
 sigs.k8s.io/controller-runtime v0.16.5/go.mod h1:j7bialYoSn142nv9sCOJmQgDXQXxnroFU4VnX/brVJ0=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
