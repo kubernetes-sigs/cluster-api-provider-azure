@@ -1,9 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../default
-patchesStrategicMerge:
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-  - patches/azure-machine-template-controlplane.yaml
-  - patches/azure-machine-template.yaml
-  - patches/kubeadm-control-plane.yaml
-  - patches/kubeadm-worker-node.yaml
+- ../default
+patches:
+- path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: patches/azure-machine-template-controlplane.yaml
+- path: patches/azure-machine-template.yaml
+- path: patches/kubeadm-control-plane.yaml
+- path: patches/kubeadm-worker-node.yaml

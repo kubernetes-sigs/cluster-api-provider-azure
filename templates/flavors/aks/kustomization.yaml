@@ -1,8 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
 - cluster-template.yaml
 - ../../azure-cluster-identity
-patchesStrategicMerge:
-- ../../azure-cluster-identity/managedazurecluster-identity-ref.yaml
+patches:
+- path: ../../azure-cluster-identity/managedazurecluster-identity-ref.yaml

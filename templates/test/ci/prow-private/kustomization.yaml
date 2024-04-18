@@ -1,33 +1,34 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../../../flavors/private
-  - cni-resource-set.yaml
-  - ../../../addons/cluster-api-helm/calico.yaml
-  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-patchesStrategicMerge:
-  - ../patches/tags.yaml
-  - ../patches/controller-manager.yaml
-  - patches/bastion.yaml
-  - patches/vnet-peerings.yaml
-  - ../patches/uami-md-0.yaml
-  - ../patches/uami-control-plane.yaml
-  - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-cloud-provider-azure.yaml
+- ../../../flavors/private
+- cni-resource-set.yaml
+- ../../../addons/cluster-api-helm/calico.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
 patches:
-  - path: patches/user-assigned.yaml
-    target:
-      kind: AzureClusterIdentity
+- path: patches/user-assigned.yaml
+  target:
+    kind: AzureClusterIdentity
+- path: ../patches/tags.yaml
+- path: ../patches/controller-manager.yaml
+- path: patches/bastion.yaml
+- path: patches/vnet-peerings.yaml
+- path: ../patches/uami-md-0.yaml
+- path: ../patches/uami-control-plane.yaml
+- path: ../patches/cluster-label-calico.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico
-    files:
-      - resources=../../../addons/calico.yaml
+- files:
+  - resources=../../../addons/calico.yaml
+  name: cni-${CLUSTER_NAME}-calico
 generatorOptions:
+  annotations:
+    note: generated
   disableNameSuffixHash: true
   labels:
     type: generated
-  annotations:
-    note: generated

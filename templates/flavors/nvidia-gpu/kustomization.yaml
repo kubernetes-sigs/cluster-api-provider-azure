@@ -1,15 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../base
-  - ../../azure-cluster-identity
-  - machine-deployment.yaml
-
-patchesStrategicMerge:
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-
+- ../base
+- ../../azure-cluster-identity
+- machine-deployment.yaml
 generatorOptions:
+  annotations:
+    note: generated
   disableNameSuffixHash: true
   labels:
     type: generated
-  annotations:
-    note: generated
+patches:
+- path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml

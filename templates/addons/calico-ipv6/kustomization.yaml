@@ -1,20 +1,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-    - calico-policy-only.yaml
-patchesStrategicMerge:
-    - patches/azure-mtu.yaml
-    - patches/calico-config.yaml
+- calico-policy-only.yaml
 patches:
-- target: 
+- path: patches/calico-node.yaml
+  target:
     group: apps
-    version: v1
     kind: DaemonSet
     name: calico-node
     namespace: kube-system
-  path: patches/calico-node.yaml
+    version: v1
 - path: patches/control-plane-tolerations.yaml
   target:
     kind: Deployment
     name: calico-kube-controllers
     namespace: kube-system
+- path: patches/azure-mtu.yaml
+- path: patches/calico-config.yaml

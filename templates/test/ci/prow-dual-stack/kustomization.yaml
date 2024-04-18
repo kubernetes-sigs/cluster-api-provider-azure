@@ -1,17 +1,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../../../flavors/dual-stack
-  - machine-pool-dualstack.yaml
-  - ../../../addons/cluster-api-helm/calico-dual-stack.yaml
-  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-patchesStrategicMerge:
-  - ../patches/tags.yaml
-  - ../patches/controller-manager.yaml
-  - patches/azure-machine-template-control-plane.yaml
-  - patches/azure-machine-template.yaml
-  - patches/cluster-label-calico-dual-stack.yaml
-  - ../patches/cluster-label-cloud-provider-azure.yaml
+- ../../../flavors/dual-stack
+- machine-pool-dualstack.yaml
+- ../../../addons/cluster-api-helm/calico-dual-stack.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+patches:
+- path: ../patches/tags.yaml
+- path: ../patches/controller-manager.yaml
+- path: patches/azure-machine-template-control-plane.yaml
+- path: patches/azure-machine-template.yaml
+- path: patches/cluster-label-calico-dual-stack.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml

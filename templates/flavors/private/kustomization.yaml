@@ -1,12 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../base
-  - ../default/machine-deployment.yaml
-  - ../../azure-cluster-identity
-
-patchesStrategicMerge:
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-  - patches/private-lb.yaml
-  - patches/apiserver-host-dns.yaml
-  - patches/azure-bastion.yaml
-
+- ../base
+- ../default/machine-deployment.yaml
+- ../../azure-cluster-identity
+patches:
+- path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: patches/private-lb.yaml
+- path: patches/apiserver-host-dns.yaml
+- path: patches/azure-bastion.yaml

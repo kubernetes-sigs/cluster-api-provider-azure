@@ -1,13 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: capz-system
-
 namePrefix: capz-
-
 # Labels to add to all resources and selectors.
 labels:
 - includeSelectors: true
   pairs:
     cluster.x-k8s.io/provider: infrastructure-azure
-
 resources:
 - namespace.yaml
 - credentials.yaml
@@ -16,7 +15,6 @@ resources:
 - ../manager
 - ../webhook
 - ../certmanager
-
 patches:
 - path: manager_image_patch.yaml
 - path: manager_pull_policy.yaml
@@ -24,10 +22,8 @@ patches:
 - path: manager_webhook_patch.yaml
 - path: validatingwebhookcainjection_patch.yaml
 - path: mutatingwebhookcainjection_patch.yaml
-
 configurations:
 - kustomizeconfig.yaml
-
 replacements:
 - source: # CERTIFICATE_NAMESPACE
     fieldPath: metadata.namespace
@@ -51,7 +47,6 @@ replacements:
       index: 1
     select:
       annotationSelector: cert-manager.io/inject-ca-from
-
 - source: # SERVICE_NAMESPACE
     fieldPath: metadata.namespace
     kind: Service
@@ -79,7 +74,6 @@ replacements:
       name: serving-cert
       namespace: system
       version: v1
-
 - source: # SERVICE_NAME
     kind: Service
     name: webhook-service

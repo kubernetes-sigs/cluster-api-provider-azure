@@ -1,37 +1,38 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../prow-machine-pool
-patchesStrategicMerge:
-  - ../patches/control-plane-image-ci-version.yaml
-  - ../patches/controller-manager.yaml
-  - patches/machine-pool-ci-version.yaml
-  - ../patches/machine-pool-worker-counts.yaml
-  - patches/machine-pool-ci-version-windows.yaml
+- ../prow-machine-pool
 patches:
-- target:
+- path: ../prow-ci-version/patches/oot-credential-provider-kcp.yaml
+  target:
     group: controlplane.cluster.x-k8s.io
-    version: v1beta1
     kind: KubeadmControlPlane
     name: .*-control-plane
-  path: ../prow-ci-version/patches/oot-credential-provider-kcp.yaml
-- target:
-    group: controlplane.cluster.x-k8s.io
     version: v1beta1
+- path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
     kind: KubeadmControlPlane
     name: .*-control-plane
     namespace: default
-  path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
-- target:
-    group: bootstrap.cluster.x-k8s.io
     version: v1beta1
+- path: patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
     kind: KubeadmConfig
     name: .*-mp-win
     namespace: default
-  path: patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
+    version: v1beta1
+- path: ../patches/control-plane-image-ci-version.yaml
+- path: ../patches/controller-manager.yaml
+- path: patches/machine-pool-ci-version.yaml
+- path: ../patches/machine-pool-worker-counts.yaml
+- path: patches/machine-pool-ci-version-windows.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico-windows
-    behavior: merge
-    files:
-      - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
+- behavior: merge
+  files:
+  - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
+  name: cni-${CLUSTER_NAME}-calico-windows

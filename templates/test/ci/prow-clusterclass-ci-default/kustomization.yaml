@@ -1,14 +1,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../../../flavors/clusterclass/clusterclass.yaml
-  - ../../../flavors/clusterclass/kubeadm-controlplane-template.yaml
-  - ../../../flavors/clusterclass/azure-cluster-template.yaml
-  - ../../../flavors/clusterclass/azure-machine-template-controlplane.yaml
-  - kubeadm-config-template.yaml
-  - windows.yaml
-  - ../../../azure-cluster-identity
-patchesStrategicMerge:
-  - patches.yaml
-  - variables.yaml
+- ../../../flavors/clusterclass/clusterclass.yaml
+- ../../../flavors/clusterclass/kubeadm-controlplane-template.yaml
+- ../../../flavors/clusterclass/azure-cluster-template.yaml
+- ../../../flavors/clusterclass/azure-machine-template-controlplane.yaml
+- kubeadm-config-template.yaml
+- windows.yaml
+- ../../../azure-cluster-identity
+patches:
+- path: patches.yaml
+- path: variables.yaml

@@ -1,4 +1,6 @@
 resources:
-  - certificate.yaml
+- certificate.yaml
 configurations:
-  - kustomizeconfig.yaml
+- kustomizeconfig.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization

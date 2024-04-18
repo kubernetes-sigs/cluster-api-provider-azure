@@ -1,31 +1,32 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+sortOptions:
+  order: fifo
 namespace: default
 resources:
-  - ../prow-ci-version
-  - ../../../addons/cluster-api-helm/calico-dual-stack.yaml
-patchesStrategicMerge:
-  - ../../../flavors/dual-stack/patches/dual-stack.yaml
-  - ../../../flavors/dual-stack/patches/controlplane-azuremachinetemplate.yaml
-  - ../../../flavors/dual-stack/patches/kubeadm-controlplane.yaml
-  - ../prow-dual-stack/patches/cluster-label-calico-dual-stack.yaml
-  - patches/machine-deployment.yaml
-  - ../patches/windows-addons-disabled.yaml
+- ../prow-ci-version
+- ../../../addons/cluster-api-helm/calico-dual-stack.yaml
 patches:
-  - target:
-      kind: HelmChartProxy
+- patch: |
+    $patch: delete
+    apiVersion: addons.cluster.x-k8s.io/v1alpha1
+    kind: HelmChartProxy
+    metadata:
       name: calico
-    patch: |
-      $patch: delete
-      apiVersion: addons.cluster.x-k8s.io/v1alpha1
-      kind: HelmChartProxy
-      metadata:
-        name: calico
-  - target:
-      name: ".*-win.*"
-    patch: |
-      $patch: delete
-      apiVersion: cluster.x-k8s.io/v1beta1
-      kind: MachineDeployment
-      metadata:
-        name: win
+  target:
+    kind: HelmChartProxy
+    name: calico
+- patch: |
+    $patch: delete
+    apiVersion: cluster.x-k8s.io/v1beta1
+    kind: MachineDeployment
+    metadata:
+      name: win
+  target:
+    name: .*-win.*
+- path: ../../../flavors/dual-stack/patches/dual-stack.yaml
+- path: ../../../flavors/dual-stack/patches/controlplane-azuremachinetemplate.yaml
+- path: ../../../flavors/dual-stack/patches/kubeadm-controlplane.yaml
+- path: ../prow-dual-stack/patches/cluster-label-calico-dual-stack.yaml
+- path: patches/machine-deployment.yaml
+- path: ../patches/windows-addons-disabled.yaml
