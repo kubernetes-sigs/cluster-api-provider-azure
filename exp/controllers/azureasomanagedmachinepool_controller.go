@@ -196,7 +196,6 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 	return r.reconcileNormal(ctx, asoManagedMachinePool, machinePool, cluster)
 }
 
-//nolint:unparam // these parameters will be used soon enough
 func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, machinePool *expv1.MachinePool, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedMachinePoolReconciler.reconcileNormal",
@@ -209,7 +208,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	resources, err := mutators.ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources)
+	resources, err := mutators.ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources, mutators.SetAgentPoolDefaults(asoManagedMachinePool, machinePool))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -223,7 +222,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		}
 	}
 	if agentPoolName == "" {
-		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedClustersAgentPools defined in AzureASOManagedMachinePool spec.resources", asocontainerservicev1.GroupVersion.Group))
+		return ctrl.Result{}, reconcile.TerminalError(mutators.ErrNoManagedClustersAgentPoolDefined)
 	}
 
 	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)

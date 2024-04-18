@@ -25,10 +25,12 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	exputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -237,7 +239,7 @@ func setManagedClusterAgentPoolProfiles(ctx context.Context, ctrlClient client.C
 }
 
 func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Client, clusterName string, namespace string) ([]conversion.Convertible, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.agentPoolsFromManagedMachinePools")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "mutators.agentPoolsFromManagedMachinePools")
 	defer done()
 
 	asoManagedMachinePools := &infrav1exp.AzureASOManagedMachinePoolList{}
@@ -253,7 +255,18 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 
 	var agentPools []conversion.Convertible
 	for _, asoManagedMachinePool := range asoManagedMachinePools.Items {
-		resources, err := ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources)
+		machinePool, err := exputil.GetOwnerMachinePool(ctx, ctrlClient, asoManagedMachinePool.ObjectMeta)
+		if err != nil {
+			return nil, err
+		}
+		if machinePool == nil {
+			log.V(2).Info("Waiting for MachinePool Controller to set OwnerRef on AzureASOManagedMachinePool")
+			return nil, nil
+		}
+
+		resources, err := ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources,
+			SetAgentPoolDefaults(ptr.To(asoManagedMachinePool), machinePool),
+		)
 		if err != nil {
 			return nil, err
 		}

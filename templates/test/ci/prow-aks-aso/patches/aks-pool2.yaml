@@ -37,4 +37,3 @@ spec:
       type: VirtualMachineScaleSets
       vmSize: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
       osType: Windows
-      count: 1

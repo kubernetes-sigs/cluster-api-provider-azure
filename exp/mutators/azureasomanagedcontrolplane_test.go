@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -494,6 +495,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 	s := runtime.NewScheme()
 	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
 	g.Expect(infrav1exp.AddToScheme(s)).To(Succeed())
+	g.Expect(expv1.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().WithScheme(s)
 	}
@@ -558,6 +560,13 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Labels: map[string]string{
 							clusterv1.ClusterNameLabel: "not-" + clusterName,
 						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: expv1.GroupVersion.Identifier(),
+								Kind:       "MachinePool",
+								Name:       "wrong-label",
+							},
+						},
 					},
 					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
 						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
@@ -579,6 +588,13 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Namespace: "not-" + namespace,
 						Labels: map[string]string{
 							clusterv1.ClusterNameLabel: clusterName,
+						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: expv1.GroupVersion.Identifier(),
+								Kind:       "MachinePool",
+								Name:       "wrong-namespace",
+							},
 						},
 					},
 					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
@@ -602,6 +618,13 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Labels: map[string]string{
 							clusterv1.ClusterNameLabel: clusterName,
 						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: expv1.GroupVersion.Identifier(),
+								Kind:       "MachinePool",
+								Name:       "pool0",
+							},
+						},
 					},
 					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
 						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
@@ -624,6 +647,13 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Labels: map[string]string{
 							clusterv1.ClusterNameLabel: clusterName,
 						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: expv1.GroupVersion.Identifier(),
+								Kind:       "MachinePool",
+								Name:       "pool1",
+							},
+						},
 					},
 					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
 						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
@@ -641,17 +671,51 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 				},
 			},
 		}
+		machinePools := &expv1.MachinePoolList{
+			Items: []expv1.MachinePool{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Name:      "wrong-label",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "not-" + namespace,
+						Name:      "wrong-namespace",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Name:      "pool0",
+					},
+					Spec: expv1.MachinePoolSpec{
+						Replicas: ptr.To[int32](1),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Name:      "pool1",
+					},
+					Spec: expv1.MachinePoolSpec{
+						Replicas: ptr.To[int32](2),
+					},
+				},
+			},
+		}
 		expected := &asocontainerservicev1.ManagedCluster{
 			Spec: asocontainerservicev1.ManagedCluster_Spec{
 				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile{
-					{Name: ptr.To("azpool0")},
-					{Name: ptr.To("azpool1")},
+					{Name: ptr.To("azpool0"), Count: ptr.To(1)},
+					{Name: ptr.To("azpool1"), Count: ptr.To(2)},
 				},
 			},
 		}
 
 		c := fakeClientBuilder().
-			WithLists(asoManagedMachinePools).
+			WithLists(asoManagedMachinePools, machinePools).
 			Build()
 
 		cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: clusterName}}
@@ -768,5 +832,13 @@ func mcUnstructured(g Gomega, mc *asocontainerservicev1.ManagedCluster) *unstruc
 	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
 	u := &unstructured.Unstructured{}
 	g.Expect(s.Convert(mc, u, nil)).To(Succeed())
+	return u
+}
+
+func apUnstructured(g Gomega, ap *asocontainerservicev1.ManagedClustersAgentPool) *unstructured.Unstructured {
+	s := runtime.NewScheme()
+	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
+	u := &unstructured.Unstructured{}
+	g.Expect(s.Convert(ap, u, nil)).To(Succeed())
 	return u
 }
