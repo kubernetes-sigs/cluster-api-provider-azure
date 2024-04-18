@@ -275,6 +275,9 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	slices.Sort(providerIDs)
 	asoManagedMachinePool.Spec.ProviderIDList = providerIDs
 	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0))
+	if machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] == infrav1exp.ReplicasManagedByAKS {
+		machinePool.Spec.Replicas = &asoManagedMachinePool.Status.Replicas
+	}
 
 	asoManagedMachinePool.Status.Ready = true
 

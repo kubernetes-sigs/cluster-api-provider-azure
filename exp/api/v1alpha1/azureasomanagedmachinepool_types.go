@@ -20,8 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AzureASOManagedMachinePoolKind is the kind for AzureASOManagedMachinePool.
-const AzureASOManagedMachinePoolKind = "AzureASOManagedMachinePool"
+const (
+	// AzureASOManagedMachinePoolKind is the kind for AzureASOManagedMachinePool.
+	AzureASOManagedMachinePoolKind = "AzureASOManagedMachinePool"
+
+	// ReplicasManagedByAKS is the value of the CAPI replica manager annotation that maps to the AKS built-in autoscaler.
+	ReplicasManagedByAKS = "aks"
+)
 
 // AzureASOManagedMachinePoolSpec defines the desired state of AzureASOManagedMachinePool.
 type AzureASOManagedMachinePoolSpec struct {

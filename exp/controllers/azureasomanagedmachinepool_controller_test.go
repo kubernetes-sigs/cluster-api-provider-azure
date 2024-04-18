@@ -354,6 +354,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterv1.ClusterNameLabel: "cluster",
 				},
 			},
+			Spec: expv1.MachinePoolSpec{
+				Replicas: ptr.To[int32](1),
+			},
 		}
 		c := fakeClientBuilder().
 			WithObjects(asoManagedMachinePool, machinePool, cluster, asoAgentPool, asoManagedCluster).
@@ -410,6 +413,116 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(asoManagedMachinePool.Spec.ProviderIDList).To(ConsistOf("azure://node1", "azure://node2"))
 		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
 		g.Expect(asoManagedMachinePool.Status.Ready).To(BeTrue())
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)).To(Succeed())
+		g.Expect(*machinePool.Spec.Replicas).To(Equal(int32(1)))
+	})
+
+	t.Run("successfully reconciles normally with autoscaling", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: &corev1.ObjectReference{
+					APIVersion: infrav1exp.GroupVersion.Identifier(),
+					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+				},
+			},
+		}
+		asoManagedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: cluster.Namespace,
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				NodeResourceGroup: ptr.To("MC_rg"),
+			},
+		}
+		asoAgentPool := &asocontainerservicev1.ManagedClustersAgentPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ap",
+				Namespace: cluster.Namespace,
+			},
+			Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+				AzureName: "pool1",
+				Owner: &genruntime.KnownResourceReference{
+					Name: asoManagedCluster.Name,
+				},
+				EnableAutoScaling: ptr.To(true),
+			},
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
+				Count: ptr.To(3),
+			},
+		}
+		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ammp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: expv1.GroupVersion.Identifier(),
+						Kind:       "MachinePool",
+						Name:       "mp",
+					},
+				},
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+			},
+			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: apJSON(g, asoAgentPool),
+						},
+					},
+				},
+			},
+			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+				Ready: false,
+			},
+		}
+		machinePool := &expv1.MachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mp",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: "cluster",
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedMachinePool, machinePool, cluster, asoAgentPool, asoManagedCluster).
+			Build()
+		r := &AzureASOManagedMachinePoolReconciler{
+			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
+			Tracker: &FakeClusterTracker{
+				getClientFunc: func(_ context.Context, _ types.NamespacedName) (client.Client, error) {
+					return fakeclient.NewClientBuilder().Build(), nil
+				},
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
+		g.Expect(asoManagedMachinePool.Status.Ready).To(BeTrue())
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)).To(Succeed())
+		g.Expect(*machinePool.Spec.Replicas).To(Equal(int32(3)))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {

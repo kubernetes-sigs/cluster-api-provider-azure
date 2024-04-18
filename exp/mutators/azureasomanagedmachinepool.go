@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -53,6 +54,10 @@ func SetAgentPoolDefaults(asoManagedMachinePool *infrav1exp.AzureASOManagedMachi
 		}
 
 		if err := setAgentPoolOrchestratorVersion(ctx, machinePool, agentPoolPath, agentPool); err != nil {
+			return err
+		}
+
+		if err := reconcileAutoscaling(agentPool, machinePool); err != nil {
 			return err
 		}
 
@@ -93,11 +98,40 @@ func setAgentPoolOrchestratorVersion(ctx context.Context, machinePool *expv1.Mac
 	return unstructured.SetNestedField(agentPool.UnstructuredContent(), capiK8sVersion, k8sVersionPath...)
 }
 
+func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *expv1.MachinePool) error {
+	autoscaling, _, err := unstructured.NestedBool(agentPool.UnstructuredContent(), "spec", "enableAutoScaling")
+	if err != nil {
+		return err
+	}
+
+	// Update the MachinePool replica manager annotation. This isn't wrapped in a mutation object because
+	// it's not modifying an ASO resource and users are not expected to set this manually. This behavior
+	// is documented by CAPI as expected of a provider.
+	replicaManager, ok := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]
+	if autoscaling {
+		if !ok {
+			if machinePool.Annotations == nil {
+				machinePool.Annotations = make(map[string]string)
+			}
+			machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] = infrav1exp.ReplicasManagedByAKS
+		} else if replicaManager != infrav1exp.ReplicasManagedByAKS {
+			return fmt.Errorf("failed to enable autoscaling, replicas are already being managed by %s according to MachinePool %s's %s annotation", replicaManager, machinePool.Name, clusterv1.ReplicasManagedByAnnotation)
+		}
+	} else if !autoscaling && replicaManager == infrav1exp.ReplicasManagedByAKS {
+		// Removing this annotation informs the MachinePool controller that this MachinePool is no longer
+		// being autoscaled.
+		delete(machinePool.Annotations, clusterv1.ReplicasManagedByAnnotation)
+	}
+
+	return nil
+}
+
 func setAgentPoolCount(ctx context.Context, machinePool *expv1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAgentPoolOrchestratorVersion")
 	defer done()
 
-	if machinePool.Spec.Replicas == nil {
+	autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] == infrav1exp.ReplicasManagedByAKS
+	if machinePool.Spec.Replicas == nil || autoscaling {
 		return nil
 	}
 

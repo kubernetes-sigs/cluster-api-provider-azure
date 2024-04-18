@@ -18,6 +18,7 @@ package mutators
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -233,6 +234,119 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 	}
 }
 
+func TestReconcileAutoscaling(t *testing.T) {
+	tests := []struct {
+		name        string
+		autoscaling bool
+		machinePool *expv1.MachinePool
+		expected    *expv1.MachinePool
+		expectedErr error
+	}{
+		{
+			name:        "autoscaling disabled removes aks annotation",
+			autoscaling: false,
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+			expected: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+				},
+			},
+		},
+		{
+			name:        "autoscaling disabled leaves other annotation",
+			autoscaling: false,
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+			expected: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+		},
+		{
+			name:        "autoscaling enabled, manager undefined adds annotation",
+			autoscaling: true,
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+				},
+			},
+			expected: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+		},
+		{
+			name:        "autoscaling enabled, manager already set",
+			autoscaling: true,
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+			expected: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+		},
+		{
+			name:        "autoscaling enabled, manager set to something else",
+			autoscaling: true,
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "mp",
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+			},
+			expectedErr: errors.New("failed to enable autoscaling, replicas are already being managed by not-aks according to MachinePool mp's cluster.x-k8s.io/replicas-managed-by annotation"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+
+			agentPool := &asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					EnableAutoScaling: ptr.To(test.autoscaling),
+				},
+			}
+
+			err := reconcileAutoscaling(apUnstructured(g, agentPool), test.machinePool)
+
+			if test.expectedErr != nil {
+				g.Expect(err).To(MatchError(test.expectedErr))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(cmp.Diff(test.expected, test.machinePool)).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestSetAgentPoolCount(t *testing.T) {
 	ctx := context.Background()
 
@@ -248,6 +362,29 @@ func TestSetAgentPoolCount(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
 					Replicas: nil,
+				},
+			},
+			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					Count: ptr.To(2),
+				},
+			},
+			expected: &asocontainerservicev1.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					Count: ptr.To(2),
+				},
+			},
+		},
+		{
+			name: "autoscaling enabled",
+			machinePool: &expv1.MachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						clusterv1.ReplicasManagedByAnnotation: infrav1exp.ReplicasManagedByAKS,
+					},
+				},
+				Spec: expv1.MachinePoolSpec{
+					Replicas: ptr.To[int32](3),
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
