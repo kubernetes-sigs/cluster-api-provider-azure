@@ -20,8 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AzureASOManagedClusterKind is the kind for AzureASOManagedCluster.
-const AzureASOManagedClusterKind = "AzureASOManagedCluster"
+const (
+	// AzureASOManagedClusterKind is the kind for AzureASOManagedCluster.
+	AzureASOManagedClusterKind = "AzureASOManagedCluster"
+
+	// AzureASOManagedControlPlaneFinalizer is the finalizer added to AzureASOManagedControlPlanes.
+	AzureASOManagedControlPlaneFinalizer = "azureasomanagedcontrolplane.infrastructure.cluster.x-k8s.io"
+)
 
 // AzureASOManagedClusterSpec defines the desired state of AzureASOManagedCluster.
 type AzureASOManagedClusterSpec struct {
