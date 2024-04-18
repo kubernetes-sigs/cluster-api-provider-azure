@@ -29,7 +29,7 @@ cluster:
   ## The name of the cluster
   name: aks-cluster-api
 
-  ## the subnet 
+  ## the subnet
   cidrBlocks:
   - 192.168.0.0/16
 
@@ -38,9 +38,6 @@ cluster:
 
 
 controlplane:
-
-  ## SSH public key (must be valid)
-  
   ## Kubernetes version
   kubernetes_version: "v1.29.2"
 
@@ -52,11 +49,11 @@ controlplane:
   networkPluginMode: "overlay"
   sshPublicKey: ""
   outboundType: "loadBalancer"
-  dnsServiceIP:  ""
+  dnsServiceIP: ""
   loadBalancerSKU: "Standard"
   sku:
     tier: Standard
-  addonProfiles : 
+  addonProfiles:
     - name: azurepolicy
       enabled: false
       config: {}
@@ -72,13 +69,13 @@ controlplane:
     outboundIPPrefixes: ""
     allocatedOutboundPorts: 0
     idleTimeoutInMinutes: 30
-  apiServerAccessProfile: 
+  apiServerAccessProfile:
     authorizedIPRanges: []
-    spec: 
+    spec:
       enablePrivateCluster: false
       privateDNSZone: ""
       enablePrivateClusterPublicFQDN: false
-  autoscalerProfile: 
+  autoscalerProfile:
     balanceSimilarNodeGroups: "false"
     expander: "random"
     maxEmptyBulkDelete: "10"
@@ -101,45 +98,45 @@ controlplane:
   oidcIssuerProfile: ""
   # disableLocalAccounts: false
   additionalTags:
-     - key: test
-       value: test
-  dnsPrefix : ""
+    - key: test
+      value: test
+  dnsPrefix: ""
   virtualNetwork: {}
   disableLocalAccounts: false
-#Only 1 Nodepool of mode System is allowed  
-agentpools: 
+# Only 1 Nodepool of mode System is allowed
+agentpools:
   agentpool0:
     mode: System
     sku: Standard_DS2_v2
     nodecount: 5
     osDiskSizeGB: 100
     additionalTags:
-     - key: test
-       value: test
-   #  To enable availability zones, uncomment the following lines and set the availability zones
-   #  availabilityZones: 
-   #   - "1"
-   #   - "2"
-   #   - "3"
+      - key: department
+        value: finance
+    #  To enable availability zones, uncomment the following lines and set the availability zones
+    # availabilityZones:
+    #   - "1"
+    #   - "2"
+    #   - "3"
     nodeLabels:
-     - key: test
-       value: test 
+      - key: test
+        value: test
     taints: {}
     scaling:
-       minSize: 1
-       maxSize: 5
+      minSize: 1
+      maxSize: 5
     maxPods: 110
-    osDiskType : "Ephemeral"
-    enableUltraSSD : false
-    osType : "Linux"
-    enableNodePublicIP : false
-    nodePublicIPPrefixID : ""
-    scaleSetPriority : "Regular"
-    scaleDownMode : "Delete"
-    spotMaxPrice : ""
-    kubeletConfig : ""
-    kubeletDiskType : "OS"
-    linuxOSConfig : "" 
-    subnetName : ""
-    enableFIPS : false
-    enableEncryptionAtHost : false 
+    osDiskType: "Ephemeral"
+    enableUltraSSD: false
+    osType: "Linux"
+    enableNodePublicIP: false
+    nodePublicIPPrefixID: ""
+    scaleSetPriority: "Regular"
+    scaleDownMode: "Delete"
+    spotMaxPrice: ""
+    kubeletConfig: ""
+    kubeletDiskType: "OS"
+    linuxOSConfig: ""
+    subnetName: ""
+    enableFIPS: false
+    enableEncryptionAtHost: false

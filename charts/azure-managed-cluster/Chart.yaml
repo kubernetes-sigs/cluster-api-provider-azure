@@ -1,6 +1,8 @@
 apiVersion: v2
 name: azure-managed-cluster
 description: A Helm chart to deploy an AKS cluster via the cluster-api-provider-azure ManagedCluster
+maintainers:
+  - name: nellyk
 
 # A chart can be either an 'application' or a 'library' chart.
 #
