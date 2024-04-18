@@ -38,6 +38,7 @@ func TestParameters(t *testing.T) {
 			name: "no existing group",
 			spec: &GroupSpec{
 				Name:           "name",
+				AzureName:      "azure-name",
 				Location:       "location",
 				ClusterName:    "cluster",
 				AdditionalTags: infrav1.Tags{"some": "tags"},
@@ -56,7 +57,8 @@ func TestParameters(t *testing.T) {
 					},
 				},
 				Spec: asoresourcesv1.ResourceGroup_Spec{
-					Location: ptr.To("location"),
+					AzureName: "azure-name",
+					Location:  ptr.To("location"),
 					Tags: map[string]string{
 						"some": "tags",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster": "owned",

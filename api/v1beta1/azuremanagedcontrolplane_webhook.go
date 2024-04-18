@@ -314,6 +314,8 @@ func (m *AzureManagedControlPlane) Validate(cli client.Client) error {
 
 	allErrs = append(allErrs, validateAutoScalerProfile(m.Spec.AutoScalerProfile, field.NewPath("spec").Child("AutoScalerProfile"))...)
 
+	allErrs = append(allErrs, validateAMCPVirtualNetwork(m.Spec.VirtualNetwork, field.NewPath("spec").Child("VirtualNetwork"))...)
+
 	return allErrs.ToAggregate()
 }
 
@@ -406,6 +408,26 @@ func validateLoadBalancerProfile(loadBalancerProfile *LoadBalancerProfile, fldPa
 		}
 	}
 
+	return allErrs
+}
+
+func validateAMCPVirtualNetwork(virtualNetwork ManagedControlPlaneVirtualNetwork, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// VirtualNetwork and the CIDR blocks get defaulted in the defaulting webhook, so we can assume they are always set.
+	if !reflect.DeepEqual(virtualNetwork, ManagedControlPlaneVirtualNetwork{}) {
+		_, parentNet, vnetErr := net.ParseCIDR(virtualNetwork.CIDRBlock)
+		if vnetErr != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("CIDRBlock"), virtualNetwork.CIDRBlock, "pre-existing virtual networks CIDR block is invalid"))
+		}
+		subnetIP, _, subnetErr := net.ParseCIDR(virtualNetwork.Subnet.CIDRBlock)
+		if subnetErr != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("Subnet", "CIDRBlock"), virtualNetwork.CIDRBlock, "pre-existing subnets CIDR block is invalid"))
+		}
+		if vnetErr == nil && subnetErr == nil && !parentNet.Contains(subnetIP) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("CIDRBlock"), virtualNetwork.CIDRBlock, "pre-existing virtual networks CIDR block should contain the subnet CIDR block"))
+		}
+	}
 	return allErrs
 }
 

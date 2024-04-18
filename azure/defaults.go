@@ -19,6 +19,8 @@ package azure
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -411,4 +413,16 @@ func (p CustomPutPatchHeaderPolicy) Do(req *policy.Request) (*http.Response, err
 	}
 
 	return req.Next()
+}
+
+// GetNormalizedKubernetesName returns a normalized name for a Kubernetes resource.
+func GetNormalizedKubernetesName(name string) string {
+	// Remove non-alphanumeric characters, convert to lowercase, and replace underscores with hyphens
+	name = strings.ToLower(name)
+	re := regexp.MustCompile(`[^a-z0-9\-]+`)
+	name = re.ReplaceAllString(name, "-")
+
+	// Remove leading and trailing hyphens
+	name = strings.Trim(name, "-")
+	return name
 }
