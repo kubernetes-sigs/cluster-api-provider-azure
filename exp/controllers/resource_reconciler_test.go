@@ -148,6 +148,85 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
 		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
 	})
+
+	t.Run("delete stale resources", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1exp.AzureASOManagedCluster{
+			Status: infrav1exp.AzureASOManagedClusterStatus{
+				Resources: []infrav1exp.ResourceStatus{
+					rgStatus("rg0"),
+					rgStatus("rg1"),
+					rgStatus("rg2"),
+					rgStatus("rg3"),
+				},
+			},
+		}
+
+		objs := []client.Object{
+			&asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rg0",
+					Namespace: owner.Namespace,
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rg1",
+					Namespace: owner.Namespace,
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rg2",
+					Namespace: owner.Namespace,
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "rg3",
+					Namespace:  owner.Namespace,
+					Finalizers: []string{"still deleting"},
+				},
+			},
+		}
+
+		c := fakeClientBuilder().
+			WithObjects(objs...).
+			Build()
+
+		r := &ResourceReconciler{
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+					return nil
+				},
+			},
+			resources: []*unstructured.Unstructured{
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg1",
+					},
+				}),
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg2",
+					},
+				}),
+			},
+			owner:   owner,
+			watcher: &FakeWatcher{},
+		}
+
+		g.Expect(r.Reconcile(ctx)).To(Succeed())
+
+		resourcesStatuses := owner.Status.Resources
+		g.Expect(resourcesStatuses).To(HaveLen(3))
+		// rg0 should be deleted and gone
+		g.Expect(resourcesStatuses[0].Resource.Name).To(Equal("rg1"))
+		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
+		g.Expect(resourcesStatuses[2].Resource.Name).To(Equal("rg3"))
+	})
 }
 
 func TestResourceReconcilerPause(t *testing.T) {
@@ -249,6 +328,12 @@ func TestResourceReconcilerDelete(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 			},
+			Status: infrav1exp.AzureASOManagedClusterStatus{
+				Resources: []infrav1exp.ResourceStatus{
+					rgStatus("still-deleting"),
+					rgStatus("already-gone"),
+				},
+			},
 		}
 
 		objs := []client.Object{
@@ -270,18 +355,6 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-			},
-			resources: []*unstructured.Unstructured{
-				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "still-deleting",
-					},
-				}),
-				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "already-gone",
-					},
-				}),
 			},
 			owner: owner,
 		}
@@ -506,4 +579,15 @@ func rgJSON(g Gomega, scheme *runtime.Scheme, rg *asoresourcesv1.ResourceGroup) 
 	u := &unstructured.Unstructured{}
 	g.Expect(scheme.Convert(rg, u, nil)).To(Succeed())
 	return u
+}
+
+func rgStatus(name string) infrav1exp.ResourceStatus {
+	return infrav1exp.ResourceStatus{
+		Resource: infrav1exp.StatusResource{
+			Group:   asoresourcesv1.GroupVersion.Group,
+			Version: asoresourcesv1.GroupVersion.Version,
+			Kind:    "ResourceGroup",
+			Name:    name,
+		},
+	}
 }

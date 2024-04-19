@@ -66,7 +66,12 @@ type AzureASOManagedControlPlane struct {
 	Status AzureASOManagedControlPlaneStatus `json:"status,omitempty"`
 }
 
-// SetResourceStatuses returns the status of resources.
+// GetResourceStatuses returns the status of resources.
+func (a *AzureASOManagedControlPlane) GetResourceStatuses() []ResourceStatus {
+	return a.Status.Resources
+}
+
+// SetResourceStatuses sets the status of resources.
 func (a *AzureASOManagedControlPlane) SetResourceStatuses(r []ResourceStatus) {
 	a.Status.Resources = r
 }
