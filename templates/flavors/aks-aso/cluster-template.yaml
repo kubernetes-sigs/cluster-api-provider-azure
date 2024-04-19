@@ -18,11 +18,50 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20231001
+    kind: ManagedCluster
+    metadata:
+      name: ${CLUSTER_NAME}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}
+      dnsPrefix: ${CLUSTER_NAME}
+      location: ${AZURE_LOCATION}
+      identity:
+        type: SystemAssigned
+      servicePrincipalProfile:
+        clientId: msi
+      operatorSpec:
+        secrets:
+          adminCredentials:
+            name: ${CLUSTER_NAME}-kubeconfig
+            key: value
+      # This agent pool only exists to avoid having to aggregate definitions
+      # from AzureASOManagedMachinePools. That will be done soon.
+      agentPoolProfiles:
+      - name: stub
+        vmSize: ${AZURE_NODE_MACHINE_TYPE}
+        mode: System
+        count: 1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
+spec:
+  resources:
+  - apiVersion: resources.azure.com/v1api20200601
+    kind: ResourceGroup
+    metadata:
+      name: ${CLUSTER_NAME}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -47,6 +86,23 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedMachinePool
 metadata:
   name: "${CLUSTER_NAME}-pool0"
+spec:
+  resources:
+  - apiVersion: "containerservice.azure.com/v1api20231001"
+    kind: ManagedClustersAgentPool
+    metadata:
+      name: ${CLUSTER_NAME}-pool0
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: pool0
+      owner:
+        name: ${CLUSTER_NAME}
+      mode: System
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      # Soon this will be derived from the MachinePool
+      count: ${WORKER_MACHINE_COUNT:=2}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -71,3 +127,20 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedMachinePool
 metadata:
   name: "${CLUSTER_NAME}-pool1"
+spec:
+  resources:
+  - apiVersion: "containerservice.azure.com/v1api20231001"
+    kind: ManagedClustersAgentPool
+    metadata:
+      name: ${CLUSTER_NAME}-pool1
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: pool1
+      owner:
+        name: ${CLUSTER_NAME}
+      mode: User
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      # Soon this will be derived from the MachinePool
+      count: ${WORKER_MACHINE_COUNT:=2}

@@ -18,12 +18,49 @@ kind: AzureASOManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20231001
+    kind: ManagedCluster
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}
+    spec:
+      agentPoolProfiles:
+      - count: 1
+        mode: System
+        name: stub
+        vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      dnsPrefix: ${CLUSTER_NAME}
+      identity:
+        type: SystemAssigned
+      location: ${AZURE_LOCATION}
+      operatorSpec:
+        secrets:
+          adminCredentials:
+            key: value
+            name: ${CLUSTER_NAME}-kubeconfig
+      owner:
+        name: ${CLUSTER_NAME}
+      servicePrincipalProfile:
+        clientId: msi
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
+spec:
+  resources:
+  - apiVersion: resources.azure.com/v1api20200601
+    kind: ResourceGroup
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -50,6 +87,22 @@ kind: AzureASOManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool0
   namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20231001
+    kind: ManagedClustersAgentPool
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pool0
+    spec:
+      azureName: pool0
+      count: ${WORKER_MACHINE_COUNT:=2}
+      mode: System
+      owner:
+        name: ${CLUSTER_NAME}
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -76,3 +129,19 @@ kind: AzureASOManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool1
   namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20231001
+    kind: ManagedClustersAgentPool
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pool1
+    spec:
+      azureName: pool1
+      count: ${WORKER_MACHINE_COUNT:=2}
+      mode: User
+      owner:
+        name: ${CLUSTER_NAME}
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}

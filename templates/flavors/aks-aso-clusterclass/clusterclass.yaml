@@ -40,3 +40,129 @@ spec:
             apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
             kind: AzureASOManagedMachinePoolTemplate
             name: ${CLUSTER_NAME}-pool1
+  # CAPI doesn't let you replace fields of array elements, so we patch the
+  # whole spec of each CAPZ object.
+  # https://kubernetes.slack.com/archives/C8TSNPY4T/p1709249751874959
+  patches:
+  - name: azureasomanagedcluster-spec
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec
+        valueFrom:
+          template: |
+            resources:
+            - apiVersion: resources.azure.com/v1api20200601
+              kind: ResourceGroup
+              metadata:
+                name: "{{ .builtin.cluster.name }}"
+                annotations:
+                  serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+              spec:
+                location: ${AZURE_LOCATION}
+  - name: azureasomanagedcontrolplane-spec
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec
+        valueFrom:
+          template: |
+            resources:
+            - apiVersion: containerservice.azure.com/v1api20231001
+              kind: ManagedCluster
+              metadata:
+                name: "{{ .builtin.cluster.name }}"
+                annotations:
+                  serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+              spec:
+                owner:
+                  name: "{{ .builtin.cluster.name }}"
+                dnsPrefix: "{{ .builtin.cluster.name }}"
+                location: ${AZURE_LOCATION}
+                identity:
+                  type: SystemAssigned
+                servicePrincipalProfile:
+                  clientId: msi
+                operatorSpec:
+                  secrets:
+                    adminCredentials:
+                      name: "{{ .builtin.cluster.name }}-kubeconfig"
+                      key: value
+                # This agent pool only exists to avoid having to aggregate definitions
+                # from AzureASOManagedMachinePools. That will be done soon.
+                agentPoolProfiles:
+                - name: stub
+                  vmSize: ${AZURE_NODE_MACHINE_TYPE}
+                  mode: System
+                  count: 1
+  - name: azureasomanagedmachinepool-pool0-spec
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedMachinePoolTemplate
+        matchResources:
+          machinePoolClass:
+            names:
+            - default-system
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec
+        valueFrom:
+          template: |
+            resources:
+            - apiVersion: "containerservice.azure.com/v1api20231001"
+              kind: ManagedClustersAgentPool
+              metadata:
+                name: "{{ .builtin.cluster.name }}-pool0"
+                annotations:
+                  serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+              spec:
+                azureName: "pool0"
+                owner:
+                  name: "{{ .builtin.cluster.name }}"
+                mode: System
+                type: VirtualMachineScaleSets
+                vmSize: ${AZURE_NODE_MACHINE_TYPE}
+                # Soon this will be derived from the MachinePool
+                count: ${WORKER_MACHINE_COUNT:=2}
+  - name: azureasomanagedmachinepool-pool1-spec
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedMachinePoolTemplate
+        matchResources:
+          machinePoolClass:
+            names:
+            - default-worker
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec
+        valueFrom:
+          template: |
+            resources:
+            - apiVersion: containerservice.azure.com/v1api20231001
+              kind: ManagedClustersAgentPool
+              metadata:
+                name: "{{ .builtin.cluster.name }}-pool1"
+                annotations:
+                  serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+              spec:
+                azureName: "pool1"
+                owner:
+                  name: "{{ .builtin.cluster.name }}"
+                mode: User
+                type: VirtualMachineScaleSets
+                vmSize: ${AZURE_NODE_MACHINE_TYPE}
+                # Soon this will be derived from the MachinePool
+                count: ${WORKER_MACHINE_COUNT:=2}
+

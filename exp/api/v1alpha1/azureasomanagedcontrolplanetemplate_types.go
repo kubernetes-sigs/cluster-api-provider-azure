@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // AzureASOManagedControlPlaneTemplateSpec defines the desired state of AzureASOManagedControlPlane.
@@ -32,6 +33,9 @@ type AzureASOManagedControlPlaneResource struct {
 
 // AzureASOManagedControlPlaneTemplateResourceSpec defines the desired state of the templated resource.
 type AzureASOManagedControlPlaneTemplateResourceSpec struct {
+	// Resources are embedded ASO resources to be managed by this resource.
+	//+optional
+	Resources []runtime.RawExtension `json:"resources,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -30,6 +30,8 @@ type AzureASOManagedMachinePoolSpec struct {
 
 // AzureASOManagedMachinePoolStatus defines the observed state of AzureASOManagedMachinePool.
 type AzureASOManagedMachinePoolStatus struct {
+	//+optional
+	Resources []ResourceStatus `json:"resources,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -42,6 +44,11 @@ type AzureASOManagedMachinePool struct {
 
 	Spec   AzureASOManagedMachinePoolSpec   `json:"spec,omitempty"`
 	Status AzureASOManagedMachinePoolStatus `json:"status,omitempty"`
+}
+
+// SetResourceStatuses returns the status of resources.
+func (a *AzureASOManagedMachinePool) SetResourceStatuses(r []ResourceStatus) {
+	a.Status.Resources = r
 }
 
 //+kubebuilder:object:root=true
