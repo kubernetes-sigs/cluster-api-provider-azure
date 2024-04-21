@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -145,7 +146,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{}))
 	})
 
-	t.Run("adds a finalizer", func(t *testing.T) {
+	t.Run("adds a finalizer and block-move annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		cluster := &clusterv1.Cluster{
@@ -194,6 +195,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
 		g.Expect(asoManagedMachinePool.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
+		g.Expect(asoManagedMachinePool.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("reconciles resources that are not ready", func(t *testing.T) {
@@ -224,6 +226,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 				Finalizers: []string{
 					clusterv1.ClusterFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
 			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
@@ -331,6 +336,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 				Finalizers: []string{
 					clusterv1.ClusterFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
 			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
@@ -472,6 +480,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Finalizers: []string{
 					clusterv1.ClusterFinalizer,
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
 				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
@@ -552,6 +563,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 						Name:       "mp",
 					},
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 		}
 		machinePool := &expv1.MachinePool{
@@ -568,10 +582,20 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					pauseFunc: func(_ context.Context, _ client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.GetAnnotations()).NotTo(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("successfully reconciles delete", func(t *testing.T) {

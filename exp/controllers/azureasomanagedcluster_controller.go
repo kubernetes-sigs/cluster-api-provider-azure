@@ -58,6 +58,9 @@ type resourceReconciler interface {
 	// state of the specified resources.
 	Reconcile(context.Context) error
 
+	// Pause stops ASO from continuously reconciling the specified resources.
+	Pause(context.Context) error
+
 	// Delete begins deleting the specified resources and updates the object's status to reflect the state of
 	// the specified resources.
 	Delete(context.Context) error
@@ -195,7 +198,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 
 	if cluster != nil && cluster.Spec.Paused ||
 		annotations.HasPaused(asoManagedCluster) {
-		return r.reconcilePaused(ctx, asoManagedCluster, cluster)
+		return r.reconcilePaused(ctx, asoManagedCluster)
 	}
 
 	if !asoManagedCluster.GetDeletionTimestamp().IsZero() {
@@ -223,6 +226,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	}
 
 	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
+	needsPatch = infracontroller.AddBlockMoveAnnotation(asoManagedCluster) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -259,14 +263,23 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // these parameters will be used soon enough
-func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, asoManagedCluster *infrav1exp.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
-	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AzureASOManagedClusterReconciler.reconcilePaused",
-	)
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
+func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, asoManagedCluster *infrav1exp.AzureASOManagedCluster) (ctrl.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedClusterReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
+
+	resources, err := mutators.ToUnstructured(ctx, asoManagedCluster.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
+	err = resourceReconciler.Pause(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to pause resources: %w", err)
+	}
+
+	infracontroller.RemoveBlockMoveAnnotation(asoManagedCluster)
 
 	return ctrl.Result{}, nil
 }

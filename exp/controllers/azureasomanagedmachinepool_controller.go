@@ -186,7 +186,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 	}
 
 	if annotations.IsPaused(cluster, asoManagedMachinePool) {
-		return r.reconcilePause(ctx, asoManagedMachinePool, cluster)
+		return r.reconcilePaused(ctx, asoManagedMachinePool)
 	}
 
 	if !asoManagedMachinePool.DeletionTimestamp.IsZero() {
@@ -204,6 +204,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	log.V(4).Info("reconciling normally")
 
 	needsPatch := controllerutil.AddFinalizer(asoManagedMachinePool, clusterv1.ClusterFinalizer)
+	needsPatch = infracontroller.AddBlockMoveAnnotation(asoManagedMachinePool) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -291,14 +292,23 @@ func expectedNodeLabels(poolName, nodeRG string) map[string]string {
 	}
 }
 
-//nolint:unparam // these parameters will be used soon enough
-func (r *AzureASOManagedMachinePoolReconciler) reconcilePause(ctx context.Context, asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
-	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AzureASOManagedMachinePoolReconciler.reconcilePaused",
-	)
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
+func (r *AzureASOManagedMachinePoolReconciler) reconcilePaused(ctx context.Context, asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool) (ctrl.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedMachinePoolReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
+
+	resources, err := mutators.ToUnstructured(ctx, asoManagedMachinePool.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
+	err = resourceReconciler.Pause(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to pause resources: %w", err)
+	}
+
+	infracontroller.RemoveBlockMoveAnnotation(asoManagedMachinePool)
 
 	return ctrl.Result{}, nil
 }

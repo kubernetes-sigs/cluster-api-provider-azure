@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
@@ -28,11 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
@@ -96,6 +99,36 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	r.owner.SetResourceStatuses(newResourceStatuses)
+
+	return nil
+}
+
+// Pause pauses reconciliation of the specified resources.
+func (r *ResourceReconciler) Pause(ctx context.Context) error {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Pause")
+	defer done()
+	log.V(4).Info("pausing resources")
+
+	err := mutators.Pause(ctx, r.resources)
+	if err != nil {
+		if errors.As(err, &mutators.Incompatible{}) {
+			err = reconcile.TerminalError(err)
+		}
+		return err
+	}
+
+	for _, spec := range r.resources {
+		gvk := spec.GroupVersionKind()
+		spec.SetNamespace(r.owner.GetNamespace())
+
+		log := log.WithValues("resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
+
+		log.V(4).Info("pausing resource")
+		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"))
+		if err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
+		}
+	}
 
 	return nil
 }
