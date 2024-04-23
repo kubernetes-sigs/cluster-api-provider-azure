@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../prow-ci-version
   - ../../../addons/cluster-api-helm/calico-ipv6.yaml
+  - ../prow-ipv6/machine-pool-ipv6.yaml
 patchesStrategicMerge:
   - ../../../flavors/ipv6/patches/ipv6.yaml
   - ../../../flavors/ipv6/patches/controlplane-azuremachinetemplate.yaml
