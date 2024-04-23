@@ -19,13 +19,29 @@ set -o pipefail
 
 # Install kubectl and kind
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/ensure-azcli.sh
+source "${REPO_ROOT}/hack/ensure-azcli.sh"
+# shellcheck source=hack/ensure-tags.sh
+source "${REPO_ROOT}/hack/ensure-tags.sh"
+
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 KIND="${REPO_ROOT}/hack/tools/bin/kind"
-AZWI_ENABLED=${AZWI:-}
+AZWI="${REPO_ROOT}/hack/tools/bin/azwi"
+AZWI_ENABLED="${AZWI_ENABLED:-true}"
+RANDOM_SUFFIX="${RANDOM_SUFFIX:-$RANDOM}"
+export AZWI_STORAGE_ACCOUNT="oidcissuer${RANDOM_SUFFIX}"
+export AZWI_STORAGE_CONTAINER="\$web"
+export AZWI_LOCATION="${AZURE_LOCATION:-southcentralus}"
+export SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER:-}"
+export SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH:-}"
+export SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH:-}"
+export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-}"
+export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azure_identity_id}"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}"
 
 # Export desired cluster name; default is "capz"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
+CONFORMANCE_FLAVOR="${CONFORMANCE_FLAVOR:-}"
 export KIND_CLUSTER_NAME
 
 if [[ "$("${KIND}" get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
@@ -42,44 +58,156 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
     registry:2
 fi
 
-# To use workload identity, service account signing key pairs base64 encoded should be exposed via the
-# env variables. The function creates the key pair files after reading it from the env variables.
+# Environment variable inputs
+# SERVICE_ACCOUNT_ISSUER - BYO existing service account issuer
+#    Accepts a URI string, e.g., https://${AZWI_STORAGE_ACCOUNT}.blob.core.windows.net/${AZWI_STORAGE_CONTAINER}/
+#    Assumes that the required openid and jwks artifacts exist in the well-known locations at this URI
+# SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH - A local filepath to a 2048 bit RSA public key
+#    Defaults to capz-wi-sa.pub, must exist locally and match the signed artifacts if using BYO
+# SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH - A local filepath to a 2048 bit RSA private key
+#    Defaults to capz-wi-sa.key, must exist locally and match the signed artifacts if using BYO
+#    If the above keypair filepaths environment variables are not included, a keypair will be created at runtime
+#    Note: if a new keypair is created at runtime then you must not BYO service account issuer
+# AZWI_RESOURCE_GROUP - Azure resource group where Workload Identity infra lives
+# AZWI_LOCATION - Azure location for Workload Identity infra
+# AZWI_STORAGE_ACCOUNT - Storage account in resource group $AZWI_RESOURCE_GROUP containing required artifacts
+#    Must be configured for static website hosting
+# AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY - BYO existing user-assigned identity
+#    Should be a UUID that represents the clientID of the identity object
+# USER_IDENTITY - Name to use when creating a new user-assigned identity
+#    Required if not bringing your own identity via $AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY
+# AZURE_IDENTITY_ID_FILEPATH - A local filepath to store the newly created user-assigned identity if not bringing your own
 function checkAZWIENVPreReqsAndCreateFiles() {
-  if [[ -z "${SERVICE_ACCOUNT_SIGNING_PUB}" ]]; then
-    echo "'SERVICE_ACCOUNT_SIGNING_PUB' is not set."
-    exit 1
+  if [[ -z "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}" || -z "${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}" ]]; then
+    export SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${REPO_ROOT}/capz-wi-sa.pub"
+    export SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${REPO_ROOT}/capz-wi-sa.key"
   fi
+  if [ -z "${SERVICE_ACCOUNT_ISSUER}" ]; then
+    # check if user is logged into azure cli
+    if ! az account show > /dev/null 2>&1; then
+        echo "Please login to Azure CLI using 'az login'"
+        exit 1
+    fi
 
-  if [[ -z "${SERVICE_ACCOUNT_SIGNING_KEY}" ]]; then
-    echo "'SERVICE_ACCOUNT_SIGNING_KEY' is not set."
-    exit 1
+    if [ -z "${AZWI_RESOURCE_GROUP}" ]; then
+      echo "AZWI_RESOURCE_GROUP environment variable required - Azure resource group to store required Workload Identity artifacts"
+      exit 1
+    fi
+    if [ "$(az group exists --name "${AZWI_RESOURCE_GROUP}" --output tsv)" == 'false' ]; then
+      echo "Creating resource group '${AZWI_RESOURCE_GROUP}' in '${AZWI_LOCATION}'"
+      az group create --name "${AZWI_RESOURCE_GROUP}" --location "${AZWI_LOCATION}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
+    fi
+    # Ensure that our connection to storage is inherited from the existing Azure login context
+    unset AZURE_STORAGE_KEY
+    unset AZURE_STORAGE_ACCOUNT
+    if ! az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" > /dev/null 2>&1; then
+      echo "Creating storage account '${AZWI_STORAGE_ACCOUNT}' in '${AZWI_RESOURCE_GROUP}'"
+      az storage account create --resource-group "${AZWI_RESOURCE_GROUP}" --name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
+      az storage blob service-properties update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website
+    fi
+    if ! az storage container show --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" > /dev/null 2>&1; then
+      echo "Creating storage container '${AZWI_STORAGE_CONTAINER}' in '${AZWI_STORAGE_ACCOUNT}'"
+      az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
+    fi
+    SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" -o json | jq -r .primaryEndpoints.web)
+    export SERVICE_ACCOUNT_ISSUER
+    AZWI_OPENID_CONFIG_FILEPATH="${REPO_ROOT}/openid-configuration.json"
+    cat <<EOF > "${AZWI_OPENID_CONFIG_FILEPATH}"
+{
+  "issuer": "${SERVICE_ACCOUNT_ISSUER}",
+  "jwks_uri": "${SERVICE_ACCOUNT_ISSUER}openid/v1/jwks",
+  "response_types_supported": [
+    "id_token"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256"
+  ]
+}
+EOF
+    openssl genrsa -out "${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}" 2048
+    openssl rsa -in "${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}" -pubout -out "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
+    AZWI_JWKS_JSON_FILEPATH="${REPO_ROOT}/jwks.json"
+    "${AZWI}" jwks --public-keys "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}" --output-file "${AZWI_JWKS_JSON_FILEPATH}"
+    echo "Uploading openid-configuration document to '${AZWI_STORAGE_ACCOUNT}' storage account"
+    upload_to_blob "${AZWI_OPENID_CONFIG_FILEPATH}" ".well-known/openid-configuration"
+    echo "Uploading jwks document to '${AZWI_STORAGE_ACCOUNT}' storage account"
+    upload_to_blob "${AZWI_JWKS_JSON_FILEPATH}" "openid/v1/jwks"
+    echo "Removing key access on storage account as no further data writes are required"
+    az storage account update -n "${AZWI_STORAGE_ACCOUNT}" -g "${AZWI_RESOURCE_GROUP}" --subscription "${AZURE_SUBSCRIPTION_ID}" --allow-shared-key-access=false --output none --only-show-errors
   fi
-  mkdir -p "$HOME"/azwi/creds
-  echo "${SERVICE_ACCOUNT_SIGNING_PUB}" > "$HOME"/azwi/creds/sa.pub
-  echo  "${SERVICE_ACCOUNT_SIGNING_KEY}" > "$HOME"/azwi/creds/sa.key
-  SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER:-https://oidcissuercapzci.blob.core.windows.net/oidc-capzci/}"
+  if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then
+    if [ -z "${USER_IDENTITY}" ]; then
+        echo "USER_IDENTITY environment variable required if not bringing your own identity via AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY"
+        exit 1
+    fi
+    az identity create -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" -l "${AZWI_LOCATION}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
+    AZURE_IDENTITY_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query clientId -o tsv)
+    AZURE_IDENTITY_ID_PRINCIPAL_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query principalId -o tsv)
+    echo "${AZURE_IDENTITY_ID}" > "${AZURE_IDENTITY_ID_FILEPATH}"
+    until az role assignment create --assignee-object-id "${AZURE_IDENTITY_ID_PRINCIPAL_ID}" --role "Contributor" --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none --only-show-errors; do
+      sleep 5
+    done
+    az identity federated-credential create -n "capz-federated-identity" \
+      --identity-name "${USER_IDENTITY}" \
+      -g "${AZWI_RESOURCE_GROUP}" \
+      --issuer "${SERVICE_ACCOUNT_ISSUER}" \
+      --subject "system:serviceaccount:capz-system:capz-manager" --output none --only-show-errors
+    az identity federated-credential create -n "aso-federated-identity" \
+      --identity-name "${USER_IDENTITY}" \
+      -g "${AZWI_RESOURCE_GROUP}" \
+      --issuer "${SERVICE_ACCOUNT_ISSUER}" \
+      --subject "system:serviceaccount:capz-system:azureserviceoperator-default" --output none --only-show-errors
+  fi
+}
+
+function upload_to_blob() {
+  local file_path=$1
+  local blob_name=$2
+
+  echo "Uploading ${file_path} to '${AZWI_STORAGE_ACCOUNT}' storage account"
+  az storage blob upload \
+      --container-name "${AZWI_STORAGE_CONTAINER}" \
+      --file "${file_path}" \
+      --name "${blob_name}" \
+      --account-name "${AZWI_STORAGE_ACCOUNT}" \
+      --output none --only-show-errors
 }
 
 # This function create a kind cluster for Workload identity which requires key pairs path
 # to be mounted on the kind cluster and hence extra mount flags are required.
 function createKindForAZWI() {
-  echo "creating azwi kind"
+  echo "creating workload-identity-enabled kind configuration"
+  if [ -n "${CONFORMANCE_FLAVOR}" ] && [ -n "${SERVICE_ACCOUNT_SIGNING_PUB}" ] && [ -n "${SERVICE_ACCOUNT_SIGNING_KEY}" ]; then
+    echo "using pre-existing service-account-issuer for kind cluster"
+    KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${REPO_ROOT}/kind-wi-sa.pub"
+    KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${REPO_ROOT}/kind-wi-sa.key"
+    echo "${SERVICE_ACCOUNT_SIGNING_PUB}" > "${KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
+    echo "${SERVICE_ACCOUNT_SIGNING_KEY}" > "${KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
+    KIND_SERVICE_ACCOUNT_ISSUER="https://oidcissuercapzci.blob.core.windows.net/oidc-capzci/"
+  else
+    KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
+    KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
+    KIND_SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER}"
+  fi
   cat <<EOF | "${KIND}" create cluster --name "${KIND_CLUSTER_NAME}" --config=-
   kind: Cluster
   apiVersion: kind.x-k8s.io/v1alpha4
   nodes:
   - role: control-plane
     extraMounts:
-      - hostPath: $HOME/azwi/creds/sa.pub
+      - hostPath: "${KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
         containerPath: /etc/kubernetes/pki/sa.pub
-      - hostPath: $HOME/azwi/creds/sa.key
+      - hostPath: "${KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
         containerPath: /etc/kubernetes/pki/sa.key
     kubeadmConfigPatches:
     - |
       kind: ClusterConfiguration
       apiServer:
         extraArgs:
-          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER}
+          service-account-issuer: ${KIND_SERVICE_ACCOUNT_ISSUER}
           service-account-key-file: /etc/kubernetes/pki/sa.pub
           service-account-signing-key-file: /etc/kubernetes/pki/sa.key
       controllerManager:
@@ -102,11 +230,11 @@ EOF
 # See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
 if [ "$AZWI_ENABLED" == 'true' ]
  then
-   echo "azwi is enabled..."
+   echo "workload-identity is enabled..."
    checkAZWIENVPreReqsAndCreateFiles
    createKindForAZWI
 else
-  echo "azwi is not enabled..."
+  echo "workload-identity is not enabled..."
  cat <<EOF | ${KIND} create cluster --name "${KIND_CLUSTER_NAME}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4

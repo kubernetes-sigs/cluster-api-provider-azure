@@ -1,8 +1,6 @@
 - op: replace
   path: /spec/type
   value: UserAssignedMSI
-- op: remove
-  path: /spec/clientSecret
 - op: replace
   path: /spec/clientID
   value: ${UAMI_CLIENT_ID}

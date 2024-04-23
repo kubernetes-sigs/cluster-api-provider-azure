@@ -6,8 +6,7 @@ metadata:
   labels:
     clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
 spec:
-  type: ServicePrincipal
+  type: WorkloadIdentity
   allowedNamespaces: {}
   tenantID: "${AZURE_TENANT_ID}"
-  clientID: "${AZURE_CLIENT_ID}"
-  clientSecret: {"name":"${AZURE_CLUSTER_IDENTITY_SECRET_NAME}","namespace":"${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}"}
+  clientID: "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}"

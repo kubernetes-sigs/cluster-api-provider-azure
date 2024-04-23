@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
 - ../bases/cluster-with-kcp.yaml
 - ../bases/md.yaml
-- ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
+- ../../../../../../templates/azure-cluster-identity/azure-cluster-identity-sp.yaml
 - ../../../../../../templates/addons/cluster-api-helm/calico.yaml
 - ../../../../../../templates/addons/cluster-api-helm/azuredisk-csi-driver.yaml
 - ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure.yaml

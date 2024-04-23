@@ -52,6 +52,7 @@ patches:
 - path: ../patches/windows-machine-deployment-replicas.yaml
 - path: patches/machine-deployment-ci-version.yaml
 - path: patches/machine-deployment-ci-version-windows.yaml
+- path: patches/machine-deployment-ci-version-control-plane.yaml
 - path: ../patches/metrics-server-enabled-cluster.yaml
 - path: ../patches/controller-manager-featuregates.yaml
 configMapGenerator:
