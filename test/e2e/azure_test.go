@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -103,6 +105,22 @@ var _ = Describe("Workload cluster creation", func() {
 		} else {
 			Logf("Using existing cluster identity secret")
 		}
+
+		asoSecretName := e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_NAME")
+		asoSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace.Name,
+				Name:      asoSecretName,
+			},
+			StringData: map[string]string{
+				config.AzureSubscriptionID: e2eConfig.GetVariable(AzureSubscriptionID),
+				config.AzureTenantID:       e2eConfig.GetVariable(AzureTenantID),
+				config.AzureClientID:       e2eConfig.GetVariable(AzureClientID),
+				config.AuthMode:            e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_MODE"),
+			},
+		}
+		err = bootstrapClusterProxy.GetClient().Create(ctx, asoSecret)
+		Expect(client.IgnoreAlreadyExists(err)).NotTo(HaveOccurred())
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
@@ -934,6 +952,28 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+		})
+	})
+
+	Context("Creating an AKS cluster with the ASO API [Managed Kubernetes]", func() {
+		It("with a single control plane node and 1 node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "asoapi")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
 		})
 	})
 

@@ -73,6 +73,7 @@ const (
 	AzureClientSecret                 = "AZURE_CLIENT_SECRET"                     //nolint:gosec // Not a secret itself, just its name
 	AzureClientID                     = "AZURE_CLIENT_ID"
 	AzureSubscriptionID               = "AZURE_SUBSCRIPTION_ID"
+	AzureTenantID                     = "AZURE_TENANT_ID"
 	AzureUserIdentity                 = "USER_IDENTITY"
 	AzureIdentityResourceGroup        = "CI_RG"
 	JobName                           = "JOB_NAME"

@@ -22,10 +22,14 @@ package e2e
 import (
 	"context"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -78,20 +82,15 @@ func DiscoverAndWaitForAKSControlPlaneInitialized(ctx context.Context, input Dis
 	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
 
-	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
+	controlPlaneNamespace := input.Cluster.Spec.ControlPlaneRef.Namespace
+	controlPlaneName := input.Cluster.Spec.ControlPlaneRef.Name
+
+	Logf("Waiting for the first AKS machine in the %s/%s 'system' node pool to exist", controlPlaneNamespace, controlPlaneName)
+	WaitForAtLeastOneSystemNodePoolMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
 		Lister:      input.Lister,
+		Getter:      input.Getter,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
-	})
-	Expect(controlPlane).NotTo(BeNil())
-
-	Logf("Waiting for the first AKS machine in the %s/%s 'system' node pool to exist", controlPlane.Namespace, controlPlane.Name)
-	WaitForAtLeastOneSystemNodePoolMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
-		Lister:       input.Lister,
-		Getter:       input.Getter,
-		ControlPlane: controlPlane,
-		ClusterName:  input.Cluster.Name,
-		Namespace:    input.Cluster.Namespace,
 	}, intervals...)
 }
 
@@ -102,50 +101,24 @@ func DiscoverAndWaitForAKSControlPlaneReady(ctx context.Context, input DiscoverA
 	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
 
-	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
+	controlPlaneNamespace := input.Cluster.Spec.ControlPlaneRef.Namespace
+	controlPlaneName := input.Cluster.Spec.ControlPlaneRef.Name
+
+	Logf("Waiting for all AKS machines in the %s/%s 'system' node pool to exist", controlPlaneNamespace, controlPlaneName)
+	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
 		Lister:      input.Lister,
+		Getter:      input.Getter,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
-	})
-	Expect(controlPlane).NotTo(BeNil())
-
-	Logf("Waiting for all AKS machines in the %s/%s 'system' node pool to exist", controlPlane.Namespace, controlPlane.Name)
-	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
-		Lister:       input.Lister,
-		Getter:       input.Getter,
-		ControlPlane: controlPlane,
-		ClusterName:  input.Cluster.Name,
-		Namespace:    input.Cluster.Namespace,
 	}, intervals...)
-}
-
-// GetAzureManagedControlPlaneByClusterInput contains the fields the required for fetching the azure managed control plane.
-type GetAzureManagedControlPlaneByClusterInput struct {
-	Lister      framework.Lister
-	ClusterName string
-	Namespace   string
-}
-
-// GetAzureManagedControlPlaneByCluster returns the AzureManagedControlPlane object for a cluster.
-// Important! this method relies on labels that are created by the CAPI controllers during the first reconciliation, so
-// it is necessary to ensure this is already happened before calling it.
-func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureManagedControlPlaneByClusterInput) *infrav1.AzureManagedControlPlane {
-	controlPlaneList := &infrav1.AzureManagedControlPlaneList{}
-	Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list AzureManagedControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
-	Expect(len(controlPlaneList.Items)).NotTo(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
-	if len(controlPlaneList.Items) == 1 {
-		return &controlPlaneList.Items[0]
-	}
-	return nil
 }
 
 // WaitForControlPlaneAndMachinesReadyInput contains the fields required for checking the status of azure managed control plane machines.
 type WaitForControlPlaneAndMachinesReadyInput struct {
-	Lister       framework.Lister
-	Getter       framework.Getter
-	ControlPlane *infrav1.AzureManagedControlPlane
-	ClusterName  string
-	Namespace    string
+	Lister      framework.Lister
+	Getter      framework.Getter
+	ClusterName string
+	Namespace   string
 }
 
 // WaitForAtLeastOneSystemNodePoolMachineToExist waits for at least one machine in the "system" node pool to exist.
@@ -184,20 +157,56 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 	Eventually(func() bool {
 		opt1 := client.InNamespace(input.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1.LabelAgentPoolMode: string(infrav1.NodePoolModeSystem),
 			clusterv1.ClusterNameLabel: input.ClusterName,
 		})
+		opt3 := client.MatchingLabels(map[string]string{
+			infrav1.LabelAgentPoolMode: string(infrav1.NodePoolModeSystem),
+		})
+
+		var capzMPs []client.Object
 
 		ammpList := &infrav1.AzureManagedMachinePoolList{}
+		asommpList := &infrav1exp.AzureASOManagedMachinePoolList{}
 
-		if err := input.Lister.List(ctx, ammpList, opt1, opt2); err != nil {
-			LogWarningf("Failed to get machinePool: %+v", err)
+		if err := input.Lister.List(ctx, ammpList, opt1, opt2, opt3); err != nil {
+			LogWarningf("Failed to list AzureManagedMachinePools: %+v", err)
 			return false
 		}
+		for _, ammp := range ammpList.Items {
+			capzMPs = append(capzMPs, ptr.To(ammp))
+		}
 
-		for _, pool := range ammpList.Items {
+		if err := input.Lister.List(ctx, asommpList, opt1, opt2); err != nil {
+			LogWarningf("Failed to list AzureASOManagedMachinePools: %+v", err)
+			return false
+		}
+		for _, asommp := range asommpList.Items {
+			var resources []*unstructured.Unstructured
+			for _, resource := range asommp.Spec.Resources {
+				u := &unstructured.Unstructured{}
+				Expect(u.UnmarshalJSON(resource.Raw)).To(Succeed())
+				resources = append(resources, u)
+			}
+			for _, resource := range resources {
+				if resource.GroupVersionKind().Group != asocontainerservicev1.GroupVersion.Group ||
+					resource.GroupVersionKind().Kind != "ManagedClustersAgentPool" {
+					continue
+				}
+				mode, _, err := unstructured.NestedString(resource.UnstructuredContent(), "spec", "mode")
+				if err != nil {
+					LogWarningf("Failed to get spec.mode for AzureASOManagedMachinePools %s/%s: %v", asommp.Namespace, asommp.Name, err)
+					continue
+				}
+				if mode == string(asocontainerservicev1.AgentPoolMode_System) {
+					capzMPs = append(capzMPs, ptr.To(asommp))
+				}
+				break
+			}
+		}
+
+		for _, pool := range capzMPs {
 			// Fetch the owning MachinePool.
-			for _, ref := range pool.OwnerReferences {
+			for _, ref := range pool.GetOwnerReferences() {
 				if ref.Kind != "MachinePool" {
 					continue
 				}

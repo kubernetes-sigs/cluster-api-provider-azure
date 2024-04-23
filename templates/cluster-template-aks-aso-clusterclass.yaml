@@ -59,6 +59,8 @@ spec:
                   type: SystemAssigned
                 servicePrincipalProfile:
                   clientId: msi
+                networkProfile:
+                  networkPlugin: azure
                 operatorSpec:
                   secrets:
                     adminCredentials:

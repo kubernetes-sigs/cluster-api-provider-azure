@@ -29,9 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
@@ -55,16 +53,6 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	}
 
 	return maxVersion, nil
-}
-
-// byClusterOptions returns a set of ListOptions that will identify all the objects belonging to a Cluster.
-func byClusterOptions(name, namespace string) []client.ListOption {
-	return []client.ListOption{
-		client.InNamespace(namespace),
-		client.MatchingLabels{
-			clusterv1.ClusterNameLabel: name,
-		},
-	}
 }
 
 // GetWorkingAKSKubernetesVersion returns an available Kubernetes version of AKS given a desired semver version, if possible.
