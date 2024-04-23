@@ -219,6 +219,8 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1exp.GroupVersion.Identifier(),
 					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					Name:       "amcp",
+					Namespace:  "ns",
 				},
 			},
 		}
@@ -238,8 +240,17 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				},
 			},
 		}
+		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: cluster.Namespace,
+			},
+			Status: infrav1exp.AzureASOManagedControlPlaneStatus{
+				ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "endpoint"},
+			},
+		}
 		c := fakeClientBuilder().
-			WithObjects(cluster, asoManagedCluster).
+			WithObjects(cluster, asoManagedCluster, asoManagedControlPlane).
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
@@ -254,6 +265,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
+		g.Expect(asoManagedCluster.Spec.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {

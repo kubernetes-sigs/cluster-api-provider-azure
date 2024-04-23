@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // AzureASOManagedControlPlaneKind is the kind for AzureASOManagedControlPlane.
@@ -32,6 +33,10 @@ type AzureASOManagedControlPlaneSpec struct {
 type AzureASOManagedControlPlaneStatus struct {
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
+
+	// ControlPlaneEndpoint represents the endpoint for the cluster's API server.
+	//+optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
 //+kubebuilder:object:root=true
