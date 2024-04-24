@@ -56,6 +56,11 @@ spec:
                           type: object
                           x-kubernetes-preserve-unknown-fields: true
                         type: array
+                      version:
+                        description: |-
+                          Version is the Kubernetes version of the control plane. It fulfills Cluster API's control plane
+                          provider contract.
+                        type: string
                     type: object
                 type: object
             required:

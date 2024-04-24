@@ -31,6 +31,11 @@ type AzureASOManagedControlPlaneSpec struct {
 
 // AzureASOManagedControlPlaneStatus defines the observed state of AzureASOManagedControlPlane.
 type AzureASOManagedControlPlaneStatus struct {
+	// Version is the observed Kubernetes version of the control plane. It fulfills Cluster API's control
+	// plane provider contract.
+	//+optional
+	Version string `json:"version,omitempty"`
+
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
 

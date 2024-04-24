@@ -19,6 +19,7 @@ kind: AzureASOManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
 spec:
+  version: ${KUBERNETES_VERSION}
   resources:
   - apiVersion: containerservice.azure.com/v1api20231001
     kind: ManagedCluster

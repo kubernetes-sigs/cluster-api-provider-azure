@@ -33,6 +33,11 @@ type AzureASOManagedControlPlaneResource struct {
 
 // AzureASOManagedControlPlaneTemplateResourceSpec defines the desired state of the templated resource.
 type AzureASOManagedControlPlaneTemplateResourceSpec struct {
+	// Version is the Kubernetes version of the control plane. It fulfills Cluster API's control plane
+	// provider contract.
+	//+optional
+	Version string `json:"version,omitempty"`
+
 	// Resources are embedded ASO resources to be managed by this resource.
 	//+optional
 	Resources []runtime.RawExtension `json:"resources,omitempty"`

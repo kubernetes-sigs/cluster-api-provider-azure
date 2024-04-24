@@ -42,6 +42,7 @@ spec:
         path: /spec/template/spec
         valueFrom:
           template: |
+            version: ${KUBERNETES_VERSION}
             resources:
             - apiVersion: containerservice.azure.com/v1api20231001
               kind: ManagedCluster

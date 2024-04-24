@@ -206,6 +206,9 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	}
 
 	asoManagedControlPlane.Status.ControlPlaneEndpoint = getControlPlaneEndpoint(managedCluster)
+	if managedCluster.Status.CurrentKubernetesVersion != nil {
+		asoManagedControlPlane.Status.Version = "v" + *managedCluster.Status.CurrentKubernetesVersion
+	}
 
 	return ctrl.Result{}, nil
 }
