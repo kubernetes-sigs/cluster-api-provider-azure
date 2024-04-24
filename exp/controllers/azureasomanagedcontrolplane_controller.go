@@ -22,6 +22,9 @@ import (
 	"fmt"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
@@ -32,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,6 +72,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(log),
 			),
 		).
+		Owns(&corev1.Secret{}).
 		Build(r)
 	if err != nil {
 		return err
@@ -210,7 +215,56 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		asoManagedControlPlane.Status.Version = "v" + *managedCluster.Status.CurrentKubernetesVersion
 	}
 
+	err = r.reconcileKubeconfig(ctx, asoManagedControlPlane, cluster, managedCluster)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile kubeconfig: %w", err)
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster, managedCluster *asocontainerservicev1.ManagedCluster) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx,
+		"controllers.AzureASOManagedControlPlaneReconciler.reconcileKubeconfig",
+	)
+	defer done()
+
+	var secretRef *genruntime.SecretDestination
+	if managedCluster.Spec.OperatorSpec != nil &&
+		managedCluster.Spec.OperatorSpec.Secrets != nil {
+		secretRef = managedCluster.Spec.OperatorSpec.Secrets.UserCredentials
+		if managedCluster.Spec.OperatorSpec.Secrets.AdminCredentials != nil {
+			secretRef = managedCluster.Spec.OperatorSpec.Secrets.AdminCredentials
+		}
+	}
+	if secretRef == nil {
+		return reconcile.TerminalError(fmt.Errorf("ManagedCluster must define at least one of spec.operatorSpec.secrets.{userCredentials,adminCredentials}"))
+	}
+	asoKubeconfig := &corev1.Secret{}
+	err := r.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretRef.Name}, asoKubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to fetch secret created by ASO: %w", err)
+	}
+
+	expectedSecret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.Identifier(),
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			Namespace: cluster.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(asoManagedControlPlane, infrav1exp.GroupVersion.WithKind(infrav1exp.AzureASOManagedControlPlaneKind)),
+			},
+			Labels: map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+		},
+		Data: map[string][]byte{
+			secret.KubeconfigDataName: asoKubeconfig.Data[secretRef.Key],
+		},
+	}
+
+	return r.Patch(ctx, expectedSecret, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
 }
 
 //nolint:unparam // these parameters will be used soon enough
