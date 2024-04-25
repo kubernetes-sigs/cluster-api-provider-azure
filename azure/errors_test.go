@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 )
 
@@ -77,16 +76,6 @@ func TestResourceNotFound(t *testing.T) {
 		err     error
 		success bool
 	}{
-		{
-			name:    "Not Found detailed error",
-			err:     autorest.DetailedError{StatusCode: http.StatusNotFound},
-			success: true,
-		},
-		{
-			name:    "Conflict detailed error",
-			err:     autorest.DetailedError{StatusCode: http.StatusConflict},
-			success: false,
-		},
 		{
 			name:    "Not Found response error",
 			err:     &azcore.ResponseError{StatusCode: http.StatusNotFound},
