@@ -41,6 +41,13 @@ spec:
             description: AzureASOManagedMachinePoolSpec defines the desired state
               of AzureASOManagedMachinePool.
             properties:
+              providerIDList:
+                description: |-
+                  ProviderIDList is the list of cloud provider IDs for the instances. It fulfills Cluster API's machine
+                  pool infrastructure provider contract.
+                items:
+                  type: string
+                type: array
               resources:
                 description: Resources are embedded ASO resources to be managed by
                   this resource.
@@ -53,6 +60,12 @@ spec:
             description: AzureASOManagedMachinePoolStatus defines the observed state
               of AzureASOManagedMachinePool.
             properties:
+              replicas:
+                description: |-
+                  Replicas is the current number of provisioned replicas. It fulfills Cluster API's machine pool
+                  infrastructure provider contract.
+                format: int32
+                type: integer
               resources:
                 items:
                   description: ResourceStatus represents the status of a resource.

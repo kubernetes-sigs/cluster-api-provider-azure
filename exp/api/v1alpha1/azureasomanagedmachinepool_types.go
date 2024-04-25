@@ -30,6 +30,11 @@ type AzureASOManagedMachinePoolSpec struct {
 
 // AzureASOManagedMachinePoolStatus defines the observed state of AzureASOManagedMachinePool.
 type AzureASOManagedMachinePoolStatus struct {
+	// Replicas is the current number of provisioned replicas. It fulfills Cluster API's machine pool
+	// infrastructure provider contract.
+	//+optional
+	Replicas int32 `json:"replicas"`
+
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
 }

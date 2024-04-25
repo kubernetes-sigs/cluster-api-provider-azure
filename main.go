@@ -54,6 +54,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/record"
@@ -517,9 +518,34 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
+		// The AzureASOManagedMachinePool controller reads the nodes in clusters to set provider IDs.
+		secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
+			HTTPClient: mgr.GetHTTPClient(),
+			Cache: &client.CacheOptions{
+				Reader: mgr.GetCache(),
+			},
+		})
+		if err != nil {
+			setupLog.Error(err, "unable to create secret caching client")
+			os.Exit(1)
+		}
+		tracker, err := remote.NewClusterCacheTracker(
+			mgr,
+			remote.ClusterCacheTrackerOptions{
+				SecretCachingClient: secretCachingClient,
+				Log:                 &ctrl.Log,
+				Indexes:             []remote.Index{remote.NodeProviderIDIndex},
+			},
+		)
+		if err != nil {
+			setupLog.Error(err, "unable to create cluster cache tracker")
+			os.Exit(1)
+		}
+
 		if err := (&infrav1controllersexp.AzureASOManagedMachinePoolReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
+			Tracker:          tracker,
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)

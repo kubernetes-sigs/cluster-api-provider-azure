@@ -19,8 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"slices"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -44,8 +49,14 @@ import (
 type AzureASOManagedMachinePoolReconciler struct {
 	client.Client
 	WatchFilterValue string
+	Tracker          ClusterTracker
 
 	newResourceReconciler func(*infrav1exp.AzureASOManagedMachinePool, []*unstructured.Unstructured) resourceReconciler
+}
+
+// ClusterTracker wraps a CAPI remote.ClusterCacheTracker.
+type ClusterTracker interface {
+	GetClient(context.Context, types.NamespacedName) (client.Client, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -184,7 +195,6 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 
 //nolint:unparam // these parameters will be used soon enough
 func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, machinePool *expv1.MachinePool, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedMachinePoolReconciler.reconcileNormal",
 	)
@@ -200,6 +210,19 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	var agentPoolName string
+	for _, resource := range us {
+		if resource.GroupVersionKind().Group == asocontainerservicev1.GroupVersion.Group &&
+			resource.GroupVersionKind().Kind == "ManagedClustersAgentPool" {
+			agentPoolName = resource.GetName()
+			break
+		}
+	}
+	if agentPoolName == "" {
+		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedClustersAgentPools defined in AzureASOManagedMachinePool spec.resources", asocontainerservicev1.GroupVersion.Group))
+	}
+
 	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, us)
 	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
@@ -211,7 +234,54 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		}
 	}
 
+	agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
+	err = r.Get(ctx, client.ObjectKey{Namespace: asoManagedMachinePool.Namespace, Name: agentPoolName}, agentPool)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting ManagedClustersAgentPool: %w", err)
+	}
+
+	managedCluster := &asocontainerservicev1.ManagedCluster{}
+	err = r.Get(ctx, client.ObjectKey{Namespace: agentPool.Namespace, Name: agentPool.Owner().Name}, managedCluster)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting ManagedCluster: %w", err)
+	}
+	if managedCluster.Status.NodeResourceGroup == nil {
+		return ctrl.Result{}, nil
+	}
+	rg := *managedCluster.Status.NodeResourceGroup
+
+	clusterClient, err := r.Tracker.GetClient(ctx, util.ObjectKey(cluster))
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	nodes := &corev1.NodeList{}
+	err = clusterClient.List(ctx, nodes,
+		client.MatchingLabels(expectedNodeLabels(agentPool.AzureName(), rg)),
+	)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to list nodes in workload cluster: %w", err)
+	}
+	providerIDs := make([]string, 0, len(nodes.Items))
+	for _, node := range nodes.Items {
+		if node.Spec.ProviderID == "" {
+			// the node will receive a provider id soon
+			return ctrl.Result{Requeue: true}, nil
+		}
+		providerIDs = append(providerIDs, node.Spec.ProviderID)
+	}
+	// Prevent a different order from updating the spec.
+	slices.Sort(providerIDs)
+	asoManagedMachinePool.Spec.ProviderIDList = providerIDs
+	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0))
+
 	return ctrl.Result{}, nil
+}
+
+func expectedNodeLabels(poolName, nodeRG string) map[string]string {
+	return map[string]string{
+		"kubernetes.azure.com/agentpool": poolName,
+		"kubernetes.azure.com/cluster":   nodeRG,
+	}
 }
 
 //nolint:unparam // these parameters will be used soon enough
