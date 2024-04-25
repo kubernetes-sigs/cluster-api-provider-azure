@@ -24,8 +24,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -778,9 +776,9 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						EnvironmentSettings: EnvironmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								"AZURE_SUBSCRIPTION_ID": "123",
 							},
 						},
 					},
@@ -824,9 +822,9 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						EnvironmentSettings: EnvironmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								"AZURE_SUBSCRIPTION_ID": "123",
 							},
 						},
 					},
@@ -887,9 +885,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzurePublicCloud",
 							},
 						},
 					},
@@ -936,9 +934,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzureUSGovernmentCloud",
 							},
 						},
 					},
@@ -973,9 +971,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzurePublicCloud",
 							},
 						},
 					},
@@ -1023,9 +1021,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzureUSGovernmentCloud",
 							},
 						},
 					},
@@ -1059,9 +1057,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzurePublicCloud",
 							},
 						},
 					},
@@ -1095,9 +1093,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzureUSGovernmentCloud",
 							},
 						},
 					},
@@ -1144,9 +1142,9 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
+						EnvironmentSettings: EnvironmentSettings{
+							Environment: Environment{
+								Name: "AzurePublicCloud",
 							},
 						},
 					},

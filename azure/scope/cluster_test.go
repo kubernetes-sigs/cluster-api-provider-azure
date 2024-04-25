@@ -26,7 +26,6 @@ import (
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -958,9 +957,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},
@@ -1022,9 +1021,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},
@@ -1104,9 +1103,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},
@@ -1377,9 +1376,9 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},
@@ -1456,9 +1455,9 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},
@@ -1719,9 +1718,9 @@ func TestAzureBastionSpec(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					EnvironmentSettings: EnvironmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							"AZURE_SUBSCRIPTION_ID": "123",
 						},
 					},
 				},

@@ -25,13 +25,11 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	auth.EnvironmentSettings
+	EnvironmentSettings
 
 	TokenCredential            azcore.TokenCredential
 	ResourceManagerEndpoint    string
@@ -115,8 +113,8 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	return err
 }
 
-func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s auth.EnvironmentSettings, err error) {
-	s = auth.EnvironmentSettings{
+func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s EnvironmentSettings, err error) {
+	s = EnvironmentSettings{
 		Values: map[string]string{},
 	}
 	s.Values["AZURE_ENVIRONMENT"] = environmentName
@@ -131,9 +129,9 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	setValue(s, "AZURE_PASSWORD")
 	setValue(s, "AZURE_AD_RESOURCE")
 	if v := s.Values["AZURE_ENVIRONMENT"]; v == "" {
-		s.Environment = azureautorest.PublicCloud
+		s.Environment = PublicCloud
 	} else {
-		s.Environment, err = azureautorest.EnvironmentFromName(v)
+		s.Environment, err = EnvironmentFromName(v)
 	}
 	if s.Values["AZURE_AD_RESOURCE"] == "" {
 		s.Values["AZURE_AD_RESOURCE"] = s.Environment.ResourceManagerEndpoint
@@ -142,7 +140,7 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 }
 
 // setValue adds the specified environment variable value to the Values map if it exists.
-func setValue(settings auth.EnvironmentSettings, key string) {
+func setValue(settings EnvironmentSettings, key string) {
 	if v := os.Getenv(key); v != "" {
 		settings.Values[key] = v
 	}
