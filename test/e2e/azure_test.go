@@ -699,7 +699,7 @@ var _ = Describe("Workload cluster creation", func() {
 			Byf("Upgrading to k8s version %s", kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+			clusterTemplate := createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks"),
 				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
@@ -714,7 +714,22 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
-			), result)
+			)
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterTemplate, result)
+
+			// This test should be first to make sure that the template re-applied here matches the current
+			// state of the cluster exactly.
+			By("orphaning and adopting the cluster", func() {
+				AKSAdoptSpec(ctx, func() AKSAdoptSpecInput {
+					return AKSAdoptSpecInput{
+						ApplyInput:   clusterTemplate,
+						ApplyResult:  result,
+						Cluster:      result.Cluster,
+						MachinePools: result.MachinePools,
+					}
+				})
+			})
 
 			By("adding an AKS marketplace extension", func() {
 				AKSMarketplaceExtensionSpec(ctx, func() AKSMarketplaceExtensionSpecInput {

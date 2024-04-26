@@ -626,3 +626,57 @@ Some notes about how this works under the hood:
 - CAPZ will fetch the kubeconfig for the AKS cluster and store it in a secret named `${CLUSTER_NAME}-kubeconfig` in the management cluster. That secret is then used for discovery by the `KubeadmConfig` resource.
 - You can customize the `MachinePool`, `AzureMachinePool`, and `KubeadmConfig` resources to your liking. The example above is just a starting point. Note that the key configurations to keep are in the `KubeadmConfig` resource, namely the `files`, `joinConfiguration`, and `preKubeadmCommands` sections.
 - The `KubeadmConfig` resource will be used to generate a `kubeadm join` command that will be executed on each node in the VMSS. It uses the cluster kubeconfig for discovery. The `kubeadm init phase upload-config all` is run as a preKubeadmCommand to ensure that the kubeadm and kubelet configurations are uploaded to a ConfigMap. This step would normally be done by the `kubeadm init` command, but since we're not running `kubeadm init` we need to do it manually.
+
+## Adopting Existing AKS Clusters
+
+<aside class="note">
+
+<h1> Warning </h1>
+
+Note: This is a newly-supported feature in CAPZ that is less battle-tested than most other features. Potential
+bugs or misuse can result in misconfigured or deleted Azure resources. Use with caution.
+
+</aside>
+
+CAPZ can adopt some AKS clusters created by other means under its management. This works by crafting CAPI and
+CAPZ manifests which describe the existing cluster and creating those resources on the CAPI management
+cluster. This approach is limited to clusters which can be described by the CAPZ API, which includes the
+following constraints:
+
+- the cluster operates within a single Virtual Network and Subnet
+- the cluster's Virtual Network exists outside of the AKS-managed `MC_*` resource group
+- the cluster's Virtual Network and Subnet are not shared with any other resources outside the context of this cluster
+
+To ensure CAPZ does not introduce any unwarranted changes while adopting an existing cluster, carefully review
+the [entire AzureManagedControlPlane spec](../reference/v1beta1-api#infrastructure.cluster.x-k8s.io/v1beta1.AzureManagedControlPlaneSpec)
+and specify _every_ field in the CAPZ resource. CAPZ's webhooks apply defaults to many fields which may not
+match the existing cluster.
+
+Specific AKS features not represented in the CAPZ API, like those from a newer AKS API version than CAPZ uses,
+do not need to be specified in the CAPZ resources to remain configured the way they are. CAPZ will still not
+be able to manage that configuration, but it will not modify any settings beyond those for which it has
+knowledge.
+
+By default, CAPZ will not make any changes to or delete any pre-existing Resource Group, Virtual Network, or
+Subnet resources. To opt-in to CAPZ management for those clusters, tag those resources with the following
+before creating the CAPZ resources: `sigs.k8s.io_cluster-api-provider-azure_cluster_<CAPI Cluster name>: owned`.
+Managed Cluster and Agent Pool resources do not need this tag in order to be adopted.
+
+After applying the CAPI and CAPZ resources for the cluster, other means of managing the cluster should be
+disabled to avoid ongoing conflicts with CAPZ's reconciliation process.
+
+### Pitfalls
+
+The following describes some specific pieces of configuration that deserve particularly careful attention,
+adapted from https://gist.github.com/mtougeron/1e5d7a30df396cd4728a26b2555e0ef0#file-capz-md.
+
+- Make sure `AzureManagedControlPlane.metadata.name` matches the AKS cluster name
+- Set the `AzureManagedControlPlane.spec.virtualNetwork` fields to match your existing VNET
+- Make sure the `AzureManagedControlPlane.spec.sshPublicKey` matches what was set on the AKS cluster. (including any potential newlines included in the base64 encoding)
+  - NOTE: This is a required field in CAPZ, if you don't know what public key was used, you can _change_ or _set_ it via the Azure CLI however before attempting to import the cluster.
+- Make sure the `Cluster.spec.clusterNetwork` settings match properly to what you are using in AKS
+- Make sure the `AzureManagedControlPlane.spec.dnsServiceIP` matches what is set in AKS
+- Set the tag `sigs.k8s.io_cluster-api-provider-azure_cluster_<clusterName>` = `owned` on the AKS cluster
+- Set the tag `sigs.k8s.io_cluster-api-provider-azure_role` = `common` on the AKS cluster
+
+NOTE: Several fields, like `networkPlugin`, if not set on the AKS cluster at creation time, will mean that CAPZ will not be able to set that field. AKS doesn't allow such fields to be changed if not set at creation. However, if it was set at creation time, CAPZ will be able to successfully change/manage the field.
