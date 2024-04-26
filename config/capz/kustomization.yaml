@@ -10,6 +10,7 @@ labels:
 
 resources:
 - namespace.yaml
+- credentials.yaml
 - ../crd
 - ../rbac
 - ../manager
@@ -19,6 +20,7 @@ resources:
 patches:
 - path: manager_image_patch.yaml
 - path: manager_pull_policy.yaml
+- path: manager_credentials_patch.yaml
 - path: manager_webhook_patch.yaml
 - path: validatingwebhookcainjection_patch.yaml
 - path: mutatingwebhookcainjection_patch.yaml
