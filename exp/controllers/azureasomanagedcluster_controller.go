@@ -186,6 +186,8 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 		}
 	}()
 
+	asoManagedCluster.Status.Ready = false
+
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -251,6 +253,8 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, fmt.Errorf("failed to get AzureASOManagedControlPlane %s/%s: %w", asoManagedControlPlane.Namespace, asoManagedControlPlane.Name, err)
 	}
 	asoManagedCluster.Spec.ControlPlaneEndpoint = asoManagedControlPlane.Status.ControlPlaneEndpoint
+
+	asoManagedCluster.Status.Ready = !asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero()
 
 	return ctrl.Result{}, nil
 }

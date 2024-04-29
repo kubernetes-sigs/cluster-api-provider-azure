@@ -35,6 +35,11 @@ type AzureASOManagedMachinePoolStatus struct {
 	//+optional
 	Replicas int32 `json:"replicas"`
 
+	// Ready represents whether or not the infrastructure is ready to be used. It fulfills Cluster API's
+	// machine pool infrastructure provider contract.
+	//+optional
+	Ready bool `json:"ready"`
+
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
 }

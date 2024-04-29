@@ -137,6 +137,9 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 		}
 	}()
 
+	asoManagedControlPlane.Status.Ready = false
+	asoManagedControlPlane.Status.Initialized = false
+
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -219,6 +222,11 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile kubeconfig: %w", err)
 	}
+
+	asoManagedControlPlane.Status.Ready = !asoManagedControlPlane.Status.ControlPlaneEndpoint.IsZero()
+	// The AKS API doesn't allow us to distinguish between CAPI's definitions of "initialized" and "ready" so
+	// we treat them equivalently.
+	asoManagedControlPlane.Status.Initialized = asoManagedControlPlane.Status.Ready
 
 	return ctrl.Result{}, nil
 }

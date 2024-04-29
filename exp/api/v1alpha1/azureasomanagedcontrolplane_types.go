@@ -31,6 +31,16 @@ type AzureASOManagedControlPlaneSpec struct {
 
 // AzureASOManagedControlPlaneStatus defines the observed state of AzureASOManagedControlPlane.
 type AzureASOManagedControlPlaneStatus struct {
+	// Initialized represents whether or not the API server has been provisioned. It fulfills Cluster API's
+	// control plane provider contract. For AKS, this is equivalent to `ready`.
+	//+optional
+	Initialized bool `json:"initialized"`
+
+	// Ready represents whether or not the API server is ready to receive requests. It fulfills Cluster API's
+	// control plane provider contract. For AKS, this is equivalent to `initialized`.
+	//+optional
+	Ready bool `json:"ready"`
+
 	// Version is the observed Kubernetes version of the control plane. It fulfills Cluster API's control
 	// plane provider contract.
 	//+optional

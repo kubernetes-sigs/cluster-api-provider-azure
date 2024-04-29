@@ -239,6 +239,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 			},
+			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+				Ready: true,
+			},
 		}
 		machinePool := &expv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -271,6 +274,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.Status.Ready).To(BeFalse())
 	})
 
 	t.Run("successfully reconciles normally", func(t *testing.T) {
@@ -336,6 +342,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 			},
+			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+				Ready: false,
+			},
 		}
 		machinePool := &expv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -400,6 +409,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
 		g.Expect(asoManagedMachinePool.Spec.ProviderIDList).To(ConsistOf("azure://node1", "azure://node2"))
 		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
+		g.Expect(asoManagedMachinePool.Status.Ready).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {

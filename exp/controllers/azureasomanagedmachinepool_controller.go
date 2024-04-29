@@ -149,6 +149,8 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 		}
 	}()
 
+	asoManagedMachinePool.Status.Ready = false
+
 	machinePool, err := utilexp.GetOwnerMachinePool(ctx, r.Client, asoManagedMachinePool.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -273,6 +275,8 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	slices.Sort(providerIDs)
 	asoManagedMachinePool.Spec.ProviderIDList = providerIDs
 	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0))
+
+	asoManagedMachinePool.Status.Ready = true
 
 	return ctrl.Result{}, nil
 }

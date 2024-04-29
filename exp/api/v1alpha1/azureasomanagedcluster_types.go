@@ -43,6 +43,11 @@ type AzureASOManagedClusterSpec struct {
 
 // AzureASOManagedClusterStatus defines the observed state of AzureASOManagedCluster.
 type AzureASOManagedClusterStatus struct {
+	// Ready represents whether or not the cluster has been provisioned and is ready. It fulfills Cluster
+	// API's cluster infrastructure provider contract.
+	//+optional
+	Ready bool `json:"ready"`
+
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
 }
