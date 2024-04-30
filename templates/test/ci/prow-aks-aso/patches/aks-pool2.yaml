@@ -1,0 +1,40 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "${CLUSTER_NAME}-pool2"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: "${CLUSTER_NAME}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedMachinePool
+        name: "${CLUSTER_NAME}-pool2"
+      version: "${KUBERNETES_VERSION}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: AzureASOManagedMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-pool2"
+spec:
+  resources:
+  - apiVersion: "containerservice.azure.com/v1api20231001"
+    kind: ManagedClustersAgentPool
+    metadata:
+      name: ${CLUSTER_NAME}-pool2
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: pool2
+      owner:
+        name: ${CLUSTER_NAME}
+      mode: User
+      type: VirtualMachineScaleSets
+      vmSize: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+      osType: Windows
+      count: 1

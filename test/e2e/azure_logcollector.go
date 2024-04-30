@@ -34,6 +34,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1expalpha "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -94,6 +95,10 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 		// Machine pool can be an AzureManagedMachinePool for AKS clusters.
 		_, err = getAzureManagedMachinePool(ctx, managementClusterClient, mp)
 		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return err
+			}
+			_, err = getAzureASOManagedMachinePool(ctx, managementClusterClient, mp)
 			return err
 		}
 	} else {
@@ -205,6 +210,17 @@ func getAzureManagedControlPlane(ctx context.Context, managementClusterClient cl
 	return azManagedControlPlane, err
 }
 
+func getAzureASOManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1expalpha.AzureASOManagedCluster, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	azManagedCluster := &infrav1expalpha.AzureASOManagedCluster{}
+	err := managementClusterClient.Get(ctx, key, azManagedCluster)
+	return azManagedCluster, err
+}
+
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,
@@ -234,6 +250,17 @@ func getAzureManagedMachinePool(ctx context.Context, managementClusterClient cli
 	}
 
 	azManagedMachinePool := &infrav1.AzureManagedMachinePool{}
+	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
+	return azManagedMachinePool, err
+}
+
+func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1expalpha.AzureASOManagedMachinePool, error) {
+	key := client.ObjectKey{
+		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+	}
+
+	azManagedMachinePool := &infrav1expalpha.AzureASOManagedMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
 	return azManagedMachinePool, err
 }

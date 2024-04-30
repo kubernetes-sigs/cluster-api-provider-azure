@@ -64,6 +64,10 @@ spec:
       name: ${CLUSTER_NAME}
     spec:
       location: ${AZURE_LOCATION}
+      tags:
+        buildProvenance: ${BUILD_PROVENANCE}
+        creationTimestamp: ${TIMESTAMP}
+        jobName: ${JOB_NAME}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -105,7 +109,7 @@ spec:
       owner:
         name: ${CLUSTER_NAME}
       type: VirtualMachineScaleSets
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -147,4 +151,47 @@ spec:
       owner:
         name: ${CLUSTER_NAME}
       type: VirtualMachineScaleSets
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool2
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: AzureASOManagedMachinePool
+        name: ${CLUSTER_NAME}-pool2
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: AzureASOManagedMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool2
+  namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20231001
+    kind: ManagedClustersAgentPool
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pool2
+    spec:
+      azureName: pool2
+      count: 1
+      mode: User
+      osType: Windows
+      owner:
+        name: ${CLUSTER_NAME}
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
