@@ -33,11 +33,6 @@ spec:
       location: ${AZURE_LOCATION}
       networkProfile:
         networkPlugin: azure
-      operatorSpec:
-        secrets:
-          adminCredentials:
-            key: value
-            name: ${CLUSTER_NAME}-kubeconfig
       owner:
         name: ${CLUSTER_NAME}
       servicePrincipalProfile:

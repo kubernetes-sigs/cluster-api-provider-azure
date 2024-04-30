@@ -38,11 +38,6 @@ spec:
         clientId: msi
       networkProfile:
         networkPlugin: azure
-      operatorSpec:
-        secrets:
-          adminCredentials:
-            name: ${CLUSTER_NAME}-kubeconfig
-            key: value
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedCluster

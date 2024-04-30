@@ -58,12 +58,24 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusters
+  verbs:
+  - create
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
   - clusters/status
   verbs:
   - get
   - list
   - patch
   - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinepools
+  verbs:
+  - create
 - apiGroups:
   - cluster.x-k8s.io
   resources:

@@ -556,6 +556,20 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)
 		}
+
+		if err := (&infrav1controllersexp.ManagedClusterAdoptReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "ManagedCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1controllersexp.AgentPoolAdoptReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AgentPool")
+			os.Exit(1)
+		}
 	}
 }
 

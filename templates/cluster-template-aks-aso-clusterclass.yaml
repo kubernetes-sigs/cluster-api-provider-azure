@@ -61,11 +61,6 @@ spec:
                   clientId: msi
                 networkProfile:
                   networkPlugin: azure
-                operatorSpec:
-                  secrets:
-                    adminCredentials:
-                      name: "{{ .builtin.cluster.name }}-kubeconfig"
-                      key: value
       selector:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: AzureASOManagedControlPlaneTemplate

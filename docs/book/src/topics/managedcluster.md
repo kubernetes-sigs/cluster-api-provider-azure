@@ -629,6 +629,38 @@ Some notes about how this works under the hood:
 
 ## Adopting Existing AKS Clusters
 
+### Option 1: Using the experimental ASO-based API
+
+<!-- markdown-link-check-disable-next-line -->
+The [experimental AzureASOManagedControlPlane and related APIs](/topics/aso.html#experimental-aso-api) support
+adoption as a first-class use case. Going forward, this method is likely to be easier, more reliable, include
+more features, and better supported for adopting AKS clusters than Option 2 below.
+
+To adopt an AKS cluster into a full Cluster API Cluster, create an ASO ManagedCluster and associated
+ManagedClustersAgentPool resources annotated with `sigs.k8s.io/cluster-api-provider-azure-adopt=true`. The
+annotation may also be added to existing ASO resources to trigger adoption. CAPZ will automatically scaffold
+the Cluster API resources like the Cluster, AzureASOManagedCluster, AzureASOManagedControlPlane, MachinePools,
+and AzureASOManagedMachinePools. The [`asoctl import
+azure-resource`](https://azure.github.io/azure-service-operator/tools/asoctl/#import-azure-resource) command
+can help generate the required YAML.
+
+Caveats:
+- The `asoctl import azure-resource` command has at least [one known
+  bug](https://github.com/Azure/azure-service-operator/issues/3805) requiring the YAML it generates to be
+  edited before it can be applied to a cluster.
+- CAPZ currently only records the ASO resources in the CAPZ resources' `spec.resources` that it needs to
+  function, which include the ManagedCluster, its ResourceGroup, and associated ManagedClustersAgentPools.
+  Other resources owned by the ManagedCluster like Kubernetes extensions or Fleet memberships are not
+  currently imported to the CAPZ specs.
+- Configuring the automatically generated Cluster API resources is not currently possible. If you need to
+  change something like the `metadata.name` of a resource from what CAPZ generates, create the Cluster API
+  resources manually referencing the pre-existing resources.
+- Adopting existing clusters created with the GA AzureManagedControlPlane API to the experimental API with
+  this method is theoretically possible, but untested. Care should be taken to prevent CAPZ from reconciling
+  two different representations of the same underlying Azure resources.
+
+### Option 2: Using the current AzureManagedControlPlane API
+
 <aside class="note">
 
 <h1> Warning </h1>
@@ -665,7 +697,7 @@ Managed Cluster and Agent Pool resources do not need this tag in order to be ado
 After applying the CAPI and CAPZ resources for the cluster, other means of managing the cluster should be
 disabled to avoid ongoing conflicts with CAPZ's reconciliation process.
 
-### Pitfalls
+#### Pitfalls
 
 The following describes some specific pieces of configuration that deserve particularly careful attention,
 adapted from https://gist.github.com/mtougeron/1e5d7a30df396cd4728a26b2555e0ef0#file-capz-md.
