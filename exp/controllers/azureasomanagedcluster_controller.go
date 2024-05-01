@@ -23,9 +23,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -227,11 +227,11 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	us, err := resourcesToUnstructured(asoManagedCluster.Spec.Resources)
+	resources, err := mutators.ToUnstructured(ctx, asoManagedCluster.Spec.Resources)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	resourceReconciler := r.newResourceReconciler(asoManagedCluster, us)
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
 	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
@@ -279,11 +279,11 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	defer done()
 	log.V(4).Info("reconciling delete")
 
-	us, err := resourcesToUnstructured(asoManagedCluster.Spec.Resources)
+	resources, err := mutators.ToUnstructured(ctx, asoManagedCluster.Spec.Resources)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	resourceReconciler := r.newResourceReconciler(asoManagedCluster, us)
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
 	err = resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
@@ -294,16 +294,4 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 
 	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
-}
-
-func resourcesToUnstructured(resources []runtime.RawExtension) ([]*unstructured.Unstructured, error) {
-	var us []*unstructured.Unstructured
-	for _, resource := range resources {
-		u := &unstructured.Unstructured{}
-		if err := u.UnmarshalJSON(resource.Raw); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal resource JSON: %w", err)
-		}
-		us = append(us, u)
-	}
-	return us, nil
 }

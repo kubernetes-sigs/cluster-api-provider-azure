@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -179,13 +180,13 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	us, err := resourcesToUnstructured(asoManagedControlPlane.Spec.Resources)
+	resources, err := mutators.ApplyMutators(ctx, asoManagedControlPlane.Spec.Resources, mutators.SetManagedClusterDefaults(asoManagedControlPlane, cluster))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	var managedClusterName string
-	for _, resource := range us {
+	for _, resource := range resources {
 		if resource.GroupVersionKind().Group == asocontainerservicev1.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == "ManagedCluster" {
 			managedClusterName = resource.GetName()
@@ -193,10 +194,10 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		}
 	}
 	if managedClusterName == "" {
-		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1.GroupVersion.Group))
+		return ctrl.Result{}, reconcile.TerminalError(mutators.ErrNoManagedClusterDefined)
 	}
 
-	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, us)
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, resources)
 	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
@@ -295,11 +296,11 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 	defer done()
 	log.V(4).Info("reconciling delete")
 
-	us, err := resourcesToUnstructured(asoManagedControlPlane.Spec.Resources)
+	resources, err := mutators.ToUnstructured(ctx, asoManagedControlPlane.Spec.Resources)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, us)
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, resources)
 	err = resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
