@@ -24,7 +24,7 @@ cd "${REPO_ROOT}" || exit
 echo "*** Running go-apidiff ***"
 APIDIFF=$(APIDIFF_OLD_COMMIT="${PULL_BASE_SHA}" make apidiff 2> /dev/null)
 
-if [[ "${APIDIFF}" == *"sigs.k8s.io/cluster-api-provider-azure/api/"* ]] || [[ "${APIDIFF}" == *"sigs.k8s.io/cluster-api-provider-azure/exp/api/"* ]]; then
+if grep -qE '^sigs\.k8s\.io/cluster-api-provider-azure/(exp/)?api/' <<< "$APIDIFF"; then
     echo "${APIDIFF}"
     exit 1
 else
