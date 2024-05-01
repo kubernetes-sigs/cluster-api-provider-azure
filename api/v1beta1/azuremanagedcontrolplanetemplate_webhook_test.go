@@ -36,7 +36,6 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcpt.Spec.Template.Spec.NetworkPlugin).To(Equal("azure"))
 	g.Expect(*amcpt.Spec.Template.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(amcpt.Spec.Template.Spec.Version).To(Equal("v1.17.5"))
-	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Name).To(Equal("fooName"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDR))
@@ -300,18 +299,18 @@ func TestValidateVirtualNetworkTemplateUpdate(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
-			name: "azuremanagedcontrolplanetemplate name is immutable",
+			name: "azuremanagedcontrolplanetemplate vnet is immutable",
 			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.VirtualNetwork = ManagedControlPlaneVirtualNetwork{
 					ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-						Name: "fooName",
+						CIDRBlock: "fooCIDRBlock",
 					},
 				}
 			}),
 			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.VirtualNetwork = ManagedControlPlaneVirtualNetwork{
 					ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-						Name: "barName",
+						CIDRBlock: "barCIDRBlock",
 					},
 				}
 			}),

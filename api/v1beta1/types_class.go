@@ -415,7 +415,6 @@ type AzureManagedMachinePoolClassSpec struct {
 
 // ManagedControlPlaneVirtualNetworkClassSpec defines the ManagedControlPlaneVirtualNetwork properties that may be shared across several managed control plane vnets.
 type ManagedControlPlaneVirtualNetworkClassSpec struct {
-	Name      string `json:"name"`
 	CIDRBlock string `json:"cidrBlock"`
 	// +optional
 	Subnet ManagedControlPlaneSubnet `json:"subnet,omitempty"`
