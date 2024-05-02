@@ -27,11 +27,6 @@ spec:
         serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
       name: ${CLUSTER_NAME}
     spec:
-      agentPoolProfiles:
-      - count: 1
-        mode: System
-        name: stub
-        vmSize: ${AZURE_NODE_MACHINE_TYPE}
       dnsPrefix: ${CLUSTER_NAME}
       identity:
         type: SystemAssigned
