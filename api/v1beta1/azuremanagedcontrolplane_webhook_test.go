@@ -1357,6 +1357,36 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "Testing valid FleetsMember",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					FleetsMember: &FleetsMember{
+						Name: "fleetmember1",
+					},
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Testing invalid FleetsMember: Fleets member name cannot contain capital letters",
+			amcp: AzureManagedControlPlane{
+				ObjectMeta: getAMCPMetaData(),
+				Spec: AzureManagedControlPlaneSpec{
+					FleetsMember: &FleetsMember{
+						Name: "FleetMember1",
+					},
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						Version: "v1.17.8",
+					},
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
