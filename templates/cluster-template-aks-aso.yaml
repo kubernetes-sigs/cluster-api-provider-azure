@@ -95,7 +95,6 @@ spec:
       name: ${CLUSTER_NAME}-pool0
     spec:
       azureName: pool0
-      count: ${WORKER_MACHINE_COUNT:=2}
       mode: System
       owner:
         name: ${CLUSTER_NAME}
@@ -137,7 +136,6 @@ spec:
       name: ${CLUSTER_NAME}-pool1
     spec:
       azureName: pool1
-      count: ${WORKER_MACHINE_COUNT:=2}
       mode: User
       owner:
         name: ${CLUSTER_NAME}
