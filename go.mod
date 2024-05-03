@@ -45,7 +45,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3
-	k8s.io/apiserver v0.29.3
 	k8s.io/client-go v0.29.3
 	k8s.io/cluster-bootstrap v0.29.3
 	k8s.io/component-base v0.29.3
@@ -68,6 +67,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	k8s.io/apiserver v0.29.3 // indirect
 	sigs.k8s.io/cloud-provider-azure/pkg/azclient v0.0.2 // indirect
 	sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.0.1 // indirect
 )
