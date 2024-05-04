@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	"github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -113,6 +115,53 @@ func TestApplyMutators(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 			g.Expect(actual).To(Equal(test.expected))
+		})
+	}
+}
+
+func TestPause(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name           string
+		policy         string
+		isIncompatible bool
+	}{
+		{
+			name:   "set from CAPI opinion",
+			policy: "",
+		},
+		{
+			name:   "user value matching CAPI ok",
+			policy: string(annotations.ReconcilePolicySkip),
+		},
+		{
+			name:           "incompatible",
+			policy:         string(annotations.ReconcilePolicyManage),
+			isIncompatible: true,
+		},
+	}
+
+	s := runtime.NewScheme()
+	NewGomegaWithT(t).Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+
+			u := &unstructured.Unstructured{}
+			if test.policy != "" {
+				u.SetAnnotations(map[string]string{
+					annotations.ReconcilePolicy: test.policy,
+				})
+			}
+			err := Pause(ctx, []*unstructured.Unstructured{u})
+			if test.isIncompatible {
+				g.Expect(errors.As(err, &Incompatible{})).To(BeTrue())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(u.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
+			}
 		})
 	}
 }

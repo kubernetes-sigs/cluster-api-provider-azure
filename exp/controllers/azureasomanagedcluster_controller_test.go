@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -38,6 +39,7 @@ import (
 type fakeResourceReconciler struct {
 	owner         client.Object
 	reconcileFunc func(context.Context, client.Object) error
+	pauseFunc     func(context.Context, client.Object) error
 	deleteFunc    func(context.Context, client.Object) error
 }
 
@@ -46,6 +48,13 @@ func (r *fakeResourceReconciler) Reconcile(ctx context.Context) error {
 		return nil
 	}
 	return r.reconcileFunc(ctx, r.owner)
+}
+
+func (r *fakeResourceReconciler) Pause(ctx context.Context) error {
+	if r.pauseFunc == nil {
+		return nil
+	}
+	return r.pauseFunc(ctx, r.owner)
 }
 
 func (r *fakeResourceReconciler) Delete(ctx context.Context) error {
@@ -110,7 +119,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 	})
 
-	t.Run("adds a finalizer", func(t *testing.T) {
+	t.Run("adds a finalizer and block-move annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		cluster := &clusterv1.Cluster{
@@ -150,6 +159,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
 		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
+		g.Expect(asoManagedCluster.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("reconciles resources that are not ready", func(t *testing.T) {
@@ -180,6 +190,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				},
 				Finalizers: []string{
 					clusterv1.ClusterFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
 			Status: infrav1exp.AzureASOManagedClusterStatus{
@@ -244,6 +257,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Finalizers: []string{
 					clusterv1.ClusterFinalizer,
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 			Status: infrav1exp.AzureASOManagedClusterStatus{
 				Ready: false,
@@ -303,6 +319,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 						Name:       cluster.Name,
 					},
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -310,10 +329,20 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					pauseFunc: func(_ context.Context, _ client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
+		g.Expect(asoManagedCluster.GetAnnotations()).NotTo(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("successfully reconciles in-progress delete", func(t *testing.T) {

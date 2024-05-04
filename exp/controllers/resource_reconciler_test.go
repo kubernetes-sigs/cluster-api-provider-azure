@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	"github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/gomega"
@@ -146,6 +147,71 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(resourcesStatuses[0].Ready).To(BeTrue())
 		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
 		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
+	})
+}
+
+func TestResourceReconcilerPause(t *testing.T) {
+	ctx := context.Background()
+
+	s := runtime.NewScheme()
+	sb := runtime.NewSchemeBuilder(
+		infrav1exp.AddToScheme,
+		asoresourcesv1.AddToScheme,
+	)
+	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
+
+	fakeClientBuilder := func() *fakeclient.ClientBuilder {
+		return fakeclient.NewClientBuilder().
+			WithScheme(s).
+			WithStatusSubresource(&infrav1exp.AzureASOManagedCluster{})
+	}
+
+	t.Run("empty resources", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		r := &ResourceReconciler{
+			resources: []*unstructured.Unstructured{},
+			owner:     &infrav1exp.AzureASOManagedCluster{},
+		}
+
+		g.Expect(r.Pause(ctx)).To(Succeed())
+	})
+
+	t.Run("pause several resources", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		c := fakeClientBuilder().
+			Build()
+
+		asoManagedCluster := &infrav1exp.AzureASOManagedCluster{}
+
+		var patchedRGs []string
+		r := &ResourceReconciler{
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+					g.Expect(o.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
+					patchedRGs = append(patchedRGs, o.GetName())
+					return nil
+				},
+			},
+			resources: []*unstructured.Unstructured{
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg1",
+					},
+				}),
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg2",
+					},
+				}),
+			},
+			owner: asoManagedCluster,
+		}
+
+		g.Expect(r.Pause(ctx)).To(Succeed())
+		g.Expect(patchedRGs).To(ConsistOf("rg1", "rg2"))
 	})
 }
 

@@ -34,6 +34,7 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -96,7 +97,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 	})
 
-	t.Run("adds a finalizer", func(t *testing.T) {
+	t.Run("adds a finalizer and block-move annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		cluster := &clusterv1.Cluster{
@@ -136,6 +137,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
 		g.Expect(asoManagedControlPlane.GetFinalizers()).To(ContainElement(infrav1exp.AzureASOManagedControlPlaneFinalizer))
+		g.Expect(asoManagedControlPlane.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("reconciles resources that are not ready", func(t *testing.T) {
@@ -166,6 +168,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 				Finalizers: []string{
 					infrav1exp.AzureASOManagedControlPlaneFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
 			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
@@ -270,6 +275,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				Finalizers: []string{
 					infrav1exp.AzureASOManagedControlPlaneFinalizer,
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
 				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
@@ -344,6 +352,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 						Name:       cluster.Name,
 					},
 				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -351,10 +362,20 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: c,
+			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					pauseFunc: func(_ context.Context, _ client.Object) error {
+						return nil
+					},
+				}
+			},
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(asoManagedControlPlane.GetAnnotations()).NotTo(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("successfully reconciles delete", func(t *testing.T) {

@@ -167,7 +167,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 
 	if cluster != nil && cluster.Spec.Paused ||
 		annotations.HasPaused(asoManagedControlPlane) {
-		return r.reconcilePaused(ctx, asoManagedControlPlane, cluster)
+		return r.reconcilePaused(ctx, asoManagedControlPlane)
 	}
 
 	if !asoManagedControlPlane.GetDeletionTimestamp().IsZero() {
@@ -195,6 +195,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	}
 
 	needsPatch := controllerutil.AddFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
+	needsPatch = infracontroller.AddBlockMoveAnnotation(asoManagedControlPlane) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -295,14 +296,23 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 	return r.Patch(ctx, expectedSecret, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
 }
 
-//nolint:unparam // these parameters will be used soon enough
-func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
-	//nolint:all // ctx will be used soon
-	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AzureASOManagedControlPlaneReconciler.reconcilePaused",
-	)
+//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
+func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane) (ctrl.Result, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedControlPlaneReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
+
+	resources, err := mutators.ToUnstructured(ctx, asoManagedControlPlane.Spec.Resources)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, resources)
+	err = resourceReconciler.Pause(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to pause resources: %w", err)
+	}
+
+	infracontroller.RemoveBlockMoveAnnotation(asoManagedControlPlane)
 
 	return ctrl.Result{}, nil
 }

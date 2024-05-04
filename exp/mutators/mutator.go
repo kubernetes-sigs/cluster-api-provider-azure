@@ -20,10 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -78,4 +82,39 @@ func ApplyMutators(ctx context.Context, resources []runtime.RawExtension, mutato
 // ToUnstructured converts the given resources to Unstructured.
 func ToUnstructured(ctx context.Context, resources []runtime.RawExtension) ([]*unstructured.Unstructured, error) {
 	return ApplyMutators(ctx, resources)
+}
+
+// Pause sets the "skip" reconcile policy on all resources to facilitate a CAPI pause.
+func Pause(ctx context.Context, resources []*unstructured.Unstructured) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.Pause")
+	defer done()
+
+	for i, resource := range resources {
+		resourcePath := "spec.resources[" + strconv.Itoa(i) + "]"
+		policyPath := []string{"metadata", "annotations", annotations.ReconcilePolicy}
+		capiPolicy := string(annotations.ReconcilePolicySkip)
+		userPolicy, userDefined := resource.GetAnnotations()[annotations.ReconcilePolicy]
+
+		setPolicy := mutation{
+			location: resourcePath + "." + strings.Join(policyPath, "."),
+			val:      capiPolicy,
+			reason:   "because the CAPZ resource is paused",
+		}
+		if userDefined && userPolicy != capiPolicy {
+			return Incompatible{
+				mutation: setPolicy,
+				userVal:  userPolicy,
+			}
+		}
+
+		logMutation(log, setPolicy)
+		anns := resource.GetAnnotations()
+		if anns == nil {
+			anns = make(map[string]string)
+		}
+		anns[annotations.ReconcilePolicy] = capiPolicy
+		resource.SetAnnotations(anns)
+	}
+
+	return nil
 }
