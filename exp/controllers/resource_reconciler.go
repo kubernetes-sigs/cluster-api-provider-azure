@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
@@ -52,6 +53,7 @@ type watcher interface {
 
 type resourceStatusObject interface {
 	client.Object
+	GetResourceStatuses() []infrav1exp.ResourceStatus
 	SetResourceStatuses([]infrav1exp.ResourceStatus)
 }
 
@@ -98,6 +100,28 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 		})
 	}
 
+	for _, oldStatus := range r.owner.GetResourceStatuses() {
+		needsDelete := true
+		for _, newStatus := range newResourceStatuses {
+			if oldStatus.Resource.Group == newStatus.Resource.Group &&
+				oldStatus.Resource.Kind == newStatus.Resource.Kind &&
+				oldStatus.Resource.Name == newStatus.Resource.Name {
+				needsDelete = false
+				break
+			}
+		}
+
+		if needsDelete {
+			updatedStatus, err := r.deleteResource(ctx, oldStatus.Resource)
+			if err != nil {
+				return err
+			}
+			if updatedStatus != nil {
+				newResourceStatuses = append(newResourceStatuses, *updatedStatus)
+			}
+		}
+	}
+
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
 	return nil
@@ -141,48 +165,59 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 
 	var newResourceStatuses []infrav1exp.ResourceStatus
 
-	for _, spec := range r.resources {
-		spec.SetNamespace(r.owner.GetNamespace())
-		gvk := spec.GroupVersionKind()
-
-		log := log.WithValues("resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
-
-		log.V(4).Info("deleting resource")
-		err := r.Client.Delete(ctx, spec)
-		if apierrors.IsNotFound(err) {
-			log.V(4).Info("resource has been deleted")
-			continue
-		}
+	for _, spec := range r.owner.GetResourceStatuses() {
+		newStatus, err := r.deleteResource(ctx, spec.Resource)
 		if err != nil {
-			return fmt.Errorf("failed to delete resource: %w", err)
+			return err
 		}
-
-		err = r.Client.Get(ctx, client.ObjectKeyFromObject(spec), spec)
-		if apierrors.IsNotFound(err) {
-			log.V(4).Info("resource has been deleted")
-			continue
+		if newStatus != nil {
+			newResourceStatuses = append(newResourceStatuses, *newStatus)
 		}
-		if err != nil {
-			return fmt.Errorf("failed to get resource: %w", err)
-		}
-		ready, err := readyStatus(ctx, spec)
-		if err != nil {
-			return fmt.Errorf("failed to get ready status: %w", err)
-		}
-		newResourceStatuses = append(newResourceStatuses, infrav1exp.ResourceStatus{
-			Resource: infrav1exp.StatusResource{
-				Group:   gvk.Group,
-				Version: gvk.Version,
-				Kind:    gvk.Kind,
-				Name:    spec.GetName(),
-			},
-			Ready: ready,
-		})
 	}
 
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
 	return nil
+}
+
+func (r *ResourceReconciler) deleteResource(ctx context.Context, resource infrav1exp.StatusResource) (*infrav1exp.ResourceStatus, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.deleteResource")
+	defer done()
+
+	spec := &unstructured.Unstructured{}
+	spec.SetGroupVersionKind(schema.GroupVersionKind{Group: resource.Group, Version: resource.Version, Kind: resource.Kind})
+	spec.SetNamespace(r.owner.GetNamespace())
+	spec.SetName(resource.Name)
+
+	log = log.WithValues("resource", klog.KObj(spec), "resourceVersion", spec.GroupVersionKind().GroupVersion(), "resourceKind", spec.GetKind())
+
+	log.V(4).Info("deleting resource")
+	err := r.Client.Delete(ctx, spec)
+	if apierrors.IsNotFound(err) {
+		log.V(4).Info("resource has been deleted")
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete resource: %w", err)
+	}
+
+	err = r.Client.Get(ctx, client.ObjectKeyFromObject(spec), spec)
+	if apierrors.IsNotFound(err) {
+		log.V(4).Info("resource has been deleted")
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource: %w", err)
+	}
+	ready, err := readyStatus(ctx, spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ready status: %w", err)
+	}
+
+	return &infrav1exp.ResourceStatus{
+		Resource: resource,
+		Ready:    ready,
+	}, nil
 }
 
 func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error) {
