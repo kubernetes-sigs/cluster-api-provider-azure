@@ -23,6 +23,7 @@ import (
 
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230202preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -73,6 +75,9 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 				},
 			},
 			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+				},
 				Spec: clusterv1.ClusterSpec{
 					ClusterNetwork: &clusterv1.ClusterNetwork{
 						Pods: &clusterv1.NetworkRanges{
@@ -91,6 +96,14 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 						NetworkProfile: &asocontainerservicev1.ContainerServiceNetworkProfile{
 							ServiceCidr: ptr.To("svc-0"),
 							PodCidr:     ptr.To("pod-0"),
+						},
+						OperatorSpec: &asocontainerservicev1.ManagedClusterOperatorSpec{
+							Secrets: &asocontainerservicev1.ManagedClusterOperatorSecrets{
+								AdminCredentials: &genruntime.SecretDestination{
+									Name: secret.Name("cluster", secret.Kubeconfig),
+									Key:  secret.KubeconfigDataName,
+								},
+							},
 						},
 					},
 				}),

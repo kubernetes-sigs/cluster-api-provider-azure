@@ -96,11 +96,6 @@ spec:
                   clientId: msi
                 networkProfile:
                   networkPlugin: azure
-                operatorSpec:
-                  secrets:
-                    adminCredentials:
-                      name: "{{ .builtin.cluster.name }}-kubeconfig"
-                      key: value
   - name: azureasomanagedmachinepool-pool0-spec
     definitions:
     - selector:

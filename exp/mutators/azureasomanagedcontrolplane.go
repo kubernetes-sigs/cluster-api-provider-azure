@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	exputil "sigs.k8s.io/cluster-api/exp/util"
+	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -77,6 +78,10 @@ func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane 
 		}
 
 		if err := setManagedClusterAgentPoolProfiles(ctx, ctrlClient, asoManagedControlPlane.Namespace, cluster, managedClusterPath, managedCluster); err != nil {
+			return err
+		}
+
+		if err := setManagedClusterCredentials(ctx, cluster, managedClusterPath, managedCluster); err != nil {
 			return err
 		}
 
@@ -358,4 +363,43 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 	}
 
 	return managedCluster.ConvertFrom(hubMC)
+}
+
+func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterCredentials")
+	defer done()
+
+	// CAPZ only cares that some set of credentials is created by ASO, but not where. CAPZ will propagate
+	// whatever is defined in the ASO resource to the <cluster>-kubeconfig secret as expected by CAPI.
+
+	_, hasUserCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "userCredentials")
+	if err != nil {
+		return err
+	}
+	if hasUserCreds {
+		return nil
+	}
+
+	_, hasAdminCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "adminCredentials")
+	if err != nil {
+		return err
+	}
+	if hasAdminCreds {
+		return nil
+	}
+
+	secrets := map[string]interface{}{
+		"adminCredentials": map[string]interface{}{
+			"name": cluster.Name + "-" + string(secret.Kubeconfig),
+			"key":  secret.KubeconfigDataName,
+		},
+	}
+
+	setCreds := mutation{
+		location: managedClusterPath + ".spec.operatorSpec.secrets",
+		val:      secrets,
+		reason:   "because no userCredentials or adminCredentials are defined",
+	}
+	logMutation(log, setCreds)
+	return unstructured.SetNestedMap(managedCluster.UnstructuredContent(), secrets, "spec", "operatorSpec", "secrets")
 }
