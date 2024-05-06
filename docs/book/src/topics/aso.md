@@ -82,7 +82,7 @@ An example configuration file and demo for `Azure Cache for Redis` can be found 
 
 ## Experimental ASO API
 
-CAPZ has begun to experiment with a new flavor of APIs that attempt to address the following limitations of
+New in CAPZ v1.15.0 is a new flavor of APIs that addresses the following limitations of
 the existing CAPZ APIs for advanced use cases:
 
 - A limited set of Azure resource types can be represented.
@@ -97,7 +97,7 @@ This new experimental API defines new AzureASOManagedCluster, AzureASOManagedCon
 AzureASOManagedMachinePool resources. An AzureASOManagedCluster might look like this:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AzureASOManagedCluster
 metadata:
   name: my-cluster
@@ -112,6 +112,8 @@ spec:
       location: eastus
 ```
 
+See [here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/cluster-template-aks-aso.yaml) for a full AKS example using all the new resources.
+
 The main element of the new API is `spec.resources` in each new resource, which defines arbitrary, literal ASO
 resources inline to be managed by CAPZ. These inline ASO resource definitions take the place of almost all
 other configuration currently defined by CAPZ. e.g. Instead of a CAPZ-specific `spec.location` field on the
@@ -120,15 +122,12 @@ resource defined in an AzureASOManagedControlPlane's `spec.resources`. This patt
 full, any ASO-supported version of a resource type in any of these new CAPZ resources.
 
 The obvious tradeoff with this new style of API is that CAPZ resource definitions can become more verbose for
-basic use cases. To address this, CAPZ will still offer flavor templates that use this API with all of the
+basic use cases. To address this, CAPZ still offers flavor templates that use this API with all of the
 boilerplate predefined to serve as a starting point for customization.
 
 The overall theme of this API is to leverage ASO as much as possible for representing Azure resources in the
 Kubernetes API, thereby making CAPZ the thinnest possible translation layer between ASO and Cluster API.
 
-This experiment will help inform CAPZ whether this pattern may be a candidate for a potential v2 API. If
-you're interested in trying this out, stay tuned! This functionality is available, but under heavy
-construction and not yet in a usable state, behind the `ASOAPI` feature flag (set by the `EXP_ASO_API`
-environment variable).
-
-Feedback is welcome!
+This experiment will help inform CAPZ whether this pattern may be a candidate for a potential v2 API. This
+functionality is available behind the `ASOAPI` feature flag (set by the `EXP_ASO_API` environment variable).
+Please try it out and offer any feedback!

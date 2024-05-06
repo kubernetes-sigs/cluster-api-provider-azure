@@ -76,6 +76,7 @@ genCRDAPIReferenceDocs="${genCRDAPIReferenceDocsPath}/gen-crd-api-reference-docs
 
 ${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./api/v1beta1 -out-file ./docs/book/src/reference/v1beta1-api-raw.html
 ${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./exp/api/v1beta1 -out-file ./docs/book/src/reference/v1beta1-exp-api-raw.html
+${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./exp/api/v1alpha1 -out-file ./docs/book/src/reference/v1alpha1-exp-api-raw.html
 
 # Finally build the book.
 (cd docs/book && /tmp/mdbook build)
