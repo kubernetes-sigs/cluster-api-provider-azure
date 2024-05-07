@@ -385,13 +385,13 @@ func (s *ManagedClusterSpec) ResourceRef() genruntime.MetaObject {
 	if s.Preview {
 		return &asocontainerservicev1preview.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: s.Name,
+				Name: azure.GetNormalizedKubernetesName(s.Name),
 			},
 		}
 	}
 	return &asocontainerservicev1.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: s.Name,
+			Name: azure.GetNormalizedKubernetesName(s.Name),
 		},
 	}
 }
@@ -441,7 +441,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 
 	managedCluster.Spec.AzureName = s.Name
 	managedCluster.Spec.Owner = &genruntime.KnownResourceReference{
-		Name: s.ResourceGroup,
+		Name: azure.GetNormalizedKubernetesName(s.ResourceGroup),
 	}
 	managedCluster.Spec.Identity = &asocontainerservicev1.ManagedClusterIdentity{
 		Type: ptr.To(asocontainerservicev1.ManagedClusterIdentity_Type_SystemAssigned),
