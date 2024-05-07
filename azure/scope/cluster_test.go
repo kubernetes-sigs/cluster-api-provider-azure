@@ -1805,7 +1805,7 @@ func TestAzureBastionSpec(t *testing.T) {
 				Location:      "centralIndia",
 				ClusterName:   "my-cluster",
 				SubnetID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/"+
-					"virtualNetworks/%s/subnets/%s", "123", "my-rg", "fake-vnet-1", "fake-bastion-subnet-1"),
+					"virtualNetworks/%s/subnets/%s", "123", "my-rg-vnet", "fake-vnet-1", "fake-bastion-subnet-1"),
 				PublicIPID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/"+
 					"publicIPAddresses/%s", "123", "my-rg", "fake-public-ip-1"),
 			},
