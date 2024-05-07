@@ -139,10 +139,6 @@ const (
 type AzureManagedControlPlaneSpec struct {
 	AzureManagedControlPlaneClassSpec `json:",inline"`
 
-	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
-	// Immutable.
-	ResourceGroupName string `json:"resourceGroupName"`
-
 	// NodeResourceGroupName is the name of the resource group
 	// containing cluster IaaS resources. Will be populated to default
 	// in webhook.

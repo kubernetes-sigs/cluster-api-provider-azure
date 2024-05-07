@@ -199,8 +199,8 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 					Namespace: "default",
 					Kind:      "AzureClusterIdentity",
 				},
+				ResourceGroupName: name,
 			},
-			ResourceGroupName: name,
 		},
 	}
 	g.Expect(c.Create(ctx, instance)).To(Succeed())

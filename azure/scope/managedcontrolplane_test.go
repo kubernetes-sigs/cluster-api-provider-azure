@@ -1638,8 +1638,8 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: "dummy-rg",
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							ResourceGroupName: "dummy-rg",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								ResourceGroup: "different-rg",
 							},
@@ -1674,8 +1674,8 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: "dummy-rg",
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							ResourceGroupName: "dummy-rg",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								ResourceGroup: "dummy-rg",
 							},
@@ -1704,8 +1704,8 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: "dummy-rg",
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							ResourceGroupName: "dummy-rg",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								Name: "vnet1",
 							},
@@ -1734,8 +1734,8 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						ResourceGroupName: "dummy-rg",
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							ResourceGroupName: "dummy-rg",
 							VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
 								ResourceGroup: "my_custom_rg",
 								Name:          "vnet1",
