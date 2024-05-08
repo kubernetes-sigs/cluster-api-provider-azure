@@ -772,7 +772,7 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		log.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
 		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), ptr.Deref(m.MachinePool.Spec.Template.Spec.Version, ""), runtime, windowsServerVersion)
 	} else {
-		defaultImage, err = svc.GetDefaultUbuntuImage(ctx, m.Location(), ptr.Deref(m.MachinePool.Spec.Template.Spec.Version, ""))
+		defaultImage, err = svc.GetDefaultLinuxImage(ctx, m.Location(), ptr.Deref(m.MachinePool.Spec.Template.Spec.Version, ""))
 	}
 
 	if err != nil {

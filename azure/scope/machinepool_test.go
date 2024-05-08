@@ -423,7 +423,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 						ImagePlan: infrav1.ImagePlan{
 							Publisher: "cncf-upstream",
 							Offer:     "capi",
-							SKU:       "k8s-1dot19dot11-ubuntu-1804",
+							SKU:       "k8s-1dot19dot11-azurelinux-3",
 						},
 						Version:         "latest",
 						ThirdPartyImage: false,

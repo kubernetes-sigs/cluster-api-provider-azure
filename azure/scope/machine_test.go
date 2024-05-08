@@ -1740,7 +1740,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := svc.GetDefaultUbuntuImage(context.TODO(), "", "1.20.1")
+				image, _ := svc.GetDefaultLinuxImage(context.TODO(), "", "1.20.1")
 				return image
 			}(),
 			expectedErr: "",

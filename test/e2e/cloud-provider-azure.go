@@ -69,6 +69,8 @@ func EnsureCNIAndCloudProviderAzureHelmChart(ctx context.Context, input clusterc
 
 		if strings.Contains(input.ClusterName, "flatcar") {
 			options.StringValues = append(options.StringValues, "cloudControllerManager.caCertDir=/usr/share/ca-certificates")
+		} else {
+			options.StringValues = append(options.StringValues, fmt.Sprintf("cloudControllerManager.caCertDir=%s", os.Getenv("CCM_CA_CERT_DIR")))
 		}
 
 		InstallHelmChart(ctx, clusterProxy, defaultNamespace, cloudProviderAzureHelmRepoURL, cloudProviderAzureChartName, cloudProviderAzureHelmReleaseName, options, "")

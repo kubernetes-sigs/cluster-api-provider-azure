@@ -199,6 +199,7 @@ variables:
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-stable-1.28}"
   CNI: "${PWD}/templates/addons/calico.yaml"
   ADDONS_PATH: "${PWD}/templates/addons"
+  CCM_CA_CERT_DIR: "${CCM_CA_CERT_DIR:-/etc/pki/tls}"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS_RESOURCE_HEALTH: "true"
   EXP_MACHINE_POOL: "true"
