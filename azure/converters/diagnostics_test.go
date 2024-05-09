@@ -81,6 +81,16 @@ func TestGetDiagnosticsProfile(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name: "nil diagnostics boot user managed",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+					UserManaged:        nil,
+				},
+			},
+			want: nil,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
