@@ -21,6 +21,7 @@ settings = {
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
     "capi_version": "v1.7.1",
+    "caaph_version": "v0.2.1",
     "cert_manager_version": "v1.14.4",
     "kubernetes_version": "v1.28.3",
     "aks_kubernetes_version": "v1.28.3",
@@ -61,13 +62,25 @@ def deploy_capi():
         extra_args = settings.get("extra_args")
         if extra_args.get("core"):
             core_extra_args = extra_args.get("core")
-            if core_extra_args:
-                for namespace in ["capi-system", "capi-webhook-system"]:
-                    patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
+            for namespace in ["capi-system", "capi-webhook-system"]:
+                patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
         if extra_args.get("kubeadm-bootstrap"):
             kb_extra_args = extra_args.get("kubeadm-bootstrap")
-            if kb_extra_args:
-                patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
+            patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
+
+# deploy CAAPH
+def deploy_caaph():
+    version = settings.get("caaph_version")
+
+    caaph_uri = "https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/{}/addon-components.yaml".format(version)
+    cmd = "curl --retry 3 -sSL {} | {} | {} apply -f -".format(caaph_uri, envsubst_cmd, kubectl_cmd)
+    local(cmd, quiet = True)
+    if settings.get("extra_args"):
+        extra_args = settings.get("extra_args")
+        if extra_args.get("helm"):
+            core_extra_args = extra_args.get("helm")
+            for namespace in ["caaph-system", "caaph-webhook-system"]:
+                patch_args_with_extra_args(namespace, "caaph-controller-manager", core_extra_args)
 
 def patch_args_with_extra_args(namespace, name, extra_args):
     args_str = str(local("{} get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}".format(kubectl_cmd, name, namespace)))
@@ -198,11 +211,10 @@ def capz():
     # add extra_args if they are defined
     if settings.get("extra_args"):
         azure_extra_args = settings.get("extra_args").get("azure")
-        if azure_extra_args:
-            yaml_dict = decode_yaml_stream(yaml)
-            append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", azure_extra_args)
-            yaml = str(encode_yaml_stream(yaml_dict))
-            yaml = fixup_yaml_empty_arrays(yaml)
+        yaml_dict = decode_yaml_stream(yaml)
+        append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", azure_extra_args)
+        yaml = str(encode_yaml_stream(yaml_dict))
+        yaml = fixup_yaml_empty_arrays(yaml)
 
     # Forge the build command
     ldflags = "-extldflags \"-static\" " + str(local("hack/version.sh")).rstrip("\n")
@@ -448,6 +460,8 @@ if settings.get("deploy_cert_manager"):
     deploy_cert_manager(version = settings.get("cert_manager_version"))
 
 deploy_capi()
+
+deploy_caaph()
 
 create_identity_secret()
 
