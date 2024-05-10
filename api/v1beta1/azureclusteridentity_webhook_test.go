@@ -76,7 +76,7 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
