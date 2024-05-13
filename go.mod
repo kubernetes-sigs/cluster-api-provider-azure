@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1
