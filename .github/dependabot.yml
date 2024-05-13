@@ -12,6 +12,9 @@ updates:
     time: "09:00"
     # Use America/New_York Standard Time (UTC -05:00)
     timezone: "America/New_York"
+  groups:
+    all-github-actions:
+      patterns: [ "*" ]
   commit-message:
     prefix: "dependabot"
     include: scope
