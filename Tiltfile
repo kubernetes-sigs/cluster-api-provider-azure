@@ -22,7 +22,7 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v1.7.2",
     "caaph_version": "v0.2.1",
-    "cert_manager_version": "v1.14.4",
+    "cert_manager_version": "v1.14.5",
     "kubernetes_version": "v1.28.3",
     "aks_kubernetes_version": "v1.28.3",
     "flatcar_version": "3374.2.1",
