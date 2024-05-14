@@ -35,6 +35,26 @@ patches:
       version: v1
       kind: Deployment
       name: azureserviceoperator-controller-manager
+  # This implements https://github.com/Azure/azure-service-operator/pull/4011
+  # for versions of ASO which don't include that fix.
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: azureserviceoperator-controller-manager
+        namespace: azureserviceoperator-system
+      spec:
+        template:
+          spec:
+            containers:
+              - name: manager
+                env:
+                - name: AZURE_USER_AGENT_SUFFIX
+                  valueFrom:
+                    secretKeyRef:
+                      key: AZURE_USER_AGENT_SUFFIX
+                      name: aso-controller-settings
+                      optional: true
 
 replacements:
   - source:
