@@ -1,23 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 resources:
-  - ../capz
+- ../capz
 
 components:
-  - ../aso
+- ../aso
 
 replacements:
-  - source:
-      kind: Deployment
-      name: capz-controller-manager
-      fieldPath: spec.template.spec.containers.[name=manager].image
-      options:
-        delimiter: ':'
-        index: 1
-    targets:
-      - select:
-          kind: Secret
-          name: aso-controller-settings
-        fieldPaths:
-          - stringData.AZURE_USER_AGENT_SUFFIX
-        options:
-          delimiter: '/'
-          index: 1
+- source:
+    fieldPath: spec.template.spec.containers.[name=manager].image
+    kind: Deployment
+    name: capz-controller-manager
+    options:
+      delimiter: ':'
+      index: 1
+  targets:
+  - fieldPaths:
+    - stringData.AZURE_USER_AGENT_SUFFIX
+    options:
+      delimiter: /
+      index: 1
+    select:
+      kind: Secret
+      name: aso-controller-settings

@@ -1,67 +1,70 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: default
 resources:
-  - ../../../test/ci/prow
-  - ../../../addons/metrics-server/metrics-server-resource-set.yaml
-patchesStrategicMerge:
-  - patches/machine-deployment-pr-version.yaml
-  - patches/machine-deployment-pr-version-windows.yaml
-  - ../../../test/ci/patches/windows-feature-gates.yaml
-  - ../../../test/ci/patches/windows-containerd-labels.yaml
-  - ../../../test/ci/patches/windows-machine-deployment-replicas.yaml
-  - ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
-  - ../../../test/ci/patches/controller-manager-featuregates.yaml
+- ../../../test/ci/prow
+- ../../../addons/metrics-server/metrics-server-resource-set.yaml
 patches:
-- target:
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider.yaml
+  target:
     group: bootstrap.cluster.x-k8s.io
-    version: v1beta1
     kind: KubeadmConfigTemplate
     name: .*-md-0
     namespace: default
-  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider.yaml
-- target:
-    group: bootstrap.cluster.x-k8s.io
     version: v1beta1
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-win.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
     kind: KubeadmConfigTemplate
     name: .*-md-win
     namespace: default
-  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-win.yaml
-- target:
-    group: controlplane.cluster.x-k8s.io
     version: v1beta1
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
     kind: KubeadmControlPlane
     name: .*-control-plane
-  path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
-- target:
-    group: bootstrap.cluster.x-k8s.io
     version: v1beta1
+- path: patches/kubeadm-bootstrap.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
     kind: KubeadmConfigTemplate
     name: .*-md-0
     namespace: default
-  path: patches/kubeadm-bootstrap.yaml
-- target:
-    group: controlplane.cluster.x-k8s.io
     version: v1beta1
+- path: patches/kubeadm-controlplane-bootstrap.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
     kind: KubeadmControlPlane
     name: .*-control-plane
-  path: patches/kubeadm-controlplane-bootstrap.yaml
-- target:
-    group: bootstrap.cluster.x-k8s.io
     version: v1beta1
+- path: patches/kubeadm-bootstrap-windows-k8s-pr-binaries.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
     kind: KubeadmConfigTemplate
     name: .*-md-win
     namespace: default
-  path: patches/kubeadm-bootstrap-windows-k8s-pr-binaries.yaml
+    version: v1beta1
+- path: patches/machine-deployment-pr-version.yaml
+- path: patches/machine-deployment-pr-version-windows.yaml
+- path: ../../../test/ci/patches/windows-feature-gates.yaml
+- path: ../../../test/ci/patches/windows-containerd-labels.yaml
+- path: ../../../test/ci/patches/windows-machine-deployment-replicas.yaml
+- path: ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
+- path: ../../../test/ci/patches/controller-manager-featuregates.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico-windows
-    behavior: merge
-    files:
-      - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
-  - name: metrics-server-${CLUSTER_NAME}
-    files:
-      - metrics-server=../../../addons/metrics-server/metrics-server.yaml
+- behavior: merge
+  files:
+  - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
+  name: cni-${CLUSTER_NAME}-calico-windows
+- files:
+  - metrics-server=../../../addons/metrics-server/metrics-server.yaml
+  name: metrics-server-${CLUSTER_NAME}
 generatorOptions:
+  annotations:
+    note: generated
   disableNameSuffixHash: true
   labels:
     type: generated
-  annotations:
-    note: generated
+sortOptions:
+  order: fifo

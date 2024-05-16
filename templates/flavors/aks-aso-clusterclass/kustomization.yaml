@@ -7,3 +7,6 @@ resources:
 - azure-managed-cluster-template.yaml
 - azure-managed-machinepool-template.yaml
 - kubeadm-config-template.yaml
+
+sortOptions:
+  order: fifo

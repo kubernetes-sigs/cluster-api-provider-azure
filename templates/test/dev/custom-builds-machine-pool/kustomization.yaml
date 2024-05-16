@@ -1,32 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: default
 resources:
-  - ../../../test/ci/prow-machine-pool
-patchesStrategicMerge:
-  - ../patches/control-plane-custom-builds.yaml
-  - patches/machine-pool-deployment-pr-version-windows.yaml
-  - patches/custom-builds.yaml
+- ../../../test/ci/prow-machine-pool
 patches:
-  - target:
-      group: controlplane.cluster.x-k8s.io
-      version: v1beta1
-      kind: KubeadmControlPlane
-      name: .*-control-plane
-    path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
-  - target:
-      group: bootstrap.cluster.x-k8s.io
-      version: v1beta1
-      kind: KubeadmConfig
-      name: .*-mp-win
-      namespace: default
-    path: patches/kubeadm-bootstrap-machine-pool-windows-k8s-pr-binaries.yaml
+- path: ../patches/control-plane-custom-builds.yaml
+- path: patches/machine-pool-deployment-pr-version-windows.yaml
+- path: patches/custom-builds.yaml
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: patches/kubeadm-bootstrap-machine-pool-windows-k8s-pr-binaries.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfig
+    name: .*-mp-win
+    namespace: default
+    version: v1beta1
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico-windows
-    behavior: merge
-    files:
-      - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
+- behavior: merge
+  files:
+    - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
+  name: cni-${CLUSTER_NAME}-calico-windows
 generatorOptions:
+  annotations:
+    note: generated
   disableNameSuffixHash: true
   labels:
     type: generated
-  annotations:
-    note: generated
+sortOptions:
+  order: fifo

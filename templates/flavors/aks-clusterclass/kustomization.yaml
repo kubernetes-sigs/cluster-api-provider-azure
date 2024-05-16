@@ -8,3 +8,6 @@ resources:
 - azure-managed-machinepool-template.yaml
 - ../../azure-cluster-identity
 - kubeadm-config-template.yaml
+
+sortOptions:
+  order: fifo

@@ -2,6 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../prow-machine-pool
-patchesStrategicMerge:
-  - patches/vmss-flex.yaml
+- ../prow-machine-pool
+patches:
+- path: patches/vmss-flex.yaml
+
+sortOptions:
+  order: fifo

@@ -2,14 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/ipv6
-  - machine-pool-ipv6.yaml
-  - ../../../addons/cluster-api-helm/calico-ipv6.yaml
-  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-patchesStrategicMerge:
-  - ../patches/tags.yaml
-  - ../patches/controller-manager.yaml
-  - patches/cluster-label-calico-ipv6.yaml
-  - ../patches/cluster-label-cloud-provider-azure.yaml
+- ../../../flavors/ipv6
+- machine-pool-ipv6.yaml
+- ../../../addons/cluster-api-helm/calico-ipv6.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+patches:
+- path: ../patches/tags.yaml
+- path: ../patches/controller-manager.yaml
+- path: patches/cluster-label-calico-ipv6.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml
+
+sortOptions:
+  order: fifo

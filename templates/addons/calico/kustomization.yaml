@@ -1,9 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-    - calico-vxlan.yaml
-patchesStrategicMerge:
-    - patches/azure-mtu.yaml
+- calico-vxlan.yaml
 patches:
 - path: patches/calico-node.yaml
   target:
@@ -13,3 +11,4 @@ patches:
     kind: Deployment
     name: calico-kube-controllers
     namespace: kube-system
+- path: patches/azure-mtu.yaml

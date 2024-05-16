@@ -1,7 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: default
 resources:
-  - ../machinepool
-  - machine-pool-deployment-windows.yaml
+- ../machinepool
+- machine-pool-deployment-windows.yaml
+patches:
+- path: ../base-windows-containerd/cluster.yaml
 
-patchesStrategicMerge:
-  - ../base-windows-containerd/cluster.yaml
+sortOptions:
+  order: fifo
