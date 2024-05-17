@@ -144,6 +144,7 @@ spec:
                 description: |-
                   ResourceID is the Azure resource ID for the User Assigned MSI resource.
                   Only applicable when type is UserAssignedMSI.
+                  Depreciated. Will be removed in future releases.
                 type: string
               tenantID:
                 description: TenantID is the service principal primary tenant id.

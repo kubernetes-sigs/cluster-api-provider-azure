@@ -24,7 +24,6 @@ import (
 
 const fakeClientID = "fake-client-id"
 const fakeTenantID = "fake-tenant-id"
-const fakeResourceID = "fake-resource-id"
 
 func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 	tests := []struct {
@@ -47,10 +46,9 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 			name: "azureclusteridentity with service principal and resource id",
 			clusterIdentity: &AzureClusterIdentity{
 				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
-					ClientID:   fakeClientID,
-					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					Type:     ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
 				},
 			},
 			wantErr: true,
@@ -62,7 +60,7 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 					Type:       UserAssignedMSI,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					ResourceID: "fake-resource-id",
 				},
 			},
 			wantErr: false,
@@ -76,7 +74,7 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 					TenantID: fakeTenantID,
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
@@ -122,18 +120,16 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 			name: "azureclusteridentity with a change in type",
 			clusterIdentity: &AzureClusterIdentity{
 				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
-					ClientID:   fakeClientID,
-					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					Type:     ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
 				},
 			},
 			oldClusterIdentity: &AzureClusterIdentity{
 				Spec: AzureClusterIdentitySpec{
-					Type:       WorkloadIdentity,
-					ClientID:   fakeClientID,
-					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					Type:     WorkloadIdentity,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
 				},
 			},
 			wantErr: true,
@@ -142,18 +138,16 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 			name: "azureclusteridentity with a change in client ID",
 			clusterIdentity: &AzureClusterIdentity{
 				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
-					ClientID:   fakeClientID,
-					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					Type:     ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
 				},
 			},
 			oldClusterIdentity: &AzureClusterIdentity{
 				Spec: AzureClusterIdentitySpec{
-					Type:       WorkloadIdentity,
-					ClientID:   "diff-fake-Client-ID",
-					TenantID:   fakeTenantID,
-					ResourceID: fakeResourceID,
+					Type:     WorkloadIdentity,
+					ClientID: "diff-fake-Client-ID",
+					TenantID: fakeTenantID,
 				},
 			},
 			wantErr: true,
