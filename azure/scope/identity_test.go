@@ -143,8 +143,7 @@ func TestHasClientSecret(t *testing.T) {
 			name: "user assigned identity",
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:       infrav1.UserAssignedMSI,
-					ResourceID: "my-resource-id",
+					Type: infrav1.UserAssignedMSI,
 				},
 			},
 			want: false,

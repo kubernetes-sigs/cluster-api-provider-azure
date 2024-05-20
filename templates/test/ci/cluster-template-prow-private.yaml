@@ -248,7 +248,6 @@ metadata:
 spec:
   allowedNamespaces: {}
   clientID: ${UAMI_CLIENT_ID}
-  resourceID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
   tenantID: ${AZURE_TENANT_ID}
   type: UserAssignedMSI
 ---

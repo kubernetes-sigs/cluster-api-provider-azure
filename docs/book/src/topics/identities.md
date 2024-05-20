@@ -155,7 +155,6 @@ spec:
   type: UserAssignedMSI
   tenantID: <azure-tenant-id>
   clientID: <client-id-of-user-assigned-identity>
-  resourceID: <resource-id-of-user-assigned-identity>
   allowedNamespaces:
     list:
     - <cluster-namespace>
