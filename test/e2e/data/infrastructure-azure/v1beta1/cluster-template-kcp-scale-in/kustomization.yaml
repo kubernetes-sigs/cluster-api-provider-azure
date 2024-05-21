@@ -1,4 +1,6 @@
-bases:
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
 - ../bases/cluster-with-kcp.yaml
 - ../bases/md.yaml
 - ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
@@ -6,9 +8,8 @@ bases:
 - ../../../../../../templates/addons/cluster-api-helm/azuredisk-csi-driver.yaml
 - ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure.yaml
 - ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-
-patchesStrategicMerge:
-- ./cluster-with-kcp.yaml
-- ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
-- ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml
-- ../../../../../../templates/test/ci/patches/cluster-label-cloud-provider-azure.yaml
+patches:
+- path: ./cluster-with-kcp.yaml
+- path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml
+- path: ../../../../../../templates/test/ci/patches/cluster-label-cloud-provider-azure.yaml

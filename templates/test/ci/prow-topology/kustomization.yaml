@@ -2,29 +2,32 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/topology/cluster.yaml
-  - cni-resource-set.yaml
-  - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
-  - ../../../addons/cluster-api-helm/calico.yaml
-  - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
-  - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-patchesStrategicMerge:
-  - ../patches/windows-containerd-labels.yaml
-  - cluster.yaml
-  - ../patches/cluster-label-calico.yaml
-  - ../patches/cluster-label-cloud-provider-azure.yaml
+- ../../../flavors/topology/cluster.yaml
+- cni-resource-set.yaml
+- ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+- ../../../addons/cluster-api-helm/calico.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-calico-windows
-    files:
-      - windows-cni=../../../addons/windows/calico/calico.yaml
-      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
-  - name: csi-proxy-addon
-    files:
-      - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+- files:
+  - windows-cni=../../../addons/windows/calico/calico.yaml
+  - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
+  name: cni-${CLUSTER_NAME}-calico-windows
+- files:
+  - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+  name: csi-proxy-addon
 generatorOptions:
+  annotations:
+    note: generated
   disableNameSuffixHash: true
   labels:
     type: generated
-  annotations:
-    note: generated
+patches:
+- path: ../patches/windows-containerd-labels.yaml
+- path: cluster.yaml
+- path: ../patches/cluster-label-calico.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml
+
+sortOptions:
+  order: fifo

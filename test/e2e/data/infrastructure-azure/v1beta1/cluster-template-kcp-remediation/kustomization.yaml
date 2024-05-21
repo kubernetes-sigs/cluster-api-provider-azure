@@ -1,4 +1,6 @@
-bases:
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
 - ../bases/cluster-with-kcp.yaml
 - ../bases/md.yaml
 - mhc.yaml
@@ -7,7 +9,6 @@ bases:
 - ../../../../../../templates/addons/cluster-api-helm/azuredisk-csi-driver.yaml
 - ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure.yaml
 - ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure-ci.yaml
-
-patchesStrategicMerge:
-- ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
-- ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml
+patches:
+- path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml

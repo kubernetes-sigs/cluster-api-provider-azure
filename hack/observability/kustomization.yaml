@@ -1,6 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 resources:
-  - ../../config/default
-  - prometheus
+- ../../config/default
+- prometheus
 
-patchesStrategicMerge:
-  - opentelemetry/controller-manager-patch.yaml
+patches:
+- path: opentelemetry/controller-manager-patch.yaml

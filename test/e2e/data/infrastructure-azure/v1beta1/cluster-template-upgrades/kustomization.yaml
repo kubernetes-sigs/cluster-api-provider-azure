@@ -1,8 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 resources:
-  - ../bases/cluster-with-kcp.yaml
-  - ../bases/md.yaml
-  - ../bases/mp.yaml
-  - ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
-
-patchesStrategicMerge:
-  - ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- ../bases/cluster-with-kcp.yaml
+- ../bases/md.yaml
+- ../bases/mp.yaml
+- ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
+patches:
+- path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml

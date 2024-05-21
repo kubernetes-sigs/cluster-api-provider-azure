@@ -2,10 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/aks
-  - patches/aks-pool2.yaml
-patchesStrategicMerge:
-  - ../patches/tags-aks.yaml
-  - patches/aks-pool0.yaml
-  - patches/aks-pool1.yaml
-  - patches/addons.yaml
+- ../../../flavors/aks
+- patches/aks-pool2.yaml
+patches:
+- path: ../patches/tags-aks.yaml
+- path: patches/aks-pool0.yaml
+- path: patches/aks-pool1.yaml
+- path: patches/addons.yaml
+
+sortOptions:
+  order: fifo

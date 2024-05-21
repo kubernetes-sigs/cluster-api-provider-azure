@@ -3,3 +3,6 @@ kind: Kustomization
 namespace: default
 resources:
 - cluster-template.yaml
+
+sortOptions:
+  order: fifo

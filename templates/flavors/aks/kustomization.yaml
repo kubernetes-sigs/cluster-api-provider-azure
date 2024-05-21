@@ -4,5 +4,8 @@ namespace: default
 resources:
 - cluster-template.yaml
 - ../../azure-cluster-identity
-patchesStrategicMerge:
-- ../../azure-cluster-identity/managedazurecluster-identity-ref.yaml
+patches:
+- path: ../../azure-cluster-identity/managedazurecluster-identity-ref.yaml
+
+sortOptions:
+  order: fifo

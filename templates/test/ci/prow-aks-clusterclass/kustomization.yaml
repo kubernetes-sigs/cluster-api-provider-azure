@@ -2,13 +2,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/aks-clusterclass
-  - ../../../flavors/aks-topology
-patchesStrategicMerge:
-  - patches/tags-aks-clusterclass.yaml
-  - patches/aks-clusterclass-pool0.yaml
-  - patches/aks-clusterclass-pool1.yaml
-  - patches/cluster.yaml
-  - patches/addons.yaml
-  - patches/kubeadm-config-template.yaml
-  - patches.yaml
+- ../../../flavors/aks-clusterclass
+- ../../../flavors/aks-topology
+patches:
+- path: patches/tags-aks-clusterclass.yaml
+- path: patches/aks-clusterclass-pool0.yaml
+- path: patches/aks-clusterclass-pool1.yaml
+- path: patches/cluster.yaml
+- path: patches/addons.yaml
+- path: patches/kubeadm-config-template.yaml
+- path: patches.yaml
+
+sortOptions:
+  order: fifo

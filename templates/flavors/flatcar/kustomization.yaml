@@ -1,9 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: default
 resources:
-  - ../base
-  - machine-deployment.yaml
-  - ../../azure-cluster-identity
+- ../base
+- machine-deployment.yaml
+- ../../azure-cluster-identity
+patches:
+- path: patches/kubeadm-controlplane.yaml
+- path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
 
-patchesStrategicMerge:
-  - patches/kubeadm-controlplane.yaml
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
+sortOptions:
+  order: fifo

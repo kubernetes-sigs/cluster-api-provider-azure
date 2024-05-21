@@ -1,7 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 namespace: default
 resources:
-  - ../default
+- ../default
+patches:
+- path: patches/azure-extendedlocation.yaml
+- path: patches/azure-remove-natgateway.yaml
 
-patchesStrategicMerge:
-  - patches/azure-extendedlocation.yaml
-  - patches/azure-remove-natgateway.yaml
+sortOptions:
+  order: fifo
