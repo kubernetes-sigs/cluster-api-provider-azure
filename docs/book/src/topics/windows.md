@@ -77,13 +77,13 @@ curl <EXTERNAL-IP>
 
 #### Kube-proxy and CNIs for Containerd
 
-The Windows HostProcess Container feature is Alpha for Kubernetes v1.22 and Beta for v1.23.  See the Windows [Hostprocess KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-windows/1981-windows-privileged-container-support) for more details.  Kube-proxy and other CNI's  have been updated to run in HostProcess containers.  The current implementation is using [kube-proxy and Calico CNI built by sig-windows](https://github.com/kubernetes-sigs/sig-windows-tools/pull/161). Sig-windows is working to upstream the kube-proxy, cni implementations, and improve kubeadm support in the next few releases.
+The Windows HostProcess Container feature is Alpha for Kubernetes v1.22 and Beta for v1.23. In v1.28, this feature is on by default and the `WindowsHostProcessContainers` feature gate is no longer recognized. See the Windows [Hostprocess KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-windows/1981-windows-privileged-container-support) for more details. Kube-proxy and other CNI's have been updated to run in HostProcess containers. The current implementation is using [kube-proxy and Calico CNI built by sig-windows](https://github.com/kubernetes-sigs/sig-windows-tools/pull/161). Sig-windows is working to upstream the kube-proxy, cni implementations, and improve kubeadm support in the next few releases.
 
 Current requirements:
 
 - Kubernetes 1.23+
 - containerd 1.6+
-- `WindowsHostProcessContainers` feature-gate (Beta / on-by-default for v1.23) turned on for kube-apiserver and kubelet
+- `WindowsHostProcessContainers` feature-gate (Beta / on-by-default for v1.23) turned on for kube-apiserver and kubelet, omitted in v1.28 and later
 
 These requirements are satisfied by the Windows Containerd Template and Azure Marketplace reference image `cncf-upstream:capi-windows:k8s-1dot22dot1-windows-2019-containerd:2021.10.15`
 
