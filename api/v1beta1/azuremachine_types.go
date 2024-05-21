@@ -132,6 +132,12 @@ type AzureMachineSpec struct {
 	// +optional
 	DNSServers []string `json:"dnsServers,omitempty"`
 
+	// DisableExtensionOperations specifies whether extension operations should be disabled on the virtual machine.
+	// Use this setting only if VMExtensions are not supported by your image, as it disables CAPZ bootstrapping extension used for detecting Kubernetes bootstrap failure.
+	// This may only be set to True when no extensions are configured on the virtual machine.
+	// +optional
+	DisableExtensionOperations *bool `json:"disableExtensionOperations,omitempty"`
+
 	// VMExtensions specifies a list of extensions to be added to the virtual machine.
 	// +optional
 	VMExtensions []VMExtension `json:"vmExtensions,omitempty"`

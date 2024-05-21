@@ -230,6 +230,16 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithCapacityReservaionGroupID("invalid-capacity-group-id"),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with DisableExtensionOperations true and without VMExtensions",
+			machine: createMachineWithDisableExtenionOperations(),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with DisableExtensionOperations true and with VMExtension",
+			machine: createMachineWithDisableExtenionOperationsAndHasExtension(),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -779,6 +789,34 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalidTest: azuremachine.spec.disableExtensionOperations is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableExtensionOperations: ptr.To(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableExtensionOperations: ptr.To(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.disableExtensionOperations is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableExtensionOperations: ptr.To(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableExtensionOperations: ptr.To(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
@@ -1151,6 +1189,31 @@ func createMachineWithCapacityReservaionGroupID(capacityReservationGroupID strin
 			SSHPublicKey:               validSSHPublicKey,
 			OSDisk:                     validOSDisk,
 			CapacityReservationGroupID: strPtr,
+		},
+	}
+}
+
+func createMachineWithDisableExtenionOperationsAndHasExtension() *AzureMachine {
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:               validSSHPublicKey,
+			OSDisk:                     validOSDisk,
+			DisableExtensionOperations: ptr.To(true),
+			VMExtensions: []VMExtension{{
+				Name:      "test-extension",
+				Publisher: "test-publiher",
+				Version:   "v0.0.1-test",
+			}},
+		},
+	}
+}
+
+func createMachineWithDisableExtenionOperations() *AzureMachine {
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey:               validSSHPublicKey,
+			OSDisk:                     validOSDisk,
+			DisableExtensionOperations: ptr.To(true),
 		},
 	}
 }

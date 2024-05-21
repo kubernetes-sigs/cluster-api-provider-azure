@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -68,6 +69,10 @@ func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 	}
 
 	if errs := ValidateCapacityReservationGroupID(spec.CapacityReservationGroupID, field.NewPath("capacityReservationGroupID")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateVMExtensions(spec.DisableExtensionOperations, spec.VMExtensions, field.NewPath("vmExtensions")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -467,6 +472,17 @@ func ValidateCapacityReservationGroupID(capacityReservationGroupID *string, fldP
 		if _, err := azureutil.ParseResourceID(*capacityReservationGroupID); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath, capacityReservationGroupID, "must be a valid Azure resource ID"))
 		}
+	}
+
+	return allErrs
+}
+
+// ValidateVMExtensions validates the VMExtensions spec.
+func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExtension, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "VMExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
 	return allErrs

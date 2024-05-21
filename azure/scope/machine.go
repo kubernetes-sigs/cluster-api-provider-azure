@@ -178,6 +178,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		SpotVMOptions:              m.AzureMachine.Spec.SpotVMOptions,
 		SecurityProfile:            m.AzureMachine.Spec.SecurityProfile,
 		DiagnosticsProfile:         m.AzureMachine.Spec.Diagnostics,
+		DisableExtensionOperations: ptr.Deref(m.AzureMachine.Spec.DisableExtensionOperations, false),
 		AdditionalTags:             m.AdditionalTags(),
 		AdditionalCapabilities:     m.AzureMachine.Spec.AdditionalCapabilities,
 		CapacityReservationGroupID: m.GetCapacityReservationGroupID(),
@@ -374,6 +375,10 @@ func (m *MachineScope) HasSystemAssignedIdentity() bool {
 
 // VMExtensionSpecs returns the VM extension specs.
 func (m *MachineScope) VMExtensionSpecs() []azure.ResourceSpecGetter {
+	if ptr.Deref(m.AzureMachine.Spec.DisableExtensionOperations, false) {
+		return []azure.ResourceSpecGetter{}
+	}
+
 	var extensionSpecs = []azure.ResourceSpecGetter{}
 	for _, extension := range m.AzureMachine.Spec.VMExtensions {
 		extensionSpecs = append(extensionSpecs, &vmextensions.VMExtensionSpec{

@@ -144,6 +144,16 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 			wantErr:         true,
 		},
 		{
+			name:            "azuremachinetemplate with DisableExtensionOperations true and without VMExtensions",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithDisableExtenionOperations()),
+			wantErr:         false,
+		},
+		{
+			name:            "azuremachinetempalte with DisableExtensionOperations true and with VMExtension",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithDisableExtenionOperationsAndHasExtension()),
+			wantErr:         true,
+		},
+		{
 			name:            "azuremachinetemplate without RoleAssignmentName",
 			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithoutRoleAssignmentName()),
 			wantErr:         false,
