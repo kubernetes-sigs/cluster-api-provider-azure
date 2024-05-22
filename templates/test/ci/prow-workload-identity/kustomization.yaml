@@ -11,7 +11,6 @@ patches:
 - path: ../patches/azureclusteridentity-azwi.yaml
 - path: ../patches/tags.yaml
 - path: ../patches/controller-manager.yaml
-- path: ../patches/apiserver.yaml
 - path: ../patches/uami-md-0.yaml
 - path: ../patches/uami-control-plane.yaml
 - path: ../patches/cluster-label-calico.yaml
