@@ -88,6 +88,13 @@ Example versions:
     - Move items out of "Uncategorized" into an appropriate section.
     - Change anything attributed to "k8s-cherrypick-robot" to credit the original author.
     - Fix any typos or other errors.
+    - Add a "Details" section with a link to the full diff:
+        ```md
+        ## Details
+        <!-- markdown-link-check-disable-next-line -->
+        https://github.com/kubernetes-sigs/cluster-api-provider-azure/compare/v1.14.4...v1.14.5
+        ```
+      Be sure to replace the versions in the URL with the appropriate tags.
 
 1. Open a pull request against the `main` branch with the release notes.
 
