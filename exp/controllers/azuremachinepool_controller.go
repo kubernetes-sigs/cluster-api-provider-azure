@@ -35,18 +35,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -126,12 +123,6 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		Watches(
 			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
-		).
-		// watch for changes in KubeadmConfig to sync bootstrap token
-		Watches(
-			&kubeadmv1.KubeadmConfig{},
-			handler.EnqueueRequestsFromMapFunc(KubeadmConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Build(r)
 	if err != nil {
