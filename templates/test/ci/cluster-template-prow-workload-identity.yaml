@@ -57,7 +57,6 @@ spec:
       apiServer:
         extraArgs:
           cloud-provider: external
-          feature-gates: MixedProtocolLBService=true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
