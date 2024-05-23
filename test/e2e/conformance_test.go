@@ -127,6 +127,7 @@ var _ = Describe("Conformance Tests", func() {
 			flavor += "-dual-stack"
 			kubetestConfigFilePath = strings.Replace(kubetestConfigFilePath, ".yaml", "-dual-stack.yaml", 1)
 		}
+		By(fmt.Sprintf("Using the %s cluster template flavor", flavor))
 
 		// Starting with Kubernetes v1.25, the kubetest config file needs to be compatible with Ginkgo V2.
 		v125 := semver.MustParse("1.25.0-alpha.0.0")
