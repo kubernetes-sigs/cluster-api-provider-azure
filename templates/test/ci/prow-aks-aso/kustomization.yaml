@@ -21,6 +21,18 @@ patches:
 - patch: |-
     - op: test
       path: /spec/resources/0/kind
+      value: ManagedCluster
+    - op: replace
+      path: /spec/resources/0/spec/tags
+      value:
+        jobName: ${JOB_NAME}
+        creationTimestamp: ${TIMESTAMP}
+        buildProvenance: ${BUILD_PROVENANCE}
+  target:
+    kind: AzureASOManagedControlPlane
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
       value: ManagedClustersAgentPool
     - op: replace
       path: /spec/resources/0/spec/vmSize
