@@ -47,17 +47,15 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 	input := inputGetter()
 	var wg sync.WaitGroup
 
-	originalReplicas := map[types.NamespacedName]int32{}
-	for _, mp := range input.MachinePools {
-		originalReplicas[client.ObjectKeyFromObject(mp)] = ptr.Deref(mp.Spec.Replicas, 0)
-	}
-
-	By("Scaling the machine pools out")
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
 		go func(mp *expv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
+
+			originalReplicas := ptr.Deref(mp.Spec.Replicas, 0)
+
+			Byf("Scaling machine pool %s out", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
@@ -65,16 +63,8 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				MachinePools:              []*expv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
-		}(mp)
-	}
-	wg.Wait()
 
-	By("Scaling the machine pools in")
-	for _, mp := range input.MachinePools {
-		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
-			defer GinkgoRecover()
-			defer wg.Done()
+			Byf("Scaling machine pool %s in", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
@@ -82,74 +72,67 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				MachinePools:              []*expv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
-		}(mp)
-	}
-	wg.Wait()
 
-	By("Scaling the machine pools to zero")
-	// System node pools cannot be scaled to 0, so only include user node pools.
-	var machinePoolsToScale []*expv1.MachinePool
-	for _, mp := range input.MachinePools {
-		switch mp.Spec.Template.Spec.InfrastructureRef.Kind {
-		case infrav1.AzureManagedMachinePoolKind:
-			ammp := &infrav1.AzureManagedMachinePool{}
-			err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
-				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
-			}, ammp)
-			Expect(err).NotTo(HaveOccurred())
+			// System node pools cannot be scaled to 0, so only include user node pools.
+			isUserPool := false
+			switch mp.Spec.Template.Spec.InfrastructureRef.Kind {
+			case infrav1.AzureManagedMachinePoolKind:
+				ammp := &infrav1.AzureManagedMachinePool{}
+				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+				}, ammp)
+				Expect(err).NotTo(HaveOccurred())
 
-			if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
-				machinePoolsToScale = append(machinePoolsToScale, mp)
-			}
-		case infrav1exp.AzureASOManagedMachinePoolKind:
-			ammp := &infrav1exp.AzureASOManagedMachinePool{}
-			err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
-				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
-			}, ammp)
-			Expect(err).NotTo(HaveOccurred())
-
-			resources, err := mutators.ToUnstructured(ctx, ammp.Spec.Resources)
-			Expect(err).NotTo(HaveOccurred())
-			for _, resource := range resources {
-				if resource.GetKind() != "ManagedClustersAgentPool" {
-					continue
+				if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
+					isUserPool = true
 				}
-				// mode may not be set in spec. Get the ASO object and check in status.
-				resource.SetNamespace(ammp.Namespace)
-				agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
-				Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(resource), agentPool)).To(Succeed())
-				if ptr.Deref(agentPool.Status.Mode, "") != asocontainerservicev1.AgentPoolMode_STATUS_System {
-					machinePoolsToScale = append(machinePoolsToScale, mp)
+			case infrav1exp.AzureASOManagedMachinePoolKind:
+				ammp := &infrav1exp.AzureASOManagedMachinePool{}
+				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+				}, ammp)
+				Expect(err).NotTo(HaveOccurred())
+
+				resources, err := mutators.ToUnstructured(ctx, ammp.Spec.Resources)
+				Expect(err).NotTo(HaveOccurred())
+				for _, resource := range resources {
+					if resource.GetKind() != "ManagedClustersAgentPool" {
+						continue
+					}
+					// mode may not be set in spec. Get the ASO object and check in status.
+					resource.SetNamespace(ammp.Namespace)
+					agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
+					Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(resource), agentPool)).To(Succeed())
+					if ptr.Deref(agentPool.Status.Mode, "") != asocontainerservicev1.AgentPoolMode_STATUS_System {
+						isUserPool = true
+					}
+					break
 				}
-				break
 			}
-		}
-	}
 
-	framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-		ClusterProxy:              bootstrapClusterProxy,
-		Cluster:                   input.Cluster,
-		Replicas:                  0,
-		MachinePools:              machinePoolsToScale,
-		WaitForMachinePoolToScale: input.WaitIntervals,
-	})
+			if isUserPool {
+				Byf("Scaling the machine pool %s to zero", mp.Name)
+				framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
+					ClusterProxy:              bootstrapClusterProxy,
+					Cluster:                   input.Cluster,
+					Replicas:                  0,
+					MachinePools:              []*expv1.MachinePool{mp},
+					WaitForMachinePoolToScale: input.WaitIntervals,
+				})
+			}
 
-	By("Restoring initial replica count")
-	for _, mp := range input.MachinePools {
-		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
-			defer GinkgoRecover()
-			defer wg.Done()
+			Byf("Restoring initial replica count for machine pool %s", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
-				Replicas:                  originalReplicas[client.ObjectKeyFromObject(mp)],
+				Replicas:                  originalReplicas,
 				MachinePools:              []*expv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 		}(mp)
 	}
+
 	wg.Wait()
 }
