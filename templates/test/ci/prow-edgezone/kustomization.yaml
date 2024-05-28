@@ -16,7 +16,6 @@ patches:
 - path: patches/azurecluster-edgezone.yaml
 - path: patches/standardssd-disk.yaml
 - path: patches/machine-type.yaml
-- path: patches/kubernetes-version.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
 
