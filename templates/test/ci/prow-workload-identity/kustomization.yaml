@@ -11,9 +11,7 @@ patchesStrategicMerge:
   - ../patches/azureclusteridentity-azwi.yaml
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
-  - ../patches/apiserver.yaml
   - ../patches/uami-md-0.yaml
   - ../patches/uami-control-plane.yaml
   - ../patches/cluster-label-calico.yaml
   - ../patches/cluster-label-cloud-provider-azure.yaml
-
