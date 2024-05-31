@@ -36,8 +36,6 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 export CCM_IMAGE_NAME=azure-cloud-controller-manager
 # cloud node manager image
 export CNM_IMAGE_NAME=azure-cloud-node-manager
-# cloud node manager windows image version
-export WINDOWS_IMAGE_VERSION=1809
 # container name
 export AZURE_BLOB_CONTAINER_NAME="${AZURE_BLOB_CONTAINER_NAME:-"kubernetes-ci"}"
 
@@ -59,24 +57,14 @@ setup() {
     IMAGE_TAG_ACR_CREDENTIAL_PROVIDER="${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER:-${IMAGE_TAG}}"
     export IMAGE_TAG_ACR_CREDENTIAL_PROVIDER
     echo "Image Tag ACR credential provider is ${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}"
-
-    if [[ -n "${WINDOWS_SERVER_VERSION:-}" ]]; then
-        if [[ "${WINDOWS_SERVER_VERSION}" == "windows-2019" ]]; then
-            export WINDOWS_IMAGE_VERSION="1809"
-        elif [[ "${WINDOWS_SERVER_VERSION}" == "windows-2022" ]]; then
-            export WINDOWS_IMAGE_VERSION="ltsc2022"
-        else
-            echo "Windows version not supported: ${WINDOWS_SERVER_VERSION}"
-        fi
-    fi
 }
 
 main() {
     if [[ "$(can_reuse_artifacts)" =~ "false" ]]; then
         echo "Building Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
-        echo "Building Linux amd64 and Windows ${WINDOWS_IMAGE_VERSION} amd64 cloud node managers"
-        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64 manifest-node-manager-image-windows-"${WINDOWS_IMAGE_VERSION}"-amd64
+        echo "Building Linux amd64 and Windows (hpc) amd64 cloud node managers"
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-hpc-amd64 manifest-node-manager-image-windows-hpc-amd64
 
         echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
@@ -103,8 +91,7 @@ can_reuse_artifacts() {
         fi
     done
 
-    FULL_VERSION=$(docker manifest inspect mcr.microsoft.com/windows/nanoserver:${WINDOWS_IMAGE_VERSION} | jq -r '.manifests[0].platform["os.version"]')
-    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"${FULL_VERSION}\""; then
+    if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os\": \"windows\""; then
         echo "false" && return
     fi
 
