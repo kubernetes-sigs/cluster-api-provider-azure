@@ -133,6 +133,7 @@ func InstallClusterAutoscaler(ctx context.Context, inputGetter func() ClusterAut
 				fmt.Sprintf("autoDiscovery.clusterName=%s", input.ClusterName),
 				fmt.Sprintf("clusterAPIKubeconfigSecret=%s-kubeconfig", input.ClusterName),
 				"clusterAPIMode=kubeconfig-incluster",
+				"extraArgs.enable-provisioning-requests=true",
 			},
 			StringValues: []string{
 				"extraArgs.scan-interval=1m",
@@ -166,6 +167,7 @@ func InstallClusterAutoscaler(ctx context.Context, inputGetter func() ClusterAut
 				fmt.Sprintf("autoscalingGroups[0].maxSize=%s", input.E2EConfig.GetVariable(ClusterAutoscalerExternalMaxNodes)),
 				"extraArgs.scan-interval=1m",
 				"extraArgs.scale-down-unneeded-time=1m",
+				"extraArgs.enable-provisioning-requests=true",
 			},
 		}
 		targetCluster = workloadClusterProxy
@@ -223,6 +225,7 @@ func InstallClusterAutoscaler(ctx context.Context, inputGetter func() ClusterAut
 				"extraArgs.max-total-unready-percentage=45",
 				"extraArgs.ok-total-unready-count=100",
 				"extraArgs.max-node-provision-time=15m",
+				"extraArgs.enable-provisioning-requests=true",
 				"extraArgs.v=2",
 			},
 		}
