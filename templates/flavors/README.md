@@ -4,7 +4,7 @@ In `clusterctl` the infrastructure provider authors can provide different type o
 or flavors; use the --flavor flag to specify which flavor to use; e.g
 
 ```shell
-clusterctl generate cluster my-cluster --kubernetes-version v1.26.1 \
+clusterctl generate cluster my-cluster --kubernetes-version v1.29.5 \
     --flavor private > my-cluster.yaml
 ```
 
