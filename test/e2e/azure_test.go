@@ -1047,6 +1047,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// the `AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE` and `AZURE_EDGEZONE_NODE_MACHINE_TYPE` environment variables.
 	Context("Creating clusters on public MEC [OPTIONAL]", func() {
 		It("with 1 control plane nodes and 1 worker node", func() {
+			Skip("Skipping public MEC test until a new edgezone is available")
 			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "edgezone")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
