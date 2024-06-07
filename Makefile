@@ -130,7 +130,11 @@ CODESPELL_BIN := codespell
 CODESPELL_DIST_DIR := codespell_dist
 CODESPELL := $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/$(CODESPELL_BIN)
 
-SETUP_ENVTEST_VER := v0.0.0-20231012212722-e25aeebc7846
+# This is a commit from CR main (22.05.2024).
+# Intentionally using a commit from main to use a setup-envtest version
+# that uses binaries from controller-tools, not GCS.
+# CR PR: https://github.com/kubernetes-sigs/controller-runtime/pull/2811
+SETUP_ENVTEST_VER := v0.0.0-20240522175850-2e9781e9fc60
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
