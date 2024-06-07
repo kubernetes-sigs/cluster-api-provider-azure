@@ -162,14 +162,14 @@ func ValidateSystemAssignedIdentityRole(identityType VMIdentity, roleAssignmentN
 	}
 	if identityType == VMIdentitySystemAssigned {
 		if role.DefinitionID == "" {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SystemAssignedIdentityRole", "DefinitionID"), role.DefinitionID, "the definitionID field cannot be empty"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "systemAssignedIdentityRole", "definitionID"), role.DefinitionID, "the definitionID field cannot be empty"))
 		}
 		if role.Scope == "" {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "SystemAssignedIdentityRole", "Scope"), role.Scope, "the scope field cannot be empty"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "systemAssignedIdentityRole", "scope"), role.Scope, "the scope field cannot be empty"))
 		}
 	}
 	if identityType != VMIdentitySystemAssigned && role != nil {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("Spec", "Role"), "systemAssignedIdentityRole can only be set when identity is set to SystemAssigned"))
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "role"), "systemAssignedIdentityRole can only be set when identity is set to SystemAssigned"))
 	}
 	return allErrs
 }
@@ -482,7 +482,7 @@ func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExt
 	allErrs := field.ErrorList{}
 
 	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "VMExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("azureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
 	return allErrs

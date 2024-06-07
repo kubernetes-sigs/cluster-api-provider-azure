@@ -174,7 +174,7 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
 func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
-	fldPath := field.NewPath("UserAssignedIdentities")
+	fldPath := field.NewPath("userAssignedIdentities")
 	if errs := infrav1.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
 		return kerrors.NewAggregate(errs.ToAggregate().Errors())
 	}
@@ -236,10 +236,10 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
 		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "DefinitionID"), amp.Spec.SystemAssignedIdentityRole.DefinitionID, "the roleDefinitionID field cannot be empty"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "definitionID"), amp.Spec.SystemAssignedIdentityRole.DefinitionID, "the roleDefinitionID field cannot be empty"))
 		}
 		if amp.Spec.SystemAssignedIdentityRole.Scope == "" {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "Scope"), amp.Spec.SystemAssignedIdentityRole.Scope, "the scope field cannot be empty"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "scope"), amp.Spec.SystemAssignedIdentityRole.Scope, "the scope field cannot be empty"))
 		}
 	}
 	if amp.Spec.Identity != infrav1.VMIdentitySystemAssigned && amp.Spec.SystemAssignedIdentityRole != nil {

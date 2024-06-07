@@ -87,7 +87,7 @@ func (r *AzureMachineTemplate) ValidateCreate(ctx context.Context, obj runtime.O
 	}
 
 	if ptr.Deref(r.Spec.Template.Spec.DisableExtensionOperations, false) && len(r.Spec.Template.Spec.VMExtensions) > 0 {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "VMExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
 	if len(allErrs) == 0 {
@@ -123,7 +123,7 @@ func (r *AzureMachineTemplate) ValidateUpdate(ctx context.Context, oldRaw runtim
 
 		if err := r.Default(ctx, old); err != nil {
 			allErrs = append(allErrs,
-				field.Invalid(field.NewPath("AzureMachineTemplate"), r, fmt.Sprintf("Unable to apply defaults: %v", err)),
+				field.Invalid(field.NewPath("azureMachineTemplate"), r, fmt.Sprintf("Unable to apply defaults: %v", err)),
 			)
 		}
 
