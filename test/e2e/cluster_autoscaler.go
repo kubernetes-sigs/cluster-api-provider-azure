@@ -176,8 +176,14 @@ func InstallClusterAutoscaler(ctx context.Context, inputGetter func() ClusterAut
 	if hasAKSAutoscalerCapability {
 		Expect(autoscalerEnabledMachinePool).NotTo(BeNil())
 		var aksVMSSName, aksVMSSResourceGroup string
+		listOptions := []client.ListOption{
+			client.InNamespace(input.Namespace.Name),
+			client.MatchingLabels{
+				clusterv1.ClusterNameLabel: input.ClusterName,
+			},
+		}
 		Eventually(func() error {
-			return mgmtClient.List(ctx, ammpList, byClusterOptions(input.ClusterName, input.Namespace.Name)...)
+			return mgmtClient.List(ctx, ammpList, listOptions...)
 		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed(), "Failed to list MachinePools object for Cluster %s", input.ClusterName)
 		r := regexp.MustCompile(regexpUniformInstance)
 		for _, ammp := range ammpList.Items {
