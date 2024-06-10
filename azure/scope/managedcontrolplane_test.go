@@ -809,6 +809,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 							},
 							AADProfile: &infrav1.AADProfile{
 								Managed:             true,
+								EnableAzureRBAC:     ptr.To(false),
 								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
 							},
 						},
@@ -823,7 +824,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 			},
 			Expected: &managedclusters.AADProfile{
 				Managed:             true,
-				EnableAzureRBAC:     true,
+				EnableAzureRBAC:     false,
 				AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
 			},
 		},

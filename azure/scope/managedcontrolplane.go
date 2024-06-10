@@ -591,8 +591,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 	if s.ControlPlane.Spec.AADProfile != nil {
 		managedClusterSpec.AADProfile = &managedclusters.AADProfile{
 			Managed:             s.ControlPlane.Spec.AADProfile.Managed,
-			EnableAzureRBAC:     s.ControlPlane.Spec.AADProfile.Managed,
 			AdminGroupObjectIDs: s.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs,
+		}
+		if s.ControlPlane.Spec.AADProfile.EnableAzureRBAC != nil {
+			managedClusterSpec.AADProfile.EnableAzureRBAC = *s.ControlPlane.Spec.AADProfile.EnableAzureRBAC
 		}
 		if s.ControlPlane.Spec.DisableLocalAccounts != nil {
 			managedClusterSpec.DisableLocalAccounts = s.ControlPlane.Spec.DisableLocalAccounts

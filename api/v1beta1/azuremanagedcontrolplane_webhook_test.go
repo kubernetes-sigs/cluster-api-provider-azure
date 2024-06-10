@@ -110,6 +110,10 @@ func TestDefaultingWebhook(t *testing.T) {
 		},
 	}
 	amcp.Spec.EnablePreviewFeatures = ptr.To(true)
+	amcp.Spec.AADProfile = &AADProfile{
+		Managed:             true,
+		AdminGroupObjectIDs: []string{"616077a8-5db7-4c98-b856-b34619afg75h"},
+	}
 
 	err = mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -136,6 +140,8 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.SecurityProfile.ImageCleaner.IntervalHours).To(Equal(48))
 	g.Expect(amcp.Spec.EnablePreviewFeatures).NotTo(BeNil())
 	g.Expect(*amcp.Spec.EnablePreviewFeatures).To(BeTrue())
+	g.Expect(amcp.Spec.AADProfile.EnableAzureRBAC).NotTo(BeNil())
+	g.Expect(*amcp.Spec.AADProfile.EnableAzureRBAC).To(BeTrue())
 
 	t.Logf("Testing amcp defaulting webhook with overlay")
 	amcp = &AzureManagedControlPlane{

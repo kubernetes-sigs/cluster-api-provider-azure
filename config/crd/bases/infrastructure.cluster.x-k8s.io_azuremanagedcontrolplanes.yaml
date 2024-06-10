@@ -77,6 +77,10 @@ spec:
                     items:
                       type: string
                     type: array
+                  enableAzureRBAC:
+                    description: EnableAzureRBAC - Whether to enable Azure RBAC for
+                      Kubernetes authorization.
+                    type: boolean
                   managed:
                     description: Managed - Whether to enable managed AAD.
                     type: boolean

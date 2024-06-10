@@ -112,6 +112,15 @@ func setDefaultFleetsMember(fleetsMember *FleetsMember, labels map[string]string
 	return result
 }
 
+// setDefaultAADProfile sets the default AADProfile for an AzureManagedControlPlane.
+func setDefaultAADProfile(aadProfile *AADProfile) *AADProfile {
+	result := aadProfile.DeepCopy()
+	if aadProfile != nil && aadProfile.EnableAzureRBAC == nil {
+		result.EnableAzureRBAC = ptr.To(aadProfile.Managed)
+	}
+	return result
+}
+
 func setDefaultSku(sku *AKSSku) *AKSSku {
 	result := sku.DeepCopy()
 	if sku == nil {

@@ -76,16 +76,17 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 		m.Spec.NetworkPlugin = &networkPlugin
 	}
 
-	setDefault[*string](&m.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
-	setDefault[*string](&m.Spec.LoadBalancerSKU, ptr.To("Standard"))
-	setDefault[*Identity](&m.Spec.Identity, &Identity{
+	setDefault(&m.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
+	setDefault(&m.Spec.LoadBalancerSKU, ptr.To("Standard"))
+	setDefault(&m.Spec.Identity, &Identity{
 		Type: ManagedControlPlaneIdentityTypeSystemAssigned,
 	})
-	setDefault[*bool](&m.Spec.EnablePreviewFeatures, ptr.To(false))
+	setDefault(&m.Spec.EnablePreviewFeatures, ptr.To(false))
 	m.Spec.Version = setDefaultVersion(m.Spec.Version)
 	m.Spec.SKU = setDefaultSku(m.Spec.SKU)
 	m.Spec.AutoScalerProfile = setDefaultAutoScalerProfile(m.Spec.AutoScalerProfile)
 	m.Spec.FleetsMember = setDefaultFleetsMember(m.Spec.FleetsMember, m.Labels)
+	m.Spec.AADProfile = setDefaultAADProfile(m.Spec.AADProfile)
 
 	if err := m.setDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "setDefaultSSHPublicKey failed")

@@ -292,6 +292,10 @@ type AADProfile struct {
 	// +kubebuilder:validation:Required
 	Managed bool `json:"managed"`
 
+	// EnableAzureRBAC - Whether to enable Azure RBAC for Kubernetes authorization.
+	// +optional
+	EnableAzureRBAC *bool `json:"enableAzureRBAC,omitempty"`
+
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	// +kubebuilder:validation:Required
 	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
