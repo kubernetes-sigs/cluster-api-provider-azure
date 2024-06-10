@@ -433,7 +433,6 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("spot"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(FlatcarKubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
