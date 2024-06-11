@@ -137,8 +137,6 @@ providers:
         targetName: "cluster-template-conformance-presubmit-artifacts.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-flex.yaml"
         targetName: "cluster-template-machine-pool-flex.yaml"
-      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-workload-identity.yaml"
-        targetName: "cluster-template-workload-identity.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-clusterclass.yaml"
@@ -216,7 +214,7 @@ variables:
   CONFORMANCE_IMAGE: "${CONFORMANCE_IMAGE:-}"
   CONFORMANCE_NODES: "${CONFORMANCE_NODES:-1}"
   IP_FAMILY: "IPv4"
-  CLUSTER_IDENTITY_NAME: "cluster-identity-sp"
+  CLUSTER_IDENTITY_NAME: "cluster-identity-ci"
   ASO_CREDENTIAL_SECRET_NAME: "aso-credentials"
   ASO_CREDENTIAL_SECRET_MODE: workloadidentity
   NODE_DRAIN_TIMEOUT: "60s"

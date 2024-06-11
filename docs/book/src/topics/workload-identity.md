@@ -169,7 +169,7 @@ to give the identity Contributor access to the Azure subscription where the work
 - At this stage, you can apply this yaml to create a workload cluster.
 
 Notes:
-- Please follow this [link](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/test/ci/cluster-template-prow-workload-identity.yaml)
+- Please follow this [link](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/test/ci/cluster-template-prow.yaml)
 to see a workload cluster yaml configuration that uses workload identity.
 - Creating a workload cluster via workload identity will be
   simplified after [this](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/3589) issue is resolved.

@@ -7,3 +7,7 @@ spec:
     metadata:
       annotations:
         windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
+    spec:
+      identity: UserAssigned
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
