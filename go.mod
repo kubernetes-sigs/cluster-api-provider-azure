@@ -54,8 +54,8 @@ require (
 	k8s.io/kubectl v0.28.4
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/cloud-provider-azure v1.28.4
-	sigs.k8s.io/cluster-api v1.6.5
-	sigs.k8s.io/cluster-api/test v1.6.5
+	sigs.k8s.io/cluster-api v1.6.6
+	sigs.k8s.io/cluster-api/test v1.6.6
 	sigs.k8s.io/controller-runtime v0.16.5
 	sigs.k8s.io/kind v0.22.0
 )
@@ -219,7 +219,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.5
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.6
 
 // kube-openapi should match the version imported by CAPI.
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
