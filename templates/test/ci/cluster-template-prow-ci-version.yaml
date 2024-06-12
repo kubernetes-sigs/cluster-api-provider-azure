@@ -273,6 +273,7 @@ metadata:
 spec:
   template:
     spec:
+      identity: UserAssigned
       image:
         marketplace:
           offer: capi
@@ -283,6 +284,8 @@ spec:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmExtensions:
       - name: CustomScript
         protectedSettings:
