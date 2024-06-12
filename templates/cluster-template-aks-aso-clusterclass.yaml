@@ -87,8 +87,6 @@ spec:
                 mode: System
                 type: VirtualMachineScaleSets
                 vmSize: ${AZURE_NODE_MACHINE_TYPE}
-                # Soon this will be derived from the MachinePool
-                count: ${WORKER_MACHINE_COUNT:=2}
       selector:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: AzureASOManagedMachinePoolTemplate
@@ -117,8 +115,6 @@ spec:
                 mode: User
                 type: VirtualMachineScaleSets
                 vmSize: ${AZURE_NODE_MACHINE_TYPE}
-                # Soon this will be derived from the MachinePool
-                count: ${WORKER_MACHINE_COUNT:=2}
       selector:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: AzureASOManagedMachinePoolTemplate
