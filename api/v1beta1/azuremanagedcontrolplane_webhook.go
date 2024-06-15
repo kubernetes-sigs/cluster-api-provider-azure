@@ -884,7 +884,6 @@ func (m *AzureManagedControlPlaneClassSpec) validateDefender(old *AzureManagedCo
 		}
 	}
 	return allErrs
-
 }
 
 // validateOIDCIssuerProfile validates an OIDCIssuerProfile.
