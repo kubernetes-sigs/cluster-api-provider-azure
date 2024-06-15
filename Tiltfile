@@ -20,9 +20,9 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.7.2",
+    "capi_version": "v1.7.3",
     "caaph_version": "v0.2.1",
-    "cert_manager_version": "v1.14.5",
+    "cert_manager_version": "v1.15.0",
     "kubernetes_version": "v1.28.3",
     "aks_kubernetes_version": "v1.28.3",
     "flatcar_version": "3374.2.1",
@@ -35,7 +35,7 @@ settings = {
 }
 
 # Auth keys that need to be loaded from the environment
-keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
+keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_ID"]
 
 # Get global settings from tilt-settings.yaml or tilt-settings.json
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
@@ -266,13 +266,10 @@ def create_identity_secret():
 
     os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
     os.putenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", "default")
-    os.putenv("CLUSTER_IDENTITY_NAME", "cluster-identity")
+    os.putenv("CLUSTER_IDENTITY_NAME", "cluster-identity-ci")
     os.putenv("ASO_CREDENTIAL_SECRET_NAME", "aso-credentials")
 
-    os.putenv("AZURE_CLIENT_SECRET_B64", base64_encode(os.environ.get("AZURE_CLIENT_SECRET")))
-    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet = True, echo_off = True)
     local("cat templates/flavors/aks-aso/credentials.yaml | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -", quiet = True, echo_off = True)
-    os.unsetenv("AZURE_CLIENT_SECRET_B64")
 
 def create_crs():
     # create config maps

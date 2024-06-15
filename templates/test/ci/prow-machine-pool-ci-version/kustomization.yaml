@@ -29,6 +29,7 @@ patches:
 - path: patches/machine-pool-ci-version.yaml
 - path: ../patches/machine-pool-worker-counts.yaml
 - path: patches/machine-pool-ci-version-windows.yaml
+- path: ../patches/uami-mp-0.yaml
 configMapGenerator:
 - behavior: merge
   files:

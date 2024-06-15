@@ -124,8 +124,6 @@ spec:
                 mode: System
                 type: VirtualMachineScaleSets
                 vmSize: ${AZURE_NODE_MACHINE_TYPE}
-                # Soon this will be derived from the MachinePool
-                count: ${WORKER_MACHINE_COUNT:=2}
   - name: azureasomanagedmachinepool-pool1-spec
     definitions:
     - selector:
@@ -154,6 +152,4 @@ spec:
                 mode: User
                 type: VirtualMachineScaleSets
                 vmSize: ${AZURE_NODE_MACHINE_TYPE}
-                # Soon this will be derived from the MachinePool
-                count: ${WORKER_MACHINE_COUNT:=2}
 

@@ -29,10 +29,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -80,32 +78,6 @@ var _ = Describe("Workload cluster creation", func() {
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		spClientSecret := os.Getenv(AzureClientSecret)
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "cluster-identity-secret",
-				Namespace: defaultNamespace,
-				Labels: map[string]string{
-					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
-				},
-			},
-			Type: corev1.SecretTypeOpaque,
-			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
-		}
-		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(defaultNamespace).Get(ctx, secret.Name, metav1.GetOptions{})
-		if err != nil && !apierrors.IsNotFound(err) {
-			Expect(err).NotTo(HaveOccurred())
-		}
-		if err != nil {
-			Logf("Creating cluster identity secret \"%s\"", secret.Name)
-			err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-			if !apierrors.IsAlreadyExists(err) {
-				Expect(err).NotTo(HaveOccurred())
-			}
-		} else {
-			Logf("Using existing cluster identity secret")
-		}
-
 		asoSecretName := e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_NAME")
 		asoSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +87,7 @@ var _ = Describe("Workload cluster creation", func() {
 			StringData: map[string]string{
 				config.AzureSubscriptionID: e2eConfig.GetVariable(AzureSubscriptionID),
 				config.AzureTenantID:       e2eConfig.GetVariable(AzureTenantID),
-				config.AzureClientID:       e2eConfig.GetVariable(AzureClientID),
+				config.AzureClientID:       e2eConfig.GetVariable(AzureClientIDUserAssignedIdentity),
 				config.AuthMode:            e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_MODE"),
 			},
 		}
@@ -125,8 +97,6 @@ var _ = Describe("Workload cluster creation", func() {
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
-		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, defaultNamespace)).To(Succeed())
 		additionalCleanup = nil
 	})
 
@@ -433,7 +403,6 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("spot"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(FlatcarKubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1148,57 +1117,6 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 
 			By("PASSED!")
-		})
-	})
-
-	// Workload identity test
-	Context("Creating a cluster that uses workload identity [OPTIONAL]", func() {
-		It("with a 1 control plane nodes and 2 worker nodes", func() {
-			By("using workload-identity")
-			clusterName = getClusterName(clusterNamePrefix, "azwi")
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("workload-identity"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(2),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				}),
-			), result)
-
-			By("Verifying expected VM extensions are present on the node", func() {
-				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
-					return AzureVMExtensionsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("Workload identity test PASSED!")
 		})
 	})
 })

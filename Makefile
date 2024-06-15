@@ -89,6 +89,10 @@ KUSTOMIZE_VER := v5.4.1
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
 
+AZWI_VER := v1.2.2
+AZWI_BIN := azwi
+AZWI := $(TOOLS_BIN_DIR)/$(AZWI_BIN)-$(AZWI_VER)
+
 MOCKGEN_VER := v0.4.0
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
@@ -177,6 +181,7 @@ ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
+AZWI_SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
 # @sonasingh46: Skip creating mgmt cluster for ci as workload identity needs kind cluster
 # to be created with extra mounts for key pairs which is not yet supported
@@ -191,6 +196,11 @@ LDFLAGS := $(shell hack/version.sh)
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 
 export KIND_CLUSTER_NAME ?= capz
+export RANDOM_SUFFIX := $(shell /bin/bash -c "echo $$RANDOM")
+export AZWI_RESOURCE_GROUP ?= capz-wi-$(RANDOM_SUFFIX)
+export CI_RG ?= $(AZWI_RESOURCE_GROUP)
+export USER_IDENTITY ?= $(addsuffix $(RANDOM_SUFFIX),$(CI_RG))
+export AZURE_IDENTITY_ID_FILEPATH ?= $(ROOT_DIR)/azure_identity_id
 
 ## --------------------------------------
 ## Binaries
@@ -287,7 +297,7 @@ verify-codespell: codespell ## Verify codespell.
 ##@ Development:
 
 .PHONY: install-tools # populate hack/tools/bin
-install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND)
+install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(AZWI)
 
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
@@ -304,7 +314,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.2/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAAPH
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.1.0-alpha.10/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
@@ -341,7 +351,10 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	# Create workload Cluster.
-	@if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
+	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
+		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
+	fi; \
+	if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
 		timeout --foreground 300 bash -c "until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
 	elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
 		timeout --foreground 300 bash -c "until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
@@ -686,7 +699,13 @@ test-cover: test ## Run tests with code coverage and generate reports.
 
 .PHONY: kind-create-bootstrap
 kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
-	export AZWI=$${AZWI:-true} KIND_CLUSTER_NAME=capz-e2e && ./scripts/kind-with-registry.sh
+	KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh
+
+.PHONY: cleanup-workload-identity
+cleanup-workload-identity: ## Cleanup CI workload-identity infra
+	@if ! [ "$(AZWI_SKIP_CLEANUP)" == "true" ]; then \
+		./scripts/cleanup-workload-identity.sh \
+	fi
 
 ## --------------------------------------
 ## Security Scanning
@@ -708,6 +727,9 @@ kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 
 .PHONY: tilt-up
 tilt-up: install-tools kind-create ## Start tilt and build kind cluster if needed.
+	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
+		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
+	fi; \
 	CLUSTER_TOPOLOGY=true EXP_CLUSTER_RESOURCE_SET=true EXP_MACHINE_POOL=true EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION=true EXP_EDGEZONE=true tilt up
 
 .PHONY: delete-cluster
@@ -791,6 +813,16 @@ $(HELM): ## Put helm into tools folder.
 	USE_SUDO=false HELM_INSTALL_DIR=$(TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VER) BINARY_NAME=$(HELM_BIN)-$(HELM_VER) $(TOOLS_BIN_DIR)/get_helm.sh
 	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
 	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
+
+$(AZWI): ## Put azwi into tools folder.
+	mkdir -p $(TOOLS_BIN_DIR)
+	rm -f "$(TOOLS_BIN_DIR)/$(AZWI_BIN)*"
+	curl --retry $(CURL_RETRIES) -fsSL -o $(TOOLS_BIN_DIR)/azwi.tar.gz https://github.com/Azure/azure-workload-identity/releases/download/$(AZWI_VER)/azwi-$(AZWI_VER)-$(GOOS)-$(GOARCH).tar.gz
+	tar -xf "$(TOOLS_BIN_DIR)/azwi.tar.gz" -C $(TOOLS_BIN_DIR) $(AZWI_BIN)
+	mv "$(TOOLS_BIN_DIR)/$(AZWI_BIN)" $(AZWI)
+	ln -sf $(AZWI) $(TOOLS_BIN_DIR)/$(AZWI_BIN)
+	chmod +x $(AZWI) $(TOOLS_BIN_DIR)/$(AZWI_BIN)
+	rm -f $(TOOLS_BIN_DIR)/azwi.tar.gz
 
 $(KIND): ## Build kind into tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
