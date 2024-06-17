@@ -12,5 +12,5 @@ spec:
             - "--diagnostics-address=:8080"
             - "--insecure-diagnostics"
             - "--leader-elect"
-            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false},EdgeZone=${EXP_EDGEZONE:=false},ASOAPI=${EXP_ASO_API:=false}"
+            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKSResourceHealth=${EXP_AKS_RESOURCE_HEALTH:=false},EdgeZone=${EXP_EDGEZONE:=false},ASOAPI=${EXP_ASO_API:=true}"
             - "--enable-tracing"
