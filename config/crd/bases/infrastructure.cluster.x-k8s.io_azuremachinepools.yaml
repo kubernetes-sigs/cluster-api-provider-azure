@@ -578,6 +578,15 @@ spec:
                             enum:
                             - Local
                             type: string
+                          placement:
+                            description: Placement specifies the ephemeral disk placement
+                              for operating system disk. If placement is specified,
+                              Option must be set to "Local".
+                            enum:
+                            - CacheDisk
+                            - NvmeDisk
+                            - ResourceDisk
+                            type: string
                         required:
                         - option
                         type: object
