@@ -31,6 +31,8 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestSetAgentPoolDefaults(t *testing.T) {
@@ -93,7 +95,7 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
 
-			mutator := SetAgentPoolDefaults(test.asoManagedMachinePool, test.machinePool)
+			mutator := SetAgentPoolDefaults(nil, test.machinePool)
 			actual, err := ApplyMutators(ctx, test.asoManagedMachinePool.Spec.Resources, mutator)
 			if test.expectedErr != nil {
 				g.Expect(err).To(MatchError(test.expectedErr))
@@ -351,11 +353,12 @@ func TestSetAgentPoolCount(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name        string
-		machinePool *expv1.MachinePool
-		agentPool   *asocontainerservicev1.ManagedClustersAgentPool
-		expected    *asocontainerservicev1.ManagedClustersAgentPool
-		expectedErr error
+		name              string
+		machinePool       *expv1.MachinePool
+		agentPool         *asocontainerservicev1.ManagedClustersAgentPool
+		existingAgentPool *asocontainerservicev1.ManagedClustersAgentPool
+		expected          *asocontainerservicev1.ManagedClustersAgentPool
+		expectedErr       error
 	}{
 		{
 			name: "no CAPI opinion",
@@ -389,12 +392,17 @@ func TestSetAgentPoolCount(t *testing.T) {
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
+					Count: nil,
+				},
+			},
+			existingAgentPool: &asocontainerservicev1.ManagedClustersAgentPool{
+				Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 					Count: ptr.To(2),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
-					Count: ptr.To(2),
+					Count: nil,
 				},
 			},
 		},
@@ -407,7 +415,7 @@ func TestSetAgentPoolCount(t *testing.T) {
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
-					OrchestratorVersion: nil,
+					Count: nil,
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
@@ -467,10 +475,18 @@ func TestSetAgentPoolCount(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
 
+			var c client.Client
+			if test.existingAgentPool != nil {
+				c = fakeclient.NewClientBuilder().
+					WithScheme(s).
+					WithObjects(test.existingAgentPool).
+					Build()
+			}
+
 			before := test.agentPool.DeepCopy()
 			uap := apUnstructured(g, test.agentPool)
 
-			err := setAgentPoolCount(ctx, test.machinePool, "", uap)
+			err := setAgentPoolCount(ctx, c, test.machinePool, "", uap)
 			g.Expect(s.Convert(uap, test.agentPool, nil)).To(Succeed())
 			if test.expectedErr != nil {
 				g.Expect(err).To(MatchError(test.expectedErr))
