@@ -363,7 +363,7 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	fi
 
 	# Wait for the kubeconfig to become available.
-	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	timeout --foreground 1800 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	$(KUBECTL) wait --for=condition=Ready --timeout=10m cluster "$(CLUSTER_NAME)"

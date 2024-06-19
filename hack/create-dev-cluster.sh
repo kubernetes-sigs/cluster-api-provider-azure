@@ -62,6 +62,7 @@ export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE:-cluster-template.yaml}"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
 export CLUSTER_IDENTITY_NAME=${CLUSTER_IDENTITY_NAME:="cluster-identity"}
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
+export ASO_CREDENTIAL_SECRET_NAME=${ASO_CREDENTIAL_SECRET_NAME:="aso-credentials"}
 
 # Generate SSH key.
 capz::util::generate_ssh_key
