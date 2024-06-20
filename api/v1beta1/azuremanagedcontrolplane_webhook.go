@@ -709,7 +709,7 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	if old.Spec.VirtualNetwork.Name != m.Spec.VirtualNetwork.Name {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "virtualNetwork.name"),
+				field.NewPath("spec", "virtualNetwork", "name"),
 				m.Spec.VirtualNetwork.Name,
 				"Virtual Network Name is immutable"))
 	}
@@ -717,7 +717,7 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	if old.Spec.VirtualNetwork.CIDRBlock != m.Spec.VirtualNetwork.CIDRBlock {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "virtualNetwork.cidrBlock"),
+				field.NewPath("spec", "virtualNetwork", "cidrBlock"),
 				m.Spec.VirtualNetwork.CIDRBlock,
 				"Virtual Network CIDRBlock is immutable"))
 	}
@@ -725,7 +725,7 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	if old.Spec.VirtualNetwork.Subnet.Name != m.Spec.VirtualNetwork.Subnet.Name {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "virtualNetwork.subnet.name"),
+				field.NewPath("spec", "virtualNetwork", "subnet", "name"),
 				m.Spec.VirtualNetwork.Subnet.Name,
 				"Subnet Name is immutable"))
 	}
@@ -737,7 +737,7 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	if old.Spec.VirtualNetwork.Subnet.CIDRBlock != m.Spec.VirtualNetwork.Subnet.CIDRBlock {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "virtualNetwork.subnet.cidrBlock"),
+				field.NewPath("spec", "virtualNetwork", "subnet", "cidrBlock"),
 				m.Spec.VirtualNetwork.Subnet.CIDRBlock,
 				"Subnet CIDRBlock is immutable"))
 	}
@@ -745,7 +745,7 @@ func (m *AzureManagedControlPlane) validateVirtualNetworkUpdate(old *AzureManage
 	if old.Spec.VirtualNetwork.ResourceGroup != m.Spec.VirtualNetwork.ResourceGroup {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "virtualNetwork.resourceGroup"),
+				field.NewPath("spec", "virtualNetwork", "resourceGroup"),
 				m.Spec.VirtualNetwork.ResourceGroup,
 				"Virtual Network Resource Group is immutable"))
 	}
@@ -779,14 +779,14 @@ func (m *AzureManagedControlPlane) validateAADProfileUpdateAndLocalAccounts(old 
 			if !m.Spec.AADProfile.Managed && old.Spec.AADProfile.Managed {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("spec", "aadProfile.managed"),
+						field.NewPath("spec", "aadProfile", "managed"),
 						m.Spec.AADProfile.Managed,
 						"cannot set AADProfile.Managed to false"))
 			}
 			if len(m.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("spec", "aadProfile.AdminGroupObjectIDs"),
+						field.NewPath("spec", "aadProfile", "adminGroupObjectIDs"),
 						m.Spec.AADProfile.AdminGroupObjectIDs,
 						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
 			}

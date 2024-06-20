@@ -482,7 +482,7 @@ func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExt
 	allErrs := field.ErrorList{}
 
 	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("azureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
 	return allErrs

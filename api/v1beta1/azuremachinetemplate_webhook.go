@@ -123,7 +123,7 @@ func (r *AzureMachineTemplate) ValidateUpdate(ctx context.Context, oldRaw runtim
 
 		if err := r.Default(ctx, old); err != nil {
 			allErrs = append(allErrs,
-				field.Invalid(field.NewPath("azureMachineTemplate"), r, fmt.Sprintf("Unable to apply defaults: %v", err)),
+				field.Invalid(field.NewPath("AzureMachineTemplate"), r, fmt.Sprintf("Unable to apply defaults: %v", err)),
 			)
 		}
 

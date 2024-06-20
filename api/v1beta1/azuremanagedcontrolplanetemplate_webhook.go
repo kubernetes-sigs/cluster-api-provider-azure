@@ -148,14 +148,14 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.
 			if !mcp.Spec.Template.Spec.AADProfile.Managed && old.Spec.Template.Spec.AADProfile.Managed {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("spec", "template", "spec", "aadProfile.Managed"),
+						field.NewPath("spec", "template", "spec", "aadProfile", "managed"),
 						mcp.Spec.Template.Spec.AADProfile.Managed,
 						"cannot set AADProfile.Managed to false"))
 			}
 			if len(mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("spec", "template", "spec", "aadProfile.AdminGroupObjectIDs"),
+						field.NewPath("spec", "template", "spec", "aadProfile", "adminGroupObjectIDs"),
 						mcp.Spec.Template.Spec.AADProfile.AdminGroupObjectIDs,
 						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
 			}
@@ -256,7 +256,7 @@ func (mcp *AzureManagedControlPlaneTemplate) validateVirtualNetworkTemplateUpdat
 	if old.Spec.Template.Spec.VirtualNetwork.CIDRBlock != mcp.Spec.Template.Spec.VirtualNetwork.CIDRBlock {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "template", "spec", "virtualNetwork.CIDRBlock"),
+				field.NewPath("spec", "template", "spec", "virtualNetwork", "cidrBlock"),
 				mcp.Spec.Template.Spec.VirtualNetwork.CIDRBlock,
 				"Virtual Network CIDRBlock is immutable"))
 	}
@@ -264,7 +264,7 @@ func (mcp *AzureManagedControlPlaneTemplate) validateVirtualNetworkTemplateUpdat
 	if old.Spec.Template.Spec.VirtualNetwork.Subnet.Name != mcp.Spec.Template.Spec.VirtualNetwork.Subnet.Name {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "template", "spec", "virtualNetwork.Subnet.Name"),
+				field.NewPath("spec", "template", "spec", "virtualNetwork", "subnet", "name"),
 				mcp.Spec.Template.Spec.VirtualNetwork.Subnet.Name,
 				"Subnet Name is immutable"))
 	}
@@ -276,7 +276,7 @@ func (mcp *AzureManagedControlPlaneTemplate) validateVirtualNetworkTemplateUpdat
 	if old.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock != mcp.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "template", "spec", "virtualNetwork.Subnet.CIDRBlock"),
+				field.NewPath("spec", "template", "spec", "virtualNetwork", "subnet", "cidrBlock"),
 				mcp.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock,
 				"Subnet CIDRBlock is immutable"))
 	}

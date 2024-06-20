@@ -89,7 +89,7 @@ func (mpw *azureManagedMachinePoolTemplateWebhook) ValidateCreate(ctx context.Co
 
 	errs = append(errs, validateMaxPods(
 		mp.Spec.Template.Spec.MaxPods,
-		field.NewPath("spec", "template", "spec", "MaxPods")))
+		field.NewPath("spec", "template", "spec", "maxPods")))
 
 	errs = append(errs, validateOSType(
 		mp.Spec.Template.Spec.Mode,
