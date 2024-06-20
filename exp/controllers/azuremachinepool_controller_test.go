@@ -44,7 +44,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 	Context("Reconcile an AzureMachinePool", func() {
 		It("should not error with minimal set up", func() {
 			reconciler := NewAzureMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
-				reconciler.Timeouts{}, "")
+				reconciler.Timeouts{}, "", "")
 			By("Calling reconcile")
 			instance := &infrav1exp.AzureMachinePool{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 			result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -79,7 +79,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 
 	recorder := record.NewFakeRecorder(1)
 
-	reconciler := NewAzureMachinePoolReconciler(c, recorder, reconciler.Timeouts{}, "")
+	reconciler := NewAzureMachinePoolReconciler(c, recorder, reconciler.Timeouts{}, "", "")
 	name := test.RandomName("paused", 10)
 	namespace := "default"
 

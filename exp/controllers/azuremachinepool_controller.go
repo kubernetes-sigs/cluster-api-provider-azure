@@ -18,12 +18,15 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -60,6 +63,7 @@ type (
 		Timeouts                      reconciler.Timeouts
 		WatchFilterValue              string
 		createAzureMachinePoolService azureMachinePoolServiceCreator
+		BootstrapConfigGVK            schema.GroupVersionKind
 	}
 
 	// annotationReaderWriter provides an interface to read and write annotations.
@@ -72,12 +76,20 @@ type (
 type azureMachinePoolServiceCreator func(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error)
 
 // NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance.
-func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureMachinePoolReconciler {
+func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue, bootstrapConfigGVK string) *AzureMachinePoolReconciler {
+	gvk := schema.FromAPIVersionAndKind(kubeadmv1.GroupVersion.String(), reflect.TypeOf((*kubeadmv1.KubeadmConfig)(nil)).Elem().Name())
+	userGVK, _ := schema.ParseKindArg(bootstrapConfigGVK)
+
+	if userGVK != nil {
+		gvk = *userGVK
+	}
+
 	ampr := &AzureMachinePoolReconciler{
-		Client:           client,
-		Recorder:         recorder,
-		Timeouts:         timeouts,
-		WatchFilterValue: watchFilterValue,
+		Client:             client,
+		Recorder:           recorder,
+		Timeouts:           timeouts,
+		WatchFilterValue:   watchFilterValue,
+		BootstrapConfigGVK: gvk,
 	}
 
 	ampr.createAzureMachinePoolService = newAzureMachinePoolService
@@ -108,6 +120,8 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureMachinePools mapper")
 	}
 
+	config := &metav1.PartialObjectMetadata{}
+	config.SetGroupVersionKind(ampr.BootstrapConfigGVK)
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePool{}).
@@ -127,10 +141,10 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
-		// watch for changes in KubeadmConfig to sync bootstrap token
+		// watch for changes in KubeadmConfig (or any BootstrapConfig) to sync bootstrap token
 		Watches(
-			&kubeadmv1.KubeadmConfig{},
-			handler.EnqueueRequestsFromMapFunc(KubeadmConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
+			config,
+			handler.EnqueueRequestsFromMapFunc(BootstrapConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Build(r)
