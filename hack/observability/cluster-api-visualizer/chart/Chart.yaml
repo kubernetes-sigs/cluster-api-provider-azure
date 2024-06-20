@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: v1.3.0
+appVersion: v1.3.1
 description: A Helm Chart for installing the Cluster API Visualizer
 maintainers:
 - email: jt572@cornell.edu
@@ -8,4 +8,4 @@ name: cluster-api-visualizer
 sources:
 - https://github.com/Jont828/cluster-api-visualizer
 type: application
-version: 1.3.0
+version: 1.3.1

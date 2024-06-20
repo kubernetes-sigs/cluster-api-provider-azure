@@ -31,6 +31,15 @@ rules:
   - '*'
   verbs:
   - '*'
+# Note: this is a fallback to allow the visualizer to work with user-specific CRDs.
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - 'list'
+  - 'get'
+  - 'watch'
 - nonResourceURLs:
   - '*'
   verbs:
