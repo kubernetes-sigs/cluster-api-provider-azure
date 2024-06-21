@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -34,7 +35,7 @@ import (
 var ErrNoManagedClustersAgentPoolDefined = fmt.Errorf("no %s ManagedClustersAgentPools defined in AzureASOManagedMachinePool spec.resources", asocontainerservicev1.GroupVersion.Group)
 
 // SetAgentPoolDefaults propagates config from a MachinePool to an AzureASOManagedMachinePool's defined ManagedClustersAgentPool.
-func SetAgentPoolDefaults(asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, machinePool *expv1.MachinePool) ResourcesMutator {
+func SetAgentPoolDefaults(ctrlClient client.Client, machinePool *expv1.MachinePool) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetAgentPoolDefaults")
 		defer done()
@@ -61,7 +62,7 @@ func SetAgentPoolDefaults(asoManagedMachinePool *infrav1exp.AzureASOManagedMachi
 			return err
 		}
 
-		if err := setAgentPoolCount(ctx, machinePool, agentPoolPath, agentPool); err != nil {
+		if err := setAgentPoolCount(ctx, ctrlClient, machinePool, agentPoolPath, agentPool); err != nil {
 			return err
 		}
 
@@ -126,13 +127,26 @@ func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *exp
 	return nil
 }
 
-func setAgentPoolCount(ctx context.Context, machinePool *expv1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
-	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAgentPoolOrchestratorVersion")
+func setAgentPoolCount(ctx context.Context, ctrlClient client.Client, machinePool *expv1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
+	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAgentPoolCount")
 	defer done()
 
-	autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] == infrav1exp.ReplicasManagedByAKS
-	if machinePool.Spec.Replicas == nil || autoscaling {
+	if machinePool.Spec.Replicas == nil {
 		return nil
+	}
+
+	// When managed by any autoscaler, CAPZ should not provide any spec.count to the ManagedClustersAgentPool
+	// to prevent ASO from overwriting the autoscaler's opinion of the replica count.
+	// The MachinePool's spec.replicas is used to seed an initial value as required by AKS.
+	if _, autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]; autoscaling {
+		existingAgentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
+		err := ctrlClient.Get(ctx, client.ObjectKey{Namespace: machinePool.GetNamespace(), Name: agentPool.GetName()}, existingAgentPool)
+		if client.IgnoreNotFound(err) != nil {
+			return err
+		}
+		if err == nil && existingAgentPool.Status.Count != nil {
+			return nil
+		}
 	}
 
 	countPath := []string{"spec", "count"}
