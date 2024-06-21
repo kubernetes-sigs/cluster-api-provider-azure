@@ -25,7 +25,7 @@ import (
 )
 
 func TestValidateImmutableBoolPtr(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -79,7 +79,7 @@ func TestValidateImmutableBoolPtr(t *testing.T) {
 }
 
 func TestValidateImmutableString(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -133,7 +133,7 @@ func TestValidateImmutableString(t *testing.T) {
 }
 
 func TestValidateImmutableStringPtr(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -187,7 +187,7 @@ func TestValidateImmutableStringPtr(t *testing.T) {
 }
 
 func TestValidateImmutableInt32(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -300,7 +300,7 @@ func TestEnsureStringSlicesAreEquivalent(t *testing.T) {
 }
 
 func TestValidateZeroTransitionPtr(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -353,7 +353,7 @@ func TestValidateZeroTransitionPtr(t *testing.T) {
 }
 
 func TestValidateZeroTransitionString(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -406,7 +406,7 @@ func TestValidateZeroTransitionString(t *testing.T) {
 }
 
 func TestValidateZeroTransitionStringPtr(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
@@ -459,7 +459,7 @@ func TestValidateZeroTransitionStringPtr(t *testing.T) {
 }
 
 func TestValidateZeroTransitionInt32(t *testing.T) {
-	testPath := field.NewPath("Spec", "Foo")
+	testPath := field.NewPath("spec", "foo")
 
 	tests := []struct {
 		name           string
