@@ -209,7 +209,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	resources, err := mutators.ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources, mutators.SetAgentPoolDefaults(asoManagedMachinePool, machinePool))
+	resources, err := mutators.ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources, mutators.SetAgentPoolDefaults(r.Client, machinePool))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -276,7 +276,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	slices.Sort(providerIDs)
 	asoManagedMachinePool.Spec.ProviderIDList = providerIDs
 	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0))
-	if machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] == infrav1exp.ReplicasManagedByAKS {
+	if _, autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]; autoscaling {
 		machinePool.Spec.Replicas = &asoManagedMachinePool.Status.Replicas
 	}
 

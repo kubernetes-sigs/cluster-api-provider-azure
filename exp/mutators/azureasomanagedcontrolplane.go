@@ -25,7 +25,6 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -270,7 +269,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 		}
 
 		resources, err := ApplyMutators(ctx, asoManagedMachinePool.Spec.Resources,
-			SetAgentPoolDefaults(ptr.To(asoManagedMachinePool), machinePool),
+			SetAgentPoolDefaults(ctrlClient, machinePool),
 		)
 		if err != nil {
 			return nil, err
