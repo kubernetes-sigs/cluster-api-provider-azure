@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-markdown-files
-        uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # tag=v44.5.2
+        uses: tj-actions/changed-files@cc3bbb0c526f8ee1d282f8c5f9f4e50745a5b457 # tag=v44.5.4
         with:
           files: CHANGELOG/**.md
       - name: Get release version
@@ -118,7 +118,7 @@ jobs:
           curl -L "https://raw.githubusercontent.com/${{ github.repository }}/main/CHANGELOG/${{ env.RELEASE_TAG }}.md" \
           -o "${{ env.RELEASE_TAG }}.md"
       - name: Release
-        uses: softprops/action-gh-release@69320dbe05506a9a39fc8ae11030b214ec2d1f87 # tag=v2.0.5
+        uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0 # tag=v2.0.6
         with:
           draft: true
           files: out/*
