@@ -533,7 +533,7 @@ func (m *MachinePoolScope) DeleteMachine(ctx context.Context, ampm infrav1exp.Az
 		return errors.Wrapf(err, "error getting owner Machine for AzureMachinePoolMachine %s/%s", ampm.Namespace, ampm.Name)
 	}
 	if machine == nil {
-		log.V(2).Info("No owner Machine exists for AzureMachinePoolMachine", ampm, klog.KObj(&ampm))
+		log.V(2).Info("No owner Machine exists for AzureMachinePoolMachine", "ampm", klog.KObj(&ampm))
 		// If the AzureMachinePoolMachine does not have an owner Machine, do not attempt to delete the AzureMachinePoolMachine as the MachinePool controller will create the
 		// Machine and we want to let it catch up. If we are too hasty to delete, that introduces a race condition where the AzureMachinePoolMachine could be deleted
 		// just as the Machine comes online.
