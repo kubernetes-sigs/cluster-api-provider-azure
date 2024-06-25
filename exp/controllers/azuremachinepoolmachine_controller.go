@@ -297,8 +297,9 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", state))
 	case infrav1.Deleting:
-		if err := ampmr.Client.Delete(ctx, machineScope.AzureMachinePoolMachine); err != nil {
-			return reconcile.Result{}, errors.Wrap(err, "machine pool machine failed to be deleted when deleting")
+		log.V(4).Info("deleting machine because state is Deleting", "machine", machineScope.Name())
+		if err := ampmr.Client.Delete(ctx, machineScope.Machine); err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "machine failed to be deleted when deleting")
 		}
 	}
 
