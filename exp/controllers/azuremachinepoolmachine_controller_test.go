@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -45,28 +46,47 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	cases := []struct {
 		Name   string
 		Setup  func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder)
-		Verify func(g *WithT, result ctrl.Result, err error)
+		Verify func(g *WithT, c client.Client, result ctrl.Result, err error)
 	}{
 		{
 			Name: "should successfully reconcile",
 			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
-				objects := getReadyMachinePoolMachineClusterObjects(false)
+				objects := getReadyMachinePoolMachineClusterObjects(false, nil)
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
 			Name: "should successfully delete",
 			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
-				objects := getReadyMachinePoolMachineClusterObjects(true)
+				objects := getReadyMachinePoolMachineClusterObjects(true, nil)
 				reconciler.Delete(gomock2.AContext()).Return(nil)
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
+			},
+		},
+		{
+			Name: "should delete Machine if VMSS VM has state Deleting",
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
+				objects := getReadyMachinePoolMachineClusterObjects(false, ptr.To(infrav1.Deleting))
+				reconciler.Reconcile(gomock2.AContext()).Return(nil)
+				cb.WithObjects(objects...)
+			},
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+
+				machine := &clusterv1.Machine{}
+				err = c.Get(context.Background(), types.NamespacedName{
+					Name:      "ma1",
+					Namespace: "default",
+				}, machine)
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).Should(ContainSubstring("not found"))
 			},
 		},
 	}
@@ -97,7 +117,8 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler.EXPECT())
-			controller := NewAzureMachinePoolMachineController(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo")
+			cl := cb.Build()
+			controller := NewAzureMachinePoolMachineController(cl, nil, reconcilerutils.Timeouts{}, "foo")
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
 				return reconciler, nil
 			}
@@ -107,12 +128,12 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 			})
-			c.Verify(g, res, err)
+			c.Verify(g, cl, res, err)
 		})
 	}
 }
 
-func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Object {
+func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvisioningState *infrav1.ProvisioningState) []client.Object {
 	azCluster := &infrav1.AzureCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "AzureCluster",
@@ -251,6 +272,11 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool) []client.Obje
 	if ampmIsDeleting {
 		ampm.DeletionTimestamp = &metav1.Time{
 			Time: time.Now(),
+		}
+	}
+	if ampmProvisioningState != nil {
+		ampm.Status = infrav1exp.AzureMachinePoolMachineStatus{
+			ProvisioningState: ampmProvisioningState,
 		}
 	}
 
