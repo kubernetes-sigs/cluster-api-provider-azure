@@ -147,7 +147,7 @@ EOF
     AZURE_IDENTITY_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query clientId -o tsv)
     AZURE_IDENTITY_ID_PRINCIPAL_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query principalId -o tsv)
     echo "${AZURE_IDENTITY_ID}" > "${AZURE_IDENTITY_ID_FILEPATH}"
-    until az role assignment create --assignee-object-id "${AZURE_IDENTITY_ID_PRINCIPAL_ID}" --role "Contributor" --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none --only-show-errors; do
+    until az role assignment create --assignee-object-id "${AZURE_IDENTITY_ID_PRINCIPAL_ID}" --role "Owner" --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none --only-show-errors; do
       sleep 5
     done
     az identity federated-credential create -n "capz-federated-identity" \
