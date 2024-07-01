@@ -33,5 +33,6 @@ if [[ "${REGISTRY:-}" =~ capzci\.azurecr\.io ]]; then
     # Use `docker login` as a suggested workaround and remove this target when the issue is resolved.
     # Issue link: https://github.com/Azure/acr/issues/582
     # Failed building link: https://prow.k8s.io/view/gs/kubernetes-jenkins/pr-logs/pull/kubernetes-sigs_cloud-provider-azure/974/pull-cloud-provider-azure-e2e-ccm-capz/1480459040440979456
-    docker login -u "${AZURE_CLIENT_ID}" -p "${AZURE_CLIENT_SECRET}" capzci.azurecr.io
+    # TODO(@nawazkh): Remove the below `docker login` if it is not needed anymore for WI codeflow.
+    # docker login -u "${AZURE_CLIENT_ID}" -p "${AZURE_CLIENT_SECRET}" capzci.azurecr.io
 fi
