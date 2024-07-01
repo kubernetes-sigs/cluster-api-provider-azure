@@ -275,7 +275,7 @@ func TestGetDefaultWindowsImage(t *testing.T) {
 			k8sVersion:  "v1.21.4",
 			runtime:     "",
 			osVersion:   "",
-			expectedSKU: "k8s-1dot21dot4-windows-2019",
+			expectedSKU: "k8s-1dot21dot4-windows-2022",
 			expectedErr: "",
 		},
 		{
@@ -283,7 +283,7 @@ func TestGetDefaultWindowsImage(t *testing.T) {
 			k8sVersion:  "v1.21.4",
 			runtime:     "dockershim",
 			osVersion:   "",
-			expectedSKU: "k8s-1dot21dot4-windows-2019",
+			expectedSKU: "k8s-1dot21dot4-windows-2022",
 			expectedErr: "",
 		},
 		{
@@ -299,7 +299,7 @@ func TestGetDefaultWindowsImage(t *testing.T) {
 			k8sVersion:  "v1.23.2",
 			runtime:     "containerd",
 			osVersion:   "",
-			expectedSKU: "k8s-1dot23dot2-windows-2019-containerd",
+			expectedSKU: "k8s-1dot23dot2-windows-2022-containerd",
 			expectedErr: "",
 		},
 		{
