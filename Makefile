@@ -473,7 +473,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./api/... \
 		paths=./$(EXP_DIR)/api/... \
 		crd:crdVersions=v1 \
-		rbac:roleName=manager-role \
+		rbac:roleName=base-manager-role \
 		output:crd:dir=$(CRD_ROOT) \
 		output:webhook:dir=$(WEBHOOK_ROOT) \
 		webhook
@@ -482,7 +482,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./controllers/... \
 		paths=./$(EXP_DIR)/controllers/... \
 		output:rbac:dir=$(RBAC_ROOT) \
-		rbac:roleName=manager-role
+		rbac:roleName=base-manager-role
 
 .PHONY: generate-flavors ## Generate template flavors.
 generate-flavors: $(KUSTOMIZE) generate-addons
