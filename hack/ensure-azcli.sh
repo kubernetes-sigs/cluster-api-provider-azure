@@ -29,7 +29,7 @@ if [[ -z "$(command -v az)" ]]; then
     # AZURE_CLIENT_ID has been overloaded with Azure Workload ID in the preset-azure-cred-wi.
     # This is done to avoid exporting Azure Workload ID as AZURE_CLIENT_ID in the test scenarios.
     echo "Using federated token for Azure CLI login, AZURE_CLIENT_ID ${AZURE_CLIENT_ID}, AZURE_TENANT_ID ${AZURE_TENANT_ID}, AZURE_FEDERATED_TOKEN_FILE ${AZURE_FEDERATED_TOKEN_FILE}"
-    az login --service-principal -u "${AZURE_CLIENT_ID}" -t "${AZURE_TENANT_ID}" --federated-token "$(cat "${AZURE_FEDERATED_TOKEN_FILE}")" > /dev/null
+    az login --service-principal -u "${AZURE_CLIENT_ID}" -t "${AZURE_TENANT_ID}" --federated-token "$(cat "${AZURE_FEDERATED_TOKEN_FILE}")" --debug > /dev/null
   else
     az login --service-principal -u "${AZURE_CLIENT_ID}" -p "${AZURE_CLIENT_SECRET}" --tenant "${AZURE_TENANT_ID}" > /dev/null
   fi
