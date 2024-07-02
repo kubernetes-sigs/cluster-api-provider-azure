@@ -220,36 +220,35 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "azurecluster resource group is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					ResourceGroup: "demoResourceGroup",
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					ResourceGroup: "demoResourceGroup-2",
-				},
-			},
+			name: "azurecluster subscription ID is immutable without annotation",
+			oldCluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q8"
+				return ac
+			}(),
+			cluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q9"
+				return ac
+			}(),
 			wantErr: true,
 		},
 		{
-			name: "azurecluster subscription ID is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q8",
-					},
-				},
-			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
-						SubscriptionID: "212ec1q9",
-					},
-				},
-			},
-			wantErr: true,
+			name: "azurecluster subscription ID is mutable with annotation",
+			oldCluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Spec.SubscriptionID = "212ec1q8"
+				return ac
+			}(),
+			cluster: func() *AzureCluster {
+				ac := createValidCluster()
+				ac.Annotations = map[string]string{
+					AzureClusterAllowMutateSubscriptionIDAnnotation: "",
+				}
+				ac.Spec.SubscriptionID = "212ec1q9"
+				return ac
+			}(),
+			wantErr: false,
 		},
 		{
 			name: "azurecluster location is immutable",
