@@ -214,9 +214,14 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return reconcile.Result{}, err
 	}
 
-	if machine != nil {
+	switch {
+	case machine != nil:
 		logger = logger.WithValues("machine", machine.Name)
-	} else {
+	case !azureMachinePool.ObjectMeta.DeletionTimestamp.IsZero():
+		logger.Info("AzureMachinePool is being deleted, removing finalizer")
+		controllerutil.RemoveFinalizer(azureMachine, infrav1exp.AzureMachinePoolMachineFinalizer)
+		return reconcile.Result{}, ampmr.Client.Update(ctx, azureMachine)
+	default:
 		logger.Info("Waiting for Machine Controller to set OwnerRef on AzureMachinePoolMachine")
 		return reconcile.Result{}, nil
 	}
