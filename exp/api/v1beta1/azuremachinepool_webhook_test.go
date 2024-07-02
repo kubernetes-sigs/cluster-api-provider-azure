@@ -233,6 +233,21 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			ownerNotFound: true,
 			wantErr:       true,
 		},
+		{
+			name: "azuremachinepool with invalid DiffDiskSettings",
+			amp: createMachinePoolWithDiffDiskSettings(infrav1.DiffDiskSettings{
+				Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+			}),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinepool with valid DiffDiskSettings",
+			amp: createMachinePoolWithDiffDiskSettings(infrav1.DiffDiskSettings{
+				Option:    string(armcompute.DiffDiskOptionsLocal),
+				Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+			}),
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -492,6 +507,10 @@ func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -514,6 +533,10 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -525,6 +548,10 @@ func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.
 			Template: AzureMachinePoolMachineTemplate{
 				SubnetName:        subnetName,
 				NetworkInterfaces: interfaces,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -541,6 +568,10 @@ func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -554,6 +585,12 @@ func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool 
 				Name:         role,
 				Scope:        "scope",
 				DefinitionID: "definitionID",
+			},
+			Template: AzureMachinePoolMachineTemplate{
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -578,6 +615,10 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
 				Diagnostics: diagnostics,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 	}
@@ -596,6 +637,12 @@ func createMachinePoolWithUserAssignedIdentity(providerIds []string) *AzureMachi
 		Spec: AzureMachinePoolSpec{
 			Identity:               infrav1.VMIdentityUserAssigned,
 			UserAssignedIdentities: userAssignedIdentities,
+			Template: AzureMachinePoolMachineTemplate{
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
 		},
 	}
 }
@@ -613,6 +660,12 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Strategy: strategy,
+			Template: AzureMachinePoolMachineTemplate{
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
 		},
 	}
 }
@@ -621,6 +674,24 @@ func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			OrchestrationMode: infrav1.OrchestrationModeType(mode),
+			Template: AzureMachinePoolMachineTemplate{
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
+		},
+	}
+}
+
+func createMachinePoolWithDiffDiskSettings(settings infrav1.DiffDiskSettings) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Template: AzureMachinePoolMachineTemplate{
+				OSDisk: infrav1.OSDisk{
+					DiffDiskSettings: &settings,
+				},
+			},
 		},
 	}
 }
@@ -678,6 +749,10 @@ func getKnownValidAzureMachinePool() *AzureMachinePool {
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: ptr.To(10),
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 			Identity: infrav1.VMIdentitySystemAssigned,
 			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{

@@ -110,6 +110,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) 
 		amp.ValidateSystemAssignedIdentity(old),
 		amp.ValidateSystemAssignedIdentityRole,
 		amp.ValidateNetwork,
+		amp.ValidateOSDisk,
 	}
 
 	var errs []error
@@ -130,13 +131,20 @@ func (amp *AzureMachinePool) ValidateNetwork() error {
 	return nil
 }
 
+// ValidateOSDisk of an AzureMachinePool.
+func (amp *AzureMachinePool) ValidateOSDisk() error {
+	if errs := infrav1.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		return errs.ToAggregate()
+	}
+	return nil
+}
+
 // ValidateImage of an AzureMachinePool.
 func (amp *AzureMachinePool) ValidateImage() error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
 		if errs := infrav1.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
-			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			return agg
+			return errs.ToAggregate()
 		}
 	}
 

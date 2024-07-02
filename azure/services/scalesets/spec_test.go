@@ -39,6 +39,7 @@ var (
 	customNetworkingSpec, customNetworkingVMSS                                         = getCustomNetworkingVMSS()
 	spotVMSpec, spotVMVMSS                                                             = getSpotVMVMSS()
 	ephemeralSpec, ephemeralVMSS                                                       = getEPHVMSSS()
+	resourceDiskSpec, resourceDiskVMSS                                                 = getResourceDiskVMSS()
 	evictionSpec, evictionVMSS                                                         = getEvictionPolicyVMSS()
 	maxPriceSpec, maxPriceVMSS                                                         = getMaxPriceVMSS()
 	encryptionSpec, encryptionVMSS                                                     = getEncryptionVMSS()
@@ -227,6 +228,32 @@ func getEPHVMSSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
 	vmss := newDefaultVMSS(vmSizeEPH)
 	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.DiffDiskSettings = &armcompute.DiffDiskSettings{
 		Option: ptr.To(armcompute.DiffDiskOptionsLocal),
+	}
+	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
+
+	return spec, vmss
+}
+
+func getResourceDiskVMSS() (ScaleSetSpec, armcompute.VirtualMachineScaleSet) {
+	spec := newDefaultVMSSSpec()
+	spec.Size = vmSizeEPH
+	spec.SKU = resourceskus.SKU{
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
+			{
+				Name:  ptr.To(resourceskus.EphemeralOSDisk),
+				Value: ptr.To("True"),
+			},
+		},
+	}
+	spec.SpotVMOptions = &infrav1.SpotVMOptions{}
+	spec.OSDisk.DiffDiskSettings = &infrav1.DiffDiskSettings{
+		Option:    string(armcompute.DiffDiskOptionsLocal),
+		Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+	}
+	vmss := newDefaultVMSS(vmSizeEPH)
+	vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.DiffDiskSettings = &armcompute.DiffDiskSettings{
+		Option:    ptr.To(armcompute.DiffDiskOptionsLocal),
+		Placement: ptr.To(armcompute.DiffDiskPlacementResourceDisk),
 	}
 	vmss.Properties.VirtualMachineProfile.Priority = ptr.To(armcompute.VirtualMachinePriorityTypesSpot)
 
@@ -584,6 +611,13 @@ func TestScaleSetParameters(t *testing.T) {
 			spec:          ephemeralSpec,
 			existing:      nil,
 			expected:      ephemeralVMSS,
+			expectedError: "",
+		},
+		{
+			name:          "spot vm and ephemeral disk with resourceDisk placement vmss",
+			spec:          resourceDiskSpec,
+			existing:      nil,
+			expected:      resourceDiskVMSS,
 			expectedError: "",
 		},
 		{

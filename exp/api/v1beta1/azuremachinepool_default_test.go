@@ -413,6 +413,10 @@ func hardcodedAzureMachinePoolWithSSHKey(sshPublicKey string) *AzureMachinePool 
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
 				SSHPublicKey: sshPublicKey,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
 			},
 		},
 		ObjectMeta: metav1.ObjectMeta{

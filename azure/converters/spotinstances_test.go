@@ -94,6 +94,21 @@ func TestGetSpotVMOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "spot with ResourceDisk",
+			spot: &infrav1.SpotVMOptions{
+				MaxPrice: nil,
+			},
+			diffDiskSettings: &infrav1.DiffDiskSettings{
+				Option:    string(armcompute.DiffDiskOptionsLocal),
+				Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+			},
+			want: resultParams{
+				vmPriorityTypes:       ptr.To(armcompute.VirtualMachinePriorityTypesSpot),
+				vmEvictionPolicyTypes: nil,
+				billingProfile:        nil,
+			},
+		},
+		{
 			name: "spot with eviction policy",
 			spot: &infrav1.SpotVMOptions{
 				MaxPrice:       nil,

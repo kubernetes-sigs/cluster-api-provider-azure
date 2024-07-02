@@ -462,6 +462,35 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "can create a vm with DiffDiskPlacement ResourceDisk",
+			spec: &VMSpec{
+				Name:       "my-vm",
+				Role:       infrav1.Node,
+				NICIDs:     []string{"my-nic"},
+				SSHKeyData: "fakesshpublickey",
+				Size:       "Standard_D2v3",
+				OSDisk: infrav1.OSDisk{
+					OSType:     "Linux",
+					DiskSizeGB: ptr.To[int32](128),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: string(armcompute.StorageAccountTypesPremiumLRS),
+					},
+					DiffDiskSettings: &infrav1.DiffDiskSettings{
+						Option:    string(armcompute.DiffDiskOptionsLocal),
+						Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+					},
+				},
+				Image: &infrav1.Image{ID: ptr.To("fake-image-id")},
+				SKU:   validSKUWithEphemeralOS,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.DiffDiskSettings.Placement).To(Equal(ptr.To(armcompute.DiffDiskPlacementResourceDisk)))
+			},
+			expectedError: "",
+		},
+		{
 			name: "can create a trusted launch vm",
 			spec: &VMSpec{
 				Name:              "my-vm",
