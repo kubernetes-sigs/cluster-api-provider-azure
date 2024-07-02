@@ -135,8 +135,9 @@ EOF
     upload_to_blob "${AZWI_OPENID_CONFIG_FILEPATH}" ".well-known/openid-configuration"
     echo "Uploading jwks document to '${AZWI_STORAGE_ACCOUNT}' storage account"
     upload_to_blob "${AZWI_JWKS_JSON_FILEPATH}" "openid/v1/jwks"
-    echo "Removing key access on storage account as no further data writes are required"
-    az storage account update -n "${AZWI_STORAGE_ACCOUNT}" -g "${AZWI_RESOURCE_GROUP}" --subscription "${AZURE_SUBSCRIPTION_ID}" --allow-shared-key-access=false --output none --only-show-errors
+    # TODO(@nawazkh): Should the below commands be uncommented?
+    # echo "Removing key access on storage account as no further data writes are required"
+    # az storage account update -n "${AZWI_STORAGE_ACCOUNT}" -g "${AZWI_RESOURCE_GROUP}" --subscription "${AZURE_SUBSCRIPTION_ID}" --allow-shared-key-access=false --output none --only-show-errors
   fi
   if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then
     if [ -z "${USER_IDENTITY}" ]; then
