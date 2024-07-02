@@ -22,6 +22,7 @@ spec:
       logVerbosity: ${CCM_LOG_VERBOSITY:-4}
       replicas: ${CCM_COUNT:-1}
       enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
+      caCertDir: ${CCM_CA_CERT_DIR:-/etc/pki/tls}
     cloudNodeManager:
       imageName: "${CNM_IMAGE_NAME:-""}"
       imageRepository: "${IMAGE_REGISTRY:-""}"
