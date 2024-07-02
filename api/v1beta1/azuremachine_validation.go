@@ -248,6 +248,15 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 			"diskEncryptionSet is not supported when diffDiskSettings.option is 'Local'",
 		))
 	}
+	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Placement != nil {
+		if osDisk.DiffDiskSettings.Option != string(armcompute.DiffDiskOptionsLocal) {
+			allErrs = append(allErrs, field.Invalid(
+				fieldPath.Child("diffDiskSettings"),
+				osDisk.DiffDiskSettings,
+				"placement is only supported when diffDiskSettings.option is 'Local'",
+			))
+		}
+	}
 
 	return allErrs
 }
