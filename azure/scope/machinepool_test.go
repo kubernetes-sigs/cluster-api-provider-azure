@@ -1449,6 +1449,26 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 				g.Expect(err).To(HaveOccurred())
 			},
 		},
+		{
+			Name: "if existing MachinePool is present but in deleting state, do not recreate AzureMachinePoolMachines",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:    "/subscriptions/123/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm",
+						Name:  "vm",
+						State: infrav1.Deleting,
+					},
+				}
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				list := infrav1exp.AzureMachinePoolMachineList{}
+				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
+				g.Expect(list.Items).Should(BeEmpty())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
