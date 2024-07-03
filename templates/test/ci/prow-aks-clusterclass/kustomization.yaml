@@ -12,6 +12,7 @@ patches:
 - path: patches/addons.yaml
 - path: patches/kubeadm-config-template.yaml
 - path: patches.yaml
+- path: patches/sku.yaml
 
 sortOptions:
   order: fifo

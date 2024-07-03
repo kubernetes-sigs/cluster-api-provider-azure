@@ -9,6 +9,7 @@ patches:
 - path: patches/aks-pool0.yaml
 - path: patches/aks-pool1.yaml
 - path: patches/addons.yaml
+- path: patches/sku.yaml
 
 sortOptions:
   order: fifo
