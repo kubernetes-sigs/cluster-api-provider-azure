@@ -37,6 +37,9 @@ spec:
         name: ${CLUSTER_NAME}
       servicePrincipalProfile:
         clientId: msi
+      sku:
+        name: Base
+        tier: Standard
       tags:
         buildProvenance: ${BUILD_PROVENANCE}
         creationTimestamp: ${TIMESTAMP}

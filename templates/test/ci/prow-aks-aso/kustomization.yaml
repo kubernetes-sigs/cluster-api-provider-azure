@@ -28,6 +28,11 @@ patches:
           jobName: ${JOB_NAME}
           creationTimestamp: ${TIMESTAMP}
           buildProvenance: ${BUILD_PROVENANCE}
+      - op: replace
+        path: /spec/resources/0/spec/sku
+        value:
+          name: Base
+          tier: Standard
     target:
       kind: AzureASOManagedControlPlane
   - patch: |-
