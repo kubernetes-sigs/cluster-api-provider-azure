@@ -84,6 +84,8 @@ spec:
         kind: AzureClusterIdentity
         name: ${CLUSTER_IDENTITY_NAME}
       location: ${AZURE_LOCATION}
+      sku:
+        tier: Standard
       subscriptionID: ${AZURE_SUBSCRIPTION_ID}
       version: ${KUBERNETES_VERSION}
 ---

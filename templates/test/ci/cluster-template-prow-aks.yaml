@@ -38,6 +38,8 @@ spec:
   oidcIssuerProfile:
     enabled: true
   resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  sku:
+    tier: Standard
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   version: ${KUBERNETES_VERSION}

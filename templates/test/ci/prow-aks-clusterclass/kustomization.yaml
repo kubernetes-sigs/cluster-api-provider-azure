@@ -12,3 +12,4 @@ patchesStrategicMerge:
   - patches/addons.yaml
   - patches/kubeadm-config-template.yaml
   - patches.yaml
+  - patches/sku.yaml

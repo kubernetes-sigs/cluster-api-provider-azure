@@ -9,3 +9,4 @@ patchesStrategicMerge:
   - patches/aks-pool0.yaml
   - patches/aks-pool1.yaml
   - patches/addons.yaml
+  - patches/sku.yaml
