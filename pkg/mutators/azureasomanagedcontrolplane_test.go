@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -44,16 +44,16 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane
+		asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane
 		cluster                *clusterv1.Cluster
 		expected               []*unstructured.Unstructured
 		expectedErr            error
 	}{
 		{
 			name: "no ManagedCluster",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{
-				Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{
+				Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 						Resources: []runtime.RawExtension{},
 					},
 				},
@@ -62,9 +62,9 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 		},
 		{
 			name: "success",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{
-				Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{
+				Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 						Version: "vCAPI k8s version",
 						Resources: []runtime.RawExtension{
 							{
@@ -117,7 +117,7 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 
 			s := runtime.NewScheme()
 			g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
-			g.Expect(infrav1exp.AddToScheme(s)).To(Succeed())
+			g.Expect(infrav1alpha.AddToScheme(s)).To(Succeed())
 			c := fakeclient.NewClientBuilder().
 				WithScheme(s).
 				Build()
@@ -139,14 +139,14 @@ func TestSetManagedClusterKubernetesVersion(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane
+		asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane
 		managedCluster         *asocontainerservicev1.ManagedCluster
 		expected               *asocontainerservicev1.ManagedCluster
 		expectedErr            error
 	}{
 		{
 			name:                   "no CAPI opinion",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{},
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{},
 			managedCluster: &asocontainerservicev1.ManagedCluster{
 				Spec: asocontainerservicev1.ManagedCluster_Spec{
 					KubernetesVersion: ptr.To("user k8s version"),
@@ -160,9 +160,9 @@ func TestSetManagedClusterKubernetesVersion(t *testing.T) {
 		},
 		{
 			name: "set from CAPI opinion",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{
-				Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{
+				Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 						Version: "vCAPI k8s version",
 					},
 				},
@@ -176,9 +176,9 @@ func TestSetManagedClusterKubernetesVersion(t *testing.T) {
 		},
 		{
 			name: "user value matching CAPI ok",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{
-				Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{
+				Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 						Version: "vCAPI k8s version",
 					},
 				},
@@ -196,9 +196,9 @@ func TestSetManagedClusterKubernetesVersion(t *testing.T) {
 		},
 		{
 			name: "incompatible",
-			asoManagedControlPlane: &infrav1exp.AzureASOManagedControlPlane{
-				Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			asoManagedControlPlane: &infrav1alpha.AzureASOManagedControlPlane{
+				Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+					AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 						Version: "vCAPI k8s version",
 					},
 				},
@@ -507,7 +507,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 	ctx := context.Background()
 	s := runtime.NewScheme()
 	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
-	g.Expect(infrav1exp.AddToScheme(s)).To(Succeed())
+	g.Expect(infrav1alpha.AddToScheme(s)).To(Succeed())
 	g.Expect(expv1.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().WithScheme(s)
@@ -564,8 +564,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 		managedCluster := &asocontainerservicev1.ManagedCluster{}
 		umc := mcUnstructured(g, managedCluster)
 
-		asoManagedMachinePools := &infrav1exp.AzureASOManagedMachinePoolList{
-			Items: []infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePools := &infrav1alpha.AzureASOManagedMachinePoolList{
+			Items: []infrav1alpha.AzureASOManagedMachinePool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "wrong-label",
@@ -581,8 +581,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							},
 						},
 					},
-					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
@@ -610,8 +610,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							},
 						},
 					},
-					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
@@ -639,8 +639,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							},
 						},
 					},
-					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
@@ -668,8 +668,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							},
 						},
 					},
-					Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+						AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
