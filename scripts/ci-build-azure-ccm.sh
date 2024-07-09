@@ -95,6 +95,12 @@ can_reuse_artifacts() {
         echo "false" && return
     fi
 
+    # Do not reuse the image if there is a Windows image built with older version of this script that did not
+    # build the images as host-process-container images. Those images cannot be pulled on mis-matched Windows Server versions.
+    if docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"10.0."; then
+        echo "false" && return
+    fi
+
     for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe credential-provider-config.yaml credential-provider-config-win.yaml; do
         if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
             echo "false" && return
