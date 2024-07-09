@@ -25,10 +25,10 @@ patches:
       name: azureserviceoperator-system
 - patch: |-
     - op: test
-      path: /spec/template/spec/containers/0/args/4
+      path: /spec/template/spec/containers/0/args/6
       value: --crd-pattern=
     - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
-      path: /spec/template/spec/containers/0/args/4
+      path: /spec/template/spec/containers/0/args/6
       value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
   target:
     group: apps
