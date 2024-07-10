@@ -93,22 +93,27 @@ function checkAZWIENVPreReqsAndCreateFiles() {
       echo "AZWI_RESOURCE_GROUP environment variable required - Azure resource group to store required Workload Identity artifacts"
       exit 1
     fi
+
     if [ "$(az group exists --name "${AZWI_RESOURCE_GROUP}" --output tsv)" == 'false' ]; then
       echo "Creating resource group '${AZWI_RESOURCE_GROUP}' in '${AZWI_LOCATION}'"
       az group create --name "${AZWI_RESOURCE_GROUP}" --location "${AZWI_LOCATION}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
     fi
+
     # Ensure that our connection to storage is inherited from the existing Azure login context
     unset AZURE_STORAGE_KEY
     unset AZURE_STORAGE_ACCOUNT
+
     if ! az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" > /dev/null 2>&1; then
       echo "Creating storage account '${AZWI_STORAGE_ACCOUNT}' in '${AZWI_RESOURCE_GROUP}'"
       az storage account create --resource-group "${AZWI_RESOURCE_GROUP}" --name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
-      az storage blob service-properties update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website
+      az storage blob service-properties ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website
     fi
+
     if ! az storage container show --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" > /dev/null 2>&1; then
       echo "Creating storage container '${AZWI_STORAGE_CONTAINER}' in '${AZWI_STORAGE_ACCOUNT}'"
-      az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
+      az storage container ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
     fi
+
     SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" -o json | jq -r .primaryEndpoints.web)
     export SERVICE_ACCOUNT_ISSUER
     AZWI_OPENID_CONFIG_FILEPATH="${REPO_ROOT}/openid-configuration.json"
@@ -131,30 +136,37 @@ EOF
     openssl rsa -in "${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}" -pubout -out "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
     AZWI_JWKS_JSON_FILEPATH="${REPO_ROOT}/jwks.json"
     "${AZWI}" jwks --public-keys "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}" --output-file "${AZWI_JWKS_JSON_FILEPATH}"
+
     echo "Uploading openid-configuration document to '${AZWI_STORAGE_ACCOUNT}' storage account"
     upload_to_blob "${AZWI_OPENID_CONFIG_FILEPATH}" ".well-known/openid-configuration"
+
     echo "Uploading jwks document to '${AZWI_STORAGE_ACCOUNT}' storage account"
     upload_to_blob "${AZWI_JWKS_JSON_FILEPATH}" "openid/v1/jwks"
-    echo "Removing key access on storage account as no further data writes are required"
-    az storage account update -n "${AZWI_STORAGE_ACCOUNT}" -g "${AZWI_RESOURCE_GROUP}" --subscription "${AZURE_SUBSCRIPTION_ID}" --allow-shared-key-access=false --output none --only-show-errors
   fi
+
   if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then
     if [ -z "${USER_IDENTITY}" ]; then
         echo "USER_IDENTITY environment variable required if not bringing your own identity via AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY"
         exit 1
     fi
+
     az identity create -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" -l "${AZWI_LOCATION}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
     AZURE_IDENTITY_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query clientId -o tsv)
     AZURE_IDENTITY_ID_PRINCIPAL_ID=$(az identity show -n "${USER_IDENTITY}" -g "${AZWI_RESOURCE_GROUP}" --query principalId -o tsv)
+
     echo "${AZURE_IDENTITY_ID}" > "${AZURE_IDENTITY_ID_FILEPATH}"
     until az role assignment create --assignee-object-id "${AZURE_IDENTITY_ID_PRINCIPAL_ID}" --role "Owner" --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none --only-show-errors; do
       sleep 5
     done
+
+    echo "Creating federated credentials for capz-federated-identity"
     az identity federated-credential create -n "capz-federated-identity" \
       --identity-name "${USER_IDENTITY}" \
       -g "${AZWI_RESOURCE_GROUP}" \
       --issuer "${SERVICE_ACCOUNT_ISSUER}" \
       --subject "system:serviceaccount:capz-system:capz-manager" --output none --only-show-errors
+
+    echo "Creating federated credentials for aso-federated-identity"
     az identity federated-credential create -n "aso-federated-identity" \
       --identity-name "${USER_IDENTITY}" \
       -g "${AZWI_RESOURCE_GROUP}" \
@@ -168,7 +180,7 @@ function upload_to_blob() {
   local blob_name=$2
 
   echo "Uploading ${file_path} to '${AZWI_STORAGE_ACCOUNT}' storage account"
-  az storage blob upload \
+  az storage blob upload ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} \
       --container-name "${AZWI_STORAGE_CONTAINER}" \
       --file "${file_path}" \
       --name "${blob_name}" \
