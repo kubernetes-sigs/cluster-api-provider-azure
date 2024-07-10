@@ -25,8 +25,8 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	exputil "sigs.k8s.io/cluster-api/exp/util"
@@ -45,7 +45,7 @@ var (
 )
 
 // SetManagedClusterDefaults propagates values defined by Cluster API to an ASO ManagedCluster.
-func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
+func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetManagedClusterDefaults")
 		defer done()
@@ -88,7 +88,7 @@ func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane 
 	}
 }
 
-func setManagedClusterKubernetesVersion(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+func setManagedClusterKubernetesVersion(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterKubernetesVersion")
 	defer done()
 
@@ -246,7 +246,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "mutators.agentPoolsFromManagedMachinePools")
 	defer done()
 
-	asoManagedMachinePools := &infrav1exp.AzureASOManagedMachinePoolList{}
+	asoManagedMachinePools := &infrav1alpha.AzureASOManagedMachinePoolList{}
 	err := ctrlClient.List(ctx, asoManagedMachinePools,
 		client.InNamespace(namespace),
 		client.MatchingLabels{

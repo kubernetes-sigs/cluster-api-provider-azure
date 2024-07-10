@@ -23,7 +23,7 @@ import (
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -114,11 +114,11 @@ func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *exp
 			if machinePool.Annotations == nil {
 				machinePool.Annotations = make(map[string]string)
 			}
-			machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] = infrav1exp.ReplicasManagedByAKS
-		} else if replicaManager != infrav1exp.ReplicasManagedByAKS {
+			machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] = infrav1alpha.ReplicasManagedByAKS
+		} else if replicaManager != infrav1alpha.ReplicasManagedByAKS {
 			return fmt.Errorf("failed to enable autoscaling, replicas are already being managed by %s according to MachinePool %s's %s annotation", replicaManager, machinePool.Name, clusterv1.ReplicasManagedByAnnotation)
 		}
-	} else if !autoscaling && replicaManager == infrav1exp.ReplicasManagedByAKS {
+	} else if !autoscaling && replicaManager == infrav1alpha.ReplicasManagedByAKS {
 		// Removing this annotation informs the MachinePool controller that this MachinePool is no longer
 		// being autoscaled.
 		delete(machinePool.Annotations, clusterv1.ReplicasManagedByAnnotation)

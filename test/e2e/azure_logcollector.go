@@ -32,9 +32,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1expalpha "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -210,13 +210,13 @@ func getAzureManagedControlPlane(ctx context.Context, managementClusterClient cl
 	return azManagedControlPlane, err
 }
 
-func getAzureASOManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1expalpha.AzureASOManagedCluster, error) {
+func getAzureASOManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1alpha.AzureASOManagedCluster, error) {
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	azManagedCluster := &infrav1expalpha.AzureASOManagedCluster{}
+	azManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
 	err := managementClusterClient.Get(ctx, key, azManagedCluster)
 	return azManagedCluster, err
 }
@@ -254,13 +254,13 @@ func getAzureManagedMachinePool(ctx context.Context, managementClusterClient cli
 	return azManagedMachinePool, err
 }
 
-func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1expalpha.AzureASOManagedMachinePool, error) {
+func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1alpha.AzureASOManagedMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 
-	azManagedMachinePool := &infrav1expalpha.AzureASOManagedMachinePool{}
+	azManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
 	return azManagedMachinePool, err
 }

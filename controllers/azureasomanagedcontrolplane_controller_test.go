@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -46,7 +46,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1exp.AddToScheme,
+		infrav1alpha.AddToScheme,
 		clusterv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
 		corev1.AddToScheme,
@@ -55,7 +55,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1exp.AzureASOManagedControlPlane{})
+			WithStatusSubresource(&infrav1alpha.AzureASOManagedControlPlane{})
 	}
 
 	t.Run("AzureASOManagedControlPlane does not exist", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 	t.Run("Cluster does not exist", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: "ns",
@@ -107,12 +107,12 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				InfrastructureRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedClusterKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedClusterKind,
 				},
 			},
 		}
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: cluster.Namespace,
@@ -136,7 +136,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
-		g.Expect(asoManagedControlPlane.GetFinalizers()).To(ContainElement(infrav1exp.AzureASOManagedControlPlaneFinalizer))
+		g.Expect(asoManagedControlPlane.GetFinalizers()).To(ContainElement(infrav1alpha.AzureASOManagedControlPlaneFinalizer))
 		g.Expect(asoManagedControlPlane.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
@@ -150,12 +150,12 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				InfrastructureRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedClusterKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedClusterKind,
 				},
 			},
 		}
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: cluster.Namespace,
@@ -167,14 +167,14 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 				Finalizers: []string{
-					infrav1exp.AzureASOManagedControlPlaneFinalizer,
+					infrav1alpha.AzureASOManagedControlPlaneFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 					Resources: []runtime.RawExtension{
 						{
 							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
@@ -186,7 +186,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 			},
-			Status: infrav1exp.AzureASOManagedControlPlaneStatus{
+			Status: infrav1alpha.AzureASOManagedControlPlaneStatus{
 				Ready: true,
 			},
 		}
@@ -195,11 +195,11 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: c,
-			newResourceReconciler: func(asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedControlPlane,
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						asoManagedControlPlane.SetResourceStatuses([]infrav1exp.ResourceStatus{
+						asoManagedControlPlane.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
@@ -227,8 +227,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				InfrastructureRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedClusterKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedClusterKind,
 				},
 			},
 		}
@@ -261,7 +261,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				CurrentKubernetesVersion: ptr.To("Current"),
 			},
 		}
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: cluster.Namespace,
@@ -273,14 +273,14 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 				Finalizers: []string{
-					infrav1exp.AzureASOManagedControlPlaneFinalizer,
+					infrav1alpha.AzureASOManagedControlPlaneFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Spec: infrav1exp.AzureASOManagedControlPlaneSpec{
-				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1exp.AzureASOManagedControlPlaneTemplateResourceSpec{
+			Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
 					Resources: []runtime.RawExtension{
 						{
 							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
@@ -292,7 +292,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					},
 				},
 			},
-			Status: infrav1exp.AzureASOManagedControlPlaneStatus{
+			Status: infrav1alpha.AzureASOManagedControlPlaneStatus{
 				Ready: false,
 			},
 		}
@@ -310,7 +310,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 					return nil
 				},
 			},
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
 						return nil
@@ -341,7 +341,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				Paused: true,
 			},
 		}
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: cluster.Namespace,
@@ -362,7 +362,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					pauseFunc: func(_ context.Context, _ client.Object) error {
 						return nil
@@ -381,12 +381,12 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 	t.Run("successfully reconciles delete", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: "ns",
 				Finalizers: []string{
-					infrav1exp.AzureASOManagedControlPlaneFinalizer,
+					infrav1alpha.AzureASOManagedControlPlaneFinalizer,
 				},
 				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
 			},
@@ -396,7 +396,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					deleteFunc: func(ctx context.Context, o client.Object) error {
 						return nil

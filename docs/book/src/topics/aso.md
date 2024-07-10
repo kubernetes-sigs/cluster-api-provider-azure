@@ -80,7 +80,7 @@ More details about how ASO manages CRDs can be found [here](https://azure.github
 **Note:** To install the resource for the newly installed CRDs, make sure that the ASO operator has the authentication to install the resources. Refer [authentication in ASO](https://azure.github.io/azure-service-operator/guide/authentication/) for more details.
 An example configuration file and demo for `Azure Cache for Redis` can be found [here](https://github.com/Azure-Samples/azure-service-operator-samples/tree/master/azure-votes-redis).
 
-## Experimental ASO API
+## ASO-based API
 
 New in CAPZ v1.15.0 is a new flavor of APIs that addresses the following limitations of
 the existing CAPZ APIs for advanced use cases:
@@ -93,7 +93,7 @@ the existing CAPZ APIs for advanced use cases:
 - For each Azure API version known by CAPZ, only a subset of fields defined in that version by the Azure API
   spec are exposed by the CAPZ API.
 
-This new experimental API defines new AzureASOManagedCluster, AzureASOManagedControlPlane, and
+This new API defines new AzureASOManagedCluster, AzureASOManagedControlPlane, and
 AzureASOManagedMachinePool resources. An AzureASOManagedCluster might look like this:
 
 ```yaml
@@ -129,5 +129,5 @@ The overall theme of this API is to leverage ASO as much as possible for represe
 Kubernetes API, thereby making CAPZ the thinnest possible translation layer between ASO and Cluster API.
 
 This experiment will help inform CAPZ whether this pattern may be a candidate for a potential v2 API. This
-functionality is available behind the `ASOAPI` feature flag (set by the `EXP_ASO_API` environment variable).
+functionality is enabled by default and can be disabled with the `ASOAPI` feature flag (set by the `EXP_ASO_API` environment variable).
 Please try it out and offer any feedback!

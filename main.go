@@ -41,9 +41,9 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1expalpha "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -75,7 +75,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
-	_ = infrav1expalpha.AddToScheme(scheme)
+	_ = infrav1alpha.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
@@ -511,7 +511,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 	}
 
 	if feature.Gates.Enabled(feature.ASOAPI) {
-		if err := (&infrav1controllersexp.AzureASOManagedClusterReconciler{
+		if err := (&controllers.AzureASOManagedClusterReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr); err != nil {
@@ -519,7 +519,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		if err := (&infrav1controllersexp.AzureASOManagedControlPlaneReconciler{
+		if err := (&controllers.AzureASOManagedControlPlaneReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr); err != nil {
@@ -551,7 +551,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		if err := (&infrav1controllersexp.AzureASOManagedMachinePoolReconciler{
+		if err := (&controllers.AzureASOManagedMachinePoolReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 			Tracker:          tracker,
@@ -560,14 +560,14 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		if err := (&infrav1controllersexp.ManagedClusterAdoptReconciler{
+		if err := (&controllers.ManagedClusterAdoptReconciler{
 			Client: mgr.GetClient(),
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "ManagedCluster")
 			os.Exit(1)
 		}
 
-		if err := (&infrav1controllersexp.AgentPoolAdoptReconciler{
+		if err := (&controllers.AgentPoolAdoptReconciler{
 			Client: mgr.GetClient(),
 		}).SetupWithManager(ctx, mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AgentPool")
@@ -644,17 +644,17 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if err := infrav1expalpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
+	if err := infrav1alpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedCluster")
 		os.Exit(1)
 	}
 
-	if err := infrav1expalpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
+	if err := infrav1alpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedControlPlane")
 		os.Exit(1)
 	}
 
-	if err := infrav1expalpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
+	if err := infrav1alpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedMachinePool")
 		os.Exit(1)
 	}

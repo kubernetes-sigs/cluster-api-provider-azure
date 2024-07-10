@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -56,7 +56,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1exp.AddToScheme,
+		infrav1alpha.AddToScheme,
 		clusterv1.AddToScheme,
 		expv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
@@ -65,7 +65,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1exp.AzureASOManagedMachinePool{})
+			WithStatusSubresource(&infrav1alpha.AzureASOManagedMachinePool{})
 	}
 
 	t.Run("AzureASOManagedMachinePool does not exist", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("MachinePool does not exist", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: "ns",
@@ -112,7 +112,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("Cluster does not exist", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: "ns",
@@ -156,12 +156,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -208,12 +208,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -231,8 +231,8 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+			Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 					Resources: []runtime.RawExtension{
 						{
 							Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
@@ -244,7 +244,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+			Status: infrav1alpha.AzureASOManagedMachinePoolStatus{
 				Ready: true,
 			},
 		}
@@ -262,11 +262,11 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
-			newResourceReconciler: func(asoManagedMachinePool *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(asoManagedMachinePool *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedMachinePool,
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						asoManagedMachinePool.SetResourceStatuses([]infrav1exp.ResourceStatus{
+						asoManagedMachinePool.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
@@ -294,8 +294,8 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
@@ -323,7 +323,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Count: ptr.To(3),
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -341,8 +341,8 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+			Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 					Resources: []runtime.RawExtension{
 						{
 							Raw: apJSON(g, asoAgentPool),
@@ -350,7 +350,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+			Status: infrav1alpha.AzureASOManagedMachinePoolStatus{
 				Ready: false,
 			},
 		}
@@ -371,7 +371,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
 						return nil
@@ -436,8 +436,8 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
@@ -466,7 +466,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Count: ptr.To(3),
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -484,8 +484,8 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Spec: infrav1exp.AzureASOManagedMachinePoolSpec{
-				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1exp.AzureASOManagedMachinePoolTemplateResourceSpec{
+			Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
 					Resources: []runtime.RawExtension{
 						{
 							Raw: apJSON(g, asoAgentPool),
@@ -493,7 +493,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			Status: infrav1exp.AzureASOManagedMachinePoolStatus{
+			Status: infrav1alpha.AzureASOManagedMachinePoolStatus{
 				Ready: false,
 			},
 		}
@@ -511,7 +511,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
 						return nil
@@ -547,12 +547,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Spec: clusterv1.ClusterSpec{
 				Paused: true,
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -582,7 +582,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					pauseFunc: func(_ context.Context, _ client.Object) error {
 						return nil
@@ -608,12 +608,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1exp.GroupVersion.Identifier(),
-					Kind:       infrav1exp.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedMachinePool := &infrav1exp.AzureASOManagedMachinePool{
+		asoManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ammp",
 				Namespace: cluster.Namespace,
@@ -644,7 +644,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedMachinePoolReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1exp.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					deleteFunc: func(ctx context.Context, o client.Object) error {
 						return nil
