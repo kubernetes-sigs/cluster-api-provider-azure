@@ -47,4 +47,4 @@
 - [Reference](./reference/reference.md)
     - [v1beta1 API](./reference/v1beta1-api.md)
     - [v1beta1 exp API](./reference/v1beta1-exp-api.md)
-    - [v1alpha1 exp API](./reference/v1alpha1-exp-api.md)
+    - [v1alpha1 API](./reference/v1alpha1-api.md)

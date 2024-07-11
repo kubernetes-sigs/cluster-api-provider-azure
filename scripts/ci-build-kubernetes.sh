@@ -33,7 +33,6 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 source "${REPO_ROOT}/hack/util.sh"
 
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
-: "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
 declare -a BINARIES=("kubeadm" "kubectl" "kubelet" "e2e.test")

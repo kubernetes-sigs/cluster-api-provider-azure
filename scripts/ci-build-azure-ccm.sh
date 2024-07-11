@@ -29,7 +29,6 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
-: "${AZURE_STORAGE_KEY:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
 # cloud controller manager image
@@ -72,6 +71,7 @@ main() {
         if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
             echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
             az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+            # if the storage account has public access disabled at the account level this will return 404
             az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
         fi
 
@@ -92,6 +92,12 @@ can_reuse_artifacts() {
     done
 
     if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os\": \"windows\""; then
+        echo "false" && return
+    fi
+
+    # Do not reuse the image if there is a Windows image built with older version of this script that did not
+    # build the images as host-process-container images. Those images cannot be pulled on mis-matched Windows Server versions.
+    if docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"10.0."; then
         echo "false" && return
     fi
 

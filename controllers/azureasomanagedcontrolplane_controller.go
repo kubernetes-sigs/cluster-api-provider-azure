@@ -26,9 +26,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -52,31 +51,31 @@ type AzureASOManagedControlPlaneReconciler struct {
 	client.Client
 	WatchFilterValue string
 
-	newResourceReconciler func(*infrav1exp.AzureASOManagedControlPlane, []*unstructured.Unstructured) resourceReconciler
+	newResourceReconciler func(*infrav1alpha.AzureASOManagedControlPlane, []*unstructured.Unstructured) resourceReconciler
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	_, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.SetupWithManager",
-		tele.KVP("controller", infrav1exp.AzureASOManagedControlPlaneKind),
+		tele.KVP("controller", infrav1alpha.AzureASOManagedControlPlaneKind),
 	)
 	defer done()
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1exp.AzureASOManagedControlPlane{}).
+		For(&infrav1alpha.AzureASOManagedControlPlane{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(clusterToAzureASOManagedControlPlane),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
-				infracontroller.ClusterPauseChangeAndInfrastructureReady(log),
+				ClusterPauseChangeAndInfrastructureReady(log),
 			),
 		).
 		// User errors that CAPZ passes through agentPoolProfiles on create must be fixed in the
 		// AzureASOManagedMachinePool, so trigger a reconciliation to consume those fixes.
 		Watches(
-			&infrav1exp.AzureASOManagedMachinePool{},
+			&infrav1alpha.AzureASOManagedMachinePool{},
 			handler.EnqueueRequestsFromMapFunc(r.azureASOManagedMachinePoolToAzureASOManagedControlPlane),
 		).
 		Owns(&corev1.Secret{}).
@@ -90,7 +89,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 		Controller: c,
 	}
 
-	r.newResourceReconciler = func(asoManagedCluster *infrav1exp.AzureASOManagedControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
+	r.newResourceReconciler = func(asoManagedCluster *infrav1alpha.AzureASOManagedControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
 		return &ResourceReconciler{
 			Client:    r.Client,
 			resources: resources,
@@ -105,15 +104,15 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 func clusterToAzureASOManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
 	controlPlaneRef := o.(*clusterv1.Cluster).Spec.ControlPlaneRef
 	if controlPlaneRef != nil &&
-		controlPlaneRef.APIVersion == infrav1exp.GroupVersion.Identifier() &&
-		controlPlaneRef.Kind == infrav1exp.AzureASOManagedControlPlaneKind {
+		controlPlaneRef.APIVersion == infrav1alpha.GroupVersion.Identifier() &&
+		controlPlaneRef.Kind == infrav1alpha.AzureASOManagedControlPlaneKind {
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
 	}
 	return nil
 }
 
 func (r *AzureASOManagedControlPlaneReconciler) azureASOManagedMachinePoolToAzureASOManagedControlPlane(ctx context.Context, o client.Object) []ctrl.Request {
-	asoManagedMachinePool := o.(*infrav1exp.AzureASOManagedMachinePool)
+	asoManagedMachinePool := o.(*infrav1alpha.AzureASOManagedMachinePool)
 	clusterName := asoManagedMachinePool.Labels[clusterv1.ClusterNameLabel]
 	if clusterName == "" {
 		return nil
@@ -135,11 +134,11 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 		"controllers.AzureASOManagedControlPlaneReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", infrav1exp.AzureASOManagedControlPlaneKind),
+		tele.KVP("kind", infrav1alpha.AzureASOManagedControlPlaneKind),
 	)
 	defer done()
 
-	asoManagedControlPlane := &infrav1exp.AzureASOManagedControlPlane{}
+	asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{}
 	err := r.Get(ctx, req.NamespacedName, asoManagedControlPlane)
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -177,7 +176,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 	return r.reconcileNormal(ctx, asoManagedControlPlane, cluster)
 }
 
-func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileNormal",
 	)
@@ -189,13 +188,13 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{}, nil
 	}
 	if cluster.Spec.InfrastructureRef == nil ||
-		cluster.Spec.InfrastructureRef.APIVersion != infrav1exp.GroupVersion.Identifier() ||
-		cluster.Spec.InfrastructureRef.Kind != infrav1exp.AzureASOManagedClusterKind {
+		cluster.Spec.InfrastructureRef.APIVersion != infrav1alpha.GroupVersion.Identifier() ||
+		cluster.Spec.InfrastructureRef.Kind != infrav1alpha.AzureASOManagedClusterKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidClusterKind)
 	}
 
-	needsPatch := controllerutil.AddFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
-	needsPatch = infracontroller.AddBlockMoveAnnotation(asoManagedControlPlane) || needsPatch
+	needsPatch := controllerutil.AddFinalizer(asoManagedControlPlane, infrav1alpha.AzureASOManagedControlPlaneFinalizer)
+	needsPatch = AddBlockMoveAnnotation(asoManagedControlPlane) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -252,7 +251,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	return ctrl.Result{}, nil
 }
 
-func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane, cluster *clusterv1.Cluster, managedCluster *asocontainerservicev1.ManagedCluster) error {
+func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, cluster *clusterv1.Cluster, managedCluster *asocontainerservicev1.ManagedCluster) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileKubeconfig",
 	)
@@ -284,7 +283,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
 			Namespace: cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(asoManagedControlPlane, infrav1exp.GroupVersion.WithKind(infrav1exp.AzureASOManagedControlPlaneKind)),
+				*metav1.NewControllerRef(asoManagedControlPlane, infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedControlPlaneKind)),
 			},
 			Labels: map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
 		},
@@ -297,7 +296,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 }
 
 //nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
-func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane) (ctrl.Result, error) {
+func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedControlPlaneReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
@@ -312,13 +311,13 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Cont
 		return ctrl.Result{}, fmt.Errorf("failed to pause resources: %w", err)
 	}
 
-	infracontroller.RemoveBlockMoveAnnotation(asoManagedControlPlane)
+	RemoveBlockMoveAnnotation(asoManagedControlPlane)
 
 	return ctrl.Result{}, nil
 }
 
 //nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
-func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, asoManagedControlPlane *infrav1exp.AzureASOManagedControlPlane) (ctrl.Result, error) {
+func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileDelete",
 	)
@@ -338,7 +337,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 		return ctrl.Result{}, nil
 	}
 
-	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1exp.AzureASOManagedControlPlaneFinalizer)
+	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1alpha.AzureASOManagedControlPlaneFinalizer)
 	return ctrl.Result{}, nil
 }
 

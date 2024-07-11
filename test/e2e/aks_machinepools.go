@@ -28,9 +28,9 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/mutators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -87,8 +87,8 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 					isUserPool = true
 				}
-			case infrav1exp.AzureASOManagedMachinePoolKind:
-				ammp := &infrav1exp.AzureASOManagedMachinePool{}
+			case infrav1alpha.AzureASOManagedMachinePoolKind:
+				ammp := &infrav1alpha.AzureASOManagedMachinePool{}
 				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
 					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
