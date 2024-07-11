@@ -79,10 +79,10 @@ setup() {
 }
 
 main() {
-    if [[ "$(az storage container exists ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+    if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
         echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
-        az storage container ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
-        az storage container ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
+        az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+        az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
     fi
 
     if [[ "${KUBE_BUILD_CONFORMANCE:-}" =~ [yY] ]]; then
@@ -115,7 +115,7 @@ main() {
         for BINARY in "${BINARIES[@]}"; do
             BIN_PATH="${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
             echo "uploading ${BIN_PATH}"
-            az storage blob upload ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
+            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
         done
 
         if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
@@ -128,7 +128,7 @@ main() {
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
                 BIN_PATH="${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
                 echo "uploading ${BIN_PATH}"
-                az storage blob upload ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
+                az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
             done
         fi
     fi
@@ -143,14 +143,14 @@ can_reuse_artifacts() {
     done
 
     for BINARY in "${BINARIES[@]}"; do
-        if [[ "$(az storage blob exists ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
             echo "false" && return
         fi
     done
 
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
-            if [[ "$(az storage blob exists ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
+            if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
                 echo "false" && return
             fi
         done

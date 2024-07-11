@@ -106,12 +106,12 @@ function checkAZWIENVPreReqsAndCreateFiles() {
     if ! az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" > /dev/null 2>&1; then
       echo "Creating storage account '${AZWI_STORAGE_ACCOUNT}' in '${AZWI_RESOURCE_GROUP}'"
       az storage account create --resource-group "${AZWI_RESOURCE_GROUP}" --name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
-      az storage blob service-properties ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website
+      az storage blob service-properties update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website
     fi
 
     if ! az storage container show --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" > /dev/null 2>&1; then
       echo "Creating storage container '${AZWI_STORAGE_CONTAINER}' in '${AZWI_STORAGE_ACCOUNT}'"
-      az storage container ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
+      az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
     fi
 
     SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" -o json | jq -r .primaryEndpoints.web)
@@ -180,7 +180,7 @@ function upload_to_blob() {
   local blob_name=$2
 
   echo "Uploading ${file_path} to '${AZWI_STORAGE_ACCOUNT}' storage account"
-  az storage blob upload ${ENABLE_AUTH_MODE_LOGIN:+"--auth-mode login"} \
+  az storage blob upload \
       --container-name "${AZWI_STORAGE_CONTAINER}" \
       --file "${file_path}" \
       --name "${blob_name}" \
