@@ -25,8 +25,6 @@ cd "${REPO_ROOT}" || exit 1
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=hack/parse-prow-creds.sh
-source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
 : "${AZURE_STORAGE_ACCOUNT:?Environment variable empty or not defined.}"
 : "${REGISTRY:?Environment variable empty or not defined.}"

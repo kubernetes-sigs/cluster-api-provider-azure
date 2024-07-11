@@ -35,6 +35,7 @@ if [[ -z "$(command -v az)" ]]; then
     # Use --auth-mode "login" in az storage commands to use RBAC permissions of login identity. This is a well known ENV variable the Azure cli
     export AZURE_STORAGE_AUTH_MODE="login"
   else
-    az login --service-principal -u "${AZURE_CLIENT_ID}" -p "${AZURE_CLIENT_SECRET}" --tenant "${AZURE_TENANT_ID}" > /dev/null
+    echo "AZURE_FEDERATED_TOKEN_FILE environment variable must be set to path location of token file"
+    exit 1
   fi
 fi
