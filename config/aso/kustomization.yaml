@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-- https://github.com/Azure/azure-service-operator/releases/download/v2.6.0/azureserviceoperator_v2.6.0.yaml
+- https://github.com/Azure/azure-service-operator/releases/download/v2.8.0/azureserviceoperator_v2.8.0.yaml
 - crds.yaml
 - settings.yaml
 
@@ -25,37 +25,16 @@ patches:
       name: azureserviceoperator-system
 - patch: |-
     - op: test
-      path: /spec/template/spec/containers/0/args/4
+      path: /spec/template/spec/containers/0/args/6
       value: --crd-pattern=
     - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
-      path: /spec/template/spec/containers/0/args/4
+      path: /spec/template/spec/containers/0/args/6
       value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
   target:
     group: apps
     kind: Deployment
     name: azureserviceoperator-controller-manager
     version: v1
-
-  # This implements https://github.com/Azure/azure-service-operator/pull/4011
-  # for versions of ASO which don't include that fix.
-- patch: |-
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: azureserviceoperator-controller-manager
-      namespace: azureserviceoperator-system
-    spec:
-      template:
-        spec:
-          containers:
-            - name: manager
-              env:
-              - name: AZURE_USER_AGENT_SUFFIX
-                valueFrom:
-                  secretKeyRef:
-                    key: AZURE_USER_AGENT_SUFFIX
-                    name: aso-controller-settings
-                    optional: true
 
 replacements:
 - source:

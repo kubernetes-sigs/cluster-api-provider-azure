@@ -46,7 +46,7 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.21.
+   - Get the latest patch version for go v1.22.
 2. Install [jq][jq]
    - `brew install jq` on macOS.
    - `sudo apt install jq` on Windows + WSL2

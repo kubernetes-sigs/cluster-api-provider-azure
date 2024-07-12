@@ -165,7 +165,7 @@ CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
-ASO_VERSION := v2.6.0
+ASO_VERSION := v2.8.0
 ASO_CRDS := resourcegroups.resources.azure.com natgateways.network.azure.com managedclusters.containerservice.azure.com managedclustersagentpools.containerservice.azure.com bastionhosts.network.azure.com virtualnetworks.network.azure.com virtualnetworkssubnets.network.azure.com privateendpoints.network.azure.com fleetsmembers.containerservice.azure.com extensions.kubernetesconfiguration.azure.com
 
 # Allow overriding the imagePullPolicy
@@ -393,7 +393,7 @@ delete-workload-cluster: $(KUBECTL) ## Deletes the example workload Kubernetes c
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
 	docker pull docker/dockerfile:1.4
-	docker pull docker.io/library/golang:1.21
+	docker pull docker.io/library/golang:1.22
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: docker-build
@@ -647,7 +647,7 @@ release-binary: $(RELEASE_DIR) ## Compile and build release binaries.
 		-e GOARCH=$(GOARCH) \
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
-		golang:1.21 \
+		golang:1.22 \
 		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
