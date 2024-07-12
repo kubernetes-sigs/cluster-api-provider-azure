@@ -16,7 +16,7 @@
 
 ###############################################################################
 
-# To run locally, set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
+# To run locally, set AZURE_CLIENT_ID, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
 
 set -o errexit
 set -o nounset
@@ -39,8 +39,6 @@ export HELM
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh"
-# shellcheck source=hack/parse-prow-creds.sh
-source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 # shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
 
@@ -139,6 +137,7 @@ create_cluster() {
         echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
         exit 1
     fi
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get clusters -A
 
     # set the SSH bastion and user that can be used to SSH into nodes
     KUBE_SSH_BASTION=$(${KUBECTL} get azurecluster -o json | jq '.items[0].spec.networkSpec.apiServerLB.frontendIPs[0].publicIP.dnsName' | tr -d \"):22
@@ -256,7 +255,7 @@ if [[ ! "${CLUSTER_TEMPLATE}" =~ "aks" ]]; then
   install_addons
 fi
 
-"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployments,machinepools
+"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait -A --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployments,machinepools
 
 echo "Cluster ${CLUSTER_NAME} created and fully operational"
 

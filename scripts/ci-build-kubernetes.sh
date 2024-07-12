@@ -27,8 +27,6 @@ cd "${REPO_ROOT}" || exit 1
 source "${REPO_ROOT}/hack/ensure-azcli.sh"
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=hack/parse-prow-creds.sh
-source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 # shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
 

@@ -68,9 +68,6 @@ const (
 	AzureBastionSubnetCidr            = "AZURE_BASTION_SUBNET_CIDR"
 	ClusterIdentityName               = "CLUSTER_IDENTITY_NAME"
 	ClusterIdentityNamespace          = "CLUSTER_IDENTITY_NAMESPACE"
-	ClusterIdentitySecretName         = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"      //nolint:gosec // Not a secret itself, just its name
-	ClusterIdentitySecretNamespace    = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE" //nolint:gosec // Not a secret itself, just its name
-	AzureClientSecret                 = "AZURE_CLIENT_SECRET"                     //nolint:gosec // Not a secret itself, just its name
 	AzureClientID                     = "AZURE_CLIENT_ID"
 	AzureClientIDUserAssignedIdentity = "AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY"
 	AzureSubscriptionID               = "AZURE_SUBSCRIPTION_ID"

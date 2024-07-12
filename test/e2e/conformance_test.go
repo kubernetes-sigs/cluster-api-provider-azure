@@ -76,23 +76,9 @@ var _ = Describe("Conformance Tests", func() {
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		spClientSecret := os.Getenv(AzureClientSecret)
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "cluster-identity-secret",
-				Namespace: namespace.Name,
-			},
-			Type: corev1.SecretTypeOpaque,
-			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
-		}
-		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).NotTo(HaveOccurred())
-
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
-		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).To(Succeed())
-		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).To(Succeed())
 	})
 
 	It(specName, func() {

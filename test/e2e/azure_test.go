@@ -127,8 +127,6 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentityName)).To(Succeed())
 		Expect(os.Unsetenv(ClusterIdentityNamespace)).To(Succeed())
-		Expect(os.Unsetenv(ClusterIdentitySecretName)).To(Succeed())
-		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).To(Succeed())
 
 		Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
 		Expect(os.Unsetenv("K8S_FEATURE_GATES")).To(Succeed())
