@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The purpose of this change is to trigger PR sanity checks against main branch
+
 # If you update this file, please follow
 # https://suva.sh/en/writings/well-documented-makefiles
 
