@@ -230,6 +230,8 @@ variables:
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.15.1"
   OLD_CAAPH_UPGRADE_VERSION: "v0.1.0-alpha.10"
   LATEST_CAAPH_UPGRADE_VERSION: "v0.1.1-alpha.1"
+  CI_RG: capz-ci
+  USER_IDENTITY: cloud-provider-user-identity
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
