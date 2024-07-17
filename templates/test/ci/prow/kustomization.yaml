@@ -47,6 +47,7 @@ patches:
 - path: ../patches/windows-server-version.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: ../patches/uami-md-0.yaml
 configMapGenerator:
 - files:
   - windows-cni=../../../addons/windows/calico/calico.yaml
