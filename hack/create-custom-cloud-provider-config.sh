@@ -33,8 +33,8 @@ fi
 
 curl --retry 3 -sL -o tmp_azure_json "${CLOUD_PROVIDER_CONFIG}"
 envsubst < tmp_azure_json > azure_json
-"${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" || true
-"${KUBECTL}" create secret generic "${CLUSTER_NAME}-control-plane-azure-json" \
+"${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" -n default || true
+"${KUBECTL}" create secret generic "${CLUSTER_NAME}-control-plane-azure-json" -n default \
   --from-file=control-plane-azure.json=azure_json \
   --from-file=worker-node-azure.json=azure_json
 rm tmp_azure_json azure_json

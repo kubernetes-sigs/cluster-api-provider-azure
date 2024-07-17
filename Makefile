@@ -321,7 +321,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until $(KUBECTL) get clusterresourcesets -A; do sleep 3; done"
 
 	# install Windows Calico cluster resource set
-	timeout --foreground 300 bash -c "until $(KUBECTL) create configmap calico-windows-addon --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until $(KUBECTL) create configmap calico-windows-addon -n default --from-file="$(ADDONS_DIR)/windows/calico" --dry-run=client -o yaml | kubectl apply -f -; do sleep 5; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) apply -f templates/addons/windows/calico-resource-set.yaml; do sleep 5; done"
 
 	# Wait for CAPZ deployments
@@ -346,10 +346,10 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	fi
 
 	# Wait for the kubeconfig to become available.
-	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	timeout --foreground 300 bash -c "while ! $(KUBECTL) get secrets -n default | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	$(KUBECTL) wait --for=condition=Ready --timeout=10m cluster "$(CLUSTER_NAME)"
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -n default -o json | jq -r .data.value | base64 --decode > ./kubeconfig
+	$(KUBECTL) -n default wait --for=condition=Ready --timeout=10m cluster "$(CLUSTER_NAME)"
 
 	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
