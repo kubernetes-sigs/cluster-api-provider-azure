@@ -201,7 +201,9 @@ Additionally, we need to update the `type: InfrastructureProvider` spec in [azur
 
 #### Update clusterctl API version upgrade tests
 
-Update the [API version upgrade tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v1.12.1/test/e2e/capi_test.go#L214) to use the oldest supported release versions of CAPI and CAPZ after the release is cut as "Init" provider versions. See [this PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4433) for more details.
+Update the provider versions for the [API version upgrade tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v1.16.0/test/e2e/common.go#L94-L95) to use the latest patch release of the previous two minor releases. See [this PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4873) for more details.
+
+The two versioned prow templates within `test/e2e/data/infrastructure-azure` should be updated to `templates/test/ci/cluster-template-prow.yaml` at the respective version. For example, if we're updating `v1.14.4` to `v1.14.5`, then `cluster-template-prow.yaml` should be moved from `test/e2e/data/infrastructure-azure/v1.14.4` to `test/e2e/data/infrastructure-azure/v1.14.5`, and contain the same contents as `templates/test/ci/cluster-template-prow.yaml`. 
 
 ### Update Upstream Tests (skip for patch releases)
 
