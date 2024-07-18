@@ -12,3 +12,5 @@ patches:
 - path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
 - path: ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml
 - path: ../../../../../../templates/test/ci/patches/cluster-label-cloud-provider-azure.yaml
+- path: ../../../../../../templates/test/ci/patches/uami-control-plane.yaml
+- path: ../../../../../../templates/test/ci/patches/uami-md-0.yaml
