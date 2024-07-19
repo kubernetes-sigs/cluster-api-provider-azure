@@ -15,6 +15,8 @@
 # If you update this file, please follow
 # https://suva.sh/en/writings/well-documented-makefiles
 
+# Validating CI changes against release-1.16 branch
+
 # Ensure Make is run with bash shell as some syntax below is bash-specific
 SHELL:=/usr/bin/env bash
 
