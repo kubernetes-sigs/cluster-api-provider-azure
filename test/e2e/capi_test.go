@@ -25,6 +25,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -187,6 +189,16 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 				// Unset windows specific variables
 				Expect(os.Unsetenv("WINDOWS_WORKER_MACHINE_COUNT")).To(Succeed())
+
+				cred, err := azidentity.NewDefaultAzureCredential(nil)
+				Expect(err).NotTo(HaveOccurred())
+				identityClient, err := armmsi.NewUserAssignedIdentitiesClient(getSubscriptionID(Default), cred, nil)
+				Expect(err).NotTo(HaveOccurred())
+				identityRG := e2eConfig.GetVariable(AzureIdentityResourceGroup)
+				identityName := e2eConfig.GetVariable(AzureUserIdentity)
+				identity, err := identityClient.Get(ctx, identityRG, identityName, nil)
+				Expect(err).NotTo(HaveOccurred())
+				os.Setenv("AZURE_CLIENT_ID_CLOUD_PROVIDER", *identity.Properties.ClientID)
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
