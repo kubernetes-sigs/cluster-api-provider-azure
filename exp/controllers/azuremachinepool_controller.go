@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -329,7 +330,11 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 			}
 
 			if reconcileError.IsTransient() {
-				log.Error(err, "failed to reconcile AzureMachinePool", "name", machinePoolScope.Name())
+				if azure.IsOperationNotDoneError(reconcileError) {
+					log.V(2).Info(fmt.Sprintf("AzureMachinePool reconcile not done: %s", reconcileError.Error()))
+				} else {
+					log.V(2).Info(fmt.Sprintf("transient failure to reconcile AzureMachinePool, retrying: %s", reconcileError.Error()))
+				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
