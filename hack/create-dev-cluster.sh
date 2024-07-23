@@ -82,12 +82,10 @@ create_cluster() {
     make create-cluster
 }
 
-setup
-
 retries=$CLUSTER_CREATE_ATTEMPTS
 while ((retries > 0)); do
-    create_cluster && break
     setup
+    create_cluster && break
     sleep 5
     ((retries --))
 done
