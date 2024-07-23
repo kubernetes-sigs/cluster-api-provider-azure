@@ -560,6 +560,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
 	Context("Creating a GPU-enabled cluster [OPTIONAL]", func() {
 		It("with a single control plane node and 1 node", func() {
+			Skip("Skipping since the e2e subscription has no quota for GPU SKUs")
 			clusterName = getClusterName(clusterNamePrefix, "gpu")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
