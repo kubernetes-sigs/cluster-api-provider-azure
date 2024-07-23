@@ -41,6 +41,7 @@ type CredentialsProvider interface {
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
 	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error)
+	Type() infrav1.IdentityType
 }
 
 // AzureCredentialsProvider represents a credential provider with azure cluster identity.
@@ -226,6 +227,11 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 // GetTenantID returns the Tenant ID associated with the AzureCredentialsProvider's Identity.
 func (p *AzureCredentialsProvider) GetTenantID() string {
 	return p.Identity.Spec.TenantID
+}
+
+// Type returns the auth mechanism used.
+func (p *AzureCredentialsProvider) Type() infrav1.IdentityType {
+	return p.Identity.Spec.Type
 }
 
 // hasClientSecret returns true if the identity has a Service Principal Client Secret.

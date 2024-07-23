@@ -25,10 +25,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -141,6 +146,40 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			Namespace:            namespace.Name,
 		})
 
+		// The workload cluster is not set up for workload identity. Use UserAssignedMSI there instead.
+		err := selfHostedClusterProxy.GetClient().Delete(ctx, &infrav1.AzureClusterIdentity{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: cluster.Namespace,
+				Name:      e2eConfig.GetVariable(ClusterIdentityName),
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
+		identityClient, err := armmsi.NewUserAssignedIdentitiesClient(getSubscriptionID(Default), cred, nil)
+		Expect(err).NotTo(HaveOccurred())
+		identityRG := e2eConfig.GetVariable(AzureIdentityResourceGroup)
+		identityName := e2eConfig.GetVariable(AzureUserIdentity)
+		identity, err := identityClient.Get(ctx, identityRG, identityName, nil)
+		Expect(err).NotTo(HaveOccurred())
+		err = selfHostedClusterProxy.GetClient().Create(ctx, &infrav1.AzureClusterIdentity{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: cluster.Namespace,
+				Name:      e2eConfig.GetVariable(ClusterIdentityName),
+				Labels: map[string]string{
+					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
+				},
+			},
+			Spec: infrav1.AzureClusterIdentitySpec{
+				AllowedNamespaces: &infrav1.AllowedNamespaces{},
+				ClientID:          *identity.Properties.ClientID,
+				ResourceID:        *identity.ID,
+				TenantID:          e2eConfig.GetVariable(AzureTenantID),
+				Type:              infrav1.UserAssignedMSI,
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
 		Log("Waiting for the cluster to be reconciled after moving to self hosted")
 		selfHostedCluster = framework.DiscoveryAndWaitForCluster(ctx, framework.DiscoveryAndWaitForClusterInput{
 			Getter:    selfHostedClusterProxy.GetClient(),
@@ -192,6 +231,31 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 				ToKubeconfigPath:     input.BootstrapClusterProxy.GetKubeconfigPath(),
 				Namespace:            selfHostedNamespace.Name,
 			})
+
+			// Restore the workload identity AzureClusterIdentity
+			err := input.BootstrapClusterProxy.GetClient().Delete(ctx, &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace.Name,
+					Name:      e2eConfig.GetVariable(ClusterIdentityName),
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			err = input.BootstrapClusterProxy.GetClient().Create(ctx, &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace.Name,
+					Name:      e2eConfig.GetVariable(ClusterIdentityName),
+					Labels: map[string]string{
+						clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
+					},
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					AllowedNamespaces: &infrav1.AllowedNamespaces{},
+					ClientID:          e2eConfig.GetVariable(AzureClientIDUserAssignedIdentity),
+					TenantID:          e2eConfig.GetVariable(AzureTenantID),
+					Type:              infrav1.WorkloadIdentity,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
 
 			Log("Waiting for the cluster to be reconciled after moving back to booststrap")
 			clusterResources.Cluster = framework.DiscoveryAndWaitForCluster(ctx, framework.DiscoveryAndWaitForClusterInput{
