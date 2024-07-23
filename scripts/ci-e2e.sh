@@ -39,8 +39,7 @@ source "${REPO_ROOT}/hack/util.sh"
 # Verify the required Environment Variables are present.
 capz::util::ensure_azure_envs
 
-export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
-export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-${LOCAL_ONLY}}
+export USE_LOCAL_KIND_REGISTRY=${USE_LOCAL_KIND_REGISTRY:-"true"}
 export BUILD_MANAGER_IMAGE=${BUILD_MANAGER_IMAGE:-"true"}
 
 if [[ "${USE_LOCAL_KIND_REGISTRY}" == "false" ]]; then
