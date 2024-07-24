@@ -174,8 +174,8 @@ spec:
   strategy:
     rollingUpdate:
       deletePolicy: Oldest
-      maxSurge: 25%
-      maxUnavailable: 1
+      maxSurge: 0
+      maxUnavailable: 10
     type: RollingUpdate
   template:
     osDisk:
@@ -260,6 +260,10 @@ metadata:
   namespace: default
 spec:
   location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 10
   template:
     osDisk:
       diskSizeGB: 128

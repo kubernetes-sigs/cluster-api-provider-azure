@@ -270,8 +270,8 @@ spec:
   strategy:
     rollingUpdate:
       deletePolicy: Oldest
-      maxSurge: 25%
-      maxUnavailable: 1
+      maxSurge: 0
+      maxUnavailable: 10
     type: RollingUpdate
   template:
     image:
@@ -452,6 +452,10 @@ metadata:
 spec:
   identity: UserAssigned
   location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 10
   template:
     image:
       marketplace:

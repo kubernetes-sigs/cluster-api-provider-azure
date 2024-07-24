@@ -35,6 +35,7 @@ patches:
 - path: ../patches/windows-containerd-labels.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: ../patches/azuremachinepool-surge.yaml
 
 sortOptions:
   order: fifo
