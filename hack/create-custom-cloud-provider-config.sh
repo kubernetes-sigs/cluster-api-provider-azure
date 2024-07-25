@@ -26,11 +26,12 @@ source "${REPO_ROOT}/hack/common-vars.sh"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}"
 
 # Test cloud provider config with shorter cache ttl
-CLOUD_PROVIDER_CONFIG="https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/tests/k8s-azure/manifest/cluster-api/cloud-config-vmss-short-cache-ttl.json"
+CLOUD_PROVIDER_CONFIG="file://$(realpath "${REPO_ROOT}")/templates/test/ci/default-custom-cloud-provider-config.json"
 if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
   CLOUD_PROVIDER_CONFIG="${CUSTOM_CLOUD_PROVIDER_CONFIG:-}"
 fi
 
+echo "curling ${CLOUD_PROVIDER_CONFIG}"
 curl --retry 3 -sL -o tmp_azure_json "${CLOUD_PROVIDER_CONFIG}"
 "${ENVSUBST}" < tmp_azure_json > azure_json
 "${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" -n default || true
