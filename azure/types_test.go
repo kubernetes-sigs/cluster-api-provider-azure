@@ -124,18 +124,6 @@ func TestVMSS_HasModelChanges(t *testing.T) {
 			},
 			HasModelChanges: true,
 		},
-		{
-			Name: "with different Tags",
-			Factory: func() (VMSS, VMSS) {
-				l := getDefaultVMSSForModelTesting()
-				l.Tags = infrav1.Tags{
-					"bin": "baz",
-				}
-				r := getDefaultVMSSForModelTesting()
-				return r, l
-			},
-			HasModelChanges: true,
-		},
 	}
 
 	for _, c := range cases {

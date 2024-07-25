@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -945,4 +946,42 @@ func (m *MachinePoolScope) ReconcileReplicas(ctx context.Context, vmss *azure.VM
 	}
 
 	return nil
+}
+
+// AnnotationJSON returns a map[string]interface from a JSON annotation.
+func (m *MachinePoolScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	jsonAnnotation := m.AzureMachinePool.GetAnnotations()[annotation]
+	if jsonAnnotation == "" {
+		return out, nil
+	}
+	err := json.Unmarshal([]byte(jsonAnnotation), &out)
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// UpdateAnnotationJSON updates the `annotation` with
+// `content`. `content` in this case should be a `map[string]interface{}`
+// suitable for turning into JSON. This `content` map will be marshalled into a
+// JSON string before being set as the given `annotation`.
+func (m *MachinePoolScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	m.SetAnnotation(annotation, string(b))
+	return nil
+}
+
+// TagsSpecs returns the tags for the AzureMachinePool.
+func (m *MachinePoolScope) TagsSpecs() []azure.TagsSpec {
+	return []azure.TagsSpec{
+		{
+			Scope:      azure.VMSSID(m.SubscriptionID(), m.NodeResourceGroup(), m.Name()),
+			Tags:       m.AdditionalTags(),
+			Annotation: azure.VMSSTagsLastAppliedAnnotation,
+		},
+	}
 }
