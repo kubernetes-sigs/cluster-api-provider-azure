@@ -48,7 +48,7 @@ type AzureClusterSpec struct {
 	// ControlPlaneEnabled enable control plane cluster components.
 	// +kubebuilder:default=true
 	// +optional
-	ControlPlaneEnabled bool `json:"controlPlaneEnabled"`
+	ControlPlaneEnabled bool `json:"controlPlaneEnabled,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane. It is not recommended to set
 	// this when creating an AzureCluster as CAPZ will set this for you. However, if it is set, CAPZ will not change it.

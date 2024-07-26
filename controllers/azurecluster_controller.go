@@ -256,6 +256,14 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 		if azureCluster.Spec.ControlPlaneEndpoint.Port == 0 {
 			azureCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()
 		}
+	} else {
+		if azureCluster.Spec.ControlPlaneEndpoint.Host == "" {
+			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane host")
+			return reconcile.Result{}, nil
+		} else if azureCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+			return reconcile.Result{}, nil
+		}
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it

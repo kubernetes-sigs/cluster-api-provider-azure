@@ -224,8 +224,10 @@ func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, f
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
-		"control-plane": !controlPlaneEnabled,
-		"node":          false,
+		"node": false,
+	}
+	if controlPlaneEnabled {
+		requiredSubnetRoles["control-plane"] = false
 	}
 	clusterSubnet := false
 	numberofClusterSubnets := 0

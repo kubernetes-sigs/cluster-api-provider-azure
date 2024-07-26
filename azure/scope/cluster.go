@@ -149,25 +149,25 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 	// Public IP specs for control plane lb
 	var controlPlaneOutboundIPSpecs []azure.ResourceSpecGetter
-	if s.ControlPlaneEnabled() {
-		if s.IsAPIServerPrivate() {
-			// Public IP specs for control plane outbound lb
-			if s.ControlPlaneOutboundLB() != nil {
-				for _, ip := range s.ControlPlaneOutboundLB().FrontendIPs {
-					controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
-						Name:             ip.PublicIP.Name,
-						ResourceGroup:    s.ResourceGroup(),
-						ClusterName:      s.ClusterName(),
-						DNSName:          "",    // Set to default value
-						IsIPv6:           false, // Set to default value
-						Location:         s.Location(),
-						ExtendedLocation: s.ExtendedLocation(),
-						FailureDomains:   s.FailureDomains(),
-						AdditionalTags:   s.AdditionalTags(),
-					})
-				}
+	if s.IsAPIServerPrivate() {
+		// Public IP specs for control plane outbound lb
+		if s.ControlPlaneOutboundLB() != nil {
+			for _, ip := range s.ControlPlaneOutboundLB().FrontendIPs {
+				controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
+					Name:             ip.PublicIP.Name,
+					ResourceGroup:    s.ResourceGroup(),
+					ClusterName:      s.ClusterName(),
+					DNSName:          "",    // Set to default value
+					IsIPv6:           false, // Set to default value
+					Location:         s.Location(),
+					ExtendedLocation: s.ExtendedLocation(),
+					FailureDomains:   s.FailureDomains(),
+					AdditionalTags:   s.AdditionalTags(),
+				})
 			}
-		} else {
+		}
+	} else {
+		if s.ControlPlaneEnabled() {
 			controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
 				&publicips.PublicIPSpec{
 					Name:             s.APIServerPublicIP().Name,
@@ -972,35 +972,36 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 // SetDNSName sets the API Server public IP DNS name.
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without an APIServerLB, and should be removed in the future.
 func (s *ClusterScope) SetDNSName() {
+	if !s.ControlPlaneEnabled() {
+		return
+	}
 	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
 	lb := s.APIServerLB()
-	if s.ControlPlaneEnabled() {
-		if lb == nil || lb.Name == "" {
-			lbName := fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
-			ip, dns := s.GenerateLegacyFQDN()
-			lb = &infrav1.LoadBalancerSpec{
-				Name: lbName,
-				FrontendIPs: []infrav1.FrontendIP{
-					{
-						Name: azure.GenerateFrontendIPConfigName(lbName),
-						PublicIP: &infrav1.PublicIPSpec{
-							Name:    ip,
-							DNSName: dns,
-						},
+	if lb == nil || lb.Name == "" {
+		lbName := fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
+		ip, dns := s.GenerateLegacyFQDN()
+		lb = &infrav1.LoadBalancerSpec{
+			Name: lbName,
+			FrontendIPs: []infrav1.FrontendIP{
+				{
+					Name: azure.GenerateFrontendIPConfigName(lbName),
+					PublicIP: &infrav1.PublicIPSpec{
+						Name:    ip,
+						DNSName: dns,
 					},
 				},
-				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
-					SKU:  infrav1.SKUStandard,
-					Type: infrav1.Public,
-				},
-			}
-			lb.DeepCopyInto(s.APIServerLB())
+			},
+			LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+				SKU:  infrav1.SKUStandard,
+				Type: infrav1.Public,
+			},
 		}
-		// Generate valid FQDN if not set.
-		// Note: this function uses the AzureCluster subscription ID.
-		if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
-			s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
-		}
+		lb.DeepCopyInto(s.APIServerLB())
+	}
+	// Generate valid FQDN if not set.
+	// Note: this function uses the AzureCluster subscription ID.
+	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
+		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}
 }
 
