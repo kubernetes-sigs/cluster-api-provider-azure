@@ -162,6 +162,13 @@ copy_kubeadm_config_map() {
     fi
 }
 
+wait_for_copy_kubeadm_config_map() {
+    echo "Copying kubeadm ConfigMap into calico-system namespace"
+    until copy_kubeadm_config_map; do
+        sleep 5
+    done
+}
+
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
@@ -199,9 +206,8 @@ wait_for_pods() {
 }
 
 install_addons() {
-    until copy_kubeadm_config_map; do
-        sleep 5
-    done
+    export -f copy_kubeadm_config_map wait_for_copy_kubeadm_config_map
+    timeout --foreground 600 bash -c wait_for_copy_kubeadm_config_map
     # In order to determine the successful outcome of CNI and cloud-provider-azure,
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.
