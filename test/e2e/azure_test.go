@@ -673,7 +673,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	// You can override the default SKU `Standard_D2s_v3` by setting the
+	// You can override the default SKU `Standard_D2ds_v5` by setting the
 	// `AZURE_AKS_NODE_MACHINE_TYPE` environment variable.
 	Context("Creating an AKS cluster for control plane tests [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {

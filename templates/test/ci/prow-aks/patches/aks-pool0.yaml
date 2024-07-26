@@ -10,4 +10,4 @@ spec:
   enableUltraSSD: true
   availabilityZones: ["1", "2"]
   name: pool0
-  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}"

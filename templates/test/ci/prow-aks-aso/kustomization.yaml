@@ -41,7 +41,7 @@ patches:
       value: ManagedClustersAgentPool
     - op: replace
       path: /spec/resources/0/spec/vmSize
-      value: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+      value: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}"
   target:
     kind: AzureASOManagedMachinePool
 
