@@ -68,7 +68,7 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
 				Mode:             "User",
-				SKU:              "Standard_D2s_v3",
+				SKU:              "Standard_D2ds_v5",
 				ScaleSetPriority: ptr.To(string(armcontainerservice.ScaleSetPrioritySpot)),
 				Scaling:          &scaling,
 				SpotMaxPrice:     &spotMaxPrice,

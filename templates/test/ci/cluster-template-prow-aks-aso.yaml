@@ -105,7 +105,7 @@ spec:
       owner:
         name: ${CLUSTER_NAME}
       type: VirtualMachineScaleSets
-      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -146,7 +146,7 @@ spec:
       owner:
         name: ${CLUSTER_NAME}
       type: VirtualMachineScaleSets
-      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -188,4 +188,4 @@ spec:
       owner:
         name: ${CLUSTER_NAME}
       type: VirtualMachineScaleSets
-      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}

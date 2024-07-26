@@ -86,7 +86,7 @@ spec:
   name: pool0
   osDiskSizeGB: 30
   osDiskType: Managed
-  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -169,7 +169,7 @@ spec:
   osDiskSizeGB: 40
   osDiskType: Ephemeral
   scaleSetPriority: Regular
-  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
   taints:
   - effect: NoSchedule
     key: type
@@ -217,4 +217,4 @@ spec:
   mode: User
   name: pool2
   osType: Windows
-  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+  sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
