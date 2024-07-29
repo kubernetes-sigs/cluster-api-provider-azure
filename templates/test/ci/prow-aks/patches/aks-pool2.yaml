@@ -25,6 +25,6 @@ metadata:
   name: "${CLUSTER_NAME}-pool2"
 spec:
   mode: User
-  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}"
+  sku: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
   osType: Windows
   name: pool2
