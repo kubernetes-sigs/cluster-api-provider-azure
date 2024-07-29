@@ -188,21 +188,6 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 					availableZones[*zone] = true
 				}
 
-				if sku.Restrictions != nil {
-					for _, restriction := range sku.Restrictions {
-						// Can't deploy anything in this subscription in this location. Bail out.
-						if ptr.Deref(restriction.Type, "") == armcompute.ResourceSKURestrictionsTypeLocation {
-							availableZones = nil
-							break
-						}
-
-						// remove restricted zones
-						for _, restrictedZone := range restriction.RestrictionInfo.Zones {
-							delete(availableZones, *restrictedZone)
-						}
-					}
-				}
-
 				// add to global list, if any exist. it's okay for the final list to be empty.
 				// that means the region may not support AZ yet.
 				for zone := range availableZones {
