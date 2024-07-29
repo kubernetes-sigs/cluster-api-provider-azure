@@ -110,7 +110,6 @@ spec:
       - "1"
       - "2"
       enableNodePublicIP: false
-      enableUltraSSD: true
       maxPods: 30
       mode: System
       name: pool0
