@@ -115,7 +115,7 @@ spec:
       name: pool0
       osDiskSizeGB: 30
       osDiskType: Managed
-      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
+      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePoolTemplate
@@ -180,7 +180,7 @@ spec:
       osDiskSizeGB: 40
       osDiskType: Ephemeral
       scaleSetPriority: Regular
-      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2ds_v5}
+      sku: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
       taints:
       - effect: NoSchedule
         key: type
