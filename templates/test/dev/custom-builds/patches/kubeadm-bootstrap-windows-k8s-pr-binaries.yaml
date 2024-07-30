@@ -30,6 +30,7 @@
         $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
         echo "running az login via identity"
         az login --identity
+        az account show || true
         foreach ( $$binary in $$binaries )
         {
           echo "downloading binary: $$ci_url/$$binary.exe"
