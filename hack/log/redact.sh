@@ -26,10 +26,8 @@ redact_vars=(
     "${AZURE_CLIENT_SECRET:-}"
     "${AZURE_SUBSCRIPTION_ID:-}"
     "${AZURE_JSON_B64:-}"
-    "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-}"
     "$(echo -n "${AZURE_SUBSCRIPTION_ID:-}" | base64 | tr -d '\n')"
     "$(echo -n "${AZURE_CLIENT_SECRET:-}" | base64 | tr -d '\n')"
-    "$(echo -n "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-}" | base64 | tr -d '\n')"
 )
 
 for log_file in "${log_files[@]}"; do
