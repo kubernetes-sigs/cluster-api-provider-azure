@@ -559,7 +559,7 @@ help: ## Display this help.
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase.
-	$(GOLANGCI_LINT) run -v $(GOLANGCI_LINT_EXTRA_ARGS)
+	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter.
