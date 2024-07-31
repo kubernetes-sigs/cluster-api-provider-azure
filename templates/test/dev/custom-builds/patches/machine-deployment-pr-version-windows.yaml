@@ -8,7 +8,7 @@ spec:
     spec:
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/capz-ci/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-provider-user-identity
+        - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY}
       image:
         # we use the latest image as a workaround there is no published marketplace image for k8s CI versions.
         # latest binaries and images will get replaced to the desired version by the script above.
