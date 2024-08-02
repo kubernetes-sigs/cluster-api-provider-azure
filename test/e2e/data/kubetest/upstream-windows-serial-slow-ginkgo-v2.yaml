@@ -1,5 +1,5 @@
 ginkgo.focus: (\[sig-windows\]|\[sig-scheduling\].SchedulerPreemption|\[sig-autoscaling\].\[Feature:HPA\]|\[sig-apps\].CronJob).*(\[Serial\]|\[Slow\])|(\[Serial\]|\[Slow\]).*(\[Conformance\]|\[NodeConformance\])|\[sig-api-machinery\].Garbage.collector
-ginkgo.skip: \[LinuxOnly\]|\[Excluded:WindowsDocker\]|device.plugin.for.Windows
+ginkgo.skip: \[LinuxOnly\]|\[Excluded:WindowsDocker\]|\[Feature:DynamicResourceAllocation\]|device.plugin.for.Windows
 disable-log-dump: true
 ginkgo.progress: true
 ginkgo.slow-spec-threshold: 120s
