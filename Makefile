@@ -308,6 +308,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/install-cert-manager.sh
 
 	# Create customized cloud provider configs
+	AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="$${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-$$(cat $(AZURE_IDENTITY_ID_FILEPATH))}" \
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
