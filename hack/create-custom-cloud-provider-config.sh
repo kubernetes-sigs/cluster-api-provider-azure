@@ -31,7 +31,6 @@ if [[ -n "${CUSTOM_CLOUD_PROVIDER_CONFIG:-}" ]]; then
   CLOUD_PROVIDER_CONFIG="${CUSTOM_CLOUD_PROVIDER_CONFIG:-}"
 fi
 
-echo "curling ${CLOUD_PROVIDER_CONFIG}"
 curl --retry 3 -sL -o tmp_azure_json "${CLOUD_PROVIDER_CONFIG}"
 "${ENVSUBST}" < tmp_azure_json > azure_json
 "${KUBECTL}" delete secret "${CLUSTER_NAME}-control-plane-azure-json" -n default || true
