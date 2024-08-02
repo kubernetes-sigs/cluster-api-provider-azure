@@ -114,7 +114,7 @@ function checkAZWIENVPreReqsAndCreateFiles() {
       az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors
     fi
 
-    SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" -o json | jq -r .primaryEndpoints.web)
+    SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" -o json | jq -r .primaryEndpoints.web)
     export SERVICE_ACCOUNT_ISSUER
     AZWI_OPENID_CONFIG_FILEPATH="${REPO_ROOT}/openid-configuration.json"
     cat <<EOF > "${AZWI_OPENID_CONFIG_FILEPATH}"
