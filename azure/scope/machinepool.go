@@ -210,7 +210,7 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		SubscriptionID:               m.SubscriptionID(),
 		HasReplicasExternallyManaged: m.HasReplicasExternallyManaged(ctx),
 		ClusterName:                  m.ClusterName(),
-		AdditionalTags:               m.AzureMachinePool.Spec.AdditionalTags,
+		AdditionalTags:               m.AdditionalTags(),
 		PlatformFaultDomainCount:     m.AzureMachinePool.Spec.PlatformFaultDomainCount,
 		ZoneBalance:                  m.AzureMachinePool.Spec.ZoneBalance,
 	}
