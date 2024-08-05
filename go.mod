@@ -42,7 +42,7 @@ require (
 	go.uber.org/mock v0.4.0
 	golang.org/x/crypto v0.25.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
-	golang.org/x/mod v0.19.0
+	golang.org/x/mod v0.20.0
 	golang.org/x/text v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.30.2
