@@ -700,27 +700,29 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
-		name        string
-		amp         *AzureMachinePool
-		deferFunc   func()
-		expectError bool
+		name               string
+		amp                *AzureMachinePool
+		featureGateEnabled *bool
+		expectError        bool
 	}{
 		{
-			name:        "feature gate explicitly disabled",
-			amp:         getKnownValidAzureMachinePool(),
-			deferFunc:   utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
-			expectError: true,
+			name:               "feature gate explicitly disabled",
+			amp:                getKnownValidAzureMachinePool(),
+			featureGateEnabled: ptr.To(false),
+			expectError:        true,
 		},
 		{
-			name:        "feature gate implicitly enabled",
-			amp:         getKnownValidAzureMachinePool(),
-			deferFunc:   func() {},
-			expectError: false,
+			name:               "feature gate implicitly enabled",
+			amp:                getKnownValidAzureMachinePool(),
+			featureGateEnabled: nil,
+			expectError:        false,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			defer tc.deferFunc()
+			if tc.featureGateEnabled != nil {
+				defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)()
+			}
 			ampw := &azureMachinePoolWebhook{}
 			_, err := ampw.ValidateCreate(context.Background(), tc.amp)
 			if tc.expectError {
