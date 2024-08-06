@@ -37,7 +37,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0
 	go.opentelemetry.io/otel/sdk v1.27.0
-	go.opentelemetry.io/otel/sdk/metric v1.24.0
+	go.opentelemetry.io/otel/sdk/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/mock v0.4.0
 	golang.org/x/crypto v0.25.0
@@ -222,27 +222,8 @@ require (
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.0-rc.0
 
-// kube-openapi should match the version imported by CAPI.
-replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
-
-// Play nice with ASO 2.8. Most of these can probably be removed with CAPI 1.8.
 replace (
 	github.com/google/cel-go => github.com/google/cel-go v0.17.8
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/common => github.com/prometheus/common v0.46.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.0
-	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace => go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc => go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0
-	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v1.24.0
-	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.24.0
-	go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v1.24.0
-	go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v1.1.0
-	k8s.io/api => k8s.io/api v0.29.3
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.29.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.29.3
-	k8s.io/apiserver => k8s.io/apiserver v0.29.3
-	k8s.io/client-go => k8s.io/client-go v0.29.3
-	k8s.io/component-base => k8s.io/component-base v0.29.3
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.17.3
 )
