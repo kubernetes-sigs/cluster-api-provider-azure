@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/utils/ptr"
 	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
@@ -285,6 +286,12 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 }
 
 func expectedNodeLabels(poolName, nodeRG string) map[string]string {
+	if len(poolName) > validation.LabelValueMaxLength {
+		poolName = poolName[:validation.LabelValueMaxLength]
+	}
+	if len(nodeRG) > validation.LabelValueMaxLength {
+		nodeRG = nodeRG[:validation.LabelValueMaxLength]
+	}
 	return map[string]string{
 		"kubernetes.azure.com/agentpool": poolName,
 		"kubernetes.azure.com/cluster":   nodeRG,
