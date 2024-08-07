@@ -211,4 +211,4 @@ spec:
   allowedNamespaces: {}
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
-  type: WorkloadIdentity
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
