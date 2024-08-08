@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../prow
+- ../../../flavors/machinepool/machine-pool-deployment.yaml
+- ../../../flavors/machinepool-windows/machine-pool-deployment-windows.yaml
+patches:
+- path: ../patches/azuremachinepool-vmextension.yaml
+- path: ../patches/machine-pool-worker-counts.yaml
+
+sortOptions:
+  order: fifo
