@@ -206,7 +206,7 @@ spec:
   allowedNamespaces: {}
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
-  type: WorkloadIdentity
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
