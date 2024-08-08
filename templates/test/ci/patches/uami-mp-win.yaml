@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  identity: UserAssigned
+  userAssignedIdentities:
+  - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
