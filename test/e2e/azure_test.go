@@ -894,7 +894,7 @@ var _ = Describe("Workload cluster creation", func() {
 			// Create a cluster using the cluster class created above
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("aks-clusterclass"),
+				withFlavor("aks-topology"),
 				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),

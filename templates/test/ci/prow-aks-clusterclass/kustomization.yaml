@@ -3,12 +3,10 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/aks-clusterclass
-- ../../../flavors/aks-topology
 patches:
 - path: patches/tags-aks-clusterclass.yaml
 - path: patches/aks-clusterclass-pool0.yaml
 - path: patches/aks-clusterclass-pool1.yaml
-- path: patches/cluster.yaml
 - path: patches/addons.yaml
 - path: patches/kubeadm-config-template.yaml
 - path: patches.yaml
