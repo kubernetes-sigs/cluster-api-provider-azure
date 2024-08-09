@@ -67,7 +67,10 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings
 		field.NewPath("spec", "subscriptionID"),
 		old.Spec.SubscriptionID,
 		c.Spec.SubscriptionID); err != nil {
-		allErrs = append(allErrs, err)
+		_, updateAllowed := c.Annotations[AzureClusterAllowMutateSubscriptionIDAnnotation]
+		if !updateAllowed {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if err := webhookutils.ValidateImmutable(

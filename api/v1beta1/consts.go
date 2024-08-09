@@ -194,3 +194,9 @@ const (
 	// AzureClusterIdentityKind indicates the kind of an AzureClusterIdentity.
 	AzureClusterIdentityKind = "AzureClusterIdentity"
 )
+
+const (
+	// AzureClusterAllowMutateSubscriptionIDAnnotation is the key for the Azure Cluster object annotation
+	// which allows the AzureCluster spec.subscriptionID field to be updated.
+	AzureClusterAllowMutateSubscriptionIDAnnotation = "sigs.k8s.io/cluster-api-provider-azure-allow-mutate-subscription-id"
+)
