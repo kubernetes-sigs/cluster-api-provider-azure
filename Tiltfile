@@ -32,6 +32,7 @@ settings = {
     "worker_machine_count": "2",
     "az_node_machine_type": "Standard_B2s",
     "cluster_class_name": "default",
+    "ccm_ca_cert_dir": "/etc/pki/tls",
 }
 
 # Auth keys that need to be loaded from the environment
@@ -359,6 +360,7 @@ def deploy_worker_templates(template, substitutions):
         "AZURE_NODE_MACHINE_TYPE": settings.get("az_node_machine_type"),
         "FLATCAR_VERSION": settings.get("flatcar_version"),
         "CLUSTER_CLASS_NAME": settings.get("cluster_class_name"),
+        "CCM_CA_CERT_DIR": settings.get("ccm_ca_cert_dir"),
     }
 
     if "aks" in flavor:
@@ -400,9 +402,12 @@ def get_addons(flavor_name):
 
     addon_cmd = "; export CIDRS=$(" + kubectl_cmd + " get cluster ${CLUSTER_NAME} -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[*]}')"
     addon_cmd += "; export CIDR_LIST=$(bash -c 'echo $CIDRS' | tr ' ' ',')"
+    addon_cmd += "; export CCM_CA_CERT_DIR=" + settings.get("ccm_ca_cert_dir")
     addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set cloudControllerManager.clusterCIDR=${CIDR_LIST}"
     if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
         addon_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+    else:  # append caCetDir location to the cloud-provider-azure helm install command for Azure Linux flavor
+        addon_cmd += " --set-string cloudControllerManager.caCertDir=${CCM_CA_CERT_DIR}"
 
     if "azure-cni-v1" in flavor_name:
         addon_cmd += "; " + kubectl_cmd + " apply -f ./templates/addons/azure-cni-v1.yaml --kubeconfig ./${CLUSTER_NAME}.kubeconfig"

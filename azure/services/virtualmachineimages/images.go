@@ -47,8 +47,59 @@ func New(auth azure.Authorizer) (*Service, error) {
 	}, nil
 }
 
+// GetDefaultLinuxImage returns the default image spec for a Linux node.
+func (s *Service) GetDefaultLinuxImage(ctx context.Context, location, k8sVersion string) (*infrav1.Image, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.GetDefaultLinuxImage")
+	defer done()
+
+	// First try Azure Linux, then Ubuntu.
+	defaultImage, err := s.GetDefaultAzureLinuxImage(ctx, location, k8sVersion)
+	if err != nil {
+		log.V(4).Info("Failed to get default Azure Linux image, trying default Ubuntu image", "error", err)
+		return s.GetDefaultUbuntuImage(ctx, location, k8sVersion)
+	}
+
+	return defaultImage, nil
+}
+
+// GetDefaultAzureLinuxImage returns the default image spec for Azure Linux.
+func (s *Service) GetDefaultAzureLinuxImage(ctx context.Context, location, k8sVersion string) (*infrav1.Image, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.GetDefaultAzureLinuxImage")
+	defer done()
+
+	// First try Azure Linux 3.
+	publisher, offer := azure.DefaultImagePublisherID, azure.DefaultImageOfferID
+	skuID, version, err := s.getSKUAndVersion(
+		ctx, location, publisher, offer, k8sVersion, "azurelinux-3")
+	if err != nil {
+		// If that fails, log the error and try Azure Linux 2.
+		log.V(4).Info("Failed to get default image for Azure Linux 3, trying Azure Linux 2", "error", err)
+		skuID, version, err = s.getSKUAndVersion(
+			ctx, location, publisher, offer, k8sVersion, "mariner-2")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get default image")
+		}
+	}
+
+	defaultImage := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       skuID,
+			},
+			Version: version,
+		},
+	}
+
+	return defaultImage, nil
+}
+
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
 func (s *Service) GetDefaultUbuntuImage(ctx context.Context, location, k8sVersion string) (*infrav1.Image, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.GetDefaultAzureLinuxImage")
+	defer done()
+
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
@@ -121,7 +172,7 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersi
 
 // getSKUAndVersion gets the SKU ID and version of the image to use for the provided version of Kubernetes.
 // note: osAndVersion is expected to be in the format of {os}-{version} (ex: ubuntu-2004 or windows-2022)
-func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, offer, k8sVersion, osAndVersion string) (skuID string, imageVersion string, err error) {
+func (s *Service) getSKUAndVersion(ctx context.Context, location, publisher, offer, k8sVersion, osAndVersion string) (skuID string, imageVersion string, err error) { //nolint:unparam // Keep "publisher" in the function signature.
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Service.getSKUAndVersion")
 	defer done()
 
