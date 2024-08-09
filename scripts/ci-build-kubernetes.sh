@@ -77,7 +77,7 @@ setup() {
 }
 
 main() {
-    if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+    if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv --auth-mode login)" == "false" ]]; then
         echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
         az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
         az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
@@ -89,7 +89,7 @@ main() {
         export CONFORMANCE_IMAGE="${REGISTRY}/conformance:${KUBE_IMAGE_TAG}"
     fi
 
-    if [[ "$(can_reuse_artifacts)" == "false" ]]; then
+    if ! can_reuse_artifacts; then
         echo "Building Kubernetes"
 
         # TODO(chewong): support multi-arch and Windows build
@@ -109,11 +109,12 @@ main() {
         done
 
         echo "Uploading binaries to Azure storage container ${AZURE_BLOB_CONTAINER_NAME}"
+        echo "AZURE_STORAGE_AUTH_MODE: ${AZURE_STORAGE_AUTH_MODE:-}"
 
         for BINARY in "${BINARIES[@]}"; do
             BIN_PATH="${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
             echo "uploading ${BIN_PATH}"
-            az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
+            az storage blob upload --auth-mode login --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${BIN_PATH}"
         done
 
         if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
@@ -126,7 +127,7 @@ main() {
             for BINARY in "${WINDOWS_BINARIES[@]}"; do
                 BIN_PATH="${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
                 echo "uploading ${BIN_PATH}"
-                az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
+                az storage blob upload --auth-mode login --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${BIN_PATH}"
             done
         fi
     fi
@@ -134,27 +135,39 @@ main() {
 
 # can_reuse_artifacts returns true if there exists Kubernetes artifacts built from a PR that we can reuse
 can_reuse_artifacts() {
+    echo "Checking if images can be reused"
     for IMAGE_NAME in "${IMAGES[@]}"; do
-        if ! docker pull "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG}"; then
-            echo "false" && return
+        if ! docker manifest inspect "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG}"; then
+            echo "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG} does not exist"
+            return 1
+        else
+            echo "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG} exists"
         fi
     done
 
+    echo "Checking if linux binaries can be reused"
     for BINARY in "${BINARIES[@]}"; do
-        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
-            echo "false" && return
+        if [[ "$(az storage blob exists --auth-mode login --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+            echo "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY} does not exist"
+            return 1
+        else
+            echo "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY} exists"
         fi
     done
 
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
+        echo "Checking if windows binaries can be reused"
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
-            if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
-                echo "false" && return
+            if [[ "$(az storage blob exists --auth-mode login --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
+                echo "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe does not exist"
+                return 1
+            else
+                echo "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe exists"
             fi
         done
     fi
 
-    echo "true"
+    echo "all artifacts exist"
 }
 
 capz::ci-build-kubernetes::cleanup() {
