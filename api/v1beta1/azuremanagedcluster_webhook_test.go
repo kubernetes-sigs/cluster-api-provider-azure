@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
@@ -135,27 +136,29 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 
 func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 	tests := []struct {
-		name        string
-		amc         *AzureManagedCluster
-		deferFunc   func()
-		expectError bool
+		name               string
+		amc                *AzureManagedCluster
+		featureGateEnabled *bool
+		expectError        bool
 	}{
 		{
-			name:        "feature gate explicitly disabled",
-			amc:         getKnownValidAzureManagedCluster(),
-			deferFunc:   utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
-			expectError: true,
+			name:               "feature gate explicitly disabled",
+			amc:                getKnownValidAzureManagedCluster(),
+			featureGateEnabled: ptr.To(false),
+			expectError:        true,
 		},
 		{
-			name:        "feature gate implicitly enabled",
-			amc:         getKnownValidAzureManagedCluster(),
-			deferFunc:   func() {},
-			expectError: false,
+			name:               "feature gate implicitly enabled",
+			amc:                getKnownValidAzureManagedCluster(),
+			featureGateEnabled: nil,
+			expectError:        false,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			defer tc.deferFunc()
+			if tc.featureGateEnabled != nil {
+				defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)()
+			}
 			g := NewWithT(t)
 			_, err := tc.amc.ValidateCreate()
 			if tc.expectError {

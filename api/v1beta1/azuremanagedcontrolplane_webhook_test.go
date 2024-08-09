@@ -1662,29 +1662,31 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 
 func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 	tests := []struct {
-		name        string
-		amcp        *AzureManagedControlPlane
-		deferFunc   func()
-		expectError bool
+		name               string
+		amcp               *AzureManagedControlPlane
+		featureGateEnabled *bool
+		expectError        bool
 	}{
 		{
-			name:        "feature gate explicitly disabled",
-			amcp:        getKnownValidAzureManagedControlPlane(),
-			deferFunc:   utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, false),
-			expectError: true,
+			name:               "feature gate explicitly disabled",
+			amcp:               getKnownValidAzureManagedControlPlane(),
+			featureGateEnabled: ptr.To(false),
+			expectError:        true,
 		},
 		{
-			name:        "feature gate implicitly enabled",
-			amcp:        getKnownValidAzureManagedControlPlane(),
-			deferFunc:   func() {},
-			expectError: false,
+			name:               "feature gate implicitly enabled",
+			amcp:               getKnownValidAzureManagedControlPlane(),
+			featureGateEnabled: nil,
+			expectError:        false,
 		},
 	}
 	client := mockClient{ReturnError: false}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			defer tc.deferFunc()
+			if tc.featureGateEnabled != nil {
+				defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)()
+			}
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,
 			}
