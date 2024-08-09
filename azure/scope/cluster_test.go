@@ -930,9 +930,15 @@ func TestRouteTableSpecs(t *testing.T) {
 }
 
 func TestNatGatewaySpecs(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = asonetworkv1api20201101.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
+		vnet         asonetworkv1api20201101.VirtualNetwork
 		want         []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]
 	}{
 		{
@@ -993,10 +999,23 @@ func TestNatGatewaySpecs(t *testing.T) {
 									},
 								},
 							},
+							Vnet: infrav1.VnetSpec{
+								Name: "fake-vnet-1",
+							},
 						},
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+				Status: asonetworkv1api20201101.VirtualNetwork_STATUS{
+					Tags: map[string]string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
 			},
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
@@ -1075,10 +1094,23 @@ func TestNatGatewaySpecs(t *testing.T) {
 									},
 								},
 							},
+							Vnet: infrav1.VnetSpec{
+								Name: "fake-vnet-1",
+							},
 						},
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+				Status: asonetworkv1api20201101.VirtualNetwork_STATUS{
+					Tags: map[string]string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
 			},
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
@@ -1156,10 +1188,23 @@ func TestNatGatewaySpecs(t *testing.T) {
 									},
 								},
 							},
+							Vnet: infrav1.VnetSpec{
+								Name: "fake-vnet-1",
+							},
 						},
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+				Status: asonetworkv1api20201101.VirtualNetwork_STATUS{
+					Tags: map[string]string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
 			},
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.NatGateway]{
 				&natgateways.NatGatewaySpec{
@@ -1182,6 +1227,23 @@ func TestNatGatewaySpecs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
+
+			initObjects := []runtime.Object{&tt.vnet, fakeIdentity, fakeSecret}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			tt.clusterScope.Client = fakeClient
+
 			if got := tt.clusterScope.NatGatewaySpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NatGatewaySpecs() = %s, want %s", specArrayToString(got), specArrayToString(tt.want))
 			}
@@ -1349,9 +1411,15 @@ func TestNSGSpecs(t *testing.T) {
 }
 
 func TestSubnetSpecs(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = asonetworkv1api20201101.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
+		vnet         asonetworkv1api20201101.VirtualNetwork
 		want         []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]
 	}{
 		{
@@ -1430,6 +1498,11 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
 			},
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{
 				&subnets.SubnetSpec{
@@ -1536,6 +1609,11 @@ func TestSubnetSpecs(t *testing.T) {
 				},
 				cache: &ClusterCache{},
 			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+			},
 			want: []azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet]{
 				&subnets.SubnetSpec{
 					Name:              "fake-subnet-1",
@@ -1568,6 +1646,23 @@ func TestSubnetSpecs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
+
+			initObjects := []runtime.Object{&tt.vnet, fakeIdentity, fakeSecret}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			tt.clusterScope.Client = fakeClient
+
 			if got := tt.clusterScope.SubnetSpecs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SubnetSpecs() = \n%s, want \n%s", specArrayToString(got), specArrayToString(tt.want))
 			}
@@ -1576,32 +1671,17 @@ func TestSubnetSpecs(t *testing.T) {
 }
 
 func TestIsVnetManaged(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = asonetworkv1api20201101.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
 	tests := []struct {
 		name         string
 		clusterScope ClusterScope
+		vnet         asonetworkv1api20201101.VirtualNetwork
 		want         bool
 	}{
-		{
-			name: "VNET ID is empty",
-			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-cluster",
-					},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{
-								ID: "",
-							},
-						},
-					},
-				},
-				cache: &ClusterCache{},
-			},
-			want: true,
-		},
 		{
 			name: "Wrong tags",
 			clusterScope: ClusterScope{
@@ -1614,15 +1694,22 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
-								ID: "my-id",
-								VnetClassSpec: infrav1.VnetClassSpec{Tags: map[string]string{
-									"key": "value",
-								}},
+								Name: "fake-vnet-1",
 							},
 						},
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+				Status: asonetworkv1api20201101.VirtualNetwork_STATUS{
+					Tags: map[string]string{
+						"key": "value",
+					},
+				},
 			},
 			want: false,
 		},
@@ -1638,15 +1725,22 @@ func TestIsVnetManaged(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
-								ID: "my-id",
-								VnetClassSpec: infrav1.VnetClassSpec{Tags: map[string]string{
-									"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
-								}},
+								Name: "fake-vnet-1",
 							},
 						},
 					},
 				},
 				cache: &ClusterCache{},
+			},
+			vnet: asonetworkv1api20201101.VirtualNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake-vnet-1",
+				},
+				Status: asonetworkv1api20201101.VirtualNetwork_STATUS{
+					Tags: map[string]string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
 			},
 			want: true,
 		},
@@ -1680,6 +1774,23 @@ func TestIsVnetManaged(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			fakeIdentity := &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-identity",
+					Namespace: "default",
+				},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			}
+			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
+
+			initObjects := []runtime.Object{&tt.vnet, fakeIdentity, fakeSecret}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			tt.clusterScope.Client = fakeClient
+
 			got := tt.clusterScope.IsVnetManaged()
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IsVnetManaged() = \n%t, want \n%t", got, tt.want)

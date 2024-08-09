@@ -582,9 +582,21 @@ func (s *ClusterScope) IsVnetManaged() bool {
 	if s.cache.isVnetManaged != nil {
 		return ptr.Deref(s.cache.isVnetManaged, false)
 	}
-	isVnetManaged := s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
-	s.cache.isVnetManaged = ptr.To(isVnetManaged)
-	return isVnetManaged
+	ctx := context.Background()
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.ClusterScope.IsVnetManaged")
+	defer done()
+
+	vnet := s.VNetSpec().ResourceRef()
+	vnet.SetNamespace(s.ASOOwner().GetNamespace())
+	err := s.Client.Get(ctx, client.ObjectKeyFromObject(vnet), vnet)
+	if err != nil {
+		log.Error(err, "Unable to determine if ClusterScope VNET is managed by capz, assuming unmanaged", "AzureCluster", s.ClusterName())
+		return false
+	}
+
+	isManaged := infrav1.Tags(vnet.Status.Tags).HasOwned(s.ClusterName())
+	s.cache.isVnetManaged = ptr.To(isManaged)
+	return isManaged
 }
 
 // IsIPv6Enabled returns true if IPv6 is enabled.
