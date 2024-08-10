@@ -77,7 +77,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
 	}
 
-	credentialsProvider, err := NewAzureClusterCredentialsProvider(ctx, params.Client, params.AzureCluster)
+	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.AzureCluster.Spec.IdentityRef, params.AzureCluster.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
