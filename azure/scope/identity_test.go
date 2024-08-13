@@ -351,7 +351,7 @@ func TestGetTokenCredential(t *testing.T) {
 				initObjects = append(initObjects, tt.secret)
 			}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-			provider, err := NewAzureClusterCredentialsProvider(context.Background(), fakeClient, tt.cluster)
+			provider, err := NewAzureCredentialsProvider(context.Background(), fakeClient, tt.cluster.Spec.IdentityRef, "")
 			g.Expect(err).NotTo(HaveOccurred())
 			cred, err := provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
 			g.Expect(err).NotTo(HaveOccurred())

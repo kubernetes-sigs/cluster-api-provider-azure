@@ -3642,7 +3642,8 @@ func TestVNetPeerings(t *testing.T) {
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: tc.subscriptionID,
 						IdentityRef: &corev1.ObjectReference{
-							Kind: infrav1.AzureClusterIdentityKind,
+							Kind:      infrav1.AzureClusterIdentityKind,
+							Namespace: clusterNamespace,
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
