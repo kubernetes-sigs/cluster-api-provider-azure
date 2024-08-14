@@ -54,8 +54,8 @@ require (
 	k8s.io/kubectl v0.29.3
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/cloud-provider-azure v1.29.3
-	sigs.k8s.io/cluster-api v1.7.4
-	sigs.k8s.io/cluster-api/test v1.7.4
+	sigs.k8s.io/cluster-api v1.7.5
+	sigs.k8s.io/cluster-api/test v1.7.5
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/kind v0.23.0
 )
@@ -108,7 +108,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v25.0.5+incompatible // indirect
+	github.com/docker/docker v25.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
@@ -217,7 +217,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.4
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.5
 
 // kube-openapi should match the version imported by CAPI.
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
