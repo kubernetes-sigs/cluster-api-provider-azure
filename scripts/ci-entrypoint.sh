@@ -239,7 +239,7 @@ capz::ci-entrypoint::on_exit() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
     # cleanup all resources we use
     if [[ ! "${SKIP_CLEANUP:-}" == "true" ]]; then
-        timeout 1800 "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" || echo "Unable to delete cluster ${CLUSTER_NAME}"
+        timeout 1800 "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" -n default || echo "Unable to delete cluster ${CLUSTER_NAME}"
         make --directory="${REPO_ROOT}" kind-reset || true
     fi
 }
