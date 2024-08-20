@@ -45,7 +45,7 @@ An Azure Service Principal is needed for deploying Azure resources. The below in
   ```
 
   5. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal.
-  NOTE: the "owner" role is required to be able to create role assignments for [system-assigned managed identity](vm-identity.md).
+  NOTE: the "owner" role is required to be able to create role assignments for system-assigned managed identity.
 
   ```bash
   az ad sp create-for-rbac --role contributor --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
@@ -84,7 +84,7 @@ For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT
 
 <h1> Warning </h1>
 
-The capability to set credentials using environment variables is now deprecated and will be removed in future releases, the recommended approach is to use `AzureClusterIdentity` as explained [here](multitenancy.md)
+The capability to set credentials using environment variables is now deprecated and will be removed in future releases, the recommended approach is to use `AzureClusterIdentity` as explained [here](./topics/multitenancy.md)
 
 </aside>
 
@@ -92,7 +92,7 @@ The capability to set credentials using environment variables is now deprecated 
 ### Building your first cluster
 Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) to create your first Kubernetes cluster on Azure using Cluster API. Make sure to select the "Azure" tabs.
 
-If you are looking to install additional ASO CRDs, set `ADDITIONAL_ASO_CRDS` to the list of CRDs you want to install. Refer to adding additional CRDs for Azure Service Operator [here](aso.md#Using-aso-for-non-capz-resources).
+If you are looking to install additional ASO CRDs, set `ADDITIONAL_ASO_CRDS` to the list of CRDs you want to install. Refer to adding additional CRDs for Azure Service Operator [here](./topics/aso.md#Using-aso-for-non-capz-resources).
 
 <h1> Warning </h1>
 
