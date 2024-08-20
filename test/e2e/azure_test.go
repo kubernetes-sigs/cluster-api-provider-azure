@@ -627,7 +627,6 @@ var _ = Describe("Workload cluster creation", func() {
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
-				withKubernetesVersion("v1.26.1"),
 				withMachineDeploymentInterval(specName, ""),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
