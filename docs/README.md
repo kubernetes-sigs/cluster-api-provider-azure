@@ -23,3 +23,9 @@
 ## Troubleshooting
 
 - [Troubleshooting guide](https://capz.sigs.k8s.io/topics/troubleshooting.html)
+
+## Docs contributors
+
+To run the link check linter, execute the following command from the root of the repository:
+
+`find . -name '*.md' -not -path './node_modules/*' -exec markdown-link-check '{}' --config .markdownlinkcheck.json -q ';'`

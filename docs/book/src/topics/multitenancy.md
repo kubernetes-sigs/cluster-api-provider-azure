@@ -20,7 +20,7 @@ Please note NamespaceList will take precedence over Selector if both are set.
 
 <aside class="note warning">
 <h1> Warning </h1>
-The ability to set credentials using environment variables has been removed. Instead, use <code class="hjls">AzureClusterIdentity</code> as described in the <a href="identities.html">identities</a> documentation.
+The ability to set credentials using environment variables has been removed. Instead, use <code class="hjls">AzureClusterIdentity</code> as described in the identities documentation.
 </aside>
 
 <aside class="note warning">

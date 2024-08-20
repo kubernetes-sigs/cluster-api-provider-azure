@@ -122,7 +122,7 @@ Makefile targets and scripts are offered to work with go modules:
 
 ### Setting up the environment
 
-Your must have the Azure credentials as outlined in the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
+You must have the Azure credentials as outlined in the [getting started prerequisites](../getting-started.md#Prerequisites) section.
 
 ### Tilt Requirements
 
@@ -163,7 +163,7 @@ kustomize_substitutions:
   AZURE_CLIENT_ID: <client-id>
 ```
 
-You should have these values saved from the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
+You should have these values saved from the [getting started prerequisites](../getting-started.md#Prerequisites) section.
 
 To build a kind cluster and start Tilt, just run:
 
@@ -218,7 +218,7 @@ kustomize_substitutions:
 EOF
 ```
 
-Make sure to replace the credentials with the values from the [getting started prerequisites](../topics/getting-started.md#Prerequisites) section.
+Make sure to replace the credentials with the values from the [getting started prerequisites](../getting-started.md#Prerequisites) section.
 
 > `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
 
@@ -245,7 +245,7 @@ To delete the cluster:
 make delete-workload-cluster
 ```
 
-> Check out the [troubleshooting guide](../topics/troubleshooting.md) for common errors you might run into.
+> Check out the [self-managed](../self-managed/troubleshooting.md) and [managed](../managed/troubleshooting.md) troubleshooting guides for common errors you might run into.
 
 #### Viewing Telemetry
 
@@ -414,7 +414,7 @@ Create the cluster:
 make create-cluster
 ```
 
-> Check out the [troubleshooting](../topics/troubleshooting.md) guide for common errors you might run into.
+> Check out the [self-managed](../self-managed/troubleshooting.md) and [managed](../managed/troubleshooting.md) troubleshooting guides for common errors you might run into
 
 ### Instrumenting Telemetry
 Telemetry is the key to operational transparency. We strive to provide insight into the internal behavior of the
@@ -571,7 +571,7 @@ You can optionally set the following variables:
 | `KUBERNETES_VERSION`        | Desired Kubernetes version to test. You can pass in a definitive released version, e.g., "v1.24.0". If you want to use pre-released CI bits of a particular release you may use the "latest-" prefix, e.g., "latest-1.24"; you may use the very latest built CI bits from the kubernetes/kubernetes master branch by passing in "latest". If you provide a `KUBERNETES_VERSION` environment variable, you may not also use `CI_VERSION` (below). Use only one configuration variable to declare the version of Kubernetes to test. |
 | `CI_VERSION`                | Provide a custom CI version of Kubernetes (e.g., `v1.25.0-alpha.0.597+aa49dffc7f24dc`). If not specified, this will be determined from the KUBERNETES_VERSION above if it is an unreleased version. If you provide a `CI_VERSION` environment variable, you may not also use `KUBERNETES_VERSION` (above).                                                                                                                                                                                                                         |
 | `TEST_CCM`                  | Build a cluster that uses custom versions of the Azure cloud-provider cloud-controller-manager and node-controller-manager images                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `EXP_MACHINE_POOL`          | Use [Machine Pool](../topics/machinepools.md) for worker machines.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `EXP_MACHINE_POOL`          | Use [Machine Pool](../self-managed/machinepools.md) for worker machines.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `TEST_WINDOWS`              | Build a cluster that has Windows worker nodes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `REGISTRY`                  | Registry to push any custom k8s images or cloud provider images built.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `CLUSTER_TEMPLATE`          | Use a custom cluster template. It can be a path to a template under templates/, a path on the host or a link. If the value is not set, the script will choose the appropriate cluster template based on existing environment variables.                                                                                                                                                                                                                                                                                            |
