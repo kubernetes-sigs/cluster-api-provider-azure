@@ -13,7 +13,7 @@ images:
     loadBehavior: tryLoad
 
 providers:
-  - name: cluster-api
+  - name: cluster-api 
     type: CoreProvider
     versions:
     - name: v1.6.8 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
