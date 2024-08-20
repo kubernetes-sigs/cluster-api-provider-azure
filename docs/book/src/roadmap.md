@@ -20,12 +20,14 @@ CAPZ can provision three major types of clusters, each of which have a different
 See deprecation timeline below.
 3. Managed clusters (AzureASOManaged* new API) - was moved out of experimentation in July for the 1.16 release and is where the investment lies moving forward for provisioning AKS clusters.
 
+See the [managed clusters](./managed/managed.md) for further background and comparison of the two managed cluster APIs.
+
 Approximate timeline for deprecation of AzureManaged API:
 - Sept 2024 - 1.17 - Announcement of deprecation of AzureManaged API.
 - Nov 2024 - 1.18
-- Jan 2025 - 1.19
+- Jan 2025 - 1.19 - move AzureASOManaged API to beta
 - Mar 2025 - 1.20 - no new features accepted for AzureManaged API. Warning message in code for deprecation.
-- May 2025 - 1.21
+- May 2025 - 1.21 - GA AzureASOManaged API
 - July 2025 - 1.22
 - Sept 2025 - 1.23 - AzureManaged API is removed from code base, AzureASOManaged API is default.
 
