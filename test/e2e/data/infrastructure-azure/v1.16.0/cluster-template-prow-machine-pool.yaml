@@ -61,7 +61,6 @@ spec:
       apiServer:
         extraArgs:
           cloud-provider: external
-          feature-gates: ${K8S_FEATURE_GATES:-""}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
@@ -144,237 +143,77 @@ spec:
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
+kind: MachinePool
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT:=2}
-  selector: {}
-  template:
-    metadata:
-      labels:
-        nodepool: pool1
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  template:
-    spec:
-      identity: UserAssigned
-      osDisk:
-        diskSizeGB: 128
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmExtensions:
-      - name: CustomScript
-        protectedSettings:
-          commandToExecute: |
-            #!/bin/sh
-            echo "This script is a no-op used for extension testing purposes ..."
-            touch test_file
-        publisher: Microsoft.Azure.Extensions
-        version: "2.1"
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-0-azure-json
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-provider: external
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
-  selector: {}
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-win
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-win
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
+kind: AzureMachinePool
 metadata:
-  annotations:
-    runtime: containerd
-  name: ${CLUSTER_NAME}-md-win
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
+  location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
-    metadata:
-      annotations:
-        runtime: containerd
-        windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
-    spec:
-      identity: UserAssigned
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Windows
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmExtensions:
+    - name: CustomScript
+      protectedSettings:
+        commandToExecute: |
+          #!/bin/sh
+          echo "This script is a no-op used for extension testing purposes ..."
+          touch test_file
+      publisher: Microsoft.Azure.Extensions
+      version: "2.1"
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
+kind: KubeadmConfig
 metadata:
-  name: ${CLUSTER_NAME}-md-win
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-win-azure-json
-        owner: root:root
-        path: c:/k/azure.json
-        permissions: "0644"
-      - content: |-
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
-        path: C:/defender-exclude-calico.ps1
-        permissions: "0744"
-      - content: |
-          # /tmp is assumed created and required for upstream e2e tests to pass
-          New-Item -ItemType Directory -Force -Path C:\tmp\
-        path: C:/create-temp-folder.ps1
-        permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
-          if($$CONTAINERD_URL -ne ""){
-            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
-            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
-            Stop-Service containerd -Force
-            echo "downloading containerd: $$CONTAINERD_URL"
-            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
-            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
-
-            Start-Service containerd
-          }
-
-          containerd.exe --version
-          containerd-shim-runhcs-v1.exe --version
-        path: C:/replace-containerd.ps1
-        permissions: "0744"
-      - content: |
-          mkdir -Force c:/localdumps
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpCount /t REG_DWORD /d 50 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpType /t REG_DWORD /d 2 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpFolder /t REG_EXPAND_SZ /d "c:/LocalDumps" /f
-          # Enable sftp so we can copy crash dump files during log collection of stfp
-          $sshd_config = "$env:ProgramData\ssh\sshd_config"
-          if (-not (Test-Path $sshd_config)) { mkdir -Force $sshd_config }
-          Add-Content -Path $sshd_config "Subsystem sftp              sftp-server.exe"
-          sc.exe stop sshd
-          sc.exe start sshd
-        path: C:/collect-hns-crashes.ps1
-        permissions: "0744"
-      joinConfiguration:
-        nodeRegistration:
-          criSocket: npipe:////./pipe/containerd-containerd
-          kubeletExtraArgs:
-            cloud-provider: external
-            feature-gates: ${NODE_FEATURE_GATES:-""}
-            v: "2"
-            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - nssm set kubelet start SERVICE_AUTO_START
-      - powershell C:/defender-exclude-calico.ps1
-      preKubeadmCommands:
-      - powershell C:/create-temp-folder.ps1
-      - powershell C:/replace-containerd.ps1
-      - powershell C:/collect-hns-crashes.ps1
-      users:
-      - groups: Administrators
-        name: capi
-        sshAuthorizedKeys:
-        - ${AZURE_SSH_PUBLIC_KEY:=""}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-mhc-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  selector:
-    matchLabels:
-      nodepool: pool1
-  unhealthyConditions:
-  - status: "True"
-    timeout: 30s
-    type: E2ENodeUnhealthy
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-calico-windows
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni-windows: ${CLUSTER_NAME}-calico
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-calico-windows
-  strategy: ApplyOnce
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-provider: external
+      name: '{{ ds.meta_data["local_hostname"] }}'
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -389,6 +228,96 @@ spec:
   resourceID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
   tenantID: ${AZURE_TENANT_ID}
   type: UserAssignedMSI
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-win
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-win
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  annotations:
+    runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  location: ${AZURE_LOCATION}
+  template:
+    osDisk:
+      diskSizeGB: 128
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Windows
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-win-azure-json
+    owner: root:root
+    path: c:/k/azure.json
+    permissions: "0644"
+  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+    path: C:/defender-exclude-calico.ps1
+    permissions: "0744"
+  joinConfiguration:
+    nodeRegistration:
+      criSocket: npipe:////./pipe/containerd-containerd
+      kubeletExtraArgs:
+        cloud-provider: external
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  postKubeadmCommands:
+  - nssm set kubelet start SERVICE_AUTO_START
+  - powershell C:/defender-exclude-calico.ps1
+  preKubeadmCommands:
+  - powershell c:/create-external-network.ps1
+  users:
+  - groups: Administrators
+    name: capi
+    sshAuthorizedKeys:
+    - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-calico-windows
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni-windows: ${CLUSTER_NAME}-calico
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-calico-windows
+  strategy: ApplyOnce
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
@@ -863,158 +792,3 @@ metadata:
     type: generated
   name: containerd-logger-${CLUSTER_NAME}
   namespace: default
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachinePool
-metadata:
-  name: ${CLUSTER_NAME}-mp-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT:=2}
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-0
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachinePool
-metadata:
-  name: ${CLUSTER_NAME}-mp-0
-  namespace: default
-spec:
-  identity: UserAssigned
-  location: ${AZURE_LOCATION}
-  strategy:
-    rollingUpdate:
-      deletePolicy: Oldest
-      maxSurge: 25%
-      maxUnavailable: 1
-    type: RollingUpdate
-  template:
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Linux
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmExtensions:
-    - name: CustomScript
-      protectedSettings:
-        commandToExecute: |
-          #!/bin/sh
-          echo "This script is a no-op used for extension testing purposes ..."
-          touch test_file
-      publisher: Microsoft.Azure.Extensions
-      version: "2.1"
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
-    userAssignedIdentities:
-    - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfig
-metadata:
-  name: ${CLUSTER_NAME}-mp-0
-  namespace: default
-spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-0-azure-json
-    owner: root:root
-    path: /etc/kubernetes/azure.json
-    permissions: "0644"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        cloud-provider: external
-      name: '{{ ds.meta_data["local_hostname"] }}'
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachinePool
-metadata:
-  name: ${CLUSTER_NAME}-mp-win
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-win
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-win
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachinePool
-metadata:
-  annotations:
-    runtime: containerd
-    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
-  name: ${CLUSTER_NAME}-mp-win
-  namespace: default
-spec:
-  identity: UserAssigned
-  location: ${AZURE_LOCATION}
-  template:
-    osDisk:
-      diskSizeGB: 128
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Windows
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
-  userAssignedIdentities:
-  - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfig
-metadata:
-  name: ${CLUSTER_NAME}-mp-win
-  namespace: default
-spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-win-azure-json
-    owner: root:root
-    path: c:/k/azure.json
-    permissions: "0644"
-  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-    path: C:/defender-exclude-calico.ps1
-    permissions: "0744"
-  joinConfiguration:
-    nodeRegistration:
-      criSocket: npipe:////./pipe/containerd-containerd
-      kubeletExtraArgs:
-        cloud-provider: external
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - nssm set kubelet start SERVICE_AUTO_START
-  - powershell C:/defender-exclude-calico.ps1
-  preKubeadmCommands:
-  - powershell c:/create-external-network.ps1
-  users:
-  - groups: Administrators
-    name: capi
-    sshAuthorizedKeys:
-    - ${AZURE_SSH_PUBLIC_KEY:=""}

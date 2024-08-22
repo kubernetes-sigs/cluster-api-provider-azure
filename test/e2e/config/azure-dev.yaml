@@ -93,6 +93,8 @@ providers:
         targetName: "cluster-template.yaml"
       - sourcePath: "../data/infrastructure-azure/v1.15.3/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.15.3/cluster-template-prow-machine-pool.yaml"
+        targetName: "cluster-template-machine-pool.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -106,6 +108,8 @@ providers:
         targetName: "cluster-template.yaml"
       - sourcePath: "../data/infrastructure-azure/v1.16.0/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.16.0/cluster-template-prow-machine-pool.yaml"
+        targetName: "cluster-template-machine-pool.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -167,6 +171,8 @@ providers:
         targetName: "cluster-template-spot.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
+        targetName: "cluster-template-machine-pool.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"

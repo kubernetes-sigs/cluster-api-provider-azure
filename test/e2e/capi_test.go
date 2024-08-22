@@ -204,8 +204,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
-						MgmtFlavor:                "machine-and-machine-pool",
-						WorkloadFlavor:            "machine-and-machine-pool",
+						MgmtFlavor:                "machine-pool",
 						CNIManifestPath:           e2eConfig.GetVariable(capi_e2e.CNIPath),
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
@@ -231,8 +230,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			Context("upgrade from the latest version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
-						MgmtFlavor:                "machine-and-machine-pool",
-						WorkloadFlavor:            "machine-and-machine-pool",
+						MgmtFlavor:                "machine-pool",
 						CNIManifestPath:           e2eConfig.GetVariable(capi_e2e.CNIPath),
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
