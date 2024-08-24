@@ -39,6 +39,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -55,7 +56,7 @@ type AzureASOManagedControlPlaneReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	_, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.SetupWithManager",
 		tele.KVP("controller", infrav1alpha.AzureASOManagedControlPlaneKind),
@@ -63,6 +64,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 	defer done()
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&infrav1alpha.AzureASOManagedControlPlane{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		Watches(&clusterv1.Cluster{},
