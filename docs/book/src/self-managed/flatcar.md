@@ -14,7 +14,7 @@ The testing reference images are built using [image-builder](https://github.com/
 
 The reference images are not updated with security fixes. They are intended only to facilitate testing and to help users try out Cluster API for Azure.
 
-The reference images should not be used in a production environment. It is highly recommended to [maintain your own custom image](#building-a-custom-image) instead.
+The reference images should not be used in a production environment. It is highly recommended to [maintain your own custom image](./custom-images.md#building-a-custom-image) instead.
 
 </aside>
 

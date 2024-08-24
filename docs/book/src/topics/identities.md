@@ -160,9 +160,9 @@ spec:
     - <cluster-namespace>
 ```
 
-### Assigning VM identities for cloud provider authentication
+### Assigning VM identities for cloud provider authentication (self-managed)
 
-When using a user-assigned managed identity to create the workload cluster, a VM identity should also be assigned to each control plane machine in the workload cluster for Azure Cloud Provider to use. See [here](../topics/vm-identity.md#managed-identities) for more information.
+When using a user-assigned managed identity to create the workload cluster, a VM identity should also be assigned to each control plane machine in the workload cluster for Azure Cloud Provider to use. See [here](../self-managed/vm-identity.md#managed-identities) for more information.
 
 
 ## Azure Host Identity
@@ -172,6 +172,6 @@ The identity assigned to the Azure host which in the control plane provides the 
 - User-assigned Managed Identity
 - System-assigned Managed Identity
 - Service Principal
-- See details about each type in the [VM identity](vm-identity.md) page
+- See details about each type in the [VM identity](../self-managed/vm-identity.md) page
 
 More details in [Azure built-in roles documentation](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles).
