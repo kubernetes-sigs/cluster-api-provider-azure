@@ -156,7 +156,7 @@ Note: this step requires access to the Netlify site. If you don't have access, p
 
 #### Minor/Major Releases
 
-1. Follow the communications process for [pre-releases](#pre-releases)
+1. Follow the communications process for [patch-releases](#patch-releases)
 2. An announcement email is sent to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
 
 [semver]: https://semver.org/#semantic-versioning-200
