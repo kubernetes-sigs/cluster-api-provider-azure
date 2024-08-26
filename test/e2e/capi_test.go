@@ -205,7 +205,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
 						MgmtFlavor:                "machine-pool",
-						CNIManifestPath:           e2eConfig.GetVariable(capi_e2e.CNIPath),
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
 						BootstrapClusterProxy:     bootstrapClusterProxy,
@@ -231,7 +230,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
 					return capi_e2e.ClusterctlUpgradeSpecInput{
 						MgmtFlavor:                "machine-pool",
-						CNIManifestPath:           e2eConfig.GetVariable(capi_e2e.CNIPath),
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
 						BootstrapClusterProxy:     bootstrapClusterProxy,
