@@ -262,7 +262,6 @@ metadata:
   labels:
     clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
   name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
 spec:
   allowedNamespaces: {}
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
