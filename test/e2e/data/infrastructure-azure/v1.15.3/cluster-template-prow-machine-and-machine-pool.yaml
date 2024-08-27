@@ -385,9 +385,10 @@ metadata:
   namespace: default
 spec:
   allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  clientID: ${AZURE_CLIENT_ID_CLOUD_PROVIDER}
+  resourceID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
   tenantID: ${AZURE_TENANT_ID}
-  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+  type: UserAssignedMSI
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
