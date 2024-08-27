@@ -388,6 +388,10 @@ delete-workload-cluster: $(KUBECTL) ## Deletes the example workload Kubernetes c
 
 ##@ Docker:
 
+.PHONY: acr-login
+acr-login: ## Login to Azure Container Registry.
+	./hack/ensure-acr-login.sh
+
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
 	docker pull docker/dockerfile:1.4
@@ -724,8 +728,12 @@ verify-container-images: ## Verify container images
 kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 	./scripts/kind-with-registry.sh
 
+.PHONY: aks-create
+aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
+	./scripts/aks-as-mgmt.sh
+
 .PHONY: tilt-up
-tilt-up: install-tools kind-create ## Start tilt and build kind cluster if needed.
+tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
@@ -763,6 +771,7 @@ yq: $(YQ) ## Build a local copy of yq.
 kind: $(KIND) ## Build a local copy of kind.
 setup-envtest: $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
 codespell : $(CODESPELL) ## Build a local copy of codespell.
+azwi: $(AZWI) ## Build a local copy of azwi.
 
 $(CONVERSION_VERIFIER): go.mod
 	cd $(TOOLS_DIR); go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier

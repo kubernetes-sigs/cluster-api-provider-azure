@@ -51,6 +51,9 @@ if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
 os_arch = str(local("go env GOARCH")).rstrip("\n")
+if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    print("Using AKS as management cluster, setting os_arch to amd64")
+    os_arch = "amd64"
 
 # deploy CAPI
 def deploy_capi():
@@ -242,10 +245,18 @@ def capz():
     if extra_args:
         entrypoint.extend(extra_args)
 
+    # use the user REGISTRY if set, otherwise use the default
+    if settings.get("kustomize_substitutions", {}).get("REGISTRY", "") != "":
+        registry = settings.get("kustomize_substitutions", {}).get("REGISTRY", "")
+        print("Using REGISTRY: " + registry + " from tilt-settings.yaml")
+        image = registry + "/cluster-api-azure-controller"
+    else:
+        image = "gcr.io/cluster-api-provider-azure/cluster-api-azure-controller"
+
     # Set up an image build for the provider. The live update configuration syncs the output from the local_resource
     # build into the container.
     docker_build(
-        ref = "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller",
+        ref = image,
         context = "./.tiltbuild/",
         dockerfile_contents = dockerfile_contents,
         target = "tilt",
