@@ -35,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -66,7 +67,7 @@ type resourceReconciler interface {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.SetupWithManager",
 		tele.KVP("controller", infrav1alpha.AzureASOManagedClusterKind),
@@ -74,6 +75,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	defer done()
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&infrav1alpha.AzureASOManagedCluster{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).

@@ -516,7 +516,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		if err := (&controllers.AzureASOManagedClusterReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedCluster")
 			os.Exit(1)
 		}
@@ -524,7 +524,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		if err := (&controllers.AzureASOManagedControlPlaneReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedControlPlane")
 			os.Exit(1)
 		}
@@ -557,21 +557,21 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 			Tracker:          tracker,
-		}).SetupWithManager(ctx, mgr); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)
 		}
 
 		if err := (&controllers.ManagedClusterAdoptReconciler{
 			Client: mgr.GetClient(),
-		}).SetupWithManager(ctx, mgr); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "ManagedCluster")
 			os.Exit(1)
 		}
 
 		if err := (&controllers.AgentPoolAdoptReconciler{
 			Client: mgr.GetClient(),
-		}).SetupWithManager(ctx, mgr); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AgentPool")
 			os.Exit(1)
 		}
