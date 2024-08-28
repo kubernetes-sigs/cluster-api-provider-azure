@@ -1665,12 +1665,6 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 		expectError        bool
 	}{
 		{
-			name:               "feature gate explicitly disabled",
-			amcp:               getKnownValidAzureManagedControlPlane(),
-			featureGateEnabled: ptr.To(false),
-			expectError:        true,
-		},
-		{
 			name:               "feature gate implicitly enabled",
 			amcp:               getKnownValidAzureManagedControlPlane(),
 			featureGateEnabled: nil,

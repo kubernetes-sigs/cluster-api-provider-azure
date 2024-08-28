@@ -29,13 +29,11 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -73,14 +71,7 @@ func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, obj runti
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureMachinePool")
 	}
-	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
-	// must prevent creating new objects in case the feature flag is disabled.
-	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return nil, field.Forbidden(
-			field.NewPath("spec"),
-			"can be set only if the MachinePool feature flag is enabled",
-		)
-	}
+
 	return nil, amp.Validate(nil, ampw.Client)
 }
 
