@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
@@ -1412,6 +1413,46 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 				list := clusterv1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
 				g.Expect(list.Items).Should(HaveLen(1))
+			},
+		},
+		{
+			Name: "if MachinePool is not externally managed, and Machines have delete machine annotation, and overProvisionCount > 0, delete machines with deleteMachine annotation first",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](2)
+
+				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
+
+				mpm2, ampm2 := getAzureMachinePoolMachineWithOwnerMachine(2)
+				mpm2.Annotations = map[string]string{
+					clusterv1.DeleteMachineAnnotation: time.Now().String(),
+				}
+
+				mpm3, ampm3 := getAzureMachinePoolMachineWithOwnerMachine(3)
+				objects := []client.Object{&mpm1, &ampm1, &mpm2, &ampm2, &mpm3, &ampm3}
+				cb.WithObjects(objects...)
+
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/1",
+						Name: "ampm1",
+					},
+					{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/2",
+						Name: "ampm2",
+					},
+					{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/3",
+						Name: "ampm3",
+					},
+				}
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				list := clusterv1.MachineList{}
+				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
+				g.Expect(list.Items).Should(HaveLen(2))
+				g.Expect(list.Items[0].Name).Should(Equal("mpm1"))
+				g.Expect(list.Items[1].Name).Should(Equal("mpm3"))
 			},
 		},
 		{
