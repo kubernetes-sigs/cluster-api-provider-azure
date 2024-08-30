@@ -49,6 +49,28 @@ spec:
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
+      version: ${KUBERNETES_VERSION}
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
@@ -169,6 +191,23 @@ spec:
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  identity: SystemAssigned
+  location: ${AZURE_LOCATION}
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -190,6 +229,26 @@ spec:
         publisher: Microsoft.Azure.Extensions
         version: "2.1"
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-provider: external
+      name: '{{ ds.meta_data["local_hostname"] }}'
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

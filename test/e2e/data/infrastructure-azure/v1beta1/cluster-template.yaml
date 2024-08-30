@@ -97,6 +97,26 @@ spec:
       imageTag: "${IMAGE_TAG_CNM:-""}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-provider: external
+      name: '{{ ds.meta_data["local_hostname"] }}'
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -162,6 +182,28 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -271,6 +313,23 @@ spec:
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
   type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  identity: SystemAssigned
+  location: ${AZURE_LOCATION}
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
