@@ -596,6 +596,13 @@ func createMachineWithUserAssignedIdentities(identitiesList []UserAssignedIdenti
 	return machine
 }
 
+func createMachineWithUserAssignedIdentitiesWithBadIdentity(identitiesList []UserAssignedIdentity) *AzureMachine {
+	machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey(true))
+	machine.Spec.Identity = VMIdentitySystemAssigned
+	machine.Spec.UserAssignedIdentities = identitiesList
+	return machine
+}
+
 func hardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
 	return &AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
