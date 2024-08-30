@@ -91,6 +91,8 @@ providers:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
       - sourcePath: "../data/infrastructure-azure/v1.16.1/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.16.1/cluster-template-prow-machine-and-machine-pool.yaml"
+        targetName: "cluster-template-machine-and-machine-pool.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -102,6 +104,8 @@ providers:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
       - sourcePath: "../data/infrastructure-azure/v1.17.0/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.17.0/cluster-template-prow-machine-and-machine-pool.yaml"
+        targetName: "cluster-template-machine-and-machine-pool.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -119,6 +123,7 @@ providers:
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-scale-in.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-node-drain.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-upgrades.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-machine-and-machine-pool.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
         targetName: "cluster-template-machine-pool.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ipv6.yaml"
