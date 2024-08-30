@@ -31,9 +31,6 @@ if [[ -z "$(command -v az)" ]]; then
     # AZURE_CLIENT_ID has been overloaded with Azure Workload ID in the preset-azure-cred-wi.
     # This is done to avoid exporting Azure Workload ID as AZURE_CLIENT_ID in the test scenarios.
     az login --service-principal -u "${AZURE_CLIENT_ID}" -t "${AZURE_TENANT_ID}" --federated-token "$(cat "${AZURE_FEDERATED_TOKEN_FILE}")" > /dev/null
-
-    # Use --auth-mode "login" in az storage commands to use RBAC permissions of login identity. This is a well known ENV variable the Azure cli
-    export AZURE_STORAGE_AUTH_MODE="login"
   else
     echo "AZURE_FEDERATED_TOKEN_FILE environment variable must be set to path location of token file"
     exit 1
