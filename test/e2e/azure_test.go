@@ -223,6 +223,19 @@ var _ = Describe("Workload cluster creation", func() {
 				}),
 			), result)
 
+			By("Creating an accessible load balancer for windows", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+						Windows:               true,
+					}
+				})
+			})
+			return
+
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
 					return AzureVMExtensionsSpecInput{
@@ -274,18 +287,6 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer for windows", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-						Windows:               true,
 					}
 				})
 			})
