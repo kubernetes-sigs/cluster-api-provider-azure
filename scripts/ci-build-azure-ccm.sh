@@ -66,17 +66,17 @@ main() {
         echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
 
-        if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv)" == "false" ]]; then
+        if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv --auth-mode login)" == "false" ]]; then
             echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
-            az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" > /dev/null
+            az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" --auth-mode login > /dev/null
             # if the storage account has public access disabled at the account level this will return 404
-            az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
+            AZURE_STORAGE_AUTH_MODE=login az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
         fi
 
-        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
-        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe"
-        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/examples/out-of-tree/credential-provider-config.yaml" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
-        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/examples/out-of-tree/credential-provider-config-win.yaml" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml"
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider" --auth-mode login
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider.exe" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --auth-mode login
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/examples/out-of-tree/credential-provider-config.yaml" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml" --auth-mode login
+        az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/examples/out-of-tree/credential-provider-config-win.yaml" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --auth-mode login
     fi
 }
 
@@ -100,7 +100,7 @@ can_reuse_artifacts() {
     fi
 
     for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe credential-provider-config.yaml credential-provider-config-win.yaml; do
-        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv)" == "false" ]]; then
+        if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv --auth-mode login)" == "false" ]]; then
             echo "false" && return
         fi
     done
