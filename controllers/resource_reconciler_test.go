@@ -55,7 +55,7 @@ type FakeWatcher struct {
 	watching map[string]struct{}
 }
 
-func (w *FakeWatcher) Watch(_ logr.Logger, obj runtime.Object, _ handler.EventHandler, _ ...predicate.Predicate) error {
+func (w *FakeWatcher) Watch(_ logr.Logger, obj client.Object, _ handler.EventHandler, _ ...predicate.Predicate) error {
 	if w.watching == nil {
 		w.watching = make(map[string]struct{})
 	}

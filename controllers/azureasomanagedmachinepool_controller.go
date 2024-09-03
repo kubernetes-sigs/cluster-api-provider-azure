@@ -91,8 +91,8 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 		).
 		Watches(
 			&expv1.MachinePool{},
-			handler.EnqueueRequestsFromMapFunc(utilexp.MachinePoolToInfrastructureMapFunc(
-				infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedMachinePoolKind), log),
+			handler.EnqueueRequestsFromMapFunc(utilexp.MachinePoolToInfrastructureMapFunc(ctx,
+				infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedMachinePoolKind)),
 			),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),

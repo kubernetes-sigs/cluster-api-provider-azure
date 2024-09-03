@@ -59,7 +59,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 	cniYaml, err := os.ReadFile(input.CNIManifestPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(workloadCluster.Apply(ctx, cniYaml)).To(Succeed())
+	Expect(workloadCluster.CreateOrUpdate(ctx, cniYaml)).To(Succeed())
 }
 
 // EnsureCalicoIsReady copies the kubeadm configmap to the calico-system namespace and waits for the calico pods to be ready.
