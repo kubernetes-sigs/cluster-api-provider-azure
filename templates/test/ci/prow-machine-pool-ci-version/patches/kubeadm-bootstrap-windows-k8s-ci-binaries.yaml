@@ -33,12 +33,23 @@
   value:
     content: |
       $ErrorActionPreference = 'Stop'
-
-      echo "Use OOT credential provider"
-      mkdir C:\var\lib\kubelet\credential-provider
-      curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
-      cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
-      curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
+      
+      Write-Host "Attempting to log in to Azure with managed identity"
+      az login --identity > $null 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "Logged in Azure with managed identity"
+        Write-Host "Use OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" -f C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe --auth-mode login
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" -f C:\var\lib\kubelet\credential-provider-config.yaml --auth-mode login
+      } else {
+        echo "Using curl to download the OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
+      }
     path: C:/oot-cred-provider.ps1
     permissions: "0744"
 - op: add
