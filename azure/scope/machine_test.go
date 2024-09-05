@@ -1411,6 +1411,65 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			wantAvailabilitySetName:      "",
 			wantAvailabilitySetExistence: false,
 		},
+		{
+			name: "returns empty and false if machine has failureDomain set",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+						},
+					},
+					Spec: clusterv1.MachineSpec{
+						FailureDomain: ptr.To("1"),
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					Spec: infrav1.AzureMachineSpec{},
+				},
+			},
+			wantAvailabilitySetName:      "",
+			wantAvailabilitySetExistence: false,
+		},
+		{
+			name: "returns empty and false if azureMachine has failureDomain set",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					Spec: infrav1.AzureMachineSpec{
+						FailureDomain: ptr.To("1"),
+					},
+				},
+			},
+			wantAvailabilitySetName:      "",
+			wantAvailabilitySetExistence: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
