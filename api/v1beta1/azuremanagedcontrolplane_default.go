@@ -74,11 +74,8 @@ func (m *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	if m.Spec.VirtualNetwork.Name == "" {
 		m.Spec.VirtualNetwork.Name = m.Name
 	}
-	if m.Spec.VirtualNetwork.CIDRBlock == "" {
-		m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
-		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
-			m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDRForOverlay
-		}
+	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+		m.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDRForOverlay
 	}
 	if m.Spec.VirtualNetwork.ResourceGroup == "" {
 		m.Spec.VirtualNetwork.ResourceGroup = m.Spec.ResourceGroupName
@@ -90,11 +87,8 @@ func (m *AzureManagedControlPlane) setDefaultSubnet() {
 	if m.Spec.VirtualNetwork.Subnet.Name == "" {
 		m.Spec.VirtualNetwork.Subnet.Name = m.Name
 	}
-	if m.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
-		m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
-		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
-			m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDRForOverlay
-		}
+	if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+		m.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDRForOverlay
 	}
 }
 
@@ -105,19 +99,13 @@ func setDefaultFleetsMember(fleetsMember *FleetsMember, labels map[string]string
 		if clusterName, ok := labels[clusterv1.ClusterNameLabel]; ok && fleetsMember.Name == "" {
 			result.Name = clusterName
 		}
-		if fleetsMember.Group == "" {
-			result.Group = "default"
-		}
 	}
 	return result
 }
 
 func setDefaultSku(sku *AKSSku) *AKSSku {
 	result := sku.DeepCopy()
-	if sku == nil {
-		result = new(AKSSku)
-		result.Tier = FreeManagedControlPlaneTier
-	} else if sku.Tier == PaidManagedControlPlaneTier {
+	if sku.Tier == PaidManagedControlPlaneTier {
 		result.Tier = StandardManagedControlPlaneTier
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Info("Paid SKU tier is deprecated and has been replaced by Standard")
 	}
@@ -132,78 +120,9 @@ func setDefaultVersion(version string) string {
 	return version
 }
 
-func setDefaultAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *AutoScalerProfile {
-	if autoScalerProfile == nil {
-		return nil
-	}
-
-	result := autoScalerProfile.DeepCopy()
-
-	// Default values are from https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler#using-the-autoscaler-profile
-	// If any values are set, they all need to be set.
-	if autoScalerProfile.BalanceSimilarNodeGroups == nil {
-		result.BalanceSimilarNodeGroups = (*BalanceSimilarNodeGroups)(ptr.To(string(BalanceSimilarNodeGroupsFalse)))
-	}
-	if autoScalerProfile.Expander == nil {
-		result.Expander = (*Expander)(ptr.To(string(ExpanderRandom)))
-	}
-	if autoScalerProfile.MaxEmptyBulkDelete == nil {
-		result.MaxEmptyBulkDelete = ptr.To("10")
-	}
-	if autoScalerProfile.MaxGracefulTerminationSec == nil {
-		result.MaxGracefulTerminationSec = ptr.To("600")
-	}
-	if autoScalerProfile.MaxNodeProvisionTime == nil {
-		result.MaxNodeProvisionTime = ptr.To("15m")
-	}
-	if autoScalerProfile.MaxTotalUnreadyPercentage == nil {
-		result.MaxTotalUnreadyPercentage = ptr.To("45")
-	}
-	if autoScalerProfile.NewPodScaleUpDelay == nil {
-		result.NewPodScaleUpDelay = ptr.To("0s")
-	}
-	if autoScalerProfile.OkTotalUnreadyCount == nil {
-		result.OkTotalUnreadyCount = ptr.To("3")
-	}
-	if autoScalerProfile.ScanInterval == nil {
-		result.ScanInterval = ptr.To("10s")
-	}
-	if autoScalerProfile.ScaleDownDelayAfterAdd == nil {
-		result.ScaleDownDelayAfterAdd = ptr.To("10m")
-	}
-	if autoScalerProfile.ScaleDownDelayAfterDelete == nil {
-		// Default is the same as the ScanInterval so default to that same value if it isn't set
-		result.ScaleDownDelayAfterDelete = result.ScanInterval
-	}
-	if autoScalerProfile.ScaleDownDelayAfterFailure == nil {
-		result.ScaleDownDelayAfterFailure = ptr.To("3m")
-	}
-	if autoScalerProfile.ScaleDownUnneededTime == nil {
-		result.ScaleDownUnneededTime = ptr.To("10m")
-	}
-	if autoScalerProfile.ScaleDownUnreadyTime == nil {
-		result.ScaleDownUnreadyTime = ptr.To("20m")
-	}
-	if autoScalerProfile.ScaleDownUtilizationThreshold == nil {
-		result.ScaleDownUtilizationThreshold = ptr.To("0.5")
-	}
-	if autoScalerProfile.SkipNodesWithLocalStorage == nil {
-		result.SkipNodesWithLocalStorage = (*SkipNodesWithLocalStorage)(ptr.To(string(SkipNodesWithLocalStorageFalse)))
-	}
-	if autoScalerProfile.SkipNodesWithSystemPods == nil {
-		result.SkipNodesWithSystemPods = (*SkipNodesWithSystemPods)(ptr.To(string(SkipNodesWithSystemPodsTrue)))
-	}
-
-	return result
-}
-
 func (m *AzureManagedControlPlane) setDefaultOIDCIssuerProfile() {
 	if m.Spec.OIDCIssuerProfile == nil {
 		m.Spec.OIDCIssuerProfile = &OIDCIssuerProfile{}
-	}
-
-	if m.Spec.OIDCIssuerProfile.Enabled == nil {
-		m.Spec.OIDCIssuerProfile.Enabled = ptr.To(false)
 	}
 }
 
@@ -217,9 +136,6 @@ func (m *AzureManagedControlPlane) setDefaultAKSExtensions() {
 	for _, extension := range m.Spec.Extensions {
 		if extension.Plan != nil && extension.Plan.Name == "" {
 			extension.Plan.Name = fmt.Sprintf("%s-%s", m.Name, extension.Plan.Product)
-		}
-		if extension.AutoUpgradeMinorVersion == nil {
-			extension.AutoUpgradeMinorVersion = ptr.To(true)
 		}
 	}
 }

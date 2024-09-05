@@ -66,25 +66,14 @@ type azureManagedControlPlaneWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedControlPlaneWebhook) Default(_ context.Context, obj runtime.Object) error {
 	m, ok := obj.(*AzureManagedControlPlane)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
-	if m.Spec.NetworkPlugin == nil {
-		networkPlugin := AzureNetworkPluginName
-		m.Spec.NetworkPlugin = &networkPlugin
-	}
 
-	setDefault[*string](&m.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
-	setDefault[*string](&m.Spec.LoadBalancerSKU, ptr.To("Standard"))
-	setDefault[*Identity](&m.Spec.Identity, &Identity{
-		Type: ManagedControlPlaneIdentityTypeSystemAssigned,
-	})
-	setDefault[*bool](&m.Spec.EnablePreviewFeatures, ptr.To(false))
 	m.Spec.Version = setDefaultVersion(m.Spec.Version)
 	m.Spec.SKU = setDefaultSku(m.Spec.SKU)
-	m.Spec.AutoScalerProfile = setDefaultAutoScalerProfile(m.Spec.AutoScalerProfile)
 	m.Spec.FleetsMember = setDefaultFleetsMember(m.Spec.FleetsMember, m.Labels)
 
 	if err := m.setDefaultSSHPublicKey(); err != nil {

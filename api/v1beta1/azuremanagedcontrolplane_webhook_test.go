@@ -54,6 +54,7 @@ func TestDefaultingWebhook(t *testing.T) {
 						},
 					},
 				},
+				SKU: &AKSSku{},
 			},
 			SSHPublicKey: ptr.To(""),
 		},
@@ -62,23 +63,14 @@ func TestDefaultingWebhook(t *testing.T) {
 	err := mcpw.Default(context.Background(), amcp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(amcp.Spec.ResourceGroupName).To(Equal("fooCluster"))
-	g.Expect(amcp.Spec.NetworkPlugin).To(Equal(ptr.To(AzureNetworkPluginName)))
-	g.Expect(amcp.Spec.LoadBalancerSKU).To(Equal(ptr.To("Standard")))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(*amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooCluster_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
-	g.Expect(amcp.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
-	g.Expect(amcp.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDR))
-	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
-	g.Expect(amcp.Spec.Identity.Type).To(Equal(ManagedControlPlaneIdentityTypeSystemAssigned))
-	g.Expect(*amcp.Spec.OIDCIssuerProfile.Enabled).To(BeFalse())
 	g.Expect(amcp.Spec.DNSPrefix).NotTo(BeNil())
 	g.Expect(*amcp.Spec.DNSPrefix).To(Equal(amcp.Name))
 	g.Expect(amcp.Spec.Extensions[0].Plan.Name).To(Equal("fooName-test-product"))
-	g.Expect(amcp.Spec.EnablePreviewFeatures).NotTo(BeNil())
-	g.Expect(*amcp.Spec.EnablePreviewFeatures).To(BeFalse())
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -162,6 +154,7 @@ func TestDefaultingWebhook(t *testing.T) {
 						Enabled: true,
 					},
 				},
+				SKU: &AKSSku{},
 			},
 			SSHPublicKey: ptr.To(""),
 		},
@@ -4071,6 +4064,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 								},
 							},
 						},
+						SKU: &AKSSku{},
 					},
 				},
 			},
@@ -4099,6 +4093,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 								},
 							},
 						},
+						SKU: &AKSSku{},
 					},
 				},
 			},
@@ -4127,60 +4122,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 								},
 							},
 						},
-					},
-				},
-			},
-			wantErr: "pre-existing virtual networks CIDR block should contain the subnet CIDR block",
-		},
-		{
-			name: "Testing invalid VirtualNetwork in different resource group: no subnet CIDR",
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "fooName",
-					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
-					},
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-						ResourceGroupName: "rg1",
-						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-							ResourceGroup: "rg2",
-							Name:          "vnet1",
-							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								CIDRBlock: "10.1.0.0/16",
-								Subnet: ManagedControlPlaneSubnet{
-									Name: "subnet1",
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr: "pre-existing virtual networks CIDR block should contain the subnet CIDR block",
-		},
-		{
-			name: "Testing invalid VirtualNetwork in different resource group: no VNet CIDR",
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "fooName",
-					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
-					},
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-						ResourceGroupName: "rg1",
-						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-							ResourceGroup: "rg2",
-							Name:          "vnet1",
-							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Subnet: ManagedControlPlaneSubnet{
-									Name:      "subnet1",
-									CIDRBlock: "11.0.0.0/24",
-								},
-							},
-						},
+						SKU: &AKSSku{},
 					},
 				},
 			},
@@ -4209,37 +4151,11 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 								},
 							},
 						},
+						SKU: &AKSSku{},
 					},
 				},
 			},
 			wantErr: "pre-existing virtual networks CIDR block is invalid",
-		},
-		{
-			name: "Testing invalid VirtualNetwork in different resource group: invalid Subnet CIDR",
-			amcp: &AzureManagedControlPlane{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "fooName",
-					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
-					},
-				},
-				Spec: AzureManagedControlPlaneSpec{
-					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-						ResourceGroupName: "rg1",
-						VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-							ResourceGroup: "rg2",
-							Name:          "vnet1",
-							ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-								Subnet: ManagedControlPlaneSubnet{
-									Name:      "subnet1",
-									CIDRBlock: "invalid_subnet_CIDR",
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr: "pre-existing subnets CIDR block is invalid",
 		},
 	}
 

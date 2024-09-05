@@ -561,6 +561,7 @@ spec:
                       for a Virtual Machine
                     properties:
                       cachingType:
+                        default: None
                         description: CachingType specifies the caching requirements.
                         enum:
                         - None
@@ -642,6 +643,7 @@ spec:
                             type: string
                         type: object
                       osType:
+                        default: Linux
                         type: string
                     required:
                     - osType

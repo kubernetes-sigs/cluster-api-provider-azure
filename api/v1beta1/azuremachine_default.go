@@ -48,13 +48,6 @@ func (s *AzureMachineSpec) SetDefaultSSHPublicKey() error {
 	return nil
 }
 
-// SetDefaultCachingType sets the default cache type for an AzureMachine.
-func (s *AzureMachineSpec) SetDefaultCachingType() {
-	if s.OSDisk.CachingType == "" {
-		s.OSDisk.CachingType = "None"
-	}
-}
-
 // SetDataDisksDefaults sets the data disk defaults for an AzureMachine.
 func (s *AzureMachineSpec) SetDataDisksDefaults() {
 	set := make(map[int32]struct{})
@@ -244,7 +237,6 @@ func (m *AzureMachine) SetDefaults(client client.Client) error {
 		errs = append(errs, errors.Wrapf(err, "failed to fetch subscription ID for AzureMachine %s/%s", m.Namespace, m.Name))
 	}
 
-	m.Spec.SetDefaultCachingType()
 	m.Spec.SetDataDisksDefaults()
 	m.Spec.SetIdentityDefaults(subscriptionID)
 	m.Spec.SetSpotEvictionPolicyDefaults()
