@@ -79,7 +79,6 @@ spec:
         extraArgs:
           authorization-always-allow-paths: /healthz,/readyz,/livez,/metrics
           bind-address: 0.0.0.0
-          v: "2"
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
