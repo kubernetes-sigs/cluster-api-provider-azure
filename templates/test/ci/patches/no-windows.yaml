@@ -1,0 +1,5 @@
+$patch: delete
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: win
