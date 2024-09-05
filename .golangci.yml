@@ -1,7 +1,5 @@
 run:
   deadline: 10m
-  skip-files:
-  - 'zz_generated\.(\w*)\.go$'
   build-tags:
     - e2e
 linters:
@@ -12,6 +10,7 @@ linters:
     - bidichk
     - bodyclose
     - containedctx
+    - copyloopvar
     - decorder
     - dogsled
     - dupword
@@ -20,7 +19,6 @@ linters:
     - errchkjson
     - errorlint
     - execinquery
-    - exportloopref
     - gci
     - ginkgolinter
     - goconst
@@ -122,14 +120,12 @@ linters-settings:
       - name: exported
         arguments:
           - disableStutteringCheck
-  staticcheck:
-    go: "1.22"
-  stylecheck:
-    go: "1.22"
   unused:
     go: "1.22"
 
 issues:
+  exclude-files:
+  - 'zz_generated\.(\w*)\.go$'
   exclude-rules:
     - path: '(\w*)conversion.go'
       text: "use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name"
