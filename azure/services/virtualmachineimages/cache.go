@@ -31,16 +31,15 @@ import (
 
 // Key contains the fields necessary to locate a VM image list resource.
 type Key struct {
-	location  string
-	publisher string
-	offer     string
-	sku       string
+	location          string
+	publicGalleryName string
+	galleryImageName  string
 }
 
 // Cache stores VM image list resources.
 type Cache struct {
 	client Client
-	data   map[Key]armcompute.VirtualMachineImagesClientListResponse
+	data   map[Key][]*armcompute.CommunityGalleryImageVersion
 }
 
 // Cacher allows getting items from and adding them to a cache.
@@ -95,7 +94,7 @@ func (c *Cache) refresh(ctx context.Context, key Key) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Cache.refresh")
 	defer done()
 
-	data, err := c.client.List(ctx, key.location, key.publisher, key.offer, key.sku)
+	data, err := c.client.List(ctx, key.location, key.publicGalleryName, key.galleryImageName)
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh VM images cache")
 	}
@@ -106,28 +105,27 @@ func (c *Cache) refresh(ctx context.Context, key Key) error {
 }
 
 // Get returns a VM image list resource in a location given a publisher, offer, and sku.
-func (c *Cache) Get(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error) {
+func (c *Cache) Get(ctx context.Context, location, publicGalleryName, galleryImageName string) ([]*armcompute.CommunityGalleryImageVersion, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.Cache.Get")
 	defer done()
 
 	if c.data == nil {
-		c.data = make(map[Key]armcompute.VirtualMachineImagesClientListResponse)
+		c.data = make(map[Key][]*armcompute.CommunityGalleryImageVersion)
 	}
 
 	key := Key{
-		location:  location,
-		publisher: publisher,
-		offer:     offer,
-		sku:       sku,
+		location:          location,
+		publicGalleryName: publicGalleryName,
+		galleryImageName:  galleryImageName,
 	}
 
 	if _, ok := c.data[key]; !ok {
-		log.V(4).Info("VM images cache miss", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
+		log.V(4).Info("VM images cache miss", "location", key.location, "publicGalleryName", key.publicGalleryName, "galleryImageName", key.galleryImageName)
 		if err := c.refresh(ctx, key); err != nil {
-			return armcompute.VirtualMachineImagesClientListResponse{}, err
+			return []*armcompute.CommunityGalleryImageVersion{}, err
 		}
 	} else {
-		log.V(4).Info("VM images cache hit", "location", key.location, "publisher", key.publisher, "offer", key.offer, "sku", key.sku)
+		log.V(4).Info("VM images cache hit", "location", key.location, "publicGalleryName", key.publicGalleryName, "galleryImageName", key.galleryImageName)
 	}
 
 	return c.data[key], nil

@@ -57,16 +57,16 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockClient) List(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error) {
+func (m *MockClient) List(ctx context.Context, location, publicGalleryName, galleryImageName string) ([]*armcompute.CommunityGalleryImageVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, location, publisher, offer, sku)
-	ret0, _ := ret[0].(armcompute.VirtualMachineImagesClientListResponse)
+	ret := m.ctrl.Call(m, "List", ctx, location, publicGalleryName, galleryImageName)
+	ret0, _ := ret[0].([]*armcompute.CommunityGalleryImageVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockClientMockRecorder) List(ctx, location, publisher, offer, sku any) *gomock.Call {
+func (mr *MockClientMockRecorder) List(ctx, location, publicGalleryName, galleryImageName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClient)(nil).List), ctx, location, publisher, offer, sku)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClient)(nil).List), ctx, location, publicGalleryName, galleryImageName)
 }

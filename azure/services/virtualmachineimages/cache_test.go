@@ -31,27 +31,23 @@ import (
 
 func TestCacheGet(t *testing.T) {
 	cases := map[string]struct {
-		location      string
-		publisher     string
-		offer         string
-		sku           string
-		have          armcompute.VirtualMachineImagesClientListResponse
-		expectedError error
+		location          string
+		publicGalleryName string
+		galleryImageName  string
+		have              []*armcompute.CommunityGalleryImageVersion
+		expectedError     error
 	}{
 		"should find": {
-			location: "test", publisher: "foo", offer: "bar", sku: "baz",
-			have: armcompute.VirtualMachineImagesClientListResponse{
-				VirtualMachineImageResourceArray: []*armcompute.VirtualMachineImageResource{
-					{Name: ptr.To("foo")},
-				},
+			location: "test", publicGalleryName: "foo", galleryImageName: "bar",
+			have: []*armcompute.CommunityGalleryImageVersion{
+				{Name: ptr.To("1.30.5")},
+				{Name: ptr.To("1.29.9")},
 			},
 			expectedError: nil,
 		},
 		"should not find": {
-			location: "test", publisher: "foo", offer: "bar", sku: "baz",
-			have: armcompute.VirtualMachineImagesClientListResponse{
-				VirtualMachineImageResourceArray: []*armcompute.VirtualMachineImageResource{},
-			},
+			location: "test", publicGalleryName: "foo", galleryImageName: "bar",
+			have:          []*armcompute.CommunityGalleryImageVersion{},
 			expectedError: errors.New("failed to refresh VM images cache"),
 		},
 	}
@@ -63,11 +59,11 @@ func TestCacheGet(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			mockClient := mock_virtualmachineimages.NewMockClient(mockCtrl)
-			mockClient.EXPECT().List(gomock.Any(), tc.location, tc.publisher, tc.offer, tc.sku).Return(tc.have, tc.expectedError)
+			mockClient.EXPECT().List(gomock.Any(), tc.location, tc.publicGalleryName, tc.galleryImageName).Return(tc.have, tc.expectedError)
 			c := &Cache{client: mockClient}
 
 			g := NewWithT(t)
-			val, err := c.Get(context.Background(), tc.location, tc.publisher, tc.offer, tc.sku)
+			val, err := c.Get(context.Background(), tc.location, tc.publicGalleryName, tc.galleryImageName)
 			if tc.expectedError != nil {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError.Error()))

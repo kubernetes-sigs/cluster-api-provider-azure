@@ -28,12 +28,12 @@ import (
 
 // Client is an interface for listing VM images.
 type Client interface {
-	List(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error)
+	List(ctx context.Context, location, publicGalleryName, galleryImageName string) ([]*armcompute.CommunityGalleryImageVersion, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
-	images *armcompute.VirtualMachineImagesClient
+	images *armcompute.CommunityGalleryImageVersionsClient
 }
 
 var _ Client = (*AzureClient)(nil)
@@ -42,20 +42,29 @@ var _ Client = (*AzureClient)(nil)
 func NewClient(auth azure.Authorizer) (*AzureClient, error) {
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create virtualmachineimages client options")
+		return nil, errors.Wrap(err, "failed to create communitygalleryimageversions client options")
 	}
 	computeClientFactory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armcompute client factory")
 	}
-	return &AzureClient{computeClientFactory.NewVirtualMachineImagesClient()}, nil
+	return &AzureClient{computeClientFactory.NewCommunityGalleryImageVersionsClient()}, nil
 }
 
-// List returns a VM image list response.
-func (ac *AzureClient) List(ctx context.Context, location, publisher, offer, sku string) (armcompute.VirtualMachineImagesClientListResponse, error) {
+// List returns a community gallery image versions list response.
+func (ac *AzureClient) List(ctx context.Context, location, publicGalleryName, galleryImageName string) ([]*armcompute.CommunityGalleryImageVersion, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachineimages.AzureClient.List")
 	defer done()
 
-	opts := &armcompute.VirtualMachineImagesClientListOptions{}
-	return ac.images.List(ctx, location, publisher, offer, sku, opts)
+	responses := make([]*armcompute.CommunityGalleryImageVersion, 0)
+	pager := ac.images.NewListPager(location, publicGalleryName, galleryImageName, nil)
+	for pager.More() {
+		resp, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list image versions")
+		}
+		responses = append(responses, resp.CommunityGalleryImageVersionList.Value...)
+	}
+
+	return responses, nil
 }
