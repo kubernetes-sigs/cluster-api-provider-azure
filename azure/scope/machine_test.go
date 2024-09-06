@@ -43,7 +43,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 )
 
@@ -1538,7 +1537,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().CloudEnvironment().AnyTimes()
 	clusterMock.EXPECT().Token().Return(&azidentity.DefaultAzureCredential{}).AnyTimes()
-	svc := virtualmachineimages.Service{Client: mock_virtualmachineimages.NewMockClient(mockCtrl)}
+	svc := virtualmachineimages.Service{}
 
 	tests := []struct {
 		name         string
@@ -1547,7 +1546,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		expectedErr  string
 	}{
 		{
-			name: "returns AzureMachine image is found if present in the AzureMachine spec",
+			name: "returns AzureMachine image if present in the AzureMachine spec",
 			machineScope: MachineScope{
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1566,7 +1565,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name: "if no image is specified and os specified is windows with version below 1.22, returns windows dockershim image",
+			name: "if no image is specified and os specified is windows, returns windows containerd image",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1589,42 +1588,13 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.20.1", "dockershim", "")
+				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.20.1", "containerd", "")
 				return image
 			}(),
 			expectedErr: "",
 		},
 		{
-			name: "if no image is specified and os specified is windows with version is 1.22+ with no annotation, returns windows containerd image",
-			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-					},
-					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.22.1"),
-					},
-				},
-				AzureMachine: &infrav1.AzureMachine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-					},
-					Spec: infrav1.AzureMachineSpec{
-						OSDisk: infrav1.OSDisk{
-							OSType: azure.WindowsOS,
-						},
-					},
-				},
-				ClusterScoper: clusterMock,
-			},
-			want: func() *infrav1.Image {
-				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "containerd", "")
-				return image
-			}(),
-			expectedErr: "",
-		},
-		{
-			name: "if no image is specified and os specified is windows with version is 1.22+ with annotation dockershim, returns windows dockershim image",
+			name: "if no image is specified and os specified is windows with annotation dockershim, returns error",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1653,71 +1623,10 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.22.1", "dockershim", "")
 				return image
 			}(),
-			expectedErr: "",
+			expectedErr: "unsupported runtime dockershim",
 		},
 		{
-			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation dockershim, returns windows dockershim image",
-			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-					},
-					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.21.1"),
-					},
-				},
-				AzureMachine: &infrav1.AzureMachine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-						Annotations: map[string]string{
-							"runtime": "dockershim",
-						},
-					},
-					Spec: infrav1.AzureMachineSpec{
-						OSDisk: infrav1.OSDisk{
-							OSType: azure.WindowsOS,
-						},
-					},
-				},
-				ClusterScoper: clusterMock,
-			},
-			want: func() *infrav1.Image {
-				image, _ := svc.GetDefaultWindowsImage(context.TODO(), "", "1.21.1", "dockershim", "")
-				return image
-			}(),
-			expectedErr: "",
-		},
-		{
-			name: "if no image is specified and os specified is windows with version is less and 1.22 with annotation containerd, returns error",
-			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-					},
-					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.21.1"),
-					},
-				},
-				AzureMachine: &infrav1.AzureMachine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-name",
-						Annotations: map[string]string{
-							"runtime": "containerd",
-						},
-					},
-					Spec: infrav1.AzureMachineSpec{
-						OSDisk: infrav1.OSDisk{
-							OSType: azure.WindowsOS,
-						},
-					},
-				},
-				ClusterScoper: clusterMock,
-			},
-			want:        nil,
-			expectedErr: "containerd image only supported in 1.22+",
-		},
-		{
-			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2019, retrurns 2019 image",
+			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2019, returns error",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1799,7 +1708,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 				ClusterScoper: clusterMock,
 			},
 			want: func() *infrav1.Image {
-				image, _ := svc.GetDefaultUbuntuImage(context.TODO(), "", "1.20.1")
+				image, _ := svc.GetDefaultLinuxImage(context.TODO(), "", "1.20.1")
 				return image
 			}(),
 			expectedErr: "",

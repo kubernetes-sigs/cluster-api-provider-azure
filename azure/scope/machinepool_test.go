@@ -425,14 +425,10 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				image := &infrav1.Image{
-					Marketplace: &infrav1.AzureMarketplaceImage{
-						ImagePlan: infrav1.ImagePlan{
-							Publisher: "cncf-upstream",
-							Offer:     "capi",
-							SKU:       "k8s-1dot19dot11-ubuntu-1804",
-						},
-						Version:         "latest",
-						ThirdPartyImage: false,
+					ComputeGallery: &infrav1.AzureComputeGalleryImage{
+						Gallery: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019",
+						Name:    "capi-ubun2-2404",
+						Version: "1.19.11",
 					},
 				}
 				g.Expect(vmImage).To(Equal(image))
