@@ -6,13 +6,24 @@ This document will help you get a CAPZ Kubernetes cluster up and running with yo
 
 An *image* defines the operating system and Kubernetes components that will populate the disk of each node in your cluster.
 
-By default, images offered by "capi" in the [Azure Marketplace][azure-marketplace] are used.
+By default, images published by the Cluster API for Azure team are used. These images live in an Azure [community gallery](https://learn.microsoft.com/azure/virtual-machines/share-gallery-community).
 
-You can list these *reference images* with this command:
+You can list these *reference images* with these commands:
 
 ```bash
-az vm image list --publisher cncf-upstream --offer capi --all -o table
+# List the image definitions (distro and version)
+az sig image-definition list-community \
+  --public-gallery-name ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019 \
+  --location northcentralus
+# List the versions for an image definition (Ubuntu 24.04 for example)
+# Version names are Kubernetes releases, such as "1.28.15" or "1.31.2".
+az sig image-version list-community \
+  --public-gallery-name ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019 \
+  --gallery-image-definition capi-ubun2-2404 \
+  --location northcentralus
 ```
+
+The reference images are replicated to the set of regions used in CAPZ e2e tests. To see if a reference image is available in the location where you intend to provision a cluster, change the value of the `--location` argument in the previous command.
 
 It is recommended to use the latest patch release of Kubernetes for a [supported minor release][supported-k8s].
 
@@ -22,7 +33,7 @@ It is recommended to use the latest patch release of Kubernetes for a [supported
 
 The Cluster API for Azure team publishes *reference images* for each Kubernetes release, for both Linux and Windows.
 
-Reference images for versions of Kubernetes which have known security issues or which are no longer [supported by Cluster API][supported-capi] will be removed from the Azure Marketplace.
+Reference images for versions of Kubernetes which have known security issues or which are no longer [supported by Cluster API][supported-capi] will be removed from the Azure Marketplace and the CAPZ community gallery.
 
 </aside>
 
@@ -130,6 +141,29 @@ spec:
 ```
 
 This will make API calls to create Virtual Machines or Virtual Machine Scale Sets to have the `Plan` correctly set.
+
+### Using a community gallery
+
+A "community gallery" is an Azure Compute Gallery with "community" permissions, but it has a globally unique name, is available to all Azure users, and is accessed differently.
+
+The CAPZ project publishes reference images to a community gallery. But as mentioned at the top of this document, they are the default. You don't need to specify a custom image section in your template to use the reference images.
+
+To use an image from a community gallery, set the `name`, `gallery`, and `version` fields:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: capz-community-gallery-example
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          name: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
+          gallery: "capi-ubun2-2404"
+          version: "1.31.2"
+```
 
 ### Using image ID
 

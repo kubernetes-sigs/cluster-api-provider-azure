@@ -725,7 +725,7 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultUbuntuImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""))
+	return svc.GetDefaultLinuxImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""))
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.
