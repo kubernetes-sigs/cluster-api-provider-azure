@@ -88,6 +88,7 @@ const (
 	capiImagePublisher                = "cncf-upstream"
 	capiOfferName                     = "capi"
 	capiWindowsOfferName              = "capi-windows"
+	capiCommunityGallery              = "capzed-489de9a5-a0a0-4e79-a806-ad5479ec43a5"
 	aksClusterNameSuffix              = "aks"
 	flatcarCAPICommunityGallery       = "flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0"
 	defaultNamespace                  = "default"
