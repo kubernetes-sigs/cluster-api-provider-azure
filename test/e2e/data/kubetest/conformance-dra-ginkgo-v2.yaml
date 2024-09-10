@@ -1,0 +1,7 @@
+ginkgo.label-filter: "Feature: containsAny DynamicResourceAllocation && Feature: isSubsetOf DynamicResourceAllocation && !Flaky"
+disable-log-dump: true
+ginkgo.progress: true
+ginkgo.slow-spec-threshold: 120s
+ginkgo.trace: true
+ginkgo.v: true
+ginkgo.timeout: 3h

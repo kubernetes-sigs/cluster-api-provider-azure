@@ -1,0 +1,35 @@
+- op: add
+  path: /spec/kubeadmConfigSpec/files/-
+  value:
+    content: |
+      #!/bin/bash
+
+      echo "enabling containerd CDI plugin"
+      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+      systemctl restart containerd
+    owner: root:root
+    path: /tmp/containerd-config.sh
+    permissions: "0744"
+- op: add
+  path: /spec/kubeadmConfigSpec/preKubeadmCommands/0
+  value: bash -c /tmp/containerd-config.sh
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/feature-gates
+  value: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/feature-gates
+  value: HPAContainerMetrics=true,DynamicResourceAllocation=true
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/runtime-config
+  value: resource.k8s.io/v1alpha3=true
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler
+  value:
+    extraArgs:
+      feature-gates: DynamicResourceAllocation=true
+- op: add
+  path: /spec/kubeadmConfigSpec/initConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
+  value: DynamicResourceAllocation=true
+- op: add
+  path: /spec/kubeadmConfigSpec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
+  value: DynamicResourceAllocation=true
