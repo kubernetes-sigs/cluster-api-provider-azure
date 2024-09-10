@@ -2,7 +2,7 @@
 
 ## Quick start
 
-- [Getting started](https://capz.sigs.k8s.io/topics/getting-started.html)
+- [Getting started](https://capz.sigs.k8s.io/getting-started.html)
 - [Cluster API quick start](https://cluster-api.sigs.k8s.io/user/quick-start.html)
 
 ## Features
@@ -22,7 +22,8 @@
 
 ## Troubleshooting
 
-- [Troubleshooting guide](https://capz.sigs.k8s.io/topics/troubleshooting.html)
+- [Self-managed troubleshooting guide](https://capz.sigs.k8s.io/self-managed/troubleshooting.html)
+- [Managed troubleshooting guide](https://capz.sigs.k8s.io/managed/troubleshooting.html)
 
 ## Docs contributors
 
