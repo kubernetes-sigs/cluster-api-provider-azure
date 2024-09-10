@@ -70,7 +70,7 @@ spec:
   resourceGroup: cluster-vnet-peering
   ```
 
-Currently, only virtual networks on the same subscription can be peered. Also, note that when creating workload clusters with internal load balancers, the management cluster must be in the same VNet or a peered VNet. See [here](https://capz.sigs.k8s.io/topics/api-server-endpoint.html#warning) for more details.
+Currently, only virtual networks on the same subscription can be peered. Also, note that when creating workload clusters with internal load balancers, the management cluster must be in the same VNet or a peered VNet. See [here](./api-server-endpoint.md#warning) for more details.
 
 ## Custom Network Spec
 

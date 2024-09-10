@@ -16,7 +16,7 @@ Azure Service Operator (ASO) is automatically installed with CAPZ and can be uti
 CAPZ can provision three major types of clusters, each of which have a different investment priority.
 
 1. Self-Managed clusters - maintain the current functionality via bug fixes and security patches.  New features will be accepted via contributor pull requests.
-2. Managed clusters (AzureManaged* current API) - maintain the current functionality via bug fixes and security patches.  New features will be accepted via contributor pull requests. It is recommended that the existing [asoManaged*Patches functionality](https://capz.sigs.k8s.io/topics/managedcluster#warning-warning-this-is-meant-to-be-used-sparingly-to-enable-features-for-development-and-testing-that-are-not-otherwise-represented-in-the-capz-api-misconfiguration-that-conflicts-with-capzs-normal-mode-of-operation-is-possible) be considered as a stop-gap to missing features in the CAPZ definitions for AKS.
+2. Managed clusters (AzureManaged* current API) - maintain the current functionality via bug fixes and security patches.  New features will be accepted via contributor pull requests. It is recommended that the existing [asoManaged*Patches functionality](./managed/managedcluster.md#warning-warning-this-is-meant-to-be-used-sparingly-to-enable-features-for-development-and-testing-that-are-not-otherwise-represented-in-the-capz-api-misconfiguration-that-conflicts-with-capzs-normal-mode-of-operation-is-possible) be considered as a stop-gap to missing features in the CAPZ definitions for AKS.
 See deprecation timeline below.
 3. Managed clusters (AzureASOManaged* new API) - was moved out of experimentation in July for the 1.16 release and is where the investment lies moving forward for provisioning AKS clusters.
 
