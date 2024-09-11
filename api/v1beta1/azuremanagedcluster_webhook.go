@@ -51,7 +51,7 @@ func (r *AzureManagedCluster) ValidateCreate() (admission.Warnings, error) {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
+func (r *AzureManagedCluster) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 

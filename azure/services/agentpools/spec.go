@@ -342,7 +342,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *AgentPoolSpec) WasManaged(resource genruntime.MetaObject) bool {
+func (s *AgentPoolSpec) WasManaged(_ genruntime.MetaObject) bool {
 	// CAPZ has never supported BYO agent pools.
 	return true
 }

@@ -163,9 +163,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		},
 	}
 
-	os.Setenv("AZURE_CLIENT_ID", "fooClient")
-	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
-	os.Setenv("AZURE_TENANT_ID", "fooTenant")
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret") //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -210,13 +210,13 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
 			if diff := cmp.Diff(tc.expectedControlPlaneConfig, string(cloudConfig.Data["control-plane-azure.json"])); diff != "" {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 			if diff := cmp.Diff(tc.expectedWorkerNodeConfig, string(cloudConfig.Data["worker-node-azure.json"])); diff != "" {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 			if diff := cmp.Diff(tc.expectedControlPlaneConfig, string(cloudConfig.Data["azure.json"])); diff != "" {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 		})
 	}
@@ -1296,7 +1296,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 	}{
 		{
 			Name: "MachinePoolToAzureManagedMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newManagedMachinePoolWithInfrastructureRef("azureManagedCluster", "ManagedMachinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -1314,7 +1314,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "MachinePoolWithoutMatchingInfraRef",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newMachinePool("azureManagedCluster", "machinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -1329,7 +1329,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "NotAMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newCluster("azureManagedCluster")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -1344,7 +1344,6 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -1555,7 +1554,6 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			p := ClusterPauseChangeAndInfrastructureReady(logr.New(nil))

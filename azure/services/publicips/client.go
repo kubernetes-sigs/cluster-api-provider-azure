@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package publicips provides utilities for working with Azure Public IPs.
 package publicips
 
 import (

@@ -55,7 +55,7 @@ func (s LinkSpec) ResourceGroupName() string {
 }
 
 // Parameters returns the parameters for the virtual network link.
-func (s LinkSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+func (s LinkSpec) Parameters(_ context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		_, ok := existing.(armprivatedns.VirtualNetworkLink)
 		if !ok {

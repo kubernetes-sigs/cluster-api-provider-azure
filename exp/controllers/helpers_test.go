@@ -85,7 +85,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 	}{
 		{
 			Name: "MachinePoolToAzureMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newMachinePoolWithInfrastructureRef("azureCluster", "machinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -103,7 +103,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "MachinePoolWithoutMatchingInfraRef",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newMachinePool("azureCluster", "machinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -118,7 +118,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "NotAMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newCluster("azureCluster")
 			},
 			Setup: func(logMock *mock_log.MockLogSink) {
@@ -133,7 +133,6 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -160,7 +159,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 	}{
 		{
 			Name: "NotAnAzureCluster",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newMachinePool("fakeCluster", "bar")
 			},
 			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
@@ -179,7 +178,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterDoesNotExist",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
 			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
@@ -199,7 +198,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsButDoesNotHaveMachinePools",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
 			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
@@ -223,7 +222,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsWithMachinePoolsButNoInfraRefs",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
 			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
@@ -249,7 +248,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsWithMachinePoolsWithOneInfraRefs",
-			MapObjectFactory: func(g *GomegaWithT) client.Object {
+			MapObjectFactory: func(_ *GomegaWithT) client.Object {
 				return newAzureCluster("foo")
 			},
 			Setup: func(t *testing.T, g *GomegaWithT) (*mock_log.MockLogSink, *gomock.Controller, client.Client) {
@@ -283,7 +282,6 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

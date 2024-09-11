@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package main is a utility to collect logs from a workload cluster and the management cluster.
 package main
 
 import (
@@ -34,7 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func Fail(message string, callerSkip ...int) {
+func Fail(message string, _ ...int) {
 	panic(message)
 }
 

@@ -207,7 +207,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedCluster,
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(_ context.Context, _ client.Object) error {
 						asoManagedCluster.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
@@ -281,7 +281,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(_ context.Context, _ client.Object) error {
 						return nil
 					},
 				}
@@ -366,7 +366,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedCluster,
-					deleteFunc: func(ctx context.Context, o client.Object) error {
+					deleteFunc: func(_ context.Context, _ client.Object) error {
 						asoManagedCluster.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{
 								Resource: infrav1alpha.StatusResource{
@@ -408,7 +408,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					deleteFunc: func(ctx context.Context, o client.Object) error {
+					deleteFunc: func(_ context.Context, _ client.Object) error {
 						return nil
 					},
 				}

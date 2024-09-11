@@ -294,7 +294,6 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 	return reconcile.Result{}, nil
 }
 
-//nolint:unparam // Always returns an empty struct for reconcile.Result
 func (ammpr *AzureManagedMachinePoolReconciler) reconcilePause(ctx context.Context, scope *scope.ManagedMachinePoolScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedMachinePool.reconcilePause")
 	defer done()

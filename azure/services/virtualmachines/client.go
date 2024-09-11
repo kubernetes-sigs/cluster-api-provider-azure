@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package virtualmachines contains utilities for working with Azure virtual machines.
 package virtualmachines
 
 import (

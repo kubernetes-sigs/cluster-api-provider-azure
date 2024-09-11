@@ -55,12 +55,12 @@ type mockClient struct {
 	ReturnError bool
 }
 
-func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	obj.(*expv1.MachinePool).Spec.Template.Spec.Version = &m.Version
 	return nil
 }
 
-func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m mockClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	if m.ReturnError {
 		return errors.New("MachinePool.cluster.x-k8s.io \"mock-machinepool-mp-0\" not found")
 	}
@@ -276,7 +276,7 @@ type mockDefaultClient struct {
 	ReturnError    bool
 }
 
-func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockDefaultClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	switch obj := obj.(type) {
 	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
@@ -291,7 +291,7 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 	return nil
 }
 
-func (m mockDefaultClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m mockDefaultClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	list.(*expv1.MachinePoolList).Items = []expv1.MachinePool{
 		{
 			Spec: expv1.MachinePoolSpec{
@@ -624,10 +624,10 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 	}
 }
 
-func createMachinePoolWithUserAssignedIdentity(providerIds []string) *AzureMachinePool {
-	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIds))
+func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachinePool {
+	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIDs))
 
-	for _, providerID := range providerIds {
+	for _, providerID := range providerIDs {
 		userAssignedIdentities = append(userAssignedIdentities, infrav1.UserAssignedIdentity{
 			ProviderID: providerID,
 		})

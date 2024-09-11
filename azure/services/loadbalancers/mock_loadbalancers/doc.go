@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Run go generate to regenerate this mock.
+// Package mock_loadbalancers can be renegeated by running go generate.
 //
 //go:generate ../../../../hack/tools/bin/mockgen -destination loadbalancers_mock.go -package mock_loadbalancers -source ../loadbalancers.go LBScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt loadbalancers_mock.go > _loadbalancers_mock.go && mv _loadbalancers_mock.go loadbalancers_mock.go"

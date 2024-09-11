@@ -64,7 +64,6 @@ func TestUnclonedMachinesPredicate(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			machine := &infrav1.AzureMachine{
@@ -264,7 +263,6 @@ func newScheme() (*runtime.Scheme, error) {
 		corev1.AddToScheme,
 	}
 	for _, fn := range schemeFn {
-		fn := fn
 		if err := fn(scheme); err != nil {
 			return nil, err
 		}

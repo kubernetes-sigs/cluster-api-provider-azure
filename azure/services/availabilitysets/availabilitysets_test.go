@@ -103,7 +103,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 		{
 			name:          "noop if no availability set spec returns nil",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(nil)
 			},
@@ -130,7 +130,6 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -180,7 +179,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "noop if AvailabilitySetSpec returns nil",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, _ *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.AvailabilitySetSpec().Return(nil)
 			},
@@ -201,7 +200,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "noop if availability set has vms",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
@@ -213,7 +212,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "availability set not found",
 			expectedError: "",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
@@ -225,7 +224,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "error in getting availability set",
 			expectedError: "failed to get availability set test-as in resource group test-rg:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
@@ -237,7 +236,7 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		{
 			name:          "availability set get result is not an availability set",
 			expectedError: "string is not an armcompute.AvailabilitySet",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.AvailabilitySetSpec().Return(&fakeSetSpec)
 				gomock.InOrder(
 					s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout),
@@ -261,7 +260,6 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 

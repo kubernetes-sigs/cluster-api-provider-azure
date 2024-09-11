@@ -264,7 +264,6 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, asoManagedCluster *infrav1alpha.AzureASOManagedCluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedClusterReconciler.reconcilePaused")
 	defer done()
@@ -285,7 +284,6 @@ func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, asoManagedCluster *infrav1alpha.AzureASOManagedCluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileDelete",

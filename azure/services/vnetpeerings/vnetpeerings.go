@@ -118,6 +118,6 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // IsManaged returns always returns true as CAPZ does not support BYO VNet peering.
-func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
 }

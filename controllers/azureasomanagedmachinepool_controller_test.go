@@ -265,7 +265,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedMachinePool *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedMachinePool,
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(_ context.Context, _ client.Object) error {
 						asoManagedMachinePool.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
@@ -373,7 +373,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(_ context.Context, _ client.Object) error {
 						return nil
 					},
 				}
@@ -513,7 +513,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(_ context.Context, _ client.Object) error {
 						return nil
 					},
 				}
@@ -646,7 +646,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					deleteFunc: func(ctx context.Context, o client.Object) error {
+					deleteFunc: func(_ context.Context, _ client.Object) error {
 						return nil
 					},
 				}

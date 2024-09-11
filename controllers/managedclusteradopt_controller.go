@@ -46,7 +46,7 @@ type ManagedClusterAdoptReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ManagedClusterAdoptReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *ManagedClusterAdoptReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&asocontainerservicev1.ManagedCluster{}).

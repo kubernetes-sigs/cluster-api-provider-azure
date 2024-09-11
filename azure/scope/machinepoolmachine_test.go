@@ -306,7 +306,6 @@ func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -387,7 +386,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, nil)
 				return nil, ampm
 			},
-			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
+			Verify: func(_ *WithT, scope *MachinePoolMachineScope) {
 				assertCondition(t, scope.AzureMachinePoolMachine, conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, ""))
 			},
 		},

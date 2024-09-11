@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Run go generate to regenerate this mock.
+// Package mock_resourcehealth can be regenerated using go generate.
 //
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_resourcehealth -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination resourcehealth_mock.go -package mock_resourcehealth -source ../resourcehealth.go ResourceHealthScope,AvailabilityStatusFilterer

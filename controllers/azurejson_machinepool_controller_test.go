@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -210,9 +211,9 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	t.Setenv("AZURE_CLIENT_ID", "fooClient")
-	t.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
-	t.Setenv("AZURE_TENANT_ID", "fooTenant")
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret") //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -379,7 +380,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		Timeouts: reconciler.Timeouts{},
 	}
 	id := "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id"
-	getClient = func(auth azure.Authorizer) (identities.Client, error) {
+	getClient = func(_ azure.Authorizer) (identities.Client, error) {
 		mockClient := mock_identities.NewMockClient(ctrlr)
 		mockClient.EXPECT().GetClientID(gomock.Any(), gomock.Any()).Return(id, nil)
 		return mockClient, nil

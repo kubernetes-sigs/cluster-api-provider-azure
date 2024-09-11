@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package privatedns provides utilities for working with Azure Private DNS Zones.
 package privatedns
 
 import (

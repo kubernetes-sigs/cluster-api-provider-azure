@@ -35,11 +35,11 @@ type HelmOptions struct {
 }
 
 // InstallHelmChart takes a Helm repo URL, a chart name, and release name, and creates a Helm release on the E2E workload cluster.
-func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *HelmOptions, version string) {
+func InstallHelmChart(_ context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, chartName, releaseName string, options *HelmOptions, version string) {
 	// Check that Helm v3 is installed
 	helm, err := exec.LookPath("helm")
 	Expect(err).NotTo(HaveOccurred(), "No helm binary found in PATH")
-	cmd := exec.Command(helm, "version", "--short")
+	cmd := exec.Command(helm, "version", "--short") //nolint:gosec // subprocess launched in a test file is tolerated
 	stdout, err := cmd.Output()
 	Expect(err).NotTo(HaveOccurred())
 	Logf("Helm version: %s", stdout)
@@ -69,7 +69,7 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 
 	// Install the chart and retry if needed
 	Eventually(func() error {
-		cmd := exec.Command(helm, args...)
+		cmd := exec.Command(helm, args...) //nolint:gosec // subprocess launched in a test file is tolerated
 		Logf("Helm command: %s", cmd.String())
 		output, err := cmd.CombinedOutput()
 		Logf("Helm install output: %s", string(output))

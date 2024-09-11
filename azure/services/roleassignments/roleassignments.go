@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package roleassignments provides utilities for working with Azure role assignments.
 package roleassignments
 
 import (
@@ -180,6 +181,6 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // IsManaged returns always returns true as CAPZ does not support BYO role assignments.
-func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
 }

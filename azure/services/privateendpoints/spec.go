@@ -61,7 +61,7 @@ func (s *PrivateEndpointSpec) ResourceRef() *asonetworkv1.PrivateEndpoint {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existingPrivateEndpoint *asonetworkv1.PrivateEndpoint) (*asonetworkv1.PrivateEndpoint, error) {
+func (s *PrivateEndpointSpec) Parameters(_ context.Context, existingPrivateEndpoint *asonetworkv1.PrivateEndpoint) (*asonetworkv1.PrivateEndpoint, error) {
 	privateEndpoint := &asonetworkv1.PrivateEndpoint{}
 	if existingPrivateEndpoint != nil {
 		privateEndpoint = existingPrivateEndpoint
@@ -151,6 +151,6 @@ func (s *PrivateEndpointSpec) Parameters(ctx context.Context, existingPrivateEnd
 
 // WasManaged implements azure.ASOResourceSpecGetter.
 // It always returns true since CAPZ doesn't support BYO private endpoints.
-func (s *PrivateEndpointSpec) WasManaged(privateEndpoint *asonetworkv1.PrivateEndpoint) bool {
+func (s *PrivateEndpointSpec) WasManaged(_ *asonetworkv1.PrivateEndpoint) bool {
 	return true
 }

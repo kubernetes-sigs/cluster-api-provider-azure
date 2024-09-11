@@ -508,7 +508,7 @@ func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalanc
 func validatePrivateDNSZoneName(privateDNSZoneName string, apiserverLBType LBType, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	if len(privateDNSZoneName) > 0 {
+	if privateDNSZoneName != "" {
 		if apiserverLBType != Internal {
 			allErrs = append(allErrs, field.Invalid(fldPath, apiserverLBType,
 				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))

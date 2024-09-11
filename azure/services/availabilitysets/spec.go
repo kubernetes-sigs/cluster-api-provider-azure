@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package availabilitysets provides a service for managing Azure availability sets.
 package availabilitysets
 
 import (
@@ -54,7 +55,7 @@ func (s *AvailabilitySetSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the availability set.
-func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+func (s *AvailabilitySetSpec) Parameters(_ context.Context, existing interface{}) (params interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(armcompute.AvailabilitySet); !ok {
 			return nil, errors.Errorf("%T is not an armcompute.AvailabilitySet", existing)
@@ -76,7 +77,7 @@ func (s *AvailabilitySetSpec) Parameters(ctx context.Context, existing interface
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse availability set fault domain count")
 	}
-	faultDomainCount = ptr.To[int32](int32(count))
+	faultDomainCount = ptr.To[int32](int32(count)) //nolint:gosec // ideally count will not overflow int32
 
 	asParams := armcompute.AvailabilitySet{
 		SKU: &armcompute.SKU{

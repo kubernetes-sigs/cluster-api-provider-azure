@@ -277,7 +277,6 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	return reconcile.Result{}, nil
 }
 
-//nolint:unparam // Always returns an empty struct for reconcile.Result
 func (amcpr *AzureManagedControlPlaneReconciler) reconcilePause(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlane.reconcilePause")
 	defer done()

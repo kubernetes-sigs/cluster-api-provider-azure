@@ -85,7 +85,7 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 			Name:         "Should fail when no user assigned identities are specified and identity is user assigned",
 			identityType: infrav1.VMIdentityUserAssigned,
 			uami:         []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m *armcompute.VirtualMachineIdentity, err error) {
+			Expect: func(g *GomegaWithT, _ *armcompute.VirtualMachineIdentity, err error) {
 				g.Expect(err.Error()).Should(ContainSubstring(ErrUserAssignedIdentitiesNotFound.Error()))
 			},
 		},
@@ -100,7 +100,6 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -128,14 +127,13 @@ func Test_UserAssignedIdentitiesToVMSDK(t *testing.T) {
 		{
 			Name:           "ShouldFailWithError",
 			SubjectFactory: []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, _ map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(Equal(ErrUserAssignedIdentitiesNotFound))
 			},
 		},
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -163,14 +161,13 @@ func Test_UserAssignedIdentitiesToVMSSSDK(t *testing.T) {
 		{
 			Name:           "ShouldFailWithError",
 			SubjectFactory: []infrav1.UserAssignedIdentity{},
-			Expect: func(g *GomegaWithT, m map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
+			Expect: func(g *GomegaWithT, _ map[string]*armcompute.UserAssignedIdentitiesValue, err error) {
 				g.Expect(err).Should(Equal(ErrUserAssignedIdentitiesNotFound))
 			},
 		},
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

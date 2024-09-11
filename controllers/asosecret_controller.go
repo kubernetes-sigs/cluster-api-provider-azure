@@ -139,12 +139,10 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 					fmt.Sprintf("AzureManagedControlPlane object %s/%s not found", req.Namespace, req.Name))
 				log.Info("object was not found")
 				return reconcile.Result{}, nil
-			} else {
-				return reconcile.Result{}, err
 			}
-		} else {
-			log = log.WithValues("AzureManagedControlPlane", req.Name)
+			return reconcile.Result{}, err
 		}
+		log = log.WithValues("AzureManagedControlPlane", req.Name)
 	}
 
 	var clusterIdentity *corev1.ObjectReference

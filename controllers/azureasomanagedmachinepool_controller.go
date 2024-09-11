@@ -277,7 +277,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	// Prevent a different order from updating the spec.
 	slices.Sort(providerIDs)
 	asoManagedMachinePool.Spec.ProviderIDList = providerIDs
-	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0))
+	asoManagedMachinePool.Status.Replicas = int32(ptr.Deref(agentPool.Status.Count, 0)) //nolint:gosec // Ideally agentPool.Status.Count will not overflow int32
 	if _, autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]; autoscaling {
 		machinePool.Spec.Replicas = &asoManagedMachinePool.Status.Replicas
 	}
@@ -300,7 +300,6 @@ func expectedNodeLabels(poolName, nodeRG string) map[string]string {
 	}
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedMachinePoolReconciler) reconcilePaused(ctx context.Context, asoManagedMachinePool *infrav1alpha.AzureASOManagedMachinePool) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedMachinePoolReconciler.reconcilePaused")
 	defer done()
@@ -321,7 +320,6 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcilePaused(ctx context.Conte
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, asoManagedMachinePool *infrav1alpha.AzureASOManagedMachinePool, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedMachinePoolReconciler.reconcileDelete",

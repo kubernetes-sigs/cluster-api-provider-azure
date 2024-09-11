@@ -57,7 +57,7 @@ type ErroringPatchClient struct {
 	err error
 }
 
-func (e ErroringPatchClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (e ErroringPatchClient) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	return e.err
 }
 
@@ -991,7 +991,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name: "name",
 			},
 		})
-		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+		specMock.MockASOResourceSpecGetter.EXPECT().Parameters(gomockinternal.AContext(), gomock.Any()).DoAndReturn(func(_ context.Context, _ *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
 			return &asoresourcesv1.ResourceGroup{
 				Spec: asoresourcesv1.ResourceGroup_Spec{
 					Location: ptr.To("location-from-parameters"),

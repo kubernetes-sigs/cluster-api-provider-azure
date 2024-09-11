@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package windows provides utilities for working with Windows images.
 package windows
 
 import (
@@ -50,7 +51,7 @@ func (i *WindowsImage) GetImage(version OSVersion) string {
 	return fmt.Sprintf("%s:%s", i.BaseImage, tag)
 }
 
-func GetWindowsImage(testImage WindowsTestImages, version OSVersion) string {
+func GetWindowsImage(_ WindowsTestImages, version OSVersion) string {
 	httpd := WindowsImage{
 		BaseImage: "registry.k8s.io/e2e-test-images/httpd",
 		Tags: map[OSVersion]string{

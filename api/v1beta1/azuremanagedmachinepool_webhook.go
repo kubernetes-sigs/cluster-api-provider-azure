@@ -61,7 +61,7 @@ type azureManagedMachinePoolWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {
 	m, ok := obj.(*AzureManagedMachinePool)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
@@ -85,7 +85,7 @@ func (mw *azureManagedMachinePoolWebhook) Default(ctx context.Context, obj runti
 //+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepools,versions=v1beta1,name=validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
@@ -146,7 +146,7 @@ func (mw *azureManagedMachinePoolWebhook) ValidateCreate(ctx context.Context, ob
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	old, ok := oldObj.(*AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
@@ -300,7 +300,7 @@ func (mw *azureManagedMachinePoolWebhook) ValidateUpdate(ctx context.Context, ol
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedMachinePoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedMachinePoolWebhook) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")

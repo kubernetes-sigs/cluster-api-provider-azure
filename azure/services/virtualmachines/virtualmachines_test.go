@@ -139,7 +139,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, _ *mock_async.MockGetterMockRecorder, _ *mock_async.MockGetterMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(nil)
 			},
@@ -164,7 +164,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, _ *mock_async.MockGetterMockRecorder, _ *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError())
@@ -175,7 +175,7 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, _ *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
@@ -204,7 +204,6 @@ func TestReconcileVM(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -245,7 +244,7 @@ func TestDeleteVM(t *testing.T) {
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(nil)
 			},
@@ -286,7 +285,6 @@ func TestDeleteVM(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -325,7 +323,7 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 			name:             "no user assigned identities",
 			specIdentities:   []infrav1.UserAssignedIdentity{},
 			actualIdentities: []infrav1.UserAssignedIdentity{},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
+			expect: func(_ *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
 				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
 			},
 			expectedError: "",
@@ -395,7 +393,6 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

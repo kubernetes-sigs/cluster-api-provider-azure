@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Run go generate to regenerate this mock.
+// Package mock_inboundnatrules contains mock implementation of inboundnatrules.
 //
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_inboundnatrules -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination inboundnatrules_mock.go -package mock_inboundnatrules -source ../inboundnatrules.go InboundNatScope

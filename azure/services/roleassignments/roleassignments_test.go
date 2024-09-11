@@ -106,7 +106,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VM:.*#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
 				m *mock_async.MockGetterMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -141,7 +141,6 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -201,7 +200,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			name:          "error getting VMSS",
 			expectedError: "failed to assign role to system assigned identity: failed to get principal ID for VMSS:.*#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder,
+				_ *mock_async.MockReconcilerMockRecorder,
 				mvmss *mock_scalesets.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.RoleAssignmentResourceType().Return(azure.VirtualMachineScaleSet)
@@ -236,7 +235,6 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

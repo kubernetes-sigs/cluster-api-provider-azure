@@ -556,7 +556,7 @@ type mockClient struct {
 	ReturnError bool
 }
 
-func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	if m.ReturnError {
 		return errors.New("AzureCluster not found: failed to find owner cluster for test-cluster")
 	}

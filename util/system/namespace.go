@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package system provides utilities for interacting with namespaces.
 package system
 
 import "os"

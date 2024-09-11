@@ -64,7 +64,7 @@ func (s *LBSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the load balancer.
-func (s *LBSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
+func (s *LBSpec) Parameters(_ context.Context, existing interface{}) (parameters interface{}, err error) {
 	var (
 		etag                *string
 		frontendIDs         []*armnetwork.SubResource

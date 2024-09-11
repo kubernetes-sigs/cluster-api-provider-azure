@@ -54,7 +54,7 @@ func (s *NSGSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the security group.
-func (s *NSGSpec) Parameters(ctx context.Context, existing interface{}) (interface{}, error) {
+func (s *NSGSpec) Parameters(_ context.Context, existing interface{}) (interface{}, error) {
 	securityRules := make([]*armnetwork.SecurityRule, 0)
 	newAnnotation := map[string]string{}
 	var etag *string

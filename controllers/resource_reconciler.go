@@ -62,8 +62,7 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	defer done()
 	log.V(4).Info("reconciling resources")
 
-	var newResourceStatuses []infrav1alpha.ResourceStatus
-
+	newResourceStatuses := make([]infrav1alpha.ResourceStatus, 0)
 	for _, spec := range r.resources {
 		gvk := spec.GroupVersionKind()
 		spec.SetNamespace(r.owner.GetNamespace())

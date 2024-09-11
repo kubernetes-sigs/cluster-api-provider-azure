@@ -36,7 +36,7 @@ func Test_SDKToVMSS(t *testing.T) {
 	}{
 		{
 			Name: "ShouldPopulateWithData",
-			SubjectFactory: func(g *gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []armcompute.VirtualMachineScaleSetVM) {
+			SubjectFactory: func(_ *gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []armcompute.VirtualMachineScaleSetVM) {
 				tags := map[string]*string{
 					"foo": ptr.To("bazz"),
 				}
@@ -113,7 +113,6 @@ func Test_SDKToVMSS(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -205,7 +204,6 @@ func Test_SDKToVMSSVM(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -314,7 +312,6 @@ func Test_SDKImageToImage(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -400,7 +397,6 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package maps provides utilities for working with maps.
 package maps
 
 // Merge merges the two maps and returns the result. For overlapping keys,

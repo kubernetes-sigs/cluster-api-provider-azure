@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package loadbalancers provides utilities for working with Azure Load Balancers.
 package loadbalancers
 
 import (

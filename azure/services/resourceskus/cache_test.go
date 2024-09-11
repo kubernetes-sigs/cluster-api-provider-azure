@@ -63,7 +63,6 @@ func TestCacheGet(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -227,7 +226,6 @@ func TestCacheGetZones(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -240,7 +238,7 @@ func TestCacheGetZones(t *testing.T) {
 				t.Error(err)
 			}
 			if diff := cmp.Diff(zones, tc.want, []cmp.Option{cmpopts.EquateEmpty()}...); diff != "" {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 		})
 	}
@@ -376,7 +374,6 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -389,7 +386,7 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 				t.Error(err)
 			}
 			if diff := cmp.Diff(zones, tc.want, []cmp.Option{cmpopts.EquateEmpty()}...); diff != "" {
-				t.Fatalf(diff)
+				t.Fatal(diff)
 			}
 		})
 	}

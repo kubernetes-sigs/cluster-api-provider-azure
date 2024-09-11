@@ -26,7 +26,7 @@ import (
 
 // GetSpotVMOptions takes the spot vm options
 // and returns the individual vm priority, eviction policy and billing profile.
-func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions, diffDiskSettings *infrav1.DiffDiskSettings) (*armcompute.VirtualMachinePriorityTypes, *armcompute.VirtualMachineEvictionPolicyTypes, *armcompute.BillingProfile, error) {
+func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions, _ *infrav1.DiffDiskSettings) (*armcompute.VirtualMachinePriorityTypes, *armcompute.VirtualMachineEvictionPolicyTypes, *armcompute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {
 		return nil, nil, nil, nil

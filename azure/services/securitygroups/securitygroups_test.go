@@ -173,14 +173,13 @@ func TestReconcileSecurityGroups(t *testing.T) {
 		{
 			name:          "vnet is not managed, should skip reconcile",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -264,14 +263,13 @@ func TestDeleteSecurityGroups(t *testing.T) {
 		{
 			name:          "vnet is not managed, should skip delete",
 			expectedError: "",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

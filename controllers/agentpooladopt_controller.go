@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package controllers contains controllers for CAPZ APIs.
 package controllers
 
 import (
@@ -42,7 +43,7 @@ type AgentPoolAdoptReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AgentPoolAdoptReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *AgentPoolAdoptReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&asocontainerservicev1.ManagedClustersAgentPool{}).
@@ -107,7 +108,7 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	var replicas *int32
 	if agentPool.Spec.Count != nil {
-		replicas = ptr.To(int32(*agentPool.Spec.Count))
+		replicas = ptr.To(int32(*agentPool.Spec.Count)) //nolint:gosec // ideally agentPool.Spec.Count will not overflow int32
 		agentPool.Spec.Count = nil
 	}
 

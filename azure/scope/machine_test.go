@@ -411,7 +411,6 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.machineScope.InboundNatSpecs(); !reflect.DeepEqual(got, tt.want) {
@@ -3153,7 +3152,6 @@ func TestDiskSpecs(t *testing.T) {
 	}
 
 	for _, tt := range testcases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 

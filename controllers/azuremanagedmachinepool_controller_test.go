@@ -70,7 +70,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				agentpools.AgentPoolSpec().Return(&fakeAgentPoolSpec)
 				agentpools.NodeResourceGroup().Return("fake-rg")
 				agentpools.SetAgentPoolProviderIDList(providerIDs)
-				agentpools.SetAgentPoolReplicas(int32(len(providerIDs))).Return()
+				agentpools.SetAgentPoolReplicas(int32(len(providerIDs))).Return() //nolint:gosec // providerIDs will not overflow int32 in this test
 				agentpools.SetAgentPoolReady(true).Return()
 				agentpools.IsPreviewEnabled().Return(false)
 
@@ -79,13 +79,13 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
 			name: "Reconcile pause",
-			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
+			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, _ *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
 				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
 				cluster.Spec.Paused = true
 
@@ -93,7 +93,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -107,7 +107,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				}
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -130,7 +130,6 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			var (
 				g          = NewWithT(t)

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package scalesetvms provides utilities for working with Azure Virtual Machine Scale Sets.
 package scalesetvms
 
 import (
@@ -69,7 +70,7 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 }
 
 // CreateOrUpdateAsync is a dummy implementation to fulfill the async.Reconciler interface.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, _ azure.ResourceSpecGetter, _ string, _ interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.CreateOrUpdateAsync")
 	defer done()
 

@@ -123,7 +123,6 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -226,7 +225,6 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -329,7 +327,6 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -428,7 +425,6 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -534,7 +530,6 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -633,7 +628,6 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -784,7 +778,6 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -884,7 +877,6 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(c.Input.MachinePool, c.Input.InfraMachinePool, c.Input.ControlPlane).Build()
@@ -922,7 +914,6 @@ func TestManagedMachinePoolScope_EnablePreviewFeatures(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			s := &ManagedMachinePoolScope{
@@ -1087,11 +1078,11 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 	}
 }
 
-func getAzureMachinePoolWithScaling(name string, min, max int) *infrav1.AzureManagedMachinePool {
+func getAzureMachinePoolWithScaling(name string, minNumNodes, maxNumNodes int) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-		MinSize: ptr.To(min),
-		MaxSize: ptr.To(max),
+		MinSize: ptr.To(minNumNodes),
+		MaxSize: ptr.To(maxNumNodes),
 	}
 	return managedPool
 }

@@ -77,7 +77,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	}, nil)
 	Expect(err).NotTo(HaveOccurred())
 	var publicIPPrefix armnetwork.PublicIPPrefix
-	Eventually(func(g Gomega) {
+	Eventually(func(_ Gomega) {
 		resp, err := poller.PollUntilDone(ctx, nil)
 		Expect(err).NotTo(HaveOccurred())
 		publicIPPrefix = resp.PublicIPPrefix

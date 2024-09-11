@@ -1,7 +1,5 @@
 run:
-  deadline: 10m
-  skip-files:
-  - 'zz_generated\.(\w*)\.go$'
+  timeout: 10m
   build-tags:
     - e2e
 linters:
@@ -12,6 +10,7 @@ linters:
     - bidichk
     - bodyclose
     - containedctx
+    - copyloopvar
     - decorder
     - dogsled
     - dupword
@@ -19,8 +18,6 @@ linters:
     - errcheck
     - errchkjson
     - errorlint
-    - execinquery
-    - exportloopref
     - gci
     - ginkgolinter
     - goconst
@@ -35,6 +32,7 @@ linters:
     - govet
     - importas
     - ineffassign
+    - intrange
     - loggercheck
     - misspell
     - nakedret
@@ -42,12 +40,14 @@ linters:
     - noctx
     - nolintlint
     - nosprintfhostport
+    - prealloc
     - predeclared
     - reassign
     - revive
     - rowserrcheck
     - staticcheck
     - stylecheck
+    - tenv
     - thelper
     - typecheck
     - unconvert
@@ -122,14 +122,45 @@ linters-settings:
       - name: exported
         arguments:
           - disableStutteringCheck
-  staticcheck:
-    go: "1.22"
-  stylecheck:
-    go: "1.22"
-  unused:
-    go: "1.22"
+      # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+      # Rules in addition to the recommended configuration above.
+      - name: bool-literal-in-expr
+      - name: constant-logical-expr
+  goconst:
+    ignore-tests: true
+  nolintlint:
+    allow-unused: false
+    require-specific: true
 
 issues:
+  exclude-files:
+    - 'zz_generated\.(\w*)\.go$'
+  # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most
+  # relevant changes in PRs and avoid nitpicking.
+  exclude-use-default: false
   exclude-rules:
     - path: '(\w*)conversion.go'
       text: "use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name"
@@ -137,14 +168,95 @@ issues:
       text: "use underscores in package names|don't use an underscore in package name"
     - path: (^test/|_test.go$)
       linters:
-        - dogsled
-        - goconst
-        - godot
-        - prealloc
+      - dogsled
+      - goconst
+      - godot
+      - prealloc
     - path: (^test/|_test.go$)
       text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
     - source: \"github.com/onsi/(ginkgo/v2|gomega)\"
       text: "should not use dot imports"
+    # Exclude some packages or code to require comments, for example test code, or fake clients.
+    - linters:
+      - revive
+      text: exported (method|function|type|const) (.+) should have comment or be unexported
+      source: (func|type).*Fake.*
+    - linters:
+      - revive
+      text: exported (method|function|type|const) (.+) should have comment or be unexported
+      path: fake_\.go
+    # Dot imports for gomega and ginkgo are allowed
+    # within test files and test utils.
+    - linters:
+      - revive
+      - stylecheck
+      path: _test\.go
+      text: should not use dot imports
+    - linters:
+      - revive
+      # Checking if an error is nil to just after return the error or nil is redundant
+      text: "if-return: redundant if ...; err != nil check, just return error instead"
+      # Ignoring stylistic checks for generated code
+      path: .*(api|types|test)\/.*\/conversion.*\.go$
+    - linters:
+      - revive
+      # Exported function and methods should have comments. This warns on undocumented exported functions and methods.
+      text: exported (method|function|type|const) (.+) should have comment or be unexported
+      # Ignoring stylistic checks for generated code
+      path: .*(api|types|test)\/.*\/conversion.*\.go$
+    - linters:
+      - revive
+      # By convention, receiver names in a method should reflect their identity.
+      text: "receiver-naming: receiver name"
+      # Ignoring stylistic checks for generated code
+      path: .*(api|types)\/.*\/conversion.*\.go$
+    - linters:
+      - stylecheck
+      text: "ST1016: methods on the same type should have the same receiver name"
+      path: .*(api|types)\/.*\/conversion.*\.go$
+    # We don't care about defer in for loops in test files.
+    - linters:
+      - gocritic
+      text: "deferInLoop: Possible resource leak, 'defer' is called in the 'for' loop"
+      path: _test\.go
+      # Ignore non-constant format string in call to condition utils
+    - linters:
+      - govet
+      text: "non-constant format string in call to sigs\\.k8s\\.io\\/cluster-api\\/util\\/conditions\\."
+    # for i = x; i < y; i++ {} is already optimal; Ignore this linter message
+    - linters:
+      - intrange
+      text: "for loop can be changed to use an integer range"
+    # Ignore the return value of below functions in test files
+    - linters:
+      - errcheck
+      text: Error return value of (`os.Setenv`|`fmt.Fprintf`|`resp.Body.Close`|`os.Unsetenv`|`fmt.Fprintln`|`[\w\.]+\.Close`|`[\w\.]+\.Flush`|`[\w\.]+\.RemoveAll`) is not checked
+      path: (^test\/e2e\/.*\.go$|.*_test\.go$)
+    # Do not validate file paths in tests
+    - linters:
+      - gosec
+      text: "G304: Potential file inclusion via variable"
+      path: ^test\/e2e\/.*\.go$
+    # Ignore the elevated access that "others" have for dirs/files created in tests with 0755 permissions
+    - linters:
+      - gosec
+      text: "G301: Expect directory permissions to be 0750 or less"
+      path: ^test\/e2e\/.*\.go$
+    # Ignore the elevated access that "group" and "others" have for dirs/files opened in tests with 0644 permissions
+    - linters:
+      - gosec
+      text: "G302: Expect file permissions to be 0600 or less"
+      path: ^test\/e2e\/.*\.go$
+    # Ignore unhandled errors in test files when using os.Setenv
+    - linters:
+      - gosec
+      text: "G104: Errors unhandled."
+      path: ^test\/e2e\/.*\.go$
+    # Ignore the unhandled errors on using os.Setenv in test files
+    - linters:
+      - gosec
+      text: "G104: Errors unhandled."
+      path: .*_test\.go$
   include:
   - EXC0012  # revive: check for comments
   - EXC0014  # revive: check for comments

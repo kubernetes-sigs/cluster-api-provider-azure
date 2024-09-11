@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package mutators contains mutators for reconciling AzureASOManagedControlPlane resources.
 package mutators
 
 import (
@@ -80,11 +81,7 @@ func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane 
 			return err
 		}
 
-		if err := setManagedClusterCredentials(ctx, cluster, managedClusterPath, managedCluster); err != nil {
-			return err
-		}
-
-		return nil
+		return setManagedClusterCredentials(ctx, cluster, managedClusterPath, managedCluster)
 	}
 }
 

@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package natgateways implements AsyncReconciler, AsyncStatusUpdater, FutureScope and Scope interfaces
+// for Azure NAT gateway service.
 package natgateways
 
 import (

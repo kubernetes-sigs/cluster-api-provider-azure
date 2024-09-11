@@ -48,7 +48,6 @@ func TestDefaultedLoopTimeout(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
@@ -84,7 +83,6 @@ func TestDefaultedReconcilerRequeue(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
@@ -120,7 +118,6 @@ func TestDefaultedAzureCallTimeout(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
@@ -156,7 +153,6 @@ func TestDefaultedAzureServiceReconcileTimeout(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)

@@ -104,7 +104,6 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -272,7 +271,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -392,7 +390,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -546,7 +543,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -714,7 +710,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -829,7 +824,6 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -978,7 +972,6 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1092,7 +1085,6 @@ func TestIsAADEnabled(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1242,7 +1234,6 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1419,7 +1410,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.Input.ControlPlane,
@@ -1523,7 +1513,6 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.Input.ControlPlane,
@@ -1607,7 +1596,6 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			g := NewWithT(t)
 			s := &ManagedControlPlaneScope{
@@ -1764,7 +1752,6 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.input.ControlPlane,

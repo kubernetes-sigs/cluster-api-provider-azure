@@ -62,11 +62,7 @@ func SetAgentPoolDefaults(ctrlClient client.Client, machinePool *expv1.MachinePo
 			return err
 		}
 
-		if err := setAgentPoolCount(ctx, ctrlClient, machinePool, agentPoolPath, agentPool); err != nil {
-			return err
-		}
-
-		return nil
+		return setAgentPoolCount(ctx, ctrlClient, machinePool, agentPoolPath, agentPool)
 	}
 }
 

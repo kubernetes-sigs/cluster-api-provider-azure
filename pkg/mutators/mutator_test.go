@@ -86,7 +86,7 @@ func TestApplyMutators(t *testing.T) {
 			name:      "error",
 			resources: []runtime.RawExtension{},
 			mutators: []ResourcesMutator{
-				func(_ context.Context, us []*unstructured.Unstructured) error {
+				func(_ context.Context, _ []*unstructured.Unstructured) error {
 					return errors.New("mutator err")
 				},
 			},
@@ -96,7 +96,7 @@ func TestApplyMutators(t *testing.T) {
 			name:      "incompatible is terminal",
 			resources: []runtime.RawExtension{},
 			mutators: []ResourcesMutator{
-				func(_ context.Context, us []*unstructured.Unstructured) error {
+				func(_ context.Context, _ []*unstructured.Unstructured) error {
 					return Incompatible{}
 				},
 			},

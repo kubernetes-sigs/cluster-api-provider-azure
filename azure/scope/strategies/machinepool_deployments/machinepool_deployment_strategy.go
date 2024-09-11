@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package machinepool contains the machine pool deployment strategies.
 package machinepool
 
 import (
@@ -325,7 +326,7 @@ func orderRandom(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.Azu
 // orderByDeleteMachineAnnotation will sort AzureMachinePoolMachines with the clusterv1.DeleteMachineAnnotation to the front of the list.
 // It will preserve the existing order of the list otherwise so that it respects the existing delete priority otherwise.
 func orderByDeleteMachineAnnotation(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
-	sort.SliceStable(machines, func(i, j int) bool {
+	sort.SliceStable(machines, func(i, _ int) bool {
 		_, iHasAnnotation := machines[i].Annotations[clusterv1.DeleteMachineAnnotation]
 
 		return iHasAnnotation

@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package networkpolicy provides utilities for working with Kubernetes NetworkPolicies.
 package networkpolicy
 
 import (
@@ -109,7 +110,7 @@ func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {
+func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, _ string, namespace string, nwpolicyFileName string, policyDir string) {
 	err := CreateNetworkPolicyFromFile(ctx, clientset, filepath.Join(policyDir, nwpolicyFileName), namespace)
 	Expect(err).NotTo(HaveOccurred())
 }

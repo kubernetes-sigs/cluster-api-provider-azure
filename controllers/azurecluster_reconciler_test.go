@@ -59,7 +59,7 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 		},
 		"service reconcile fails": {
 			expectedError: "failed to reconcile AzureCluster service two: some error happened",
-			expect: func(one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					one.Reconcile(gomockinternal.AContext()).Return(nil),
 					two.Reconcile(gomockinternal.AContext()).Return(errors.New("some error happened")),
@@ -69,7 +69,6 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -137,7 +136,6 @@ func TestAzureClusterServicePause(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -328,7 +326,6 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 

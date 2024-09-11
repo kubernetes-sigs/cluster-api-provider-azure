@@ -328,7 +328,7 @@ func (s *ManagedMachinePoolScope) PatchCAPIMachinePoolObject(ctx context.Context
 func (s *ManagedMachinePoolScope) SetCAPIMachinePoolReplicas(replicas *int) {
 	var setReplicas *int32
 	if replicas != nil {
-		setReplicas = ptr.To(int32(*replicas))
+		setReplicas = ptr.To(int32(*replicas)) //nolint:gosec // replicas should not overflow int32
 	}
 	s.MachinePool.Spec.Replicas = setReplicas
 }

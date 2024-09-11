@@ -811,7 +811,6 @@ func TestValidateSecurityRule(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -1030,7 +1029,6 @@ func TestValidateAPIServerLB(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -1110,7 +1108,6 @@ func TestPrivateDNSZoneName(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -1267,7 +1264,6 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -1347,7 +1343,6 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)

@@ -204,7 +204,6 @@ func TestValidateVersion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateVersion(tt.version, field.NewPath("spec").Child("Version"))
@@ -272,7 +271,6 @@ func TestValidateLoadBalancerProfile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateLoadBalancerProfile(tt.profile, field.NewPath("spec").Child("loadBalancerProfile"))
@@ -464,7 +462,6 @@ func TestValidateAutoScalerProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateAutoScalerProfile(tt.profile, field.NewPath("spec").Child("autoScalerProfile"))
@@ -1389,7 +1386,6 @@ func TestValidatingWebhook(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		// client is used to fetch the AzureManagedControlPlane, we do not want to return an error on client.Get
 		client := mockClient{ReturnError: false}
 		t.Run(tt.name, func(t *testing.T) {

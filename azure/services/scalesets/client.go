@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package scalesets provides utilities for working with Azure Virtual Machine Scale Sets.
 package scalesets
 
 import (

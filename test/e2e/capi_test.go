@@ -305,8 +305,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 })
 
-func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
-	return func(clusterProxy framework.ClusterProxy) {
+func getPreInitFunc(_ context.Context) func(proxy framework.ClusterProxy) {
+	return func(_ framework.ClusterProxy) {
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 	}

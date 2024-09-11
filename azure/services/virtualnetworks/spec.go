@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package virtualnetworks implements AzureResourceSpecGetter for Azure Virtual Network service.
 package virtualnetworks
 
 import (
@@ -49,7 +50,7 @@ func (s *VNetSpec) ResourceRef() *asonetworkv1.VirtualNetwork {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *VNetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetwork) (*asonetworkv1.VirtualNetwork, error) {
+func (s *VNetSpec) Parameters(_ context.Context, existing *asonetworkv1.VirtualNetwork) (*asonetworkv1.VirtualNetwork, error) {
 	vnet := existing
 	if existing == nil {
 		vnet = &asonetworkv1.VirtualNetwork{

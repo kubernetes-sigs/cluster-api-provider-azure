@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Run go generate to regenerate this mock.
+// Package mock_privateendpoints can be renegeated by running go generate.
 //
 //go:generate ../../../../hack/tools/bin/mockgen -destination privateendpoints_mock.go -package mock_privateendpoints -source ../privateendpoints.go PrivateEndpointScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt privateendpoints_mock.go > _privateendpoints_mock.go && mv _privateendpoints_mock.go privateendpoints_mock.go"

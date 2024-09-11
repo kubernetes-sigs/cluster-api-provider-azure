@@ -275,7 +275,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		},
 		{
 			Name: "default surge should be 1 regardless of replica count with no surger",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool) {
 				mp.Spec.Replicas = ptr.To[int32](3)
 			},
 			Verify: func(g *WithT, surge int, err error) {
@@ -414,7 +414,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 	}{
 		{
 			Name: "should set and default the image if no image is specified for the AzureMachinePool",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool) {
 				mp.Spec.Template.Spec.Version = ptr.To("v1.19.11")
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
@@ -519,7 +519,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 	}{
 		{
 			Name: "should requeue if the machine is not in succeeded state",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, _ *azure.VMSS) {
 				creating := infrav1.Creating
 				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &creating
@@ -530,7 +530,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should not requeue if the machine is in succeeded state",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, _ *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &succeeded
@@ -541,7 +541,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should requeue if the machine is in succeeded state but desired replica count does not match",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, _ *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
@@ -1330,7 +1330,6 @@ func TestMachinePoolScope_SetInfrastructureMachineKind(t *testing.T) {
 	}
 
 	for _, tt := range testcases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -1359,7 +1358,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 	}{
 		{
 			Name: "if MachinePool is externally managed and overProvisionCount > 0, do not try to reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Annotations = map[string]string{clusterv1.ReplicasManagedByAnnotation: "cluster-autoscaler"}
 				mp.Spec.Replicas = ptr.To[int32](1)
 
@@ -1379,7 +1378,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				list := clusterv1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
@@ -1388,7 +1387,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if MachinePool is not externally managed and overProvisionCount > 0, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
@@ -1408,7 +1407,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				list := clusterv1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
@@ -1417,7 +1416,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if MachinePool is not externally managed, and Machines have delete machine annotation, and overProvisionCount > 0, delete machines with deleteMachine annotation first",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](2)
 
 				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
@@ -1446,7 +1445,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				list := clusterv1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
@@ -1457,7 +1456,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if existing MachinePool is not present, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, _ *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1467,7 +1466,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				list := infrav1exp.AzureMachinePoolMachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
@@ -1476,7 +1475,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if existing MachinePool is not present and Instances ID is in wrong format, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, _ *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1486,13 +1485,13 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, _ client.Client, err error) {
 				g.Expect(err).To(HaveOccurred())
 			},
 		},
 		{
 			Name: "if existing MachinePool is present but in deleting state, do not recreate AzureMachinePoolMachines",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *expv1.MachinePool, _ *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, _ *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1503,7 +1502,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 					},
 				}
 			},
-			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
+			Verify: func(g *WithT, _ *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				list := infrav1exp.AzureMachinePoolMachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())

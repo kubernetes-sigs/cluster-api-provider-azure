@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package ttllru provides a TTL LRU cache which caches items with a max time to live and with
+// bounded length.
 package ttllru
 
 import (

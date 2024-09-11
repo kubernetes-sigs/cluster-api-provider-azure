@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package mock_ttllru can be regenerated using go generate.
+//
 //go:generate ../../../../hack/tools/bin/mockgen -destination ttllru_mock.go -package mock_ttllru -source ../ttllru.go Cacher PeekingCacher
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt ttllru_mock.go > _ttllru_mock.go && mv _ttllru_mock.go ttllru_mock.go"
 package mock_ttllru

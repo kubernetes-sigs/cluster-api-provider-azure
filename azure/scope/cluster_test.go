@@ -162,7 +162,6 @@ func TestAPIServerHost(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		g := NewWithT(t)
 		scheme := runtime.NewScheme()
 		_ = clusterv1.AddToScheme(scheme)
@@ -919,7 +918,6 @@ func TestRouteTableSpecs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.RouteTableSpecs(); !reflect.DeepEqual(got, tt.want) {
@@ -1224,7 +1222,6 @@ func TestNatGatewaySpecs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1307,7 +1304,6 @@ func TestSetNatGatewayIDInSubnets(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -1400,7 +1396,6 @@ func TestNSGSpecs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.NSGSpecs(); !reflect.DeepEqual(got, tt.want) {
@@ -1643,7 +1638,6 @@ func TestSubnetSpecs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1771,7 +1765,6 @@ func TestIsVnetManaged(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -1927,7 +1920,6 @@ func TestAzureBastionSpec(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.AzureBastionSpec(); !reflect.DeepEqual(got, tt.want) {
@@ -3329,7 +3321,6 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -4019,7 +4010,6 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.clusterScope.PrivateEndpointSpecs(); !reflect.DeepEqual(got, tt.want) {
@@ -4068,7 +4058,6 @@ func TestSetFailureDomain(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -4244,7 +4233,6 @@ func TestGroupSpecs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			s := &ClusterScope{
 				AzureCluster: c.input.AzureCluster,

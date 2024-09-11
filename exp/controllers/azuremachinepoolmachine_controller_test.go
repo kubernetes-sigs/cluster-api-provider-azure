@@ -55,7 +55,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -66,7 +66,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				reconciler.Delete(gomock2.AContext()).Return(nil)
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -77,7 +77,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				reconciler.Reconcile(gomock2.AContext()).Return(nil)
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+			Verify: func(g *WithT, c client.Client, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				machine := &clusterv1.Machine{}
@@ -91,11 +91,11 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 		},
 		{
 			Name: "should remove finalizer if Machine is not found and AzureMachinePool has deletionTimestamp set",
-			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
+			Setup: func(cb *fake.ClientBuilder, _ *mock_azure.MockReconcilerMockRecorder) {
 				objects := getDeletingMachinePoolObjects()
 				cb.WithObjects(objects...)
 			},
-			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+			Verify: func(g *WithT, c client.Client, _ ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				ampm := &infrav1exp.AzureMachinePoolMachine{}
@@ -110,7 +110,6 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			var (
 				g          = NewWithT(t)

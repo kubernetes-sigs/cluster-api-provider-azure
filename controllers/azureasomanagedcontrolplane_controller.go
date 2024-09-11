@@ -297,7 +297,6 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 	return r.Patch(ctx, expectedSecret, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedControlPlaneReconciler.reconcilePaused")
 	defer done()
@@ -318,7 +317,6 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcilePaused(ctx context.Cont
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam // an empty ctrl.Result is always returned here, leaving it as-is to avoid churn in refactoring later if that changes.
 func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileDelete",

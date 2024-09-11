@@ -137,7 +137,6 @@ func Test_ImageToPlan(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -211,14 +210,13 @@ func Test_ComputeImageToSDK(t *testing.T) {
 				ComputeGallery: nil,
 				SharedGallery:  nil,
 			},
-			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, _ *armcompute.ImageReference, err error) {
 				g.Expect(err).Should(HaveOccurred())
 			},
 		},
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -292,7 +290,7 @@ func Test_ImageToSDK(t *testing.T) {
 				ComputeGallery: nil,
 				SharedGallery:  nil,
 			},
-			expect: func(g *GomegaWithT, result *armcompute.ImageReference, err error) {
+			expect: func(g *GomegaWithT, _ *armcompute.ImageReference, err error) {
 				g.Expect(err).Should(HaveOccurred())
 			},
 		},
@@ -333,7 +331,6 @@ func Test_ImageToSDK(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

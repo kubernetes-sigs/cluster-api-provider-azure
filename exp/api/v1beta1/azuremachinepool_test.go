@@ -244,7 +244,6 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			// Don't add t.Parallel() here or the test will fail.
 			g := gomega.NewGomegaWithT(t)

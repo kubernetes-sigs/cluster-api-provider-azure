@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package record provides a event recorder that can be used to record events.
 package record
 
 import (

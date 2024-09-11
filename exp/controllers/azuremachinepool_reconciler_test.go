@@ -51,7 +51,7 @@ func TestAzureMachinePoolServiceReconcile(t *testing.T) {
 		},
 		"service reconcile fails": {
 			expectedError: "failed to reconcile AzureMachinePool service foo: some error happened",
-			expect: func(one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, _ *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					one.Reconcile(gomockinternal.AContext()).Return(nil),
 					two.Reconcile(gomockinternal.AContext()).Return(errors.New("some error happened")),
@@ -61,7 +61,6 @@ func TestAzureMachinePoolServiceReconcile(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -139,7 +138,6 @@ func TestAzureMachinePoolServicePause(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -194,7 +192,7 @@ func TestAzureMachinePoolServiceDelete(t *testing.T) {
 		},
 		"service delete fails": {
 			expectedError: "failed to delete AzureMachinePool service test-service-two: some error happened",
-			expect: func(one *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
+			expect: func(_ *mock_azure.MockServiceReconcilerMockRecorder, two *mock_azure.MockServiceReconcilerMockRecorder, three *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					three.Delete(gomockinternal.AContext()).Return(nil),
 					two.Delete(gomockinternal.AContext()).Return(errors.New("some error happened")),
@@ -204,7 +202,6 @@ func TestAzureMachinePoolServiceDelete(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 

@@ -46,7 +46,7 @@ func (s *GroupSpec) ResourceRef() *asoresourcesv1.ResourceGroup {
 }
 
 // Parameters implements aso.ResourceSpecGetter.
-func (s *GroupSpec) Parameters(ctx context.Context, existing *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+func (s *GroupSpec) Parameters(_ context.Context, existing *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
 	if existing != nil {
 		return existing, nil
 	}

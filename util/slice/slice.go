@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package slice provides utilities for working with slices.
 package slice
 
 import "k8s.io/utils/ptr"

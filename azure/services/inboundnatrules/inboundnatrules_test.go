@@ -102,8 +102,8 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			name:          "noop if no NAT rule specs are found",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_inboundnatrules.MockclientMockRecorder,
+				_ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
@@ -149,8 +149,8 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			name:          "No LB, Nat rule reconciliation is skipped",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_inboundnatrules.MockclientMockRecorder,
+				_ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.APIServerLBName().AnyTimes().Return("")
 			},
@@ -160,7 +160,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expectedError: `failed to get existing NAT rules:.*#: Internal Server Error: StatusCode=500`,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
-				r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
@@ -189,7 +189,6 @@ func TestReconcileInboundNATRule(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			// TODO: investigate why t.Parallel() trips the race detector here.
@@ -229,7 +228,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "noop if no NAT rules are found",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_inboundnatrules.MockclientMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -238,7 +237,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "successfully delete an existing NAT rule",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
@@ -253,7 +252,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "NAT rule deletion fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				_ *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
@@ -267,7 +266,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package gomega provides utilities for testing with Gomega.
 package gomega
 
 import (

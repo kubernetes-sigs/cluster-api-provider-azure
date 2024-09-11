@@ -90,7 +90,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name:          "noop if no network interface specs are found",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -140,7 +140,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -178,7 +177,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		{
 			name:          "noop if no network interface specs are found",
 			expectedError: "",
-			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.NICSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -218,7 +217,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

@@ -50,7 +50,7 @@ type azureManagedControlPlaneTemplateWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mcpw *azureManagedControlPlaneTemplateWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (mcpw *azureManagedControlPlaneTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
 	mcp, ok := obj.(*AzureManagedControlPlaneTemplate)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
@@ -60,7 +60,7 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) Default(ctx context.Context
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	mcp, ok := obj.(*AzureManagedControlPlaneTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
@@ -78,7 +78,7 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateCreate(ctx context.
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old, ok := oldObj.(*AzureManagedControlPlaneTemplate)
 	if !ok {
@@ -234,7 +234,7 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateDelete(ctx context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 

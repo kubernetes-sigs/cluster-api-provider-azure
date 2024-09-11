@@ -37,10 +37,10 @@ import (
 )
 
 func TestASOSecretReconcile(t *testing.T) {
-	os.Setenv("AZURE_CLIENT_ID", "fooClient")
-	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
-	os.Setenv("AZURE_TENANT_ID", "fooTenant")
-	os.Setenv("AZURE_SUBSCRIPTION_ID", "fooSubscription")
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")             //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")         //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")             //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_SUBSCRIPTION_ID", "fooSubscription") //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
 
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)

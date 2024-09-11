@@ -84,7 +84,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "get a uniform vmss vm",
 			expectedError: "",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(uniformScaleSetVM, nil)
 				s.SetVMSSVM(converters.SDKToVMSSVM(uniformScaleSetVM))
@@ -93,7 +93,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "get a vmss flex vm",
 			expectedError: "",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
 				v.CreateOrUpdateResource(gomockinternal.AContext(), flexGetter, serviceName).Return(flexScaleSetVM, nil)
 				s.SetVMSSVM(converters.SDKVMToVMSSVM(flexScaleSetVM, infrav1.FlexibleOrchestrationMode))
@@ -102,7 +102,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "uniform vmss vm doesn't exist yet",
 			expectedError: "instance does not exist yet. Object will be requeued after 30s",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(nil, nil)
 			},
@@ -110,7 +110,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "vmss flex vm doesn't exist yet",
 			expectedError: "instance does not exist yet. Object will be requeued after 30s",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
 				v.CreateOrUpdateResource(gomockinternal.AContext(), flexGetter, serviceName).Return(nil, nil)
 			},
@@ -118,7 +118,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "error getting uniform vmss vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(nil, errInternal())
 			},
@@ -126,7 +126,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "error getting vmss flex vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
 				v.CreateOrUpdateResource(gomockinternal.AContext(), flexGetter, serviceName).Return(nil, errInternal())
 			},
@@ -134,7 +134,6 @@ func TestReconcileVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -173,7 +172,7 @@ func TestDeleteVMSS(t *testing.T) {
 		{
 			name:          "delete a uniform vmss vm",
 			expectedError: "",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(nil)
 				s.SetVMSSVMState(infrav1.Deleted)
@@ -182,7 +181,7 @@ func TestDeleteVMSS(t *testing.T) {
 		{
 			name:          "delete a vmss flex vm",
 			expectedError: "",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
 				v.DeleteResource(gomockinternal.AContext(), flexGetter, serviceName).Return(nil)
 				s.SetVMSSVMState(infrav1.Deleted)
@@ -191,7 +190,7 @@ func TestDeleteVMSS(t *testing.T) {
 		{
 			name:          "error when deleting a uniform vmss vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(uniformScaleSetVMSpec)
 				r.DeleteResource(gomockinternal.AContext(), uniformScaleSetVMSpec, serviceName).Return(errInternal())
 				s.SetVMSSVMState(infrav1.Deleting)
@@ -200,7 +199,7 @@ func TestDeleteVMSS(t *testing.T) {
 		{
 			name:          "error when deleting a vmss flex vm",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(g *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
+			expect: func(_ *WithT, s *mock_scalesetvms.MockScaleSetVMScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder, v *mock_async.MockReconcilerMockRecorder) {
 				s.ScaleSetVMSpec().Return(flexScaleSetVMSpec)
 				v.DeleteResource(gomockinternal.AContext(), flexGetter, serviceName).Return(errInternal())
 				s.SetVMSSVMState(infrav1.Deleting)
@@ -209,7 +208,6 @@ func TestDeleteVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

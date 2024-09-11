@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package reconciler provides utilities for reconciling Azure resources.
 package reconciler
 
 import (

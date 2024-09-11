@@ -44,7 +44,7 @@ type azureASOManagedControlPlaneWebhook struct {
 // +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha1-azureasomanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedcontrolplanes,versions=v1alpha1,name=validation.azureasomanagedcontrolplane.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureASOManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (ampw *azureASOManagedControlPlaneWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	_, ok := obj.(*AzureASOManagedControlPlane)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureASOManagedControlPlane")
@@ -59,11 +59,11 @@ func (ampw *azureASOManagedControlPlaneWebhook) ValidateCreate(ctx context.Conte
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureASOManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (ampw *azureASOManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureASOManagedControlPlaneWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (ampw *azureASOManagedControlPlaneWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

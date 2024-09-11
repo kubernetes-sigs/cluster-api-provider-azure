@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package tags provides a client for interacting with Azure tags.
+// It allows for retrieving and updating tags on Azure resources or subscriptions.
 package tags
 
 import (

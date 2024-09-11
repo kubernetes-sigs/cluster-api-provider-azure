@@ -134,7 +134,7 @@ func TestReconcileVnetPeerings(t *testing.T) {
 		{
 			name:          "noop if no peering specs are found",
 			expectedError: "",
-			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				p.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				p.VnetPeeringSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -240,7 +240,6 @@ func TestReconcileVnetPeerings(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -287,7 +286,7 @@ func TestDeleteVnetPeerings(t *testing.T) {
 		{
 			name:          "noop if no peering specs are found",
 			expectedError: "",
-			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(p *mock_vnetpeerings.MockVnetPeeringScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				p.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				p.VnetPeeringSpecs().Return([]azure.ResourceSpecGetter{})
 			},
@@ -393,7 +392,6 @@ func TestDeleteVnetPeerings(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 

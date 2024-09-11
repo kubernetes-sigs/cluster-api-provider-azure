@@ -49,7 +49,7 @@ func (s *NatGatewaySpec) ResourceRef() *asonetworkv1.NatGateway {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *NatGatewaySpec) Parameters(ctx context.Context, existingNatGateway *asonetworkv1.NatGateway) (params *asonetworkv1.NatGateway, err error) {
+func (s *NatGatewaySpec) Parameters(_ context.Context, existingNatGateway *asonetworkv1.NatGateway) (params *asonetworkv1.NatGateway, err error) {
 	natGateway := &asonetworkv1.NatGateway{}
 	natGateway.Spec = asonetworkv1.NatGateway_Spec{}
 
@@ -83,6 +83,6 @@ func (s *NatGatewaySpec) Parameters(ctx context.Context, existingNatGateway *aso
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *NatGatewaySpec) WasManaged(resource *asonetworkv1.NatGateway) bool {
+func (s *NatGatewaySpec) WasManaged(_ *asonetworkv1.NatGateway) bool {
 	return s.IsVnetManaged
 }

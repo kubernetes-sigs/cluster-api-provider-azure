@@ -169,7 +169,7 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 	Eventually(func(g Gomega) {
 		nodeList, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(int32(len(nodeList.Items))).To(Equal(input.ExpectedWorkerNodes + 2))
+		g.Expect(int32(len(nodeList.Items))).To(Equal(input.ExpectedWorkerNodes + 2)) //nolint:gosec // nodeList.Items will not overflow int32 in the tests
 		for i, node := range nodeList.Items {
 			if _, ok := node.Labels["kubernetes.azure.com/cluster"]; !ok {
 				node.Labels["kubernetes.azure.com/cluster"] = infraControlPlane.Spec.NodeResourceGroupName

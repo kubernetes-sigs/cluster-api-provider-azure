@@ -267,7 +267,6 @@ func TestReconcileTags(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -442,7 +441,6 @@ func TestTagsChanged(t *testing.T) {
 		}}
 
 	for name, test := range tests {
-		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			changed, createdOrUpdated, deleted, newAnnotation := TagsChanged(test.lastAppliedTags, test.desiredTags, test.currentTags)

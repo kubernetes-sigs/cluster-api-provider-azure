@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package networkinterfaces providers a service for working with network interfaces.
 package networkinterfaces
 
 import (
@@ -79,7 +80,7 @@ func (s *NICSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the network interface.
-func (s *NICSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
+func (s *NICSpec) Parameters(_ context.Context, existing interface{}) (parameters interface{}, err error) {
 	if existing != nil {
 		if _, ok := existing.(armnetwork.Interface); !ok {
 			return nil, errors.Errorf("%T is not an armnetwork.Interface", existing)

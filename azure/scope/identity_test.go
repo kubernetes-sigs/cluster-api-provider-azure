@@ -117,7 +117,7 @@ func TestAllowedNamespaces(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(_ *testing.T) {
 			fakeNamespace := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "namespace8",
@@ -339,7 +339,6 @@ func TestGetTokenCredential(t *testing.T) {
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)

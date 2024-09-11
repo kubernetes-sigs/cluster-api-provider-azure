@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package azure provides utilities for working with Azure resources.
 package azure
 
 import "k8s.io/utils/ptr"

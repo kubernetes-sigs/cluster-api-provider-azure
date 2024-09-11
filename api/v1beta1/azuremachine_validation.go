@@ -491,7 +491,7 @@ func ValidateCapacityReservationGroupID(capacityReservationGroupID *string, fldP
 }
 
 // ValidateVMExtensions validates the VMExtensions spec.
-func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExtension, fldPath *field.Path) field.ErrorList {
+func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExtension, _ *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {

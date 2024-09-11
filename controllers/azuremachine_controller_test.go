@@ -132,7 +132,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(_ *testing.T) {
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithRuntimeObjects(tc.objects...).
@@ -748,7 +748,7 @@ func TestConditions(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(_ *testing.T) {
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "my-cluster",

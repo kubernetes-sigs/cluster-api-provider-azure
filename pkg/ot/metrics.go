@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package ot provides utilities for working with OpenTelemetry.
 package ot
 
 import (

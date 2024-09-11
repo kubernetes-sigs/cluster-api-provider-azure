@@ -943,7 +943,7 @@ type mockDefaultClient struct {
 	SubscriptionID string
 }
 
-func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockDefaultClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	switch obj := obj.(type) {
 	case *AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID

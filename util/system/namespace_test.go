@@ -42,11 +42,14 @@ func TestGetNamespace(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			os.Setenv(NamespaceEnvVarName, c.PodNamespace)
-			defer os.Unsetenv(NamespaceEnvVarName)
+			err := os.Setenv(NamespaceEnvVarName, c.PodNamespace) //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+			g.Expect(err).NotTo(gomega.HaveOccurred())
+			defer func() {
+				err := os.Unsetenv(NamespaceEnvVarName)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+			}()
 			g.Expect(GetManagerNamespace()).To(gomega.Equal(c.Expected))
 		})
 	}

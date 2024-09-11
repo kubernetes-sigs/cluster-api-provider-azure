@@ -68,7 +68,7 @@ func (s *AzureMachineSpec) SetDataDisksDefaults() {
 	for i, disk := range s.DataDisks {
 		if disk.Lun == nil {
 			for l := range s.DataDisks {
-				lun := int32(l)
+				lun := int32(l) //nolint:gosec // l will not overflow int32
 				if _, ok := set[lun]; !ok {
 					s.DataDisks[i].Lun = &lun
 					set[lun] = struct{}{}

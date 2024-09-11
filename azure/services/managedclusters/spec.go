@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package managedclusters provides utilities for working with Azure ManagedClusters.
 package managedclusters
 
 import (
@@ -808,7 +809,7 @@ func userKubeconfigSecretName(clusterName string) string {
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *ManagedClusterSpec) WasManaged(resource genruntime.MetaObject) bool {
+func (s *ManagedClusterSpec) WasManaged(_ genruntime.MetaObject) bool {
 	// CAPZ has never supported BYO managed clusters.
 	return true
 }

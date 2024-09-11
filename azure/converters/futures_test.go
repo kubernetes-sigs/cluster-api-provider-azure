@@ -95,7 +95,6 @@ func TestPollerToFuture(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -127,7 +126,7 @@ func TestFutureToResumeToken(t *testing.T) {
 		{
 			name:   "data is empty",
 			future: emptyDataFuture,
-			expect: func(g *GomegaWithT, token string, err error) {
+			expect: func(g *GomegaWithT, _ string, err error) {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).Should(ContainSubstring("failed to unmarshal future data"))
 			},
@@ -135,7 +134,7 @@ func TestFutureToResumeToken(t *testing.T) {
 		{
 			name:   "data is not base64-encoded",
 			future: decodedDataFuture,
-			expect: func(g *GomegaWithT, token string, err error) {
+			expect: func(g *GomegaWithT, _ string, err error) {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).Should(ContainSubstring("failed to decode future data"))
 			},
@@ -163,7 +162,6 @@ func TestFutureToResumeToken(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

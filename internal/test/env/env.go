@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package env contains utilities for setting up a Kubernetes local test environment.
 package env
 
 import (
@@ -132,7 +133,7 @@ func (t *TestEnvironment) Stop() error {
 }
 
 func getFilePathToCAPICRDs(root string) string {
-	modBits, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	modBits, err := os.ReadFile(filepath.Join(root, "go.mod")) //nolint:gosec // Ignore Potential file inclusion via variable in a test file
 	if err != nil {
 		return ""
 	}

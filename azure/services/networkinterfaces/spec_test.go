@@ -671,7 +671,6 @@ func TestParameters(t *testing.T) {
 	}
 	format.MaxLength = 10000
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

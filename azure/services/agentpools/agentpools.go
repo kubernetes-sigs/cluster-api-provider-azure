@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package agentpools implements AsyncReconciler, AsynStatusUpdater, FutureScope and Scope interfaces for agent pools.
 package agentpools
 
 import (
@@ -57,7 +58,7 @@ func New(scope AgentPoolScope) *aso.Service[genruntime.MetaObject, AgentPoolScop
 	return svc
 }
 
-func postCreateOrUpdateResourceHook(ctx context.Context, scope AgentPoolScope, obj genruntime.MetaObject, err error) error {
+func postCreateOrUpdateResourceHook(_ context.Context, scope AgentPoolScope, obj genruntime.MetaObject, err error) error {
 	if err != nil {
 		return err
 	}

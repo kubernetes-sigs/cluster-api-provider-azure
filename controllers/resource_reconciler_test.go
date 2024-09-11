@@ -106,7 +106,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				patchFunc: func(_ context.Context, o client.Object, _ client.Patch, _ ...client.PatchOption) error {
 					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
 					delete(unpatchedRGs, o.GetName())
 					return nil
@@ -198,7 +198,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
 					return nil
 				},
 			},
@@ -268,7 +268,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				patchFunc: func(_ context.Context, o client.Object, _ client.Patch, _ ...client.PatchOption) error {
 					g.Expect(o.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
 					patchedRGs = append(patchedRGs, o.GetName())
 					return nil

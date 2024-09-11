@@ -218,7 +218,6 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 
 	location := "westus3"
 	for _, test := range tests {
-		test := test
 		t.Run(test.k8sVersion, func(t *testing.T) {
 			t.Parallel()
 
@@ -559,7 +558,6 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 
 	location := "francesouth"
 	for _, test := range tests {
-		test := test
 		t.Run(test.k8sVersion, func(t *testing.T) {
 			t.Parallel()
 

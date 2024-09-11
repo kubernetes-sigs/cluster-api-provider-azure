@@ -105,7 +105,7 @@ func TestParameters(t *testing.T) {
 			name:         "create a new NAT Gateway spec when existing aso resource is nil",
 			spec:         fakeNatGatewaySpec,
 			existingSpec: nil,
-			expect: func(g *WithT, existing *asonetworkv1.NatGateway, parameters *asonetworkv1.NatGateway) {
+			expect: func(g *WithT, _ *asonetworkv1.NatGateway, parameters *asonetworkv1.NatGateway) {
 				g.Expect(parameters).NotTo(BeNil())
 				g.Expect(parameters.Spec.AzureName).NotTo(BeNil())
 				g.Expect(parameters.Spec.AzureName).To(Equal("my-natgateway"))
@@ -133,7 +133,6 @@ func TestParameters(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

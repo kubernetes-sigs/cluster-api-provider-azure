@@ -69,13 +69,12 @@ func TestParameters(t *testing.T) {
 			existing: nil,
 			expect: func(g *WithT, result interface{}) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.AvailabilitySet{}))
-				g.Expect(result.(armcompute.AvailabilitySet).Properties.PlatformFaultDomainCount).To(Equal(ptr.To[int32](int32(fakeFaultDomainCount))))
+				g.Expect(result.(armcompute.AvailabilitySet).Properties.PlatformFaultDomainCount).To(Equal(ptr.To[int32](int32(fakeFaultDomainCount)))) //nolint:gosec // fakeFaultDomainCount will not overflow int32
 			},
 			expectedError: "",
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

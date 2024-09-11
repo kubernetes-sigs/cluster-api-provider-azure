@@ -112,7 +112,7 @@ type mockClient struct {
 	client.Client
 }
 
-func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m mockClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	mp := &expv1.MachinePool{}
 	mp.Spec.Template.Spec.InfrastructureRef.Name = "mock-machinepool-mp-0"
 	list.(*expv1.MachinePoolList).Items = []expv1.MachinePool{*mp}

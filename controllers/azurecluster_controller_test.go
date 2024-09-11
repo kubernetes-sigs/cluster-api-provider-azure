@@ -123,7 +123,7 @@ func TestAzureClusterReconcile(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(_ *testing.T) {
 			client := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithRuntimeObjects(tc.objects...).
@@ -189,7 +189,7 @@ func TestAzureClusterReconcileNormal(t *testing.T) {
 				return getDefaultAzureClusterService(func(acs *azureClusterService) {
 					acs.skuCache = resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, cs.Location())
 					acs.scope = cs
-					acs.Reconcile = func(ctx context.Context) error {
+					acs.Reconcile = func(_ context.Context) error {
 						return azure.WithTransientError(errors.New("failed to reconcile AzureCluster"), 10*time.Second)
 					}
 				}), nil
@@ -370,7 +370,7 @@ func TestAzureClusterReconcileDelete(t *testing.T) {
 			cache: &scope.ClusterCache{},
 		},
 		"should fail if failed to create azure cluster service": {
-			createAzureClusterService: func(cs *scope.ClusterScope) (*azureClusterService, error) {
+			createAzureClusterService: func(_ *scope.ClusterScope) (*azureClusterService, error) {
 				return nil, errors.New("failed to create AzureClusterService")
 			},
 			cache:       &scope.ClusterCache{},
@@ -381,7 +381,7 @@ func TestAzureClusterReconcileDelete(t *testing.T) {
 				return getDefaultAzureClusterService(func(acs *azureClusterService) {
 					acs.skuCache = resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, cs.Location())
 					acs.scope = cs
-					acs.Reconcile = func(ctx context.Context) error {
+					acs.Reconcile = func(_ context.Context) error {
 						return azure.WithTransientError(errors.New("failed to reconcile AzureCluster"), 10*time.Second)
 					}
 				}), nil
@@ -434,13 +434,13 @@ func TestAzureClusterReconcileDelete(t *testing.T) {
 func getDefaultAzureClusterService(changes ...func(*azureClusterService)) *azureClusterService {
 	input := &azureClusterService{
 		services: []azure.ServiceReconciler{},
-		Reconcile: func(ctx context.Context) error {
+		Reconcile: func(_ context.Context) error {
 			return nil
 		},
-		Delete: func(ctx context.Context) error {
+		Delete: func(_ context.Context) error {
 			return nil
 		},
-		Pause: func(ctx context.Context) error {
+		Pause: func(_ context.Context) error {
 			return nil
 		},
 	}

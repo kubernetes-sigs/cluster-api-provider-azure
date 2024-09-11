@@ -66,7 +66,7 @@ type azureManagedControlPlaneWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (mw *azureManagedControlPlaneWebhook) Default(_ context.Context, obj runtime.Object) error {
 	m, ok := obj.(*AzureManagedControlPlane)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
@@ -105,7 +105,7 @@ func (mw *azureManagedControlPlaneWebhook) Default(ctx context.Context, obj runt
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedControlPlaneWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	m, ok := obj.(*AzureManagedControlPlane)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
@@ -123,7 +123,7 @@ func (mw *azureManagedControlPlaneWebhook) ValidateCreate(ctx context.Context, o
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old, ok := oldObj.(*AzureManagedControlPlane)
 	if !ok {
@@ -240,7 +240,7 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(ctx context.Context, o
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *azureManagedControlPlaneWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (mw *azureManagedControlPlaneWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 

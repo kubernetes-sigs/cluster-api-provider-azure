@@ -31,7 +31,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
@@ -195,7 +194,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 				// Wait for operation to complete.
 				return false, nil
 			default:
-				return false, errors.New(fmt.Sprintf("Azure Bastion provisioning failed with state: %q", ptr.Deref(bastion.Properties.ProvisioningState, "(nil)")))
+				return false, fmt.Errorf("azure bastion provisioning failed with state: %q", ptr.Deref(bastion.Properties.ProvisioningState, "(nil)"))
 			}
 		}
 		err = wait.ExponentialBackoff(backoff, retryFn)

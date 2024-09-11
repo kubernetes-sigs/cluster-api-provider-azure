@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Run go generate to regenerate this mock.
+// Package mock_availabilitysets can be renegeated by running go generate.
 //
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_availabilitysets -source ../client.go Client
 //go:generate ../../../../hack/tools/bin/mockgen -destination availabilitysets_mock.go -package mock_availabilitysets -source ../availabilitysets.go AvailabilitySetScope

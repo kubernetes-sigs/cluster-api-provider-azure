@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package publicips provides utilities for working with Azure Public IPs.
 package publicips
 
 import (
@@ -166,6 +167,6 @@ func (s *Service) isIPManaged(ctx context.Context, spec azure.ResourceSpecGetter
 }
 
 // IsManaged returns always returns true as public IPs are managed on a one-by-one basis.
-func (s *Service) IsManaged(ctx context.Context) (bool, error) {
+func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
 }

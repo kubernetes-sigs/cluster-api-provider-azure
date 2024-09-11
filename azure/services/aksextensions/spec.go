@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package aksextensions provides a service for managing Azure AKS Extensions.
 package aksextensions
 
 import (
@@ -55,7 +56,7 @@ func (s *AKSExtensionSpec) ResourceRef() *asokubernetesconfigurationv1.Extension
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *AKSExtensionSpec) Parameters(ctx context.Context, existingAKSExtension *asokubernetesconfigurationv1.Extension) (parameters *asokubernetesconfigurationv1.Extension, err error) {
+func (s *AKSExtensionSpec) Parameters(_ context.Context, existingAKSExtension *asokubernetesconfigurationv1.Extension) (parameters *asokubernetesconfigurationv1.Extension, err error) {
 	aksExtension := &asokubernetesconfigurationv1.Extension{}
 	if existingAKSExtension != nil {
 		aksExtension = existingAKSExtension
@@ -108,7 +109,7 @@ func (s *AKSExtensionSpec) Parameters(ctx context.Context, existingAKSExtension 
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *AKSExtensionSpec) WasManaged(resource *asokubernetesconfigurationv1.Extension) bool {
+func (s *AKSExtensionSpec) WasManaged(_ *asokubernetesconfigurationv1.Extension) bool {
 	// returns always returns true as CAPZ does not support BYO extension.
 	return true
 }

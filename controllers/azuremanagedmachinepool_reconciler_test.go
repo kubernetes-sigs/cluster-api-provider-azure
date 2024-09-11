@@ -59,7 +59,6 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)
@@ -97,7 +96,6 @@ func TestAzureManagedMachinePoolServicePause(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 

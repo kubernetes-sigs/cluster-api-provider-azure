@@ -127,7 +127,6 @@ func TestVMSS_HasModelChanges(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			l, r := c.Factory()
 			g := NewWithT(t)

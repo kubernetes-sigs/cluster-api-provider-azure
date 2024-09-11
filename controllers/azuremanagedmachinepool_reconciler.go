@@ -133,7 +133,6 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 
 	var match *armcompute.VirtualMachineScaleSet
 	for _, ss := range vmss {
-		ss := ss
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
 			match = &ss
 			break
@@ -165,7 +164,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	}
 
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
-	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
+	s.scope.SetAgentPoolReplicas(int32(len(providerIDs))) //nolint:gosec // replicas will not overflow int32
 	s.scope.SetAgentPoolReady(true)
 
 	log.Info("reconciled managed machine pool successfully")

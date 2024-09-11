@@ -302,7 +302,7 @@ func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, 
 			Name:          parameters.GetName(),
 		}), requeueInterval)
 	}
-	return zero, errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, parameters.GetNamespace(), parameters.GetName(), serviceName))
+	return zero, errors.Wrap(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, parameters.GetNamespace(), parameters.GetName(), serviceName))
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.

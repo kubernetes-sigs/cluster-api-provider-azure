@@ -81,7 +81,7 @@ ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
-GOLANGCI_LINT_VER := v1.55.2
+GOLANGCI_LINT_VER := v1.60.2
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
@@ -275,7 +275,7 @@ verify-gen: generate ## Verify generated files are the latest.
 	fi
 
 .PHONY: verify-shellcheck
-verify-shellcheck: ## Verify shell files are passing lint.
+verify-shellcheck: ## Verify shell files are passing shellcheck.
 	./hack/verify-shellcheck.sh
 
 .PHONY: verify-conversions
@@ -563,19 +563,19 @@ help: ## Display this help.
 ##@ Linting:
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase.
-	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage $(GOLANGCI_LINT_EXTRA_ARGS)
+lint: $(GOLANGCI_LINT) lint-azuresdk-latest ## Lint codebase.
+	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage --go=1.22 $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter.
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
 lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues.
-	$(GOLANGCI_LINT) run -v --fast=false
+	$(GOLANGCI_LINT) run -v --fast=false --go=1.22
 
-.PHONY: lint-latest
-lint-latest:
-	./hack/lint-latest.sh
+.PHONY: lint-azuresdk-latest
+lint-azuresdk-latest:
+	./hack/lint-azuresdk-latest.sh
 
 ## --------------------------------------
 ## Release

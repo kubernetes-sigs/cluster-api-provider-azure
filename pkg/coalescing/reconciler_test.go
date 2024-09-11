@@ -53,7 +53,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 	}{
 		{
 			Name: "should call upstream reconciler if key does not exist in cache",
-			Reconciler: func(g *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
+			Reconciler: func(_ *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now(), true)
 				cacherMock.EXPECT().Reconciled(defaultRequestKey)
 				mockReconciler.EXPECT().Reconcile(gomock.Any(), defaultRequest)
@@ -64,7 +64,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 		},
 		{
 			Name: "should not call upstream reconciler if key does exists in cache and is not expired",
-			Reconciler: func(g *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
+			Reconciler: func(_ *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now().Add(30*time.Second), false)
 				return NewReconciler(mockReconciler, cacherMock, logr.New(log.NullLogSink{}))
 			},
@@ -73,7 +73,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 		},
 		{
 			Name: "should call upstream reconciler if key does not exist in cache and return error",
-			Reconciler: func(g *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
+			Reconciler: func(_ *WithT, cacherMock *mock_coalescing.MockReconcileCacher, mockReconciler *mock_coalescing.MockReconciler) reconcile.Reconciler {
 				cacherMock.EXPECT().ShouldProcess(defaultRequestKey).Return(time.Now(), true)
 				mockReconciler.EXPECT().Reconcile(gomock.Any(), defaultRequest).Return(reconcile.Result{}, errors.New("boom"))
 				return NewReconciler(mockReconciler, cacherMock, logr.New(log.NullLogSink{}))
@@ -85,7 +85,6 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			mockCtrl := gomock.NewController(t)

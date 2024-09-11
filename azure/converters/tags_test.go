@@ -44,7 +44,6 @@ func Test_TagsToMap(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run("name", func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -74,7 +73,6 @@ func Test_MapToTags(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run("name", func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -107,7 +105,6 @@ func Test_TagsToMapRoundTrip(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run("name", func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
@@ -140,7 +137,6 @@ func Test_MapToTagsMapRoundTrip(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run("name", func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)

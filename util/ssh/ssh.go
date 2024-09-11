@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package ssh provides utilities for generating ssh keys.
 package ssh
 
 import (

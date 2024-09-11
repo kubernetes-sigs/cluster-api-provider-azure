@@ -61,7 +61,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "noop if no route table specs are found",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
@@ -106,7 +106,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		{
 			name:          "noop if vnet is not managed",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
@@ -114,7 +114,6 @@ func TestReconcileRouteTables(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -151,7 +150,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "noop if no route table specs are found",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(true)
 				s.RouteTableSpecs().Return([]azure.ResourceSpecGetter{})
@@ -196,7 +195,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		{
 			name:          "noop if vnet is not managed",
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, _ *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.IsVnetManaged().Return(false)
 			},
@@ -204,7 +203,6 @@ func TestDeleteRouteTable(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
