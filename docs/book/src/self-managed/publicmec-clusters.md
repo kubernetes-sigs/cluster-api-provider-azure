@@ -68,14 +68,14 @@ Execute clusterctl to template the resources:
 clusterctl init --infrastructure azure
 clusterctl generate cluster ${CLUSTER_NAME} --kubernetes-version ${KUBERNETES_VERSION} --flavor edgezone > edgezone-cluster.yaml
 ```
-Public MEC doesn't have access to CAPI images in Azure Marketplace, therefore, users need to prepare CAPI image by themselves. You can follow doc [Custom Images](https://capz.sigs.k8s.io/topics/custom-images.html) to setup custom image.
+Public MEC doesn't have access to CAPI images in Azure Marketplace, therefore, users need to prepare CAPI image by themselves. You can follow doc [Custom Images](./custom-images.md) to setup custom image.
 
 Apply the modified template to your kind management cluster:
 ```bash
 kubectl apply -f edgezone-cluster.yaml
 ```
 
-Once target cluster's control plane is up, install [Azure cloud provider components](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure) by helm. The minimum version for "out-of-tree" Azure cloud provider is v1.0.3,  "in-tree" Azure cloud provider is not supported. (Reference: https://capz.sigs.k8s.io/topics/addons.html#external-cloud-provider)
+Once target cluster's control plane is up, install [Azure cloud provider components](https://github.com/kubernetes-sigs/cloud-provider-azure/tree/master/helm/cloud-provider-azure) by helm. The minimum version for "out-of-tree" Azure cloud provider is v1.0.3,  "in-tree" Azure cloud provider is not supported. (Reference: ./addons.md#external-cloud-provider)
 
 ```bash
 # get the kubeconfig of the cluster
