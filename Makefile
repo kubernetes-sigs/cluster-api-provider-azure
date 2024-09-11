@@ -82,7 +82,7 @@ ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
-GOLANGCI_LINT_VER := v1.60.2
+GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
@@ -684,7 +684,7 @@ promote-images: $(KPROMO) ## Promote images.
 
 ##@ Testing:
 .PHONY: test
-test: generate lint go-test-race ## Run "generate", "lint" and "go-test-race" rules.
+test: generate go-test-race ## Run "generate" and "go-test-race" rules.
 
 .PHONY: go-test-race
 go-test-race: TEST_ARGS+= -race
