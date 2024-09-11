@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-azure
 
 go 1.22.0
 
-toolchain go1.22.5
+toolchain go1.22.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
@@ -54,8 +54,8 @@ require (
 	k8s.io/kubectl v0.30.3
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/cloud-provider-azure v1.30.4
-	sigs.k8s.io/cluster-api v1.8.1
-	sigs.k8s.io/cluster-api/test v1.8.1
+	sigs.k8s.io/cluster-api v1.8.3
+	sigs.k8s.io/cluster-api/test v1.8.3
 	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/kind v0.24.0
 )
@@ -220,7 +220,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.3
 
 replace (
 	github.com/google/cel-go => github.com/google/cel-go v0.17.8
