@@ -20,6 +20,7 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
+GO_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
 GOPATH  := $(shell go env GOPATH)
 GOARCH  := $(shell go env GOARCH)
 GOOS    := $(shell go env GOOS)
@@ -395,7 +396,7 @@ acr-login: ## Login to Azure Container Registry.
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
 	docker pull docker/dockerfile:1.4
-	docker pull docker.io/library/golang:1.22
+	docker pull docker.io/library/golang:$(GO_VERSION)
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: docker-build
@@ -564,14 +565,14 @@ help: ## Display this help.
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) lint-azuresdk-latest ## Lint codebase.
-	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage --go=1.22 $(GOLANGCI_LINT_EXTRA_ARGS)
+	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage --go=$(GO_VERSION) $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter.
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
 lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues.
-	$(GOLANGCI_LINT) run -v --fast=false --go=1.22
+	$(GOLANGCI_LINT) run -v --fast=false --go=$(GO_VERSION)
 
 .PHONY: lint-azuresdk-latest
 lint-azuresdk-latest:
@@ -649,7 +650,7 @@ release-binary: $(RELEASE_DIR) ## Compile and build release binaries.
 		-e GOARCH=$(GOARCH) \
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
-		golang:1.22 \
+		golang:$(GO_VERSION) \
 		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
@@ -869,6 +870,15 @@ $(CODESPELL): ## Build codespell from tools folder.
 		mv $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/bin/$(CODESPELL_BIN) $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR); \
 		rm -r $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/bin; \
     )
+
+## --------------------------------------
+## Helpers
+## --------------------------------------
+
+##@ helpers:
+
+go-version: ## Print the go version we use to compile our binaries and images
+	@echo $(GO_VERSION)
 
 include conformance.mk
 include e2e.mk
