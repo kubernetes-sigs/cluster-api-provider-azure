@@ -203,34 +203,22 @@ function upload_to_blob() {
 # to be mounted on the kind cluster and hence extra mount flags are required.
 function createKindForAZWI() {
   echo "creating workload-identity-enabled kind configuration"
-  if [ -n "${CONFORMANCE_FLAVOR}" ] && [ -n "${SERVICE_ACCOUNT_SIGNING_PUB}" ] && [ -n "${SERVICE_ACCOUNT_SIGNING_KEY}" ]; then
-    echo "using pre-existing service-account-issuer for kind cluster"
-    KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${REPO_ROOT}/kind-wi-sa.pub"
-    KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${REPO_ROOT}/kind-wi-sa.key"
-    echo "${SERVICE_ACCOUNT_SIGNING_PUB}" > "${KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
-    echo "${SERVICE_ACCOUNT_SIGNING_KEY}" > "${KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
-    KIND_SERVICE_ACCOUNT_ISSUER="https://oidcissuercapzci.blob.core.windows.net/oidc-capzci/"
-  else
-    KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
-    KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
-    KIND_SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER}"
-  fi
   cat <<EOF | "${KIND}" create cluster --name "${KIND_CLUSTER_NAME}" --config=-
   kind: Cluster
   apiVersion: kind.x-k8s.io/v1alpha4
   nodes:
   - role: control-plane
     extraMounts:
-      - hostPath: "${KIND_SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
+      - hostPath: "${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH}"
         containerPath: /etc/kubernetes/pki/sa.pub
-      - hostPath: "${KIND_SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
+      - hostPath: "${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH}"
         containerPath: /etc/kubernetes/pki/sa.key
     kubeadmConfigPatches:
     - |
       kind: ClusterConfiguration
       apiServer:
         extraArgs:
-          service-account-issuer: ${KIND_SERVICE_ACCOUNT_ISSUER}
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER}
           service-account-key-file: /etc/kubernetes/pki/sa.pub
           service-account-signing-key-file: /etc/kubernetes/pki/sa.key
       controllerManager:
