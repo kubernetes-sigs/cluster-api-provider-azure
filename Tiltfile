@@ -251,7 +251,7 @@ def capz():
         print("Using REGISTRY: " + registry + " from tilt-settings.yaml")
         image = registry + "/cluster-api-azure-controller"
     else:
-        image = "gcr.io/cluster-api-provider-azure/cluster-api-azure-controller"
+        image = "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller"
 
     # Set up an image build for the provider. The live update configuration syncs the output from the local_resource
     # build into the container.
