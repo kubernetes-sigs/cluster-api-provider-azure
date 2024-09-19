@@ -83,18 +83,7 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v1.15.3 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.15.3/infrastructure-components.yaml
-      type: url
-      contract: v1beta1
-      files:
-      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.15.3/cluster-template-prow.yaml"
-        targetName: "cluster-template.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
-    - name: v1.16.1 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
+    - name: v1.16.1 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
       value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.16.1/infrastructure-components.yaml
       type: url
       contract: v1beta1
@@ -105,7 +94,18 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.17.99 # "vNext"; use manifests from local source files
+    - name: v1.17.0 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.17.0/infrastructure-components.yaml
+      type: url
+      contract: v1beta1
+      files:
+      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.17.0/cluster-template-prow.yaml"
+        targetName: "cluster-template.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v1.18.99 # "vNext"; use manifests from local source files
       value: "${PWD}/config/default"
       contract: v1beta1
       files:
@@ -229,8 +229,8 @@ variables:
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
   OLD_CAPI_UPGRADE_VERSION: "v1.7.6"
   LATEST_CAPI_UPGRADE_VERSION: "v1.8.3"
-  OLD_PROVIDER_UPGRADE_VERSION: "v1.15.3"
-  LATEST_PROVIDER_UPGRADE_VERSION: "v1.16.1"
+  OLD_PROVIDER_UPGRADE_VERSION: "v1.16.1"
+  LATEST_PROVIDER_UPGRADE_VERSION: "v1.17.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.1.0-alpha.10"
   LATEST_CAAPH_UPGRADE_VERSION: "v0.2.5"
   CI_RG: capz-ci
