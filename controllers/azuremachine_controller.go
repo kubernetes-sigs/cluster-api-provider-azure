@@ -51,18 +51,20 @@ type AzureMachineReconciler struct {
 	Recorder                  record.EventRecorder
 	Timeouts                  reconciler.Timeouts
 	WatchFilterValue          string
+	CredentialCache           azure.CredentialCache
 	createAzureMachineService azureMachineServiceCreator
 }
 
 type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
 // NewAzureMachineReconciler returns a new AzureMachineReconciler instance.
-func NewAzureMachineReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureMachineReconciler {
+func NewAzureMachineReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureMachineReconciler {
 	amr := &AzureMachineReconciler{
 		Client:           client,
 		Recorder:         recorder,
 		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
 	}
 
 	amr.createAzureMachineService = newAzureMachineService
@@ -187,10 +189,11 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-		Client:       amr.Client,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-		Timeouts:     amr.Timeouts,
+		Client:          amr.Client,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		Timeouts:        amr.Timeouts,
+		CredentialCache: amr.CredentialCache,
 	})
 	if err != nil {
 		amr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "Error creating the cluster scope", err.Error())

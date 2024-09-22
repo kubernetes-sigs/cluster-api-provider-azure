@@ -136,7 +136,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 
 			c.Setup(cb, reconciler.EXPECT())
 			cl := cb.Build()
-			controller := NewAzureMachinePoolMachineController(cl, nil, reconcilerutils.Timeouts{}, "foo")
+			controller := NewAzureMachinePoolMachineController(cl, nil, reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
 				return reconciler, nil
 			}

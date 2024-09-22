@@ -177,7 +177,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler, agentpools.EXPECT(), nodelister.EXPECT())
-			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo")
+			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
 			controller.createAzureManagedMachinePoolService = func(_ *scope.ManagedMachinePoolScope, _ time.Duration) (*azureManagedMachinePoolService, error) {
 				return &azureManagedMachinePoolService{
 					scope:         agentpools,

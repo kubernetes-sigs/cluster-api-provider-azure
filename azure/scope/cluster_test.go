@@ -116,9 +116,10 @@ func TestNewClusterScope(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	_, err := NewClusterScope(context.TODO(), ClusterScopeParams{
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-		Client:       fakeClient,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		Client:          fakeClient,
+		CredentialCache: azure.NewCredentialCache(),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 }

@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 )
@@ -200,9 +201,10 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			g.Expect(fakeClient.Get(context.Background(), key, resultSecret)).To(Succeed())
 
 			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-				Cluster:      tc.cluster,
-				AzureCluster: tc.azureCluster,
-				Client:       fakeClient,
+				Cluster:         tc.cluster,
+				AzureCluster:    tc.azureCluster,
+				Client:          fakeClient,
+				CredentialCache: azure.NewCredentialCache(),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -319,9 +321,10 @@ func TestReconcileAzureSecret(t *testing.T) {
 	kubeclient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-		Client:       kubeclient,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		Client:          kubeclient,
+		CredentialCache: azure.NewCredentialCache(),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 

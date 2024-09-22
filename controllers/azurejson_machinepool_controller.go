@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -50,6 +51,7 @@ type AzureJSONMachinePoolReconciler struct {
 	Recorder         record.EventRecorder
 	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
+	CredentialCache  azure.CredentialCache
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -135,7 +137,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, nil
 	}
 
-	clusterScope, err := GetClusterScoper(ctx, log, r.Client, cluster, r.Timeouts)
+	clusterScope, err := GetClusterScoper(ctx, log, r.Client, cluster, r.Timeouts, r.CredentialCache)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}

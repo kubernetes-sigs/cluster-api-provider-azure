@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -163,7 +163,7 @@ func (c *asoCredentialCache) authTokenForScopedASOSecret(secret *corev1.Secret, 
 			ClientOptions: clientOpts,
 			TenantID:      string(d[config.AzureTenantID]),
 			ClientID:      string(d[config.AzureClientID]),
-			TokenFilePath: federatedTokenFilePath(),
+			TokenFilePath: scope.GetProjectedTokenPath(),
 		},
 	)
 }
@@ -177,7 +177,7 @@ func (c *asoCredentialCache) authTokenForGlobalASOSecret(secret *corev1.Secret, 
 				ClientOptions: clientOpts,
 				TenantID:      string(d[config.AzureTenantID]),
 				ClientID:      string(d[config.AzureClientID]),
-				TokenFilePath: federatedTokenFilePath(),
+				TokenFilePath: scope.GetProjectedTokenPath(),
 			},
 		)
 	}
@@ -211,11 +211,4 @@ func (c *asoCredentialCache) authTokenForGlobalASOSecret(secret *corev1.Secret, 
 			ID:            azidentity.ClientID(d[config.AzureClientID]),
 		},
 	)
-}
-
-func federatedTokenFilePath() string {
-	if env, ok := os.LookupEnv("AZURE_FEDERATED_TOKEN_FILE"); ok {
-		return env
-	}
-	return "/var/run/secrets/azure/tokens/azure-identity-token"
 }

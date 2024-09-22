@@ -55,10 +55,10 @@ var _ = BeforeSuite(func() {
 	ctx = log.IntoContext(ctx, logr.New(testEnv.Log))
 
 	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
-		reconciler.Timeouts{}, "", "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+		reconciler.Timeouts{}, "", "", testEnv.CredentialCache).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	Expect(NewAzureMachinePoolMachineController(testEnv, testEnv.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
-		reconciler.Timeouts{}, "").SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
+		reconciler.Timeouts{}, "", testEnv.CredentialCache).SetupWithManager(ctx, testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

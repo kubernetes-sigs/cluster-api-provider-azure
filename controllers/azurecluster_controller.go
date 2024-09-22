@@ -50,18 +50,20 @@ type AzureClusterReconciler struct {
 	Recorder                  record.EventRecorder
 	Timeouts                  reconciler.Timeouts
 	WatchFilterValue          string
+	CredentialCache           azure.CredentialCache
 	createAzureClusterService azureClusterServiceCreator
 }
 
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
 // NewAzureClusterReconciler returns a new AzureClusterReconciler instance.
-func NewAzureClusterReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureClusterReconciler {
+func NewAzureClusterReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,
 		Recorder:         recorder,
 		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
 	}
 
 	acr.createAzureClusterService = newAzureClusterService
@@ -151,10 +153,11 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-		Client:       acr.Client,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-		Timeouts:     acr.Timeouts,
+		Client:          acr.Client,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		Timeouts:        acr.Timeouts,
+		CredentialCache: acr.CredentialCache,
 	})
 	if err != nil {
 		err = errors.Wrap(err, "failed to create scope")

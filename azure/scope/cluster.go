@@ -58,11 +58,12 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
 	AzureClients
-	Client       client.Client
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
-	Cache        *ClusterCache
-	Timeouts     azure.AsyncReconciler
+	Client          client.Client
+	Cluster         *clusterv1.Cluster
+	AzureCluster    *infrav1.AzureCluster
+	Cache           *ClusterCache
+	Timeouts        azure.AsyncReconciler
+	CredentialCache azure.CredentialCache
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -78,7 +79,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		return nil, errors.New("failed to generate new scope from nil AzureCluster")
 	}
 
-	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.AzureCluster.Spec.IdentityRef, params.AzureCluster.Namespace)
+	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.CredentialCache, params.Client, params.AzureCluster.Spec.IdentityRef, params.AzureCluster.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
