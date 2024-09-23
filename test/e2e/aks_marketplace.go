@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -165,6 +166,21 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	ensureAKSExtensionAdded(ctx, input, extensionName, "TraefikLabs.TraefikProxy", extensionClient, amcp)
 	ensureAKSExtensionAdded(ctx, input, officialExtensionName, "microsoft.flux", extensionClient, amcp)
 
+	By("Deleting the AKS Marketplace Extension")
+	Eventually(func(g Gomega) {
+		err = mgmtClient.Get(ctx, client.ObjectKey{
+			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
+		}, infraControlPlane)
+		g.Expect(err).NotTo(HaveOccurred())
+		infraControlPlane.Spec.Extensions = []infrav1.AKSExtension{}
+		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
+	}, input.WaitIntervals...).Should(Succeed())
+
+	By("Ensuring the AKS Marketplace Extension is deleted from the AzureManagedControlPlane")
+	ensureAKSExtensionDeleted(ctx, input, extensionName, extensionClient, amcp)
+	ensureAKSExtensionDeleted(ctx, input, officialExtensionName, extensionClient, amcp)
+
 	By("Restoring initial taints for Windows machine pool")
 	expectedTaints = initialTaints
 	Eventually(func(g Gomega) {
@@ -185,5 +201,12 @@ func ensureAKSExtensionAdded(ctx context.Context, input AKSMarketplaceExtensionS
 		g.Expect(extension.Name).To(Equal(ptr.To(extensionName)))
 		g.Expect(extension.Properties.AutoUpgradeMinorVersion).To(Equal(ptr.To(true)))
 		g.Expect(extension.Properties.ExtensionType).To(Equal(ptr.To(extensionType)))
+	}, input.WaitIntervals...).Should(Succeed())
+}
+
+func ensureAKSExtensionDeleted(ctx context.Context, input AKSMarketplaceExtensionSpecInput, extensionName string, extensionClient *armkubernetesconfiguration.ExtensionsClient, amcp *infrav1.AzureManagedControlPlane) {
+	Eventually(func(g Gomega) {
+		_, err := extensionClient.Get(ctx, amcp.Spec.ResourceGroupName, "Microsoft.ContainerService", "managedClusters", input.Cluster.Name, extensionName, nil)
+		g.Expect(azure.ResourceNotFound(err)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }
