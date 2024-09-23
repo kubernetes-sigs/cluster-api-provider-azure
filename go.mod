@@ -17,6 +17,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel v0.4.0
 	github.com/Azure/azure-service-operator/v2 v2.8.0
 	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13

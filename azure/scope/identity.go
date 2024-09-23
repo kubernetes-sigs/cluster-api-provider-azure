@@ -23,11 +23,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -81,6 +83,12 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 	var authErr error
 	var cred azcore.TokenCredential
 
+	otelTP, err := ot.OTLPTracerProvider(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tracingProvider := azotel.NewTracingProvider(otelTP, nil)
+
 	switch p.Identity.Spec.Type {
 	case infrav1.WorkloadIdentity:
 		azwiCredOptions, err := NewWorkloadIdentityCredentialOptions().
@@ -90,6 +98,7 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to setup azwi options for identity %s", p.Identity.Name)
 		}
+		azwiCredOptions.ClientOptions.TracingProvider = tracingProvider
 		cred, authErr = NewWorkloadIdentityCredential(azwiCredOptions)
 
 	case infrav1.ManualServicePrincipal:
@@ -102,6 +111,7 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		}
 		options := azidentity.ClientSecretCredentialOptions{
 			ClientOptions: azcore.ClientOptions{
+				TracingProvider: tracingProvider,
 				Cloud: cloud.Configuration{
 					ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
 					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
@@ -124,10 +134,17 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse certificate data")
 		}
-		cred, authErr = azidentity.NewClientCertificateCredential(p.GetTenantID(), p.Identity.Spec.ClientID, certs, key, nil)
+		cred, authErr = azidentity.NewClientCertificateCredential(p.GetTenantID(), p.Identity.Spec.ClientID, certs, key, &azidentity.ClientCertificateCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				TracingProvider: tracingProvider,
+			},
+		})
 
 	case infrav1.UserAssignedMSI:
 		options := azidentity.ManagedIdentityCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				TracingProvider: tracingProvider,
+			},
 			ID: azidentity.ClientID(p.Identity.Spec.ClientID),
 		}
 		cred, authErr = azidentity.NewManagedIdentityCredential(&options)
