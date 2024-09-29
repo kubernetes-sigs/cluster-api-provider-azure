@@ -1,6 +1,7 @@
 # MachinePools
-- **Feature status:** Experimental
+- **Feature status:** Experimental (Beta)
 - **Feature gate:** MachinePool=true
+- **Default value:** true (enabled)
 
 > In Cluster API (CAPI) v1alpha2, users can create MachineDeployment, MachineSet or Machine custom
 > resources. When you create a MachineDeployment or MachineSet, Cluster API components react and
@@ -30,6 +31,11 @@
 > MachinePool for their use case.
 
 *Source: [MachinePool API Proposal](https://github.com/kubernetes-sigs/cluster-api/blob/bf51a2502f9007b531f6a9a2c1a4eae1586fb8ca/docs/proposals/20190919-machinepool-api.md)*
+
+> In Cluster API (CAPI) v1.7.0, MachinePool feature flag's default settings become true and promoted
+> to Beta from Alpha. To disable this feature, you can use `EXP_MACHINE_POOL=false`.
+
+*Source: [Cluster API v1.7.0 Release Note](https://github.com/kubernetes-sigs/cluster-api/releases/tag/v1.7.0)*
 
 ## AzureMachinePool
 Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` through the infrastructure
