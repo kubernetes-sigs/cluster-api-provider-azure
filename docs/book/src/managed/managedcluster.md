@@ -96,7 +96,7 @@ clusterctl generate cluster ${CLUSTER_NAME} --kubernetes-version ${KUBERNETES_VE
 kubectl apply -f cluster.yaml
 
 # check status of created resources
-kubectl get cluster-api -o wide
+kubectl get cluster my-cluster -o wide
 ```
 
 ## Specification
