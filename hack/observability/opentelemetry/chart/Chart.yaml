@@ -13,4 +13,4 @@ sources:
 - https://github.com/open-telemetry/opentelemetry-collector
 - https://github.com/open-telemetry/opentelemetry-collector-contrib
 type: application
-version: 0.13.1
+version: 0.16.0
