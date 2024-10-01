@@ -853,16 +853,17 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("creating a byo nodepool", func() {
-				AKSBYONodeSpec(ctx, func() AKSBYONodeSpecInput {
-					return AKSBYONodeSpecInput{
-						Cluster:             result.Cluster,
-						KubernetesVersion:   kubernetesVersion,
-						WaitIntervals:       e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-						ExpectedWorkerNodes: result.ExpectedWorkerNodes(),
-					}
-				})
-			})
+			// TODO: restore when new CAPZ reference images are published
+			// By("creating a byo nodepool", func() {
+			// 	AKSBYONodeSpec(ctx, func() AKSBYONodeSpecInput {
+			// 		return AKSBYONodeSpecInput{
+			// 			Cluster:             result.Cluster,
+			// 			KubernetesVersion:   kubernetesVersion,
+			// 			WaitIntervals:       e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			// 			ExpectedWorkerNodes: result.ExpectedWorkerNodes(),
+			// 		}
+			// 	})
+			// })
 
 			By("modifying custom patches", func() {
 				AKSPatchSpec(ctx, func() AKSPatchSpecInput {
