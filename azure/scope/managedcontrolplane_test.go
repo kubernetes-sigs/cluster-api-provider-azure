@@ -42,20 +42,64 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
+func TestNewManagedControlPlaneScope(t *testing.T) {
+	g := NewWithT(t)
+
 	scheme := runtime.NewScheme()
 	_ = expv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
+
+	input := ManagedControlPlaneScopeParams{
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster1",
+				Namespace: "default",
+			},
+		},
+		ControlPlane: &infrav1.AzureManagedControlPlane{
+			Spec: infrav1.AzureManagedControlPlaneSpec{
+				AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+					SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					IdentityRef: &corev1.ObjectReference{
+						Name:      "fake-identity",
+						Namespace: "default",
+						Kind:      "AzureClusterIdentity",
+					},
+				},
+			},
+		},
+	}
+	fakeIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-identity",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type:     infrav1.ServicePrincipal,
+			ClientID: fakeClientID,
+			TenantID: fakeTenantID,
+		},
+	}
+	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
+	initObjects := []runtime.Object{input.ControlPlane, fakeIdentity, fakeSecret}
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+	input.Client = fakeClient
+	_, err := NewManagedControlPlaneScope(context.TODO(), input)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 	explicitOutboundType := infrav1.ManagedControlPlaneOutboundTypeUserDefinedRouting
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected bool
 	}{
 		{
 			Name: "With Explicit OutboundType defined",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -65,12 +109,6 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							OutboundType: &explicitOutboundType,
 						},
 					},
@@ -80,7 +118,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		},
 		{
 			Name: "Without OutboundType defined",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -89,14 +127,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 				},
 				ControlPlane: &infrav1.AzureManagedControlPlane{
 					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{},
 					},
 				},
 			},
@@ -107,25 +138,8 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			managedCluster := s.ManagedClusterSpec()
+			managedCluster := c.Scope.ManagedClusterSpec()
 			result := managedCluster.(*managedclusters.ManagedClusterSpec).OutboundType == nil
 			g.Expect(result).To(Equal(c.Expected))
 		})
@@ -133,20 +147,15 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 }
 
 func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected []azure.ASOResourceSpecGetter[genruntime.MetaObject]
 		Err      string
 	}{
 		{
 			Name: "Without Version",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -161,11 +170,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 						},
 					},
 				},
@@ -190,7 +194,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		},
 		{
 			Name: "With Version",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -206,11 +210,6 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							Version:        "v1.22.0",
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 						},
 					},
 				},
@@ -236,7 +235,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		},
 		{
 			Name: "With bad version",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -250,13 +249,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							Version:        "v1.20.1",
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
+							Version: "v1.20.1",
 						},
 					},
 				},
@@ -272,28 +265,10 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			agentPools, err := s.GetAllAgentPoolSpecs()
+			agentPools, err := c.Scope.GetAllAgentPoolSpecs()
 			if err != nil {
 				g.Expect(err.Error()).To(Equal(c.Err))
 			} else {
@@ -304,19 +279,14 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 }
 
 func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected []managedclusters.AddonProfile
 	}{
 		{
 			Name: "Without add-ons",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -328,16 +298,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
-					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
 					{
@@ -350,7 +311,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		},
 		{
 			Name: "With add-ons",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -364,12 +325,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AddonProfiles: []infrav1.AddonProfile{
 								{Name: "addon1", Config: nil, Enabled: false},
 								{Name: "addon2", Config: map[string]string{"k1": "v1", "k2": "v2"}, Enabled: true},
@@ -395,45 +350,22 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			managedCluster := s.ManagedClusterSpec()
+			managedCluster := c.Scope.ManagedClusterSpec()
 			g.Expect(managedCluster.(*managedclusters.ManagedClusterSpec).AddonProfiles).To(Equal(c.Expected))
 		})
 	}
 }
 
 func TestManagedControlPlaneScope_OSType(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected []azure.ASOResourceSpecGetter[genruntime.MetaObject]
 		Err      string
 	}{
 		{
 			Name: "with Linux and Windows pools",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -449,11 +381,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							Version:        "v1.20.1",
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 						},
 					},
 				},
@@ -506,7 +433,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		},
 		{
 			Name: "system pool required",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -522,11 +449,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
 							Version:        "v1.20.1",
 							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 						},
 					},
 				},
@@ -549,25 +471,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			agentPools, err := s.GetAllAgentPoolSpecs()
+			agentPools, err := c.Scope.GetAllAgentPoolSpecs()
 			if err != nil {
 				g.Expect(err.Error()).To(Equal(c.Err))
 			} else {
@@ -585,12 +489,12 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected bool
 	}{
 		{
 			Name: "no Cache value",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -623,13 +527,16 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						MachinePool:      getMachinePool("pool1"),
 						InfraMachinePool: getLinuxAzureMachinePool("pool1"),
 					},
+				},
+				cache: &ManagedControlPlaneCache{
+					isVnetManaged: nil,
 				},
 			},
 			Expected: false,
 		},
 		{
 			Name: "with Cache value of true",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -663,7 +570,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						InfraMachinePool: getLinuxAzureMachinePool("pool1"),
 					},
 				},
-				Cache: &ManagedControlPlaneCache{
+				cache: &ManagedControlPlaneCache{
 					isVnetManaged: ptr.To(true),
 				},
 			},
@@ -671,7 +578,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		},
 		{
 			Name: "with Cache value of false",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -705,7 +612,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 						InfraMachinePool: getLinuxAzureMachinePool("pool1"),
 					},
 				},
-				Cache: &ManagedControlPlaneCache{
+				cache: &ManagedControlPlaneCache{
 					isVnetManaged: ptr.To(false),
 				},
 			},
@@ -717,43 +624,25 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
+			initObjects := []runtime.Object{c.Scope.ControlPlane}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			isVnetManaged := s.IsVnetManaged()
+			c.Scope.Client = fakeClient
+			isVnetManaged := c.Scope.IsVnetManaged()
 			g.Expect(isVnetManaged).To(Equal(c.Expected))
 		})
 	}
 }
 
 func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected *managedclusters.AADProfile
 	}{
 		{
 			Name: "Without AADProfile",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -765,16 +654,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
-					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
 					{
@@ -787,7 +667,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		},
 		{
 			Name: "With AADProfile",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -801,12 +681,6 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AADProfile: &infrav1.AADProfile{
 								Managed:             true,
 								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
@@ -829,28 +703,9 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			managedClusterGetter := s.ManagedClusterSpec()
+			managedClusterGetter := c.Scope.ManagedClusterSpec()
 			managedCluster, ok := managedClusterGetter.(*managedclusters.ManagedClusterSpec)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(managedCluster.AADProfile).To(Equal(c.Expected))
@@ -859,18 +714,14 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 }
 
 func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected *bool
 	}{
 		{
 			Name: "Without DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -882,16 +733,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
-					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{},
 				},
 				ManagedMachinePools: []ManagedMachinePool{
 					{
@@ -904,7 +746,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		},
 		{
 			Name: "Without AAdProfile and With DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -918,13 +760,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-							DisableLocalAccounts: ptr.To[bool](true),
+							DisableLocalAccounts: ptr.To(true),
 						},
 					},
 				},
@@ -939,7 +775,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		},
 		{
 			Name: "With AAdProfile and With DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
+			Scope: &ManagedControlPlaneScope{
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
@@ -953,17 +789,11 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AADProfile: &infrav1.AADProfile{
 								Managed:             true,
 								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
 							},
-							DisableLocalAccounts: ptr.To[bool](true),
+							DisableLocalAccounts: ptr.To(true),
 						},
 					},
 				},
@@ -974,32 +804,13 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 					},
 				},
 			},
-			Expected: ptr.To[bool](true),
+			Expected: ptr.To(true),
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			managedClusterGetter := s.ManagedClusterSpec()
+			managedClusterGetter := c.Scope.ManagedClusterSpec()
 			managedCluster, ok := managedClusterGetter.(*managedclusters.ManagedClusterSpec)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(managedCluster.DisableLocalAccounts).To(Equal(c.Expected))
@@ -1008,83 +819,30 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 }
 
 func TestIsAADEnabled(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected bool
 	}{
 		{
 			Name: "AAD is not enabled",
-			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-				},
+			Scope: &ManagedControlPlaneScope{
 				ControlPlane: &infrav1.AzureManagedControlPlane{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
-					},
-				},
-				ManagedMachinePools: []ManagedMachinePool{
-					{
-						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
-					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{},
 				},
 			},
 			Expected: false,
 		},
 		{
-			Name: "AAdProfile and With DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-				},
+			Name: "AAdProfile is enabled",
+			Scope: &ManagedControlPlaneScope{
 				ControlPlane: &infrav1.AzureManagedControlPlane{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AADProfile: &infrav1.AADProfile{
-								Managed:             true,
-								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+								Managed: true,
 							},
-							DisableLocalAccounts: ptr.To[bool](true),
 						},
-					},
-				},
-				ManagedMachinePools: []ManagedMachinePool{
-					{
-						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 					},
 				},
 			},
@@ -1092,110 +850,39 @@ func TestIsAADEnabled(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			aadEnabled := s.IsAADEnabled()
+			aadEnabled := c.Scope.IsAADEnabled()
 			g.Expect(aadEnabled).To(Equal(c.Expected))
 		})
 	}
 }
 
 func TestAreLocalAccountsDisabled(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
 	cases := []struct {
 		Name     string
-		Input    ManagedControlPlaneScopeParams
+		Scope    *ManagedControlPlaneScope
 		Expected bool
 	}{
 		{
 			Name: "DisbaleLocalAccount is not enabled",
-			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-				},
+			Scope: &ManagedControlPlaneScope{
 				ControlPlane: &infrav1.AzureManagedControlPlane{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-					Spec: infrav1.AzureManagedControlPlaneSpec{
-						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
-						},
-					},
-				},
-				ManagedMachinePools: []ManagedMachinePool{
-					{
-						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
-					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{},
 				},
 			},
 			Expected: false,
 		},
 		{
 			Name: "With AAdProfile and Without DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-				},
+			Scope: &ManagedControlPlaneScope{
 				ControlPlane: &infrav1.AzureManagedControlPlane{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AADProfile: &infrav1.AADProfile{
-								Managed:             true,
-								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+								Managed: true,
 							},
 						},
-					},
-				},
-				ManagedMachinePools: []ManagedMachinePool{
-					{
-						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 					},
 				},
 			},
@@ -1203,38 +890,15 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		},
 		{
 			Name: "With AAdProfile and With DisableLocalAccounts",
-			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
-				},
+			Scope: &ManagedControlPlaneScope{
 				ControlPlane: &infrav1.AzureManagedControlPlane{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cluster1",
-						Namespace: "default",
-					},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							SubscriptionID: "00000000-0000-0000-0000-000000000000",
-							IdentityRef: &corev1.ObjectReference{
-								Name:      "fake-identity",
-								Namespace: "default",
-								Kind:      "AzureClusterIdentity",
-							},
 							AADProfile: &infrav1.AADProfile{
-								Managed:             true,
-								AdminGroupObjectIDs: []string{"00000000-0000-0000-0000-000000000000"},
+								Managed: true,
 							},
-							DisableLocalAccounts: ptr.To[bool](true),
+							DisableLocalAccounts: ptr.To(true),
 						},
-					},
-				},
-				ManagedMachinePools: []ManagedMachinePool{
-					{
-						MachinePool:      getMachinePool("pool0"),
-						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
 					},
 				},
 			},
@@ -1242,28 +906,9 @@ func TestAreLocalAccountsDisabled(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
-			fakeIdentity := &infrav1.AzureClusterIdentity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-identity",
-					Namespace: "default",
-				},
-				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.ServicePrincipal,
-					ClientID: fakeClientID,
-					TenantID: fakeTenantID,
-				},
-			}
-			fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
-			initObjects := []runtime.Object{c.Input.ControlPlane, fakeIdentity, fakeSecret}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
-
-			c.Input.Client = fakeClient
-			s, err := NewManagedControlPlaneScope(context.TODO(), c.Input)
-			g.Expect(err).To(Succeed())
-			localAccountsDisabled := s.AreLocalAccountsDisabled()
+			localAccountsDisabled := c.Scope.AreLocalAccountsDisabled()
 			g.Expect(localAccountsDisabled).To(Equal(c.Expected))
 		})
 	}
