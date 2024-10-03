@@ -27,12 +27,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // AzureEdgeZoneClusterSpecInput is the input for Azure

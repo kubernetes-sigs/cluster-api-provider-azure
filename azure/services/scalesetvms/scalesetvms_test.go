@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
@@ -134,7 +135,6 @@ func TestReconcileVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -209,7 +209,6 @@ func TestDeleteVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

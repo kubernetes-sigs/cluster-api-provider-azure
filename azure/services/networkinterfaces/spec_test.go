@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
 
@@ -671,7 +672,6 @@ func TestParameters(t *testing.T) {
 	}
 	format.MaxLength = 10000
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

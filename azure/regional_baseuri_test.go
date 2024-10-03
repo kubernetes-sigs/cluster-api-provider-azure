@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 )
 
@@ -60,7 +61,6 @@ func TestWithRegionalBaseURI(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			mockCtrl := gomock.NewController(t)

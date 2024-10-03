@@ -31,10 +31,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/test/framework"
+
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	e2e_networkpolicy "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
-	"sigs.k8s.io/cluster-api/test/framework"
 )
 
 const (

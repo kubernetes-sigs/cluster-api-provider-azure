@@ -28,11 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -43,6 +38,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ASOSecretReconciler reconciles ASO secrets associated with AzureCluster objects.
@@ -139,12 +140,10 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 					fmt.Sprintf("AzureManagedControlPlane object %s/%s not found", req.Namespace, req.Name))
 				log.Info("object was not found")
 				return reconcile.Result{}, nil
-			} else {
-				return reconcile.Result{}, err
 			}
-		} else {
-			log = log.WithValues("AzureManagedControlPlane", req.Name)
+			return reconcile.Result{}, err
 		}
+		log = log.WithValues("AzureManagedControlPlane", req.Name)
 	}
 
 	var clusterIdentity *corev1.ObjectReference

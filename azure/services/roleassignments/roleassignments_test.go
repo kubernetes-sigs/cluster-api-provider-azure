@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments/mock_roleassignments"
@@ -141,7 +142,6 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -236,7 +236,6 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

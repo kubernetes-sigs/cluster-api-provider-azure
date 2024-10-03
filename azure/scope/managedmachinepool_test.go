@@ -28,12 +28,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 )
 
 func TestNewManagedMachinePoolScope(t *testing.T) {
@@ -742,7 +743,6 @@ func TestManagedMachinePoolScope_EnablePreviewFeatures(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			s := &ManagedMachinePoolScope{
@@ -907,11 +907,11 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 	}
 }
 
-func getAzureMachinePoolWithScaling(name string, min, max int) *infrav1.AzureManagedMachinePool {
+func getAzureMachinePoolWithScaling(name string, minVal, maxVal int) *infrav1.AzureManagedMachinePool {
 	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
 	managedPool.Spec.Scaling = &infrav1.ManagedMachinePoolScaling{
-		MinSize: ptr.To(min),
-		MaxSize: ptr.To(max),
+		MinSize: ptr.To(minVal),
+		MaxSize: ptr.To(maxVal),
 	}
 	return managedPool
 }

@@ -33,11 +33,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
 	"sigs.k8s.io/cluster-api/util"
+
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 )
 
 var _ = Describe("Conformance Tests", func() {

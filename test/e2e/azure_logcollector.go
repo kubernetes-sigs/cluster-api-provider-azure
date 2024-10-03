@@ -32,17 +32,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
+
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // AzureLogCollector collects logs from a CAPZ workload cluster.
@@ -132,7 +133,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 
 // CollectInfrastructureLogs collects log from the infrastructure.
 // This is currently a no-op implementation to satisfy the LogCollector interface.
-func (k AzureLogCollector) CollectInfrastructureLogs(ctx context.Context, managementClusterClient client.Client, c *clusterv1.Cluster, outputPath string) error {
+func (k AzureLogCollector) CollectInfrastructureLogs(_ context.Context, _ client.Client, _ *clusterv1.Cluster, _ string) error {
 	return nil
 }
 
@@ -507,7 +508,7 @@ func writeBootLog(bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, 
 		return errors.Wrap(err, "failed to create HTTP request")
 	}
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return errors.Wrap(err, "failed to get logs from serial console uri")
 	}
 	defer resp.Body.Close()

@@ -20,11 +20,12 @@ import (
 	"context"
 
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const serviceName = "extension"

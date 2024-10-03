@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -59,7 +60,6 @@ func TestAzureManagedControlPlaneServicePause(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
 

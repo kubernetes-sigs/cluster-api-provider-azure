@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -100,7 +101,6 @@ func Test_VMIdentityToVMSDK(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -135,7 +135,6 @@ func Test_UserAssignedIdentitiesToVMSDK(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -170,7 +169,6 @@ func Test_UserAssignedIdentitiesToVMSSSDK(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

@@ -29,12 +29,13 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 )
 
-func Fail(message string, callerSkip ...int) {
+func Fail(message string, _ ...int) {
 	panic(message)
 }
 

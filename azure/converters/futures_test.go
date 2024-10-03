@@ -26,6 +26,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	. "github.com/onsi/gomega"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -95,7 +96,6 @@ func TestPollerToFuture(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)
@@ -163,7 +163,6 @@ func TestFutureToResumeToken(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewGomegaWithT(t)

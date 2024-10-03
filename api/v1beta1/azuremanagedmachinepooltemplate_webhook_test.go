@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 

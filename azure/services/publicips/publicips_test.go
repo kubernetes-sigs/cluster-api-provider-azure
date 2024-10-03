@@ -29,13 +29,14 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func init() {
@@ -166,7 +167,6 @@ func TestReconcilePublicIP(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -297,7 +297,6 @@ func TestDeletePublicIP(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 

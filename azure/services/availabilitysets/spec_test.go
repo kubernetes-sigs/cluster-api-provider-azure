@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
 
@@ -75,7 +76,6 @@ func TestParameters(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()

@@ -31,6 +31,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -38,8 +41,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
-	"sigs.k8s.io/cluster-api/util/secret"
-	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ManagedClusterSpec contains properties to create a managed cluster.
@@ -814,7 +815,7 @@ func userKubeconfigSecretName(clusterName string) string {
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *ManagedClusterSpec) WasManaged(resource genruntime.MetaObject) bool {
+func (s *ManagedClusterSpec) WasManaged(_ genruntime.MetaObject) bool {
 	// CAPZ has never supported BYO managed clusters.
 	return true
 }

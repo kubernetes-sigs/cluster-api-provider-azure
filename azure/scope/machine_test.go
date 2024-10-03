@@ -31,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -43,7 +45,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestMachineScope_Name(t *testing.T) {
@@ -411,7 +412,6 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.machineScope.InboundNatSpecs(); !reflect.DeepEqual(got, tt.want) {
@@ -3153,7 +3153,6 @@ func TestDiskSpecs(t *testing.T) {
 	}
 
 	for _, tt := range testcases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 

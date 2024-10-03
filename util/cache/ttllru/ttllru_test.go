@@ -23,6 +23,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	mockttllru "sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru/mocks"
 )
@@ -148,7 +149,6 @@ func TestCache_Get(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			mockCtrl := gomock.NewController(t)

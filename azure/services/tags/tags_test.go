@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags/mock_tags"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -267,7 +268,6 @@ func TestReconcileTags(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -442,7 +442,6 @@ func TestTagsChanged(t *testing.T) {
 		}}
 
 	for name, test := range tests {
-		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			changed, createdOrUpdated, deleted, newAnnotation := TagsChanged(test.lastAppliedTags, test.desiredTags, test.currentTags)

@@ -28,14 +28,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
@@ -62,7 +63,10 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	defer done()
 	log.V(4).Info("reconciling resources")
 
-	var newResourceStatuses []infrav1alpha.ResourceStatus
+	// TODO (nojnhuh) : is there a functional diff between
+	// var newResourceStatuses []infrav1alpha.ResourceStatus and newResourceStatuses := make([]infrav1alpha.ResourceStatus,0)
+	// in the scenario below?
+	var newResourceStatuses []infrav1alpha.ResourceStatus //nolint:prealloc // leaving it as is for now
 
 	for _, spec := range r.resources {
 		gvk := spec.GroupVersionKind()

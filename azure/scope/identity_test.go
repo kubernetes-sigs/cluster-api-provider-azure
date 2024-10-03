@@ -25,8 +25,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestAllowedNamespaces(t *testing.T) {
@@ -339,7 +340,6 @@ func TestGetTokenCredential(t *testing.T) {
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)

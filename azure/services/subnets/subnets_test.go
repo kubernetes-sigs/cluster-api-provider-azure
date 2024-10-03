@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
 )
 

@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
@@ -64,7 +65,7 @@ func (s *LBSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the load balancer.
-func (s *LBSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
+func (s *LBSpec) Parameters(_ context.Context, existing interface{}) (parameters interface{}, err error) {
 	var (
 		etag                *string
 		frontendIDs         []*armnetwork.SubResource

@@ -32,6 +32,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/net"
 	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -48,10 +53,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -720,7 +721,7 @@ func (s *ClusterScope) APIServerPrivateIP() string {
 
 // GetPrivateDNSZoneName returns the Private DNS Zone from the spec or generate it from cluster name.
 func (s *ClusterScope) GetPrivateDNSZoneName() string {
-	if len(s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName) > 0 {
+	if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName != "" {
 		return s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName
 	}
 	return azure.GeneratePrivateDNSZoneName(s.ClusterName())

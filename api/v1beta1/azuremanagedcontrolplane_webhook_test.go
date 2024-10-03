@@ -25,9 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
+
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestDefaultingWebhook(t *testing.T) {
@@ -204,7 +205,6 @@ func TestValidateVersion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateVersion(tt.version, field.NewPath("spec").Child("Version"))
@@ -272,7 +272,6 @@ func TestValidateLoadBalancerProfile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateLoadBalancerProfile(tt.profile, field.NewPath("spec").Child("loadBalancerProfile"))
@@ -464,7 +463,6 @@ func TestValidateAutoScalerProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			allErrs := validateAutoScalerProfile(tt.profile, field.NewPath("spec").Child("autoScalerProfile"))
@@ -1389,7 +1387,6 @@ func TestValidatingWebhook(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		// client is used to fetch the AzureManagedControlPlane, we do not want to return an error on client.Get
 		client := mockClient{ReturnError: false}
 		t.Run(tt.name, func(t *testing.T) {

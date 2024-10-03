@@ -23,9 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
+
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {

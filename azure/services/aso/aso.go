@@ -33,14 +33,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 const (
@@ -302,7 +303,7 @@ func (r *reconciler[T]) createOrUpdateResource(ctx context.Context, existing T, 
 			Name:          parameters.GetName(),
 		}), requeueInterval)
 	}
-	return zero, errors.Wrapf(err, fmt.Sprintf("failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, parameters.GetNamespace(), parameters.GetName(), serviceName))
+	return zero, errors.Wrapf(err, "failed to %se resource %s/%s (service: %s)", logMessageVerbPrefix, parameters.GetNamespace(), parameters.GetName(), serviceName)
 }
 
 // DeleteResource implements the logic for deleting a resource Asynchronously.

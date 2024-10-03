@@ -20,6 +20,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -36,7 +38,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // azureClusterService is the reconciler called by the AzureCluster controller.

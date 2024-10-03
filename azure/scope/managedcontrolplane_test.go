@@ -30,6 +30,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -37,9 +41,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestNewManagedControlPlaneScope(t *testing.T) {
@@ -135,7 +136,6 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -347,7 +347,6 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			managedCluster := c.Scope.ManagedClusterSpec()
@@ -468,7 +467,6 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			agentPools, err := c.Scope.GetAllAgentPoolSpecs()
@@ -621,7 +619,6 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			initObjects := []runtime.Object{c.Scope.ControlPlane}
@@ -1064,7 +1061,6 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.Input.ControlPlane,
@@ -1168,7 +1164,6 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.Input.ControlPlane,
@@ -1252,7 +1247,6 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			g := NewWithT(t)
 			s := &ManagedControlPlaneScope{
@@ -1409,7 +1403,6 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			s := &ManagedControlPlaneScope{
 				ControlPlane: c.input.ControlPlane,

@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
+
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
 )
 

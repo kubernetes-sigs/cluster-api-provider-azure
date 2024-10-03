@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages/mock_virtualmachineimages"
@@ -218,7 +219,6 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 
 	location := "westus3"
 	for _, test := range tests {
-		test := test
 		t.Run(test.k8sVersion, func(t *testing.T) {
 			t.Parallel()
 
@@ -559,7 +559,6 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 
 	location := "francesouth"
 	for _, test := range tests {
-		test := test
 		t.Run(test.k8sVersion, func(t *testing.T) {
 			t.Parallel()
 

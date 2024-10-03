@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
+
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 )
 
