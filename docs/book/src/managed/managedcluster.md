@@ -68,11 +68,12 @@ export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 export CLUSTER_IDENTITY_NAME="cluster-identity"
 ```
 
-Managed clusters require the Cluster API "MachinePool" feature flag enabled. You can do that via an environment variable thusly:
+Managed clusters require the Cluster API "MachinePool" feature flag enabled. The feature flag is enabled by default, but you can configure it using the following environment variable:
 
 ```bash
-export EXP_MACHINE_POOL=true  
+export EXP_MACHINE_POOL=true
 ```
+
 
 Create a local kind cluster to run the management cluster components:
 
