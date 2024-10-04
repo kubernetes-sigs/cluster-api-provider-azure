@@ -27,9 +27,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/types"
-	mock_coalescing "sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	mock_coalescing "sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing/mocks"
 )
 
 func TestCoalescingReconciler_Reconcile(t *testing.T) {
@@ -85,7 +86,6 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			mockCtrl := gomock.NewController(t)

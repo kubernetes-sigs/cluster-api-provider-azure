@@ -245,7 +245,6 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
@@ -593,7 +592,6 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 
 	// dry-run=true
 	for _, amt := range tests {
-		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(true)}})
@@ -607,7 +605,6 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	}
 	// dry-run=false
 	for _, amt := range tests {
-		amt := amt
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)

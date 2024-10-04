@@ -31,12 +31,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 type AKSPublicIPPrefixSpecInput struct {
@@ -77,7 +78,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	}, nil)
 	Expect(err).NotTo(HaveOccurred())
 	var publicIPPrefix armnetwork.PublicIPPrefix
-	Eventually(func(g Gomega) {
+	Eventually(func(_ Gomega) {
 		resp, err := poller.PollUntilDone(ctx, nil)
 		Expect(err).NotTo(HaveOccurred())
 		publicIPPrefix = resp.PublicIPPrefix

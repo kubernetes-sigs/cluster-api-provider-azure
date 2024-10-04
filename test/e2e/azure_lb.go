@@ -33,12 +33,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	k8snet "k8s.io/utils/net"
+	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
+
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
-	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util"
 )
 
 // AzureLBSpecInput is the input for AzureLBSpec.

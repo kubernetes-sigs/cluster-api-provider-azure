@@ -21,6 +21,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
@@ -244,7 +245,6 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			// Don't add t.Parallel() here or the test will fail.
 			g := gomega.NewGomegaWithT(t)

@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -55,7 +56,7 @@ func (s *SubnetSpec) ResourceRef() *asonetworkv1.VirtualNetworksSubnet {
 }
 
 // Parameters implements azure.ASOResourceSpecGetter.
-func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.VirtualNetworksSubnet) (parameters *asonetworkv1.VirtualNetworksSubnet, err error) {
+func (s *SubnetSpec) Parameters(_ context.Context, existing *asonetworkv1.VirtualNetworksSubnet) (parameters *asonetworkv1.VirtualNetworksSubnet, err error) {
 	subnet := existing
 	if subnet == nil {
 		subnet = &asonetworkv1.VirtualNetworksSubnet{}
@@ -97,7 +98,8 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.Virt
 		}
 	}
 
-	var serviceEndpoints []asonetworkv1.ServiceEndpointPropertiesFormat
+	// TODO (nojnhuh) : do we want to initialize serviceEndpoints with an empty slice instead?
+	var serviceEndpoints []asonetworkv1.ServiceEndpointPropertiesFormat //nolint:prealloc // leaving it as is for now
 	for _, se := range s.ServiceEndpoints {
 		serviceEndpoints = append(serviceEndpoints, asonetworkv1.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: se.Locations})
 	}
@@ -107,6 +109,6 @@ func (s *SubnetSpec) Parameters(ctx context.Context, existing *asonetworkv1.Virt
 }
 
 // WasManaged implements azure.ASOResourceSpecGetter.
-func (s *SubnetSpec) WasManaged(resource *asonetworkv1.VirtualNetworksSubnet) bool {
+func (s *SubnetSpec) WasManaged(_ *asonetworkv1.VirtualNetworksSubnet) bool {
 	return s.IsVNetManaged
 }

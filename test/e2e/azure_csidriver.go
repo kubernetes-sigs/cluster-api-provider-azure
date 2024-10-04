@@ -27,11 +27,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
+
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	e2e_pvc "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pvc"
 	e2e_sc "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/storageclass"
-	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util"
 )
 
 const (

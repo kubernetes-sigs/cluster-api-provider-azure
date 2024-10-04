@@ -52,7 +52,7 @@ func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateA
 }
 
 // InstallCNIManifest installs the CNI manifest provided by the user
-func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) {
+func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) { //nolint:revive // leaving unused cidrBlocks and hasWindows for understanding
 	By("Installing a CNI plugin to the workload cluster")
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 

@@ -20,6 +20,7 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
+GO_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
 GOPATH  := $(shell go env GOPATH)
 GOARCH  := $(shell go env GOARCH)
 GOOS    := $(shell go env GOOS)
@@ -81,7 +82,7 @@ ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
-GOLANGCI_LINT_VER := v1.55.2
+GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
@@ -275,7 +276,7 @@ verify-gen: generate ## Verify generated files are the latest.
 	fi
 
 .PHONY: verify-shellcheck
-verify-shellcheck: ## Verify shell files are passing lint.
+verify-shellcheck: ## Verify shell files are shellcheck.
 	./hack/verify-shellcheck.sh
 
 .PHONY: verify-conversions
@@ -395,7 +396,7 @@ acr-login: ## Login to Azure Container Registry.
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites: ## Pull prerequisites for building controller-manager.
 	docker pull docker/dockerfile:1.4
-	docker pull docker.io/library/golang:1.22
+	docker pull docker.io/library/golang:$(GO_VERSION)
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: docker-build
@@ -565,18 +566,18 @@ help: ## Display this help.
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase.
-	$(GOLANGCI_LINT) run -v --timeout=8m0s --print-resources-usage $(GOLANGCI_LINT_EXTRA_ARGS)
+	$(GOLANGCI_LINT) run -v --print-resources-usage --go=$(GO_VERSION) $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter.
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
 lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues.
-	$(GOLANGCI_LINT) run -v --fast=false
+	$(GOLANGCI_LINT) run -v --fast=false --go=$(GO_VERSION)
 
-.PHONY: lint-latest
+.PHONY: lint-latest ## TODO: update the lint-latest to lint-azure-latest
 lint-latest:
-	./hack/lint-latest.sh
+	./hack/lint-latest.sh ## TODO: update the lint-latest.sh to lint-azure-latest.sh
 
 ## --------------------------------------
 ## Release
@@ -650,7 +651,7 @@ release-binary: $(RELEASE_DIR) ## Compile and build release binaries.
 		-e GOARCH=$(GOARCH) \
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
-		golang:1.22 \
+		golang:$(GO_VERSION) \
 		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
@@ -684,7 +685,7 @@ promote-images: $(KPROMO) ## Promote images.
 
 ##@ Testing:
 .PHONY: test
-test: generate lint go-test-race ## Run "generate", "lint" and "go-test-race" rules.
+test: generate go-test-race ## Run "generate" and "go-test-race" rules.
 
 .PHONY: go-test-race
 go-test-race: TEST_ARGS+= -race
@@ -870,6 +871,15 @@ $(CODESPELL): ## Build codespell from tools folder.
 		mv $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/bin/$(CODESPELL_BIN) $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR); \
 		rm -r $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/bin; \
     )
+
+## --------------------------------------
+## Helpers
+## --------------------------------------
+
+##@ helpers:
+
+go-version: ## Print the go version we use to compile our binaries and images
+	@echo $(GO_VERSION)
 
 include conformance.mk
 include e2e.mk

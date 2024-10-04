@@ -26,8 +26,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
 )
 
 func TestPostCreateOrUpdateResourceHook(t *testing.T) {

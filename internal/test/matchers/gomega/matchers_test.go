@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
 )
 
@@ -78,7 +79,6 @@ func TestLogContains(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewWithT(t)

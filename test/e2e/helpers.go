@@ -52,14 +52,15 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 const (
@@ -78,7 +79,7 @@ type deploymentsClientAdapter struct {
 }
 
 // Get fetches the deployment named by the key and updates the provided object.
-func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	deployment, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
 		deployment.DeepCopyInto(deployObj)
@@ -148,7 +149,7 @@ type jobsClientAdapter struct {
 }
 
 // Get fetches the job named by the key and updates the provided object.
-func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	job, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
 		job.DeepCopyInto(jobObj)
@@ -243,7 +244,7 @@ type servicesClientAdapter struct {
 }
 
 // Get fetches the service named by the key and updates the provided object.
-func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	service, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if serviceObj, ok := obj.(*corev1.Service); ok {
 		service.DeepCopyInto(serviceObj)
@@ -281,7 +282,7 @@ func WaitForDaemonset(ctx context.Context, input WaitForDaemonsetInput, interval
 }
 
 // WaitForDaemonsets retries during E2E until all daemonsets pods are all Running.
-func WaitForDaemonsets(ctx context.Context, clusterProxy framework.ClusterProxy, specName string, intervals ...interface{}) {
+func WaitForDaemonsets(ctx context.Context, clusterProxy framework.ClusterProxy, _ string, intervals ...interface{}) {
 	Expect(clusterProxy).NotTo(BeNil())
 	cl := clusterProxy.GetClient()
 	var dsList = &appsv1.DaemonSetList{}

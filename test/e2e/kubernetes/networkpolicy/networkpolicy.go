@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/scheme"
+
 	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
 )
 
@@ -109,7 +110,7 @@ func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {
+func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, _ string, namespace string, nwpolicyFileName string, policyDir string) {
 	err := CreateNetworkPolicyFromFile(ctx, clientset, filepath.Join(policyDir, nwpolicyFileName), namespace)
 	Expect(err).NotTo(HaveOccurred())
 }

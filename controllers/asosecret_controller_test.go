@@ -29,18 +29,19 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestASOSecretReconcile(t *testing.T) {
-	os.Setenv("AZURE_CLIENT_ID", "fooClient")
-	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")
-	os.Setenv("AZURE_TENANT_ID", "fooTenant")
-	os.Setenv("AZURE_SUBSCRIPTION_ID", "fooSubscription")
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")             //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret")         //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")             //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_SUBSCRIPTION_ID", "fooSubscription") //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
 
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)

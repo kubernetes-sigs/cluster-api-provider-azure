@@ -153,12 +153,12 @@ func (l *Logger) Init(info logr.RuntimeInfo) {
 }
 
 // Enabled is always enabled.
-func (l *Logger) Enabled(v int) bool {
+func (l *Logger) Enabled(_ int) bool {
 	return true
 }
 
 // Info logs a non-error message with the given key/value pairs as context.
-func (l *Logger) Info(level int, msg string, kvs ...interface{}) {
+func (l *Logger) Info(_ int, msg string, kvs ...interface{}) {
 	values := copySlice(l.values)
 	values = append(values, kvs...)
 	values = append(values, "msg", msg)
@@ -183,7 +183,7 @@ func (l *Logger) V(level int) logr.LogSink {
 // WithName adds a new element to the logger's name.
 func (l *Logger) WithName(name string) logr.LogSink {
 	nl := l.clone()
-	if len(l.prefix) > 0 {
+	if l.prefix != "" {
 		nl.prefix = l.prefix + "/"
 	}
 	nl.prefix += name
