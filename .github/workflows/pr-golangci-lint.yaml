@@ -29,17 +29,6 @@ jobs:
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
 
-      - name: Cache golangci-lint binary
-        id: golangci-cache
-        uses: actions/cache@v4
-        with:
-          # Cache location used by golangci-lint-action
-          path: ~/.cache/golangci-lint
-          # Change this when updating golangci-lint version
-          key: golangci-lint-v1.60.2
-          restore-keys: |
-            golangci-lint-
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # tag=v6.1.1
         with:
