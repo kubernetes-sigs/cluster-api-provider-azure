@@ -18,7 +18,7 @@ jobs:
           - ""
           - test
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4.1.7
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4.2.0
 
       - name: Calculate go version
         id: vars
@@ -31,7 +31,7 @@ jobs:
 
       - name: Cache golangci-lint binary
         id: golangci-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           # Cache location used by golangci-lint-action
           path: ~/.cache/golangci-lint
@@ -41,7 +41,7 @@ jobs:
             golangci-lint-
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # tag=v6.1.0
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # tag=v6.1.1
         with:
           # update the version when updating golangci-lint
           version: v1.60.2
