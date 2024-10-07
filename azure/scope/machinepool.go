@@ -80,6 +80,7 @@ type (
 		capiMachinePoolPatchHelper *patch.Helper
 		vmssState                  *azure.VMSS
 		cache                      *MachinePoolCache
+		skuCache                   *resourceskus.Cache
 	}
 
 	// NodeStatus represents the status of a Kubernetes node.
@@ -163,12 +164,15 @@ func (m *MachinePoolScope) InitMachinePoolCache(ctx context.Context) error {
 			return err
 		}
 
-		skuCache, err := resourceskus.GetCache(m, m.Location())
-		if err != nil {
-			return err
+		if m.skuCache == nil {
+			skuCache, err := resourceskus.GetCache(m, m.Location())
+			if err != nil {
+				return errors.Wrap(err, "failed to init resourceskus cache")
+			}
+			m.skuCache = skuCache
 		}
 
-		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachinePool.Spec.Template.VMSize, resourceskus.VirtualMachines)
+		m.cache.VMSKU, err = m.skuCache.Get(ctx, m.AzureMachinePool.Spec.Template.VMSize, resourceskus.VirtualMachines)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get VM SKU %s in compute api", m.AzureMachinePool.Spec.Template.VMSize)
 		}
@@ -221,10 +225,8 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 	}
 
 	if m.cache != nil {
-		if m.HasReplicasExternallyManaged(ctx) {
-			spec.ShouldPatchCustomData = m.cache.HasBootstrapDataChanges
-			log.V(4).Info("has bootstrap data changed?", "shouldPatchCustomData", spec.ShouldPatchCustomData)
-		}
+		spec.ShouldPatchCustomData = m.cache.HasBootstrapDataChanges
+		log.V(4).Info("has bootstrap data changed?", "shouldPatchCustomData", spec.ShouldPatchCustomData)
 		spec.VMSSExtensionSpecs = m.VMSSExtensionSpecs()
 		spec.SKU = m.cache.VMSKU
 		spec.VMImage = m.cache.VMImage
@@ -678,11 +680,9 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 		if err := m.updateReplicasAndProviderIDs(ctx); err != nil {
 			return errors.Wrap(err, "failed to update replicas and providerIDs")
 		}
-		if m.HasReplicasExternallyManaged(ctx) {
-			if err := m.updateCustomDataHash(ctx); err != nil {
-				// ignore errors to calculating the custom data hash since it's not absolutely crucial.
-				log.V(4).Error(err, "unable to update custom data hash, ignoring.")
-			}
+		if err := m.updateCustomDataHash(ctx); err != nil {
+			// ignore errors to calculating the custom data hash since it's not absolutely crucial.
+			log.V(4).Error(err, "unable to update custom data hash, ignoring.")
 		}
 	}
 

@@ -742,8 +742,8 @@ func newWindowsVMSSSpec() ScaleSetSpec {
 	return vmss
 }
 
-func newDefaultExistingVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
-	vmss := newDefaultVMSS(vmSize)
+func newDefaultExistingVMSS() armcompute.VirtualMachineScaleSet {
+	vmss := newDefaultVMSS("VM_SIZE")
 	vmss.ID = ptr.To("subscriptions/1234/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
 	return vmss
 }
