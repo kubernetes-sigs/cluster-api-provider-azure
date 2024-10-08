@@ -189,8 +189,9 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		deleteTimeoutConfig = "wait-delete-cluster-aks"
 	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-		Client:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
+		Client:         input.ClusterProxy.GetClient(),
+		Namespace:      input.Namespace.Name,
+		ArtifactFolder: input.ArtifactFolder,
 	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
 
 	Logf("Deleting namespace used for hosting the %q test spec", input.SpecName)
