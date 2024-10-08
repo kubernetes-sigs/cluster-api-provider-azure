@@ -581,17 +581,8 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 					List(gomock.Any(), location, azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName).
 					Return(test.versions, nil)
 			}
-			// id, version, err := svc.getSKUAndVersion(context.TODO(), location, azure.DefaultImagePublisherID,
-			// 	offer, test.k8sVersion, test.osAndVersion)
 
 			g := NewWithT(t)
-			// if test.expectedError {
-			// 	g.Expect(err).To(HaveOccurred())
-			// } else {
-			// 	g.Expect(err).NotTo(HaveOccurred())
-			// }
-			// g.Expect(id).To(Equal(test.expectedSKU))
-			// g.Expect(version).To(Equal(test.expectedVersion))
 
 			// TODO: temp hack
 			g.Expect(svc).NotTo(BeNil())

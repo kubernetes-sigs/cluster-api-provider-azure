@@ -24,6 +24,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Service provides operations on Azure VM Images.
@@ -45,7 +46,10 @@ func New(auth azure.Authorizer) (*Service, error) {
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func (s *Service) GetDefaultUbuntuImage(ctx context.Context, location, k8sVersion string) (*infrav1.Image, error) {
+func (s *Service) GetDefaultUbuntuImage(ctx context.Context, _, k8sVersion string) (*infrav1.Image, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "azure.services.virtualmachineimages.GetDefaultUbuntuImage")
+	defer done()
+
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
@@ -63,10 +67,21 @@ func (s *Service) GetDefaultUbuntuImage(ctx context.Context, location, k8sVersio
 }
 
 // GetDefaultWindowsImage returns the default image spec for Windows.
-func (s *Service) GetDefaultWindowsImage(ctx context.Context, location, k8sVersion, runtime, osAndVersion string) (*infrav1.Image, error) {
+func (s *Service) GetDefaultWindowsImage(ctx context.Context, _, k8sVersion, runtime, osAndVersion string) (*infrav1.Image, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "azure.services.virtualmachineimages.GetDefaultWindowsImage")
+	defer done()
+
 	v, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
+	}
+
+	if runtime != "" && runtime != "containerd" {
+		return nil, errors.Errorf("unsupported runtime %s", runtime)
+	}
+
+	if osAndVersion != "" && osAndVersion != "windows-2022" {
+		return nil, errors.Errorf("unsupported osAndVersion %s", osAndVersion)
 	}
 
 	defaultImage := &infrav1.Image{
