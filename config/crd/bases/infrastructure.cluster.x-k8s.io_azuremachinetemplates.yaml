@@ -292,6 +292,7 @@ spec:
                         - None
                         - SystemAssigned
                         - UserAssigned
+                        - WorkloadIdentity
                         type: string
                       image:
                         description: |-
