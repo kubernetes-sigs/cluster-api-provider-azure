@@ -1,0 +1,41 @@
+name: Cache Cleanup
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+  schedule:
+  - cron: '0 0 * * 2'  # Run every Tuesday at midnight (UTC)
+
+jobs:
+  cleanup:
+    name: Cleanup Old Caches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Install gh CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Install gh-actions-cache extension
+        run: |
+          gh extension install actions/gh-actions-cache
+
+      - name: List all caches
+        run: |
+          gh actions-cache list --repo ${{ github.repository }}
+
+      - name: Delete caches older than 30 days
+        run: |
+          echo "Fetching list of caches..."
+          # List all caches for the current repository
+          caches=$(gh actions-cache list --repo ${{ github.repository }})
+
+          echo "Caches found: $(echo "$caches" | wc -l)"
+          
+          # Loop through the list of caches and delete
+          echo "$caches" | while read -r cache; do
+            cache_id=$(echo "$cache" | awk '{print $1}')
+            gh actions-cache delete "$cache_id" --repo ${{ github.repository }} --confirm
+          done
