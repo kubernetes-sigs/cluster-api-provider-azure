@@ -27,22 +27,25 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+/* Reference images live in an Azure community gallery with this structure:
+. Gallery: "capzed-489de9a5-a0a0-4e79-a806-ad5479ec43a5"
+├── Image Definition: "capi-ubun2-2404"
+│   ├── Version: "1.30.4"
+│   ├── Version: "1.30.5"
+│   └── Version: "1.31.1"
+└── Image Definition: "capi-win-2022-containerd"
+    ├── Version: "1.30.4"
+    ├── Version: "1.30.5"
+    └── Version: "1.31.1"
+*/
+
 // Service provides operations on Azure VM Images.
 type Service struct {
-	Client
-	azure.Authorizer
 }
 
 // New creates a VM Images service.
-func New(auth azure.Authorizer) (*Service, error) {
-	client, err := NewClient(auth)
-	if err != nil {
-		return nil, err
-	}
-	return &Service{
-		Client:     client,
-		Authorizer: auth,
-	}, nil
+func New(_ azure.Authorizer) (*Service, error) {
+	return &Service{}, nil
 }
 
 // GetDefaultLinuxImage returns the default image spec for Ubuntu.
