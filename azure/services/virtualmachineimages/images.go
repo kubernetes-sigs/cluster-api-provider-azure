@@ -45,9 +45,9 @@ func New(auth azure.Authorizer) (*Service, error) {
 	}, nil
 }
 
-// GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func (s *Service) GetDefaultUbuntuImage(ctx context.Context, _, k8sVersion string) (*infrav1.Image, error) {
-	_, _, done := tele.StartSpanWithLogger(ctx, "azure.services.virtualmachineimages.GetDefaultUbuntuImage")
+// GetDefaultLinuxImage returns the default image spec for Ubuntu.
+func (s *Service) GetDefaultLinuxImage(ctx context.Context, _, k8sVersion string) (*infrav1.Image, error) {
+	_, _, done := tele.StartSpanWithLogger(ctx, "azure.services.virtualmachineimages.GetDefaultLinuxImage")
 	defer done()
 
 	v, err := semver.ParseTolerant(k8sVersion)
@@ -55,15 +55,13 @@ func (s *Service) GetDefaultUbuntuImage(ctx context.Context, _, k8sVersion strin
 		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
 	}
 
-	defaultImage := &infrav1.Image{
+	return &infrav1.Image{
 		ComputeGallery: &infrav1.AzureComputeGalleryImage{
 			Gallery: azure.DefaultPublicGalleryName,
 			Name:    azure.DefaultLinuxGalleryImageName,
 			Version: v.String(),
 		},
-	}
-
-	return defaultImage, nil
+	}, nil
 }
 
 // GetDefaultWindowsImage returns the default image spec for Windows.
@@ -84,13 +82,11 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, _, k8sVersion, run
 		return nil, errors.Errorf("unsupported osAndVersion %s", osAndVersion)
 	}
 
-	defaultImage := &infrav1.Image{
+	return &infrav1.Image{
 		ComputeGallery: &infrav1.AzureComputeGalleryImage{
 			Gallery: azure.DefaultPublicGalleryName,
 			Name:    azure.DefaultWindowsGalleryImageName,
 			Version: v.String(),
 		},
-	}
-
-	return defaultImage, nil
+	}, nil
 }
