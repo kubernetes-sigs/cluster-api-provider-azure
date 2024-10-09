@@ -63,6 +63,11 @@ func (s *Service) GetDefaultLinuxImage(ctx context.Context, _, k8sVersion string
 			Gallery: azure.DefaultPublicGalleryName,
 			Name:    azure.DefaultLinuxGalleryImageName,
 			Version: v.String(),
+			Plan: &infrav1.ImagePlan{
+				Publisher: "Canonical",
+				Offer:     "ubuntu-24_04-lts",
+				SKU:       "server-gen1",
+			},
 		},
 	}, nil
 }
@@ -90,6 +95,11 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, _, k8sVersion, run
 			Gallery: azure.DefaultPublicGalleryName,
 			Name:    azure.DefaultWindowsGalleryImageName,
 			Version: v.String(),
+			Plan: &infrav1.ImagePlan{
+				Publisher: "WindowsServer",
+				Offer:     "MicrosoftWindowsServer",
+				SKU:       "2022-Datacenter-Core-smalldisk",
+			},
 		},
 	}, nil
 }

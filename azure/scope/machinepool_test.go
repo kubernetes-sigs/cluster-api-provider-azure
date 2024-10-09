@@ -425,6 +425,11 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 						Gallery: "capzed-489de9a5-a0a0-4e79-a806-ad5479ec43a5",
 						Name:    "capi-ubun2-2404",
 						Version: "1.19.11",
+						Plan: &infrav1.ImagePlan{
+							Publisher: "Canonical",
+							Offer:     "ubuntu-24_04-lts",
+							SKU:       "server-gen1",
+						},
 					},
 				}
 				g.Expect(vmImage).To(Equal(image))
