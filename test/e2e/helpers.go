@@ -777,6 +777,7 @@ func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageV
 }
 
 func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+	Logf("Getting versions for image %q in community gallery %q in location %q", image, galleryName, location)
 	versions := make(map[string]semver.Version)
 
 	client := newCommunityGalleryImageVersionsClient()
