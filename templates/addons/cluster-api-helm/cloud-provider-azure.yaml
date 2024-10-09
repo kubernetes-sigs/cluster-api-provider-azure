@@ -15,3 +15,4 @@ spec:
     cloudControllerManager:
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
       logVerbosity: 4
+      caCertDir: ${CCM_CA_CERT_DIR:-/etc/pki/tls}
