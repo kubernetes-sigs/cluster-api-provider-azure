@@ -76,10 +76,6 @@ func (mw *azureManagedMachinePoolWebhook) Default(_ context.Context, obj runtime
 		m.Spec.Name = &m.Name
 	}
 
-	if m.Spec.OSType == nil {
-		m.Spec.OSType = ptr.To(DefaultOSType)
-	}
-
 	return nil
 }
 
