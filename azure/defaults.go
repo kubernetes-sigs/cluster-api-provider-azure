@@ -56,6 +56,12 @@ const (
 	DefaultImagePublisherID = "cncf-upstream"
 	// LatestVersion is the image version latest.
 	LatestVersion = "latest"
+	// DefaultPublicGalleryName is the default Azure Compute Gallery.
+	DefaultPublicGalleryName = "capzed-489de9a5-a0a0-4e79-a806-ad5479ec43a5"
+	// DefaultLinuxGalleryImageName is the default Azure Linux Gallery Image Name.
+	DefaultLinuxGalleryImageName = "capi-ubun2-2404"
+	// DefaultWindowsGalleryImageName is the default Azure Windows Gallery Image Name.
+	DefaultWindowsGalleryImageName = "capi-win-2022-containerd"
 )
 
 const (
