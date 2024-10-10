@@ -23,7 +23,7 @@ az sig image-version list-community \
   --location northcentralus
 ```
 
-The reference images are replicated to the set of regions used in CAPZ e2e tests. To see if a reference image is available in the location where you intend to provision a cluster, change the `northcentralus` argument in the previous command.
+The reference images are replicated to the set of regions used in CAPZ e2e tests. To see if a reference image is available in the location where you intend to provision a cluster, change the value of the `--location` argument in the previous command.
 
 It is recommended to use the latest patch release of Kubernetes for a [supported minor release][supported-k8s].
 
