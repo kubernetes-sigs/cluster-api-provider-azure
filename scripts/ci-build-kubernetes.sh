@@ -89,7 +89,7 @@ main() {
         export CONFORMANCE_IMAGE="${REGISTRY}/conformance:${KUBE_IMAGE_TAG}"
     fi
 
-    if [[ "$(can_reuse_artifacts)" == "false" ]]; then
+    if ! can_reuse_artifacts; then
         echo "Building Kubernetes"
 
         # TODO(chewong): support multi-arch and Windows build
@@ -135,26 +135,24 @@ main() {
 # can_reuse_artifacts returns true if there exists Kubernetes artifacts built from a PR that we can reuse
 can_reuse_artifacts() {
     for IMAGE_NAME in "${IMAGES[@]}"; do
-        if ! docker pull "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG}"; then
-            echo "false" && return
+        if ! docker manifest inspect "${REGISTRY}/${IMAGE_NAME}:${KUBE_IMAGE_TAG}" >/dev/null; then
+            return 1
         fi
     done
 
     for BINARY in "${BINARIES[@]}"; do
         if [[ "$(az storage blob exists --auth-mode login --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}" --query exists --output tsv)" == "false" ]]; then
-            echo "false" && return
+            return 1
         fi
     done
 
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         for BINARY in "${WINDOWS_BINARIES[@]}"; do
             if [[ "$(az storage blob exists --auth-mode login --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists --output tsv)" == "false" ]]; then
-                echo "false" && return
+                return 1
             fi
         done
     fi
-
-    echo "true"
 }
 
 capz::ci-build-kubernetes::cleanup() {
