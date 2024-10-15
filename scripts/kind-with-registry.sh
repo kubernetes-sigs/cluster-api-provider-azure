@@ -105,7 +105,7 @@ function checkAZWIENVPreReqsAndCreateFiles() {
 
     if ! az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" > /dev/null 2>&1; then
       echo "Creating storage account '${AZWI_STORAGE_ACCOUNT}' in '${AZWI_RESOURCE_GROUP}'"
-      az storage account create --resource-group "${AZWI_RESOURCE_GROUP}" --name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
+      az storage account create --resource-group "${AZWI_RESOURCE_GROUP}" --name "${AZWI_STORAGE_ACCOUNT}" --allow-shared-key-access=false --output none --only-show-errors --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
       until az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" > /dev/null 2>&1; do
         sleep 5
       done
