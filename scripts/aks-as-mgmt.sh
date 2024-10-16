@@ -137,13 +137,13 @@ create_aks_cluster() {
   echo "mgmt resource identity: ${AKS_MI_RESOURCE_ID}"
 
   # save resource identity name and resource group
-  MANAGED_IDENTITY_NAME=$(az identity show --ids "${AKS_MI_RESOURCE_ID}" | jq -r '.name')
+  MANAGED_IDENTITY_NAME=$(az identity show --ids "${AKS_MI_RESOURCE_ID}" --output json | jq -r '.name')
   # export MANAGED_IDENTITY_NAME
   echo "mgmt resource identity name: ${MANAGED_IDENTITY_NAME}"
   USER_IDENTITY=$MANAGED_IDENTITY_NAME
   export USER_IDENTITY
 
-  MANAGED_IDENTITY_RG=$(az identity show --ids "${AKS_MI_RESOURCE_ID}" | jq -r '.resourceGroup')
+  MANAGED_IDENTITY_RG=$(az identity show --ids "${AKS_MI_RESOURCE_ID}" --output json | jq -r '.resourceGroup')
   export MANAGED_IDENTITY_RG
   echo "mgmt resource identity resource group: ${MANAGED_IDENTITY_RG}"
 
