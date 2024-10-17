@@ -72,20 +72,9 @@ func (mw *azureManagedControlPlaneWebhook) Default(_ context.Context, obj runtim
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
-	if m.Spec.NetworkPlugin == nil {
-		networkPlugin := AzureNetworkPluginName
-		m.Spec.NetworkPlugin = &networkPlugin
-	}
 
-	setDefault[*string](&m.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
-	setDefault[*string](&m.Spec.LoadBalancerSKU, ptr.To("Standard"))
-	setDefault[*Identity](&m.Spec.Identity, &Identity{
-		Type: ManagedControlPlaneIdentityTypeSystemAssigned,
-	})
-	setDefault[*bool](&m.Spec.EnablePreviewFeatures, ptr.To(false))
 	m.Spec.Version = setDefaultVersion(m.Spec.Version)
 	m.Spec.SKU = setDefaultSku(m.Spec.SKU)
-	m.Spec.AutoScalerProfile = setDefaultAutoScalerProfile(m.Spec.AutoScalerProfile)
 	m.Spec.FleetsMember = setDefaultFleetsMember(m.Spec.FleetsMember, m.Labels)
 
 	if err := m.setDefaultSSHPublicKey(); err != nil {
