@@ -11,6 +11,7 @@
         - [Identity use cases](./topics/identities-use-cases.md)
         - [Multi-tenancy](./topics/multitenancy.md)
         - [Workload Identity](./topics/workload-identity.md)
+	- [FAQs](./topics/FAQ.md)
 - [Managed Clusters (AKS)](./managed/managed.md)
     - [Adopting Clusters](./managed/adopting-clusters.md)
     - [ASO Managed Clusters (AKS)](./managed/asomanagedcluster.md)
