@@ -207,7 +207,7 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
-  replicas: 6
+  replicas: 7
   version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
