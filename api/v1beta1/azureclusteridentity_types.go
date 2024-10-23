@@ -59,6 +59,9 @@ type AzureClusterIdentitySpec struct {
 	// ClientSecret is a secret reference which should contain either a Service Principal password or certificate secret.
 	// +optional
 	ClientSecret corev1.SecretReference `json:"clientSecret,omitempty"`
+	// certPath is the path where certificates exist. When set, it takes precedence over ClientSecret for types that uses certs like ServicePrincipalCertificate.
+	// +optional
+	CertPath string `json:"certPath,omitempty"`
 	// TenantID is the service principal primary tenant id.
 	TenantID string `json:"tenantID"`
 	// AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from.
