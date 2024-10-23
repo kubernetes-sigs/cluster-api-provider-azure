@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"os"
 	"reflect"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -127,11 +128,20 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		cred, authErr = azidentity.NewClientSecretCredential(p.GetTenantID(), p.Identity.Spec.ClientID, clientSecret, &options)
 
 	case infrav1.ServicePrincipalCertificate:
-		clientSecret, err := p.GetClientSecret(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get client secret")
+		var certsContent []byte
+		if p.Identity.Spec.CertPath != "" {
+			certsContent, err = os.ReadFile(p.Identity.Spec.CertPath)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to read certificate file")
+			}
+		} else {
+			clientSecret, err := p.GetClientSecret(ctx)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get client secret")
+			}
+			certsContent = []byte(clientSecret)
 		}
-		certs, key, err := azidentity.ParseCertificates([]byte(clientSecret), nil)
+		certs, key, err := azidentity.ParseCertificates(certsContent, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse certificate data")
 		}
