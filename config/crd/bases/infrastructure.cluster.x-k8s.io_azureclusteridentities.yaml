@@ -124,7 +124,7 @@ spec:
                     x-kubernetes-map-type: atomic
                 type: object
               certPath:
-                description: certPath is the path where certicates exist. When set,
+                description: certPath is the path where certificates exist. When set,
                   it takes precedence over ClientSecret for types that uses certs
                   like ServicePrincipalCertificate.
                 type: string
