@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
 
 	asoconfig "github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	"github.com/pkg/errors"
@@ -288,23 +289,33 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 		return newASOSecret, nil
 	}
 
-	// Fetch identity secret, if it exists
-	key = types.NamespacedName{
-		Namespace: identity.Spec.ClientSecret.Namespace,
-		Name:      identity.Spec.ClientSecret.Name,
-	}
-	identitySecret := &corev1.Secret{}
-	err := asos.Get(ctx, key, identitySecret)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
-	}
+	if identity.Spec.CertPath != "" {
+		certsContent, err := os.ReadFile(identity.Spec.CertPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read certificate file")
+		}
 
-	switch identity.Spec.Type {
-	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
-		newASOSecret.Data[asoconfig.AzureClientSecret] = identitySecret.Data[scope.AzureSecretKey]
-	case infrav1.ServicePrincipalCertificate:
-		newASOSecret.Data[asoconfig.AzureClientCertificate] = identitySecret.Data["certificate"]
-		newASOSecret.Data[asoconfig.AzureClientCertificatePassword] = identitySecret.Data["password"]
+		newASOSecret.Data[asoconfig.AzureClientCertificate] = certsContent
+		newASOSecret.Data[asoconfig.AzureClientCertificatePassword] = []byte{}
+	} else {
+		// Fetch identity secret, if it exists
+		key = types.NamespacedName{
+			Namespace: identity.Spec.ClientSecret.Namespace,
+			Name:      identity.Spec.ClientSecret.Name,
+		}
+		identitySecret := &corev1.Secret{}
+		err := asos.Get(ctx, key, identitySecret)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch AzureClusterIdentity secret")
+		}
+
+		switch identity.Spec.Type {
+		case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
+			newASOSecret.Data[asoconfig.AzureClientSecret] = identitySecret.Data[scope.AzureSecretKey]
+		case infrav1.ServicePrincipalCertificate:
+			newASOSecret.Data[asoconfig.AzureClientCertificate] = identitySecret.Data["certificate"]
+			newASOSecret.Data[asoconfig.AzureClientCertificatePassword] = identitySecret.Data["password"]
+		}
 	}
 	return newASOSecret, nil
 }
