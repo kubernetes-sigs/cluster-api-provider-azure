@@ -31,6 +31,7 @@ import (
 	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	azidentity "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -2289,4 +2290,87 @@ func (m *MockASOResourceSpecGetter[T]) WasManaged(arg0 T) bool {
 func (mr *MockASOResourceSpecGetterMockRecorder[T]) WasManaged(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WasManaged", reflect.TypeOf((*MockASOResourceSpecGetter[T])(nil).WasManaged), arg0)
+}
+
+// MockCredentialCache is a mock of CredentialCache interface.
+type MockCredentialCache struct {
+	ctrl     *gomock.Controller
+	recorder *MockCredentialCacheMockRecorder
+}
+
+// MockCredentialCacheMockRecorder is the mock recorder for MockCredentialCache.
+type MockCredentialCacheMockRecorder struct {
+	mock *MockCredentialCache
+}
+
+// NewMockCredentialCache creates a new mock instance.
+func NewMockCredentialCache(ctrl *gomock.Controller) *MockCredentialCache {
+	mock := &MockCredentialCache{ctrl: ctrl}
+	mock.recorder = &MockCredentialCacheMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCredentialCache) EXPECT() *MockCredentialCacheMockRecorder {
+	return m.recorder
+}
+
+// GetOrStoreClientCert mocks base method.
+func (m *MockCredentialCache) GetOrStoreClientCert(tenantID, clientID string, cert, certPassword []byte, opts *azidentity.ClientCertificateCredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreClientCert", tenantID, clientID, cert, certPassword, opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreClientCert indicates an expected call of GetOrStoreClientCert.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreClientCert(tenantID, clientID, cert, certPassword, opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreClientCert", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreClientCert), tenantID, clientID, cert, certPassword, opts)
+}
+
+// GetOrStoreClientSecret mocks base method.
+func (m *MockCredentialCache) GetOrStoreClientSecret(tenantID, clientID, clientSecret string, opts *azidentity.ClientSecretCredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreClientSecret", tenantID, clientID, clientSecret, opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreClientSecret indicates an expected call of GetOrStoreClientSecret.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreClientSecret(tenantID, clientID, clientSecret, opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreClientSecret", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreClientSecret), tenantID, clientID, clientSecret, opts)
+}
+
+// GetOrStoreManagedIdentity mocks base method.
+func (m *MockCredentialCache) GetOrStoreManagedIdentity(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreManagedIdentity", opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreManagedIdentity indicates an expected call of GetOrStoreManagedIdentity.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreManagedIdentity(opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreManagedIdentity", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreManagedIdentity), opts)
+}
+
+// GetOrStoreWorkloadIdentity mocks base method.
+func (m *MockCredentialCache) GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreWorkloadIdentity", opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreWorkloadIdentity indicates an expected call of GetOrStoreWorkloadIdentity.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreWorkloadIdentity(opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreWorkloadIdentity", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreWorkloadIdentity), opts)
 }
