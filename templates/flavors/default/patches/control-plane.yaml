@@ -1,0 +1,15 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    apiServerLB:
+      # Hack: We pre-create this public IP and the DNS name to use it in the
+      # worker node's /etc/hosts. This resolves the routing issue due to newly
+      # implemented security rules in Azure.
+      frontendIPs:
+        - name: ${CLUSTER_NAME}-api-lb
+          publicIP:
+            name: ${CLUSTER_NAME}-api-lb
+            dnsName: ${CLUSTER_NAME}.${AZURE_LOCATION}.cloudapp.azure.com
