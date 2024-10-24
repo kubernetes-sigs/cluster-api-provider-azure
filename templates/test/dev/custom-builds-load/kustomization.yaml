@@ -1,0 +1,90 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+# From prow template
+- ../../../flavors/base
+- ../../../flavors/default/machine-deployment.yaml
+- ../../ci/prow/mhc.yaml
+- ../../../azure-cluster-identity
+- ../../../addons/cluster-api-helm/calico.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+# From custom builds template
+- ../../../addons/metrics-server/metrics-server-resource-set.yaml
+# From original template
+- storageclass-resource-set.yaml
+patches:
+# From prow template
+- path: ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../ci/patches/tags.yaml
+- path: ../../ci/patches/mhc.yaml
+- path: ../../ci/patches/controller-manager.yaml
+- path: ../../ci/patches/azuremachinetemplate-vmextension.yaml
+- path: ../../ci/patches/cluster-label-calico.yaml
+- path: ../../ci/patches/cluster-label-cloud-provider-azure.yaml
+- path: ../../ci/patches/uami-md-0.yaml
+# From custom builds template
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+    version: v1beta1
+- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: ../custom-builds/patches/kubeadm-bootstrap.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+    version: v1beta1
+- path: ../custom-builds/patches/kubeadm-controlplane-bootstrap.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: ../custom-builds/patches/machine-deployment-pr-version.yaml
+- path: ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
+- path: ../../../test/ci/patches/controller-manager-featuregates.yaml
+# From original changes
+- path: patches/cluster-label-storageclass.yaml
+- path: patches/cluster-label-azuredisk.yaml
+- path: patches/kcp-scheduler.yaml
+- path: patches/ephemeral.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    name: .*-md-0
+    version: v1beta1
+- path: patches/ephemeral.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    name: .*-control-plane
+    version: v1beta1
+configMapGenerator:
+- files:
+  - storageclass=../../../addons/storageclass-azure-disk.yaml
+  name: storageclass-${CLUSTER_NAME}
+# From custom builds template
+- files:
+  - metrics-server=../../../addons/metrics-server/metrics-server.yaml
+  name: metrics-server-${CLUSTER_NAME}
+generatorOptions:
+  annotations:
+    note: generated
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+
+sortOptions:
+  order: fifo
