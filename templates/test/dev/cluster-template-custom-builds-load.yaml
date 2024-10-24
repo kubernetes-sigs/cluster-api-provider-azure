@@ -230,6 +230,9 @@ spec:
           sku: ubuntu-2204-gen1
           version: latest
       osDisk:
+        cachingType: ReadOnly
+        diffDiskSettings:
+          option: Local
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
@@ -279,6 +282,9 @@ spec:
           sku: ubuntu-2204-gen1
           version: latest
       osDisk:
+        cachingType: ReadOnly
+        diffDiskSettings:
+          option: Local
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}

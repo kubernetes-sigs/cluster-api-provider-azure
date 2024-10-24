@@ -8,6 +8,18 @@ patches:
 - path: patches/cluster-label-storageclass.yaml
 - path: patches/cluster-label-azuredisk.yaml
 - path: patches/kcp-scheduler.yaml
+- path: patches/ephemeral.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    name: .*-md-0
+    version: v1beta1
+- path: patches/ephemeral.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    name: .*-control-plane
+    version: v1beta1
 configMapGenerator:
 - files:
   - storageclass=../../../addons/storageclass-azure-disk.yaml
