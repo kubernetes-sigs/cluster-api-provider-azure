@@ -405,12 +405,6 @@ spec:
         windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
     spec:
       identity: UserAssigned
-      image:
-        marketplace:
-          offer: capi-windows
-          publisher: cncf-upstream
-          sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
-          version: latest
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -418,7 +412,7 @@ spec:
         osType: Windows
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY}
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -479,68 +473,12 @@ spec:
           sc.exe start sshd
         path: C:/collect-hns-crashes.ps1
         permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          echo "Use OOT credential provider"
-          mkdir C:\var\lib\kubelet\credential-provider
-          curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
-          cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
-          curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
-        path: C:/oot-cred-provider.ps1
-        permissions: "0744"
-      - content: |
-          Write-Host "Installing Azure CLI"
-          $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri https://azcliprod.blob.core.windows.net/msi/azure-cli-2.53.0.msi -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; Remove-Item .\AzureCLI.msi
-          # Need to add manually AZ to PATH as it is not added without a reset
-          Write-Host "Adding AZ to path:"
-          $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
-          Write-Host "Version Azure CLI:"
-          az version
-        path: C:/install-az-cli.ps1
-        permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          Stop-Service kubelet -Force
-
-          $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
-          if($$KUBE_GIT_VERSION -ne "")
-          {
-            # Need to add manually AZ to PATH as it is not added without a reset
-            Write-Host "Adding AZ to path:"
-            $env:PATH +=";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
-            # Install Binaries
-            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-            $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
-            echo "running az login via identity"
-            az login --identity
-            foreach ( $$binary in $$binaries )
-            {
-              echo "downloading binary: $$ci_url/$$binary.exe"
-              az storage blob download --blob-url "$$ci_url/$$binary.exe" --file "c:/k/$$binary.exe" --auth-mode login
-            }
-          }
-
-          # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
-          # that is applied at at this stage (windows-kubeproxy-ci.yaml)
-          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
-          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
-
-          kubeadm.exe version -o=short
-          kubectl.exe version --client=true
-          kubelet.exe --version
-          kube-proxy.exe --version
-        path: C:/replace-pr-binaries.ps1
-        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
             cloud-provider: external
             feature-gates: ${NODE_FEATURE_GATES:-""}
-            image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
-            image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'
@@ -551,9 +489,6 @@ spec:
       - powershell C:/create-temp-folder.ps1
       - powershell C:/replace-containerd.ps1
       - powershell C:/collect-hns-crashes.ps1
-      - powershell C:/oot-cred-provider.ps1
-      - powershell C:/install-az-cli.ps1
-      - powershell C:/replace-pr-binaries.ps1
       users:
       - groups: Administrators
         name: capi
@@ -735,14 +670,6 @@ spec:
 ---
 apiVersion: v1
 data:
-  kube-proxy-patch: |-
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: windows-kubeproxy-ci
-      namespace: kube-system
-    data:
-      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: |
     apiVersion: apps/v1
     kind: DaemonSet
@@ -1099,6 +1026,74 @@ spec:
     name: metrics-server-${CLUSTER_NAME}
   strategy: ApplyOnce
 ---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-storageclass
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      storageclass: "true"
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-storageclass
+  strategy: ApplyOnce
+---
+apiVersion: v1
+data:
+  storageclass: |
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: default
+      annotations:
+        storageclass.beta.kubernetes.io/is-default-class: "true"
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Standard_LRS
+      cachingmode: ReadOnly
+    volumeBindingMode: WaitForFirstConsumer
+    ---
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: managed-premium
+      annotations:
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Premium_LRS
+      cachingmode: ReadOnly
+    volumeBindingMode: WaitForFirstConsumer
+    ---
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: managed-standard
+      annotations:
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Standard_LRS
+      cachingmode: ReadOnly
+    volumeBindingMode: WaitForFirstConsumer
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: storageclass-${CLUSTER_NAME}
+  namespace: default
+---
 apiVersion: v1
 data:
   metrics-server: |
@@ -1313,72 +1308,4 @@ metadata:
   labels:
     type: generated
   name: metrics-server-${CLUSTER_NAME}
-  namespace: default
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-storageclass
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      storageclass: "true"
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-storageclass
-  strategy: ApplyOnce
----
-apiVersion: v1
-data:
-  storageclass: |
-    apiVersion: storage.k8s.io/v1
-    kind: StorageClass
-    metadata:
-      name: default
-      annotations:
-        storageclass.beta.kubernetes.io/is-default-class: "true"
-      labels:
-        kubernetes.io/cluster-service: "true"
-    provisioner: kubernetes.io/azure-disk
-    parameters:
-      kind: Managed
-      storageaccounttype: Standard_LRS
-      cachingmode: ReadOnly
-    volumeBindingMode: WaitForFirstConsumer
-    ---
-    apiVersion: storage.k8s.io/v1
-    kind: StorageClass
-    metadata:
-      name: managed-premium
-      annotations:
-      labels:
-        kubernetes.io/cluster-service: "true"
-    provisioner: kubernetes.io/azure-disk
-    parameters:
-      kind: Managed
-      storageaccounttype: Premium_LRS
-      cachingmode: ReadOnly
-    volumeBindingMode: WaitForFirstConsumer
-    ---
-    apiVersion: storage.k8s.io/v1
-    kind: StorageClass
-    metadata:
-      name: managed-standard
-      annotations:
-      labels:
-        kubernetes.io/cluster-service: "true"
-    provisioner: kubernetes.io/azure-disk
-    parameters:
-      kind: Managed
-      storageaccounttype: Standard_LRS
-      cachingmode: ReadOnly
-    volumeBindingMode: WaitForFirstConsumer
-kind: ConfigMap
-metadata:
-  annotations:
-    note: generated
-  labels:
-    type: generated
-  name: storageclass-${CLUSTER_NAME}
   namespace: default
