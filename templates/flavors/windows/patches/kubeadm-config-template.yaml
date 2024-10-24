@@ -1,0 +1,14 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  template:
+    spec:
+      # Hack: /etc/hosts file is updated with a pre-created DNS name of the API server
+      # so that worker nodes can access the API server using the internal IP.
+      # 10.0.0.4 is the default IP that gets assigned to a single control plane
+      # cluster scenario.
+      # TODO: Replace 10.0.0.4 with an internal LB that has backend pools pointed to the control plane nodes.
+      preKubeadmCommands:
+        - powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '10.0.0.4   ${CLUSTER_NAME}.${AZURE_LOCATION}.cloudapp.azure.com'"
