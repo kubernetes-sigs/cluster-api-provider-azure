@@ -68,7 +68,7 @@ func (s *Service) Name() string {
 
 // Reconcile idempotently creates or updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "loadbalancers.Service.Reconcile, no really")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())

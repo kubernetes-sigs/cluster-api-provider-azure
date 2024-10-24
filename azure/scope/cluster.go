@@ -242,6 +242,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
+	// Build the Load Balancer that sits in front of the apiserver
 	specs := []azure.ResourceSpecGetter{
 		&loadbalancers.LBSpec{
 			// API Server LB
@@ -265,7 +266,29 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		},
 	}
 
-	// Node outbound LB
+	if s.APIServerLB().Type == infrav1.Public || s.APIServerLB().Type == "" {
+		specs = append(specs, &loadbalancers.LBSpec{
+			Name:                 s.APIServerLB().Name + "-ilb",
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			ExtendedLocation:     s.ExtendedLocation(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
+			SubnetName:           s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
+			APIServerPort:        s.APIServerPort(),
+			Type:                 infrav1.Internal,
+			SKU:                  s.APIServerLB().SKU,
+			Role:                 infrav1.APIServerRoleInternal,
+			BackendPoolName:      s.APIServerLB().BackendPool.Name,
+			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:       s.AdditionalTags(),
+		})
+	}
+
+	// If we want to provide a specific outbound load balancer for worker nodes
 	if s.NodeOutboundLB() != nil {
 		specs = append(specs, &loadbalancers.LBSpec{
 			Name:                 s.NodeOutboundLB().Name,
@@ -286,7 +309,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	// Control Plane Outbound LB
+	// If we want to provide a specific outbound load balancer for control plane nodes
 	if s.ControlPlaneOutboundLB() != nil {
 		specs = append(specs, &loadbalancers.LBSpec{
 			Name:                 s.ControlPlaneOutboundLB().Name,

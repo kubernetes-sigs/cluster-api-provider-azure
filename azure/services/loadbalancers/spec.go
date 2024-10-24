@@ -214,7 +214,7 @@ func getOutboundRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource) []*a
 }
 
 func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource) []*armnetwork.LoadBalancingRule {
-	if lbSpec.Role == infrav1.APIServerRole {
+	if lbSpec.Role == infrav1.APIServerRole || lbSpec.Role == infrav1.APIServerRoleInternal {
 		// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
 		// For more information on Standard LB outbound connections see https://learn.microsoft.com/azure/load-balancer/load-balancer-outbound-connections.
 		var frontendIPConfig *armnetwork.SubResource
@@ -255,7 +255,7 @@ func getBackendAddressPools(lbSpec LBSpec) []*armnetwork.BackendAddressPool {
 }
 
 func getProbes(lbSpec LBSpec) []*armnetwork.Probe {
-	if lbSpec.Role == infrav1.APIServerRole {
+	if lbSpec.Role == infrav1.APIServerRole || lbSpec.Role == infrav1.APIServerRoleInternal {
 		return []*armnetwork.Probe{
 			{
 				Name: ptr.To(httpsProbe),
