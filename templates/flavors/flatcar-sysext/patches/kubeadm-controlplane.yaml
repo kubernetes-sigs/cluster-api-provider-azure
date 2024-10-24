@@ -1,0 +1,101 @@
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  kubeadmConfigSpec:
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+        overwrite: false
+      # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+      partitions: []
+    format: ignition
+    ignition:
+      containerLinuxConfig:
+        additionalConfig: |
+          systemd:
+            units:
+            - name: systemd-sysupdate.service
+              dropins:
+                - name: kubernetes.conf
+                  contents: |
+                    [Service]
+                    ExecStartPre=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes"
+                    ExecStartPre=/usr/lib/systemd/systemd-sysupdate -C kubernetes update
+                    ExecStartPost=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes-new"
+                    ExecStartPost=/usr/bin/sh -c "if ! cmp --silent /tmp/kubernetes /tmp/kubernetes-new; then touch /run/reboot-required; fi"
+            - name: update-engine.service
+              # Set this to 'false' if you want to enable Flatcar auto-update
+              mask: ${FLATCAR_DISABLE_AUTO_UPDATE:=true}
+            - name: locksmithd.service
+              # NOTE: To coordinate the node reboot in this context, we recommend to use Kured.
+              mask: true
+            - name: systemd-sysupdate.timer
+              # Set this to 'true' if you want to enable the Kubernetes auto-update.
+              # NOTE: Only patches version will be pulled.
+              enabled: false
+            - name: kubeadm.service
+              dropins:
+              - name: 10-flatcar.conf
+                contents: |
+                  [Unit]
+                  After=oem-cloudinit.service
+                  # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                  After=containerd.service
+          # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+          storage:
+            disks:
+            - device: /dev/disk/azure/scsi1/lun0
+              partitions:
+              - number: 1
+            links:
+            - path: /etc/extensions/kubernetes.raw
+              hard: false
+              target: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+            files:
+            - path: /etc/sysupdate.kubernetes.d/kubernetes-${KUBERNETES_VERSION%.*}.conf
+              mode: 0644
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION%.*}.conf
+            - path: /etc/sysupdate.d/noop.conf
+              mode: 0644
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/noop.conf
+            - path: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+    initConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    joinConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    mounts:
+    - - etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01' | jq -r .compute.name)/g" /etc/kubeadm.yml
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
+          name: flatcar-stable-amd64
+          version: ${FLATCAR_VERSION}
