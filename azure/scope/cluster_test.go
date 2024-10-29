@@ -2232,20 +2232,25 @@ func TestBackendPoolName(t *testing.T) {
 			}
 			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			got := clusterScope.LBSpecs()
-			g.Expect(got).To(HaveLen(3))
+			g.Expect(got).To(HaveLen(4))
 
 			// API server backend pool name
 			apiServerLBSpec := got[0].(*loadbalancers.LBSpec)
 			g.Expect(apiServerLBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName))
 			g.Expect(apiServerLBSpec.Role).To(Equal(infrav1.APIServerRole))
 
+			// API server backend pool name
+			apiServerILBSpec := got[1].(*loadbalancers.LBSpec)
+			g.Expect(apiServerILBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName + "-internal"))
+			g.Expect(apiServerILBSpec.Role).To(Equal(infrav1.APIServerRoleInternal))
+
 			// Node backend pool name
-			NodeLBSpec := got[1].(*loadbalancers.LBSpec)
+			NodeLBSpec := got[2].(*loadbalancers.LBSpec)
 			g.Expect(NodeLBSpec.BackendPoolName).To(Equal(tc.expectedNodeBackendPoolName))
 			g.Expect(NodeLBSpec.Role).To(Equal(infrav1.NodeOutboundRole))
 
 			// Control Plane backend pool name
-			controlPlaneLBSpec := got[2].(*loadbalancers.LBSpec)
+			controlPlaneLBSpec := got[3].(*loadbalancers.LBSpec)
 			g.Expect(controlPlaneLBSpec.BackendPoolName).To(Equal(tc.expectedControlPlaneBackendPoolName))
 			g.Expect(controlPlaneLBSpec.Role).To(Equal(infrav1.ControlPlaneOutboundRole))
 		})
@@ -2662,6 +2667,33 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SKU:                  infrav1.SKUStandard,
 					Role:                 infrav1.APIServerRole,
 					BackendPoolName:      "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes: ptr.To[int32](30),
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+				&loadbalancers.LBSpec{
+					Name:              "api-server-lb-internal",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					SubnetName:        "cp-subnet",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "api-server-lb-internal-frontEnd",
+							FrontendIPClass: infrav1.FrontendIPClass{
+								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+							},
+						},
+					},
+					APIServerPort:        6443,
+					Type:                 infrav1.Internal,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.APIServerRoleInternal,
+					BackendPoolName:      "api-server-lb-backend-pool-internal",
 					IdleTimeoutInMinutes: ptr.To[int32](30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",

@@ -265,6 +265,35 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		},
 	}
 
+	if s.APIServerLB().Type != infrav1.Internal {
+		specs = append(specs, &loadbalancers.LBSpec{
+			Name:              s.APIServerLB().Name + "-internal",
+			ResourceGroup:     s.ResourceGroup(),
+			SubscriptionID:    s.SubscriptionID(),
+			ClusterName:       s.ClusterName(),
+			Location:          s.Location(),
+			ExtendedLocation:  s.ExtendedLocation(),
+			VNetName:          s.Vnet().Name,
+			VNetResourceGroup: s.Vnet().ResourceGroup,
+			SubnetName:        s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs: []infrav1.FrontendIP{
+				{
+					Name: s.APIServerLB().Name + "-internal-frontEnd", // TODO: improve this name.
+					FrontendIPClass: infrav1.FrontendIPClass{
+						PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+					},
+				},
+			},
+			APIServerPort:        s.APIServerPort(),
+			Type:                 infrav1.Internal,
+			SKU:                  s.APIServerLB().SKU,
+			Role:                 infrav1.APIServerRoleInternal,
+			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
+			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:       s.AdditionalTags(),
+		})
+	}
+
 	// Node outbound LB
 	if s.NodeOutboundLB() != nil {
 		specs = append(specs, &loadbalancers.LBSpec{

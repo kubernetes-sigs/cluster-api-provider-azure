@@ -24,12 +24,11 @@ source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 source "${REPO_ROOT}/hack/ensure-tags.sh" # set the right timestamp and job name
 
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-KIND="${REPO_ROOT}/hack/tools/bin/kind"
 AZWI="${REPO_ROOT}/hack/tools/bin/azwi"
-make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}" "${AZWI##*/}"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${AZWI##*/}"
 
-export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-capz}-${RANDOM_SUFFIX}" # management cluster name
-export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-aks-mgmt-capz}-${RANDOM_SUFFIX}" # resource group name
+export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # management cluster name
+export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="node-${AKS_RESOURCE_GROUP}"
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.30.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
@@ -47,6 +46,16 @@ export REGISTRY="${REGISTRY:-}"
 export AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-}"
 export AZURE_CLIENT_ID="${AZURE_CLIENT_ID:-}"
 export AZURE_TENANT_ID="${AZURE_TENANT_ID:-}"
+
+# to suppress unbound variable error message
+export APISERVER_LB_DNS_SUFFIX="${APISERVER_LB_DNS_SUFFIX:-}"
+export AKS_MI_CLIENT_ID="${AKS_MI_CLIENT_ID:-}"
+export AKS_MI_OBJECT_ID="${AKS_MI_OBJECT_ID:-}"
+export AKS_MI_RESOURCE_ID="${AKS_MI_RESOURCE_ID:-}"
+export MANAGED_IDENTITY_NAME="${MANAGED_IDENTITY_NAME:-}"
+export MANAGED_IDENTITY_RG="${MANAGED_IDENTITY_RG:-}"
+export ASO_CREDENTIAL_SECRET_MODE="${ASO_CREDENTIAL_SECRET_MODE:-}"
+export SKIP_AKS_CREATE="${SKIP_AKS_CREATE:-false}"
 
 main() {
 
@@ -66,11 +75,18 @@ main() {
   echo "SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH: $SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH"
   echo "SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH: $SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH"
   echo "REGISTRY:                             $REGISTRY"
+  echo "APISERVER_LB_DNS_SUFFIX:              $APISERVER_LB_DNS_SUFFIX"
 
   echo "AZURE_SUBSCRIPTION_ID:                $AZURE_SUBSCRIPTION_ID"
   echo "AZURE_CLIENT_ID:                      $AZURE_CLIENT_ID"
   echo "AZURE_TENANT_ID:                      $AZURE_TENANT_ID"
   echo "--------------------------------"
+
+  # if using SKIP_AKS_CREATE=true, skip creating the AKS cluster
+  if [[ "${SKIP_AKS_CREATE}" == "true" ]]; then
+    echo "Skipping AKS cluster creation"
+    return
+  fi
 
   create_aks_cluster
   set_env_varaibles
@@ -178,6 +194,7 @@ kustomize_substitutions:
   CLUSTER_IDENTITY_TYPE: "UserAssignedMSI"
   ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE}"
   REGISTRY: "${REGISTRY}"
+  APISERVER_LB_DNS_SUFFIX: "${APISERVER_LB_DNS_SUFFIX}"
 allowed_contexts:
   - "$MGMT_CLUSTER_NAME"
   - "kind-capz"
