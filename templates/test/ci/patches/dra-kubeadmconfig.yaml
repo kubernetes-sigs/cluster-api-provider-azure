@@ -1,5 +1,5 @@
 - op: add
-  path: /spec/template/spec/files/-
+  path: /spec/files/-
   value:
     content: |
       #!/bin/bash
@@ -11,8 +11,8 @@
     path: /tmp/containerd-config.sh
     permissions: "0744"
 - op: add
-  path: /spec/template/spec/preKubeadmCommands/0
+  path: /spec/preKubeadmCommands/0
   value: bash -c /tmp/containerd-config.sh
 - op: add
-  path: /spec/template/spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
+  path: /spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
   value: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}

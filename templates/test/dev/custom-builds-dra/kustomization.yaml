@@ -10,9 +10,9 @@ patches:
 - path: ../../ci/patches/dra-kubeadmcontrolplane.yaml
   target:
     kind: KubeadmControlPlane
-- path: ../../ci/patches/dra-kubeadmconfigtemplate.yaml
+- path: ../../ci/patches/dra-kubeadmconfig.yaml
   target:
-    kind: KubeadmConfigTemplate
+    kind: KubeadmConfig
 
 sortOptions:
   order: fifo
