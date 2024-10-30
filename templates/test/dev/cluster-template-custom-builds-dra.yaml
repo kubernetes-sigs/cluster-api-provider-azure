@@ -391,14 +391,25 @@ spec:
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"
+  - content: |
+      #!/bin/bash
+
+      echo "enabling containerd CDI plugin"
+      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+      systemctl restart containerd
+    owner: root:root
+    path: /tmp/containerd-config.sh
+    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
         cloud-provider: external
+        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
+  - bash -c /tmp/containerd-config.sh
   - bash -c /tmp/oot-cred-provider.sh
   - bash -c /tmp/replace-k8s-binaries.sh
 ---
