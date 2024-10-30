@@ -208,6 +208,12 @@ export CI_RG ?= $(AZWI_RESOURCE_GROUP)
 export USER_IDENTITY ?= $(addsuffix $(RANDOM_SUFFIX),$(CI_RG))
 export AZURE_IDENTITY_ID_FILEPATH ?= $(ROOT_DIR)/azure_identity_id
 
+# ensure that the APISERVER_LB_DNS_SUFFIX is of length 10 and contains only alphanumeric characters
+# LC_ALL=C is used to set the locale to C to ensure that the output is ASCII
+# head /dev/urandom generates random bytes. Will work on Linux and MacOS. Also works on Windows with WSL.
+# Ignore SIGPIPE error. This will suppress error messages if head closes the pipe before tr finishes.
+export APISERVER_LB_DNS_SUFFIX := $(shell LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 10 2>/dev/null)
+
 ## --------------------------------------
 ## Binaries
 ## --------------------------------------

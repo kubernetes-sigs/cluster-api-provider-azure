@@ -298,6 +298,8 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 				spec.InternalLBName = m.APIServerLBName()
 				spec.InternalLBAddressPoolName = m.APIServerLBPoolName()
 			} else {
+				spec.InternalLBName = m.APIServerLBName() + "-internal"
+				spec.InternalLBAddressPoolName = m.APIServerLBPoolName() + "-internal"
 				spec.PublicLBNATRuleName = m.Name()
 				spec.PublicLBAddressPoolName = m.APIServerLBPoolName()
 			}
