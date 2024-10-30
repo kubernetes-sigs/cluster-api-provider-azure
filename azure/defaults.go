@@ -48,14 +48,12 @@ const (
 )
 
 const (
-	// DefaultImageOfferID is the default Azure Marketplace offer ID.
-	DefaultImageOfferID = "capi"
-	// DefaultWindowsImageOfferID is the default Azure Marketplace offer ID for Windows.
-	DefaultWindowsImageOfferID = "capi-windows"
-	// DefaultImagePublisherID is the default Azure Marketplace publisher ID.
-	DefaultImagePublisherID = "cncf-upstream"
-	// LatestVersion is the image version latest.
-	LatestVersion = "latest"
+	// DefaultPublicGalleryName is the default Azure compute gallery.
+	DefaultPublicGalleryName = "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
+	// DefaultLinuxGalleryImageName is the default Linux community gallery image definition.
+	DefaultLinuxGalleryImageName = "capi-ubun2-2404"
+	// DefaultWindowsGalleryImageName is the default Windows community gallery image definition.
+	DefaultWindowsGalleryImageName = "capi-win-2019-containerd"
 )
 
 const (

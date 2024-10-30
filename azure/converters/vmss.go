@@ -183,7 +183,7 @@ func GetOrchestrationMode(modeType infrav1.OrchestrationModeType) armcompute.Orc
 	return armcompute.OrchestrationModeUniform
 }
 
-// IDImageRefToImage converts an ID to a infrav1.Image with ComputerGallery set or ID, depending on the structure of the ID.
+// IDImageRefToImage converts an ID to a infrav1.Image with ComputeGallery set or ID, depending on the structure of the ID.
 func IDImageRefToImage(id string) infrav1.Image {
 	// compute gallery image
 	if ok, params := getParams(RegExpStrComputeGalleryID, id); ok {

@@ -699,13 +699,13 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
-	ubuntuVersions := getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiOfferName)
-	windowsVersions := getVersionsInOffer(context.TODO(), os.Getenv(AzureLocation), capiImagePublisher, capiWindowsOfferName)
+	linuxVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
+	windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
 	flatcarK8sVersions := getFlatcarK8sVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
 
 	// find the intersection of ubuntu and windows versions available, since we need an image for both.
 	var versions semver.Versions
-	for k, v := range ubuntuVersions {
+	for k, v := range linuxVersions {
 		if _, ok := windowsVersions[k]; ok {
 			versions = append(versions, v)
 		}
@@ -758,16 +758,6 @@ func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Version
 	resolveVariable(config, varName, version)
 }
 
-// newImagesClient returns a new VM images client using environmental settings for auth.
-func newImagesClient() *armcompute.VirtualMachineImagesClient {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	Expect(err).NotTo(HaveOccurred())
-	imagesClient, err := armcompute.NewVirtualMachineImagesClient(getSubscriptionID(Default), cred, nil)
-	Expect(err).NotTo(HaveOccurred())
-
-	return imagesClient
-}
-
 func newCommunityGalleryImagesClient() *armcompute.CommunityGalleryImagesClient {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -786,40 +776,17 @@ func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageV
 	return communityGalleryImageVersionsClient
 }
 
-// getVersionsInOffer returns a map of Kubernetes versions as strings to semver.Versions.
-func getVersionsInOffer(ctx context.Context, location, publisher, offer string) map[string]semver.Version {
-	Logf("Finding image skus and versions for offer %s/%s in %s", publisher, offer, location)
-	var versions map[string]semver.Version
-	capiSku := regexp.MustCompile(`^[\w-]+-gen[12]$`)
-	capiVersion := regexp.MustCompile(`^(\d)(\d{1,2})\.(\d{1,2})\.\d{8}$`)
-	oldCapiSku := regexp.MustCompile(`^k8s-(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)dot(0|[1-9][0-9]*)-[a-z]*.*$`)
-	imagesClient := newImagesClient()
-	resp, err := imagesClient.ListSKUs(ctx, location, publisher, offer, nil)
-	Expect(err).NotTo(HaveOccurred())
+func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+	Logf("Getting versions for image %q in community gallery %q in location %q", image, galleryName, location)
+	versions := make(map[string]semver.Version)
 
-	skus := resp.VirtualMachineImageResourceArray
-
-	versions = make(map[string]semver.Version, len(skus))
-	for _, sku := range skus {
-		res, err := imagesClient.List(ctx, location, publisher, offer, *sku.Name, nil)
+	client := newCommunityGalleryImageVersionsClient()
+	pager := client.NewListPager(location, galleryName, image, nil)
+	for pager.More() {
+		resp, err := pager.NextPage(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		// Don't use SKUs without existing images. See https://github.com/Azure/azure-cli/issues/20115.
-		if len(res.VirtualMachineImageResourceArray) > 0 {
-			// New SKUs don't contain the Kubernetes version and are named like "ubuntu-2004-gen1".
-			if match := capiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
-				for _, vmImage := range res.VirtualMachineImageResourceArray {
-					// Versions are named like "121.13.20220601", for Kubernetes v1.21.13 published on June 1, 2022.
-					match = capiVersion.FindStringSubmatch(*vmImage.Name)
-					stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
-					versions[stringVer] = semver.MustParse(stringVer)
-				}
-				continue
-			}
-			// Old SKUs before 1.21.12, 1.22.9, or 1.23.6 are named like "k8s-1dot21dot2-ubuntu-2004".
-			if match := oldCapiSku.FindStringSubmatch(*sku.Name); len(match) > 0 {
-				stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
-				versions[stringVer] = semver.MustParse(stringVer)
-			}
+		for _, version := range resp.Value {
+			versions[*version.Name] = semver.MustParse(*version.Name)
 		}
 	}
 
