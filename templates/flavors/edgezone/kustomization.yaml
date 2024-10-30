@@ -2,10 +2,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../default
+- ../base
+- machine-deployment.yaml
+- ../../azure-cluster-identity
+
 patches:
+- path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
 - path: patches/azure-extendedlocation.yaml
 - path: patches/azure-remove-natgateway.yaml
+- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
+- path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 
 sortOptions:
   order: fifo
