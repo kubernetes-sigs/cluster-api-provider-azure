@@ -431,6 +431,44 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	Context("Creating an Azure Linux cluster [OPTIONAL]", func() {
+		It("With Azure Linux control-plane and worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "azurelinux")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("azurelinux"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(e2eConfig.GetVariable(capi_e2e.KubernetesVersion)),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("can create and access a load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+		})
+	})
+
 	Context("Creating a cluster with spot vms [OPTIONAL]", func() {
 		It("With spot vm machine deployments", func() {
 			clusterName = getClusterName(clusterNamePrefix, "spot")

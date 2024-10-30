@@ -412,8 +412,10 @@ def get_addons(flavor_name):
     addon_cmd = "; export CIDRS=$(" + kubectl_cmd + " get cluster ${CLUSTER_NAME} -o jsonpath='{.spec.clusterNetwork.pods.cidrBlocks[*]}')"
     addon_cmd += "; export CIDR_LIST=$(bash -c 'echo $CIDRS' | tr ' ' ',')"
     addon_cmd += "; " + helm_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig install --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo cloud-provider-azure --generate-name --set infra.clusterName=${CLUSTER_NAME} --set cloudControllerManager.clusterCIDR=${CIDR_LIST}"
-    if "flatcar" in flavor_name:  # append caCetDir location to the cloud-provider-azure helm install command for flatcar flavor
+    if "flatcar" in flavor_name:  # append caCertDir location to the cloud-provider-azure helm install command for flatcar flavor
         addon_cmd += " --set-string cloudControllerManager.caCertDir=/usr/share/ca-certificates"
+    elif "azurelinux" in flavor_name:  # append caCertDir location to the cloud-provider-azure helm install command for Azure Linux flavor
+        addon_cmd += " --set-string cloudControllerManager.caCertDir=/etc/pki/tls"
 
     if "azure-cni-v1" in flavor_name:
         addon_cmd += "; " + kubectl_cmd + " apply -f ./templates/addons/azure-cni-v1.yaml --kubeconfig ./${CLUSTER_NAME}.kubeconfig"
