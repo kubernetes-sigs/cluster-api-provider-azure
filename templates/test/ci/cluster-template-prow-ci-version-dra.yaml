@@ -198,14 +198,13 @@ spec:
       path: /tmp/kubeadm-bootstrap.sh
       permissions: "0744"
     - content: |
-        #!/bin/bash
-
-        echo "enabling containerd CDI plugin"
-        sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
-        systemctl restart containerd
+        version = 2
+        [plugins]
+          [plugins."io.containerd.grpc.v1.cri"]
+            enable_cdi = true
       owner: root:root
-      path: /tmp/containerd-config.sh
-      permissions: "0744"
+      path: /etc/containerd/conf.d/device-plugin.toml
+      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -227,7 +226,6 @@ spec:
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands:
-    - bash -c /tmp/containerd-config.sh
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -436,14 +434,13 @@ spec:
     path: /etc/kubernetes/azure.json
     permissions: "0644"
   - content: |
-      #!/bin/bash
-
-      echo "enabling containerd CDI plugin"
-      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
-      systemctl restart containerd
+      version = 2
+      [plugins]
+        [plugins."io.containerd.grpc.v1.cri"]
+          enable_cdi = true
     owner: root:root
-    path: /tmp/containerd-config.sh
-    permissions: "0744"
+    path: /etc/containerd/conf.d/device-plugin.toml
+    permissions: "0644"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
