@@ -427,7 +427,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				image := &infrav1.Image{
 					ComputeGallery: &infrav1.AzureComputeGalleryImage{
 						Gallery: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019",
-						Name:    "capi-ubun2-2404",
+						Name:    "capi-ubun2-2204",
 						Version: "1.19.11",
 					},
 				}
