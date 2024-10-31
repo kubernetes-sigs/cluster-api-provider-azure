@@ -2,17 +2,13 @@
   path: /spec/kubeadmConfigSpec/files/-
   value:
     content: |
-      #!/bin/bash
-
-      echo "enabling containerd CDI plugin"
-      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
-      systemctl restart containerd
+      version = 2
+      [plugins]
+        [plugins."io.containerd.grpc.v1.cri"]
+          enable_cdi = true
     owner: root:root
-    path: /tmp/containerd-config.sh
-    permissions: "0744"
-- op: add
-  path: /spec/kubeadmConfigSpec/preKubeadmCommands/0
-  value: bash -c /tmp/containerd-config.sh
+    path: /etc/containerd/conf.d/device-plugin.toml
+    permissions: "0644"
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/feature-gates
   value: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
