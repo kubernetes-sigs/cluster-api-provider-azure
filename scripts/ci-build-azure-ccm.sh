@@ -57,7 +57,7 @@ setup() {
 }
 
 main() {
-    if [[ "$(can_reuse_artifacts)" =~ "false" ]]; then
+    if ! can_reuse_artifacts; then
         echo "Building Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
         echo "Building Linux amd64 and Windows (hpc) amd64 cloud node managers"
@@ -84,28 +84,26 @@ main() {
 can_reuse_artifacts() {
     declare -a IMAGES=("${CCM_IMAGE_NAME}:${IMAGE_TAG_CCM}" "${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}")
     for IMAGE in "${IMAGES[@]}"; do
-        if ! docker pull "${REGISTRY}/${IMAGE}"; then
-            echo "false" && return
+        if ! docker manifest inspect "${REGISTRY}/${IMAGE}" >/dev/null; then
+            return 1
         fi
     done
 
     if ! docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os\": \"windows\""; then
-        echo "false" && return
+        return 1
     fi
 
     # Do not reuse the image if there is a Windows image built with older version of this script that did not
     # build the images as host-process-container images. Those images cannot be pulled on mis-matched Windows Server versions.
     if docker manifest inspect "${REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM}" | grep -q "\"os.version\": \"10.0."; then
-        echo "false" && return
+        return 1
     fi
 
     for BINARY in azure-acr-credential-provider azure-acr-credential-provider.exe credential-provider-config.yaml credential-provider-config-win.yaml; do
         if [[ "$(az storage blob exists --container-name "${AZURE_BLOB_CONTAINER_NAME}" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/${BINARY}" --query exists --output tsv --auth-mode login)" == "false" ]]; then
-            echo "false" && return
+        return 1
         fi
     done
-
-    echo "true"
 }
 
 capz::ci-build-azure-ccm::cleanup() {
