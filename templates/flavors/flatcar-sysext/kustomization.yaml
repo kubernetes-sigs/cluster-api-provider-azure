@@ -4,6 +4,6 @@ resources:
   - machine-deployment.yaml
   - ../../azure-cluster-identity
 
-patchesStrategicMerge:
-  - patches/kubeadm-controlplane.yaml
-  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
+patches:
+  - path: patches/kubeadm-controlplane.yaml
+  - path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
