@@ -1,0 +1,405 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |-
+    installation:
+      cni:
+        type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        mtu: 1350
+        ipPools:
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      registry: mcr.microsoft.com/oss
+    # Image and registry configuration for the tigera/operator pod.
+    tigeraOperator:
+      image: tigera/operator
+      registry: mcr.microsoft.com/oss
+    calicoctl:
+      image: mcr.microsoft.com/oss/calico/ctl
+  version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-flatcar-sysext
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-flatcar-sysext
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+      caCertDir: /usr/share/ca-certificates
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      format: ignition
+      ignition:
+        containerLinuxConfig:
+          additionalConfig: |
+            storage:
+              links:
+              - path: /etc/extensions/kubernetes.raw
+                hard: false
+                target: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+              files:
+              - path: /etc/sysupdate.kubernetes.d/kubernetes-${KUBERNETES_VERSION%.*}.conf
+                mode: 0644
+                contents:
+                  remote:
+                    url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION%.*}.conf
+              - path: /etc/sysupdate.d/noop.conf
+                mode: 0644
+                contents:
+                  remote:
+                    url: https://github.com/flatcar/sysext-bakery/releases/download/latest/noop.conf
+              - path: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+                contents:
+                  remote:
+                    url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+            systemd:
+              units:
+              - name: systemd-sysupdate.service
+                dropins:
+                  - name: kubernetes.conf
+                    contents: |
+                      [Service]
+                      ExecStartPre=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes"
+                      ExecStartPre=/usr/lib/systemd/systemd-sysupdate -C kubernetes update
+                      ExecStartPost=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes-new"
+                      ExecStartPost=/usr/bin/sh -c "if ! cmp --silent /tmp/kubernetes /tmp/kubernetes-new; then touch /run/reboot-required; fi"
+              - name: update-engine.service
+                # Set this to 'false' if you want to enable Flatcar auto-update
+                mask: ${FLATCAR_DISABLE_AUTO_UPDATE:=true}
+              - name: locksmithd.service
+                # NOTE: To coordinate the node reboot in this context, we recommend to use Kured.
+                mask: true
+              - name: systemd-sysupdate.timer
+                # Set this to 'true' if you want to enable the Kubernetes auto-update.
+                # NOTE: Only patches version will be pulled.
+                enabled: false
+              - name: kubeadm.service
+                dropins:
+                - name: 10-flatcar.conf
+                  contents: |
+                    [Unit]
+                    After=oem-cloudinit.service
+                    # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                    After=containerd.service
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+          name: '@@HOSTNAME@@'
+      postKubeadmCommands: []
+      preKubeadmCommands:
+      - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
+        | jq -r .compute.name)/g" /etc/kubeadm.yml
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cloud-provider: azure-flatcar-sysext
+    cni: calico
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-provider: external
+          cluster-name: ${CLUSTER_NAME}
+          v: "4"
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+          extraArgs:
+            quota-backend-bytes: "8589934592"
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+        overwrite: false
+      partitions: []
+    files:
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    format: ignition
+    ignition:
+      containerLinuxConfig:
+        additionalConfig: |
+          systemd:
+            units:
+            - name: systemd-sysupdate.service
+              dropins:
+                - name: kubernetes.conf
+                  contents: |
+                    [Service]
+                    ExecStartPre=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes"
+                    ExecStartPre=/usr/lib/systemd/systemd-sysupdate -C kubernetes update
+                    ExecStartPost=/usr/bin/sh -c "readlink --canonicalize /etc/extensions/kubernetes.raw > /tmp/kubernetes-new"
+                    ExecStartPost=/usr/bin/sh -c "if ! cmp --silent /tmp/kubernetes /tmp/kubernetes-new; then touch /run/reboot-required; fi"
+            - name: update-engine.service
+              # Set this to 'false' if you want to enable Flatcar auto-update
+              mask: ${FLATCAR_DISABLE_AUTO_UPDATE:=true}
+            - name: locksmithd.service
+              # NOTE: To coordinate the node reboot in this context, we recommend to use Kured.
+              mask: true
+            - name: systemd-sysupdate.timer
+              # Set this to 'true' if you want to enable the Kubernetes auto-update.
+              # NOTE: Only patches version will be pulled.
+              enabled: false
+            - name: kubeadm.service
+              dropins:
+              - name: 10-flatcar.conf
+                contents: |
+                  [Unit]
+                  After=oem-cloudinit.service
+                  # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                  After=containerd.service
+          # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+          storage:
+            disks:
+            - device: /dev/disk/azure/scsi1/lun0
+              partitions:
+              - number: 1
+            links:
+            - path: /etc/extensions/kubernetes.raw
+              hard: false
+              target: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+            files:
+            - path: /etc/sysupdate.kubernetes.d/kubernetes-${KUBERNETES_VERSION%.*}.conf
+              mode: 0644
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION%.*}.conf
+            - path: /etc/sysupdate.d/noop.conf
+              mode: 0644
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/noop.conf
+            - path: /opt/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+              contents:
+                remote:
+                  url: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION}-x86-64.raw
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '@@HOSTNAME@@'
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '@@HOSTNAME@@'
+    mounts:
+    - - etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
+      | jq -r .compute.name)/g" /etc/kubeadm.yml
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      role: node
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
+          name: flatcar-stable-amd64
+          version: ${FLATCAR_VERSION}
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
+          name: flatcar-stable-amd64
+          version: ${FLATCAR_VERSION}
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
