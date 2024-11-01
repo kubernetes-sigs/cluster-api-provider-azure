@@ -24,6 +24,13 @@ patches:
     name: .*-mp-win
     namespace: default
     version: v1beta1
+- path: patches/kubeadm-bootstrap-k8s-ci-binaries.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfig
+    name: .*-mp-0
+    namespace: default
+    version: v1beta1
 - path: ../patches/control-plane-image-ci-version.yaml
 - path: ../patches/controller-manager.yaml
 - path: patches/machine-pool-ci-version.yaml
