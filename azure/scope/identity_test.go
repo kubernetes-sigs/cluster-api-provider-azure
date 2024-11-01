@@ -163,11 +163,10 @@ func TestHasClientSecret(t *testing.T) {
 			name: "service principal with certificate",
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         infrav1.ServicePrincipalCertificate,
-					ClientSecret: corev1.SecretReference{Name: "my-client-secret"},
+					Type: infrav1.ServicePrincipalCertificate,
 				},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "manual service principal",
@@ -302,9 +301,7 @@ func TestGetTokenCredential(t *testing.T) {
 				Spec: infrav1.AzureClusterIdentitySpec{
 					Type:     infrav1.ServicePrincipalCertificate,
 					TenantID: fakeTenantID,
-					ClientSecret: corev1.SecretReference{
-						Name: "test-identity-secret",
-					},
+					CertPath: "../../test/setup/certificate",
 				},
 			},
 			secret: &corev1.Secret{
@@ -313,6 +310,25 @@ func TestGetTokenCredential(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					"clientSecret": certPEM,
+				},
+			},
+		},
+		{
+			name: "service principal certificate with certificate filepath",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					TenantID: fakeTenantID,
+					CertPath: "../../test/setup/certificate",
 				},
 			},
 		},

@@ -125,6 +125,24 @@ data:
   password: PASSWORD
 ```
 
+Alternatively, the path to a certificate can be specified instead of the k8s secret:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: example-identity
+  namespace: default
+spec:
+  type: ServicePrincipalCertificate
+  tenantID: <azure-tenant-id>
+  clientID: <client-id-of-SP-identity>
+  certPath: <path-to-the-cert>
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
+
 ## User-Assigned Managed Identity
 
 <aside class="note">
