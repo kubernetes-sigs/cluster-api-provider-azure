@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -64,6 +65,15 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 			Location: infraControlPlane.Spec.Location,
 			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				VMSize: os.Getenv("AZURE_NODE_MACHINE_TYPE"),
+				Image: &infrav1.Image{
+					// The old Marketplace images don't have newer Kubernetes versions that this test
+					// requires. Use the new Community Gallery instead.
+					ComputeGallery: &infrav1.AzureComputeGalleryImage{
+						Gallery: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019",
+						Name:    "capi-ubun2-2404",
+						Version: strings.TrimPrefix(input.KubernetesVersion, "v"),
+					},
+				},
 			},
 		},
 	}
