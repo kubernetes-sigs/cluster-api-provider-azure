@@ -58,36 +58,81 @@ type resourceStatusObject interface {
 }
 
 // Reconcile creates or updates the specified resources.
-func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
+func (r *ResourceReconciler) Reconcile(ctx context.Context) (bool, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Reconcile")
 	defer done()
 	log.V(4).Info("reconciling resources")
 
 	var newResourceStatuses []infrav1alpha.ResourceStatus
 
-	for _, spec := range r.resources {
+	// Newly-defined resources in the CAPZ spec are first recorded in the status without performing a patch
+	// that creates the resource. CAPZ only patches resources that have already been recorded in status to
+	// ensure no resources are orphaned.
+	needsRequeue := false
+	for _, resource := range r.resources {
+		hasStatus := false
+		for _, status := range r.owner.GetResourceStatuses() {
+			if statusRefersToResource(status, resource) {
+				hasStatus = true
+				break
+			}
+		}
+		if !hasStatus {
+			needsRequeue = true
+			gvk := resource.GroupVersionKind()
+			newResourceStatuses = append(newResourceStatuses, infrav1alpha.ResourceStatus{
+				Resource: infrav1alpha.StatusResource{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+					Name:    resource.GetName(),
+				},
+				Ready: false,
+			})
+		}
+	}
+
+	for _, status := range r.owner.GetResourceStatuses() {
+		var spec *unstructured.Unstructured
+		for _, resource := range r.resources {
+			if statusRefersToResource(status, resource) {
+				spec = resource
+				break
+			}
+		}
+		if spec == nil {
+			updatedStatus, err := r.deleteResource(ctx, status.Resource)
+			if err != nil {
+				return false, err
+			}
+			if updatedStatus != nil {
+				newResourceStatuses = append(newResourceStatuses, *updatedStatus)
+			}
+			continue
+		}
+
 		gvk := spec.GroupVersionKind()
 		spec.SetNamespace(r.owner.GetNamespace())
 
 		log := log.WithValues("resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
 
 		if err := controllerutil.SetControllerReference(r.owner, spec, r.Scheme()); err != nil {
-			return fmt.Errorf("failed to set owner reference: %w", err)
+			return false, fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
 		if err := r.watcher.Watch(log, spec, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return fmt.Errorf("failed to watch resource: %w", err)
+			return false, fmt.Errorf("failed to watch resource: %w", err)
 		}
 
 		log.V(4).Info("applying resource")
 		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
 		if err != nil {
-			return fmt.Errorf("failed to apply resource: %w", err)
+			return false, fmt.Errorf("failed to apply resource: %w", err)
 		}
 
 		ready, err := readyStatus(ctx, spec)
 		if err != nil {
-			return fmt.Errorf("failed to get ready status: %w", err)
+			return false, fmt.Errorf("failed to get ready status: %w", err)
 		}
 		newResourceStatuses = append(newResourceStatuses, infrav1alpha.ResourceStatus{
 			Resource: infrav1alpha.StatusResource{
@@ -100,31 +145,9 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 		})
 	}
 
-	for _, oldStatus := range r.owner.GetResourceStatuses() {
-		needsDelete := true
-		for _, newStatus := range newResourceStatuses {
-			if oldStatus.Resource.Group == newStatus.Resource.Group &&
-				oldStatus.Resource.Kind == newStatus.Resource.Kind &&
-				oldStatus.Resource.Name == newStatus.Resource.Name {
-				needsDelete = false
-				break
-			}
-		}
-
-		if needsDelete {
-			updatedStatus, err := r.deleteResource(ctx, oldStatus.Resource)
-			if err != nil {
-				return err
-			}
-			if updatedStatus != nil {
-				newResourceStatuses = append(newResourceStatuses, *updatedStatus)
-			}
-		}
-	}
-
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
-	return nil
+	return needsRequeue, nil
 }
 
 // Pause pauses reconciliation of the specified resources.
@@ -141,7 +164,17 @@ func (r *ResourceReconciler) Pause(ctx context.Context) error {
 		return err
 	}
 
-	for _, spec := range r.resources {
+	for _, status := range r.owner.GetResourceStatuses() {
+		var spec *unstructured.Unstructured
+		for _, resource := range r.resources {
+			if statusRefersToResource(status, resource) {
+				spec = resource
+				break
+			}
+		}
+		if spec == nil {
+			continue
+		}
 		gvk := spec.GroupVersionKind()
 		spec.SetNamespace(r.owner.GetNamespace())
 
@@ -260,4 +293,11 @@ func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error
 
 	// no ready condition is set
 	return false, nil
+}
+
+func statusRefersToResource(status infrav1alpha.ResourceStatus, resource *unstructured.Unstructured) bool {
+	gvk := resource.GroupVersionKind()
+	return status.Resource.Group == gvk.Group &&
+		status.Resource.Kind == gvk.Kind &&
+		status.Resource.Name == resource.GetName()
 }
