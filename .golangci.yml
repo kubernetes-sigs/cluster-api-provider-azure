@@ -39,7 +39,8 @@ linters:
     - noctx # http requests without context.Context
     - nolintlint # badly formatted nolint directives
     - nosprintfhostport # using sprintf to construct host:port in a URL
-    - prealloc # suggest preallocating slices
+    # We don't want to use this one: https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4703
+    # - prealloc # suggest preallocating slices
     - predeclared # shadowing predeclared identifiers
     - revive # better version of golint
     - staticcheck # some of staticcheck's rules

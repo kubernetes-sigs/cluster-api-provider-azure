@@ -98,8 +98,7 @@ func (s *SubnetSpec) Parameters(_ context.Context, existing *asonetworkv1.Virtua
 		}
 	}
 
-	// TODO (nojnhuh) : do we want to initialize serviceEndpoints with an empty slice instead?
-	var serviceEndpoints []asonetworkv1.ServiceEndpointPropertiesFormat //nolint:prealloc // leaving it as is for now
+	var serviceEndpoints []asonetworkv1.ServiceEndpointPropertiesFormat
 	for _, se := range s.ServiceEndpoints {
 		serviceEndpoints = append(serviceEndpoints, asonetworkv1.ServiceEndpointPropertiesFormat{Service: ptr.To(se.Service), Locations: se.Locations})
 	}
