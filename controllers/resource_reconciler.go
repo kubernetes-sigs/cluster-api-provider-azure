@@ -63,10 +63,7 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	defer done()
 	log.V(4).Info("reconciling resources")
 
-	// TODO (nojnhuh) : is there a functional diff between
-	// var newResourceStatuses []infrav1alpha.ResourceStatus and newResourceStatuses := make([]infrav1alpha.ResourceStatus,0)
-	// in the scenario below?
-	var newResourceStatuses []infrav1alpha.ResourceStatus //nolint:prealloc // leaving it as is for now
+	var newResourceStatuses []infrav1alpha.ResourceStatus
 
 	for _, spec := range r.resources {
 		gvk := spec.GroupVersionKind()
