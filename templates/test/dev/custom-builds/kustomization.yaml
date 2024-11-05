@@ -51,7 +51,6 @@ patches:
 - path: ../../../test/ci/patches/windows-containerd-labels.yaml
 - path: ../../../test/ci/patches/windows-machine-deployment-replicas.yaml
 - path: ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
-- path: ../../../test/ci/patches/controller-manager-featuregates.yaml
 configMapGenerator:
 - behavior: merge
   files:
