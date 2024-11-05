@@ -310,12 +310,16 @@ verify-codespell: codespell ## Verify codespell.
 ##@ Development:
 
 .PHONY: install-tools # populate hack/tools/bin
-install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(AZWI)
+install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(AZWI) $(YQ)
 
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
-	# Create kind management cluster.
-	$(MAKE) kind-create
+	# Create management cluster.
+	if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
+		$(MAKE) kind-create ; \
+	else \
+		$(MAKE) aks-create ; \
+	fi
 
 	# Install cert manager and wait for availability
 	./hack/install-cert-manager.sh
@@ -331,7 +335,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAPZ
-	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME)
+	@if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
+		$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME) ; \
+	fi
 	timeout --foreground 300 bash -c "until $(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Wait for CAPI deployments
@@ -361,16 +367,16 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
-	# Create workload Cluster.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
+	# TODO: change this so it doesn't source aks-mgmt-vars.env when it is using a kind cluster
 	if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
-		timeout --foreground 300 bash -c "until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
 	elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
-		timeout --foreground 300 bash -c "until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
 	else \
-		timeout --foreground 300 bash -c "until curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
 	fi
 
 	# Wait for the kubeconfig to become available.

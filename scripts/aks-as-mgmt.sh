@@ -18,6 +18,8 @@ set -o nounset # exit when script tries to use undeclared variables.
 set -o pipefail # make the pipeline fail if any command in it fails.
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/common-vars.sh
+source "${REPO_ROOT}/hack/common-vars.sh"
 # shellcheck source=hack/ensure-azcli.sh
 source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 # shellcheck source=hack/ensure-tags.sh
@@ -177,6 +179,28 @@ create_aks_cluster() {
 }
 
 set_env_varaibles(){
+rm aks-mgmt-vars.env || true
+cat <<EOF > aks-mgmt-vars.env
+export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME}"
+export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}"
+export AKS_NODE_RESOURCE_GROUP="${AKS_NODE_RESOURCE_GROUP}"
+export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG}"
+export AKS_MI_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AZURE_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AKS_MI_OBJECT_ID="${AKS_MI_OBJECT_ID}"
+export AKS_MI_RESOURCE_ID="${AKS_MI_RESOURCE_ID}"
+export MANAGED_IDENTITY_NAME="${MANAGED_IDENTITY_NAME}"
+export MANAGED_IDENTITY_RG="${MANAGED_IDENTITY_RG}"
+export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="${AKS_MI_CLIENT_ID}"
+export CI_RG="${MANAGED_IDENTITY_RG}"
+export USER_IDENTITY="${MANAGED_IDENTITY_NAME}"
+export CLUSTER_IDENTITY_TYPE="UserAssignedMSI"
+export ASO_CREDENTIAL_SECRET_MODE="${ASO_CREDENTIAL_SECRET_MODE}"
+export REGISTRY="${REGISTRY}"
+export APISERVER_LB_DNS_SUFFIX="${APISERVER_LB_DNS_SUFFIX}"
+export AZURE_LOCATION="${AZURE_LOCATION}"
+EOF
+
   cat <<EOF > tilt-settings-temp.yaml
 kustomize_substitutions:
   MGMT_CLUSTER_NAME: "${MGMT_CLUSTER_NAME}"
@@ -210,28 +234,28 @@ else
 fi
 
 # copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
-allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
+allowed_contexts_exists=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml)
 if [ "$allowed_contexts_exists" == "null" ]; then
-  yq eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
+  ${YQ} eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
 fi
 
 # extract allowed_contexts from tilt-settings.yaml
-current_contexts=$(yq eval '.allowed_contexts' tilt-settings.yaml | sort -u)
+current_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml | sort -u)
 
 # extract allowed_contexts from tilt-settings-new.yaml
-new_contexts=$(yq eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
+new_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
 
 # combine current and new contexts, keeping the union of both
 combined_contexts=$(echo "$current_contexts"$'\n'"$new_contexts" | sort -u)
 
-# create a temporary file since env($combined_contexts) is not supported in yq
+# create a temporary file since env($combined_contexts) is not supported in ${YQ}
 echo "$combined_contexts" > combined_contexts.yaml
 
 # update allowed_contexts in tilt-settings.yaml with the combined contexts
-yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
+${YQ} eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
 
 # merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
-yq eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
+${YQ} eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
 
 mv tilt-settings-new.yaml tilt-settings.yaml
 rm -r combined_contexts.yaml
