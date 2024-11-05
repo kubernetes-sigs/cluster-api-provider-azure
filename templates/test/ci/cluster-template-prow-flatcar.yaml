@@ -36,6 +36,12 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
     subnets:
     - name: control-plane-subnet
       role: control-plane
@@ -240,6 +246,8 @@ spec:
       preKubeadmCommands:
       - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
         | jq -r .compute.name)/g" /etc/kubeadm.yml
+      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
