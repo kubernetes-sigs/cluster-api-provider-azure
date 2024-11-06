@@ -754,6 +754,13 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
+	# Create management cluster.
+	if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
+		$(MAKE) kind-create ; \
+	else \
+		$(MAKE) aks-create ; \
+	fi
+
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
