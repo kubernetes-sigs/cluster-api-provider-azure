@@ -32,7 +32,7 @@ make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${AZWI##*/}"
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # management cluster name
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="node-${AKS_RESOURCE_GROUP}"
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.30.2}"
+export AKS_KUBERNETES_VERSION="${AKS_KUBERNETES_VERSION:-v1.30.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
 export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
 export AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
@@ -65,7 +65,7 @@ main() {
   echo "MGMT_CLUSTER_NAME:                    $MGMT_CLUSTER_NAME"
   echo "AKS_RESOURCE_GROUP:                   $AKS_RESOURCE_GROUP"
   echo "AKS_NODE_RESOURCE_GROUP:              $AKS_NODE_RESOURCE_GROUP"
-  echo "KUBERNETES_VERSION:                   $KUBERNETES_VERSION"
+  echo "AKS_KUBERNETES_VERSION:               $AKS_KUBERNETES_VERSION"
   echo "AZURE_LOCATION:                       $AZURE_LOCATION"
   echo "AKS_NODE_VM_SIZE:                     $AKS_NODE_VM_SIZE"
   echo "AZURE_NODE_MACHINE_TYPE:              $AZURE_NODE_MACHINE_TYPE"
@@ -112,7 +112,7 @@ create_aks_cluster() {
     az aks create --name "${MGMT_CLUSTER_NAME}" \
     --resource-group "${AKS_RESOURCE_GROUP}" \
     --location "${AZURE_LOCATION}" \
-    --kubernetes-version "${KUBERNETES_VERSION}" \
+    --kubernetes-version "${AKS_KUBERNETES_VERSION}" \
     --node-count "${AKS_NODE_COUNT}" \
     --node-vm-size "${AKS_NODE_VM_SIZE}" \
     --node-resource-group "${AKS_NODE_RESOURCE_GROUP}" \

@@ -80,7 +80,7 @@ main() {
     if [[ "$(az storage container exists --name "${AZURE_BLOB_CONTAINER_NAME}" --query exists --output tsv --auth-mode login)" == "false" ]]; then
         echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
         az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" --auth-mode login > /dev/null
-        az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --auth-mode login --public-access container > /dev/null
+        # az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --auth-mode login --public-access container > /dev/null
     fi
 
     if [[ "${KUBE_BUILD_CONFORMANCE:-}" =~ [yY] ]]; then
