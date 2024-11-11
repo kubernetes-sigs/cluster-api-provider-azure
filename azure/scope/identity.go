@@ -33,6 +33,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
+	"sigs.k8s.io/cluster-api-provider-azure/util/filewatcher"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -145,6 +146,13 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse certificate data")
 		}
+
+		// Watch the certificate for changes; if the certificate changes, the pod will be restarted
+		err = filewatcher.WatchFileForChanges(p.Identity.Spec.CertPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to watch certificate file")
+		}
+
 		cred, authErr = azidentity.NewClientCertificateCredential(p.GetTenantID(), p.Identity.Spec.ClientID, certs, key, &azidentity.ClientCertificateCredentialOptions{
 			ClientOptions: azcore.ClientOptions{
 				TracingProvider: tracingProvider,
