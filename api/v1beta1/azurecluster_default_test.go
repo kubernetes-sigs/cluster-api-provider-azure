@@ -106,8 +106,9 @@ func TestVnetDefaults(t *testing.T) {
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
-									Name: "control-plane-subnet",
+									Role:       SubnetControlPlane,
+									Name:       "control-plane-subnet",
+									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 								},
 
 								SecurityGroup: SecurityGroup{},
@@ -130,6 +131,12 @@ func TestVnetDefaults(t *testing.T) {
 									PublicIP: &PublicIPSpec{
 										Name:    "public-ip",
 										DNSName: "myfqdn.azure.com",
+									},
+								},
+								{
+									Name: "ip-config-internal-ip",
+									FrontendIPClass: FrontendIPClass{
+										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
@@ -1237,6 +1244,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 										DNSName: "",
 									},
 								},
+								{
+									Name: "cluster-test-public-lb-frontEnd-internal-ip",
+									FrontendIPClass: FrontendIPClass{
+										PrivateIPAddress: DefaultInternalLBIPAddress,
+									},
+								},
 							},
 							BackendPool: BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
@@ -1276,7 +1289,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 						APIServerLB: LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
-									Name: "cluster-test-internal-lb-frontEnd",
+									Name: "cluster-test-internal-lb-frontEnd-internal-ip",
 									FrontendIPClass: FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
@@ -1324,7 +1337,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 						APIServerLB: LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
-									Name: "cluster-test-internal-lb-frontEnd",
+									Name: "cluster-test-internal-lb-frontEnd-internal-ip",
 									FrontendIPClass: FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},

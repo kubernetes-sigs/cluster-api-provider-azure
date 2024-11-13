@@ -242,10 +242,51 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
+
+	// construct the frontend LB
+	frontendLB := &loadbalancers.LBSpec{
+		Name:                 s.APIServerLB().Name,
+		ResourceGroup:        s.ResourceGroup(),
+		SubscriptionID:       s.SubscriptionID(),
+		ClusterName:          s.ClusterName(),
+		Location:             s.Location(),
+		ExtendedLocation:     s.ExtendedLocation(),
+		VNetName:             s.Vnet().Name,
+		VNetResourceGroup:    s.Vnet().ResourceGroup,
+		SubnetName:           s.ControlPlaneSubnet().Name,
+		APIServerPort:        s.APIServerPort(),
+		Type:                 s.APIServerLB().Type,
+		SKU:                  s.APIServerLB().SKU,
+		Role:                 infrav1.APIServerRole,
+		BackendPoolName:      s.APIServerLB().BackendPool.Name,
+		IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+		AdditionalTags:       s.AdditionalTags(),
+	}
+
+	// get the internal LB IP and the public LB IPs
+	apiServerInternalLBIP := infrav1.FrontendIP{}
+	apiServerFrontendLBIP := make([]infrav1.FrontendIP, 0)
+	if s.APIServerLB().FrontendIPs != nil {
+
+		for _, frontendIP := range s.APIServerLB().FrontendIPs {
+			if frontendIP.PrivateIPAddress != "" {
+				apiServerInternalLBIP = frontendIP
+			}
+			if frontendIP.PublicIP != nil {
+				apiServerFrontendLBIP = append(apiServerFrontendLBIP, frontendIP)
+			}
+		}
+	}
+
+	// set the frontend IPs for the frontend LB
+	frontendLB.FrontendIPConfigs = apiServerFrontendLBIP
 	specs := []azure.ResourceSpecGetter{
-		&loadbalancers.LBSpec{
-			// API Server LB
-			Name:                 s.APIServerLB().Name,
+		frontendLB,
+	}
+
+	if s.APIServerLB().Type != infrav1.Internal {
+		internalLB := &loadbalancers.LBSpec{
+			Name:                 s.APIServerLB().Name + "-internal",
 			ResourceGroup:        s.ResourceGroup(),
 			SubscriptionID:       s.SubscriptionID(),
 			ClusterName:          s.ClusterName(),
@@ -254,36 +295,6 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			VNetName:             s.Vnet().Name,
 			VNetResourceGroup:    s.Vnet().ResourceGroup,
 			SubnetName:           s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 s.APIServerLB().Type,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRole,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-		},
-	}
-
-	if s.APIServerLB().Type != infrav1.Internal {
-		specs = append(specs, &loadbalancers.LBSpec{
-			Name:              s.APIServerLB().Name + "-internal",
-			ResourceGroup:     s.ResourceGroup(),
-			SubscriptionID:    s.SubscriptionID(),
-			ClusterName:       s.ClusterName(),
-			Location:          s.Location(),
-			ExtendedLocation:  s.ExtendedLocation(),
-			VNetName:          s.Vnet().Name,
-			VNetResourceGroup: s.Vnet().ResourceGroup,
-			SubnetName:        s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs: []infrav1.FrontendIP{
-				{
-					Name: s.APIServerLB().Name + "-internal-frontEnd", // TODO: improve this name.
-					FrontendIPClass: infrav1.FrontendIPClass{
-						PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
-					},
-				},
-			},
 			APIServerPort:        s.APIServerPort(),
 			Type:                 infrav1.Internal,
 			SKU:                  s.APIServerLB().SKU,
@@ -291,7 +302,11 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
-		})
+		}
+
+		// set the internal IP for the internal LB
+		internalLB.FrontendIPConfigs = []infrav1.FrontendIP{apiServerInternalLBIP}
+		specs = append(specs, internalLB)
 	}
 
 	// Node outbound LB
