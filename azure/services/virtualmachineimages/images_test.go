@@ -69,6 +69,19 @@ func TestGetDefaultLinuxImage(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			k8sVersion: "1.28.12",
+			expected: &infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "cncf-upstream",
+						Offer:     "capi",
+						SKU:       "ubuntu-2204-gen1",
+					},
+					Version: "128.12.20240717",
+				},
+			},
+		},
 	}
 
 	location := "unused"
@@ -173,6 +186,19 @@ func TestGetDefaultWindowsImage(t *testing.T) {
 				},
 			},
 			expectErr: false,
+		},
+		{
+			k8sVersion: "1.28.12",
+			expected: &infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
+						Publisher: "cncf-upstream",
+						Offer:     "capi-windows",
+						SKU:       "windows-2019-containerd-gen1",
+					},
+					Version: "128.12.20240717",
+				},
+			},
 		},
 	}
 
