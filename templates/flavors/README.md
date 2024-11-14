@@ -91,3 +91,27 @@ worker-templates:
     KUBERNETES_VERSION: v1.22.1
     WORKER_MACHINE_COUNT: "1"
 ```
+
+#### Tilt flavors and their CIDRs
+- Below VNet CIDRs are opininated and can be changed as per the requirement.
+- AKS cluster created as part of [`aks-as-mgmt.sh`](../../hack/aks-as-mgmt.sh) script uses the `20.255.0.0/16` as the VNet CIDR. So the templates should have non overlapping CIDRs to that of AKS mgmt cluster.
+
+| Flavor                                              | VNet          | Control Plane Subnet | Private IP     | Node Subnet    |
+|-----------------------------------------------------|---------------|----------------------|----------------|----------------|
+| [`default`](default/kustomization.yaml)             | `10.0.0.0/8`  | `10.0.0.0/16`        | `10.0.0.100`   | `10.1.0.0/16`  |
+| [`aad`](aad/kustomization.yaml)                     | `30.0.0.0/8`  | `30.0.0.0/16`        | `30.0.11.100`  | `30.1.0.0/16`  |
+| [`azure-bastion`](azure-bastion/kustomization.yaml) | `40.0.0.0/8`  | `40.0.0.0/16`        | `40.0.11.100`  | `40.1.0.0/16`  |
+| [`azure-cni-v1`](azure-cni-v1/kustomization.yaml)   | `50.0.0.0/8`  | `50.0.0.0/16`        | `50.0.11.100`  | `50.1.0.0/16`  |
+| [`edgezone`](edgezone/kustomization.yaml)           | `60.0.0.0/8`  | `60.0.0.0/16`        | `60.0.11.100`  | `60.1.0.0/16`  |
+| [`private`](private/kustomization.yaml)             | `70.0.0.0/8`  | `70.0.0.0/16`        | `70.0.11.100`  | `70.1.0.0/16`  |
+| [`dual-stack`](dual-stack/kustomization.yaml)       | `10.0.0.0/8`  | `10.0.0.0/16`        | `10.0.11.100`  | `10.1.0.0/16`  |
+| [`ipv6`](ipv6/kustomization.yaml)                   | `10.0.0.0/8`  | `10.0.0.0/16`        | `10.0.11.100`  | `10.1.0.0/16`  |
+| [`flatcar`](flatcar/kustomization.yaml)             | `80.0.0.0/8`  | `80.0.0.0/16`        | `80.0.11.100`  | `80.1.0.0/16`  |
+| [`nvdia-gpu`](nvidia-gpu/kustomization.yaml)        | `90.0.0.0/8`  | `90.0.0.0/16`        | `90.0.11.100`  | `90.1.0.0/16`  |
+| [`windows`](windows/kustomization.yaml)             | `10.0.0.0/8`  | `10.0.0.0/16`        | `10.0.11.100`  | `10.1.0.0/16`  |
+| [`ephemeral`](ephemeral/kustomization.yaml)         | `100.0.0.0/8` | `100.0.0.0/16`       | `100.0.11.100` | `100.1.0.0/16` |
+
+Note:
+- Dual-stack has not been updated with non-overlapping CIDR and uses the `10.0.0.0` based CIDR.
+- IPv6 has not been updated with non-overlapping CIDR and uses the `10.0.0.0` based CIDR.
+- Windows has not been updated with non-overlapping CIDR and uses the `10.0.0.0` based CIDR.

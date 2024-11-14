@@ -20,6 +20,16 @@ patches:
 - path: ../patches/uami-control-plane.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+# we need to add the default private IP to the hosts file of the worker nodes
+- target:
+    kind: KubeadmConfigTemplate
+  patch: |-
+    - op: remove
+      path: /spec/template/spec/preKubeadmCommands/0
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands/-
+      value: echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+
 configMapGenerator:
 - files:
   - resources=../../../addons/calico.yaml
