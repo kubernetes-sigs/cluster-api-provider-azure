@@ -400,33 +400,58 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
 	}
 
-	// There should only be one IP config.
-	if len(lb.FrontendIPs) != 1 || ptr.Deref[int32](lb.FrontendIPsCount, 1) != 1 {
+	publicIPCount := 0
+	privateIPCount := 0
+	newPrivateIP := ""
+	for i := range lb.FrontendIPs {
+		if lb.FrontendIPs[i].PublicIP != nil {
+			publicIPCount++
+		}
+		if lb.FrontendIPs[i].PrivateIPAddress != "" {
+			privateIPCount++
+			newPrivateIP = lb.FrontendIPs[i].PrivateIPAddress
+		}
+	}
+
+	if lb.Type == Public {
+		// public IP count should be 1 for public LB.
+		if publicIPCount != 1 || ptr.Deref[int32](lb.FrontendIPsCount, 1) != 1 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
+				"API Server Load balancer should have 1 Frontend IP"))
+		}
+	}
+
+	// if Internal, IP config should not have a public IP.
+	if lb.Type == Internal {
+		if publicIPCount != 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
+				"API Server's associated internal load balancer cannot have a Public IP"))
+		}
+	}
+
+	// private IP count should be 1 for public LB.
+	if privateIPCount != 1 {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
-			"API Server Load balancer should have 1 Frontend IP"))
+			"API Server Load balancer should have 1 private IP"))
 	} else {
-		// if Internal, IP config should not have a public IP.
-		if lb.Type == Internal {
-			if lb.FrontendIPs[0].PublicIP != nil {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
-					"Internal Load Balancers cannot have a Public IP"))
-			}
-			if lb.FrontendIPs[0].PrivateIPAddress != "" {
-				if err := validateInternalLBIPAddress(lb.FrontendIPs[0].PrivateIPAddress, cidrs,
+		for i := range lb.FrontendIPs {
+			if lb.FrontendIPs[i].PrivateIPAddress != "" {
+				if err := validateInternalLBIPAddress(lb.FrontendIPs[i].PrivateIPAddress, cidrs,
 					fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
 					allErrs = append(allErrs, err)
-				}
-				if len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-					allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
 				}
 			}
 		}
 
-		// if Public, IP config should not have a private IP.
-		if lb.Type == Public {
-			if lb.FrontendIPs[0].PrivateIPAddress != "" {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					"Public Load Balancers cannot have a Private IP"))
+		if len(old.FrontendIPs) != 0 {
+			oldPrivateIP := ""
+			for i := range old.FrontendIPs {
+				if old.FrontendIPs[i].PrivateIPAddress != "" {
+					oldPrivateIP = old.FrontendIPs[i].PrivateIPAddress
+				}
+			}
+			if newPrivateIP != oldPrivateIP {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
 			}
 		}
 	}

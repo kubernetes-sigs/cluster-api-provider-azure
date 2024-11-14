@@ -2577,12 +2577,6 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 									Role: infrav1.SubnetControlPlane,
 								},
 							},
-							{
-								SubnetClassSpec: infrav1.SubnetClassSpec{
-									Name: "node-subnet",
-									Role: infrav1.SubnetNode,
-								},
-							},
 						},
 						APIServerLB: infrav1.LoadBalancerSpec{
 							Name: "api-server-lb",
@@ -2599,6 +2593,14 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 									Name: "api-server-lb-frontend-ip",
 									PublicIP: &infrav1.PublicIPSpec{
 										Name: "api-server-lb-frontend-ip",
+									},
+								},
+								{
+									// The private IP for the internal LB is set by the Defaulting Webhook
+									// since no defaulters are called here, we have to update the test
+									Name: "api-server-internal-lb-private-ip",
+									FrontendIPClass: infrav1.FrontendIPClass{
+										PrivateIPAddress: "10.10.10.100",
 									},
 								},
 							},
@@ -2683,9 +2685,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SubnetName:        "cp-subnet",
 					FrontendIPConfigs: []infrav1.FrontendIP{
 						{
-							Name: "api-server-lb-internal-frontEnd",
+							Name: "api-server-internal-lb-private-ip",
 							FrontendIPClass: infrav1.FrontendIPClass{
-								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+								PrivateIPAddress: "10.10.10.100",
 							},
 						},
 					},
@@ -2792,6 +2794,14 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 								IdleTimeoutInMinutes: ptr.To[int32](30),
 								SKU:                  infrav1.SKUStandard,
 							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "api-server-lb-internal-ip",
+									FrontendIPClass: infrav1.FrontendIPClass{
+										PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -2813,6 +2823,14 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					BackendPoolName:      "api-server-lb-backend-pool",
 					IdleTimeoutInMinutes: ptr.To[int32](30),
 					AdditionalTags:       infrav1.Tags{},
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "api-server-lb-internal-ip",
+							FrontendIPClass: infrav1.FrontendIPClass{
+								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+							},
+						},
+					},
 				},
 			},
 		},

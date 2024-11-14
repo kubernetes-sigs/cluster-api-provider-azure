@@ -232,17 +232,31 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 		if lb.Name == "" {
 			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
 		}
-		if len(lb.FrontendIPs) == 0 {
-			lb.FrontendIPs = []FrontendIP{
-				{
-					Name: generateFrontendIPConfigName(lb.Name),
-					FrontendIPClass: FrontendIPClass{
-						PrivateIPAddress: DefaultInternalLBIPAddress,
-					},
-				},
+	}
+
+	// create default private IP if not set
+	privateIPFound := false
+	for i := range lb.FrontendIPs {
+		if lb.FrontendIPs[i].FrontendIPClass.PrivateIPAddress != "" {
+			if lb.FrontendIPs[i].Name == "" {
+				lb.FrontendIPs[i].Name = generateFrontendIPConfigName(lb.Name) + "-internal-ip"
 			}
+			privateIPFound = true
+			break
 		}
 	}
+
+	// if no private IP found, create a default one
+	if !privateIPFound {
+		privateIP := FrontendIP{
+			Name: generateFrontendIPConfigName(lb.Name) + "-internal-ip",
+			FrontendIPClass: FrontendIPClass{
+				PrivateIPAddress: DefaultInternalLBIPAddress,
+			},
+		}
+		lb.FrontendIPs = append(lb.FrontendIPs, privateIP)
+	}
+
 	c.SetAPIServerLBBackendPoolNameDefault()
 }
 
