@@ -151,8 +151,8 @@ ifeq (,$(shell command -v gcloud))
 else
     REGISTRY ?= localhost:5000
 endif
-STAGING_REGISTRY := gcr.io/k8s-staging-cluster-api-azure
-PROD_REGISTRY := registry.k8s.io/cluster-api-azure
+STAGING_REGISTRY ?= gcr.io/k8s-staging-cluster-api-azure
+PROD_REGISTRY ?= registry.k8s.io/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 TAG ?= dev
