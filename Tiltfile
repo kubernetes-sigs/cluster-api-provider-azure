@@ -23,8 +23,8 @@ settings = {
     "capi_version": "v1.8.5",
     "caaph_version": "v0.2.5",
     "cert_manager_version": "v1.16.1",
-    "kubernetes_version": "v1.28.3",
-    "aks_kubernetes_version": "v1.28.3",
+    "kubernetes_version": "v1.28.15",
+    "aks_kubernetes_version": "v1.28.15",
     "flatcar_version": "3374.2.1",
     "azure_location": "eastus",
     "control_plane_machine_count": "1",
@@ -51,6 +51,8 @@ if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
 os_arch = str(local("go env GOARCH")).rstrip("\n")
+
+# TODO: no one is clearing MGMT_CLUSTER_NAME when using KIND, so this is always going to be true. Improve this logic.
 if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
     print("Using AKS as management cluster, setting os_arch to amd64")
     os_arch = "amd64"
@@ -118,7 +120,7 @@ def fixup_yaml_empty_arrays(yaml_str):
     return yaml_str.replace("storedVersions: null", "storedVersions: []")
 
 def validate_auth():
-    substitutions = settings.get("kustomize_substitutions", {})
+    substitutions = settings.get("kustomize_substitutions", {})  # all the env variables are exported here
     os.environ.update(substitutions)
     for sub in substitutions:
         if sub[-4:] == "_B64":
@@ -212,10 +214,10 @@ def capz():
     yaml = str(kustomizesub("./hack/observability"))  # build an observable kind deployment by default
 
     # add extra_args if they are defined
-    if settings.get("extra_args"):
-        azure_extra_args = settings.get("extra_args").get("azure")
+    if settings.get("container_args"):
+        capz_container_args = settings.get("container_args").get("capz-controller-manager")
         yaml_dict = decode_yaml_stream(yaml)
-        append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", azure_extra_args)
+        append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", capz_container_args)
         yaml = str(encode_yaml_stream(yaml_dict))
         yaml = fixup_yaml_empty_arrays(yaml)
 
@@ -317,9 +319,15 @@ def flavors():
     for template in template_list:
         deploy_worker_templates(template, substitutions)
 
+    delete_all_workload_clusters = kubectl_cmd + " delete clusters --all --wait=false"
+
+    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+        delete_all_workload_clusters += clear_aks_vnet_peerings()
+
+
     local_resource(
         name = "delete-all-workload-clusters",
-        cmd = kubectl_cmd + " delete clusters --all --wait=false",
+        cmd = ["sh", "-ec", delete_all_workload_clusters],
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = ["flavors"],
@@ -382,16 +390,29 @@ def deploy_worker_templates(template, substitutions):
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
-    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
+    flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM')"
+    flavor_cmd += "; export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -"
+    flavor_cmd += "; echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\""
 
     # wait for kubeconfig to be available
-    flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; chmod 600 ./${CLUSTER_NAME}.kubeconfig; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
+    flavor_cmd += "; echo \"Waiting for kubeconfig to be available\""
+    flavor_cmd += "; until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done"
+    flavor_cmd += "; " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig"
+    flavor_cmd += "; chmod 600 ./${CLUSTER_NAME}.kubeconfig"
+    flavor_cmd += "; echo \"Kubeconfig for $CLUSTER_NAME created and saved in the local\""
+    flavor_cmd += "; echo \"Waiting for $CLUSTER_NAME API Server to be accessible\""
+    flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done"
+    flavor_cmd += "; echo \"API Server of $CLUSTER_NAME is accessible\""
 
     # copy the kubeadm configmap to the calico-system namespace.
     # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     if "windows" in flavor_name:
         flavor_cmd += "; until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done"
         flavor_cmd += "; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -"
+
+    # TODO: no one is clearing MGMT_CLUSTER_NAME when using KIND, so this is always going to be true. Improve this logic.
+    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+        flavor_cmd += peer_vnets()
 
     flavor_cmd += get_addons(flavor_name)
 
@@ -453,6 +474,63 @@ def waitforsystem():
     local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
     local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
     local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-system")
+
+def peer_vnets():
+    # TODO: check for az cli to be installed in local
+    # wait for AKS VNet to be in the state created
+    peering_cmd = "; echo \"--------Peering VNETs--------\""
+    peering_cmd += "; az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180"
+    peering_cmd += "; export MGMT_VNET_ID=$(az network vnet show --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --query id --output tsv)"
+    peering_cmd += "; echo \" 1/8 ${AKS_MGMT_VNET_NAME} found \""
+
+    # wait for workload VNet to be created
+    peering_cmd += "; az network vnet wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --created --timeout 180"
+    peering_cmd += "; export WORKLOAD_VNET_ID=$(az network vnet show --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --query id --output tsv)"
+    peering_cmd += "; echo \" 2/8 ${CLUSTER_NAME}-vnet found \""
+
+    # peer mgmt vnet
+    peering_cmd += "; az network vnet peering create --name mgmt-to-${CLUSTER_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --remote-vnet \"${WORKLOAD_VNET_ID}\" --allow-vnet-access true --allow-forwarded-traffic true --only-show-errors --output none"
+    peering_cmd += "; az network vnet peering wait --name mgmt-to-${CLUSTER_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --created --timeout 300 --only-show-errors --output none"
+    peering_cmd += "; echo \" 3/8 mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}\""
+
+    # peer workload vnet
+    peering_cmd += "; az network vnet peering create --name ${CLUSTER_NAME}-to-mgmt --resource-group ${CLUSTER_NAME} --vnet-name ${CLUSTER_NAME}-vnet --remote-vnet \"${MGMT_VNET_ID}\" --allow-vnet-access true --allow-forwarded-traffic true --only-show-errors --output none"
+    peering_cmd += "; az network vnet peering wait --name ${CLUSTER_NAME}-to-mgmt --resource-group ${CLUSTER_NAME} --vnet-name ${CLUSTER_NAME}-vnet --created --timeout 300 --only-show-errors --output none"
+    peering_cmd += "; echo \" 4/8 ${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet\""
+
+    # create private DNS zone
+    peering_cmd += "; az network private-dns zone create --resource-group ${CLUSTER_NAME} --name ${AZURE_LOCATION}.cloudapp.azure.com --only-show-errors --output none"
+    peering_cmd += "; az network private-dns zone wait --resource-group ${CLUSTER_NAME} --name ${AZURE_LOCATION}.cloudapp.azure.com --created --timeout 300 --only-show-errors --output none"
+    peering_cmd += "; echo \" 5/8 ${AZURE_LOCATION}.cloudapp.azure.com private DNS zone created in ${CLUSTER_NAME}\""
+
+    # link private DNS Zone to workload vnet
+    peering_cmd += "; az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --virtual-network \"${WORKLOAD_VNET_ID}\" --registration-enabled false --only-show-errors --output none"
+    peering_cmd += "; az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --created --timeout 300 --only-show-errors --output none"
+    peering_cmd += "; echo \" 6/8 workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone\""
+
+    # link private DNS Zone to mgmt vnet
+    peering_cmd += "; az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --virtual-network \"${MGMT_VNET_ID}\" --registration-enabled false --only-show-errors --output none"
+    peering_cmd += "; az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --created --timeout 300 --only-show-errors --output none"
+    peering_cmd += "; echo \" 7/8 management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone\""
+
+    # create private DNS zone record
+    # TODO: 10.0.0.100 should be customizable
+    peering_cmd += "; az network private-dns record-set a add-record --resource-group ${CLUSTER_NAME} --zone-name ${AZURE_LOCATION}.cloudapp.azure.com --record-set-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX} --ipv4-address 10.0.0.100 --only-show-errors --output none"
+    peering_cmd += "; echo \" 8/8 ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX} private DNS zone record created\n\""
+
+    return peering_cmd
+
+def clear_aks_vnet_peerings():
+    delete_peering_cmd = "; echo \"--------Clearing AKS MGMT VNETs Peerings--------\""
+    delete_peering_cmd += "; az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180"
+    delete_peering_cmd += "; echo \" ${AKS_MGMT_VNET_NAME} found \""
+
+    # List all peering names and store them in an array
+    delete_peering_cmd += "; PEERING_NAMES=$(az network vnet peering list --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --query \"[].name\" --output tsv)"
+    delete_peering_cmd += "; for PEERING_NAME in ${PEERING_NAMES[@]}; do echo \"Deleting peering: ${PEERING_NAME}\"; az network vnet peering delete --name ${PEERING_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME}; done"
+    delete_peering_cmd += "; echo \"All VNETs Peerings deleted in ${AKS_MGMT_VNET_NAME}\""
+
+    return delete_peering_cmd
 
 ##############################
 # Actual work happens here
