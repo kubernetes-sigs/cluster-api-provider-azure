@@ -212,6 +212,8 @@ func (p *AzureCredentialsProvider) hasClientSecret() bool {
 	switch p.Identity.Spec.Type {
 	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
 		return true
+	case infrav1.ServicePrincipalCertificate:
+		return p.Identity.Spec.CertPath == ""
 	default:
 		return false
 	}
