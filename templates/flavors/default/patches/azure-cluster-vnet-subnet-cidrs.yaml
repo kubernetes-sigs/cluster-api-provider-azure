@@ -1,0 +1,28 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    apiServerLB:
+      # We pre-create this public IP and the DNS name to use it in the
+      # worker node's /etc/hosts.
+      frontendIPs:
+        - name: ${CLUSTER_NAME}-api-lb
+          publicIP:
+            name: ${CLUSTER_NAME}-api-lb
+            dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+        - name: ${CLUSTER_NAME}-internal-lb-private-ip
+          privateIP: 10.0.0.100
+    vnet:
+      cidrBlocks:
+        - 10.0.0.0/8
+    subnets:
+      - name: control-plane-subnet
+        role: control-plane
+        cidrBlocks:
+          - 10.0.0.0/16
+      - name: node-subnet
+        role: node
+        cidrBlocks:
+          - 10.1.0.0/16
