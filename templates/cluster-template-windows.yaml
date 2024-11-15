@@ -39,12 +39,20 @@ spec:
         publicIP:
           dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
           name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: 10.11.0.100
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - 10.11.0.0/24
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - 10.11.1.0/24
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - 10.11.0.0/16
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -298,7 +306,7 @@ spec:
       - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands:
       - powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts'
-        -Value '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
+        -Value '10.11.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
       users:
       - groups: Administrators
         name: capi

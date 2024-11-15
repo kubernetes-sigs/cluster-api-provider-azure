@@ -9,4 +9,4 @@ spec:
       # so that worker nodes can access the API server using the internal IP.
       # 10.0.0.100 is the default IP that gets assigned to a internal load balancer.
       preKubeadmCommands:
-        - powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
+        - powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '10.11.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
