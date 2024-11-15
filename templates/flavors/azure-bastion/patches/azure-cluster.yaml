@@ -5,4 +5,7 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   bastionSpec:
-    azureBastion: {}
+    azureBastion:
+      subnet:
+        cidrBlocks:
+          - 10.2.3.0/24
