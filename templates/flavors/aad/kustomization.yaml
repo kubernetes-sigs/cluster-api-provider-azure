@@ -40,6 +40,11 @@ patches:
     - op: replace
       path: /spec/networkSpec/subnets/1/cidrBlocks/0
       value: 10.1.1.0/24
+- target:
+    kind: KubeadmConfigTemplate
+  patch: |-
+    - op: remove
+      path: /spec/template/spec/preKubeadmCommands/0
 
 sortOptions:
   order: fifo

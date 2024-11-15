@@ -211,8 +211,6 @@ spec:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
-      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
-        >> /etc/hosts
       - echo '10.1.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
         >> /etc/hosts
 ---
