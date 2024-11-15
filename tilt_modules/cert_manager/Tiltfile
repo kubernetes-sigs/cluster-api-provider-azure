@@ -25,7 +25,7 @@ spec:
     name: test-selfsigned
 """
 
-
+# Deploys cert manager to your environment
 def deploy_cert_manager(registry="quay.io/jetstack", version="v1.3.1", load_to_kind=False, kind_cluster_name="kind"):
     silent=True
     if version.startswith('v0'):
