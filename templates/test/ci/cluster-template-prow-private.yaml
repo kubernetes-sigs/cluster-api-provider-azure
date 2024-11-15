@@ -236,7 +236,9 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
+      preKubeadmCommands:
+      - echo '10.9.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
