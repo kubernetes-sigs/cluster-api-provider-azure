@@ -9,13 +9,38 @@ resources:
 patches:
 - path: patches/kubeadm-controlplane.yaml
 - path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
+- path: ../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: replace
+      path: /spec/networkSpec/apiServerLB/frontendIPs/1/privateIP
+      value: 10.10.0.100
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: replace
+      path: /spec/networkSpec/vnet/cidrBlocks/0
+      value: 10.10.0.0/16
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: replace
+      path: /spec/networkSpec/subnets/0/cidrBlocks/0
+      value: 10.10.0.0/24
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: replace
+      path: /spec/networkSpec/subnets/1/cidrBlocks/0
+      value: 10.10.1.0/24
 - target:
     kind: KubeadmConfigTemplate
   patch: |-
     - op: add
       path: /spec/template/spec/preKubeadmCommands/-
-      value: echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+      value: echo '10.10.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+
 
 sortOptions:
   order: fifo
