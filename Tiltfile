@@ -324,7 +324,6 @@ def flavors():
     if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
         delete_all_workload_clusters += clear_aks_vnet_peerings()
 
-
     local_resource(
         name = "delete-all-workload-clusters",
         cmd = ["sh", "-ec", delete_all_workload_clusters],
