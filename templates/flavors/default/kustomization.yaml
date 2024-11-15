@@ -8,8 +8,8 @@ resources:
 
 patches:
 - path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-- path: patches/azure-cluster-vnet-subnet-cidrs.yaml
-- path: patches/kubeadm-config-template-worker-node.yaml
+- path: ../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
+- path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 
 sortOptions:
   order: fifo
