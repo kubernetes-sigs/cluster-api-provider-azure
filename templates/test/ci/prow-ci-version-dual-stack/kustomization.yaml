@@ -28,6 +28,13 @@ patches:
 - path: ../prow-dual-stack/patches/cluster-label-calico-dual-stack.yaml
 - path: patches/machine-deployment.yaml
 - path: ../patches/windows-addons-disabled.yaml
+- target:
+    kind: KubeadmConfigTemplate
+  patch: |-
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands/-
+      value: echo '50.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+
 
 sortOptions:
   order: fifo
