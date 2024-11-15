@@ -38,20 +38,22 @@ spec:
         publicIP:
           dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
           name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: 60.0.0.100
     subnets:
     - cidrBlocks:
-      - 10.0.0.0/16
+      - 60.0.0.0/16
       - 2001:1234:5678:9abc::/64
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - 10.1.0.0/16
+      - 60.1.0.0/16
       - 2001:1234:5678:9abd::/64
       name: node-subnet
       role: node
     vnet:
       cidrBlocks:
-      - 10.0.0.0/8
+      - 60.0.0.0/8
       - 2001:1234:5678:9a00::/56
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
@@ -252,5 +254,5 @@ spec:
             cluster-dns: '[fd00::10]'
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
-      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+      - echo '60.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
         >> /etc/hosts

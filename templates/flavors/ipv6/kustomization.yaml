@@ -11,8 +11,15 @@ patches:
 - path: patches/ipv6.yaml
 - path: patches/kubeadm-controlplane.yaml
 - path: patches/controlplane-azuremachinetemplate.yaml
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
-- path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
+- target:
+    kind: KubeadmConfigTemplate
+  patch: |-
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands
+      value: []
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands/-
+      value: echo '60.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
 
 sortOptions:
   order: fifo
