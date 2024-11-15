@@ -68,4 +68,3 @@ def deploy_cert_manager(registry="quay.io/jetstack", version="v1.3.1", load_to_k
     local("for i in 1 2 3 4 5 6; do (kubectl apply -f - <<EOF" + cert_manager_test_resources_versioned + "EOF\n) && break || sleep 15; done", quiet=silent, echo_off=silent)
     local("kubectl wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert ", quiet=silent, echo_off=silent)
     local("kubectl delete -f - <<EOF" + cert_manager_test_resources_versioned + "EOF", quiet=silent, echo_off=silent)
-    
