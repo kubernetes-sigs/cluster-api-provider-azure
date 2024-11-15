@@ -166,6 +166,16 @@ func TestHasClientSecret(t *testing.T) {
 					Type: infrav1.ServicePrincipalCertificate,
 				},
 			},
+			want: true,
+		},
+		{
+			name: "service principal with certificate path",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					CertPath: "something",
+				},
+			},
 			want: false,
 		},
 		{
