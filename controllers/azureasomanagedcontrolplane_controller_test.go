@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
@@ -31,6 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
@@ -330,6 +334,277 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(asoManagedControlPlane.Status.Ready).To(BeTrue())
 	})
 
+	t.Run("successfully reconciles a kubeconfig with a token", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				InfrastructureRef: &corev1.ObjectReference{
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedClusterKind,
+				},
+			},
+		}
+		kubeconfig := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secret.Name(cluster.Name, secret.Kubeconfig) + "-user",
+				Namespace: cluster.Namespace,
+			},
+			Data: map[string][]byte{
+				"some other key": func() []byte {
+					kubeconfig := &clientcmdapi.Config{
+						AuthInfos: map[string]*clientcmdapi.AuthInfo{
+							"some-user": {
+								Exec: &clientcmdapi.ExecConfig{},
+							},
+						},
+					}
+					kubeconfigData, err := clientcmd.Write(*kubeconfig)
+					g.Expect(err).NotTo(HaveOccurred())
+					return kubeconfigData
+				}(),
+			},
+		}
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: cluster.Namespace,
+			},
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				OperatorSpec: &asocontainerservicev1.ManagedClusterOperatorSpec{
+					Secrets: &asocontainerservicev1.ManagedClusterOperatorSecrets{
+						UserCredentials: &genruntime.SecretDestination{
+							Name: secret.Name(cluster.Name, secret.Kubeconfig) + "-user",
+							Key:  "some other key",
+						},
+					},
+				},
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				Fqdn: ptr.To("endpoint"),
+				AadProfile: &asocontainerservicev1.ManagedClusterAADProfile_STATUS{
+					Managed: ptr.To(true),
+				},
+				DisableLocalAccounts: ptr.To(true),
+			},
+		}
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+				Finalizers: []string{
+					infrav1alpha.AzureASOManagedControlPlaneFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
+			},
+			Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: managedCluster.Name,
+								},
+							}),
+						},
+					},
+				},
+			},
+			Status: infrav1alpha.AzureASOManagedControlPlaneStatus{
+				Ready: false,
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedControlPlane, managedCluster, kubeconfig).
+			Build()
+		kubeConfigPatched := false
+		r := &AzureASOManagedControlPlaneReconciler{
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+					kubeconfigSecret := obj.(*corev1.Secret)
+					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
+					kubeConfigPatched = true
+
+					kubeconfig, err := clientcmd.Load(kubeconfigSecret.Data[secret.KubeconfigDataName])
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(kubeconfig.AuthInfos).To(HaveEach(Satisfy(func(user *clientcmdapi.AuthInfo) bool {
+						return user.Exec == nil &&
+							user.Token == "token"
+					})))
+
+					return nil
+				},
+			},
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
+			CredentialCache: fakeASOCredentialCache(func(_ context.Context, _ client.Object) (azcore.TokenCredential, error) {
+				return fakeTokenCredential{token: "token", expiresOn: time.Now().Add(1 * time.Hour)}, nil
+			}),
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.Requeue).To(BeFalse())
+		g.Expect(result.RequeueAfter).NotTo(BeZero())
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(kubeConfigPatched).To(BeTrue())
+		g.Expect(asoManagedControlPlane.Status.Ready).To(BeTrue())
+	})
+
+	t.Run("successfully reconciles a kubeconfig with a token that has expired", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				InfrastructureRef: &corev1.ObjectReference{
+					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1alpha.AzureASOManagedClusterKind,
+				},
+			},
+		}
+		kubeconfig := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secret.Name(cluster.Name, secret.Kubeconfig) + "-user",
+				Namespace: cluster.Namespace,
+			},
+			Data: map[string][]byte{
+				"some other key": func() []byte {
+					kubeconfig := &clientcmdapi.Config{
+						AuthInfos: map[string]*clientcmdapi.AuthInfo{
+							"some-user": {
+								Exec: &clientcmdapi.ExecConfig{},
+							},
+						},
+					}
+					kubeconfigData, err := clientcmd.Write(*kubeconfig)
+					g.Expect(err).NotTo(HaveOccurred())
+					return kubeconfigData
+				}(),
+			},
+		}
+		managedCluster := &asocontainerservicev1.ManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mc",
+				Namespace: cluster.Namespace,
+			},
+			Spec: asocontainerservicev1.ManagedCluster_Spec{
+				OperatorSpec: &asocontainerservicev1.ManagedClusterOperatorSpec{
+					Secrets: &asocontainerservicev1.ManagedClusterOperatorSecrets{
+						UserCredentials: &genruntime.SecretDestination{
+							Name: secret.Name(cluster.Name, secret.Kubeconfig) + "-user",
+							Key:  "some other key",
+						},
+					},
+				},
+			},
+			Status: asocontainerservicev1.ManagedCluster_STATUS{
+				Fqdn: ptr.To("endpoint"),
+				AadProfile: &asocontainerservicev1.ManagedClusterAADProfile_STATUS{
+					Managed: ptr.To(true),
+				},
+				DisableLocalAccounts: ptr.To(true),
+			},
+		}
+		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+				Finalizers: []string{
+					infrav1alpha.AzureASOManagedControlPlaneFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
+			},
+			Spec: infrav1alpha.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1alpha.AzureASOManagedControlPlaneTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: managedCluster.Name,
+								},
+							}),
+						},
+					},
+				},
+			},
+			Status: infrav1alpha.AzureASOManagedControlPlaneStatus{
+				Ready: true,
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedControlPlane, managedCluster, kubeconfig).
+			Build()
+		kubeConfigPatched := false
+		r := &AzureASOManagedControlPlaneReconciler{
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+					kubeconfigSecret := obj.(*corev1.Secret)
+					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
+					kubeConfigPatched = true
+
+					kubeconfig, err := clientcmd.Load(kubeconfigSecret.Data[secret.KubeconfigDataName])
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(kubeconfig.AuthInfos).To(HaveEach(Satisfy(func(user *clientcmdapi.AuthInfo) bool {
+						return user.Exec == nil &&
+							user.Token == "token"
+					})))
+
+					return nil
+				},
+			},
+			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
+					},
+				}
+			},
+			CredentialCache: fakeASOCredentialCache(func(_ context.Context, _ client.Object) (azcore.TokenCredential, error) {
+				return fakeTokenCredential{token: "token", expiresOn: time.Now()}, nil
+			}),
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(kubeConfigPatched).To(BeTrue())
+		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
+	})
+
 	t.Run("successfully reconciles pause", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -477,4 +752,19 @@ func mcJSON(g Gomega, mc *asocontainerservicev1.ManagedCluster) []byte {
 	j, err := json.Marshal(mc)
 	g.Expect(err).NotTo(HaveOccurred())
 	return j
+}
+
+type fakeASOCredentialCache func(context.Context, client.Object) (azcore.TokenCredential, error)
+
+func (t fakeASOCredentialCache) authTokenForASOResource(ctx context.Context, obj client.Object) (azcore.TokenCredential, error) {
+	return t(ctx, obj)
+}
+
+type fakeTokenCredential struct {
+	token     string
+	expiresOn time.Time
+}
+
+func (t fakeTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	return azcore.AccessToken{Token: t.token, ExpiresOn: t.expiresOn}, nil
 }
