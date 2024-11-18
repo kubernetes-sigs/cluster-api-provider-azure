@@ -11,7 +11,7 @@ patches:
 - path: patches/azure-machine-template.yaml
 - path: patches/kubeadm-control-plane.yaml
 - path: patches/kubeadm-worker-node.yaml
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
+- path: ../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
 - path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 
 sortOptions:

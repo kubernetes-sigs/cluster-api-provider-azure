@@ -20,7 +20,7 @@ patches:
     kind: AzureMachineTemplate
     name: .*-control-plane
     version: v1beta1
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
+- path: ../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
 - path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 
 sortOptions:
