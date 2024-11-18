@@ -89,7 +89,7 @@ spec:
         extraArgs:
           allocate-node-cidrs: "true"
           cloud-provider: external
-          cluster-cidr: 10.244.0.0/16,2001:1234:5678:9a40::/58
+          cluster-cidr: 50.244.0.0/16,2001:1234:5678:9a40::/58
           cluster-name: ${CLUSTER_NAME}
           configure-cloud-routes: "true"
           v: "4"

@@ -26,6 +26,6 @@ spec:
         extraArgs:
           #required for ipv6 using calico
           allocate-node-cidrs: "true"
-          cluster-cidr: "10.244.0.0/16,2001:1234:5678:9a40::/58"
+          cluster-cidr: "50.244.0.0/16,2001:1234:5678:9a40::/58"
           configure-cloud-routes: "true"
           cloud-provider: external
