@@ -385,6 +385,8 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	$(KUBECTL) get secret/$(CLUSTER_NAME)-kubeconfig -n default -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	$(KUBECTL) -n default wait --for=condition=Ready --timeout=10m cluster "$(CLUSTER_NAME)"
 
+	./scripts/peer-vnets.sh	
+
 	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
 .PHONY: create-cluster
