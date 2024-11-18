@@ -40,12 +40,26 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: 10.0.0.100
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - 10.0.0.0/24
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - 10.1.0.0/24
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - 10.0.0.0/16
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -373,6 +387,8 @@ spec:
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
+      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/replace-k8s-binaries.sh
 ---

@@ -45,6 +45,14 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: 10.0.0.100
     subnets:
     - cidrBlocks:
       - 10.0.0.0/16
@@ -446,6 +454,8 @@ spec:
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
+      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5
