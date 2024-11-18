@@ -42,19 +42,19 @@ spec:
           dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
           name: ${CLUSTER_NAME}-api-lb
       - name: ${CLUSTER_NAME}-internal-lb-private-ip
-        privateIP: 10.3.0.100
+        privateIP: 60.3.0.100
     subnets:
     - cidrBlocks:
-      - 10.3.0.0/24
+      - 60.3.0.0/16
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - 10.3.1.0/24
+      - 60.3.1.0/16
       name: node-subnet
       role: node
     vnet:
       cidrBlocks:
-      - 10.3.0.0/16
+      - 60.3.0.0/8
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -220,7 +220,7 @@ spec:
             max-pods: "110"
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
-      - echo '10.3.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+      - echo '60.3.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
         >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
