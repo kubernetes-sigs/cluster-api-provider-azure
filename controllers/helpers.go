@@ -1078,7 +1078,7 @@ func ClusterPauseChangeAndInfrastructureReady(log logr.Logger) predicate.Funcs {
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
-func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster, timeouts reconciler.Timeouts) (ClusterScoper, error) {
+func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster, timeouts reconciler.Timeouts, credCache azure.CredentialCache) (ClusterScoper, error) {
 	infraRef := cluster.Spec.InfrastructureRef
 	switch infraRef.Kind {
 	case "AzureCluster":
@@ -1095,10 +1095,11 @@ func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, 
 
 		// Create the cluster scope
 		return scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-			Client:       c,
-			Cluster:      cluster,
-			AzureCluster: azureCluster,
-			Timeouts:     timeouts,
+			Client:          c,
+			Cluster:         cluster,
+			AzureCluster:    azureCluster,
+			Timeouts:        timeouts,
+			CredentialCache: credCache,
 		})
 
 	case "AzureManagedCluster":
@@ -1115,10 +1116,11 @@ func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, 
 
 		// Create the control plane scope
 		return scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-			Client:       c,
-			Cluster:      cluster,
-			ControlPlane: azureManagedControlPlane,
-			Timeouts:     timeouts,
+			Client:          c,
+			Cluster:         cluster,
+			ControlPlane:    azureManagedControlPlane,
+			Timeouts:        timeouts,
+			CredentialCache: credCache,
 		})
 	}
 

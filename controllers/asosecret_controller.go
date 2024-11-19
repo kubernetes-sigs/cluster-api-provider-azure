@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -53,6 +54,7 @@ type ASOSecretReconciler struct {
 	Recorder         record.EventRecorder
 	Timeouts         reconciler.Timeouts
 	WatchFilterValue string
+	CredentialCache  azure.CredentialCache
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -167,10 +169,11 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		// Create the scope.
 		clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
-			Client:       asos.Client,
-			Cluster:      cluster,
-			AzureCluster: ownerType,
-			Timeouts:     asos.Timeouts,
+			Client:          asos.Client,
+			Cluster:         cluster,
+			AzureCluster:    ownerType,
+			Timeouts:        asos.Timeouts,
+			CredentialCache: asos.CredentialCache,
 		})
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
@@ -193,10 +196,11 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		// Create the scope.
 		clusterScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-			Client:       asos.Client,
-			Cluster:      cluster,
-			ControlPlane: ownerType,
-			Timeouts:     asos.Timeouts,
+			Client:          asos.Client,
+			Cluster:         cluster,
+			ControlPlane:    ownerType,
+			Timeouts:        asos.Timeouts,
+			CredentialCache: asos.CredentialCache,
 		})
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create scope")

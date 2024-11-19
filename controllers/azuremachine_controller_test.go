@@ -147,8 +147,9 @@ func TestAzureMachineReconcile(t *testing.T) {
 			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
 
 			reconciler := &AzureMachineReconciler{
-				Client:   fakeClient,
-				Recorder: record.NewFakeRecorder(128),
+				Client:          fakeClient,
+				Recorder:        record.NewFakeRecorder(128),
+				CredentialCache: azure.NewCredentialCache(),
 			}
 
 			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -402,16 +403,19 @@ func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineRecon
 		).
 		Build()
 
+	credCache := azure.NewCredentialCache()
 	reconciler := &AzureMachineReconciler{
 		Client:                    client,
 		Recorder:                  record.NewFakeRecorder(128),
 		createAzureMachineService: tc.createAzureMachineService,
+		CredentialCache:           credCache,
 	}
 
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-		Client:       client,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+		Client:          client,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		CredentialCache: credCache,
 	})
 	if err != nil {
 		return nil, nil, nil, err
@@ -785,12 +789,14 @@ func TestConditions(t *testing.T) {
 			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
 			recorder := record.NewFakeRecorder(10)
 
-			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.Timeouts{}, "")
+			credCache := azure.NewCredentialCache()
+			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.Timeouts{}, "", credCache)
 
 			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
-				Client:       fakeClient,
-				Cluster:      cluster,
-				AzureCluster: azureCluster,
+				Client:          fakeClient,
+				Cluster:         cluster,
+				AzureCluster:    azureCluster,
+				CredentialCache: credCache,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

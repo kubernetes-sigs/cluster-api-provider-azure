@@ -51,18 +51,20 @@ type AzureManagedMachinePoolReconciler struct {
 	Recorder                             record.EventRecorder
 	Timeouts                             reconciler.Timeouts
 	WatchFilterValue                     string
+	CredentialCache                      azure.CredentialCache
 	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
 }
 
 type azureManagedMachinePoolServiceCreator func(managedMachinePoolScope *scope.ManagedMachinePoolScope, apiCallTimeout time.Duration) (*azureManagedMachinePoolService, error)
 
 // NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
-func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureManagedMachinePoolReconciler {
+func NewAzureManagedMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureManagedMachinePoolReconciler {
 	ampr := &AzureManagedMachinePoolReconciler{
 		Client:           client,
 		Recorder:         recorder,
 		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
 	}
 
 	ampr.createAzureManagedMachinePoolService = newAzureManagedMachinePoolService
@@ -192,10 +194,11 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 
 	// create the managed control plane scope
 	managedControlPlaneScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-		Client:       ammpr.Client,
-		ControlPlane: controlPlane,
-		Cluster:      ownerCluster,
-		Timeouts:     ammpr.Timeouts,
+		Client:          ammpr.Client,
+		ControlPlane:    controlPlane,
+		Cluster:         ownerCluster,
+		Timeouts:        ammpr.Timeouts,
+		CredentialCache: ammpr.CredentialCache,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create ManagedControlPlane scope")

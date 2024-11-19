@@ -69,7 +69,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 
 	Context("Reconcile an AzureCluster", func() {
 		It("should not error with minimal set up", func() {
-			reconciler := NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.Timeouts{}, "")
+			reconciler := NewAzureClusterReconciler(testEnv, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.Timeouts{}, "", azure.NewCredentialCache())
 			By("Calling reconcile")
 			name := test.RandomName("foo", 10)
 			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
@@ -276,7 +276,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 
 	recorder := record.NewFakeRecorder(1)
 
-	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.Timeouts{}, "")
+	reconciler := NewAzureClusterReconciler(c, recorder, reconciler.Timeouts{}, "", azure.NewCredentialCache())
 	name := test.RandomName("paused", 10)
 	namespace := namespace
 
@@ -506,10 +506,11 @@ func getClusterReconcileInputs(tc TestClusterReconcileInput) (*AzureClusterRecon
 	}
 
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
-		Client:       client,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-		Cache:        tc.cache,
+		Client:          client,
+		Cluster:         cluster,
+		AzureCluster:    azureCluster,
+		Cache:           tc.cache,
+		CredentialCache: azure.NewCredentialCache(),
 	})
 	if err != nil {
 		return nil, nil, err

@@ -61,6 +61,7 @@ type (
 		Timeouts          reconciler.Timeouts
 		WatchFilterValue  string
 		reconcilerFactory azureMachinePoolMachineReconcilerFactory
+		CredentialCache   azure.CredentialCache
 	}
 
 	azureMachinePoolMachineReconciler struct {
@@ -70,13 +71,14 @@ type (
 )
 
 // NewAzureMachinePoolMachineController creates a new AzureMachinePoolMachineController to handle updates to Azure Machine Pool Machines.
-func NewAzureMachinePoolMachineController(c client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string) *AzureMachinePoolMachineController {
+func NewAzureMachinePoolMachineController(c client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureMachinePoolMachineController {
 	return &AzureMachinePoolMachineController{
 		Client:            c,
 		Recorder:          recorder,
 		Timeouts:          timeouts,
 		WatchFilterValue:  watchFilterValue,
 		reconcilerFactory: newAzureMachinePoolMachineReconciler,
+		CredentialCache:   credCache,
 	}
 }
 
@@ -168,7 +170,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return ctrl.Result{}, nil
 	}
 
-	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampmr.Client, cluster, ampmr.Timeouts)
+	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampmr.Client, cluster, ampmr.Timeouts, ampmr.CredentialCache)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}

@@ -65,6 +65,7 @@ type (
 		WatchFilterValue              string
 		createAzureMachinePoolService azureMachinePoolServiceCreator
 		BootstrapConfigGVK            schema.GroupVersionKind
+		CredentialCache               azure.CredentialCache
 	}
 
 	// annotationReaderWriter provides an interface to read and write annotations.
@@ -77,7 +78,7 @@ type (
 type azureMachinePoolServiceCreator func(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error)
 
 // NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance.
-func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue, bootstrapConfigGVK string) *AzureMachinePoolReconciler {
+func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue, bootstrapConfigGVK string, credCache azure.CredentialCache) *AzureMachinePoolReconciler {
 	gvk := schema.FromAPIVersionAndKind(kubeadmv1.GroupVersion.String(), reflect.TypeOf((*kubeadmv1.KubeadmConfig)(nil)).Elem().Name())
 	userGVK, _ := schema.ParseKindArg(bootstrapConfigGVK)
 
@@ -91,6 +92,7 @@ func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRe
 		Timeouts:           timeouts,
 		WatchFilterValue:   watchFilterValue,
 		BootstrapConfigGVK: gvk,
+		CredentialCache:    credCache,
 	}
 
 	ampr.createAzureMachinePoolService = newAzureMachinePoolService
@@ -228,7 +230,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	logger = logger.WithValues("cluster", cluster.Name)
 
-	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampr.Client, cluster, ampr.Timeouts)
+	clusterScope, err := infracontroller.GetClusterScoper(ctx, logger, ampr.Client, cluster, ampr.Timeouts, ampr.CredentialCache)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to create cluster scope for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}

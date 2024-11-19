@@ -125,6 +125,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		Recorder:                                 recorder,
 		Timeouts:                                 reconciler.Timeouts{},
 		WatchFilterValue:                         "",
+		CredentialCache:                          azure.NewCredentialCache(),
 		getNewAzureManagedControlPlaneReconciler: newAzureManagedControlPlaneReconciler,
 	}
 	name := test.RandomName("paused", 10)

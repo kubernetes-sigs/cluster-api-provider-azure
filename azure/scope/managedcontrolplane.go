@@ -75,6 +75,7 @@ type ManagedControlPlaneScopeParams struct {
 	ManagedMachinePools []ManagedMachinePool
 	Cache               *ManagedControlPlaneCache
 	Timeouts            azure.AsyncReconciler
+	CredentialCache     azure.CredentialCache
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -91,7 +92,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
 	}
 
-	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.ControlPlane.Spec.IdentityRef, params.ControlPlane.Namespace)
+	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.CredentialCache, params.Client, params.ControlPlane.Spec.IdentityRef, params.ControlPlane.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
