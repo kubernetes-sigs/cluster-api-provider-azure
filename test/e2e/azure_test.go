@@ -687,7 +687,6 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterTemplate := createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks"),
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersionUpgradeFrom),
@@ -894,7 +893,6 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks-topology"),
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersionUpgradeFrom),
