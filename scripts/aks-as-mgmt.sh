@@ -18,6 +18,8 @@ set -o nounset # exit when script tries to use undeclared variables.
 set -o pipefail # make the pipeline fail if any command in it fails.
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/common-vars.sh
+source "${REPO_ROOT}/hack/common-vars.sh"
 # shellcheck source=hack/ensure-azcli.sh
 source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 # shellcheck source=hack/ensure-tags.sh
@@ -30,7 +32,7 @@ make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${AZWI##*/}"
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # management cluster name
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="node-${AKS_RESOURCE_GROUP}"
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.30.2}"
+export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.30.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
 export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
 export AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
@@ -42,6 +44,12 @@ export AZWI_STORAGE_CONTAINER="\$web"
 export SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH:-}"
 export SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH:-}"
 export REGISTRY="${REGISTRY:-}"
+export AKS_MGMT_VNET_NAME="${AKS_MGMT_VNET_NAME:-"aks-mgmt-vnet-${RANDOM_SUFFIX}"}"
+export AKS_MGMT_VNET_CIDR="${AKS_MGMT_VNET_CIDR:-"20.255.0.0/16"}"
+export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR:-"20.255.254.0/24"}"
+export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP:-"20.255.254.100"}"
+export AKS_MGMT_SUBNET_NAME="${AKS_MGMT_SUBNET_NAME:-"aks-mgmt-subnet-${RANDOM_SUFFIX}"}"
+export AKS_MGMT_SUBNET_CIDR="${AKS_MGMT_SUBNET_CIDR:-"20.255.0.0/24"}"
 
 export AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-}"
 export AZURE_CLIENT_ID="${AZURE_CLIENT_ID:-}"
@@ -63,7 +71,7 @@ main() {
   echo "MGMT_CLUSTER_NAME:                    $MGMT_CLUSTER_NAME"
   echo "AKS_RESOURCE_GROUP:                   $AKS_RESOURCE_GROUP"
   echo "AKS_NODE_RESOURCE_GROUP:              $AKS_NODE_RESOURCE_GROUP"
-  echo "KUBERNETES_VERSION:                   $KUBERNETES_VERSION"
+  echo "AKS_MGMT_KUBERNETES_VERSION:          $AKS_MGMT_KUBERNETES_VERSION"
   echo "AZURE_LOCATION:                       $AZURE_LOCATION"
   echo "AKS_NODE_VM_SIZE:                     $AKS_NODE_VM_SIZE"
   echo "AZURE_NODE_MACHINE_TYPE:              $AZURE_NODE_MACHINE_TYPE"
@@ -76,6 +84,12 @@ main() {
   echo "SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH: $SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH"
   echo "REGISTRY:                             $REGISTRY"
   echo "APISERVER_LB_DNS_SUFFIX:              $APISERVER_LB_DNS_SUFFIX"
+  echo "AKS_MGMT_VNET_NAME:                   $AKS_MGMT_VNET_NAME"
+  echo "AKS_MGMT_VNET_CIDR:                   $AKS_MGMT_VNET_CIDR"
+  echo "AKS_MGMT_SERVICE_CIDR:                $AKS_MGMT_SERVICE_CIDR"
+  echo "AKS_MGMT_DNS_SERVICE_IP:              $AKS_MGMT_DNS_SERVICE_IP"
+  echo "AKS_MGMT_SUBNET_NAME:                 $AKS_MGMT_SUBNET_NAME"
+  echo "AKS_MGMT_SUBNET_CIDR:                 $AKS_MGMT_SUBNET_CIDR"
 
   echo "AZURE_SUBSCRIPTION_ID:                $AZURE_SUBSCRIPTION_ID"
   echo "AZURE_CLIENT_ID:                      $AZURE_CLIENT_ID"
@@ -102,6 +116,17 @@ create_aks_cluster() {
     --location "${AZURE_LOCATION}" \
     --output none --only-show-errors \
     --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
+
+
+    echo "creating vnet for the resource group ${AKS_RESOURCE_GROUP}"
+    az network vnet create \
+      --resource-group "${AKS_RESOURCE_GROUP}"\
+      --name "${AKS_MGMT_VNET_NAME}" \
+      --address-prefix "${AKS_MGMT_VNET_CIDR}" \
+      --subnet-name "${AKS_MGMT_SUBNET_NAME}" \
+      --subnet-prefix "${AKS_MGMT_SUBNET_CIDR}" \
+      --output none --only-show-errors \
+      --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}"
   fi
 
   aks_exists=$(az aks show --name "${MGMT_CLUSTER_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" 2>&1 || true) # true because we want to continue if the command fails
@@ -110,13 +135,16 @@ create_aks_cluster() {
     az aks create --name "${MGMT_CLUSTER_NAME}" \
     --resource-group "${AKS_RESOURCE_GROUP}" \
     --location "${AZURE_LOCATION}" \
-    --kubernetes-version "${KUBERNETES_VERSION}" \
+    --kubernetes-version "${AKS_MGMT_KUBERNETES_VERSION}" \
     --node-count "${AKS_NODE_COUNT}" \
     --node-vm-size "${AKS_NODE_VM_SIZE}" \
     --node-resource-group "${AKS_NODE_RESOURCE_GROUP}" \
     --vm-set-type VirtualMachineScaleSets \
     --generate-ssh-keys \
     --network-plugin azure \
+    --vnet-subnet-id "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AKS_RESOURCE_GROUP}/providers/Microsoft.Network/virtualNetworks/${AKS_MGMT_VNET_NAME}/subnets/${AKS_MGMT_SUBNET_NAME}" \
+    --service-cidr "${AKS_MGMT_SERVICE_CIDR}" \
+    --dns-service-ip "${AKS_MGMT_DNS_SERVICE_IP}" \
     --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}" \
     --output none --only-show-errors;
   elif echo "$aks_exists" | grep -q "${MGMT_CLUSTER_NAME}"; then
@@ -127,6 +155,7 @@ create_aks_cluster() {
   fi
 
   # check and save kubeconfig
+  echo -e "\n"
   echo "saving credentials of cluster ${MGMT_CLUSTER_NAME} in ${REPO_ROOT}/${MGMT_CLUSTER_KUBECONFIG}"
   az aks get-credentials --name "${MGMT_CLUSTER_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" \
   --file "${REPO_ROOT}/${MGMT_CLUSTER_KUBECONFIG}" --only-show-errors
@@ -177,6 +206,34 @@ create_aks_cluster() {
 }
 
 set_env_varaibles(){
+rm aks-mgmt-vars.env || true
+cat <<EOF > aks-mgmt-vars.env
+export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME}"
+export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}"
+export AKS_NODE_RESOURCE_GROUP="${AKS_NODE_RESOURCE_GROUP}"
+export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG}"
+export AKS_MI_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AZURE_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AKS_MI_OBJECT_ID="${AKS_MI_OBJECT_ID}"
+export AKS_MI_RESOURCE_ID="${AKS_MI_RESOURCE_ID}"
+export MANAGED_IDENTITY_NAME="${MANAGED_IDENTITY_NAME}"
+export MANAGED_IDENTITY_RG="${MANAGED_IDENTITY_RG}"
+export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="${AKS_MI_CLIENT_ID}"
+export CI_RG="${MANAGED_IDENTITY_RG}"
+export USER_IDENTITY="${MANAGED_IDENTITY_NAME}"
+export CLUSTER_IDENTITY_TYPE="UserAssignedMSI"
+export ASO_CREDENTIAL_SECRET_MODE="${ASO_CREDENTIAL_SECRET_MODE}"
+export REGISTRY="${REGISTRY}"
+export APISERVER_LB_DNS_SUFFIX="${APISERVER_LB_DNS_SUFFIX}"
+export AZURE_LOCATION="${AZURE_LOCATION}"
+export AKS_MGMT_VNET_NAME="${AKS_MGMT_VNET_NAME}"
+export AKS_MGMT_VNET_CIDR="${AKS_MGMT_VNET_CIDR}"
+export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR}"
+export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP}"
+export AKS_MGMT_SUBNET_NAME="${AKS_MGMT_SUBNET_NAME}"
+export AKS_MGMT_SUBNET_CIDR="${AKS_MGMT_SUBNET_CIDR}"
+EOF
+
   cat <<EOF > tilt-settings-temp.yaml
 kustomize_substitutions:
   MGMT_CLUSTER_NAME: "${MGMT_CLUSTER_NAME}"
@@ -210,28 +267,28 @@ else
 fi
 
 # copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
-allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
+allowed_contexts_exists=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml)
 if [ "$allowed_contexts_exists" == "null" ]; then
-  yq eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
+  ${YQ} eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
 fi
 
 # extract allowed_contexts from tilt-settings.yaml
-current_contexts=$(yq eval '.allowed_contexts' tilt-settings.yaml | sort -u)
+current_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml | sort -u)
 
 # extract allowed_contexts from tilt-settings-new.yaml
-new_contexts=$(yq eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
+new_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
 
 # combine current and new contexts, keeping the union of both
 combined_contexts=$(echo "$current_contexts"$'\n'"$new_contexts" | sort -u)
 
-# create a temporary file since env($combined_contexts) is not supported in yq
+# create a temporary file since env($combined_contexts) is not supported in ${YQ}
 echo "$combined_contexts" > combined_contexts.yaml
 
 # update allowed_contexts in tilt-settings.yaml with the combined contexts
-yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
+${YQ} eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
 
 # merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
-yq eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
+${YQ} eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
 
 mv tilt-settings-new.yaml tilt-settings.yaml
 rm -r combined_contexts.yaml

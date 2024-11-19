@@ -9,7 +9,7 @@ resources:
 patches:
 - path: patches/kubeadm-controlplane.yaml
 - path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
+- path: ../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
 - target:
     kind: KubeadmConfigTemplate
   patch: |-
