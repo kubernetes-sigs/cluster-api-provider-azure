@@ -49,7 +49,7 @@ spec:
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - 10.1.0.0/24
+      - 10.0.1.0/24
       name: node-subnet
       role: node
     vnet:

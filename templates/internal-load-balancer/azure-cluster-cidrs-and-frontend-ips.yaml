@@ -25,4 +25,4 @@ spec:
       - name: node-subnet
         role: node
         cidrBlocks:
-          - 10.1.0.0/24
+          - 10.0.1.0/24
