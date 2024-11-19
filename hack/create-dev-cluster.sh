@@ -64,7 +64,11 @@ export ASO_CREDENTIAL_SECRET_NAME=${ASO_CREDENTIAL_SECRET_NAME:="aso-credentials
 capz::util::generate_ssh_key
 
 echo "================ DOCKER BUILD ==============="
-PULL_POLICY=IfNotPresent make modules docker-build
+PULL_POLICY=IfNotPresent make modules docker-build docker-push
+# TODO: add a check for AKS vs kind
+if [ -v "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then
+    PULL_POLICY=IfNotPresent make docker-push
+else
 
 setup() {
     echo "================ MAKE CLEAN ==============="
