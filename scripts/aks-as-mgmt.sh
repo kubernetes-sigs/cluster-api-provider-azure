@@ -209,7 +209,6 @@ set_env_varaibles(){
 rm aks-mgmt-vars.env || true
 cat <<EOF > aks-mgmt-vars.env
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME}"
-export AKS_MGMT_VNET_NAME=${AKS_MGMT_VNET_NAME}"
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}"
 export AKS_NODE_RESOURCE_GROUP="${AKS_NODE_RESOURCE_GROUP}"
 export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG}"
