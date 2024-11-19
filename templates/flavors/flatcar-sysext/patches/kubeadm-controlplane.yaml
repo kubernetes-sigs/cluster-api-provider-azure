@@ -95,7 +95,8 @@ spec:
   template:
     spec:
       image:
-        computeGallery:
-          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
-          name: flatcar-stable-amd64
+        marketplace:
           version: ${FLATCAR_VERSION}
+          publisher: kinvolk
+          offer: flatcar-container-linux-corevm-amd64
+          sku: stable-gen2

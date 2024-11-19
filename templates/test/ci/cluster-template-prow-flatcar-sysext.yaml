@@ -373,9 +373,10 @@ spec:
         nameSuffix: etcddisk
       identity: UserAssigned
       image:
-        computeGallery:
-          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
-          name: flatcar-stable-amd64
+        marketplace:
+          offer: flatcar-container-linux-corevm-amd64
+          publisher: kinvolk
+          sku: stable-gen2
           version: ${FLATCAR_VERSION}
       osDisk:
         diskSizeGB: 128
@@ -394,9 +395,10 @@ spec:
   template:
     spec:
       image:
-        computeGallery:
-          gallery: flatcar-23485951-527a-48d6-9d11-6931ff0afc2e
-          name: flatcar-stable-amd64
+        marketplace:
+          offer: flatcar-container-linux-corevm-amd64
+          publisher: kinvolk
+          sku: stable-gen2
           version: ${FLATCAR_VERSION}
       osDisk:
         diskSizeGB: 128

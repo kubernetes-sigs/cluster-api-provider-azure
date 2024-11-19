@@ -6,7 +6,7 @@ CAPZ enables you to create Kubernetes clusters using Flatcar Container Linux on 
 
 ### The `flatcar-sysext` flavor (**recommended**)
 
-This variant relies on a vanilla Flatcar Community Gallery image which leverages the [systemd-sysext](https://www.flatcar.org/docs/latest/provisioning/sysext/) feature to install and update Kubernetes components. The Kubernetes version is not bound to the Flatcar version (i.e. Flatcar can be upgraded independently from Kubernetes and vice versa).
+This variant relies on a vanilla Flatcar marketplace image which leverages the [systemd-sysext](https://www.flatcar.org/docs/latest/provisioning/sysext/) feature to install and update Kubernetes components. The Kubernetes version is not bound to the Flatcar version (i.e. Flatcar can be upgraded independently from Kubernetes and vice versa).
 
 The template comes with a [systemd-sysupdate](https://www.freedesktop.org/software/systemd/man/latest/sysupdate.d.html) configuration file that will download each new patch version of Kubernetes (i.e. if you start with Kubernetes 1.x.y, systemd-sysupdate will automatically pull 1.x.y+1 but not 1.x+1.y). Please note that this behavior is disabled by default. To enable the Kubernetes auto-update you can:
   * Update the template to enable the `systemd-sysupdate.timer`
@@ -18,13 +18,13 @@ To coordinate the node reboot, we recommend using [Kured](https://github.com/kub
 
 Find the latest published images:
 ```console
-az sig image-version list --gallery-image-definition flatcar-stable-amd64 --gallery-name flatcar --resource-group flatcar-image-gallery-publishing -o table
-Location    Name      ProvisioningState    ResourceGroup
-----------  --------  -------------------  --------------------------------
-westeurope  3374.2.0  Succeeded            flatcar-image-gallery-publishing
-westeurope  3374.2.1  Succeeded            flatcar-image-gallery-publishing
-westeurope  3374.2.3  Succeeded            flatcar-image-gallery-publishing
-....
+az vm image list --offer flatcar-container-linux-corevm-amd64 --publisher kinvolk --sku stable-gen2 -o table --all
+Architecture    Offer                                 Publisher    Sku          Urn                                                                Version
+--------------  ------------------------------------  -----------  -----------  -----------------------------------------------------------------  ---------
+...
+x64             flatcar-container-linux-corevm-amd64  kinvolk      stable-gen2  kinvolk:flatcar-container-linux-corevm-amd64:stable-gen2:3975.2.0  3975.2.0
+x64             flatcar-container-linux-corevm-amd64  kinvolk      stable-gen2  kinvolk:flatcar-container-linux-corevm-amd64:stable-gen2:3975.2.1  3975.2.1
+x64             flatcar-container-linux-corevm-amd64  kinvolk      stable-gen2  kinvolk:flatcar-container-linux-corevm-amd64:stable-gen2:3975.2.2  3975.2.2
 ```
 
 ### The `flatcar` flavor
