@@ -286,6 +286,8 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		frontendLB,
 	}
 
+	fmt.Printf("Willie frontend lb: %v\n", frontendLB)
+
 	if s.APIServerLB().Type != infrav1.Internal {
 		internalLB := &loadbalancers.LBSpec{
 			Name:                 s.APIServerLB().Name + "-internal",
@@ -309,11 +311,12 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		// set the internal IP for the internal LB
 		internalLB.FrontendIPConfigs = []infrav1.FrontendIP{apiServerInternalLBIP}
 		specs = append(specs, internalLB)
+		fmt.Printf("Willie internal lb: %v\n", internalLB)
 	}
 
 	// Node outbound LB
 	if s.NodeOutboundLB() != nil {
-		specs = append(specs, &loadbalancers.LBSpec{
+		lb := &loadbalancers.LBSpec{
 			Name:                 s.NodeOutboundLB().Name,
 			ResourceGroup:        s.ResourceGroup(),
 			SubscriptionID:       s.SubscriptionID(),
@@ -329,12 +332,14 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
-		})
+		}
+		specs = append(specs, lb)
+		fmt.Printf("Willie node outbound lb: %v\n", lb)
 	}
 
 	// Control Plane Outbound LB
 	if s.ControlPlaneOutboundLB() != nil {
-		specs = append(specs, &loadbalancers.LBSpec{
+		lb := &loadbalancers.LBSpec{
 			Name:                 s.ControlPlaneOutboundLB().Name,
 			ResourceGroup:        s.ResourceGroup(),
 			SubscriptionID:       s.SubscriptionID(),
@@ -350,7 +355,9 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.ControlPlaneOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
-		})
+		}
+		specs = append(specs, lb)
+		fmt.Printf("Willie control plane outbound lb: %v\n", lb)
 	}
 
 	return specs
