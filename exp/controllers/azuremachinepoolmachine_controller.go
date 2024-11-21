@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
+	capierrors "sigs.k8s.io/cluster-api/errors" //nolint:staticcheck
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -98,14 +98,14 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePoolMachine{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, ampmr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, ampmr.WatchFilterValue)).
 		// Add a watch on AzureMachinePool for model changes
 		Watches(
 			&infrav1exp.AzureMachinePool{},
 			handler.EnqueueRequestsFromMapFunc(AzureMachinePoolToAzureMachinePoolMachines(ctx, mgr.GetClient(), log)),
 			builder.WithPredicates(
 				MachinePoolModelHasChanged(log),
-				predicates.ResourceNotPausedAndHasFilterLabel(log, ampmr.WatchFilterValue),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, ampmr.WatchFilterValue),
 			),
 		).
 		// Add a watch on CAPI Machines for MachinePool Machines
@@ -113,7 +113,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePoolMachine"))),
 			builder.WithPredicates(
-				predicates.ResourceNotPausedAndHasFilterLabel(log, ampmr.WatchFilterValue),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, ampmr.WatchFilterValue),
 			),
 		).
 		Complete(r)

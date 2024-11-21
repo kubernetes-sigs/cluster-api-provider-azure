@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
+	capierrors "sigs.k8s.io/cluster-api/errors" //nolint:staticcheck
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -133,7 +133,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePool{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&expv1.MachinePool{},
@@ -160,7 +160,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			handler.EnqueueRequestsFromMapFunc(AzureMachinePoolMachineMapper(mgr.GetScheme(), log)),
 			builder.WithPredicates(
 				MachinePoolMachineHasStateOrVersionChange(log),
-				predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue),
 			),
 		).
 		// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
@@ -168,8 +168,8 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
-				infracontroller.ClusterPauseChangeAndInfrastructureReady(log),
-				predicates.ResourceHasFilterLabel(log, ampr.WatchFilterValue),
+				infracontroller.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue),
 			),
 		).
 		Complete(r)

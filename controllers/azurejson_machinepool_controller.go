@@ -69,7 +69,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1exp.AzureMachinePool{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 		// set in Clusters created from a ClusterClass.
@@ -77,8 +77,8 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
-				predicates.ClusterUnpausedAndInfrastructureReady(log),
-				predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
+				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
 		Complete(r)
