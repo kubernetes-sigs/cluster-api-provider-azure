@@ -1602,7 +1602,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.featureGate != "" {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)()
+				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)
 			}
 			tc.cluster.setAPIServerLBDefaults()
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
