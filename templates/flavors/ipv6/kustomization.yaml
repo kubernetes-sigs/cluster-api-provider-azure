@@ -11,8 +11,6 @@ patches:
 - path: patches/ipv6.yaml
 - path: patches/kubeadm-controlplane.yaml
 - path: patches/controlplane-azuremachinetemplate.yaml
-- path: ../../internal-load-balancer/azure-cluster-frontend-ip.yaml
-- path: ../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 
 sortOptions:
   order: fifo
