@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -283,7 +282,7 @@ type (
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
 		// +optional
-		FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
+		FailureReason *string `json:"failureReason,omitempty"`
 
 		// FailureMessage will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a more verbose string suitable
