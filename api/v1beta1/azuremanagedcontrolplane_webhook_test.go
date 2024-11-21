@@ -1675,7 +1675,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			if tc.featureGateEnabled != nil {
-				defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)()
+				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
 			mcpw := &azureManagedControlPlaneWebhook{
 				Client: client,

@@ -722,7 +722,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.featureGateEnabled != nil {
-				defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)()
+				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
 			ampw := &azureMachinePoolWebhook{}
 			_, err := ampw.ValidateCreate(context.Background(), tc.amp)

@@ -1560,7 +1560,7 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			p := ClusterPauseChangeAndInfrastructureReady(logr.New(nil))
+			p := ClusterPauseChangeAndInfrastructureReady(&runtime.Scheme{}, logr.New(nil))
 			var actual bool
 			switch e := test.event.(type) {
 			case event.CreateEvent:
