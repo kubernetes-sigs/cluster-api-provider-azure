@@ -71,7 +71,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(azManagedCluster).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, amcr.WatchFilterValue)).
 		// watch AzureManagedControlPlane resources
 		Watches(
 			&infrav1.AzureManagedControlPlane{},
@@ -82,8 +82,8 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureManagedClusterKind), mgr.GetClient(), &infrav1.AzureManagedCluster{})),
 			builder.WithPredicates(
-				predicates.ClusterUnpaused(log),
-				predicates.ResourceNotPausedAndHasFilterLabel(log, amcr.WatchFilterValue),
+				predicates.ClusterUnpaused(mgr.GetScheme(), log),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, amcr.WatchFilterValue),
 			),
 		).
 		Complete(r)

@@ -72,12 +72,12 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1alpha.AzureASOManagedControlPlane{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(clusterToAzureASOManagedControlPlane),
 			builder.WithPredicates(
-				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
-				ClusterPauseChangeAndInfrastructureReady(log),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
+				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
 			),
 		).
 		// User errors that CAPZ passes through agentPoolProfiles on create must be fixed in the
