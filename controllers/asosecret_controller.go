@@ -68,8 +68,8 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, asos.WatchFilterValue)).
-		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, asos.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		Named("ASOSecret").
 		Owns(&corev1.Secret{}).
 		// Add a watch on ASO secrets owned by an AzureManagedControlPlane
@@ -82,7 +82,7 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 			&infrav1.AzureManagedControlPlane{},
 			&handler.EnqueueRequestForObject{},
 			builder.WithPredicates(
-				predicates.ResourceNotPausedAndHasFilterLabel(log, asos.WatchFilterValue),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, asos.WatchFilterValue),
 			),
 		).
 		// Add a watch on clusterv1.Cluster object for unpause notifications.
@@ -90,8 +90,8 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 			builder.WithPredicates(
-				predicates.ClusterUnpaused(log),
-				predicates.ResourceNotPausedAndHasFilterLabel(log, asos.WatchFilterValue),
+				predicates.ClusterUnpaused(mgr.GetScheme(), log),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, asos.WatchFilterValue),
 			),
 		).
 		Complete(asos)
