@@ -2231,7 +2231,7 @@ func TestBackendPoolName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			if tc.featureGate == feature.APIServerILB {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)()
+				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)
 			}
 
 			cluster := &clusterv1.Cluster{
@@ -3161,7 +3161,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.featureGate == feature.APIServerILB {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)()
+				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)
 			}
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
