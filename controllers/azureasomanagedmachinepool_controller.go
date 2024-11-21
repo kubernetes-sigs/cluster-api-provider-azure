@@ -78,14 +78,14 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1alpha.AzureASOManagedMachinePool{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Watches(
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(clusterToAzureASOManagedMachinePools),
 			builder.WithPredicates(
-				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
-				predicates.Any(log,
-					predicates.ClusterControlPlaneInitialized(log),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
+				predicates.Any(mgr.GetScheme(), log,
+					predicates.ClusterControlPlaneInitialized(mgr.GetScheme(), log),
 					ClusterUpdatePauseChange(log),
 				),
 			),
@@ -96,7 +96,7 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 				infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedMachinePoolKind)),
 			),
 			builder.WithPredicates(
-				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
 		Build(r)
