@@ -308,8 +308,19 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			AdditionalTags:       s.AdditionalTags(),
 		}
 
-		// set the internal IP for the internal LB
-		internalLB.FrontendIPConfigs = []infrav1.FrontendIP{apiServerInternalLBIP}
+		// In upgrade scenarios, we want to default to the default internal IP if the user has not specified one.
+		if apiServerInternalLBIP.PrivateIPAddress == "" {
+			defaultPrivateLBIP := infrav1.FrontendIP{
+				Name: s.APIServerLB().Name + "-internal-ip",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+				},
+			}
+			internalLB.FrontendIPConfigs = []infrav1.FrontendIP{defaultPrivateLBIP}
+		} else {
+			// set the internal IP for the internal LB
+			internalLB.FrontendIPConfigs = []infrav1.FrontendIP{apiServerInternalLBIP}
+		}
 		specs = append(specs, internalLB)
 		fmt.Printf("Willie internal lb: %v\n", internalLB)
 	}
