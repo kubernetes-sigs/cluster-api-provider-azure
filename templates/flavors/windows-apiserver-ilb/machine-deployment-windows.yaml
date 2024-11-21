@@ -1,0 +1,84 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-md-win"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-md-win"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+  annotations:
+    runtime: containerd
+spec:
+  template:
+    metadata:
+      annotations:
+        runtime: containerd
+    spec:
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      osDisk:
+        osType: "Windows"
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      identity: UserAssigned
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  template:
+    spec:
+      users:
+      - name: capi
+        groups: Administrators
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
+      preKubeadmCommands: []
+      postKubeadmCommands:
+        - nssm set kubelet start SERVICE_AUTO_START
+        - powershell C:/defender-exclude-calico.ps1
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          criSocket: npipe:////./pipe/containerd-containerd
+          kubeletExtraArgs:
+            cloud-provider: external
+            v: "2"
+            windows-priorityclass: "ABOVE_NORMAL_PRIORITY_CLASS"
+      files:
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-md-win-azure-json
+            key: worker-node-azure.json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - path: C:/defender-exclude-calico.ps1
+        permissions: "0744"
+        content: |-
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
