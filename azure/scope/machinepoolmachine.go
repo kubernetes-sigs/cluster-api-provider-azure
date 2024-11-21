@@ -28,7 +28,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -277,7 +276,7 @@ func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.
-func (s *MachinePoolMachineScope) SetFailureReason(v capierrors.MachineStatusError) {
+func (s *MachinePoolMachineScope) SetFailureReason(v string) {
 	s.AzureMachinePoolMachine.Status.FailureReason = &v
 }
 

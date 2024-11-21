@@ -41,8 +41,10 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
@@ -418,7 +420,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
 		CredentialCache:  credCache,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency, SkipNameValidation: ptr.To(true)}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
 		os.Exit(1)
 	}
@@ -476,7 +478,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			Timeouts:         timeouts,
 			WatchFilterValue: watchFilterValue,
 			CredentialCache:  credCache,
-		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency, SkipNameValidation: ptr.To(true)}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
 			os.Exit(1)
 		}
@@ -558,23 +560,30 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			setupLog.Error(err, "unable to create secret caching client")
 			os.Exit(1)
 		}
-		tracker, err := remote.NewClusterCacheTracker(
-			mgr,
-			remote.ClusterCacheTrackerOptions{
-				SecretCachingClient: secretCachingClient,
-				Log:                 &ctrl.Log,
-				Indexes:             []remote.Index{remote.NodeProviderIDIndex},
+		clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+			SecretClient: secretCachingClient,
+			Cache:        clustercache.CacheOptions{},
+			Client: clustercache.ClientOptions{
+				UserAgent: remote.DefaultClusterAPIUserAgent("azure-controller"),
+				Cache: clustercache.ClientCacheOptions{
+					DisableFor: []client.Object{
+						// Don't cache ConfigMaps or Secrets.
+						&corev1.ConfigMap{},
+						&corev1.Secret{},
+					},
+				},
 			},
-		)
+			WatchFilterValue: watchFilterValue,
+		}, controller.Options{})
 		if err != nil {
-			setupLog.Error(err, "unable to create cluster cache tracker")
+			setupLog.Error(err, "unable to create cluster cache")
 			os.Exit(1)
 		}
 
 		if err := (&controllers.AzureASOManagedMachinePoolReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-			Tracker:          tracker,
+			Tracker:          clusterCache,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)

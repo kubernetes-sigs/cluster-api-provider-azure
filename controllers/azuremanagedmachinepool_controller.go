@@ -100,7 +100,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(azManagedMachinePool).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&expv1.MachinePool{},
@@ -116,8 +116,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 			builder.WithPredicates(
-				ClusterPauseChangeAndInfrastructureReady(log),
-				predicates.ResourceHasFilterLabel(log, ammpr.WatchFilterValue),
+				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ammpr.WatchFilterValue),
 			),
 		).
 		Complete(r)
