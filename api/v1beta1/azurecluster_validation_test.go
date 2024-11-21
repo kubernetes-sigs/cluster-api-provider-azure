@@ -891,7 +891,6 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "too many IP configs",
 			lb: LoadBalancerSpec{
-				Name: "my-valid-lb",
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -899,10 +898,6 @@ func TestValidateAPIServerLB(t *testing.T) {
 					{
 						Name: "ip-2",
 					},
-				},
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Public,
-					SKU:  SKUStandard,
 				},
 			},
 			wantErr: true,
@@ -921,67 +916,9 @@ func TestValidateAPIServerLB(t *testing.T) {
 			},
 		},
 		{
-			name: "too many private IP configs",
+			name: "public LB with private IP",
 			lb: LoadBalancerSpec{
-				Name: "my-valid-lb",
 				FrontendIPs: []FrontendIP{
-					{
-						Name: "ip-1",
-						FrontendIPClass: FrontendIPClass{
-							PrivateIPAddress: "10.0.0.100",
-						},
-					},
-					{
-						Name: "ip-2",
-						FrontendIPClass: FrontendIPClass{
-							PrivateIPAddress: "10.0.0.200",
-						},
-					},
-					{
-						Name: "ip-3",
-					},
-				},
-				LoadBalancerClassSpec: LoadBalancerClassSpec{
-					Type: Public,
-					SKU:  SKUStandard,
-				},
-			},
-			wantErr: true,
-			expectedErr: field.Error{
-				Type:  "FieldValueInvalid",
-				Field: "apiServerLB.frontendIPConfigs",
-				BadValue: []FrontendIP{
-					{
-						Name: "ip-1",
-						FrontendIPClass: FrontendIPClass{
-							PrivateIPAddress: "10.0.0.100",
-						},
-					},
-					{
-						Name: "ip-2",
-						FrontendIPClass: FrontendIPClass{
-							PrivateIPAddress: "10.0.0.200",
-						},
-					},
-					{
-						Name: "ip-3",
-					},
-				},
-				Detail: "API Server Load balancer should have 1 private IP",
-			},
-		},
-		{
-			name:    "public LB with private IP",
-			cpCIDRS: []string{"10.0.0.0/24"},
-			lb: LoadBalancerSpec{
-				Name: "my-valid-lb",
-				FrontendIPs: []FrontendIP{
-					{
-						Name: "ip-1",
-						PublicIP: &PublicIPSpec{
-							Name: "my-valid-ip-name",
-						},
-					},
 					{
 						Name: "ip-1",
 						FrontendIPClass: FrontendIPClass{
@@ -991,10 +928,14 @@ func TestValidateAPIServerLB(t *testing.T) {
 				},
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
 					Type: Public,
-					SKU:  SKUStandard,
 				},
 			},
-			wantErr: false,
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "Public Load Balancers cannot have a Private IP",
+			},
 		},
 		{
 			name: "internal LB with public IP",
@@ -1015,7 +956,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			expectedErr: field.Error{
 				Type:   "FieldValueForbidden",
 				Field:  "apiServerLB.frontendIPConfigs[0].publicIP",
-				Detail: "API Server's associated internal load balancer cannot have a Public IP",
+				Detail: "Internal Load Balancers cannot have a Public IP",
 			},
 		},
 		{
@@ -1542,18 +1483,12 @@ func createClusterNetworkSpec() NetworkSpec {
 		Vnet: VnetSpec{
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
-			VnetClassSpec: VnetClassSpec{
-				CIDRBlocks: []string{DefaultVnetCIDR},
-			},
 		},
 		Subnets: Subnets{
 			{
 				SubnetClassSpec: SubnetClassSpec{
 					Role: "cluster",
 					Name: "cluster-subnet",
-					CIDRBlocks: []string{
-						DefaultClusterSubnetCIDR,
-					},
 				},
 			},
 		},
@@ -1567,18 +1502,12 @@ func createValidNetworkSpecWithClusterSubnet() NetworkSpec {
 		Vnet: VnetSpec{
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
-			VnetClassSpec: VnetClassSpec{
-				CIDRBlocks: []string{DefaultVnetCIDR},
-			},
 		},
 		Subnets: Subnets{
 			{
 				SubnetClassSpec: SubnetClassSpec{
 					Role: "cluster",
 					Name: "cluster-subnet",
-					CIDRBlocks: []string{
-						DefaultClusterSubnetCIDR,
-					},
 				},
 			},
 		},
@@ -1592,9 +1521,6 @@ func createValidNetworkSpec() NetworkSpec {
 		Vnet: VnetSpec{
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
-			VnetClassSpec: VnetClassSpec{
-				CIDRBlocks: []string{DefaultVnetCIDR},
-			},
 		},
 		Subnets:        createValidSubnets(),
 		APIServerLB:    createValidAPIServerLB(),
@@ -1608,9 +1534,6 @@ func createValidSubnets() Subnets {
 			SubnetClassSpec: SubnetClassSpec{
 				Role: "control-plane",
 				Name: "control-plane-subnet",
-				CIDRBlocks: []string{
-					DefaultControlPlaneSubnetCIDR,
-				},
 			},
 		},
 		{
@@ -1641,12 +1564,6 @@ func createValidAPIServerLB() LoadBalancerSpec {
 				PublicIP: &PublicIPSpec{
 					Name:    "public-ip",
 					DNSName: "myfqdn.azure.com",
-				},
-			},
-			{
-				Name: "ip-config-internal-ip",
-				FrontendIPClass: FrontendIPClass{
-					PrivateIPAddress: DefaultInternalLBIPAddress,
 				},
 			},
 		},
