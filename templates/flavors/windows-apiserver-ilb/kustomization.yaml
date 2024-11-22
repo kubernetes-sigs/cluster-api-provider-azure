@@ -2,11 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../default
+- ../apiserver-ilb
 - machine-deployment-windows.yaml
 
 patches:
 - path: ../base-windows-containerd/cluster.yaml
+- path: patches/kubeadm-config-template.yaml
 
 sortOptions:
   order: fifo

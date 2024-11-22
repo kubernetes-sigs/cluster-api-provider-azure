@@ -8,6 +8,8 @@ resources:
 
 patches:
 - path: ../../azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: patches/control-plane.yaml
+- path: patches/kubeadm-config-template.yaml
 
 sortOptions:
   order: fifo

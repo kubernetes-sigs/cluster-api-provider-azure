@@ -1,10 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cni-windows: calico
-    csi-proxy: enabled
-    windows: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -33,6 +29,12 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
     subnets:
     - name: control-plane-subnet
       role: control-plane
@@ -193,7 +195,9 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
+      preKubeadmCommands:
+      - echo '10.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -207,90 +211,3 @@ spec:
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
   type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT:=2}
-  selector:
-    matchLabels: null
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-win
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-win
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
-metadata:
-  annotations:
-    runtime: containerd
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  template:
-    metadata:
-      annotations:
-        runtime: containerd
-    spec:
-      identity: UserAssigned
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Windows
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-win
-  namespace: default
-spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-win-azure-json
-        owner: root:root
-        path: c:/k/azure.json
-        permissions: "0644"
-      - content: |-
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
-        path: C:/defender-exclude-calico.ps1
-        permissions: "0744"
-      joinConfiguration:
-        nodeRegistration:
-          criSocket: npipe:////./pipe/containerd-containerd
-          kubeletExtraArgs:
-            cloud-provider: external
-            v: "2"
-            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - nssm set kubelet start SERVICE_AUTO_START
-      - powershell C:/defender-exclude-calico.ps1
-      preKubeadmCommands: []
-      users:
-      - groups: Administrators
-        name: capi
-        sshAuthorizedKeys:
-        - ${AZURE_SSH_PUBLIC_KEY:=""}
