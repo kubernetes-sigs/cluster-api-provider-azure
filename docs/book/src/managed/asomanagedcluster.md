@@ -89,3 +89,32 @@ spec:
             name: ${CLUSTER_NAME}-user-kubeconfig # NOT ${CLUSTER_NAME}-kubeconfig
             key: value
 ```
+
+### Migrating existing Clusters to AzureASOManagedControlPlane
+
+Existing CAPI Clusters using the AzureManagedControlPlane and associated APIs can be migrated to use the new
+AzureASOManagedControlPlane and its associated APIs. This process relies on CAPZ's ability to
+[adopt](./adopting-clusters#option-1-using-the-new-azureasomanaged-api) existing clusters that may not have
+been created by CAPZ, which comes with some [caveats](./adopting-clusters#caveats) that should be reviewed first.
+
+To migrate one cluster to the ASO-based APIs:
+
+1. Pause the cluster by setting the Cluster's `spec.paused` to `true`.
+1. Wait for the cluster to be paused by waiting for the _absence_ of the `clusterctl.cluster.x-k8s.io/block-move`
+   annotation on the AzureManagedControlPlane and its AzureManagedMachinePools. This should be fairly instantaneous.
+1. Create a new namespace to contain the new resources to avoid conflicting ASO definitions.
+1. [Adopt](./adopting-clusters#option-1-using-the-new-azureasomanaged-api) the underlying AKS resources from
+   the new namespace, which creates the new CAPI and CAPZ resources.
+1. Forcefully delete the old Cluster. This is more complicated than normal because CAPI controllers do not reconcile
+   paused resources at all, even when they are deleted. The underlying Azure resources will not be affected.
+   - Delete the cluster: `kubectl delete cluster <name> --wait=false`
+   - Delete the cluster infrastructure object: `kubectl delete azuremanagedcluster <name> --wait=false`
+   - Delete the cluster control plane object: `kubectl delete azuremanagedcontrolplane <name> --wait=false`
+   - Delete the machine pools: `kubectl delete machinepool <names...> --wait=false`
+   - Delete the machine pool infrastructure resources: `kubectl delete azuremanagedmachinepool <names...> --wait=false`
+   - Remove finalizers from the machine pool infrastructure resources: `kubectl patch azuremanagedmachinepool <names...> --type merge -p '{"metadata": {"finalizers": null}}'`
+   - Remove finalizers from the machine pools: `kubectl patch machinepool <names...> --type merge -p '{"metadata": {"finalizers": null}}'`
+   - Remove finalizers from the cluster control plane object: `kubectl patch azuremanagedcontrolplane <name> --type merge -p '{"metadata": {"finalizers": null}}'`
+   - Note: the cluster infrastructure object should not have any finalizers and should already be deleted
+   - Remove finalizers from the cluster: `kubectl patch cluster <name> --type merge -p '{"metadata": {"finalizers": null}}'`
+   - Verify the old ASO resources like ResourceGroup and ManagedCluster managed by the old Cluster are deleted.
