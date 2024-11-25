@@ -91,7 +91,8 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	if old != nil {
 		oldNetworkSpec = old.Spec.NetworkSpec
 	}
-	allErrs = append(allErrs, validateNetworkSpec(c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
+
+	allErrs = append(allErrs, validateNetworkSpec(c.Spec.ControlPlaneEnabled, c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
 
 	var oldCloudProviderConfigOverrides *CloudProviderConfigOverrides
 	if old != nil {
@@ -155,7 +156,7 @@ func validateIdentityRef(identityRef *corev1.ObjectReference, fldPath *field.Pat
 }
 
 // validateNetworkSpec validates a NetworkSpec.
-func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
+func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	// If the user specifies a resourceGroup for vnet, it means
 	// that they intend to use a pre-existing vnet. In this case,
@@ -168,20 +169,21 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 
 		allErrs = append(allErrs, validateVnetCIDR(networkSpec.Vnet.CIDRBlocks, fldPath.Child("cidrBlocks"))...)
 
-		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, networkSpec.Vnet, fldPath.Child("subnets"))...)
+		allErrs = append(allErrs, validateSubnets(controlPlaneEnabled, networkSpec.Subnets, networkSpec.Vnet, fldPath.Child("subnets"))...)
 
 		allErrs = append(allErrs, validateVnetPeerings(networkSpec.Vnet.Peerings, fldPath.Child("peerings"))...)
 	}
 
 	var cidrBlocks []string
-	controlPlaneSubnet, err := networkSpec.GetControlPlaneSubnet()
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
+	if controlPlaneEnabled {
+		controlPlaneSubnet, err := networkSpec.GetControlPlaneSubnet()
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
+		}
+
+		cidrBlocks = controlPlaneSubnet.CIDRBlocks
+		allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 	}
-
-	cidrBlocks = controlPlaneSubnet.CIDRBlocks
-
-	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 
 	var needOutboundLB bool
 	for _, subnet := range networkSpec.Subnets {
@@ -193,10 +195,14 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	if needOutboundLB {
 		allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
 	}
-
-	allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
-
-	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec.PrivateDNSZoneName, networkSpec.APIServerLB.Type, fldPath.Child("privateDNSZoneName"))...)
+	if controlPlaneEnabled {
+		allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
+	}
+	var lbType = Internal
+	if networkSpec.APIServerLB != nil {
+		lbType = networkSpec.APIServerLB.Type
+	}
+	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec.PrivateDNSZoneName, controlPlaneEnabled, lbType, fldPath.Child("privateDNSZoneName"))...)
 
 	if len(allErrs) == 0 {
 		return nil
@@ -215,12 +221,14 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 
 // validateSubnets validates a list of Subnets.
 // When configuring a cluster, it is essential to include either a control-plane subnet and a node subnet, or a user can configure a cluster subnet which will be used as a control-plane subnet and a node subnet.
-func validateSubnets(subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.ErrorList {
+func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
-		"control-plane": false,
-		"node":          false,
+		"node": false,
+	}
+	if controlPlaneEnabled {
+		requiredSubnetRoles["control-plane"] = false
 	}
 	clusterSubnet := false
 	numberofClusterSubnets := 0
@@ -384,11 +392,15 @@ func validateSecurityRule(rule SecurityRule, fldPath *field.Path) (allErrs field
 	return allErrs
 }
 
-func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
+func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	lbClassSpec := lb.LoadBalancerClassSpec
-	olLBClassSpec := old.LoadBalancerClassSpec
+	var olLBClassSpec LoadBalancerClassSpec
+	if old != nil {
+		olLBClassSpec = old.LoadBalancerClassSpec
+	}
+
 	allErrs = append(allErrs, validateClassSpecForAPIServerLB(lbClassSpec, &olLBClassSpec, fldPath)...)
 
 	// Name should be valid.
@@ -396,7 +408,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		allErrs = append(allErrs, err)
 	}
 	// Name should be immutable.
-	if old.Name != "" && old.Name != lb.Name {
+	if old != nil && old.Name != "" && old.Name != lb.Name {
 		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
 	}
 
@@ -434,7 +446,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 	return allErrs
 }
 
-func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB *LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	var lbClassSpec, oldClassSpec *LoadBalancerClassSpec
@@ -484,7 +496,7 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	return allErrs
 }
 
-func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB *LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	var lbClassSpec *LoadBalancerClassSpec
@@ -506,11 +518,11 @@ func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalanc
 }
 
 // validatePrivateDNSZoneName validates the PrivateDNSZoneName.
-func validatePrivateDNSZoneName(privateDNSZoneName string, apiserverLBType LBType, fldPath *field.Path) field.ErrorList {
+func validatePrivateDNSZoneName(privateDNSZoneName string, controlPlaneEnabled bool, apiserverLBType LBType, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if privateDNSZoneName != "" {
-		if apiserverLBType != Internal {
+		if controlPlaneEnabled && apiserverLBType != Internal {
 			allErrs = append(allErrs, field.Invalid(fldPath, apiserverLBType,
 				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))
 		}

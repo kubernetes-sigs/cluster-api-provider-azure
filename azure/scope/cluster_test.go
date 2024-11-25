@@ -52,6 +52,7 @@ import (
 
 const fakeClientID = "fake-client-id"
 const fakeTenantID = "fake-tenant-id"
+const fakeSubscriptionID = "123"
 
 func specToString(spec any) string {
 	var sb strings.Builder
@@ -79,8 +80,6 @@ func TestNewClusterScope(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
-
-	fakeSubscriptionID := "123"
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -134,8 +133,15 @@ func TestAPIServerHost(t *testing.T) {
 			name: "public apiserver lb (user-defined dns)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -156,8 +162,15 @@ func TestAPIServerHost(t *testing.T) {
 			name: "private apiserver lb (default private dns zone)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -178,11 +191,18 @@ func TestAPIServerHost(t *testing.T) {
 			name: "private apiserver (user-defined private dns zone)",
 			azureCluster: infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: fakeSubscriptionID,
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						NetworkClassSpec: infrav1.NetworkClassSpec{
 							PrivateDNSZoneName: "example.private",
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -233,6 +253,13 @@ func TestGettingSecurityRules(t *testing.T) {
 			Name: "my-azure-cluster",
 		},
 		Spec: infrav1.AzureClusterSpec{
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "123",
+				IdentityRef: &corev1.ObjectReference{
+					Kind: infrav1.AzureClusterIdentityKind,
+				},
+			},
+			ControlPlaneEnabled: true,
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
 					{
@@ -287,7 +314,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						},
 					},
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -311,7 +338,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "centralIndia",
 						AdditionalTags: infrav1.Tags{
@@ -323,7 +351,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](0),
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -347,7 +375,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "centralIndia",
 						AdditionalTags: infrav1.Tags{
@@ -368,7 +397,7 @@ func TestPublicIPSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -406,7 +435,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "centralIndia",
 						AdditionalTags: infrav1.Tags{
@@ -439,7 +469,7 @@ func TestPublicIPSpecs(t *testing.T) {
 							},
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								Type: infrav1.Internal,
 							},
@@ -503,7 +533,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "centralIndia",
 						AdditionalTags: infrav1.Tags{
@@ -515,7 +546,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 							FrontendIPs: []infrav1.FrontendIP{
 								{
@@ -559,7 +590,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "centralIndia",
 						AdditionalTags: infrav1.Tags{
@@ -574,7 +606,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -618,7 +650,8 @@ func TestPublicIPSpecs(t *testing.T) {
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
-					ResourceGroup: "my-rg",
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
 					BastionSpec: infrav1.BastionSpec{
 						AzureBastion: &infrav1.AzureBastion{
 							PublicIP: infrav1.PublicIPSpec{
@@ -654,7 +687,7 @@ func TestPublicIPSpecs(t *testing.T) {
 						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							FrontendIPs: []infrav1.FrontendIP{
 								{
 									PublicIP: &infrav1.PublicIPSpec{
@@ -2001,7 +2034,7 @@ func TestAPIServerLBPoolName(t *testing.T) {
 				},
 				Spec: infrav1.AzureClusterSpec{
 					NetworkSpec: infrav1.NetworkSpec{
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: tc.lbName,
 						},
 					},
@@ -2093,6 +2126,13 @@ func TestOutboundLBName(t *testing.T) {
 					Name: tc.clusterName,
 				},
 				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							{
@@ -2107,7 +2147,7 @@ func TestOutboundLBName(t *testing.T) {
 			}
 
 			if tc.apiServerLB != nil {
-				azureCluster.Spec.NetworkSpec.APIServerLB = *tc.apiServerLB
+				azureCluster.Spec.NetworkSpec.APIServerLB = tc.apiServerLB
 			}
 
 			if tc.controlPlaneOutboundLB != nil {
@@ -2191,6 +2231,13 @@ func TestBackendPoolName(t *testing.T) {
 					Name: tc.clusterName,
 				},
 				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							{
@@ -2200,7 +2247,7 @@ func TestBackendPoolName(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "APIServerLBName",
 						},
 						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
@@ -2285,6 +2332,22 @@ func TestOutboundPoolName(t *testing.T) {
 			azureCluster := &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1beta1",
+							Kind:       "Cluster",
+							Name:       "my-cluster",
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
 				},
 			}
 
@@ -2565,7 +2628,8 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 						SubscriptionID: "123",
 						Location:       "westus2",
 					},
-					ResourceGroup: "my-rg",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: infrav1.VnetSpec{
 							Name:          "my-vnet",
@@ -2585,7 +2649,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "api-server-lb",
 							BackendPool: infrav1.BackendPool{
 								Name: "api-server-lb-backend-pool",
@@ -2763,7 +2827,8 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 						SubscriptionID: "123",
 						Location:       "westus2",
 					},
-					ResourceGroup: "my-rg",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: infrav1.VnetSpec{
 							Name:          "my-vnet",
@@ -2783,7 +2848,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 								},
 							},
 						},
-						APIServerLB: infrav1.LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "api-server-lb",
 							BackendPool: infrav1.BackendPool{
 								Name: "api-server-lb-backend-pool",

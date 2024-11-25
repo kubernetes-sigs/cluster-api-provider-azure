@@ -303,7 +303,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 								},
 							},
 							NetworkSpec: infrav1.NetworkSpec{
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 										Type: infrav1.Internal,
 									},
@@ -387,7 +387,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 								SubscriptionID: "123",
 							},
 							NetworkSpec: infrav1.NetworkSpec{
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "foo-loadbalancer",
 									FrontendIPs: []infrav1.FrontendIP{
 										{
@@ -2215,7 +2215,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 										Type: infrav1.Internal,
@@ -2328,7 +2328,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 									BackendPool: infrav1.BackendPool{
 										Name: "api-lb-backendPool",
@@ -2438,7 +2438,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 									BackendPool: infrav1.BackendPool{
 										Name: "api-lb-backendPool",
@@ -2549,7 +2549,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
@@ -2689,7 +2689,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
@@ -2827,7 +2827,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 										},
 									},
 								},
-								APIServerLB: infrav1.LoadBalancerSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
 									Name: "api-lb",
 								},
 								NodeOutboundLB: &infrav1.LoadBalancerSpec{
