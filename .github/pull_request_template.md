@@ -24,7 +24,6 @@ Fixes #
 **Special notes for your reviewer**:
 <!-- Refer to https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/docs/book/src/developers/releasing.md#release-support for more information about which changes are eligible for backport -->
 
-- [ ] cherry-pick candidate
 
 **TODOs**:
 <!-- Put an "X" character inside the brackets of each completed task. Some may be optional depending on the PR. -->
@@ -32,6 +31,7 @@ Fixes #
 - [ ] squashed commits
 - [ ] includes documentation
 - [ ] adds unit tests
+- [ ] cherry-pick candidate
 
 **Release note**:
 <!--  Write your release note:
