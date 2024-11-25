@@ -2,7 +2,6 @@
 
 ### Option 1: Using the new AzureASOManaged API
 
-<!-- markdown-link-check-disable-next-line -->
 The [AzureASOManagedControlPlane and related APIs](./asomanagedcluster.md) support
 adoption as a first-class use case. Going forward, this method is likely to be easier, more reliable, include
 more features, and better supported for adopting AKS clusters than Option 2 below.
@@ -15,10 +14,10 @@ and AzureASOManagedMachinePools. The [`asoctl import
 azure-resource`](https://azure.github.io/azure-service-operator/tools/asoctl/#import-azure-resource) command
 can help generate the required YAML.
 
-Caveats:
-- The `asoctl import azure-resource` command has at least [one known
-  bug](https://github.com/Azure/azure-service-operator/issues/3805) requiring the YAML it generates to be
-  edited before it can be applied to a cluster.
+This method can also be used to [migrate](./asomanagedcluster#migrating-existing-clusters-to-azureasomanagedcontrolplane) from AzureManagedControlPlane and its associated APIs.
+
+#### Caveats
+
 - CAPZ currently only records the ASO resources in the CAPZ resources' `spec.resources` that it needs to
   function, which include the ManagedCluster, its ResourceGroup, and associated ManagedClustersAgentPools.
   Other resources owned by the ManagedCluster like Kubernetes extensions or Fleet memberships are not
@@ -29,6 +28,8 @@ Caveats:
 - Adopting existing clusters created with the GA AzureManagedControlPlane API to the experimental API with
   this method is theoretically possible, but untested. Care should be taken to prevent CAPZ from reconciling
   two different representations of the same underlying Azure resources.
+- This method cannot be used to import existing clusters as a ClusterClass or a topology, only as a standalone
+  Cluster.
 
 ### Option 2: Using the current AzureManagedControlPlane API
 
