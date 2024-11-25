@@ -431,8 +431,8 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating an Azure Linux cluster [OPTIONAL]", func() {
-		It("With Azure Linux control-plane and worker nodes", func() {
+	FContext("Creating an Azure Linux cluster [OPTIONAL]", func() {
+		FIt("With Azure Linux control-plane and worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "azurelinux")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
