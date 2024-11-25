@@ -169,19 +169,21 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 			}
 		}
 	} else {
-		controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
-			&publicips.PublicIPSpec{
-				Name:             s.APIServerPublicIP().Name,
-				ResourceGroup:    s.ResourceGroup(),
-				DNSName:          s.APIServerPublicIP().DNSName,
-				IsIPv6:           false, // Currently azure requires an IPv4 lb rule to enable IPv6
-				ClusterName:      s.ClusterName(),
-				Location:         s.Location(),
-				ExtendedLocation: s.ExtendedLocation(),
-				FailureDomains:   s.FailureDomains(),
-				AdditionalTags:   s.AdditionalTags(),
-				IPTags:           s.APIServerPublicIP().IPTags,
-			},
+		if s.ControlPlaneEnabled() {
+			controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:             s.APIServerPublicIP().Name,
+					ResourceGroup:    s.ResourceGroup(),
+					DNSName:          s.APIServerPublicIP().DNSName,
+					IsIPv6:           false, // Currently azure requires an IPv4 lb rule to enable IPv6
+					ClusterName:      s.ClusterName(),
+					Location:         s.Location(),
+					ExtendedLocation: s.ExtendedLocation(),
+					FailureDomains:   s.FailureDomains(),
+					AdditionalTags:   s.AdditionalTags(),
+					IPTags:           s.APIServerPublicIP().IPTags,
+				},
+			}
 		}
 	}
 	publicIPSpecs = append(publicIPSpecs, controlPlaneOutboundIPSpecs...)
@@ -243,27 +245,30 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
-	specs := []azure.ResourceSpecGetter{
-		&loadbalancers.LBSpec{
-			// API Server LB
-			Name:                 s.APIServerLB().Name,
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 s.APIServerLB().Type,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRole,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-		},
+	var specs []azure.ResourceSpecGetter
+	if s.ControlPlaneEnabled() {
+		specs = []azure.ResourceSpecGetter{
+			&loadbalancers.LBSpec{
+				// API Server LB
+				Name:                 s.APIServerLB().Name,
+				ResourceGroup:        s.ResourceGroup(),
+				SubscriptionID:       s.SubscriptionID(),
+				ClusterName:          s.ClusterName(),
+				Location:             s.Location(),
+				ExtendedLocation:     s.ExtendedLocation(),
+				VNetName:             s.Vnet().Name,
+				VNetResourceGroup:    s.Vnet().ResourceGroup,
+				SubnetName:           s.ControlPlaneSubnet().Name,
+				FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
+				APIServerPort:        s.APIServerPort(),
+				Type:                 s.APIServerLB().Type,
+				SKU:                  s.APIServerLB().SKU,
+				Role:                 infrav1.APIServerRole,
+				BackendPoolName:      s.APIServerLB().BackendPool.Name,
+				IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+				AdditionalTags:       s.AdditionalTags(),
+			},
+		}
 	}
 
 	if s.APIServerLB().Type != infrav1.Internal {
@@ -714,9 +719,14 @@ func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	return subnet.RouteTable
 }
 
+// ControlPlaneEnabled returns true if the control plane is enabled.
+func (s *ClusterScope) ControlPlaneEnabled() bool {
+	return s.AzureCluster.Spec.ControlPlaneEnabled
+}
+
 // APIServerLB returns the cluster API Server load balancer.
 func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
-	return &s.AzureCluster.Spec.NetworkSpec.APIServerLB
+	return s.AzureCluster.Spec.NetworkSpec.APIServerLB
 }
 
 // NodeOutboundLB returns the cluster node outbound load balancer.
@@ -736,7 +746,7 @@ func (s *ClusterScope) APIServerLBName() string {
 
 // IsAPIServerPrivate returns true if the API Server LB is of type Internal.
 func (s *ClusterScope) IsAPIServerPrivate() bool {
-	return s.APIServerLB().Type == infrav1.Internal
+	return s.APIServerLB() != nil && s.APIServerLB().Type == infrav1.Internal
 }
 
 // APIServerPublicIP returns the API Server public IP.
@@ -971,6 +981,9 @@ func (s *ClusterScope) FailureDomains() []*string {
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
 // Note that this is not done in a webhook as it requires a valid Cluster object to exist to get the API Server port.
 func (s *ClusterScope) SetControlPlaneSecurityRules() {
+	if !s.ControlPlaneEnabled() {
+		return
+	}
 	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
 		subnet := s.ControlPlaneSubnet()
 		subnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{
@@ -1006,6 +1019,9 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 // SetDNSName sets the API Server public IP DNS name.
 // Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without an APIServerLB, and should be removed in the future.
 func (s *ClusterScope) SetDNSName() {
+	if !s.ControlPlaneEnabled() {
+		return
+	}
 	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
 	lb := s.APIServerLB()
 	if lb == nil || lb.Name == "" {

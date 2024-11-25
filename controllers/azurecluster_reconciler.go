@@ -115,10 +115,11 @@ func (s *azureClusterService) reconcile(ctx context.Context) error {
 	if err := s.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrap(err, "failed to get availability zones")
 	}
-
-	s.scope.AzureCluster.SetBackendPoolNameDefault()
-	s.scope.SetDNSName()
-	s.scope.SetControlPlaneSecurityRules()
+	if s.scope.ControlPlaneEnabled() {
+		s.scope.AzureCluster.SetBackendPoolNameDefault()
+		s.scope.SetDNSName()
+		s.scope.SetControlPlaneSecurityRules()
+	}
 
 	for _, service := range s.services {
 		if err := service.Reconcile(ctx); err != nil {

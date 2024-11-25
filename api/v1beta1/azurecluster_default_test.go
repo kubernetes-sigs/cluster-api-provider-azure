@@ -95,6 +95,7 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "test-cluster",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "custom-vnet",
@@ -122,7 +123,7 @@ func TestVnetDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "my-lb",
 							FrontendIPs: []FrontendIP{
 								{
@@ -158,7 +159,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					AzureClusterClassSpec: AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
 							Kind: AzureClusterIdentityKind,
@@ -171,7 +173,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -196,7 +199,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -216,7 +220,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -241,7 +246,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -261,7 +267,8 @@ func TestVnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					ResourceGroup: "cluster-test",
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
@@ -308,7 +315,8 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{},
+					ControlPlaneEnabled: true,
+					NetworkSpec:         NetworkSpec{},
 				},
 			},
 			output: &AzureCluster{
@@ -316,6 +324,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -352,6 +361,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -382,6 +392,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -422,6 +433,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -445,6 +457,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -486,6 +499,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -509,6 +523,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -540,6 +555,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -557,6 +573,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -588,6 +605,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -614,6 +632,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -654,6 +673,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -671,6 +691,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -712,6 +733,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -742,6 +764,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
 							VnetClassSpec: VnetClassSpec{
@@ -779,6 +802,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -838,6 +862,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -913,6 +938,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -948,6 +974,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1005,6 +1032,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1030,6 +1058,7 @@ func TestSubnetDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1218,7 +1247,8 @@ func TestAPIServerLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{},
+					ControlPlaneEnabled: true,
+					NetworkSpec:         NetworkSpec{},
 				},
 			},
 			output: &AzureCluster{
@@ -1226,8 +1256,9 @@ func TestAPIServerLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
 							FrontendIPs: []FrontendIP{
 								{
@@ -1259,7 +1290,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1273,7 +1304,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
@@ -1304,7 +1335,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1321,7 +1352,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
@@ -1456,8 +1487,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1484,6 +1516,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1503,7 +1536,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1519,8 +1552,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1548,6 +1582,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1568,7 +1603,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1602,8 +1637,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1639,6 +1675,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1667,7 +1704,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1702,7 +1739,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1780,7 +1817,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1796,8 +1833,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						Subnets: Subnets{
 							{
 								SubnetClassSpec: SubnetClassSpec{
@@ -1843,6 +1881,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
@@ -1881,7 +1920,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -1916,7 +1955,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 					},
 				},
 			},
@@ -1926,7 +1965,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -1943,7 +1982,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 						NodeOutboundLB: &LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
 							BackendPool: BackendPool{
@@ -1962,7 +2001,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -2005,7 +2044,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "user-defined-name",
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
@@ -2062,7 +2101,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							Name: "user-defined-name",
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
@@ -2123,7 +2162,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
 					},
 				},
 			},
@@ -2133,7 +2172,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Public,
 							},
@@ -2150,7 +2189,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 					},
 				},
 			},
@@ -2160,7 +2199,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -2177,7 +2216,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
@@ -2193,7 +2232,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
@@ -2236,7 +2275,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
 						ControlPlaneOutboundLB: &LoadBalancerSpec{
 							BackendPool: BackendPool{
 								Name: "custom-outbound-lb",
@@ -2254,7 +2293,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{
+						APIServerLB: &LoadBalancerSpec{
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								Type: Internal,
 							},
