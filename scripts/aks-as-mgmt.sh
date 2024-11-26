@@ -201,6 +201,17 @@ create_aks_cluster() {
     sleep 5
   done
 
+  # If storage account var is set:
+  if [ -n "${AZURE_STORAGE_ACCOUNT}" ]; then
+    echo "assigning storage blob data reader role to the service principal"
+    until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Storage Blob Data Reader" \
+    --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AZURE_STORAGE_ACCOUNT_RESOURCE_GROUP}/providers/Microsoft.Storage/storageAccounts/${AZURE_STORAGE_ACCOUNT}/blobServices/default/containers/${AZURE_BLOB_CONTAINER_NAME}" \
+    --assignee-principal-type ServicePrincipal; do
+      echo "retrying to assign storage blob data reader role to the service principal"
+      sleep 5
+    done
+  fi
+
   echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
