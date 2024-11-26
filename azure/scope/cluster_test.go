@@ -2956,7 +2956,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 					SubnetName:        "cp-subnet",
 					FrontendIPConfigs: []infrav1.FrontendIP{
 						{
-							Name: "api-server-lb-internal-frontEnd",
+							Name: "api-server-lb-internal-ip",
 							FrontendIPClass: infrav1.FrontendIPClass{
 								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
 							},

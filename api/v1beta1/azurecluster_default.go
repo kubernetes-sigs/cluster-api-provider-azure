@@ -20,6 +20,8 @@ import (
 	"fmt"
 
 	"k8s.io/utils/ptr"
+
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 const (
@@ -243,6 +245,29 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 						Name: generatePublicIPName(c.ObjectMeta.Name),
 					},
 				},
+			}
+		}
+		// If the API Server ILB feature is enabled, create a default internal LB IP or use the specified one
+		if feature.Gates.Enabled(feature.APIServerILB) {
+			privateIPFound := false
+			for i := range lb.FrontendIPs {
+				if lb.FrontendIPs[i].FrontendIPClass.PrivateIPAddress != "" {
+					if lb.FrontendIPs[i].Name == "" {
+						lb.FrontendIPs[i].Name = generatePrivateIPConfigName(lb.Name)
+					}
+					privateIPFound = true
+					break
+				}
+			}
+			// if no private IP is found, we should create a default internal LB IP
+			if !privateIPFound {
+				privateIP := FrontendIP{
+					Name: generatePrivateIPConfigName(lb.Name),
+					FrontendIPClass: FrontendIPClass{
+						PrivateIPAddress: DefaultInternalLBIPAddress,
+					},
+				}
+				lb.FrontendIPs = append(lb.FrontendIPs, privateIP)
 			}
 		}
 	} else if lb.Type == Internal {
@@ -528,6 +553,11 @@ func generatePublicIPName(clusterName string) string {
 // generateFrontendIPConfigName generates a load balancer frontend IP config name.
 func generateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
+}
+
+// generateFrontendIPConfigName generates a load balancer frontend IP config name.
+func generatePrivateIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd-internal-ip")
 }
 
 // generateNodeOutboundIPName generates a public IP name, based on the cluster name.
