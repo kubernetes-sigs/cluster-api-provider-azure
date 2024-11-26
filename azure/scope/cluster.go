@@ -51,6 +51,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -270,8 +271,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			},
 		}
 	}
-
-	if s.APIServerLB().Type != infrav1.Internal {
+	if s.APIServerLB().Type != infrav1.Internal && feature.Gates.Enabled(feature.APIServerILB) {
 		specs = append(specs, &loadbalancers.LBSpec{
 			Name:              s.APIServerLB().Name + "-internal",
 			ResourceGroup:     s.ResourceGroup(),

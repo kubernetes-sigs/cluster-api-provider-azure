@@ -32,6 +32,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/component-base/featuregate"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -48,6 +50,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 const fakeClientID = "fake-client-id"
@@ -2174,6 +2177,7 @@ func TestBackendPoolName(t *testing.T) {
 	tests := []struct {
 		name        string
 		clusterName string
+		featureGate featuregate.Feature
 
 		customAPIServerBackendPoolName    string
 		customNodeBackendPoolName         string
@@ -2186,6 +2190,14 @@ func TestBackendPoolName(t *testing.T) {
 		{
 			name:                                "With default backend pool names",
 			clusterName:                         "my-cluster",
+			expectedAPIServerBackendPoolName:    "APIServerLBName-backendPool",
+			expectedNodeBackendPoolName:         "NodeOutboundLBName-outboundBackendPool",
+			expectedControlPlaneBackendPoolName: "my-cluster-outbound-lb-outboundBackendPool",
+		},
+		{
+			name:                                "With default backend pool names feature gate enabled",
+			clusterName:                         "my-cluster",
+			featureGate:                         feature.APIServerILB,
 			expectedAPIServerBackendPoolName:    "APIServerLBName-backendPool",
 			expectedNodeBackendPoolName:         "NodeOutboundLBName-outboundBackendPool",
 			expectedControlPlaneBackendPoolName: "my-cluster-outbound-lb-outboundBackendPool",
@@ -2218,6 +2230,9 @@ func TestBackendPoolName(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
+			if tc.featureGate == feature.APIServerILB {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)()
+			}
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2280,27 +2295,43 @@ func TestBackendPoolName(t *testing.T) {
 			}
 			clusterScope.AzureCluster.SetBackendPoolNameDefault()
 			got := clusterScope.LBSpecs()
-			g.Expect(got).To(HaveLen(4))
+			if tc.featureGate == feature.APIServerILB {
+				g.Expect(got).To(HaveLen(4))
+			} else {
+				g.Expect(got).To(HaveLen(3))
+			}
 
 			// API server backend pool name
 			apiServerLBSpec := got[0].(*loadbalancers.LBSpec)
 			g.Expect(apiServerLBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName))
 			g.Expect(apiServerLBSpec.Role).To(Equal(infrav1.APIServerRole))
 
-			// API server backend pool name
-			apiServerILBSpec := got[1].(*loadbalancers.LBSpec)
-			g.Expect(apiServerILBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName + "-internal"))
-			g.Expect(apiServerILBSpec.Role).To(Equal(infrav1.APIServerRoleInternal))
+			if tc.featureGate == feature.APIServerILB {
+				// API server backend pool name
+				apiServerILBSpec := got[1].(*loadbalancers.LBSpec)
+				g.Expect(apiServerILBSpec.BackendPoolName).To(Equal(tc.expectedAPIServerBackendPoolName + "-internal"))
+				g.Expect(apiServerILBSpec.Role).To(Equal(infrav1.APIServerRoleInternal))
 
-			// Node backend pool name
-			NodeLBSpec := got[2].(*loadbalancers.LBSpec)
-			g.Expect(NodeLBSpec.BackendPoolName).To(Equal(tc.expectedNodeBackendPoolName))
-			g.Expect(NodeLBSpec.Role).To(Equal(infrav1.NodeOutboundRole))
+				// Node backend pool name
+				NodeLBSpec := got[2].(*loadbalancers.LBSpec)
+				g.Expect(NodeLBSpec.BackendPoolName).To(Equal(tc.expectedNodeBackendPoolName))
+				g.Expect(NodeLBSpec.Role).To(Equal(infrav1.NodeOutboundRole))
 
-			// Control Plane backend pool name
-			controlPlaneLBSpec := got[3].(*loadbalancers.LBSpec)
-			g.Expect(controlPlaneLBSpec.BackendPoolName).To(Equal(tc.expectedControlPlaneBackendPoolName))
-			g.Expect(controlPlaneLBSpec.Role).To(Equal(infrav1.ControlPlaneOutboundRole))
+				// Control Plane backend pool name
+				controlPlaneLBSpec := got[3].(*loadbalancers.LBSpec)
+				g.Expect(controlPlaneLBSpec.BackendPoolName).To(Equal(tc.expectedControlPlaneBackendPoolName))
+				g.Expect(controlPlaneLBSpec.Role).To(Equal(infrav1.ControlPlaneOutboundRole))
+			} else {
+				// Node backend pool name
+				NodeLBSpec := got[1].(*loadbalancers.LBSpec)
+				g.Expect(NodeLBSpec.BackendPoolName).To(Equal(tc.expectedNodeBackendPoolName))
+				g.Expect(NodeLBSpec.Role).To(Equal(infrav1.NodeOutboundRole))
+
+				// Control Plane backend pool name
+				controlPlaneLBSpec := got[2].(*loadbalancers.LBSpec)
+				g.Expect(controlPlaneLBSpec.BackendPoolName).To(Equal(tc.expectedControlPlaneBackendPoolName))
+				g.Expect(controlPlaneLBSpec.Role).To(Equal(infrav1.ControlPlaneOutboundRole))
+			}
 		})
 	}
 }
@@ -2611,11 +2642,188 @@ func TestFailureDomains(t *testing.T) {
 func TestClusterScope_LBSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
+		featureGate  featuregate.Feature
 		azureCluster *infrav1.AzureCluster
 		want         []azure.ResourceSpecGetter
 	}{
 		{
 			name: "API Server LB, Control Plane Oubound LB, and Node Outbound LB",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						AdditionalTags: infrav1.Tags{
+							"foo": "bar",
+						},
+						SubscriptionID: "123",
+						Location:       "westus2",
+					},
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Name:          "my-vnet",
+							ResourceGroup: "my-rg",
+						},
+						Subnets: []infrav1.SubnetSpec{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "cp-subnet",
+									Role: infrav1.SubnetControlPlane,
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node-subnet",
+									Role: infrav1.SubnetNode,
+								},
+							},
+						},
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							Name: "api-server-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "api-server-lb-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: ptr.To[int32](30),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "api-server-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "api-server-lb-frontend-ip",
+									},
+								},
+							},
+						},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "cp-outbound-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "cp-outbound-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: ptr.To[int32](15),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "cp-outbound-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "cp-outbound-lb-frontend-ip",
+									},
+								},
+							},
+						},
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
+							Name: "node-outbound-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "node-outbound-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Public,
+								IdleTimeoutInMinutes: ptr.To[int32](50),
+								SKU:                  infrav1.SKUStandard,
+							},
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "node-outbound-lb-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "node-outbound-lb-frontend-ip",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&loadbalancers.LBSpec{
+					Name:              "api-server-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					SubnetName:        "cp-subnet",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "api-server-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "api-server-lb-frontend-ip",
+							},
+						},
+					},
+					APIServerPort:        6443,
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.APIServerRole,
+					BackendPoolName:      "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes: ptr.To[int32](30),
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+				&loadbalancers.LBSpec{
+					Name:              "node-outbound-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "node-outbound-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "node-outbound-lb-frontend-ip",
+							},
+						},
+					},
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.NodeOutboundRole,
+					BackendPoolName:      "node-outbound-backend-pool",
+					IdleTimeoutInMinutes: ptr.To[int32](50),
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+				&loadbalancers.LBSpec{
+					Name:              "cp-outbound-lb",
+					ResourceGroup:     "my-rg",
+					SubscriptionID:    "123",
+					ClusterName:       "my-cluster",
+					Location:          "westus2",
+					VNetName:          "my-vnet",
+					VNetResourceGroup: "my-rg",
+					FrontendIPConfigs: []infrav1.FrontendIP{
+						{
+							Name: "cp-outbound-lb-frontend-ip",
+							PublicIP: &infrav1.PublicIPSpec{
+								Name: "cp-outbound-lb-frontend-ip",
+							},
+						},
+					},
+					Type:                 infrav1.Public,
+					SKU:                  infrav1.SKUStandard,
+					BackendPoolName:      "cp-outbound-backend-pool",
+					IdleTimeoutInMinutes: ptr.To[int32](15),
+					Role:                 infrav1.ControlPlaneOutboundRole,
+					AdditionalTags: infrav1.Tags{
+						"foo": "bar",
+					},
+				},
+			},
+		},
+		{
+			name:        "API Server LB, Control Plane Oubound LB, and Node Outbound LB with feature gate",
+			featureGate: feature.APIServerILB,
 			azureCluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "my-cluster",
@@ -2882,11 +3090,79 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Private API Server LB",
+			featureGate: feature.APIServerILB,
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						Location:       "westus2",
+					},
+					ControlPlaneEnabled: true,
+					ResourceGroup:       "my-rg",
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Name:          "my-vnet",
+							ResourceGroup: "my-rg",
+						},
+						Subnets: []infrav1.SubnetSpec{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "cp-subnet",
+									Role: infrav1.SubnetControlPlane,
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Name: "node-subnet",
+									Role: infrav1.SubnetNode,
+								},
+							},
+						},
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							Name: "api-server-lb",
+							BackendPool: infrav1.BackendPool{
+								Name: "api-server-lb-backend-pool",
+							},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type:                 infrav1.Internal,
+								IdleTimeoutInMinutes: ptr.To[int32](30),
+								SKU:                  infrav1.SKUStandard,
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&loadbalancers.LBSpec{
+					Name:                 "api-server-lb",
+					ResourceGroup:        "my-rg",
+					SubscriptionID:       "123",
+					ClusterName:          "my-cluster",
+					Location:             "westus2",
+					VNetName:             "my-vnet",
+					VNetResourceGroup:    "my-rg",
+					SubnetName:           "cp-subnet",
+					APIServerPort:        6443,
+					Type:                 infrav1.Internal,
+					SKU:                  infrav1.SKUStandard,
+					Role:                 infrav1.APIServerRole,
+					BackendPoolName:      "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes: ptr.To[int32](30),
+					AdditionalTags:       infrav1.Tags{},
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
+			if tc.featureGate == feature.APIServerILB {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)()
+			}
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.azureCluster.Name,

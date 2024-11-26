@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -298,8 +299,10 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 				spec.InternalLBName = m.APIServerLBName()
 				spec.InternalLBAddressPoolName = m.APIServerLBPoolName()
 			} else {
-				spec.InternalLBName = m.APIServerLBName() + "-internal"
-				spec.InternalLBAddressPoolName = m.APIServerLBPoolName() + "-internal"
+				if feature.Gates.Enabled(feature.APIServerILB) {
+					spec.InternalLBName = m.APIServerLBName() + "-internal"
+					spec.InternalLBAddressPoolName = m.APIServerLBPoolName() + "-internal"
+				}
 				spec.PublicLBNATRuleName = m.Name()
 				spec.PublicLBAddressPoolName = m.APIServerLBPoolName()
 			}
