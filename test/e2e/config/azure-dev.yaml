@@ -172,6 +172,8 @@ providers:
         targetName: "cluster-template-azure-cni-v1.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-spot.yaml"
         targetName: "cluster-template-spot.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb.yaml"
+        targetName: "cluster-template-apiserver-ilb.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
@@ -240,6 +242,7 @@ variables:
   LATEST_CAAPH_UPGRADE_VERSION: "v0.2.5"
   CI_RG: capz-ci
   USER_IDENTITY: cloud-provider-user-identity
+  EXP_APISERVER_ILB: "true"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]

@@ -23,7 +23,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/component-base/featuregate"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
+
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestClusterNameValidation(t *testing.T) {
@@ -888,6 +892,7 @@ func TestValidateSecurityRule(t *testing.T) {
 func TestValidateAPIServerLB(t *testing.T) {
 	testcases := []struct {
 		name        string
+		featureGate featuregate.Feature
 		lb          LoadBalancerSpec
 		old         LoadBalancerSpec
 		cpCIDRS     []string
@@ -947,6 +952,40 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "too many IP configs",
 			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+				},
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.frontendIPConfigs",
+				BadValue: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+				Detail: "API Server Load balancer should have 1 Frontend IP",
+			},
+		},
+		{
+			name:        "too many IP configs with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+				},
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -994,6 +1033,34 @@ func TestValidateAPIServerLB(t *testing.T) {
 			},
 		},
 		{
+			name:        "public LB with private IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				Name: "my-awesome-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &PublicIPSpec{
+							Name:    "my-valid-frontend-ip",
+							DNSName: "my-valid-frontend-ip",
+						},
+					},
+					{
+						Name: "ip-2",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.0.0.111",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+					SKU:  SKUStandard,
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: false,
+		},
+		{
 			name: "internal LB with public IP",
 			lb: LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
@@ -1016,7 +1083,54 @@ func TestValidateAPIServerLB(t *testing.T) {
 			},
 		},
 		{
+			name:        "internal LB with public IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &PublicIPSpec{
+							Name: "my-invalid-ip",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].publicIP",
+				Detail: "Internal Load Balancers cannot have a Public IP",
+			},
+		},
+		{
 			name: "internal LB with invalid private IP",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "NAIP",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "NAIP",
+				Detail:   "Internal LB IP address isn't a valid IPv4 or IPv6 address",
+			},
+		},
+		{
+			name:        "internal LB with invalid private IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
 			lb: LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
@@ -1063,6 +1177,31 @@ func TestValidateAPIServerLB(t *testing.T) {
 			},
 		},
 		{
+			name:        "internal LB with out of range private IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "20.1.2.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Internal,
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "20.1.2.3",
+				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
+			},
+		},
+		{
 			name: "internal LB with in range private IP",
 			lb: LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
@@ -1082,12 +1221,67 @@ func TestValidateAPIServerLB(t *testing.T) {
 			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
 			wantErr: false,
 		},
+		{
+			name:        "public LB with in-range private IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "10.0.0.123",
+						},
+					},
+					{
+						Name: "ip-2",
+						PublicIP: &PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+					SKU:  SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: false,
+		},
+		{
+			name:        "public LB with out of range private IP with feature flag APIServerILB enabled",
+			featureGate: feature.APIServerILB,
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: FrontendIPClass{
+							PrivateIPAddress: "20.1.2.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{
+					Type: Public,
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "20.1.2.3",
+				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
+			},
+		},
 	}
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			g := NewWithT(t)
+			if test.featureGate == feature.APIServerILB {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, test.featureGate, true)()
+			}
 			err := validateAPIServerLB(&test.lb, &test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))

@@ -248,48 +248,50 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 	var specs []azure.ResourceSpecGetter
 	if s.ControlPlaneEnabled() {
-		specs = []azure.ResourceSpecGetter{
-			&loadbalancers.LBSpec{
-				// API Server LB
-				Name:                 s.APIServerLB().Name,
-				ResourceGroup:        s.ResourceGroup(),
-				SubscriptionID:       s.SubscriptionID(),
-				ClusterName:          s.ClusterName(),
-				Location:             s.Location(),
-				ExtendedLocation:     s.ExtendedLocation(),
-				VNetName:             s.Vnet().Name,
-				VNetResourceGroup:    s.Vnet().ResourceGroup,
-				SubnetName:           s.ControlPlaneSubnet().Name,
-				FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
-				APIServerPort:        s.APIServerPort(),
-				Type:                 s.APIServerLB().Type,
-				SKU:                  s.APIServerLB().SKU,
-				Role:                 infrav1.APIServerRole,
-				BackendPoolName:      s.APIServerLB().BackendPool.Name,
-				IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-				AdditionalTags:       s.AdditionalTags(),
-			},
+		frontendLB := &loadbalancers.LBSpec{
+			// API Server LB
+			Name:                 s.APIServerLB().Name,
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			ExtendedLocation:     s.ExtendedLocation(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
+			SubnetName:           s.ControlPlaneSubnet().Name,
+			APIServerPort:        s.APIServerPort(),
+			Type:                 s.APIServerLB().Type,
+			SKU:                  s.APIServerLB().SKU,
+			Role:                 infrav1.APIServerRole,
+			BackendPoolName:      s.APIServerLB().BackendPool.Name,
+			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:       s.AdditionalTags(),
 		}
+
+		if s.APIServerLB().FrontendIPs != nil {
+			for _, frontendIP := range s.APIServerLB().FrontendIPs {
+				// save the public IP for the frontend LB
+				// or if the LB is of the type internal, save the only IP allowed for the frontend LB
+				if frontendIP.PublicIP != nil || frontendLB.Type == infrav1.Internal {
+					frontendLB.FrontendIPConfigs = []infrav1.FrontendIP{frontendIP}
+					break
+				}
+			}
+		}
+		specs = append(specs, frontendLB)
 	}
+
 	if s.APIServerLB().Type != infrav1.Internal && feature.Gates.Enabled(feature.APIServerILB) {
-		specs = append(specs, &loadbalancers.LBSpec{
-			Name:              s.APIServerLB().Name + "-internal",
-			ResourceGroup:     s.ResourceGroup(),
-			SubscriptionID:    s.SubscriptionID(),
-			ClusterName:       s.ClusterName(),
-			Location:          s.Location(),
-			ExtendedLocation:  s.ExtendedLocation(),
-			VNetName:          s.Vnet().Name,
-			VNetResourceGroup: s.Vnet().ResourceGroup,
-			SubnetName:        s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs: []infrav1.FrontendIP{
-				{
-					Name: s.APIServerLB().Name + "-internal-frontEnd", // TODO: improve this name.
-					FrontendIPClass: infrav1.FrontendIPClass{
-						PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
-					},
-				},
-			},
+		internalLB := &loadbalancers.LBSpec{
+			Name:                 s.APIServerLB().Name + "-internal",
+			ResourceGroup:        s.ResourceGroup(),
+			SubscriptionID:       s.SubscriptionID(),
+			ClusterName:          s.ClusterName(),
+			Location:             s.Location(),
+			ExtendedLocation:     s.ExtendedLocation(),
+			VNetName:             s.Vnet().Name,
+			VNetResourceGroup:    s.Vnet().ResourceGroup,
+			SubnetName:           s.ControlPlaneSubnet().Name,
 			APIServerPort:        s.APIServerPort(),
 			Type:                 infrav1.Internal,
 			SKU:                  s.APIServerLB().SKU,
@@ -297,7 +299,35 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
-		})
+		}
+
+		privateIPFound := false
+		if s.APIServerLB().FrontendIPs != nil {
+			for _, frontendIP := range s.APIServerLB().FrontendIPs {
+				if frontendIP.PrivateIPAddress != "" {
+					internalLB.FrontendIPConfigs = []infrav1.FrontendIP{frontendIP}
+					privateIPFound = true
+					break
+				}
+			}
+		}
+
+		if !privateIPFound {
+			// If no private IP is found, use the default internal LB IP
+			// useful for scenarios where the user has not specified a private IP and is upgrading from a version that did not support it
+			// TODO: create a random IP from the controlplane subnet instead of using the default
+			// TODO: also update the underlying VM prekubeadm command with the new internal IP and trigger a reconcile
+			// TODO: update APIServerILB templates with opinionated non-overlapping CIDR defaults
+			internalLB.FrontendIPConfigs = []infrav1.FrontendIP{
+				{
+					Name: s.APIServerLB().Name + "-internal-ip",
+					FrontendIPClass: infrav1.FrontendIPClass{
+						PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+					},
+				},
+			}
+		}
+		specs = append(specs, internalLB)
 	}
 
 	// Node outbound LB
