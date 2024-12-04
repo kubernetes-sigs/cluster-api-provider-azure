@@ -315,6 +315,9 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 		if !privateIPFound {
 			// If no private IP is found, use the default internal LB IP
 			// useful for scenarios where the user has not specified a private IP and is upgrading from a version that did not support it
+			// TODO: create a random IP from the controlplane subnet instead of using the default
+			// TODO: also update the underlying VM prekubeadm command with the new internal IP and trigger a reconcile
+			// TODO: update APIServerILB templates with opinionated non-overlapping CIDR defaults
 			internalLB.FrontendIPConfigs = []infrav1.FrontendIP{
 				{
 					Name: s.APIServerLB().Name + "-internal-ip",
