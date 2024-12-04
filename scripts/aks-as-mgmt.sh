@@ -212,6 +212,19 @@ create_aks_cluster() {
     done
   fi
 
+  if [[ "${REGISTRY:-}" =~ \.azurecr\.io ]]; then
+    # if we are using the prow Azure Container Registry, login.
+    acrname="${REGISTRY%%.*}"
+    az acr login --name "$acrname"
+      echo "assigning azure container registry contributor role to the service principal"
+    until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Contributor" \
+    --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AZURE_CONTAINER_REGISTRY_RESOURCE_GROUP}/providers/Microsoft.ContainerRegistry/registries/$acrname" \
+    --assignee-principal-type ServicePrincipal; do
+      echo "retrying to assign azure container registry contributor role to the service principal"
+      sleep 5
+    done
+fi
+
   echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
