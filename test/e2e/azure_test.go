@@ -1153,4 +1153,19 @@ var _ = Describe("Workload cluster creation", func() {
 			By("PASSED!")
 		})
 	})
+
+	Context("Creating a self-managed VM based cluster using API Server ILB feature gate [OPTIONAL][API-Server-ILB]", func() {
+		It("with one controlplane node and three worker nodes", func() {
+			// TODO: create a workload cluster with API Server ILB feature gate enabled
+			// TODO: deploy a sample deployment on the worker nodes
+			// TODO: verify the worker node's /etc/hosts has the updated DNS entry for the Internal LB for the API Server
+			// AZURE_INTERNAL_LB_PRIVATE_IP = 40.0.0.100
+			// AZURE_VNET_CIDR = 40.0.0.0/8
+			// AZURE_CP_SUBNET_CIDR = 40.0.0.0/16
+			// AZURE_NODE_SUBNET_CIDR = 40.1.0.0/16
+
+		})
+	})
+
+	// TODO: add a same test as above for a windows cluster
 })
