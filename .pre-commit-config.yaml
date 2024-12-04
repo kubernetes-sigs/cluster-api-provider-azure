@@ -32,3 +32,35 @@ repos:
   hooks:
   - id: forbid-binary
     stages: [pre-commit]
+- repo: local
+  hooks:
+  - id: make-modules
+    name: Run make verify-modules
+    entry: make verify-modules
+    language: system
+    stages: [pre-push]
+  - id: make-gen
+    name: Run make verify-gen
+    entry: make verify-gen
+    language: system
+    stages: [pre-push]
+  - id: make-spellcheck
+    name: Run make verify-shellcheck
+    entry: make verify-shellcheck
+    language: system
+    stages: [ pre-push ]
+  - id: make-conversions
+    name: Run make verify-conversions
+    entry: make verify-conversions
+    language: system
+    stages: [ pre-push ]
+  - id: make-tiltfile
+    name: Run make verify-tiltfile
+    entry: make verify-tiltfile
+    language: system
+    stages: [ pre-push ]
+  - id: make-test
+    name: Run make test
+    entry: make test
+    language: system
+    stages: [pre-push]
