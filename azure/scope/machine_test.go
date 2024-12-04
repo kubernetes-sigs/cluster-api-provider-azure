@@ -30,6 +30,8 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/component-base/featuregate"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
@@ -44,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestMachineScope_Name(t *testing.T) {
@@ -1730,6 +1733,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 func TestMachineScope_NICSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
+		featureGate  featuregate.Feature
 		machineScope MachineScope
 		want         []azure.ResourceSpecGetter
 	}{
@@ -2364,6 +2368,115 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			},
 			want: []azure.ResourceSpecGetter{
 				&networkinterfaces.NICSpec{
+					Name:                    "machine-name-nic",
+					ResourceGroup:           "my-rg",
+					Location:                "westus",
+					SubscriptionID:          "123",
+					MachineName:             "machine-name",
+					SubnetName:              "subnet1",
+					IPConfigs:               []networkinterfaces.IPConfig{{}},
+					VNetName:                "vnet1",
+					VNetResourceGroup:       "rg1",
+					PublicLBName:            "api-lb",
+					PublicLBAddressPoolName: "api-lb-backendPool",
+					PublicLBNATRuleName:     "machine-name",
+					PublicIPName:            "",
+					AcceleratedNetworking:   nil,
+					DNSServers:              nil,
+					IPv6Enabled:             false,
+					EnableIPForwarding:      false,
+					SKU:                     nil,
+					ClusterName:             "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name:        "Control Plane Machine with public LB with feature gate API Server ILB enabled",
+			featureGate: feature.APIServerILB,
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1beta1",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+											Name: "subnet1",
+										},
+									},
+								},
+								APIServerLB: &infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						NetworkInterfaces: []infrav1.NetworkInterface{{
+							SubnetName:       "subnet1",
+							PrivateIPConfigs: 1,
+						}},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+						Labels: map[string]string{
+							clusterv1.MachineControlPlaneLabel: "true",
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
 					Name:                      "machine-name-nic",
 					ResourceGroup:             "my-rg",
 					Location:                  "westus",
@@ -2393,6 +2506,116 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 		},
 		{
 			name: "Control Plane Machine with public LB and Custom DNS Servers",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						EnvironmentSettings: auth.EnvironmentSettings{
+							Values: map[string]string{
+								auth.SubscriptionID: "123",
+							},
+						},
+					},
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1beta1",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role: infrav1.SubnetNode,
+											Name: "subnet1",
+										},
+									},
+								},
+								APIServerLB: &infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+									BackendPool: infrav1.BackendPool{
+										Name: "api-lb-backendPool",
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachines/machine-name"),
+						NetworkInterfaces: []infrav1.NetworkInterface{{
+							SubnetName:       "subnet1",
+							PrivateIPConfigs: 1,
+						}},
+						DNSServers: []string{"123.123.123.123", "124.124.124.124"},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+						Labels: map[string]string{
+							clusterv1.MachineControlPlaneLabel: "true",
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&networkinterfaces.NICSpec{
+					Name:                    "machine-name-nic",
+					ResourceGroup:           "my-rg",
+					Location:                "westus",
+					SubscriptionID:          "123",
+					MachineName:             "machine-name",
+					SubnetName:              "subnet1",
+					IPConfigs:               []networkinterfaces.IPConfig{{}},
+					VNetName:                "vnet1",
+					VNetResourceGroup:       "rg1",
+					PublicLBName:            "api-lb",
+					PublicLBAddressPoolName: "api-lb-backendPool",
+					PublicLBNATRuleName:     "machine-name",
+					PublicIPName:            "",
+					AcceleratedNetworking:   nil,
+					DNSServers:              []string{"123.123.123.123", "124.124.124.124"},
+					IPv6Enabled:             false,
+					EnableIPForwarding:      false,
+					SKU:                     nil,
+					ClusterName:             "cluster",
+					AdditionalTags: infrav1.Tags{
+						"kubernetes.io_cluster_cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name:        "Control Plane Machine with public LB and Custom DNS Servers with feature gate API Server ILB enabled",
+			featureGate: feature.APIServerILB,
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
@@ -2894,6 +3117,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
+			if tt.featureGate == feature.APIServerILB {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tt.featureGate, true)()
+			}
 			gotNicSpecs := tt.machineScope.NICSpecs()
 			if !reflect.DeepEqual(gotNicSpecs, tt.want) {
 				g.Expect(gotNicSpecs).To(BeEquivalentTo(tt.want))
