@@ -1155,7 +1155,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating a self-managed VM based cluster using API Server ILB feature gate [OPTIONAL][API-Server-ILB]", func() {
-		It("with one controlplane node and three worker nodes", func() {
+		It("with three controlplane node and three worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "apiserver-ilb")
 
 			// Set the environment variables required for the API Server ILB feature gate
@@ -1167,7 +1167,6 @@ var _ = Describe("Workload cluster creation", func() {
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)), // AzureCNIManifest is set
 				withFlavor("apiserver-ilb"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
@@ -1187,8 +1186,21 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
-			// TODO: deploy a sample deployment on the worker nodes
-			// TODO: verify the worker node's /etc/hosts has the updated DNS entry for the Internal LB for the API Server
+
+			By("Probing workload cluster with APIServerILB feature gate", func() {
+				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
+					return AzureAPIServerILBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Cluster:               result.Cluster,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						ExpectedWorkerNodes:   result.ExpectedWorkerNodes(),
+						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					}
+				})
+			})
+
+			By("PASSED!")
 		})
 	})
 
