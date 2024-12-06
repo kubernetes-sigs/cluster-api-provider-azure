@@ -87,15 +87,15 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, acr.WatchFilterValue)).
-		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, acr.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Add a watch on clusterv1.Cluster object for pause/unpause notifications.
 		Watches(
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 			builder.WithPredicates(
 				ClusterUpdatePauseChange(log),
-				predicates.ResourceHasFilterLabel(log, acr.WatchFilterValue),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, acr.WatchFilterValue),
 			),
 		).
 		Complete(r)

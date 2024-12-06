@@ -78,8 +78,8 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1alpha.AzureASOManagedCluster{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(log, r.WatchFilterValue)).
-		WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Watch clusters for pause/unpause notifications
 		Watches(
 			&clusterv1.Cluster{},
@@ -87,7 +87,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 				util.ClusterToInfrastructureMapFunc(ctx, infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedClusterKind), mgr.GetClient(), &infrav1alpha.AzureASOManagedCluster{}),
 			),
 			builder.WithPredicates(
-				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 				ClusterUpdatePauseChange(log),
 			),
 		).
@@ -95,7 +95,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 			&infrav1alpha.AzureASOManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(asoManagedControlPlaneToManagedClusterMap(r.Client)),
 			builder.WithPredicates(
-				predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 				predicate.Funcs{
 					CreateFunc: func(ev event.CreateEvent) bool {
 						controlPlane := ev.Object.(*infrav1alpha.AzureASOManagedControlPlane)
