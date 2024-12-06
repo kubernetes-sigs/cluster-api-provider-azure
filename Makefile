@@ -742,10 +742,12 @@ verify-container-images: ## Verify container images
 .PHONY: kind-create
 kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 	./scripts/kind-with-registry.sh
+	unset MGMT_CLUSTER_TYPE
 
 .PHONY: aks-create
 aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	./scripts/aks-as-mgmt.sh
+	export MGMT_CLUSTER_TYPE=aks
 
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
