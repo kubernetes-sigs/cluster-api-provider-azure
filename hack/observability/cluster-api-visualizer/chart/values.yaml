@@ -8,3 +8,6 @@ image:
 label: 
   key: app
   value: capi-visualizer
+
+service:
+  type: ClusterIP

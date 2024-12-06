@@ -12,3 +12,4 @@ spec:
     protocol: TCP
   selector:
     {{ .Values.label.key }}: {{ .Values.label.value }}
+  type: {{ .Values.service.type }}
