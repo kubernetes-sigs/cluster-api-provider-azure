@@ -62,7 +62,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	)
 
 	input = inputGetter()
-	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName) //nolint:typecheck
+	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 
 	By("1. Fetching new Azure Credentials")
@@ -84,13 +84,14 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		Steps:    retryBackoffSteps,
 	}
 	retryFn := func(ctx context.Context) (bool, error) {
+		defer GinkgoRecover()
 		resp, err := azureLoadBalancerClient.Get(ctx, groupName, internalLoadbalancerName, nil)
 		if err != nil {
 			return false, err
 		}
 
 		internalLoadbalancer := resp.LoadBalancer
-		Expect(internalLoadbalancer.Name).To(Equal(internalLoadbalancerName))
+		Expect(ptr.Deref(internalLoadbalancer.Name, "g")).To(Equal(internalLoadbalancerName))
 
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
