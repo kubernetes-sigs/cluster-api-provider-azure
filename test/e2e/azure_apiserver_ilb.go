@@ -138,7 +138,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
 	// ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
-	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", clusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION")), "controlPlaneEndpointName should be equal to the cluster name and location"))
+	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", clusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION"))))
 	Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
 	// By("Creating a K8s client for the management cluster")
