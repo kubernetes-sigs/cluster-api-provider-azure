@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -174,7 +171,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	// Deploy node-debug daemonset to workload cluster
 	By("7.1 Deploying node-debug daemonset to the workload cluster")
-	nodeDebugDS := v1.DaemonSet{
+	nodeDebugDS := &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "node-debug",
 			Namespace: "kube-system",
@@ -228,7 +225,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			},
 		},
 	}
-	nodeDebugDS, err = workloadClusterClientSet.AppsV1().DaemonSets("kube-system").Create(ctx, &nodeDebugDS, metav1.CreateOptions{})
+	nodeDebugDS, err = workloadClusterClientSet.AppsV1().DaemonSets("kube-system").Create(ctx, nodeDebugDS, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("8. Probing worker nodes")
