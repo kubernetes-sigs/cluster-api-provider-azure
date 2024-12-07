@@ -65,7 +65,6 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName) //nolint:typecheck
 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 
-	// --------------------------------------------- //
 	By("1. Fetching new Azure Credentials")
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -104,16 +103,14 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 	}
 	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryFn)
-	// --------------------------------------------- //
 
-	// --------------------------------------------- //
-	By("Creating a dynamic client for accessing custom resources in the management cluster")
+	By("4. Creating a dynamic client for accessing custom resources in the management cluster")
 	mgmtRestConfig := input.BootstrapClusterProxy.GetRESTConfig()
 	mgmtDynamicClientSet, err := dynamic.NewForConfig(mgmtRestConfig)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmtDynamicClientSet).NotTo(BeNil())
 
-	By("Getting the AzureCluster using the dynamic client set")
+	By("5. Getting the AzureCluster using the dynamic client set")
 	azureClusterGVR := schema.GroupVersionResource{
 		Group:    "infrastructure.cluster.x-k8s.io",
 		Version:  "v1beta1",
@@ -130,7 +127,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		azureCluster.UnstructuredContent(),
 		deployedAzureCluster,
 	)
-	By("Getting the controlplane endpoint name")
+	By("6. Getting the controlplane endpoint name")
 	controlPlaneEndpointName, apiServerILBPrivateIP := "", ""
 	for _, frontendIP := range deployedAzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs {
 		if frontendIP.PublicIP != nil && frontendIP.PublicIP.DNSName != "" {
@@ -166,34 +163,34 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	// Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
 	// Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
-	By("Creating a Kubernetes client set to the workload cluster")
+	By("7. Creating a Kubernetes client set to the workload cluster")
 	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(workloadClusterProxy).NotTo(BeNil())
 	workloadClusterClientSet := workloadClusterProxy.GetClientSet()
 	Expect(workloadClusterClientSet).NotTo(BeNil())
 
-	By("Probing worker nodes")
+	By("8. Probing worker nodes")
 	Eventually(func(g Gomega) {
-		By("Listing all the nodes")
+		By("8.1 Listing all the nodes")
 		allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(int32(len(allNodes.Items))).To(Equal(input.ExpectedWorkerNodes))
 
-		By("Saving all the nodes")
+		By("8.2 Saving all the nodes")
 		workerNodes := make(map[string]corev1.Node, 0)
 		for i, node := range allNodes.Items {
 			if strings.Contains(node.Name, input.ClusterName+"-md-0") {
 				workerNodes[node.Name] = allNodes.Items[i]
 			}
 		}
+		g.Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
 
-		By("Saving all the worker nodes")
+		By("8.3 Saving all the worker nodes")
 		allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
 			LabelSelector: "app=node-debug",
 		})
 		g.Expect(err).NotTo(HaveOccurred())
 
-		By("Saving all the daemonset pods running on the worker nodes")
+		By("8.4 Saving all the node-debug daemonset pods running on the worker nodes")
 		workerDSPods := make(map[string]corev1.Pod, 0)
 		for _, daemonsetPod := range allNodeDebugPods.Items {
 			if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
@@ -201,13 +198,14 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			}
 		}
 
-		By("Checking the /etc/hosts file in each of the worker nodes")
+		By("8.5 Checking the /etc/hosts file in each of the worker nodes")
 		// get the kubeconfig for the workload cluster
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
 		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		for _, pod := range workerDSPods {
+			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 			catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 				Resource("pods").
