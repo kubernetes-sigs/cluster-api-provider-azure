@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -56,9 +57,8 @@ type AzureAPIServerILBSpecInput struct {
 // AzureAPIServerILBSpec implements a test that verifies the Azure API server ILB is created.
 func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServerILBSpecInput) {
 	var (
-		specName    = "azure-apiserver-ilb"
-		input       AzureAPIServerILBSpecInput
-		clusterName = os.Getenv("AZURE_CLUSTER_NAME")
+		specName = "azure-apiserver-ilb"
+		input    AzureAPIServerILBSpecInput
 	)
 
 	input = inputGetter()
@@ -75,7 +75,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	By("3. Verifying the Azure API Server Internal Load Balancer is created")
 	groupName := os.Getenv(AzureResourceGroup)
-	internalLoadbalancerName := fmt.Sprintf("%s-%s", clusterName, "public-lb-internal")
+	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "public-lb-internal")
 
 	backoff := wait.Backoff{
 		Duration: retryBackoffInitialDuration, // TODO: retryBackoffInitialDuration is not readable. Update it to a more readable value.
@@ -90,6 +90,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 
 		internalLoadbalancer := resp.LoadBalancer
+		Expect(resp.LoadBalancer.Name).To(Equal(internalLoadbalancerName))
 
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
@@ -138,7 +139,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
 	// ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
-	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", clusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION"))))
+	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", input.ClusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION"))))
 	Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
 	// By("Creating a K8s client for the management cluster")
@@ -170,6 +171,65 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(workloadClusterProxy).NotTo(BeNil())
 	workloadClusterClientSet := workloadClusterProxy.GetClientSet()
 	Expect(workloadClusterClientSet).NotTo(BeNil())
+
+	// Deploy node-debug daemonset to workload cluster
+	By("7.1 Deploying node-debug daemonset to the workload cluster")
+	nodeDebugDS := v1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "node-debug",
+			Namespace: "kube-system",
+		},
+		Spec: v1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "node-debug",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "node-debug",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "node-debug",
+							Image: "busybox:1.35",
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: ptr.To(true),
+							},
+							Command: []string{
+								"sh",
+								"-c",
+								"sleep infinity",
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "etc-hosts",
+									MountPath: "/host/etc",
+									ReadOnly:  true,
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "etc-hosts",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/etc/hosts",
+									Type: ptr.To(corev1.HostPathFile),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	nodeDebugDS, err = workloadClusterClientSet.AppsV1().DaemonSets("kube-system").Create(ctx, &nodeDebugDS, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
 
 	By("8. Probing worker nodes")
 	Eventually(func(g Gomega) {

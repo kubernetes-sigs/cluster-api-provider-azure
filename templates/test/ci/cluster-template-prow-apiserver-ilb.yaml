@@ -332,36 +332,3 @@ spec:
       imageName: "${CNM_IMAGE_NAME:-""}"
       imageRepository: "${IMAGE_REGISTRY:-""}"
       imageTag: "${IMAGE_TAG_CNM:-""}"
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: node-debug
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: node-debug
-  template:
-    metadata:
-      labels:
-        app: node-debug
-    spec:
-      containers:
-      - command:
-        - sh
-        - -c
-        - sleep infinity
-        image: busybox:1.35
-        name: node-debug
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /host/etc/hosts
-          name: etc-hosts
-          readOnly: true
-      volumes:
-      - hostPath:
-          path: /etc/hosts
-          type: File
-        name: etc-hosts
