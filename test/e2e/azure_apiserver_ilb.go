@@ -75,7 +75,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	By("3. Verifying the Azure API Server Internal Load Balancer is created")
 	groupName := os.Getenv(AzureResourceGroup)
-	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "public-lb-internal")
+	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "apiserver-ilb-public-lb-internal")
 
 	backoff := wait.Backoff{
 		Duration: retryBackoffInitialDuration, // TODO: retryBackoffInitialDuration is not readable. Update it to a more readable value.
@@ -90,7 +90,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 
 		internalLoadbalancer := resp.LoadBalancer
-		Expect(resp.LoadBalancer.Name).To(Equal(internalLoadbalancerName))
+		Expect(internalLoadbalancer.Name).To(Equal(internalLoadbalancerName))
 
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
