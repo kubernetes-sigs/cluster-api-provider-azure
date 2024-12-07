@@ -137,6 +137,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 	}
 	Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
+	// ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", clusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION")), "controlPlaneEndpointName should be equal to the cluster name and location"))
 	Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
 	// By("Creating a K8s client for the management cluster")
@@ -171,11 +173,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	By("8. Probing worker nodes")
 	Eventually(func(g Gomega) {
-		By("8.1 Listing all the nodes")
 		allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		g.Expect(err).NotTo(HaveOccurred())
 
-		By("8.2 Saving all the nodes")
+		By("8.1 Saving all the nodes")
 		workerNodes := make(map[string]corev1.Node, 0)
 		for i, node := range allNodes.Items {
 			if strings.Contains(node.Name, input.ClusterName+"-md-0") {
@@ -184,21 +185,22 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 		g.Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
 
-		By("8.3 Saving all the worker nodes")
+		By("8.2 Saving all the worker nodes")
 		allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
 			LabelSelector: "app=node-debug",
 		})
 		g.Expect(err).NotTo(HaveOccurred())
 
-		By("8.4 Saving all the node-debug daemonset pods running on the worker nodes")
+		By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
 		workerDSPods := make(map[string]corev1.Pod, 0)
 		for _, daemonsetPod := range allNodeDebugPods.Items {
 			if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
 				workerDSPods[daemonsetPod.Name] = daemonsetPod
 			}
 		}
+		Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods not found")
 
-		By("8.5 Checking the /etc/hosts file in each of the worker nodes")
+		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
 		// get the kubeconfig for the workload cluster
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
 		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
