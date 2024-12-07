@@ -146,7 +146,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	// mgmtClient := input.BootstrapClusterProxy.GetClient()
 	// Expect(mgmtClient).NotTo(BeNil())
 	//
-	// By("Getting the AzureCluster") // TODO: swtich to a RESTClient instead of using the mgmtClient
+	// By("Getting the AzureCluster") // TODO: switch to a RESTClient instead of using the mgmtClient
 	// deployedAzureCluster := &infrav1.AzureCluster{}
 	// err = mgmtClient.Get(ctx, types.NamespacedName{
 	// 	Name:      input.ClusterName,
