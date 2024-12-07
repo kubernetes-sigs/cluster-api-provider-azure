@@ -91,7 +91,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 
 		internalLoadbalancer := resp.LoadBalancer
-		Expect(ptr.Deref(internalLoadbalancer.Name, "g")).To(Equal(internalLoadbalancerName))
+		Expect(ptr.Deref(internalLoadbalancer.Name, "")).To(Equal(internalLoadbalancerName))
 
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
