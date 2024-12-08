@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,7 +41,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
 
@@ -92,9 +90,11 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			return false, err
 		}
 
+		By("3.1. Verifying the Azure API Server Internal Load Balancer is the right one created")
 		internalLoadbalancer := resp.LoadBalancer
 		Expect(ptr.Deref(internalLoadbalancer.Name, "")).To(Equal(internalLoadbalancerName))
 
+		By("3.2. Verifying the Azure API Server Internal Load Balancer is in a succeeded state")
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
 			return true, nil
