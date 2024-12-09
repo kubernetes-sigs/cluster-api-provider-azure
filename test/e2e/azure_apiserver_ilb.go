@@ -146,34 +146,6 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", input.ClusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION"))))
 	Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
-	// ------------------------ //
-
-	// By("Creating a K8s client for the management cluster")
-	// mgmtClient := input.BootstrapClusterProxy.GetClient()
-	// Expect(mgmtClient).NotTo(BeNil())
-	//
-	// By("Getting the AzureCluster") // TODO: switch to a RESTClient instead of using the mgmtClient
-	// deployedAzureCluster := &infrav1.AzureCluster{}
-	// err = mgmtClient.Get(ctx, types.NamespacedName{
-	// 	Name:      input.ClusterName,
-	// 	Namespace: input.Namespace.Name,
-	// }, deployedAzureCluster)
-	// Expect(err).NotTo(HaveOccurred())
-	//
-	// By("Getting the controlplane endpoint name")
-	// controlPlaneEndpointName, apiServerILBPrivateIP := "", ""
-	// for _, frontendIP := range deployedAzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs {
-	// 	if frontendIP.PublicIP != nil && frontendIP.PublicIP.DNSName != "" {
-	// 		controlPlaneEndpointName = frontendIP.PublicIP.DNSName
-	// 	} else if frontendIP.PrivateIPAddress != "" {
-	// 		apiServerILBPrivateIP = frontendIP.PrivateIPAddress
-	// 	}
-	// }
-	// Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
-	// Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
-
-	// ------------------------ //
-
 	By("7. Creating a Kubernetes client set to the workload cluster")
 	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(workloadClusterProxy).NotTo(BeNil())
