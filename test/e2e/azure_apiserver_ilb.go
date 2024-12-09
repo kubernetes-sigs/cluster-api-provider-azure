@@ -41,6 +41,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"strings"
 )
 
 // AzureAPIServerILBSpecInput is the input for AzureAPIServerILBSpec.
@@ -214,7 +215,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(err).NotTo(HaveOccurred())
 
 	allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	g.Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	By("8.1 Saving all the nodes")
 	workerNodes := make(map[string]corev1.Node, 0)
 	for i, node := range allNodes.Items {
@@ -222,13 +223,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			workerNodes[node.Name] = allNodes.Items[i]
 		}
 	}
-	g.Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
+	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
 
 	By("8.2 Saving all the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
-	g.Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	By("8. Probing worker nodes")
 
 	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
@@ -241,11 +242,14 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods not found")
 
 	retryDSFn := func(ctx context.Context) (bool, error) {
+		defer GinkgoRecover()
+
 		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
-		// get the kubeconfig for the workload cluster
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
 		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-		g.Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
+		}
 
 		for _, pod := range workerDSPods {
 			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
@@ -263,7 +267,9 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 			// create the executor
 			executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
+			}
 
 			// cat the /etc/hosts file
 			var stdout, stderr bytes.Buffer
@@ -273,14 +279,19 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				Stderr: &stderr,
 				Tty:    false,
 			})
-			g.Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to exec into pod: %s, stderr: %s", pod.Name, stderr.String()))
+			if err != nil {
+				return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
+			}
 
 			output := stdout.String()
 			fmt.Printf("Captured output:\n%s\n", output)
 			Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
-
+			if strings.Contains(output, apiServerILBPrivateIP) {
+				return true, nil
+			}
 			// TODO: run netcat command to check if the DNS entry is resolvable
 		}
+		return false /* retry */, nil
 	}
 	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
 	Expect(err).NotTo(HaveOccurred())
