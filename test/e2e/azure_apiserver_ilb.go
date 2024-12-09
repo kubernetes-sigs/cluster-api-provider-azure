@@ -213,9 +213,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
-	allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	Expect(err).NotTo(HaveOccurred())
 	By("8.1 Saving all the nodes")
+	allNodes := &corev1.NodeList{}
+	err = workloadClusterClient.List(ctx, allNodes)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(allNodes.Items)).NotTo(BeZero(), "Expected at least one node in the workload cluster")
+
+	By("8.2 Saving all the worker nodes")
 	workerNodes := make(map[string]corev1.Node, 0)
 	for i, node := range allNodes.Items {
 		if strings.Contains(node.Name, input.ClusterName+"-md-0") {
@@ -224,13 +228,11 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
-	By("8.2 Saving all the worker nodes")
+	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
 	Expect(err).NotTo(HaveOccurred())
-
-	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
 	workerDSPods := make(map[string]corev1.Pod, 0)
 	for _, daemonsetPod := range allNodeDebugPods.Items {
 		if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
@@ -239,61 +241,65 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
 
-	retryDSFn := func(ctx context.Context) (bool, error) {
-		defer GinkgoRecover()
+	// retryDSFn := func(ctx context.Context) (bool, error) {
+	// 	defer GinkgoRecover()
 
-		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
-		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
-		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-		if err != nil {
-			return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
-		}
+	By("8.4 Checking the /etc/hosts file in each of the worker nodes")
+	workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
+	workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
+	Expect(err).NotTo(HaveOccurred())
+	// if err != nil {
+	// 	return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
+	// }
 
-		for _, pod := range workerDSPods {
-			fmt.Println("Worker DS Pod Name: ", pod.Name)
-			fmt.Println("Worker DS Pod Spec: ", pod.Spec)
+	for _, pod := range workerDSPods {
+		fmt.Println("Worker DS Pod Name: ", pod.Name)
+		fmt.Println("Worker DS Pod Spec: ", pod.Spec)
 
-			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
-			catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
-			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
-				Resource("pods").
-				Name(pod.Name).
-				Namespace(pod.Namespace).
-				SubResource("exec").
-				Param("container", pod.Spec.Containers[0].Name).
-				Param("stdin", "true").
-				Param("stdout", "true").
-				Param("tty", "true").
-				Param("command", catEtcHostsCommand)
+		By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
+		catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+		req := workloadClusterClientSet.CoreV1().RESTClient().Post().
+			Resource("pods").
+			Name(pod.Name).
+			Namespace(pod.Namespace).
+			SubResource("exec").
+			Param("stdin", "true").
+			Param("stdout", "true").
+			Param("tty", "true").
+			Param("command", catEtcHostsCommand)
+		// Param("container", pod.Spec.Containers[0].Name).
 
-			// create the executor
-			executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-			if err != nil {
-				return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
-			}
+		// create the executor
+		executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
+		Expect(err).NotTo(HaveOccurred())
+		// if err != nil {
+		// 	return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
+		// }
 
-			// cat the /etc/hosts file
-			var stdout, stderr bytes.Buffer
-			err = executor.Stream(remotecommand.StreamOptions{
-				Stdin:  nil,
-				Stdout: &stdout,
-				Stderr: &stderr,
-				Tty:    false,
-			})
-			if err != nil {
-				return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
-			}
+		// cat the /etc/hosts file
+		var stdout, stderr bytes.Buffer
+		err = executor.Stream(remotecommand.StreamOptions{
+			Stdin:  nil,
+			Stdout: &stdout,
+			Stderr: &stderr,
+			Tty:    false,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		// if err != nil {
+		// 	return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
+		// }
 
-			output := stdout.String()
-			fmt.Printf("Captured output:\n%s\n", output)
-			Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
-			if strings.Contains(output, apiServerILBPrivateIP) {
-				return true, nil
-			}
-			// TODO: run netcat command to check if the DNS entry is resolvable
-		}
-		return false /* retry */, nil
+		output := stdout.String()
+		fmt.Printf("Captured output:\n%s\n", output)
+		Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
+
+		// if strings.Contains(output, apiServerILBPrivateIP) {
+		// 	return true, nil
+		// }
+		// TODO: run netcat command to check if the DNS entry is resolvable
 	}
+	// return false /* retry */, nil
+	// }
 	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
 	Expect(err).NotTo(HaveOccurred())
 }
