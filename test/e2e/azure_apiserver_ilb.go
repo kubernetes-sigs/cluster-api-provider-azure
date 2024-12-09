@@ -41,7 +41,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"strings"
 )
 
 // AzureAPIServerILBSpecInput is the input for AzureAPIServerILBSpec.
@@ -214,35 +213,34 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
+	allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	g.Expect(err).NotTo(HaveOccurred())
+	By("8.1 Saving all the nodes")
+	workerNodes := make(map[string]corev1.Node, 0)
+	for i, node := range allNodes.Items {
+		if strings.Contains(node.Name, input.ClusterName+"-md-0") {
+			workerNodes[node.Name] = allNodes.Items[i]
+		}
+	}
+	g.Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
+
+	By("8.2 Saving all the worker nodes")
+	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
+		LabelSelector: "app=node-debug",
+	})
+	g.Expect(err).NotTo(HaveOccurred())
 	By("8. Probing worker nodes")
-	Eventually(func(g Gomega) {
-		allNodes, err := workloadClusterClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-		g.Expect(err).NotTo(HaveOccurred())
 
-		By("8.1 Saving all the nodes")
-		workerNodes := make(map[string]corev1.Node, 0)
-		for i, node := range allNodes.Items {
-			if strings.Contains(node.Name, input.ClusterName+"-md-0") {
-				workerNodes[node.Name] = allNodes.Items[i]
-			}
+	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
+	workerDSPods := make(map[string]corev1.Pod, 0)
+	for _, daemonsetPod := range allNodeDebugPods.Items {
+		if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
+			workerDSPods[daemonsetPod.Name] = daemonsetPod
 		}
-		g.Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
+	}
+	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods not found")
 
-		By("8.2 Saving all the worker nodes")
-		allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
-			LabelSelector: "app=node-debug",
-		})
-		g.Expect(err).NotTo(HaveOccurred())
-
-		By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
-		workerDSPods := make(map[string]corev1.Pod, 0)
-		for _, daemonsetPod := range allNodeDebugPods.Items {
-			if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
-				workerDSPods[daemonsetPod.Name] = daemonsetPod
-			}
-		}
-		Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods not found")
-
+	retryDSFn := func(ctx context.Context) (bool, error) {
 		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
 		// get the kubeconfig for the workload cluster
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
@@ -283,5 +281,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 			// TODO: run netcat command to check if the DNS entry is resolvable
 		}
-	}, input.WaitIntervals...).Should(Succeed())
+	}
+	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
+	Expect(err).NotTo(HaveOccurred())
 }
