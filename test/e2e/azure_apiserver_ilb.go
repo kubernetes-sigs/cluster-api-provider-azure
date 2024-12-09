@@ -210,7 +210,6 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			},
 		},
 	}
-	// nodeDebugDS, err = workloadClusterClientSet.AppsV1().DaemonSets("kube-system").Create(ctx, nodeDebugDS, metav1.CreateOptions{})
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -223,14 +222,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			workerNodes[node.Name] = allNodes.Items[i]
 		}
 	}
-	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker nodes not found")
+	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
 	By("8.2 Saving all the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
 	Expect(err).NotTo(HaveOccurred())
-	By("8. Probing worker nodes")
 
 	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
 	workerDSPods := make(map[string]corev1.Pod, 0)
@@ -239,7 +237,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			workerDSPods[daemonsetPod.Name] = daemonsetPod
 		}
 	}
-	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods not found")
+	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
 
 	retryDSFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
@@ -252,6 +250,9 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 
 		for _, pod := range workerDSPods {
+			fmt.Println("Worker DS Pod Name: ", pod.Name)
+			fmt.Println("Worker DS Pod Spec: ", pod.Spec)
+
 			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 			catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
