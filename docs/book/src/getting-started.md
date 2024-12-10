@@ -90,9 +90,98 @@ The capability to set credentials using environment variables is now deprecated 
 
 
 ### Building your first cluster
-Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) to create your first Kubernetes cluster on Azure using Cluster API. Make sure to select the "Azure" tabs.
 
-If you are looking to install additional ASO CRDs, set `ADDITIONAL_ASO_CRDS` to the list of CRDs you want to install. Refer to adding additional CRDs for Azure Service Operator [here](./topics/aso.md#Using-aso-for-non-capz-resources).
+The recommended way to build a cluster is to install a CAPZ management cluster using [Cluster API Operator](https://github.com/kubernetes-sigs/cluster-api-operator), then utilizing a Helm chart to create a workload cluster, specifically an [ASO Managed Cluster](./managed/asomanagedcluster.md).
+
+To create a cluster manually, check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) for in-depth instructions. Make sure to select the "Azure" tabs. If you are looking to install additional ASO CRDs, set `ADDITIONAL_ASO_CRDS` to the list of CRDs you want to install. Refer to adding additional CRDs for Azure Service Operator [here](./topics/aso.md#Using-aso-for-non-capz-resources).
+
+## Creating a CAPZ Management Cluster with CAPI Operator
+
+First, it is a common practice to create a temporary, local bootstrap cluster to deploy the management cluster. You can either use an existing Kubernetes cluster, or create a kind cluster for this purpose.
+
+```bash
+kind create cluster
+```
+
+Add the CAPI Operator and cert-manager Helm repositories, which we will use to install the management cluster.
+
+```bash
+helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm repo update
+```
+
+Install cert manager:
+
+```bash
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true
+```
+
+Create a `values.yaml` file for the CAPI Operator Helm chart like so:
+
+```yaml
+core: "cluster-api:v1.8.5"
+infrastructure: "azure:v1.17.2"
+addon: "helm:v0.2.5"
+manager:
+  featureGates:
+    core:
+      ClusterTopology: true
+```
+
+Install the CAPI Operator:
+
+```bash
+helm install capi-operator capi-operator/cluster-api-operator --create-namespace -f values.yaml --wait --timeout 90s
+```
+
+## Creating an ASO Managed workload cluster
+
+Once your management cluster is up and running, you can create an ASO Managed Cluster using the [azure-aks-aso Helm chart](https://github.com/mboersma/cluster-api-charts/tree/main/charts/azure-aks-aso).
+
+Add the cluster-api-charts Helm repository:
+
+```bash
+helm repo add capi https://mboersma.github.io/cluster-api-charts
+```
+
+Specify values for the CAPZ AKS-ASO Helm chart in a `values.yaml` file. For example:
+
+```yaml
+credentialSecretName: "aso-credentials"
+createCredentials: true
+subscriptionID: "subscription-id"
+tenantID: "tenant-id"
+clientID: "client-id"
+# Leave clientSecret blank if using WorkloadIdentity
+clientSecret: "client-secret"
+# set to podIdentity for managed identity or service principal even if NOT using pod identity
+authMode: "podIdentity"
+
+# clusterName defaults to the name of the Helm release
+clusterName: ""
+location: westus3
+
+managedMachinePoolSpecs:
+  pool0:
+    count: 1
+    mode: System
+    vmSize: Standard_DS2_v2
+    type: VirtualMachineScaleSets
+  pool1:
+    count: 1
+    mode: User
+    vmSize: Standard_DS2_v2
+    type: VirtualMachineScaleSets
+```
+
+Install the Helm chart:
+
+```bash
+helm install quick-start capi/azure-aks-aso -f values.yaml
+```
+
+For more information on the `azure-aks-aso` Helm chart, see the [chart documentation](https://github.com/mboersma/cluster-api-charts/tree/main/charts/azure-aks-aso#azure-aks-aso-chart).
 
 <h1> Warning </h1>
 
