@@ -1,3 +1,6 @@
+//go:build e2e
+// +build e2e
+
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -156,7 +159,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	nodeDebugDS := &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "node-debug",
-			Namespace: "kube-system",
+			Namespace: "default",
 		},
 		Spec: v1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
@@ -181,7 +184,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 							Command: []string{
 								"sh",
 								"-c",
-								"sleep infinity",
+								"tail -f /dev/null",
 							},
 							// VolumeMounts: []corev1.VolumeMount{
 							// 	{
@@ -190,6 +193,15 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 							// 		ReadOnly:  true,
 							// 	},
 							// },
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"ls"},
+									},
+								},
+								InitialDelaySeconds: 1,
+								PeriodSeconds:       3,
+							},
 						},
 					},
 					// Volumes: []corev1.Volume{
@@ -226,7 +238,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
 	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
-	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
+	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -249,6 +261,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	// 	return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
 	// }
 
+	fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
+	fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
 	for _, pod := range workerDSPods {
 		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
 		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
