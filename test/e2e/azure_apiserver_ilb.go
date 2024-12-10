@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -42,6 +39,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"strings"
+	"time"
 )
 
 // AzureAPIServerILBSpecInput is the input for AzureAPIServerILBSpec.
@@ -65,23 +63,23 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 
-	By("1. Fetching new Azure Credentials")
+	By("Fetching new Azure Credentials")
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("2. Getting azureLoadBalancerClient")
+	By("Getting azureLoadBalancerClient")
 	azureLoadBalancerClient, err := armnetwork.NewLoadBalancersClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("3. Verifying the Azure API Server Internal Load Balancer is created")
+	By("Verifying the Azure API Server Internal Load Balancer is created")
 	groupName := os.Getenv(AzureResourceGroup)
 	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "apiserver-ilb-public-lb-internal")
 
 	backoff := wait.Backoff{
-		Duration: retryBackoffInitialDuration, // TODO: retryBackoffInitialDuration is not readable. Update it to a more readable value.
-		Factor:   retryBackoffFactor,
-		Jitter:   retryBackoffJitter,
-		Steps:    retryBackoffSteps,
+		Duration: 5 * time.Second,
+		Factor:   5,
+		Jitter:   0.5,
+		Steps:    5,
 	}
 	retryFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
@@ -90,11 +88,11 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			return false, err
 		}
 
-		By("3.1. Verifying the Azure API Server Internal Load Balancer is the right one created")
+		By("Verifying the Azure API Server Internal Load Balancer is the right one created")
 		internalLoadbalancer := resp.LoadBalancer
 		Expect(ptr.Deref(internalLoadbalancer.Name, "")).To(Equal(internalLoadbalancerName))
 
-		By("3.2. Verifying the Azure API Server Internal Load Balancer is in a succeeded state")
+		By("Verifying the Azure API Server Internal Load Balancer is in a succeeded state")
 		switch ptr.Deref(internalLoadbalancer.Properties.ProvisioningState, "") {
 		case armnetwork.ProvisioningStateSucceeded:
 			return true, nil
@@ -109,13 +107,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryFn)
 
 	// ------------------------ //
-	By("4. Creating a dynamic client for accessing custom resources in the management cluster")
+	By("Creating a dynamic client for accessing custom resources in the management cluster")
 	mgmtRestConfig := input.BootstrapClusterProxy.GetRESTConfig()
 	mgmtDynamicClientSet, err := dynamic.NewForConfig(mgmtRestConfig)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmtDynamicClientSet).NotTo(BeNil())
 
-	By("5. Getting the AzureCluster using the dynamic client set")
+	By("Getting the AzureCluster using the dynamic client set")
 	azureClusterGVR := schema.GroupVersionResource{
 		Group:    "infrastructure.cluster.x-k8s.io",
 		Version:  "v1beta1",
@@ -132,7 +130,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		azureCluster.UnstructuredContent(),
 		deployedAzureCluster,
 	)
-	By("6. Getting the controlplane endpoint name")
+	By("Getting the controlplane endpoint name")
 	controlPlaneEndpointName, apiServerILBPrivateIP := "", ""
 	for _, frontendIP := range deployedAzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs {
 		if frontendIP.PublicIP != nil && frontendIP.PublicIP.DNSName != "" {
@@ -142,11 +140,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 	}
 	Expect(controlPlaneEndpointName).NotTo(BeEmpty(), "controlPlaneEndpointName should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs with a valid DNS name")
-	// DNS Name should match : ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
 	Expect(controlPlaneEndpointName).To(Equal(fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", input.ClusterName, os.Getenv("APISERVER_LB_DNS_SUFFIX"), os.Getenv("AZURE_LOCATION"))))
 	Expect(apiServerILBPrivateIP).NotTo(BeEmpty(), "apiServerILBPrivateIP should be found at AzureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs when apiserver ilb feature flag is enabled")
 
-	By("7. Creating a Kubernetes client set to the workload cluster")
+	By("Creating a Kubernetes client set to the workload cluster")
 	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(workloadClusterProxy).NotTo(BeNil())
 	workloadClusterClient := workloadClusterProxy.GetClient()
@@ -155,7 +152,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	Expect(workloadClusterClientSet).NotTo(BeNil())
 
 	// Deploy node-debug daemonset to workload cluster
-	By("7.1 Deploying node-debug daemonset to the workload cluster")
+	By("Deploying node-debug daemonset to the workload cluster")
 	nodeDebugDS := &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "node-debug",
@@ -202,13 +199,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("8. Saving all the nodes")
+	By("Saving all the nodes")
 	allNodes := &corev1.NodeList{}
 	err = workloadClusterClient.List(ctx, allNodes)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(allNodes.Items)).NotTo(BeZero(), "Expected at least one node in the workload cluster")
 
-	By("9. Saving all the worker nodes")
+	By("Saving all the worker nodes")
 	workerNodes := make(map[string]corev1.Node, 0)
 	for i, node := range allNodes.Items {
 		if strings.Contains(node.Name, input.ClusterName+"-md-0") {
@@ -217,7 +214,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
-	By("10. Saving all the node-debug daemonset pods running on the worker nodes")
+	By("Saving all the node-debug daemonset pods running on the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
@@ -230,36 +227,32 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
 
+	By("Getting the kubeconfig path for the workload cluster")
+	workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
+	workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
+	Expect(err).NotTo(HaveOccurred())
+
 	retryDSFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
 
-		By("11.1 Checking the /etc/hosts file in each of the worker nodes")
-		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
-		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-		// Expect(err).NotTo(HaveOccurred())
-		if err != nil {
-			return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
-		}
-
 		fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
-		// fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
 		for _, pod := range workerDSPods {
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
+			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
+			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", pod.Spec.NodeName)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
+			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
+			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
+			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
-			By("11.2 Checking the status of the node-debug pod")
+			By("Checking the status of the node-debug pod")
 			if pod.Status.Phase == corev1.PodPending {
-				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Rgetrying\n", pod.Name)
+				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Retrying\n", pod.Name)
 				return false /* retry */, nil
 			}
 
-			By("11.3 Exec into the node-debug pod to check the /etc/hosts file")
 			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namspace %s and running the command %s\n", pod.Name, pod.Namespace, catEtcHostsCommand)
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 				Resource("pods").
 				Name(pod.Name).
@@ -267,9 +260,9 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				SubResource("exec").
 				Param("stdin", "true").
 				Param("stdout", "true").
-				Param("tty", "true").
+				Param("stderr", "true").
 				Param("command", catEtcHostsCommand).
-				Param("container", pod.Spec.Containers[0].Name)
+				Param("container", "node-debug")
 
 			// create the executor
 			executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
