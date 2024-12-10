@@ -178,21 +178,11 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 						{
 							Name:  "node-debug",
 							Image: "busybox:latest",
-							// SecurityContext: &corev1.SecurityContext{
-							// 	Privileged: ptr.To(true),
-							// },
 							Command: []string{
 								"sh",
 								"-c",
 								"tail -f /dev/null",
 							},
-							// VolumeMounts: []corev1.VolumeMount{
-							// 	{
-							// 		Name:      "etc-hosts",
-							// 		MountPath: "/host/etc",
-							// 		ReadOnly:  true,
-							// 	},
-							// },
 							ReadinessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									Exec: &corev1.ExecAction{
@@ -201,20 +191,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 								},
 								InitialDelaySeconds: 1,
 								PeriodSeconds:       3,
+								TimeoutSeconds:      60,
 							},
 						},
 					},
-					// Volumes: []corev1.Volume{
-					// 	{
-					// 		Name: "etc-hosts",
-					// 		VolumeSource: corev1.VolumeSource{
-					// 			HostPath: &corev1.HostPathVolumeSource{
-					// 				Path: "/etc/hosts",
-					// 				Type: ptr.To(corev1.HostPathFile),
-					// 			},
-					// 		},
-					// 	},
-					// },
 				},
 			},
 		},
@@ -262,7 +242,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		}
 
 		fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
-		fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
+		// fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
 		for _, pod := range workerDSPods {
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
