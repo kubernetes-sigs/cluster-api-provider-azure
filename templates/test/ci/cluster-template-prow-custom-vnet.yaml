@@ -54,6 +54,8 @@ spec:
       securityGroup:
         name: node-nsg
     vnet:
+      cidrBlocks:
+      - 10.0.0.0/16
       name: ${AZURE_CUSTOM_VNET_NAME}
       resourceGroup: ${AZURE_CUSTOM_VNET_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
