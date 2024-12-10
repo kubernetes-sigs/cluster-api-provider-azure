@@ -202,13 +202,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("8.1 Saving all the nodes")
+	By("8. Saving all the nodes")
 	allNodes := &corev1.NodeList{}
 	err = workloadClusterClient.List(ctx, allNodes)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(allNodes.Items)).NotTo(BeZero(), "Expected at least one node in the workload cluster")
 
-	By("8.2 Saving all the worker nodes")
+	By("9. Saving all the worker nodes")
 	workerNodes := make(map[string]corev1.Node, 0)
 	for i, node := range allNodes.Items {
 		if strings.Contains(node.Name, input.ClusterName+"-md-0") {
@@ -217,7 +217,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
-	By("8.3 Saving all the node-debug daemonset pods running on the worker nodes")
+	By("10. Saving all the node-debug daemonset pods running on the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
@@ -233,7 +233,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	retryDSFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
 
-		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
+		By("11.1 Checking the /etc/hosts file in each of the worker nodes")
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
 		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
 		// Expect(err).NotTo(HaveOccurred())
@@ -252,12 +252,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
+			By("11.2 Checking the status of the node-debug pod")
 			if pod.Status.Phase == corev1.PodPending {
-				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase\n", pod.Name)
+				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Rgetrying\n", pod.Name)
 				return false /* retry */, nil
 			}
 
-			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
+			By("11.3 Exec into the node-debug pod to check the /etc/hosts file")
 			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 				Resource("pods").
