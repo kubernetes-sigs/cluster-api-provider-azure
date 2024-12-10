@@ -181,7 +181,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 							Command: []string{
 								"sh",
 								"-c",
-								"tail -f /dev/null",
+								"sleep 3600",
 							},
 							ReadinessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
@@ -252,8 +252,12 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
-			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
+			if pod.Status.Phase != corev1.Pending {
+				fmt.Fprintf(GinkgoWriter, "Pod %s is not in Pending phase\n", pod.Name)
+				return false /* retry */, nil
+			}
 
+			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 				Resource("pods").
