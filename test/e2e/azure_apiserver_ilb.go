@@ -255,8 +255,12 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	for _, pod := range workerDSPods {
 		fmt.Println("Worker DS Pod Name: ", pod.Name)
 		fmt.Println("Worker DS Pod Spec: ", pod.Spec)
+		fmt.Println("Worker DS Pod Status: ", pod.Status)
+		fmt.Println("Worker DS Pod NodeName: ", pod.Spec.NodeName)
+		fmt.Println("Worker DS Pod Containers: ", pod.Spec.Containers)
 
 		By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
+
 		catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 		req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 			Resource("pods").
@@ -300,6 +304,6 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	// return false /* retry */, nil
 	// }
-	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
+	// err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
 	Expect(err).NotTo(HaveOccurred())
 }
