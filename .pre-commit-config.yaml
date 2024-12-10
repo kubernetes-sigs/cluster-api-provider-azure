@@ -48,19 +48,19 @@ repos:
     name: Run make verify-shellcheck
     entry: make verify-shellcheck
     language: system
-    stages: [ pre-push ]
+    stages: [pre-push]
   - id: make-conversions
     name: Run make verify-conversions
     entry: make verify-conversions
     language: system
-    stages: [ pre-push ]
+    stages: [pre-push]
   - id: make-tiltfile
     name: Run make verify-tiltfile
     entry: make verify-tiltfile
     language: system
-    stages: [ pre-push ]
+    stages: [pre-push]
   - id: make-test
-    name: Run make test
-    entry: make test
+    name: Run make go-test
+    entry: make go-test
     language: system
     stages: [pre-push]
