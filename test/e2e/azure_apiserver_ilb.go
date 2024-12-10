@@ -177,11 +177,11 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 					Containers: []corev1.Container{
 						{
 							Name:  "node-debug",
-							Image: "busybox:latest",
+							Image: "docker.io/library/busybox:latest",
 							Command: []string{
 								"sh",
 								"-c",
-								"sleep 3600",
+								"tail -f /dev/null",
 							},
 							ReadinessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
@@ -252,8 +252,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
-			if pod.Status.Phase != corev1.PodPending {
-				fmt.Fprintf(GinkgoWriter, "Pod %s is not in Pending phase\n", pod.Name)
+			if pod.Status.Phase == corev1.PodPending {
+				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase\n", pod.Name)
 				return false /* retry */, nil
 			}
 
