@@ -252,7 +252,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
-			if pod.Status.Phase != corev1.Pending {
+			if pod.Status.Phase != corev1.PodPending {
 				fmt.Fprintf(GinkgoWriter, "Pod %s is not in Pending phase\n", pod.Name)
 				return false /* retry */, nil
 			}
