@@ -1,3 +1,6 @@
+//go:build e2e
+// +build e2e
+
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -183,26 +186,26 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 								"-c",
 								"sleep infinity",
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "etc-hosts",
-									MountPath: "/host/etc",
-									ReadOnly:  true,
-								},
-							},
+							// VolumeMounts: []corev1.VolumeMount{
+							// 	{
+							// 		Name:      "etc-hosts",
+							// 		MountPath: "/host/etc",
+							// 		ReadOnly:  true,
+							// 	},
+							// },
 						},
 					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "etc-hosts",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/etc/hosts",
-									Type: ptr.To(corev1.HostPathFile),
-								},
-							},
-						},
-					},
+					// Volumes: []corev1.Volume{
+					// 	{
+					// 		Name: "etc-hosts",
+					// 		VolumeSource: corev1.VolumeSource{
+					// 			HostPath: &corev1.HostPathVolumeSource{
+					// 				Path: "/etc/hosts",
+					// 				Type: ptr.To(corev1.HostPathFile),
+					// 			},
+					// 		},
+					// 	},
+					// },
 				},
 			},
 		},
