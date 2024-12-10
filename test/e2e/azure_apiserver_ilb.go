@@ -252,7 +252,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			}
 
 			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
-			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namspace %s and running the command %s\n", pod.Name, pod.Namespace, catEtcHostsCommand)
+			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namespace %s and running the command %s\n", pod.Name, pod.Namespace, catEtcHostsCommand)
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 				Resource("pods").
 				Name(pod.Name).
