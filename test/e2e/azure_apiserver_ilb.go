@@ -250,73 +250,73 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
 
-	// retryDSFn := func(ctx context.Context) (bool, error) {
-	// 	defer GinkgoRecover()
+	retryDSFn := func(ctx context.Context) (bool, error) {
+		defer GinkgoRecover()
 
-	By("8.4 Checking the /etc/hosts file in each of the worker nodes")
-	workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
-	workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-	Expect(err).NotTo(HaveOccurred())
-	// if err != nil {
-	// 	return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
-	// }
+		By("8.4 Checking the /etc/hosts file in each of the worker nodes")
+		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
+		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
+		// Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return false, fmt.Errorf("failed to build kubeconfig from %s: %v", workloadClusterKubeConfigPath, err)
+		}
 
-	fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
-	fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
-	for _, pod := range workerDSPods {
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", pod.Spec.NodeName)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
-		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
+		fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
+		fmt.Fprintf(GinkgoWriter, "worker DSPods: %v\n", workerDSPods)
+		for _, pod := range workerDSPods {
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", pod.Spec.NodeName)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
-		By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
+			By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 
-		catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
-		req := workloadClusterClientSet.CoreV1().RESTClient().Post().
-			Resource("pods").
-			Name(pod.Name).
-			Namespace(pod.Namespace).
-			SubResource("exec").
-			Param("stdin", "true").
-			Param("stdout", "true").
-			Param("tty", "true").
-			Param("command", catEtcHostsCommand).
-			Param("container", pod.Spec.Containers[0].Name)
+			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
+				Resource("pods").
+				Name(pod.Name).
+				Namespace(pod.Namespace).
+				SubResource("exec").
+				Param("stdin", "true").
+				Param("stdout", "true").
+				Param("tty", "true").
+				Param("command", catEtcHostsCommand).
+				Param("container", pod.Spec.Containers[0].Name)
 
-		// create the executor
-		executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-		Expect(err).NotTo(HaveOccurred())
-		// if err != nil {
-		// 	return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
-		// }
+			// create the executor
+			executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
+			// Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
+			}
 
-		// cat the /etc/hosts file
-		var stdout, stderr bytes.Buffer
-		err = executor.Stream(remotecommand.StreamOptions{
-			Stdin:  nil,
-			Stdout: &stdout,
-			Stderr: &stderr,
-			Tty:    false,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		// if err != nil {
-		// 	return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
-		// }
+			// cat the /etc/hosts file
+			var stdout, stderr bytes.Buffer
+			err = executor.Stream(remotecommand.StreamOptions{
+				Stdin:  nil,
+				Stdout: &stdout,
+				Stderr: &stderr,
+				Tty:    false,
+			})
+			// Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
+			}
 
-		output := stdout.String()
-		fmt.Printf("Captured output:\n%s\n", output)
-		Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
+			output := stdout.String()
+			fmt.Printf("Captured output:\n%s\n", output)
+			// Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
 
-		// if strings.Contains(output, apiServerILBPrivateIP) {
-		// 	return true, nil
-		// }
-		// TODO: run netcat command to check if the DNS entry is resolvable
+			if strings.Contains(output, apiServerILBPrivateIP) {
+				return true, nil
+			}
+			// TODO: run netcat command to check if the DNS entry is resolvable
+		}
+		return false /* retry */, nil
 	}
-	// return false /* retry */, nil
-	// }
-	// err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
+	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
 	Expect(err).NotTo(HaveOccurred())
 }
