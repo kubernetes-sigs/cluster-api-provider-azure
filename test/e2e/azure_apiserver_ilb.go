@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -177,10 +174,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 					Containers: []corev1.Container{
 						{
 							Name:  "node-debug",
-							Image: "busybox:1.35",
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: ptr.To(true),
-							},
+							Image: "busybox:latest",
+							// SecurityContext: &corev1.SecurityContext{
+							// 	Privileged: ptr.To(true),
+							// },
 							Command: []string{
 								"sh",
 								"-c",
@@ -253,11 +250,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	// }
 
 	for _, pod := range workerDSPods {
-		fmt.Println("Worker DS Pod Name: ", pod.Name)
-		fmt.Println("Worker DS Pod Spec: ", pod.Spec)
-		fmt.Println("Worker DS Pod Status: ", pod.Status)
-		fmt.Println("Worker DS Pod NodeName: ", pod.Spec.NodeName)
-		fmt.Println("Worker DS Pod Containers: ", pod.Spec.Containers)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", pod.Spec.NodeName)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
+		fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
 
 		By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 
