@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -261,7 +258,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 		By("8.5.1 Exec into the node-debug pod to check the /etc/hosts file")
 
-		catEtcHostsCommand := "cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+		catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 		req := workloadClusterClientSet.CoreV1().RESTClient().Post().
 			Resource("pods").
 			Name(pod.Name).
@@ -270,8 +267,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			Param("stdin", "true").
 			Param("stdout", "true").
 			Param("tty", "true").
-			Param("command", catEtcHostsCommand)
-		// Param("container", pod.Spec.Containers[0].Name).
+			Param("command", catEtcHostsCommand).
+			Param("container", pod.Spec.Containers[0].Name)
 
 		// create the executor
 		executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
