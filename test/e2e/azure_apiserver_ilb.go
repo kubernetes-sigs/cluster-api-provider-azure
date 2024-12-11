@@ -78,10 +78,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "apiserver-ilb-public-lb-internal")
 
 	backoff := wait.Backoff{
-		Duration: 600 * time.Second,
+		Duration: 100 * time.Second,
 		Factor:   0.5,
 		Jitter:   0.5,
-		Steps:    10,
+		Steps:    5,
 	}
 	retryFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
@@ -303,7 +303,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				Stdin:   false,
 				Stdout:  true,
 				Stderr:  true,
-				TTY:     true,
+				TTY:     false,
 			}
 
 			req.VersionedParams(
@@ -316,24 +316,31 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
 			}
 
-			// cat the /etc/hosts file
-			var stdout, stderr bytes.Buffer
-			err = exec.Stream(remotecommand.StreamOptions{
-				Stdin:  nil,
-				Stdout: &stdout,
-				Stderr: &stderr,
-				Tty:    false,
-			})
-			if err != nil {
-				return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
-			}
+			podExecOperationTimeout             := 3 * time.Minute
+			podExecOperationSleepBetweenRetries := 3 * time.Second
+			Eventually(func (g Gomega) {
+				// cat the /etc/hosts file
+				var stdout, stderr bytes.Buffer
+				err = exec.StreamWithContext(ctx,remotecommand.StreamOptions{
+					Stdin:  nil,
+					Stdout: &stdout,
+					Stderr: &stderr,
+					Tty:    false,
+				})
+				g.Expect(err).NotTo(HaveOccurred())
+				// if err != nil {
+				// 	return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
+				// }
 
-			output := stdout.String()
-			fmt.Fprintf(GinkgoWriter, "Captured output!!!!!!!!\n\t\t%s\n", output)
+				output := stdout.String()
+				fmt.Fprintf(GinkgoWriter, "Captured output!!!!!!!!\n\t\t%s\n", output)
+				g.Expect(output).To(ContainSubstring(apiServerILBPrivateIP))
+				// return true, nil
+			}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed()))
 
-			if strings.Contains(output, apiServerILBPrivateIP) {
-				return true, nil
-			}
+			// if strings.Contains(output, apiServerILBPrivateIP) {
+			// 	return true, nil
+			// }
 			return false /* retry */, nil
 		}
 		return false /* retry */, nil
