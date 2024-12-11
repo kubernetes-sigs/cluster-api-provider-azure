@@ -172,6 +172,8 @@ providers:
         targetName: "cluster-template-azure-cni-v1.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-spot.yaml"
         targetName: "cluster-template-spot.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azurelinux.yaml"
+        targetName: "cluster-template-azurelinux.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
