@@ -707,12 +707,6 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 		expectError        bool
 	}{
 		{
-			name:               "feature gate explicitly disabled",
-			amp:                getKnownValidAzureMachinePool(),
-			featureGateEnabled: ptr.To(false),
-			expectError:        true,
-		},
-		{
 			name:               "feature gate implicitly enabled",
 			amp:                getKnownValidAzureMachinePool(),
 			featureGateEnabled: nil,
