@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -36,6 +33,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
 	"os"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -76,6 +74,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	By("Verifying the Azure API Server Internal Load Balancer is created")
 	groupName := os.Getenv(AzureResourceGroup)
+	fmt.Fprintf(GinkgoWriter, "Azure Resource Group: %s\n", groupName)
 	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "apiserver-ilb-public-lb-internal")
 
 	backoff := wait.Backoff{
@@ -189,8 +188,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 										Command: []string{"ls"},
 									},
 								},
-								InitialDelaySeconds: 1,
-								PeriodSeconds:       3,
+								InitialDelaySeconds: 0,
+								PeriodSeconds:       1,
 								TimeoutSeconds:      60,
 							},
 						},
@@ -217,7 +216,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
 
-	By("Saving all the node-debug daemonset pods running on the worker nodes")
+	By("Saving all the node-debug pods running on the worker nodes")
 	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "app=node-debug",
 	})
@@ -235,69 +234,70 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	retryDSFn := func(ctx context.Context) (bool, error) {
-		defer GinkgoRecover()
+	fmt.Fprintf(GinkgoWriter, "\n\nNumber of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
+	for _, nodeDebugPod := range workerDSPods {
+		retryDSFn := func(ctx context.Context) (bool, error) {
+			defer GinkgoRecover()
 
-		fmt.Fprintf(GinkgoWriter, "number of worker DS Nodes: %v\n", len(workerDSPods))
-		for _, pod := range workerDSPods {
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", pod.Name)
-			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Spec: %v\n", pod.Spec)
-			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", pod.Status)
-			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", pod.Spec.NodeName)
-			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Labels: %v\n", pod.Labels)
-			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Annotations: %v\n", pod.Annotations)
-			// fmt.Fprintf(GinkgoWriter, "Worker DS Pod Containers: %v\n", pod.Spec.Containers)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", nodeDebugPod.Name)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", nodeDebugPod.Spec.NodeName)
+			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", nodeDebugPod.Status)
 
-			By("Checking the status of the node-debug pod")
-			if pod.Status.Phase == corev1.PodPending {
-				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Retrying\n", pod.Name)
+			switch nodeDebugPod.Status.Phase {
+			case corev1.PodPending:
+				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Retrying\n", nodeDebugPod.Name)
 				return false /* retry */, nil
+			case corev1.PodRunning:
+				fmt.Fprintf(GinkgoWriter, "Pod %s is in Running phase. Proceeding\n", nodeDebugPod.Name)
+			default:
+				return false, fmt.Errorf("node-debug pod %s is in an unexpected phase: %v", nodeDebugPod.Name, nodeDebugPod.Status.Phase)
 			}
 
-			catEtcHostsCommand := "sh -c cat /host/etc/hosts" // /etc/host is mounted as /host/etc/hosts in the node-debug pod
-			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namespace %s and running the command %s\n", pod.Name, pod.Namespace, catEtcHostsCommand)
-			req := workloadClusterClientSet.CoreV1().RESTClient().Post().
-				Resource("pods").
-				Name(pod.Name).
-				Namespace(pod.Namespace).
-				SubResource("exec").
-				Param("stdin", "true").
-				Param("stdout", "true").
-				Param("stderr", "true").
-				Param("command", catEtcHostsCommand).
-				Param("container", "node-debug")
+			catEtcHostsCommand := []string{"sh", "-c", "cat,", "/host/etc/hosts"} // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namespace %s and running the command %s\n", nodeDebugPod.Name, nodeDebugPod.Namespace, catEtcHostsCommand)
+			req := workloadClusterClientSet.CoreV1().RESTClient().Post().Resource("pods").Name(nodeDebugPod.Name).
+				Namespace(nodeDebugPod.Namespace).
+				SubResource("exec")
 
-			// create the executor
-			executor, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-			// Expect(err).NotTo(HaveOccurred())
+			option := &corev1.PodExecOptions{
+				Command: catEtcHostsCommand,
+				Stdin:   false,
+				Stdout:  true,
+				Stderr:  true,
+				TTY:     true,
+			}
+
+			req.VersionedParams(
+				option,
+				scheme.ParameterCodec,
+			)
+
+			exec, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
 			if err != nil {
-				return false, fmt.Errorf("failed to exec into pod: %s: %v", pod.Name, err)
+				return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
 			}
 
 			// cat the /etc/hosts file
 			var stdout, stderr bytes.Buffer
-			err = executor.Stream(remotecommand.StreamOptions{
+			err = exec.Stream(remotecommand.StreamOptions{
 				Stdin:  nil,
 				Stdout: &stdout,
 				Stderr: &stderr,
 				Tty:    false,
 			})
-			// Expect(err).NotTo(HaveOccurred())
 			if err != nil {
 				return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
 			}
 
 			output := stdout.String()
 			fmt.Printf("Captured output:\n%s\n", output)
-			// Expect(output).To(ContainSubstring(apiServerILBPrivateIP), "Expected the /etc/hosts file to contain the updated DNS entry for the Internal LB for the API Server")
 
 			if strings.Contains(output, apiServerILBPrivateIP) {
 				return true, nil
 			}
-			// TODO: run netcat command to check if the DNS entry is resolvable
+			return false /* retry */, nil
 		}
-		return false /* retry */, nil
+		err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
+		Expect(err).NotTo(HaveOccurred())
 	}
-	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
-	Expect(err).NotTo(HaveOccurred())
 }
