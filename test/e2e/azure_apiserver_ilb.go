@@ -182,6 +182,13 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 								"-c",
 								"tail -f /dev/null",
 							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "etc-hosts",
+									MountPath: "/host/etc",
+									ReadOnly:  true,
+								},
+							},
 							ReadinessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									Exec: &corev1.ExecAction{
@@ -191,6 +198,17 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 								InitialDelaySeconds: 0,
 								PeriodSeconds:       1,
 								TimeoutSeconds:      60,
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "etc-hosts",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/etc/hosts",
+									Type: ptr.To(corev1.HostPathFile),
+								},
 							},
 						},
 					},
@@ -256,7 +274,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			return false, fmt.Errorf("failed to build workload cluster kubeconfig from flags: %v", err)
 		}
 
-		fmt.Fprintf(GinkgoWriter, "\n\nNumber of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
+		fmt.Fprintf(GinkgoWriter, "Number of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
 		for _, nodeDebugPod := range workerDSPods {
 
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", nodeDebugPod.Name)
@@ -274,7 +292,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				return false, fmt.Errorf("node-debug pod %s is in an unexpected phase: %v", nodeDebugPod.Name, nodeDebugPod.Status.Phase)
 			}
 
-			catEtcHostsCommand := []string{"sh", "-c", "cat,", "/host/etc/hosts"} // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+			catEtcHostsCommand := []string{"sh", "-c", "cat", "/host/etc/hosts"} // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namespace %s and running the command %s\n", nodeDebugPod.Name, nodeDebugPod.Namespace, catEtcHostsCommand)
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().Resource("pods").Name(nodeDebugPod.Name).
 				Namespace(nodeDebugPod.Namespace).
