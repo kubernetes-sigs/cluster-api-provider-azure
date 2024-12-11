@@ -176,6 +176,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 					},
 				},
 				Spec: corev1.PodSpec{
+					SecurityContext: &corev1.PodSecurityContext{},
 					Containers: []corev1.Container{
 						{
 							Name:  "node-debug",
@@ -295,7 +296,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				return false, fmt.Errorf("node-debug pod %s is in an unexpected phase: %v", nodeDebugPod.Name, nodeDebugPod.Status.Phase)
 			}
 
-			catEtcHostsCommand := []string{"sh", "-c", "cat", "/host/etc/hosts"} // /etc/host is mounted as /host/etc/hosts in the node-debug pod
+			catEtcHostsCommand := []string{"cat", "/host/etc/hosts"} // /etc/host is mounted as /host/etc/hosts in the node-debug pod
 			fmt.Fprintf(GinkgoWriter, "Trying to exec into the pod %s at namespace %s and running the command %s\n", nodeDebugPod.Name, nodeDebugPod.Namespace, catEtcHostsCommand)
 			req := workloadClusterClientSet.CoreV1().RESTClient().Post().Resource("pods").Name(nodeDebugPod.Name).
 				Namespace(nodeDebugPod.Namespace).
@@ -314,14 +315,14 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				scheme.ParameterCodec,
 			)
 
-			exec, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-			if err != nil {
-				return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
-			}
-
 			podExecOperationTimeout := 60 * time.Second
 			podExecOperationSleepBetweenRetries := 3 * time.Second
 			Eventually(func(g Gomega) {
+				exec, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
+				if err != nil {
+					return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
+				}
+
 				// cat the /etc/hosts file
 				var stdout, stderr bytes.Buffer
 				err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
