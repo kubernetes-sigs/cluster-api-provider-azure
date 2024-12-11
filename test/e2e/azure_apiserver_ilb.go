@@ -1,3 +1,6 @@
+//go:build e2e
+// +build e2e
+
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -316,7 +319,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
 			}
 
-			podExecOperationTimeout             := 3 * time.Minute
+			podExecOperationTimeout             := 60 * time.Second
 			podExecOperationSleepBetweenRetries := 3 * time.Second
 			Eventually(func (g Gomega) {
 				// cat the /etc/hosts file
