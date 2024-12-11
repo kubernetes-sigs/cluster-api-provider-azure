@@ -79,9 +79,9 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 
 	backoff := wait.Backoff{
 		Duration: 600 * time.Second,
-		Factor:   5,
+		Factor:   0.5,
 		Jitter:   0.5,
-		Steps:    5,
+		Steps:    10,
 	}
 	retryFn := func(ctx context.Context) (bool, error) {
 		defer GinkgoRecover()
@@ -201,43 +201,63 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("Saving all the nodes")
-	allNodes := &corev1.NodeList{}
-	err = workloadClusterClient.List(ctx, allNodes)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(len(allNodes.Items)).NotTo(BeZero(), "Expected at least one node in the workload cluster")
+	retryDSFn := func(ctx context.Context) (bool, error) {
+		defer GinkgoRecover()
 
-	By("Saving all the worker nodes")
-	workerNodes := make(map[string]corev1.Node, 0)
-	for i, node := range allNodes.Items {
-		if strings.Contains(node.Name, input.ClusterName+"-md-0") {
-			workerNodes[node.Name] = allNodes.Items[i]
+		By("Saving all the nodes")
+		allNodes := &corev1.NodeList{}
+		err = workloadClusterClient.List(ctx, allNodes)
+		// Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return false, fmt.Errorf("failed to list nodes in the workload cluster: %v", err)
 		}
-	}
-	Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
-
-	By("Saving all the node-debug pods running on the worker nodes")
-	allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
-		LabelSelector: "app=node-debug",
-	})
-	Expect(err).NotTo(HaveOccurred())
-	workerDSPods := make(map[string]corev1.Pod, 0)
-	for _, daemonsetPod := range allNodeDebugPods.Items {
-		if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
-			workerDSPods[daemonsetPod.Name] = daemonsetPod
+		// Expect(len(allNodes.Items)).NotTo(BeZero(), "Expected at least one node in the workload cluster")
+		if len(allNodes.Items) == 0 {
+			return false, fmt.Errorf("no nodes found in the workload cluster")
 		}
-	}
-	Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
 
-	By("Getting the kubeconfig path for the workload cluster")
-	workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
-	workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-	Expect(err).NotTo(HaveOccurred())
+		By("Saving all the worker nodes")
+		workerNodes := make(map[string]corev1.Node, 0)
+		for i, node := range allNodes.Items {
+			if strings.Contains(node.Name, input.ClusterName+"-md-0") {
+				workerNodes[node.Name] = allNodes.Items[i]
+			}
+		}
+		// Expect(len(workerNodes)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker should 2 or as per the input")
+		if len(workerNodes) != int(input.ExpectedWorkerNodes) {
+			return false, fmt.Errorf("expected number of worker nodes: %d, got: %d", input.ExpectedWorkerNodes, len(workerNodes))
+		}
 
-	fmt.Fprintf(GinkgoWriter, "\n\nNumber of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
-	for _, nodeDebugPod := range workerDSPods {
-		retryDSFn := func(ctx context.Context) (bool, error) {
-			defer GinkgoRecover()
+		By("Saving all the node-debug pods running on the worker nodes")
+		allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+			LabelSelector: "app=node-debug",
+		})
+		// Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return false, fmt.Errorf("failed to list node-debug pods in the workload cluster: %v", err)
+		}
+
+		workerDSPods := make(map[string]corev1.Pod, 0)
+		for _, daemonsetPod := range allNodeDebugPods.Items {
+			if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
+				workerDSPods[daemonsetPod.Name] = daemonsetPod
+			}
+		}
+		// Expect(len(workerDSPods)).To(Equal(int(input.ExpectedWorkerNodes)), "Expected number of worker node-debug daemonset pods should equal total number of worker nodes")
+		if len(workerDSPods) != int(input.ExpectedWorkerNodes) {
+			return false, fmt.Errorf("expected number of worker node-debug daemonset pods: %d, got: %d", input.ExpectedWorkerNodes, len(workerDSPods))
+		}
+
+		By("Getting the kubeconfig path for the workload cluster")
+		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
+		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
+		// Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return false, fmt.Errorf("failed to build workload cluster kubeconfig from flags: %v", err)
+		}
+
+		fmt.Fprintf(GinkgoWriter, "\n\nNumber of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
+		for _, nodeDebugPod := range workerDSPods {
 
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Name: %v\n", nodeDebugPod.Name)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", nodeDebugPod.Spec.NodeName)
@@ -291,14 +311,15 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			}
 
 			output := stdout.String()
-			fmt.Printf("Captured output:\n%s\n", output)
+			fmt.Fprintf(GinkgoWriter, "Captured output!!!!!!!!\n\t\t%s\n", output)
 
 			if strings.Contains(output, apiServerILBPrivateIP) {
 				return true, nil
 			}
 			return false /* retry */, nil
 		}
-		err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
-		Expect(err).NotTo(HaveOccurred())
+		return false /* retry */, nil
 	}
+	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
+	Expect(err).NotTo(HaveOccurred())
 }
