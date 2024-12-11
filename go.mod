@@ -55,9 +55,9 @@ require (
 	k8s.io/kubectl v0.30.3
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/cloud-provider-azure v1.30.4
-	sigs.k8s.io/cluster-api v1.8.5
-	sigs.k8s.io/cluster-api/test v1.8.5
-	sigs.k8s.io/controller-runtime v0.18.5
+	sigs.k8s.io/cluster-api v1.8.8
+	sigs.k8s.io/cluster-api/test v1.8.8
+	sigs.k8s.io/controller-runtime v0.18.6
 	sigs.k8s.io/kind v0.26.0
 )
 
@@ -156,7 +156,7 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/magiconair/properties v1.8.8 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
