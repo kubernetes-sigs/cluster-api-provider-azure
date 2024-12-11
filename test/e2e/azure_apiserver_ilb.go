@@ -78,7 +78,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	internalLoadbalancerName := fmt.Sprintf("%s-%s", input.ClusterName, "apiserver-ilb-public-lb-internal")
 
 	backoff := wait.Backoff{
-		Duration: 5 * time.Second,
+		Duration: 600 * time.Second,
 		Factor:   5,
 		Jitter:   0.5,
 		Steps:    5,
@@ -243,6 +243,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod NodeName: %v\n", nodeDebugPod.Spec.NodeName)
 			fmt.Fprintf(GinkgoWriter, "Worker DS Pod Status: %v\n", nodeDebugPod.Status)
 
+			By("Checking the status of the node-debug pod")
 			switch nodeDebugPod.Status.Phase {
 			case corev1.PodPending:
 				fmt.Fprintf(GinkgoWriter, "Pod %s is in Pending phase. Retrying\n", nodeDebugPod.Name)
