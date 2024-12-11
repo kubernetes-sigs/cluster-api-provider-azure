@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-azure
 
 go 1.22.0
 
-toolchain go1.22.5
+toolchain go1.22.10
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
@@ -54,8 +54,8 @@ require (
 	k8s.io/kubectl v0.29.3
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/cloud-provider-azure v1.29.3
-	sigs.k8s.io/cluster-api v1.7.8
-	sigs.k8s.io/cluster-api/test v1.7.8
+	sigs.k8s.io/cluster-api v1.7.9
+	sigs.k8s.io/cluster-api/test v1.7.9
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/kind v0.23.0
 )
@@ -217,7 +217,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.8
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.9
 
 // kube-openapi should match the version imported by CAPI.
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
