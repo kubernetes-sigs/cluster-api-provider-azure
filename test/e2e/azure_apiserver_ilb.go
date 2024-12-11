@@ -319,9 +319,10 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			podExecOperationSleepBetweenRetries := 3 * time.Second
 			Eventually(func(g Gomega) {
 				exec, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", req.URL())
-				if err != nil {
-					return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
-				}
+				// if err != nil {
+				// 	return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
+				// }
+				g.Expect(err).NotTo(HaveOccurred())
 
 				// cat the /etc/hosts file
 				var stdout, stderr bytes.Buffer
