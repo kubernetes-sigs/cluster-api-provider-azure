@@ -319,12 +319,12 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				return false, fmt.Errorf("failed to exec into pod: %s: %v", nodeDebugPod.Name, err)
 			}
 
-			podExecOperationTimeout             := 60 * time.Second
+			podExecOperationTimeout := 60 * time.Second
 			podExecOperationSleepBetweenRetries := 3 * time.Second
-			Eventually(func (g Gomega) {
+			Eventually(func(g Gomega) {
 				// cat the /etc/hosts file
 				var stdout, stderr bytes.Buffer
-				err = exec.StreamWithContext(ctx,remotecommand.StreamOptions{
+				err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 					Stdin:  nil,
 					Stdout: &stdout,
 					Stderr: &stderr,
@@ -339,7 +339,7 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				fmt.Fprintf(GinkgoWriter, "Captured output!!!!!!!!\n\t\t%s\n", output)
 				g.Expect(output).To(ContainSubstring(apiServerILBPrivateIP))
 				// return true, nil
-			}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed()))
+			}, podExecOperationTimeout, podExecOperationSleepBetweenRetries).Should(Succeed())
 
 			// if strings.Contains(output, apiServerILBPrivateIP) {
 			// 	return true, nil
