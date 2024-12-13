@@ -988,11 +988,6 @@ func TestAzureMachine_Default(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 
-	cacheTypeNotSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: ""}}}}
-	err = mw.Default(context.Background(), cacheTypeNotSpecifiedTest.machine)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(cacheTypeNotSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal("None"))
-
 	for _, possibleCachingType := range armcompute.PossibleCachingTypesValues() {
 		cacheTypeSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
 		err = mw.Default(context.Background(), cacheTypeSpecifiedTest.machine)

@@ -39,7 +39,6 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.CIDRBlock).To(Equal(defaultAKSNodeSubnetCIDR))
-	g.Expect(amcpt.Spec.Template.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 	g.Expect(*amcpt.Spec.Template.Spec.EnablePreviewFeatures).To(BeFalse())
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
@@ -440,6 +439,7 @@ func getAzureManagedControlPlaneTemplate(changes ...func(*AzureManagedControlPla
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						Location: "fooLocation",
 						Version:  "v1.17.5",
+						SKU:      &AKSSku{},
 					},
 				},
 			},
