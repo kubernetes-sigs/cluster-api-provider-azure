@@ -306,6 +306,14 @@ The `managerName` and `managerResourceGroup` fields are the name and resource gr
 
 When the `fleetMember` field is included, CAPZ will create an AKS fleet member resource which will join the CAPZ cluster to the AKS fleet. The AKS fleet member resource will be created in the same resource group as the CAPZ cluster.
 
+<aside class="note">
+
+<h1> Note </h1>
+
+When attempting to create a cluster using `AzureASOManagedControlPlane` and adding it to an AKS fleet, the fleet manager should be referenced by the `armId` field in the ASO owner reference. See [#5333](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/5333#issuecomment-2539303793) for more information.
+
+</aside>
+
 ### AKS Extensions
 
 CAPZ supports enabling AKS extensions on your managed AKS clusters. Cluster extensions provide an Azure Resource Manager driven experience for installation and lifecycle management of services like Azure Machine Learning or Kubernetes applications on an AKS cluster. For more documentation on AKS extensions, refer [AKS Docs](https://learn.microsoft.com/azure/aks/cluster-extensions).
