@@ -17,6 +17,6 @@ generatorOptions:
 configMapGenerator:
 - files:
   - storageclass=../../../addons/storageclass-azure-disk.yaml
-  name: storageclass-${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-storageclass
 sortOptions:
   order: fifo
