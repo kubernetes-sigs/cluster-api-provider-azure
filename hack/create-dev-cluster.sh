@@ -65,10 +65,6 @@ capz::util::generate_ssh_key
 
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build docker-push
-# TODO: add a check for AKS vs kind
-if [ -v "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then
-    PULL_POLICY=IfNotPresent make docker-push
-fi
 
 setup() {
     echo "================ MAKE CLEAN ==============="
