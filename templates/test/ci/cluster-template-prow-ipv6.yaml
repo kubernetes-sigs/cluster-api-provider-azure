@@ -41,16 +41,19 @@ spec:
   networkSpec:
     subnets:
     - cidrBlocks:
-      - 10.0.0.0/24
+      - 10.0.0.0/16
+      - 2001:1234:5678:9abc::/64
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - 10.0.1.0/24
+      - 10.1.0.0/16
+      - 2001:1234:5678:9abd::/64
       name: node-subnet
       role: node
     vnet:
       cidrBlocks:
-      - 10.0.0.0/16
+      - 10.0.0.0/8
+      - 2001:1234:5678:9a00::/56
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
