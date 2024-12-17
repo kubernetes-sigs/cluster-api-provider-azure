@@ -133,11 +133,16 @@ select_cluster_template() {
 
 create_cluster() {
     "${REPO_ROOT}/hack/create-dev-cluster.sh"
-    if [ ! -f "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" ]; then
-        echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
-        exit 1
-    fi
-    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get clusters -A
+    if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then
+        if [ ! -f "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" ]; then
+            echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
+            exit 1
+        fi
+        "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get clusters -A
+	else
+        "${KUBECTL}" get clusters -A
+	fi;
+
 
     # set the SSH bastion and user that can be used to SSH into nodes
     KUBE_SSH_BASTION=$(${KUBECTL} get azurecluster -o json | jq '.items[0].spec.networkSpec.apiServerLB.frontendIPs[0].publicIP.dnsName' | tr -d \"):22

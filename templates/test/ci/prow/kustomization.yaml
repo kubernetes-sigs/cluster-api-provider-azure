@@ -48,6 +48,8 @@ patches:
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
 - path: ../patches/uami-md-0.yaml
+- path: ../../../internal-load-balancer/azure-cluster-cidrs-and-frontend-ips.yaml
+- path: ../../../internal-load-balancer/kubeadm-config-template-worker-node.yaml
 configMapGenerator:
 - files:
   - windows-cni=../../../addons/windows/calico/calico.yaml

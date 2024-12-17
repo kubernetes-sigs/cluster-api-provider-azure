@@ -1,0 +1,14 @@
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-storageclass
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      storageclass: "true"
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-storageclass
+  strategy: ApplyOnce
