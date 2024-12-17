@@ -70,7 +70,7 @@ main() {
             echo "Creating ${AZURE_BLOB_CONTAINER_NAME} storage container"
             az storage container create --name "${AZURE_BLOB_CONTAINER_NAME}" --auth-mode login > /dev/null
             # if the storage account has public access disabled at the account level this will return 404
-            AZURE_STORAGE_AUTH_MODE=login az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
+            # AZURE_STORAGE_AUTH_MODE=login az storage container set-permission --name "${AZURE_BLOB_CONTAINER_NAME}" --public-access container > /dev/null
         fi
 
         az storage blob upload --overwrite --container-name "${AZURE_BLOB_CONTAINER_NAME}" --file "${AZURE_CLOUD_PROVIDER_ROOT}/bin/azure-acr-credential-provider" --name "${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider" --auth-mode login
