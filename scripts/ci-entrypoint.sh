@@ -35,6 +35,8 @@ export KIND_CLUSTER_NAME
 export KUBECTL
 export HELM
 
+export USE_AKS_MANAGEMENT_CLUSTER="${USE_AKS_MANAGEMENT_CLUSTER:-false}"
+
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/ensure-tags.sh
@@ -133,14 +135,14 @@ select_cluster_template() {
 
 create_cluster() {
     "${REPO_ROOT}/hack/create-dev-cluster.sh"
-    if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then
+    if "${USE_AKS_MANAGEMENT_CLUSTER}"; then
+        "${KUBECTL}" get clusters -A
+	else
         if [ ! -f "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" ]; then
             echo "Unable to find kubeconfig for kind mgmt cluster ${KIND_CLUSTER_NAME}"
             exit 1
         fi
         "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get clusters -A
-	else
-        "${KUBECTL}" get clusters -A
 	fi;
 
 

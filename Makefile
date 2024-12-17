@@ -166,6 +166,8 @@ TAG ?= dev
 ARCH ?= $(GOARCH)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
+USE_AKS_MANAGEMENT_CLUSTER ?= false
+
 # Allow overriding manifest generation destination directory
 MANIFEST_ROOT ?= config
 CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
@@ -315,10 +317,10 @@ install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(A
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
 	# Create management cluster.
-	if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
-		$(MAKE) kind-create ; \
-	else \
+	if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
 		$(MAKE) aks-create ; \
+	else \
+		$(MAKE) kind-create ; \
 	fi
 
 	# Install cert manager and wait for availability
@@ -335,7 +337,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAPZ
-	@if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
+	@if ! "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
 		$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME) ; \
 	fi
 	timeout --foreground 300 bash -c "until $(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
@@ -758,10 +760,10 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	# Create management cluster.
-	if [ -z "${USE_AKS_MANAGEMENT_CLUSTER}" ]; then \
-		$(MAKE) kind-create ; \
-	else \
+	if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
 		$(MAKE) aks-create ; \
+	else \
+		$(MAKE) kind-create ; \
 	fi
 
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
