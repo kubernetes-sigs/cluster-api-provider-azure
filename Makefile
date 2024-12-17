@@ -373,13 +373,24 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
 	# TODO: change this so it doesn't source aks-mgmt-vars.env when it is using a kind cluster
-	if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
-		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
-	elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
-		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+	@if ${USE_AKS_MANAGEMENT_CLUSTER} ; then \
+		if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
+			timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
+			timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		else \
+			timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		fi \
 	else \
-		timeout --foreground 300 bash -c "source aks-mgmt-vars.env && env && until curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
+			timeout --foreground 300 bash -c "until $(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		elif [ -f "$(CLUSTER_TEMPLATE)" ]; then \
+			timeout --foreground 300 bash -c "until $(ENVSUBST) < "$(CLUSTER_TEMPLATE)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		else \
+			timeout --foreground 300 bash -c "until curl --retry "$(CURL_RETRIES)" "$(CLUSTER_TEMPLATE)" | "$(ENVSUBST)" | $(KUBECTL) apply -f -; do sleep 5; done"; \
+		fi \
 	fi
+
 
 	# Wait for the kubeconfig to become available.
 	timeout --foreground 1800 bash -c "while ! $(KUBECTL) get secrets -n default | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
