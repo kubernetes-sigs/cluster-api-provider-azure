@@ -10,5 +10,5 @@ spec:
       storageclass: "true"
   resources:
   - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-storageclass
+    name: ${CLUSTER_NAME}-storageclass
   strategy: ApplyOnce
