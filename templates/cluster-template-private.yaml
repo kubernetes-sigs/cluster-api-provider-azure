@@ -40,11 +40,11 @@ spec:
       frontendIPsCount: 1
     subnets:
     - cidrBlocks:
-      - 10.0.0.0/24
+      - 10.0.0.0/20
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - 10.0.1.0/24
+      - 10.0.16.0/20
       name: node-subnet
       role: node
     vnet:
