@@ -317,7 +317,7 @@ install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(A
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
 	# Create management cluster.
-	if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
+	@if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
 		$(MAKE) aks-create ; \
 	else \
 		$(MAKE) kind-create ; \
@@ -760,7 +760,7 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	# Create management cluster.
-	if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
+	@if "${USE_AKS_MANAGEMENT_CLUSTER}" ; then \
 		$(MAKE) aks-create ; \
 	else \
 		$(MAKE) kind-create ; \
