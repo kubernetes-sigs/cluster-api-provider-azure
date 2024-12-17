@@ -64,7 +64,7 @@ export ASO_CREDENTIAL_SECRET_NAME=${ASO_CREDENTIAL_SECRET_NAME:="aso-credentials
 capz::util::generate_ssh_key
 
 echo "================ DOCKER BUILD ==============="
-PULL_POLICY=IfNotPresent make modules docker-build docker-push
+PULL_POLICY=IfNotPresent make modules docker-build
 
 setup() {
     echo "================ MAKE CLEAN ==============="
