@@ -749,6 +749,11 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
+	ifeq (, $(shell which az))
+		$(error "No az found")
+	else 
+		@echo 'az is installed'
+	endif
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
