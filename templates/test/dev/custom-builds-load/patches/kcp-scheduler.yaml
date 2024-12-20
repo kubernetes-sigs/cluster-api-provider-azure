@@ -1,0 +1,12 @@
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      scheduler:
+        extraArgs:
+          authorization-always-allow-paths: /healthz,/readyz,/livez,/metrics
+          bind-address: 0.0.0.0
