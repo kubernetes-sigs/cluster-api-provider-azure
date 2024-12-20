@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -47,7 +46,7 @@ type TestMachineReconcileInput struct {
 	createAzureMachineService func(*scope.MachineScope) (*azureMachineService, error)
 	azureMachineOptions       func(am *infrav1.AzureMachine)
 	expectedErr               string
-	machineScopeFailureReason capierrors.MachineStatusError
+	machineScopeFailureReason string
 	ready                     bool
 	cache                     *scope.MachineCache
 	skuCache                  scope.SKUCacher
@@ -185,8 +184,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should skip reconciliation if error state is detected on azure machine": {
 			azureMachineOptions: func(am *infrav1.AzureMachine) {
-				updateError := capierrors.UpdateMachineError
-				am.Status.FailureReason = &updateError
+				am.Status.FailureReason = ptr.To(azure.UpdateError)
 			},
 			createAzureMachineService: getFakeAzureMachineService,
 		},
@@ -219,13 +217,13 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should fail if VM is deleted": {
 			createAzureMachineService: getFakeAzureMachineServiceWithVMDeleted,
-			machineScopeFailureReason: capierrors.UpdateMachineError,
+			machineScopeFailureReason: azure.UpdateError,
 			cache:                     &scope.MachineCache{},
 			expectedErr:               "failed to reconcile AzureMachine",
 		},
 		"should reconcile if terminal error is received": {
 			createAzureMachineService: getFakeAzureMachineServiceWithTerminalError,
-			machineScopeFailureReason: capierrors.CreateMachineError,
+			machineScopeFailureReason: azure.CreateError,
 			cache:                     &scope.MachineCache{},
 		},
 		"should requeue if transient error is received": {

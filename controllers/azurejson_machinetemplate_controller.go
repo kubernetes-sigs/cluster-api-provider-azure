@@ -71,7 +71,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachineTemplate{}).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 		// set in Clusters created from a ClusterClass.
@@ -79,8 +79,8 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineTemplateMapper),
 			builder.WithPredicates(
-				predicates.ClusterUnpausedAndInfrastructureReady(log),
-				predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
+				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
 		Complete(r)
