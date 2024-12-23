@@ -126,7 +126,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 				}{scopeMock, filtererMock}
 			}
 
-			defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKSResourceHealth, !tc.featureDisabled)()
+			utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKSResourceHealth, !tc.featureDisabled)
 
 			err := s.Reconcile(context.TODO())
 
