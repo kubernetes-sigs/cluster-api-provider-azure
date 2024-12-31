@@ -50,8 +50,9 @@ if "allowed_contexts" in settings:
 if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
+mgmt_cluster_type = os.getenv("MGMT_CLUSTER_TYPE", "")
 os_arch = str(local("go env GOARCH")).rstrip("\n")
-if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+if mgmt_cluster_type == "aks":
     print("Using AKS as management cluster, setting os_arch to amd64")
     os_arch = "amd64"
 
