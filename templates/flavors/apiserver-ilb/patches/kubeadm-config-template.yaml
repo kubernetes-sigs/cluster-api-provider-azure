@@ -9,4 +9,4 @@ spec:
       # This custom DNS Resolution of the API server ensures that the worker nodes can reach the API server when
       # the public IP of the API server is not accessible.
       preKubeadmCommands:
-        - echo '30.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+        - echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-30.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts

@@ -14,13 +14,13 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/preKubeadmCommands/0
-        value: echo '40.0.0.100   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+        value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-40.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
   - target:
       kind: AzureCluster
     patch: |-
       - op: replace
         path: /spec/networkSpec/apiServerLB/frontendIPs/1/privateIP
-        value: 40.0.11.100
+        value: ${AZURE_INTERNAL_LB_PRIVATE_IP:-40.0.0.100}
   - target:
       kind: AzureCluster
     patch: |-
@@ -46,7 +46,7 @@ patches:
       - op: replace
         path: /spec/template/spec/preKubeadmCommands/0
         value:
-          powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '40.0.0.100 ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
+          powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '${AZURE_INTERNAL_LB_PRIVATE_IP:-40.0.0.100} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
 
 sortOptions:
   order: fifo
