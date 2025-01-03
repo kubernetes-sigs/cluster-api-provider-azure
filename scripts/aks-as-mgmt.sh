@@ -18,6 +18,8 @@ set -o nounset # exit when script tries to use undeclared variables.
 set -o pipefail # make the pipeline fail if any command in it fails.
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+# shellcheck source=hack/common-vars.sh
+source "${REPO_ROOT}/hack/common-vars.sh"
 # shellcheck source=hack/ensure-azcli.sh
 source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 # shellcheck source=hack/ensure-tags.sh
@@ -48,7 +50,10 @@ export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR:-"20.255.254.0/24"}"
 export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP:-"20.255.254.100"}"
 export AKS_MGMT_SUBNET_NAME="${AKS_MGMT_SUBNET_NAME:-"aks-mgmt-subnet-${RANDOM_SUFFIX}"}"
 export AKS_MGMT_SUBNET_CIDR="${AKS_MGMT_SUBNET_CIDR:-"20.255.0.0/24"}"
+<<<<<<< HEAD
 
+=======
+>>>>>>> 007ef8e4f (Set up ci-entrypoint to work with AKS management cluster and add custom builds perf testing template)
 
 export AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-}"
 export AZURE_CLIENT_ID="${AZURE_CLIENT_ID:-}"
@@ -199,11 +204,50 @@ create_aks_cluster() {
     sleep 5
   done
 
+  # If storage account var is set:
+  if [ -n "${AZURE_STORAGE_ACCOUNT}" ]; then
+    echo "assigning storage blob data reader role to the service principal"
+    until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Storage Blob Data Reader" \
+    --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AZURE_STORAGE_ACCOUNT_RESOURCE_GROUP}/providers/Microsoft.Storage/storageAccounts/${AZURE_STORAGE_ACCOUNT}/blobServices/default/containers/${AZURE_BLOB_CONTAINER_NAME}" \
+    --assignee-principal-type ServicePrincipal; do
+      echo "retrying to assign storage blob data reader role to the service principal"
+      sleep 5
+    done
+  fi
+
   echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
 
 set_env_varaibles(){
+rm aks-mgmt-vars.env || true
+cat <<EOF > aks-mgmt-vars.env
+export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME}"
+export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}"
+export AKS_NODE_RESOURCE_GROUP="${AKS_NODE_RESOURCE_GROUP}"
+export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG}"
+export AKS_MI_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AZURE_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+export AKS_MI_OBJECT_ID="${AKS_MI_OBJECT_ID}"
+export AKS_MI_RESOURCE_ID="${AKS_MI_RESOURCE_ID}"
+export MANAGED_IDENTITY_NAME="${MANAGED_IDENTITY_NAME}"
+export MANAGED_IDENTITY_RG="${MANAGED_IDENTITY_RG}"
+export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="${AKS_MI_CLIENT_ID}"
+export CI_RG="${MANAGED_IDENTITY_RG}"
+export USER_IDENTITY="${MANAGED_IDENTITY_NAME}"
+export CLUSTER_IDENTITY_TYPE="UserAssignedMSI"
+export ASO_CREDENTIAL_SECRET_MODE="${ASO_CREDENTIAL_SECRET_MODE}"
+export REGISTRY="${REGISTRY}"
+export APISERVER_LB_DNS_SUFFIX="${APISERVER_LB_DNS_SUFFIX}"
+export AZURE_LOCATION="${AZURE_LOCATION}"
+export AKS_MGMT_VNET_NAME="${AKS_MGMT_VNET_NAME}"
+export AKS_MGMT_VNET_CIDR="${AKS_MGMT_VNET_CIDR}"
+export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR}"
+export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP}"
+export AKS_MGMT_SUBNET_NAME="${AKS_MGMT_SUBNET_NAME}"
+export AKS_MGMT_SUBNET_CIDR="${AKS_MGMT_SUBNET_CIDR}"
+EOF
+
   cat <<EOF > tilt-settings-temp.yaml
 kustomize_substitutions:
   AKS_RESOURCE_GROUP: "${AKS_RESOURCE_GROUP}"
@@ -232,28 +276,28 @@ else
 fi
 
 # copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
-allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
+allowed_contexts_exists=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml)
 if [ "$allowed_contexts_exists" == "null" ]; then
-  yq eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
+  ${YQ} eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
 fi
 
 # extract allowed_contexts from tilt-settings.yaml
-current_contexts=$(yq eval '.allowed_contexts' tilt-settings.yaml | sort -u)
+current_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings.yaml | sort -u)
 
 # extract allowed_contexts from tilt-settings-new.yaml
-new_contexts=$(yq eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
+new_contexts=$(${YQ} eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
 
 # combine current and new contexts, keeping the union of both
 combined_contexts=$(echo "$current_contexts"$'\n'"$new_contexts" | sort -u)
 
-# create a temporary file since env($combined_contexts) is not supported in yq
+# create a temporary file since env($combined_contexts) is not supported in ${YQ}
 echo "$combined_contexts" > combined_contexts.yaml
 
 # update allowed_contexts in tilt-settings.yaml with the combined contexts
-yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
+${YQ} eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
 
 # merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
-yq eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
+${YQ} eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
 
 mv tilt-settings-new.yaml tilt-settings.yaml
 rm -r combined_contexts.yaml
