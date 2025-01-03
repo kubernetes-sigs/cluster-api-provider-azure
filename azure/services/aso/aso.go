@@ -378,8 +378,7 @@ func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Sche
 }
 
 func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
-	//nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
-	return labels[infrav1.OwnedByClusterLabelKey] == clusterName
+	return labels[infrav1.OwnedByClusterLabelKey] == clusterName //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
 }
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.

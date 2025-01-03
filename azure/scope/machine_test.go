@@ -3118,7 +3118,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			if tt.featureGate == feature.APIServerILB {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tt.featureGate, true)()
+				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tt.featureGate, true)
 			}
 			gotNicSpecs := tt.machineScope.NICSpecs()
 			if !reflect.DeepEqual(gotNicSpecs, tt.want) {
