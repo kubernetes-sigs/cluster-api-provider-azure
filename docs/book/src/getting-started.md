@@ -120,7 +120,7 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --creat
 Create a `values.yaml` file for the CAPI Operator Helm chart like so:
 
 ```yaml
-core: "cluster-api:v1.8.5"
+core: "cluster-api:v1.8.8"
 infrastructure: "azure:v1.17.2"
 addon: "helm:v0.2.5"
 manager:
