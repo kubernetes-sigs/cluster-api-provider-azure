@@ -607,6 +607,11 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
+	if err := infrav1.SetupAzureMachineWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
+		os.Exit(1)
+	}
+
 	if err := (&infrav1.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 		os.Exit(1)
@@ -617,66 +622,63 @@ func registerWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&infrav1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
-		os.Exit(1)
+	if feature.Gates.Enabled(capifeature.MachinePool) {
+		if err := infrav1exp.SetupAzureMachinePoolWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
+			os.Exit(1)
+		}
+
+		if err := infrav1.SetupAzureManagedMachinePoolWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePool")
+			os.Exit(1)
+		}
+
+		if err := infrav1.SetupAzureManagedMachinePoolTemplateWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePoolTemplate")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1.AzureManagedClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedClusterTemplate")
+			os.Exit(1)
+		}
+
+		if err := infrav1.SetupAzureManagedControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
+			os.Exit(1)
+		}
+
+		if err := infrav1.SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlaneTemplate")
+			os.Exit(1)
+		}
 	}
 
-	// NOTE: AzureManagedCluster is behind AKS feature gate flag; the webhook
-	// is going to prevent creating or updating new objects in case the feature flag is disabled
-	if err := (&infrav1.AzureManagedCluster{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedCluster")
-		os.Exit(1)
-	}
+	if feature.Gates.Enabled(feature.ASOAPI) {
+		if err := infrav1alpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedCluster")
+			os.Exit(1)
+		}
 
-	if err := (&infrav1.AzureManagedClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedClusterTemplate")
-		os.Exit(1)
-	}
+		if err := infrav1alpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedControlPlane")
+			os.Exit(1)
+		}
 
-	if err := infrav1exp.SetupAzureMachinePoolWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
-		os.Exit(1)
-	}
-
-	if err := infrav1.SetupAzureMachineWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
-		os.Exit(1)
-	}
-
-	if err := infrav1.SetupAzureManagedMachinePoolWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePool")
-		os.Exit(1)
-	}
-
-	if err := infrav1.SetupAzureManagedMachinePoolTemplateWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePoolTemplate")
-		os.Exit(1)
-	}
-
-	if err := infrav1.SetupAzureManagedControlPlaneWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
-		os.Exit(1)
-	}
-
-	if err := infrav1.SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlaneTemplate")
-		os.Exit(1)
-	}
-
-	if err := infrav1alpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedCluster")
-		os.Exit(1)
-	}
-
-	if err := infrav1alpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedControlPlane")
-		os.Exit(1)
-	}
-
-	if err := infrav1alpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedMachinePool")
-		os.Exit(1)
+		if err := infrav1alpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedMachinePool")
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
