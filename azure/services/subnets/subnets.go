@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 const serviceName = "subnets"
@@ -50,14 +51,20 @@ func New(scope SubnetScope) *aso.Service[*asonetworkv1.VirtualNetworksSubnet, Su
 	return svc
 }
 
-func postCreateOrUpdateResourceHook(_ context.Context, scope SubnetScope, subnet *asonetworkv1.VirtualNetworksSubnet, err error) error {
+func postCreateOrUpdateResourceHook(ctx context.Context, scope SubnetScope, subnet *asonetworkv1.VirtualNetworksSubnet, err error) error {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "subnets.Service.postCreateOrUpdateResourceHook")
+	defer done()
+
 	if err != nil {
 		return err
 	}
 
 	name := subnet.AzureName()
+	log.Info("Got subnet", "name", name, "subnet", subnet)
 	scope.UpdateSubnetID(name, ptr.Deref(subnet.Status.Id, ""))
+	log.Info("Subnet ID is updated", "name", name, "id", ptr.Deref(subnet.Status.Id, ""))
 	scope.UpdateSubnetCIDRs(name, converters.GetSubnetAddresses(*subnet))
+	log.Info("Subnet CIDRs are updated", "name", name, "cidrs", converters.GetSubnetAddresses(*subnet))
 
 	return nil
 }
