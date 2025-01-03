@@ -320,7 +320,7 @@ def flavors():
 
     delete_all_workload_clusters = kubectl_cmd + " delete clusters --all --wait=false;"
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    if mgmt_cluster_type == "aks":
         delete_all_workload_clusters += clear_aks_vnet_peerings()
 
     local_resource(
@@ -415,7 +415,7 @@ def deploy_worker_templates(template, substitutions):
         flavor_cmd += "until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done; "
         flavor_cmd += kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; "
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    if mgmt_cluster_type == "aks":
         flavor_cmd += peer_vnets()
 
     flavor_cmd += get_addons(flavor_name)
