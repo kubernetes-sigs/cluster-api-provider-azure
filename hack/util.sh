@@ -63,12 +63,12 @@ capz::util::should_build_ccm() {
 
 # all test regions must support AvailabilityZones
 capz::util::get_random_region() {
-    local REGIONS=("australiaeast" "canadacentral" "francecentral" "germanywestcentral" "northeurope" "switzerlandnorth" "uksouth" )
+    local REGIONS=("australiaeast" "canadacentral" "francecentral" "germanywestcentral" "switzerlandnorth" "uksouth" )
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 # all regions below must have GPU availability for the chosen GPU VM SKU
 capz::util::get_random_region_gpu() {
-    local REGIONS=("eastus" "eastus2" "northeurope" "uksouth" "westeurope" "westus2")
+    local REGIONS=("eastus" "eastus2" "uksouth" "westeurope" "westus2")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 # all regions below must support ExtendedLocation
