@@ -160,8 +160,8 @@ spec:
     spec:
       image:
         computeGallery:
-          name: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
-          gallery: "capi-ubun2-2404"
+          gallery: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
+          name: "capi-ubun2-2404"
           version: "1.31.2"
 ```
 
