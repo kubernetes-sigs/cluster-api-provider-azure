@@ -377,7 +377,11 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	timeout --foreground 1800 bash -c "while ! $(KUBECTL) get secrets -n default | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	$(KUBECTL) get secret/$(CLUSTER_NAME)-kubeconfig -n default -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	$(KUBECTL) -n default wait --for=condition=Ready --timeout=10m cluster "$(CLUSTER_NAME)"
+	# TODO: Standardize timeouts across the Makefile and make them configurable based on the job.
+	$(KUBECTL) -n default wait --for=condition=Ready --timeout=60m cluster "$(CLUSTER_NAME)"
+	
+	# Set the namespace to `default` b/c when the service account is auto mounted, the namespace is changed to `test-pods`.
+	$(KUBECTL) --kubeconfig=./kubeconfig config set-context --current --namespace="default"
 
 	@echo 'run "$(KUBECTL) --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
