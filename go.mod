@@ -227,6 +227,6 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250115190549-7a4abb17eddb
+replace sigs.k8s.io/cluster-api => github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250115195605-9992a46caa35
 
-replace sigs.k8s.io/cluster-api/test => github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250115190549-7a4abb17eddb
+replace sigs.k8s.io/cluster-api/test => github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250115195605-9992a46caa35
