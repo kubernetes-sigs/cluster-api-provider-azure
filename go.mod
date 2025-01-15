@@ -224,3 +224,7 @@ require (
 )
 
 replace github.com/google/cel-go => github.com/google/cel-go v0.17.8
+
+replace sigs.k8s.io/cluster-api => github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250115180729-68adca8bf41b
+
+replace sigs.k8s.io/cluster-api/test => github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250115180729-68adca8bf41b
