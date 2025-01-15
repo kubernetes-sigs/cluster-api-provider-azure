@@ -42,16 +42,6 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
-// func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-// 	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
-// 	return ctrl.NewWebhookManagedBy(mgr).
-// 		For(&AzureMachinePool{}).
-// 		WithDefaulter(ampw).
-// 		WithValidator(ampw).
-// 		Complete()
-// }
-
 // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhooks with the manager.
 func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 	// webhook handlers
@@ -64,8 +54,8 @@ func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 
 	// admission decoders
 	dec := admission.NewDecoder(mgr.GetScheme())
-	mutatingWebhook.decoder = dec
-	validatingWebhook.decoder = dec
+	mutatingWebhook.decoder = &dec
+	validatingWebhook.decoder = &dec
 
 	// register webhooks
 	server := mgr.GetWebhookServer()
@@ -86,7 +76,7 @@ func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 
 type azureMachinePoolMutatingWebhook struct {
 	Client  client.Client
-	decoder admission.Decoder
+	decoder *admission.Decoder
 }
 
 // Handle implements admission.Handler so the controller-runtime can call this
@@ -95,8 +85,16 @@ func (w *azureMachinePoolMutatingWebhook) Handle(ctx context.Context, req admiss
 	// Decode the incoming object into an AzureMachinePool
 	amp := &AzureMachinePool{}
 
-	if err := w.decoder.Decode(req, amp); err != nil {
+	admissionDecoder := *w.decoder
+	if err := admissionDecoder.Decode(req, amp); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
+	}
+	fmt.Println("In Custom Mutating Webhook")
+	fmt.Println("req.DryRun: ", *req.DryRun)
+
+	// if dry run is enabled, skip the defaulting logic
+	if req.DryRun != nil && *req.DryRun {
+		return admission.Allowed("dry run")
 	}
 
 	switch req.Operation {
@@ -123,12 +121,19 @@ func (w *azureMachinePoolMutatingWebhook) Handle(ctx context.Context, req admiss
 
 type azureMachinePoolValidatingWebhook struct {
 	Client  client.Client
-	decoder admission.Decoder
+	decoder *admission.Decoder
 }
 
 // Handle implements admission.Handler so the controller-runtime can call this
 // for CREATE, UPDATE, and potentially DELETE (if you configure `verbs=delete` too).
 func (w *azureMachinePoolValidatingWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
+	fmt.Println("In Custom Mutating Webhook")
+	fmt.Println("req.DryRun: ", *req.DryRun)
+	// if dry run is enabled, skip the defaulting logic
+	if req.DryRun != nil && *req.DryRun {
+		return admission.Allowed("dry run")
+	}
+
 	switch req.Operation {
 	case admissionv1.Create:
 		return w.handleCreate(ctx, req)
@@ -144,7 +149,8 @@ func (w *azureMachinePoolValidatingWebhook) Handle(ctx context.Context, req admi
 // handleCreate handles Create validation
 func (w *azureMachinePoolValidatingWebhook) handleCreate(ctx context.Context, req admission.Request) admission.Response {
 	amp := &AzureMachinePool{}
-	if err := w.decoder.Decode(req, amp); err != nil {
+	admissionDecoder := *w.decoder
+	if err := admissionDecoder.Decode(req, amp); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
@@ -165,7 +171,8 @@ func (w *azureMachinePoolValidatingWebhook) handleCreate(ctx context.Context, re
 // handleUpdate handles Update validation
 func (w *azureMachinePoolValidatingWebhook) handleUpdate(ctx context.Context, req admission.Request) admission.Response {
 	newAmp := &AzureMachinePool{}
-	if err := w.decoder.Decode(req, newAmp); err != nil {
+	admissionDecoder := *w.decoder
+	if err := admissionDecoder.Decode(req, newAmp); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
