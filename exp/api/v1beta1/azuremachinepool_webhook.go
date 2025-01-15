@@ -19,12 +19,16 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/util/json"
+	"net/http"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	_ "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -32,70 +36,169 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
+// // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
+// func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
+// 	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
+// 	return ctrl.NewWebhookManagedBy(mgr).
+// 		For(&AzureMachinePool{}).
+// 		WithDefaulter(ampw).
+// 		WithValidator(ampw).
+// 		Complete()
+// }
+
+// SetupAzureMachinePoolWebhookWithManager sets up and registers the webhooks with the manager.
 func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureMachinePool{}).
-		WithDefaulter(ampw).
-		WithValidator(ampw).
-		Complete()
+	// webhook handlers
+	mutatingWebhook := &azureMachinePoolMutatingWebhook{
+		Client: mgr.GetClient(),
+	}
+	validatingWebhook := &azureMachinePoolValidatingWebhook{
+		Client: mgr.GetClient(),
+	}
+
+	// admission decoders
+	dec := admission.NewDecoder(mgr.GetScheme())
+	mutatingWebhook.decoder = dec
+	validatingWebhook.decoder = dec
+
+	// register webhooks
+	server := mgr.GetWebhookServer()
+	server.Register(
+		"/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool",
+		&admission.Webhook{Handler: mutatingWebhook},
+	)
+	server.Register(
+		"/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool",
+		&admission.Webhook{Handler: validatingWebhook},
+	)
+
+	// Return nil if everything is successful
+	return nil
 }
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1beta1,name=default.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-// azureMachinePoolWebhook implements a validating and defaulting webhook for AzureMachinePool.
-type azureMachinePoolWebhook struct {
-	Client client.Client
+type azureMachinePoolMutatingWebhook struct {
+	Client  client.Client
+	decoder admission.Decoder
 }
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {
-	amp, ok := obj.(*AzureMachinePool)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureMachinePool")
+// Handle implements admission.Handler so the controller-runtime can call this
+// on CREATE or UPDATE for AzureMachinePools.
+func (w *azureMachinePoolMutatingWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
+	// Decode the incoming object into an AzureMachinePool
+	amp := &AzureMachinePool{}
+
+	if err := w.decoder.Decode(req, amp); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
 	}
-	return amp.SetDefaults(ampw.Client)
+
+	switch req.Operation {
+	case admissionv1.Create, admissionv1.Update:
+		// Apply defaulting logic (similar to your old amp.SetDefaults(ampw.Client))
+		if err := amp.SetDefaults(w.Client); err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+
+		// Return a patch containing the defaulted fields
+		marshaled, err := json.Marshal(amp)
+		if err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+		return admission.PatchResponseFromRaw(req.Object.Raw, marshaled)
+
+	default:
+		// For safety, if we get e.g. Delete or Connect, we just allow
+		return admission.Allowed(fmt.Sprintf("operation %s not handled by mutating webhook", req.Operation))
+	}
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	amp, ok := obj.(*AzureMachinePool)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachinePool")
+type azureMachinePoolValidatingWebhook struct {
+	Client  client.Client
+	decoder admission.Decoder
+}
+
+// Handle implements admission.Handler so the controller-runtime can call this
+// for CREATE, UPDATE, and potentially DELETE (if you configure `verbs=delete` too).
+func (w *azureMachinePoolValidatingWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
+	switch req.Operation {
+	case admissionv1.Create:
+		return w.handleCreate(ctx, req)
+	case admissionv1.Update:
+		return w.handleUpdate(ctx, req)
+	case admissionv1.Delete:
+		return w.handleDelete(ctx, req)
+	default:
+		return admission.Allowed(fmt.Sprintf("operation %s not explicitly handled", req.Operation))
 	}
+}
+
+// handleCreate handles Create validation
+func (w *azureMachinePoolValidatingWebhook) handleCreate(ctx context.Context, req admission.Request) admission.Response {
+	amp := &AzureMachinePool{}
+	if err := w.decoder.Decode(req, amp); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
 	// NOTE: AzureMachinePool is behind MachinePool feature gate flag; the webhook
 	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(capifeature.MachinePool) {
-		return nil, field.Forbidden(
-			field.NewPath("spec"),
-			"can be set only if the MachinePool feature flag is enabled",
-		)
+		return admission.Denied("AzureMachinePool creation is disallowed if the MachinePool feature flag is disabled")
 	}
-	return nil, amp.Validate(nil, ampw.Client)
+
+	// Perform validations on the AzureMachinePool object
+	if err := amp.Validate(nil, w.Client); err != nil {
+		return admission.Denied(err.Error())
+	}
+
+	return admission.Allowed("create is valid")
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	amp, ok := newObj.(*AzureMachinePool)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachinePool")
+// handleUpdate handles Update validation
+func (w *azureMachinePoolValidatingWebhook) handleUpdate(ctx context.Context, req admission.Request) admission.Response {
+	newAmp := &AzureMachinePool{}
+	if err := w.decoder.Decode(req, newAmp); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
 	}
-	return nil, amp.Validate(oldObj, ampw.Client)
+
+	// Decode the old object from req.OldObject
+	oldAmp := &AzureMachinePool{}
+	if len(req.OldObject.Raw) > 0 {
+		if err := json.Unmarshal(req.OldObject.Raw, oldAmp); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
+
+	if err := newAmp.Validate(oldAmp, w.Client); err != nil {
+		return admission.Denied(err.Error())
+	}
+	return admission.Allowed("update is valid")
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	return nil, nil
+// handleDelete handles Delete validation
+func (w *azureMachinePoolValidatingWebhook) handleDelete(ctx context.Context, req admission.Request) admission.Response {
+	// For DELETE, the object is typically in req.OldObject (not req.Object)
+	oldAmp := &AzureMachinePool{}
+	if len(req.OldObject.Raw) > 0 {
+		if err := json.Unmarshal(req.OldObject.Raw, oldAmp); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
+
+	// AzureMachinePool deletion is always allowed
+	// if err := oldAmp.ValidateDelete(); err != nil {
+	// 	return admission.Denied(err.Error())
+	// }
+
+	return admission.Allowed("delete is valid")
 }
 
 // Validate the Azure Machine Pool and return an aggregate error.
