@@ -44,6 +44,9 @@ import (
 
 // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhooks with the manager.
 func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
+	fmt.Println("in SetupAzureMachinePoolWebhookWithManager for AzureMachinePool")
+	fmt.Println("registering webhooks")
+
 	// webhook handlers
 	mutatingWebhook := &azureMachinePoolMutatingWebhook{
 		Client: mgr.GetClient(),
@@ -97,6 +100,8 @@ func (w *azureMachinePoolMutatingWebhook) Handle(ctx context.Context, req admiss
 		return admission.Allowed("dry run")
 	}
 
+	fmt.Println("req.Options", req.Options)
+
 	switch req.Operation {
 	case admissionv1.Create, admissionv1.Update:
 		// Apply defaulting logic (similar to your old amp.SetDefaults(ampw.Client))
@@ -127,12 +132,15 @@ type azureMachinePoolValidatingWebhook struct {
 // Handle implements admission.Handler so the controller-runtime can call this
 // for CREATE, UPDATE, and potentially DELETE (if you configure `verbs=delete` too).
 func (w *azureMachinePoolValidatingWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
-	fmt.Println("In Custom Mutating Webhook")
+	fmt.Println("In Custom Validating Webhook")
 	fmt.Println("req.DryRun: ", *req.DryRun)
+
 	// if dry run is enabled, skip the defaulting logic
 	if req.DryRun != nil && *req.DryRun {
 		return admission.Allowed("dry run")
 	}
+
+	fmt.Println("req.Options", req.Options)
 
 	switch req.Operation {
 	case admissionv1.Create:
