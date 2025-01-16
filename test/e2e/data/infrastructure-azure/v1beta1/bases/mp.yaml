@@ -29,7 +29,6 @@ metadata:
   name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
-  identity: SystemAssigned
   location: ${AZURE_LOCATION}
   template:
     osDisk:
