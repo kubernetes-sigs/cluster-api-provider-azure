@@ -397,10 +397,10 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f h1:y5//uYreIhSUg3J1GEMiLbxo1LJaP8RfCpH6pymGZus=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
-github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250117182246-d556a250b727 h1:6AMT7wCRWW+y+h3zBFK4q1vkFl8R80NOu0AhE3BUo2M=
-github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250117182246-d556a250b727/go.mod h1:5iojv38PSvOd4cxqu08Un5TQmy2yBkd3+0U7R/e+msk=
-github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250117182246-d556a250b727 h1:c84I4gGJPv6juu48UNojZmIBYu2D2GYMb1ys3zzuRxM=
-github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250117182246-d556a250b727/go.mod h1:RbMw6WR4vwqzu9tx13MmRsnIR+WLQ6xx8BMFtvPYUOY=
+github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250117202039-ce366c46d520 h1:bmDHlo8WUAJ8NRc6sxljDwqdmkAK4SHRyHTK6Hiz2g4=
+github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250117202039-ce366c46d520/go.mod h1:5iojv38PSvOd4cxqu08Un5TQmy2yBkd3+0U7R/e+msk=
+github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250117202039-ce366c46d520 h1:Nqm3ixgLBo5izeIfKwNI9q6WzNKQI8ac5fLwOW6HNOs=
+github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250117202039-ce366c46d520/go.mod h1:RbMw6WR4vwqzu9tx13MmRsnIR+WLQ6xx8BMFtvPYUOY=
 github.com/onsi/ginkgo/v2 v2.22.2 h1:/3X8Panh8/WwhU/3Ssa6rCKqPLuAkVY2I0RoyDLySlU=
 github.com/onsi/ginkgo/v2 v2.22.2/go.mod h1:oeMosUL+8LtarXBHu/c0bx2D/K9zyQ6uX3cTyztHwsk=
 github.com/onsi/gomega v1.36.2 h1:koNYke6TVk6ZmnyHrCXba/T/MoLBXFjeC1PtvYgw0A8=
