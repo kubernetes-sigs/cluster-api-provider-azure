@@ -226,3 +226,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace sigs.k8s.io/cluster-api => github.com/nawazkh/cluster-api v1.1.0-beta.2.0.20250117182246-d556a250b727
+
+replace sigs.k8s.io/cluster-api/test => github.com/nawazkh/cluster-api/test v1.1.0-beta.2.0.20250117182246-d556a250b727
