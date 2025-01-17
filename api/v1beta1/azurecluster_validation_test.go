@@ -893,15 +893,15 @@ func TestValidateAPIServerLB(t *testing.T) {
 	testcases := []struct {
 		name        string
 		featureGate featuregate.Feature
-		lb          LoadBalancerSpec
-		old         LoadBalancerSpec
+		lb          *LoadBalancerSpec
+		old         *LoadBalancerSpec
 		cpCIDRS     []string
 		wantErr     bool
 		expectedErr field.Error
 	}{
 		{
 			name: "invalid SKU",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				Name: "my-awesome-lb",
 				FrontendIPs: []FrontendIP{
 					{
@@ -923,7 +923,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "invalid Type",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
 					Type: "Foo",
 				},
@@ -938,7 +938,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "invalid Name",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				Name: "***",
 			},
 			wantErr: true,
@@ -951,7 +951,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "too many IP configs",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
 					Type: Public,
 				},
@@ -982,7 +982,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "too many IP configs with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				LoadBalancerClassSpec: LoadBalancerClassSpec{
 					Type: Public,
 				},
@@ -1012,7 +1012,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "public LB with private IP",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1035,7 +1035,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "public LB with private IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				Name: "my-awesome-lb",
 				FrontendIPs: []FrontendIP{
 					{
@@ -1062,7 +1062,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "internal LB with public IP",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1085,7 +1085,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "internal LB with public IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1107,7 +1107,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "internal LB with invalid private IP",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1131,7 +1131,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "internal LB with invalid private IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1154,7 +1154,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "internal LB with out of range private IP",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1179,7 +1179,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "internal LB with out of range private IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1203,7 +1203,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		},
 		{
 			name: "internal LB with in range private IP",
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1224,7 +1224,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "public LB with in-range private IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1252,7 +1252,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name:        "public LB with out of range private IP with feature flag APIServerILB enabled",
 			featureGate: feature.APIServerILB,
-			lb: LoadBalancerSpec{
+			lb: &LoadBalancerSpec{
 				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
@@ -1282,7 +1282,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			if test.featureGate == feature.APIServerILB {
 				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, test.featureGate, true)()
 			}
-			err := validateAPIServerLB(&test.lb, &test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
+			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
