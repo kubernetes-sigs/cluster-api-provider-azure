@@ -321,7 +321,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.4/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAAPH
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
@@ -375,7 +375,7 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	$(KUBECTL) get secret/$(CLUSTER_NAME)-kubeconfig -n default -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	# TODO: Standardize timeouts across the Makefile and make them configurable based on the job.
 	$(KUBECTL) -n default wait --for=condition=Ready --timeout=60m cluster "$(CLUSTER_NAME)"
-	
+
 	# Set the namespace to `default` b/c when the service account is auto mounted, the namespace is changed to `test-pods`.
 	$(KUBECTL) --kubeconfig=./kubeconfig config set-context --current --namespace="default"
 
