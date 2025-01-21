@@ -281,6 +281,8 @@ metadata:
 spec:
   template:
     spec:
+      additionalTags:
+        monitoring: virtualmachine
       identity: UserAssigned
       image:
         marketplace:

@@ -42,6 +42,7 @@ patches:
 - path: ../patches/windows-machine-deployment-replicas.yaml
 - path: ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
 - path: ../patches/azuremachinetemplate-vmextension.yaml
+- path: ../patches/azuremachinetemplate-monitoring.yaml
 - path: ../patches/windows-feature-gates.yaml
 - path: ../patches/windows-containerd-labels.yaml
 - path: ../patches/windows-server-version.yaml

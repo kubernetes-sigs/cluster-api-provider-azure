@@ -305,6 +305,8 @@ metadata:
 spec:
   template:
     spec:
+      additionalTags:
+        monitoring: virtualmachine
       enableIPForwarding: true
       identity: UserAssigned
       image:
