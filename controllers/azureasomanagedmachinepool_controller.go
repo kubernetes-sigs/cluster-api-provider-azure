@@ -105,8 +105,10 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 	}
 
 	externalTracker := &external.ObjectTracker{
-		Cache:      mgr.GetCache(),
-		Controller: c,
+		Cache:           mgr.GetCache(),
+		Controller:      c,
+		Scheme:          mgr.GetScheme(),
+		PredicateLogger: &log,
 	}
 
 	r.newResourceReconciler = func(asoManagedCluster *infrav1alpha.AzureASOManagedMachinePool, resources []*unstructured.Unstructured) resourceReconciler {

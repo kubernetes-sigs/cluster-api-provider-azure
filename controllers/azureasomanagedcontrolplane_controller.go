@@ -93,8 +93,10 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 	}
 
 	externalTracker := &external.ObjectTracker{
-		Cache:      mgr.GetCache(),
-		Controller: c,
+		Cache:           mgr.GetCache(),
+		Controller:      c,
+		Scheme:          mgr.GetScheme(),
+		PredicateLogger: &log,
 	}
 
 	r.newResourceReconciler = func(asoManagedCluster *infrav1alpha.AzureASOManagedControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
