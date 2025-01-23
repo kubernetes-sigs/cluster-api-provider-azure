@@ -287,6 +287,13 @@ verify-gen: generate ## Verify generated files are the latest.
 		git diff; echo "generated files are out of date, run make generate"; exit 1; \
 	fi
 
+.PHONY: verify-generate-local
+verify-generate-local: ## Verify generated files are the latest. To be run locally
+	@if !(git diff --quiet HEAD); then \
+		git diff; echo "generated files are out of date, run make generate"; exit 1; \
+	fi
+
+
 .PHONY: verify-shellcheck
 verify-shellcheck: ## Verify shell files are shellcheck.
 	./hack/verify-shellcheck.sh
@@ -379,7 +386,7 @@ create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	$(KUBECTL) get secret/$(CLUSTER_NAME)-kubeconfig -n default -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	# TODO: Standardize timeouts across the Makefile and make them configurable based on the job.
 	$(KUBECTL) -n default wait --for=condition=Ready --timeout=60m cluster "$(CLUSTER_NAME)"
-	
+
 	# Set the namespace to `default` b/c when the service account is auto mounted, the namespace is changed to `test-pods`.
 	$(KUBECTL) --kubeconfig=./kubeconfig config set-context --current --namespace="default"
 
