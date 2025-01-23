@@ -33,7 +33,7 @@ export AKS_NODE_RESOURCE_GROUP="node-${AKS_RESOURCE_GROUP}"
 export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.30.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
 export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
-export AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
+export AKS_NODE_COUNT="${AKS_NODE_COUNT:-2}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG:-$REPO_ROOT/aks-mgmt.config}"
 export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azure_identity_id}"
@@ -143,6 +143,7 @@ create_aks_cluster() {
     --vnet-subnet-id "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AKS_RESOURCE_GROUP}/providers/Microsoft.Network/virtualNetworks/${AKS_MGMT_VNET_NAME}/subnets/${AKS_MGMT_SUBNET_NAME}" \
     --service-cidr "${AKS_MGMT_SERVICE_CIDR}" \
     --dns-service-ip "${AKS_MGMT_DNS_SERVICE_IP}" \
+    --max-pods 60 \
     --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}" \
     --output none --only-show-errors;
   elif echo "$aks_exists" | grep -q "${MGMT_CLUSTER_NAME}"; then
