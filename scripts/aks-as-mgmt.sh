@@ -23,10 +23,6 @@ source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 # shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh" # set the right timestamp and job name
 
-KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-AZWI="${REPO_ROOT}/hack/tools/bin/azwi"
-make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${AZWI##*/}"
-
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # management cluster name
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-aks-mgmt-capz-${RANDOM_SUFFIX}}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="node-${AKS_RESOURCE_GROUP}"
@@ -34,13 +30,8 @@ export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.30.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
 export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
 export AKS_NODE_COUNT="${AKS_NODE_COUNT:-2}"
-export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG:-$REPO_ROOT/aks-mgmt.config}"
 export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azure_identity_id}"
-export AZWI_STORAGE_ACCOUNT="capzcioidcissuer${RANDOM_SUFFIX}"
-export AZWI_STORAGE_CONTAINER="\$web"
-export SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH="${SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH:-}"
-export SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH="${SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH:-}"
 export REGISTRY="${REGISTRY:-}"
 export AKS_MGMT_VNET_NAME="${AKS_MGMT_VNET_NAME:-"aks-mgmt-vnet-${RANDOM_SUFFIX}"}"
 export AKS_MGMT_VNET_CIDR="${AKS_MGMT_VNET_CIDR:-"20.255.0.0/16"}"
@@ -73,16 +64,10 @@ main() {
   echo "AKS_MGMT_KUBERNETES_VERSION:          $AKS_MGMT_KUBERNETES_VERSION"
   echo "AZURE_LOCATION:                       $AZURE_LOCATION"
   echo "AKS_NODE_VM_SIZE:                     $AKS_NODE_VM_SIZE"
-  echo "AZURE_NODE_MACHINE_TYPE:              $AZURE_NODE_MACHINE_TYPE"
   echo "AKS_NODE_COUNT:                       $AKS_NODE_COUNT"
   echo "MGMT_CLUSTER_KUBECONFIG:              $MGMT_CLUSTER_KUBECONFIG"
   echo "AZURE_IDENTITY_ID_FILEPATH:           $AZURE_IDENTITY_ID_FILEPATH"
-  echo "AZWI_STORAGE_ACCOUNT:                 $AZWI_STORAGE_ACCOUNT"
-  echo "AZWI_STORAGE_CONTAINER:               $AZWI_STORAGE_CONTAINER"
-  echo "SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH: $SERVICE_ACCOUNT_SIGNING_PUB_FILEPATH"
-  echo "SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH: $SERVICE_ACCOUNT_SIGNING_KEY_FILEPATH"
   echo "REGISTRY:                             $REGISTRY"
-  echo "APISERVER_LB_DNS_SUFFIX:              $APISERVER_LB_DNS_SUFFIX"
   echo "AKS_MGMT_VNET_NAME:                   $AKS_MGMT_VNET_NAME"
   echo "AKS_MGMT_VNET_CIDR:                   $AKS_MGMT_VNET_CIDR"
   echo "AKS_MGMT_SERVICE_CIDR:                $AKS_MGMT_SERVICE_CIDR"
@@ -93,6 +78,14 @@ main() {
   echo "AZURE_SUBSCRIPTION_ID:                $AZURE_SUBSCRIPTION_ID"
   echo "AZURE_CLIENT_ID:                      $AZURE_CLIENT_ID"
   echo "AZURE_TENANT_ID:                      $AZURE_TENANT_ID"
+  echo "APISERVER_LB_DNS_SUFFIX:              $APISERVER_LB_DNS_SUFFIX"
+  echo "AKS_MI_CLIENT_ID:                     $AKS_MI_CLIENT_ID"
+  echo "AKS_MI_OBJECT_ID:                     $AKS_MI_OBJECT_ID"
+  echo "AKS_MI_RESOURCE_ID:                   $AKS_MI_RESOURCE_ID"
+  echo "MANAGED_IDENTITY_NAME:                $MANAGED_IDENTITY_NAME"
+  echo "MANAGED_IDENTITY_RG:                  $MANAGED_IDENTITY_RG"
+  echo "ASO_CREDENTIAL_SECRET_MODE:           $ASO_CREDENTIAL_SECRET_MODE"
+  echo "SKIP_AKS_CREATE:                      $SKIP_AKS_CREATE"
   echo "--------------------------------"
 
   # if using SKIP_AKS_CREATE=true, skip creating the AKS cluster

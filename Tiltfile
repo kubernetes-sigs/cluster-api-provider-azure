@@ -23,8 +23,8 @@ settings = {
     "capi_version": "v1.8.8",
     "caaph_version": "v0.2.5",
     "cert_manager_version": "v1.16.1",
-    "kubernetes_version": "v1.28.15",
-    "aks_kubernetes_version": "v1.28.15",
+    "kubernetes_version": "v1.30.2",
+    "aks_kubernetes_version": "v1.30.2",
     "flatcar_version": "3374.2.1",
     "azure_location": "eastus",
     "control_plane_machine_count": "1",
@@ -541,7 +541,7 @@ def clear_aks_vnet_peerings():
     # List all peering names and store them in an array
     delete_peering_cmd += '''
     PEERING_NAMES=$(az network vnet peering list --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --query \"[].name\" --output tsv);
-    for PEERING_NAME in ${PEERING_NAMES[@]}; do echo \"Deleting peering: ${PEERING_NAME}\"; az network vnet peering delete --name ${PEERING_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME}; done;
+    for PEERING_NAME in ${PEERING_NAMES}; do echo \"Deleting peering: ${PEERING_NAME}\"; az network vnet peering delete --name ${PEERING_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME}; done;
     echo \"All VNETs Peerings deleted in ${AKS_MGMT_VNET_NAME}\"; '''
 
     return delete_peering_cmd
