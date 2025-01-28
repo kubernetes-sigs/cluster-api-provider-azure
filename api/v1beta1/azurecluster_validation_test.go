@@ -1280,7 +1280,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
 			if test.featureGate == feature.APIServerILB {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, test.featureGate, true)()
+				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, test.featureGate, true)
 			}
 			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
