@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,11 +26,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -63,7 +60,6 @@ type (
 		Timeouts                      reconciler.Timeouts
 		WatchFilterValue              string
 		createAzureMachinePoolService azureMachinePoolServiceCreator
-		BootstrapConfigGVK            schema.GroupVersionKind
 		CredentialCache               azure.CredentialCache
 	}
 
@@ -77,21 +73,13 @@ type (
 type azureMachinePoolServiceCreator func(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error)
 
 // NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance.
-func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue, bootstrapConfigGVK string, credCache azure.CredentialCache) *AzureMachinePoolReconciler {
-	gvk := schema.FromAPIVersionAndKind(kubeadmv1.GroupVersion.String(), reflect.TypeOf((*kubeadmv1.KubeadmConfig)(nil)).Elem().Name())
-	userGVK, _ := schema.ParseKindArg(bootstrapConfigGVK)
-
-	if userGVK != nil {
-		gvk = *userGVK
-	}
-
+func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureMachinePoolReconciler {
 	ampr := &AzureMachinePoolReconciler{
-		Client:             client,
-		Recorder:           recorder,
-		Timeouts:           timeouts,
-		WatchFilterValue:   watchFilterValue,
-		BootstrapConfigGVK: gvk,
-		CredentialCache:    credCache,
+		Client:           client,
+		Recorder:         recorder,
+		Timeouts:         timeouts,
+		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
 	}
 
 	ampr.createAzureMachinePoolService = newAzureMachinePoolService
@@ -127,8 +115,19 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachines")
 	}
 
-	config := &metav1.PartialObjectMetadata{}
-	config.SetGroupVersionKind(ampr.BootstrapConfigGVK)
+	// bootstrap secrets must contain the `cluster.x-k8s.io/cluster-name` label and can be filtered by it
+	bootstrapSecretLabelPredicate, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      clusterv1.ClusterNameLabel,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("creating bootstrap secret label selector: %w", err)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePool{}).
@@ -148,11 +147,11 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
-		// watch for changes in KubeadmConfig (or any BootstrapConfig) to sync bootstrap token
+		// watch for changes in bootstrap secrets to sync bootstrap token
 		Watches(
-			config,
-			handler.EnqueueRequestsFromMapFunc(BootstrapConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(BootstrapSecretToInfrastructureMapFunc(ctx, ampr.Client, log)),
+			builder.WithPredicates(bootstrapSecretLabelPredicate, predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(
 			&infrav1exp.AzureMachinePoolMachine{},
@@ -176,7 +175,6 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kubeadmconfigs;kubeadmconfigs/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines/status,verbs=get
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch;update;patch

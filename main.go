@@ -109,7 +109,6 @@ var (
 	azureMachineConcurrency            int
 	azureMachinePoolConcurrency        int
 	azureMachinePoolMachineConcurrency int
-	azureBootrapConfigGVK              string
 	debouncingTimer                    time.Duration
 	syncPeriod                         time.Duration
 	healthAddr                         string
@@ -256,12 +255,6 @@ func InitFlags(fs *pflag.FlagSet) {
 		"enable-tracing",
 		false,
 		"Enable tracing to the opentelemetry-collector service in the same namespace.",
-	)
-
-	fs.StringVar(&azureBootrapConfigGVK,
-		"bootstrap-config-gvk",
-		"",
-		"Provide fully qualified GVK string to override default kubeadm config watch source, in the form of Kind.version.group (default: KubeadmConfig.v1beta1.bootstrap.cluster.x-k8s.io)",
 	)
 
 	flags.AddManagerOptions(fs, &managerOptions)
@@ -449,7 +442,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
 			timeouts,
 			watchFilterValue,
-			azureBootrapConfigGVK,
 			credCache,
 		).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}, Cache: mpCache}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")

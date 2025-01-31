@@ -23,7 +23,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -372,47 +374,65 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 	}
 }
 
-// BootstrapConfigToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for <Bootstrap>Config events and returns.
-func BootstrapConfigToInfrastructureMapFunc(_ context.Context, c client.Client, log logr.Logger) handler.MapFunc {
+// BootstrapSecretToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for <Bootstrap>Config events and returns.
+func BootstrapSecretToInfrastructureMapFunc(_ context.Context, c client.Client, log logr.Logger) handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		mpKey := client.ObjectKey{
-			Namespace: o.GetNamespace(),
-			Name:      o.GetName(),
+		// Verify we are actually handling a Secret object
+		bootstrapSecret, ok := o.(*corev1.Secret)
+		if !ok {
+			log.Error(errors.Errorf("expected a Secret but got a %T", o), "failed to get Secret")
+			return []ctrl.Request{}
 		}
+		namespace := bootstrapSecret.Namespace
+		logWithValues := log.WithValues("Secret", bootstrapSecret.Name, "Namespace", namespace)
 
-		// fetch MachinePool to get reference
+		// Evaluate the (Bootstrap)Config owning the bootstrap Secret
+		config := getFirstControllerOwnerRef(bootstrapSecret.OwnerReferences)
+		if config == nil {
+			logWithValues.V(4).Info("Bootstrap secret has no controller owner")
+			return []ctrl.Request{}
+		}
+		logWithValues = logWithValues.WithValues("BootstrapConfig", config.Name, "BootstrapKind", config.Kind)
+
+		// Fetch the MachinePool owning the (Bootstrap)Config
+		//
+		// Note: since the (Bootstrap)Config Kind can vary, and the controller does not have permissions
+		//       to get them all, we assume the MachinePool has the same name of any (Bootstrap)Config
+		//       owning the secret. If a MachinePool with same name is not found, then this might be a
+		//       bootstrap secret for a Machine, or something else.
 		mp := &expv1.MachinePool{}
-		if err := c.Get(ctx, mpKey, mp); err != nil {
+		if err := c.Get(ctx, types.NamespacedName{Name: config.Name, Namespace: namespace}, mp); err != nil {
 			if !apierrors.IsNotFound(err) {
-				log.Error(err, "failed to fetch MachinePool to validate Bootstrap.ConfigRef")
+				logWithValues.Error(err, "failed to fetch MachinePool to validate Bootstrap.ConfigRef")
 			}
 			return []reconcile.Request{}
 		}
 
+		// Validate the bootstrap secret referenced by the MachinePool
 		ref := mp.Spec.Template.Spec.Bootstrap.ConfigRef
 		if ref == nil {
 			log.V(4).Info("fetched MachinePool has no Bootstrap.ConfigRef")
 			return []reconcile.Request{}
 		}
-		sameKind := ref.Kind != o.GetObjectKind().GroupVersionKind().Kind
-		sameName := ref.Name == o.GetName()
+		sameKind := ref.Kind == config.Kind
+		sameName := ref.Name == config.Name
 		sameNamespace := ref.Namespace == o.GetNamespace()
 		if !sameKind || !sameName || !sameNamespace {
-			log.V(4).Info("Bootstrap.ConfigRef does not match",
+			logWithValues.V(4).Info("Bootstrap.ConfigRef does not match",
 				"sameKind", sameKind,
 				"ref kind", ref.Kind,
-				"other kind", o.GetObjectKind().GroupVersionKind().Kind,
+				"other kind", config.Kind,
 				"sameName", sameName,
 				"sameNamespace", sameNamespace,
 			)
 			return []reconcile.Request{}
 		}
 
-		key := client.ObjectKeyFromObject(o)
-		log.V(4).Info("adding KubeadmConfig to watch", "key", key)
+		key := client.ObjectKey{Namespace: mp.Namespace, Name: mp.Name}
+		log.Info("Enqueueing MachinePool from (Bootstrap)Config", "key", key, "kind", config.Kind)
 
 		return []reconcile.Request{
 			{
@@ -420,4 +440,13 @@ func BootstrapConfigToInfrastructureMapFunc(_ context.Context, c client.Client, 
 			},
 		}
 	}
+}
+
+func getFirstControllerOwnerRef(refs []metav1.OwnerReference) *metav1.OwnerReference {
+	for i, ref := range refs {
+		if *ref.Controller {
+			return &refs[i]
+		}
+	}
+	return nil
 }
