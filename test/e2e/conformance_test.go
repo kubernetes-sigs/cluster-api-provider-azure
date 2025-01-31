@@ -79,6 +79,9 @@ var _ = Describe("Conformance Tests", func() {
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
+
+		Expect(os.Setenv("AZURE_BLOB_CONTAINER_NAME", "kubernetes-ci")).To(Succeed())
+		Expect(os.Setenv("IMAGE_TAG_ACR_CREDENTIAL_PROVIDER", "b9b3aa1")).To(Succeed())
 	})
 
 	It(specName, func() {
@@ -87,15 +90,16 @@ var _ = Describe("Conformance Tests", func() {
 
 		var err error
 
-		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
+		kubernetesVersion := "v1.28.15"
+		Expect(os.Setenv("CI_VERSION", "v1.28.15")).To(Succeed())
 		flavor := e2eConfig.GetVariable("CONFORMANCE_FLAVOR")
+		useCIArtifacts = true
 
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
 		// PR artifacts will replace the CI artifacts during kubeadm init
 		if useCIArtifacts || usePRArtifacts {
 			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 		}
 
