@@ -282,7 +282,7 @@ spec:
   template:
     spec:
       additionalTags:
-        monitoring: virtualmachine
+        monitoring: load
       identity: UserAssigned
       image:
         marketplace:
