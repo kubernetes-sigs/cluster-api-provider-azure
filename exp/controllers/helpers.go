@@ -373,17 +373,29 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 }
 
 // BootstrapConfigToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for <Bootstrap>Config events and returns.
-func BootstrapConfigToInfrastructureMapFunc(_ context.Context, c client.Client, log logr.Logger) handler.MapFunc {
+func BootstrapConfigToInfrastructureMapFunc(c client.Client, log logr.Logger) handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		mpKey := client.ObjectKey{
-			Namespace: o.GetNamespace(),
-			Name:      o.GetName(),
+		// Lookup the first MachinePool owner of this BootstrapConfig, if any
+		mpName := ""
+		for _, owner := range o.GetOwnerReferences() {
+			if owner.Kind == "MachinePool" {
+				mpName = owner.Name
+				break
+			}
+		}
+		if mpName == "" {
+			log.V(4).Info("BootstrapConfig has no MachinePool owner")
+			return []reconcile.Request{}
 		}
 
-		// fetch MachinePool to get reference
+		// Fetch the MachinePool to validate the Bootstrap.ConfigRef
+		mpKey := client.ObjectKey{
+			Namespace: o.GetNamespace(),
+			Name:      mpName,
+		}
 		mp := &expv1.MachinePool{}
 		if err := c.Get(ctx, mpKey, mp); err != nil {
 			if !apierrors.IsNotFound(err) {
@@ -397,7 +409,7 @@ func BootstrapConfigToInfrastructureMapFunc(_ context.Context, c client.Client, 
 			log.V(4).Info("fetched MachinePool has no Bootstrap.ConfigRef")
 			return []reconcile.Request{}
 		}
-		sameKind := ref.Kind != o.GetObjectKind().GroupVersionKind().Kind
+		sameKind := ref.Kind == o.GetObjectKind().GroupVersionKind().Kind
 		sameName := ref.Name == o.GetName()
 		sameNamespace := ref.Namespace == o.GetNamespace()
 		if !sameKind || !sameName || !sameNamespace {
@@ -411,12 +423,12 @@ func BootstrapConfigToInfrastructureMapFunc(_ context.Context, c client.Client, 
 			return []reconcile.Request{}
 		}
 
-		key := client.ObjectKeyFromObject(o)
-		log.V(4).Info("adding KubeadmConfig to watch", "key", key)
+		// Enqueue a request for an AzureMachinePool with same name of MachinePool
+		log.V(4).Info("Enqueueing AzureMachinePool from Bootstrap Config", "key", client.ObjectKeyFromObject(o), "kind", ref.Kind)
 
 		return []reconcile.Request{
 			{
-				NamespacedName: key,
+				NamespacedName: mpKey,
 			},
 		}
 	}
