@@ -588,6 +588,9 @@ const (
 
 	// WorkloadIdentity represents a WorkloadIdentity.
 	WorkloadIdentity IdentityType = "WorkloadIdentity"
+
+	// UserAssignedIdentityCredential represents a UserAssignedIdentityCredential.
+	UserAssignedIdentityCredential IdentityType = "UserAssignedIdentityCredential"
 )
 
 // OSDisk defines the operating system disk for a VM.
