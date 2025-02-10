@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -159,6 +160,17 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		}
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
 
+	case infrav1.UserAssignedIdentityCredential:
+		cloudType := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		clientOptions := azcore.ClientOptions{
+			TracingProvider: tracingProvider,
+			Cloud:           cloudType,
+		}
+		// Using context.Background() here as something is cancelling the context prematurely in the ctx passed into the
+		// function. This authentication method is long lived and has built in capabilities to rotate the certificates
+		// when they change.
+		cred, authErr = p.cache.GetOrStoreUserAssignedManagedIdentityCredentials(context.Background(), p.Identity.Spec.UserAssignedIdentityCredentialsPath, clientOptions, &log)
+
 	default:
 		return nil, errors.Errorf("identity type %s not supported", p.Identity.Spec.Type)
 	}
@@ -258,4 +270,18 @@ func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, all
 	}
 
 	return false
+}
+
+func parseCloudType(cloudType string) cloud.Configuration {
+	cloudType = strings.ToUpper(cloudType)
+	switch cloudType {
+	case "PUBLIC":
+		return cloud.AzurePublic
+	case "CHINA":
+		return cloud.AzureChina
+	case "USGOVERNMENT":
+		return cloud.AzureGovernment
+	default:
+		return cloud.AzurePublic
+	}
 }

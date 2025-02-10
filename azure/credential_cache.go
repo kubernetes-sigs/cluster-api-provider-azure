@@ -17,10 +17,13 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/msi-dataplane/pkg/dataplane"
+	"github.com/go-logr/logr"
 )
 
 type credentialCache struct {
@@ -34,6 +37,7 @@ type credentialFactory interface {
 	newClientCertificateCredential(tenantID string, clientID string, clientCertificate []byte, clientCertificatePassword []byte, opts *azidentity.ClientCertificateCredentialOptions) (azcore.TokenCredential, error)
 	newManagedIdentityCredential(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error)
 	newWorkloadIdentityCredential(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error)
+	newUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error)
 }
 
 // CredentialType represents the auth mechanism in use.
@@ -48,6 +52,8 @@ const (
 	CredentialTypeManagedIdentity
 	// CredentialTypeWorkloadIdentity is for Workload Identity.
 	CredentialTypeWorkloadIdentity
+	// CredentialTypeUserAssignedManagedIdentity is for User Assigned Managed Identity Credentials.
+	CredentialTypeUserAssignedManagedIdentity
 )
 
 type credentialCacheKey struct {
@@ -125,6 +131,18 @@ func (c *credentialCache) GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadId
 	)
 }
 
+func (c *credentialCache) GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error) {
+	return c.getOrStore(
+		credentialCacheKey{
+			authorityHost:  opts.Cloud.ActiveDirectoryAuthorityHost,
+			credentialType: CredentialTypeUserAssignedManagedIdentity,
+		},
+		func() (azcore.TokenCredential, error) {
+			return c.credFactory.newUserAssignedManagedIdentityCredentials(ctx, credsPath, opts, logger)
+		},
+	)
+}
+
 func (c *credentialCache) getOrStore(key credentialCacheKey, newCredFunc func() (azcore.TokenCredential, error)) (azcore.TokenCredential, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
@@ -159,4 +177,8 @@ func (azureCredentialFactory) newManagedIdentityCredential(opts *azidentity.Mana
 
 func (azureCredentialFactory) newWorkloadIdentityCredential(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error) {
 	return azidentity.NewWorkloadIdentityCredential(opts)
+}
+
+func (azureCredentialFactory) newUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error) {
+	return dataplane.NewUserAssignedIdentityCredential(ctx, credsPath, dataplane.WithClientOpts(opts), dataplane.WithLogger(logger))
 }
