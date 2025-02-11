@@ -114,7 +114,7 @@ helm repo update
 Install cert manager:
 
 ```bash
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
 ```
 
 Create a `values.yaml` file for the CAPI Operator Helm chart like so:
