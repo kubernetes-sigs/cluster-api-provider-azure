@@ -532,7 +532,7 @@ def peer_vnets():
     return peering_cmd
 
 def clear_aks_vnet_peerings():
-    #
+    # fetch the AKS VNet
     delete_peering_cmd = '''
     echo \"--------Clearing AKS MGMT VNETs Peerings--------\";
     az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;

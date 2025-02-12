@@ -185,7 +185,7 @@ create_aks_cluster() {
   export MANAGED_IDENTITY_RG
   echo "mgmt resource identity resource group: ${MANAGED_IDENTITY_RG}"
 
-  echo "assigning contributor role to the service principal"
+  echo "assigning contributor role to the aks created managed identity to your subscription"
   until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Contributor" \
   --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none \
   --only-show-errors; do
@@ -193,6 +193,9 @@ create_aks_cluster() {
     sleep 5
   done
 
+  # Set the ASO_CREDENTIAL_SECRET_MODE to podidentity to
+  # use the client ID of the managed identity created by AKS for authentication
+  # refer: https://github.com/Azure/azure-service-operator/blob/190edf60f1d84da7ae4ee5c4df9806068c0cd982/v2/internal/identity/credential_provider.go#L279-L301
   echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
