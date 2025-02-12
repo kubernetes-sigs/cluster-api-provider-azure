@@ -17,7 +17,7 @@ limitations under the License.
 package converters
 
 import (
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"k8s.io/utils/ptr"
 )
 

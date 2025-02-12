@@ -62,7 +62,7 @@ func (s *SubnetSpec) Parameters(_ context.Context, existing *asonetworkv1.Virtua
 		subnet = &asonetworkv1.VirtualNetworksSubnet{}
 	}
 
-	subnet.Spec = asonetworkv1.VirtualNetworks_Subnet_Spec{
+	subnet.Spec = asonetworkv1.VirtualNetworksSubnet_Spec{
 		AzureName: s.Name,
 		Owner: &genruntime.KnownResourceReference{
 			Name: azure.GetNormalizedKubernetesName(s.VNetName),
