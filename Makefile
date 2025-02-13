@@ -186,6 +186,7 @@ E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
 AZWI_SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
+MGMT_CLUSTER_TYPE ?= kind
 # @sonasingh46: Skip creating mgmt cluster for ci as workload identity needs kind cluster
 # to be created with extra mounts for key pairs which is not yet supported
 # by existing e2e framework. A mgmt cluster(kind) is created as part of e2e suite
@@ -722,9 +723,17 @@ test-cover: test ## Run tests with code coverage and generate reports.
 	./hack/codecov-ignore.sh
 	go tool cover -html=coverage.out -o coverage.html
 
-.PHONY: kind-create-bootstrap
-kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
-	KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh
+.PHONY: create-bootstrap
+create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
+	if [ "$(MGMT_CLUSTER_TYPE)" == "aks" ]; then \
+		MGMT_CLUSTER_NAME=capz-e2e-6 \
+		AKS_RESOURCE_GROUP=capz-e2e-6 \
+		AKS_MGMT_VNET_NAME=capz-e2e-6-mgmt-vnet \
+		AKS_MGMT_SUBNET_NAME=capz-e2e-6-mgmt-subnet \
+		./scripts/aks-as-mgmt.sh; \
+	else \
+		KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh; \
+	fi
 
 .PHONY: cleanup-workload-identity
 cleanup-workload-identity: ## Cleanup CI workload-identity infra

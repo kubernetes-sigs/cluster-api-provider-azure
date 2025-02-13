@@ -98,6 +98,7 @@ const (
 	OldAddonProviderUpgradeVersion    = "OLD_CAAPH_UPGRADE_VERSION"
 	LatestAddonProviderUpgradeVersion = "LATEST_CAAPH_UPGRADE_VERSION"
 	KubernetesVersionAPIUpgradeFrom   = "KUBERNETES_VERSION_API_UPGRADE_FROM"
+	PeerVNetsScriptPath               = "PEER_VNETS_SCRIPT_PATH"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -441,5 +442,11 @@ func withPostMachinesProvisioned(postMachinesProvisioned func()) func(*clusterct
 func withAzureCNIv1Manifest(manifestPath string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
 		input.CNIManifestPath = manifestPath
+	}
+}
+
+func withPreWaitForCluster(preWaitForCluster func()) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
+		input.PreWaitForCluster = preWaitForCluster
 	}
 }

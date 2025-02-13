@@ -25,9 +25,6 @@ set -o pipefail
 
 # Install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
-KIND="${REPO_ROOT}/hack/tools/bin/kind"
-make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}"
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -82,11 +79,14 @@ trap capz::ci-e2e::cleanup EXIT
 # Image is configured as `${CONTROLLER_IMG}-${ARCH}:${TAG}` where `CONTROLLER_IMG` is defaulted to `${REGISTRY}/${IMAGE_NAME}`.
 if [[ "${BUILD_MANAGER_IMAGE}" == "false" ]]; then
   # Load an existing image, skip docker-build and docker-push.
+  echo "running make test-e2e-skip-build-and-push"
   make test-e2e-skip-build-and-push
 elif [[ "${USE_LOCAL_KIND_REGISTRY}" == "true" ]]; then
   # Build an image with kind local registry, skip docker-push. REGISTRY is set to `localhost:5000/ci-e2e`. TAG is set to `$(date -u '+%Y%m%d%H%M%S')`.
+  echo "running make test-e2e-skip-push"
   make test-e2e-skip-push
 else
   # Build an image and push to the registry. TAG is set to `$(date -u '+%Y%m%d%H%M%S')`.
+  echo "running make test-e2e"
   make test-e2e
 fi
