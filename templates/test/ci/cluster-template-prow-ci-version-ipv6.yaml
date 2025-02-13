@@ -258,6 +258,8 @@ metadata:
 spec:
   template:
     spec:
+      additionalTags:
+        monitoring: virtualmachine
       dataDisks:
       - diskSizeGB: 256
         lun: 0

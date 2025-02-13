@@ -228,6 +228,8 @@ metadata:
 spec:
   template:
     spec:
+      additionalTags:
+        monitoring: load
       dataDisks:
       - diskSizeGB: 256
         lun: 0
