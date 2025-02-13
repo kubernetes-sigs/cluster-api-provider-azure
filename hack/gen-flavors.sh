@@ -27,6 +27,7 @@ make --directory="${REPO_ROOT}" "${KUSTOMIZE##*/}"
 flavors_dir="${REPO_ROOT}/templates/flavors/"
 ci_dir="${REPO_ROOT}/templates/test/ci/"
 dev_dir="${REPO_ROOT}/templates/test/dev/"
+internal_dir="${REPO_ROOT}/templates/internal/"
 
 for name in $(find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base); do
   ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone "${flavors_dir}${name}" > "${REPO_ROOT}/templates/cluster-template-${name}.yaml"
@@ -41,3 +42,8 @@ done
 for name in $(find "${dev_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches); do
   ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone "${dev_dir}${name}" > "${dev_dir}cluster-template-${name}.yaml"
 done
+
+for name in $(find "${internal_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base); do
+  ${KUSTOMIZE} build --load-restrictor LoadRestrictionsNone "${internal_dir}${name}" > "${REPO_ROOT}/templates/internal/cluster-template-${name}.yaml"
+done
+mv "${REPO_ROOT}/templates/internal/cluster-template-default.yaml" "${REPO_ROOT}/templates/internal/cluster-template.yaml"

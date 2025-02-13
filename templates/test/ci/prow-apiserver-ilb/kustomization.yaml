@@ -21,7 +21,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/preKubeadmCommands/0
-        value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+        value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
   - target:
       kind: AzureCluster
     patch: |-

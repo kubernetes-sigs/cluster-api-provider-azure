@@ -1,9 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
-    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -26,10 +23,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  additionalTags:
-    buildProvenance: ${BUILD_PROVENANCE}
-    creationTimestamp: ${TIMESTAMP}
-    jobName: ${JOB_NAME}
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
@@ -43,19 +36,19 @@ spec:
           dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
           name: ${CLUSTER_NAME}-api-lb
       - name: ${CLUSTER_NAME}-internal-lb-private-ip
-        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP:-37.0.0.100}
     subnets:
     - cidrBlocks:
-      - ${AZURE_CP_SUBNET_CIDR}
+      - 37.0.0.0/16
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - ${AZURE_NODE_SUBNET_CIDR}
+      - 37.1.0.0/16
       name: node-subnet
       role: node
     vnet:
       cidrBlocks:
-      - ${AZURE_VNET_CIDR}
+      - 37.0.0.0/8
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -77,7 +70,6 @@ spec:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
-          v: "4"
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -91,15 +83,8 @@ spec:
         - lazy_itable_init=1,lazy_journal_init=1
         filesystem: ext4
         label: etcd_disk
-      - device: ephemeral0.1
-        filesystem: ext4
-        label: ephemeral0
-        replaceFS: ntfs
-      partitions:
-      - device: /dev/disk/azure/scsi1/lun0
-        layout: true
         overwrite: false
-        tableType: gpt
+      partitions: []
     files:
     - contentFrom:
         secret:
@@ -108,21 +93,43 @@ spec:
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
+    format: ignition
+    ignition:
+      containerLinuxConfig:
+        additionalConfig: |
+          systemd:
+            units:
+            - name: kubeadm.service
+              dropins:
+              - name: 10-flatcar.conf
+                contents: |
+                  [Unit]
+                  After=oem-cloudinit.service
+                  # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                  After=containerd.service
+          # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+          storage:
+            disks:
+            - device: /dev/disk/azure/scsi1/lun0
+              partitions:
+              - number: 1
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-        name: '{{ ds.meta_data["local_hostname"] }}'
+        name: '@@HOSTNAME@@'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-        name: '{{ ds.meta_data["local_hostname"] }}'
+        name: '@@HOSTNAME@@'
     mounts:
-    - - LABEL=etcd_disk
+    - - etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands: []
-    preKubeadmCommands: []
+    preKubeadmCommands:
+    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
+      | jq -r .compute.name)/g" /etc/kubeadm.yml
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -144,6 +151,11 @@ spec:
         lun: 0
         nameSuffix: etcddisk
       identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0
+          name: flatcar-stable-amd64-capi-${KUBERNETES_VERSION}
+          version: ${FLATCAR_VERSION}
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -184,13 +196,15 @@ metadata:
 spec:
   template:
     spec:
-      identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0
+          name: flatcar-stable-amd64-capi-${KUBERNETES_VERSION}
+          version: ${FLATCAR_VERSION}
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -209,13 +223,28 @@ spec:
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
+      format: ignition
+      ignition:
+        containerLinuxConfig:
+          additionalConfig: |
+            systemd:
+              units:
+              - name: kubeadm.service
+                dropins:
+                - name: 10-flatcar.conf
+                  contents: |
+                    [Unit]
+                    After=oem-cloudinit.service
+                    # kubeadm must run after containerd - see https://github.com/kubernetes-sigs/image-builder/issues/939.
+                    After=containerd.service
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-provider: external
-          name: '{{ ds.meta_data["local_hostname"] }}'
+          name: '@@HOSTNAME@@'
+      postKubeadmCommands: []
       preKubeadmCommands:
-      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-37.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
         >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -230,105 +259,3 @@ spec:
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
   type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: calico
-  namespace: default
-spec:
-  chartName: tigera-operator
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  namespace: tigera-operator
-  releaseName: projectcalico
-  repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
-    installation:
-      cni:
-        type: Calico
-      calicoNetwork:
-        bgp: Disabled
-        mtu: 1350
-        ipPools:
-        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
-        - cidr: {{ $cidr }}
-          encapsulation: VXLAN{{end}}
-      registry: mcr.microsoft.com/oss
-    # Image and registry configuration for the tigera/operator pod.
-    tigeraOperator:
-      image: tigera/operator
-      registry: mcr.microsoft.com/oss
-    calicoctl:
-      image: mcr.microsoft.com/oss/calico/ctl
-  version: ${CALICO_VERSION}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: azuredisk-csi-driver-chart
-  namespace: default
-spec:
-  chartName: azuredisk-csi-driver
-  clusterSelector:
-    matchLabels:
-      azuredisk-csi: "true"
-  namespace: kube-system
-  releaseName: azuredisk-csi-driver-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
-  valuesTemplate: |-
-    controller:
-      replicas: 1
-      runOnControlPlane: true
-    windows:
-      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      logVerbosity: 4
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart-ci
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure-ci
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
-      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: "${CCM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CCM:-""}"
-      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
-      replicas: ${CCM_COUNT:-1}
-      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
-    cloudNodeManager:
-      imageName: "${CNM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CNM:-""}"

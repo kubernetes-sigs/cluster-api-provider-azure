@@ -1,9 +1,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
-    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -26,10 +23,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  additionalTags:
-    buildProvenance: ${BUILD_PROVENANCE}
-    creationTimestamp: ${TIMESTAMP}
-    jobName: ${JOB_NAME}
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
@@ -43,19 +36,19 @@ spec:
           dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
           name: ${CLUSTER_NAME}-api-lb
       - name: ${CLUSTER_NAME}-internal-lb-private-ip
-        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP:-31.0.0.100}
     subnets:
     - cidrBlocks:
-      - ${AZURE_CP_SUBNET_CIDR}
+      - 31.0.0.0/16
       name: control-plane-subnet
       role: control-plane
     - cidrBlocks:
-      - ${AZURE_NODE_SUBNET_CIDR}
+      - 31.1.0.0/16
       name: node-subnet
       role: node
     vnet:
       cidrBlocks:
-      - ${AZURE_VNET_CIDR}
+      - 31.0.0.0/8
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -71,13 +64,17 @@ spec:
       apiServer:
         extraArgs:
           cloud-provider: external
+          oidc-client-id: ${AZURE_SERVER_APP_ID}
+          oidc-groups-claim: groups
+          oidc-issuer-url: https://sts.windows.net/${AZURE_TENANT_ID}/
+          oidc-username-claim: oid
+          oidc-username-prefix: '-'
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
-          v: "4"
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -184,13 +181,12 @@ metadata:
 spec:
   template:
     spec:
-      identity: UserAssigned
       osDisk:
         diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -215,7 +211,7 @@ spec:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
-      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-31.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
         >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -230,105 +226,3 @@ spec:
   clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
   tenantID: ${AZURE_TENANT_ID}
   type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: calico
-  namespace: default
-spec:
-  chartName: tigera-operator
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  namespace: tigera-operator
-  releaseName: projectcalico
-  repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
-    installation:
-      cni:
-        type: Calico
-      calicoNetwork:
-        bgp: Disabled
-        mtu: 1350
-        ipPools:
-        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
-        - cidr: {{ $cidr }}
-          encapsulation: VXLAN{{end}}
-      registry: mcr.microsoft.com/oss
-    # Image and registry configuration for the tigera/operator pod.
-    tigeraOperator:
-      image: tigera/operator
-      registry: mcr.microsoft.com/oss
-    calicoctl:
-      image: mcr.microsoft.com/oss/calico/ctl
-  version: ${CALICO_VERSION}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: azuredisk-csi-driver-chart
-  namespace: default
-spec:
-  chartName: azuredisk-csi-driver
-  clusterSelector:
-    matchLabels:
-      azuredisk-csi: "true"
-  namespace: kube-system
-  releaseName: azuredisk-csi-driver-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
-  valuesTemplate: |-
-    controller:
-      replicas: 1
-      runOnControlPlane: true
-    windows:
-      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      logVerbosity: 4
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart-ci
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure-ci
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
-      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: "${CCM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CCM:-""}"
-      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
-      replicas: ${CCM_COUNT:-1}
-      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
-    cloudNodeManager:
-      imageName: "${CNM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CNM:-""}"

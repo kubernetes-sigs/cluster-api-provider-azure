@@ -311,7 +311,15 @@ def flavors():
         os.environ.update({az_key_b64_name: base64_encode_file(default_key_path)})
         os.environ.update({az_key_name: read_file_from_path(default_key_path)})
 
-    template_list = [item for item in listdir("./templates")]
+    # Prefer templates/internal if subscription-type is msft
+    # TODO: improve this subscription type check
+    template_list = []
+    if settings.get("subscription-type", "") == "msft":
+        print("Using Azure subscription type: corporate. Selecting CAPZ flavors from ./templates/internal .")
+        template_list = [item for item in listdir("./templates/internal")]
+    else:
+        template_list = [item for item in listdir("./templates")]
+
     template_list = [template for template in template_list if os.path.basename(template).endswith("yaml")]
 
     for template in template_list:
@@ -336,6 +344,7 @@ def deploy_worker_templates(template, substitutions):
         fail(template + " not found")
 
     yaml = str(read_file(template))
+    parsed_yamls=decode_yaml_stream(yaml)
     flavor = os.path.basename(template).replace("cluster-template-", "").replace(".yaml", "")
 
     # for the base cluster-template, flavor is "default"
@@ -389,11 +398,27 @@ def deploy_worker_templates(template, substitutions):
     flavor_name = os.path.basename(flavor)
     flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); "
 
-    apiserver_lb_private_ip = os.getenv("AZURE_INTERNAL_LB_PRIVATE_IP", "")
-    if "windows-apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
-        flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"40.0.11.100\"; "
-    elif "apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
-        flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"30.0.11.100\"; "
+
+    # for corp tenants, fetch the apiserver ilb ip from the parsed yaml
+    if settings.get("subscription-type", "") == "msft":
+        apiserver_lb_private_ip = os.getenv("AZURE_INTERNAL_LB_PRIVATE_IP", "")
+        if apiserver_lb_private_ip != "":
+            flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"" + apiserver_lb_private_ip + "\"; "
+        else:
+            azurecluster_doc = None
+
+            for d in parsed_yamls:
+                # handle empty/null documents
+                if d != None and d.get("kind") == "AzureCluster":
+                    azurecluster_doc = d
+                    break
+
+            if azurecluster_doc == None:
+                fail("No AzureCluster kind found in YAML")
+            else:
+                private_ip = azurecluster_doc["spec"]["networkSpec"]["apiServerLB"]["frontendIPs"][1]["privateIP"]
+                # print("Private IP is:", private_ip)
+                flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"" + private_ip + "\"; "
 
     flavor_cmd += "export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; "
     flavor_cmd += "echo \"Cluster ${CLUSTER_NAME} created, don't forget to delete\"; "
@@ -414,7 +439,8 @@ def deploy_worker_templates(template, substitutions):
         flavor_cmd += "until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done; "
         flavor_cmd += kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; "
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    # if using AKS as mgmt cluster and the user is of msft tenant, peer vnets even before kubeconfig of the deployed cluster is available
+    if ("aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", "")) and settings.get("subscription-type", "") == "msft":
         flavor_cmd += peer_vnets()
 
     flavor_cmd += get_addons(flavor_name)
@@ -484,13 +510,13 @@ def peer_vnets():
     # wait for AKS VNet to be in the state created
     peering_cmd = '''
     echo \"--------Peering VNETs--------\";
-    az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
+    az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 600;
     export MGMT_VNET_ID=$(az network vnet show --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --query id --output tsv);
     echo \" 1/8 ${AKS_MGMT_VNET_NAME} found \"; '''
 
     # wait for workload VNet to be created
     peering_cmd += '''
-    az network vnet wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --created --timeout 180;
+    az network vnet wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --created --timeout 600;
     export WORKLOAD_VNET_ID=$(az network vnet show --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --query id --output tsv);
     echo \" 2/8 ${CLUSTER_NAME}-vnet found \"; '''
 
