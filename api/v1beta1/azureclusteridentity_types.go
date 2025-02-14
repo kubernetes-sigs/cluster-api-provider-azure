@@ -62,6 +62,14 @@ type AzureClusterIdentitySpec struct {
 	// CertPath is the path where certificates exist. When set, it takes precedence over ClientSecret for types that use certs like ServicePrincipalCertificate.
 	// +optional
 	CertPath string `json:"certPath,omitempty"`
+	// UserAssignedIdentityCredentialsPath is the path where an existing JSON file exists containing the JSON format of
+	// a UserAssignedIdentityCredentials struct.
+	// See the msi-dataplane for more details on UserAssignedIdentityCredentials - https://github.com/Azure/msi-dataplane/blob/63fb37d3a1aaac130120624674df795d2e088083/pkg/dataplane/internal/generated_client.go#L156C6-L156C37
+	UserAssignedIdentityCredentialsPath string `json:"userAssignedIdentityCredentialsPath,omitempty"`
+	// UserAssignedIdentityCredentialsCloudType is used with UserAssignedIdentityCredentialsPath to specify the Cloud
+	// type. Can only be one of the following values: public, china, or usgovernment
+	// If a value is not specified, defaults to AzurePublicCloud
+	UserAssignedIdentityCredentialsCloudType string `json:"userAssignedIdentityCredentialsCloudType,omitempty"`
 	// TenantID is the service principal primary tenant id.
 	TenantID string `json:"tenantID"`
 	// AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from.

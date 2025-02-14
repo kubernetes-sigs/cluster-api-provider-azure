@@ -182,6 +182,67 @@ spec:
 
 When using a user-assigned managed identity to create the workload cluster, a VM identity should also be assigned to each control plane machine in the workload cluster for Azure Cloud Provider to use. See [here](../self-managed/vm-identity.md#managed-identities) for more information.
 
+## User-Assigned Identity Credentials
+
+<aside class="note">
+
+<h1> Note </h1>
+
+This option is only available for 1st party Microsoft applications who have access to the msi data-plane.
+
+</aside>
+
+#### General
+This authentication type is similar to user assigned managed identity authentication combined with client certificate
+authentication. As a 1st party Microsoft application, one has access to pull a user assigned managed identity's backing
+certificate information from the MSI data plane. Using this data, a user can authenticate to Azure Cloud.
+
+#### Prerequisites
+A JSON file with information from the user assigned managed identity. It should be in this format:
+```json
+        {
+            "client_id": "0998...",
+            "client_secret": "MIIKUA...",
+            "client_secret_url": "https://control...",
+            "tenant_id": "93b...",
+            "object_id": "ae...",
+            "resource_id": "/subscriptions/...",
+            "authentication_endpoint": "https://login.microsoftonline.com/",
+            "mtls_authentication_endpoint": "https://login.microsoftonline.com/",
+            "not_before": "2025-02-07T13:29:00Z",
+            "not_after": "2025-05-08T13:29:00Z",
+            "renew_after": "2025-03-25T13:29:00Z",
+            "cannot_renew_after": "2025-08-06T13:29:00Z"
+        }
+```
+
+Note, the client secret should be a base64 encoded certificate.
+
+The steps to get this information from the MSI data plane are as follows:
+1. Make an unauthenticated GET or POST (no Authorization request headers) on the x-ms-identity-url received from ARM to get the token authority and, on older api versions, resource.
+2. Get an Access Token from Azure AD using your Resource Provider applicationId and Certificate. The applicationId should match the one you added to your manifest. The response should give you an access token.
+3. Perform a GET or POST to MSI on the same URL from earlier to get the Credentials using this bearer token.
+
+#### Creating the AzureClusterIdentity
+
+The corresponding values should be used to create an `AzureClusterIdentity` resource:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: example-identity
+  namespace: default
+spec:
+  type: UserAssignedIdentityCredential
+  tenantID: <azure-tenant-id>
+  clientID: <client-id-of-user-assigned-identity>
+  userAssignedIdentityCredentialsPath: <path-to-JSON-file-with-mi-certifcate-information>
+  userAssignedIdentityCredentialsCloudType: "AzurePublicCloud"
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
 
 ## Azure Host Identity
 
