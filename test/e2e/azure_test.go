@@ -1230,74 +1230,22 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
+					// Peer the VNets of the management cluster and workload cluster
+					// Create a private DNS zone for the fqdn of the workload cluster's API Server ILB and link them to both
+					// the management cluster and workload cluster's VNets
+					// enable TCP ports 22, 443, 5986 and 6443 on the management cluster's NSG
+					// enable UDP ports 53 and 123 on the management cluster's NSG
+					// PeerVnets(ctx, func() AzureAPIServerILBSpecInput {
+					// 	return AzureAPIServerILBSpecInput{
+					// 		BootstrapClusterProxy:                   bootstrapClusterProxy,
+					// 		Cluster:                                 result.Cluster,
+					// 		Namespace:                               namespace,
+					// 		ClusterName:                             clusterName,
+					// 		WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					// 		TemplateHasPrivateIPCustomDNSResolution: true,
+					// 	}
+					// })
 				}),
-				withPreWaitForCluster(func() {
-					// TODO: only invoke this in local runs
-					// Peer VNets of the mgmt cluster and workload cluster
-					PeerVnets(ctx, func() AzureAPIServerILBSpecInput {
-						return AzureAPIServerILBSpecInput{
-							BootstrapClusterProxy:                   bootstrapClusterProxy,
-							Cluster:                                 result.Cluster,
-							Namespace:                               namespace,
-							ClusterName:                             clusterName,
-							WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-							TemplateHasPrivateIPCustomDNSResolution: true,
-						}
-					})
-				}),
-			), result)
-
-			By("Probing workload cluster with APIServerILB feature gate", func() {
-				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
-					return AzureAPIServerILBSpecInput{
-						BootstrapClusterProxy:                   bootstrapClusterProxy,
-						Cluster:                                 result.Cluster,
-						Namespace:                               namespace,
-						ClusterName:                             clusterName,
-						ExpectedWorkerNodes:                     result.ExpectedWorkerNodes(),
-						WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-						TemplateHasPrivateIPCustomDNSResolution: true,
-					}
-				})
-			})
-
-			By("PASSED!")
-		})
-	})
-
-	Context("Local test: Creating a self-managed VM based cluster using API Server ILB feature gate and fully spec-ed out APIServer ILB template [OPTIONAL][API-Server-ILB]", func() {
-		It("with three controlplane node and three worker nodes", func() {
-			clusterName = getClusterName(clusterNamePrefix, "apiserver-ilb")
-
-			// Set the environment variables required for the API Server ILB feature gate
-			Expect(os.Setenv("EXP_APISERVER_ILB", "true")).To(Succeed())
-			Expect(os.Setenv("AZURE_INTERNAL_LB_PRIVATE_IP", "40.0.0.100")).To(Succeed())
-			Expect(os.Setenv("AZURE_VNET_CIDR", "40.0.0.0/8")).To(Succeed())
-			Expect(os.Setenv("AZURE_CP_SUBNET_CIDR", "40.0.0.0/16")).To(Succeed())
-			Expect(os.Setenv("AZURE_NODE_SUBNET_CIDR", "40.1.0.0/16")).To(Succeed())
-
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("apiserver-ilb"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
-				withWorkerMachineCount(2),
-				withControlPlaneInterval(specName, "wait-control-plane-ha"),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				}),
-				// withPreWaitForCluster(func() {
-				// }),
 			), result)
 
 			By("Probing workload cluster with APIServerILB feature gate", func() {
