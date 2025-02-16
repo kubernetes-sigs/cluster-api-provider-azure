@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
@@ -227,7 +228,7 @@ func (s *ManagedControlPlaneScope) SubscriptionID() string {
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ManagedControlPlaneScope) BaseURI() string {
-	return s.AzureClients.ResourceManagerEndpoint
+	return s.AzureClients.CloudSettings.Services[cloud.ResourceManager].Endpoint
 }
 
 // PatchObject persists the cluster configuration and status.

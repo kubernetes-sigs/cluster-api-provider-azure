@@ -26,7 +26,6 @@ import (
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -56,6 +55,7 @@ import (
 const fakeClientID = "fake-client-id"
 const fakeTenantID = "fake-tenant-id"
 const fakeSubscriptionID = "123"
+const SubscriptionID = "AZURE_SUBSCRIPTION_ID"
 
 func specToString(spec any) string {
 	var sb strings.Builder
@@ -875,9 +875,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -949,9 +949,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -1041,9 +1041,9 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -1341,9 +1341,9 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -1422,9 +1422,9 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -1718,9 +1718,9 @@ func TestAzureBastionSpec(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: "123",
+							SubscriptionID: "123",
 						},
 					},
 				},
@@ -3174,9 +3174,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: tc.azureCluster.Spec.SubscriptionID,
+							SubscriptionID: tc.azureCluster.Spec.SubscriptionID,
 						},
 					},
 				},
@@ -3496,9 +3496,9 @@ func TestVNetPeerings(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
+					environmentSettings: environmentSettings{
 						Values: map[string]string{
-							auth.SubscriptionID: tc.subscriptionID,
+							SubscriptionID: tc.subscriptionID,
 						},
 					},
 				},

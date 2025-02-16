@@ -29,8 +29,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -780,9 +778,9 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -826,9 +824,9 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -889,10 +887,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType: azure.PublicCloudName,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
@@ -937,13 +933,6 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -975,10 +964,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType: azure.PublicCloudName,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
@@ -1024,13 +1011,6 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -1060,13 +1040,6 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -1096,13 +1069,6 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -1146,10 +1112,8 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType: azure.PublicCloudName,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{

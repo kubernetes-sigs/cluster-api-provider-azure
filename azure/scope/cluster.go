@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -128,7 +129,7 @@ type ClusterCache struct {
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ClusterScope) BaseURI() string {
-	return s.ResourceManagerEndpoint
+	return s.AzureClients.CloudSettings.Services[cloud.ResourceManager].Endpoint
 }
 
 // GetClient returns the controller-runtime client.
@@ -893,7 +894,7 @@ func (s *ClusterScope) GenerateFQDN(ipName string) string {
 		return ""
 	}
 	hash := fmt.Sprintf("%x", h.Sum32())
-	return strings.ToLower(fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix))
+	return strings.ToLower(fmt.Sprintf("%s-%s.%s", s.ClusterName(), hash, s.Location()))
 }
 
 // GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
@@ -904,7 +905,7 @@ func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 		return "", ""
 	}
 	ipName := fmt.Sprintf("%s-%x", s.ClusterName(), h.Sum32())
-	fqdn := fmt.Sprintf("%s.%s.%s", ipName, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
+	fqdn := fmt.Sprintf("%s.%s", ipName, s.Location())
 	return ipName, fqdn
 }
 
