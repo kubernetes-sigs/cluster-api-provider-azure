@@ -48,6 +48,7 @@ type AzureClusterClassSpec struct {
 	// - GermanCloud: "AzureGermanCloud"
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	// - StackCloud: "AzureStackCloud"
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
@@ -185,6 +186,7 @@ type AzureManagedControlPlaneClassSpec struct {
 	// - ChinaCloud: "AzureChinaCloud"
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	//
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does

@@ -44,6 +44,8 @@ const (
 	ChinaCloudName = "AzureChinaCloud"
 	// USGovernmentCloudName is the name of the Azure US Government cloud.
 	USGovernmentCloudName = "AzureUSGovernmentCloud"
+	// StackCloudName is the name for Azure Stack hybrid cloud environments.
+	StackCloudName = "AzureStackCloud"
 )
 
 const (
