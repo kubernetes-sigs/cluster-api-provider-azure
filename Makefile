@@ -726,10 +726,10 @@ test-cover: test ## Run tests with code coverage and generate reports.
 .PHONY: create-bootstrap
 create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
 	if [ "$(MGMT_CLUSTER_TYPE)" == "aks" ]; then \
-		MGMT_CLUSTER_NAME=capz-e2e-6 \
-		AKS_RESOURCE_GROUP=capz-e2e-6 \
-		AKS_MGMT_VNET_NAME=capz-e2e-6-mgmt-vnet \
-		AKS_MGMT_SUBNET_NAME=capz-e2e-6-mgmt-subnet \
+		MGMT_CLUSTER_NAME=capz-e2e-9 \
+		AKS_RESOURCE_GROUP=capz-e2e-9 \
+		AKS_MGMT_VNET_NAME=capz-e2e-9-mgmt-vnet \
+		AKS_MGMT_SUBNET_NAME=capz-e2e-9-mgmt-subnet \
 		./scripts/aks-as-mgmt.sh; \
 	else \
 		KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh; \
