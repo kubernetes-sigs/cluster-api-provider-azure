@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -35,7 +35,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 		{
 			name: "Should set all values correctly",
 			pool: &asocontainerservicev1hub.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1hub.ManagedClusters_AgentPool_Spec{
+				Spec: asocontainerservicev1hub.ManagedClustersAgentPool_Spec{
 					AzureName:           "agentpool1",
 					VmSize:              ptr.To("Standard_D2s_v3"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),

@@ -66,7 +66,7 @@ func (s *NatGatewaySpec) Parameters(_ context.Context, existingNatGateway *asone
 	natGateway.Spec.Sku = &asonetworkv1.NatGatewaySku{
 		Name: ptr.To(asonetworkv1.NatGatewaySku_Name_Standard),
 	}
-	natGateway.Spec.PublicIpAddresses = []asonetworkv1.ApplicationGatewaySubResource{
+	natGateway.Spec.PublicIpAddresses = []asonetworkv1.SubResource{
 		{
 			Reference: &genruntime.ResourceReference{
 				ARMID: azure.PublicIPID(s.SubscriptionID, s.ResourceGroup, s.NatGatewayIP.Name),
