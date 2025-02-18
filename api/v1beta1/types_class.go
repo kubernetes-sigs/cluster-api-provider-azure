@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -541,14 +542,18 @@ func (acc *AzureClusterClassSpec) setDefaults() {
 
 // setDefaults sets default values for VnetClassSpec.
 func (vc *VnetClassSpec) setDefaults() {
+	fmt.Println("in AzureCluster's VnetClassSpec()")
 	if len(vc.CIDRBlocks) == 0 {
+		fmt.Println("in AzureCluster's VnetClassSpec() setting default VNetCIDR")
 		vc.CIDRBlocks = []string{DefaultVnetCIDR}
 	}
 }
 
 // setDefaults sets default values for SubnetClassSpec.
 func (sc *SubnetClassSpec) setDefaults(cidr string) {
+	fmt.Println("in AzureCluster's SubnetClassSpec()")
 	if len(sc.CIDRBlocks) == 0 {
+		fmt.Println("in AzureCluster's SubnetClassSpec() setting CIDRBlocks")
 		sc.CIDRBlocks = []string{cidr}
 	}
 }
