@@ -58,6 +58,12 @@ repos:
         stages: [pre-commit]
         language: system
         require_serial: true
+      - id: make-verify-codespell
+        name: Run make verify-codespell
+        entry: make verify-codespell
+        stages: [ pre-push ]
+        language: system
+        require_serial: true
       - id: make-lint-fix
         name: Run make lint-fix
         entry: make lint-fix
