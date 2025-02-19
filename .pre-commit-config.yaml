@@ -58,6 +58,12 @@ repos:
         stages: [pre-commit]
         language: system
         require_serial: true
+      - id: make-lint-fix
+        name: Run make lint-fix
+        entry: make lint-fix
+        stages: [pre-push]
+        language: system
+        require_serial: true
       - id: make-conversions
         name: Run make verify-conversions
         entry: make verify-conversions
