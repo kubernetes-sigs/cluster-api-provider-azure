@@ -8,5 +8,5 @@ spec:
     spec:
       containers:
       # Change the value of image field below to your controller image URL
-      - image: nhkregistry.azurecr.io/cluster-api-azure-controller-amd64:20250215021135
+      - image: nhkregistry.azurecr.io/cluster-api-azure-controller-amd64:20250218235942
         name: manager

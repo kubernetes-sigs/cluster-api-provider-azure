@@ -473,33 +473,27 @@ func PeerVnets(ctx context.Context, inputGetter func() AzureAPIServerILBSpecInpu
 	input = inputGetter()
 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 
-	peer_vnets_script := e2eConfig.GetVariable(PeerVNetsScriptPath)
-	Expect(peer_vnets_script).NotTo(BeEmpty(), "PEER_VNETS_SCRIPT_PATH env var is required")
-	Expect(len(peer_vnets_script)).To(BeNumerically(">", 0), "PEER_VNETS_SCRIPT_PATH should have length greater than 0")
+	peerVnetsScript := e2eConfig.GetVariable(PeerVNetsScriptPath)
+	Expect(peerVnetsScript).NotTo(BeEmpty(), "PEER_VNETS_SCRIPT_PATH env var is required")
 
-	// shell commands
-	peer_command := "CLUSTER_NAME=" + input.ClusterName + " source " + peer_vnets_script + " && peer_vnets"
-	cmd := exec.Command("sh", "-c", peer_command)
-	Logf("cmd to be run %v", cmd)
+	// Execute peer_vnets directly instead of sourcing the script
+	cmd := exec.CommandContext(ctx, peerVnetsScript)
 
-	// ------------------------ //
+	// Set the required CLUSTER_NAME environment variable
+	cmd.Env = append(os.Environ(), fmt.Sprintf("CLUSTER_NAME=%s", input.ClusterName))
+
 	var stdoutBuf, stderrBuf bytes.Buffer
-
-	// Capture stdout, stderr separately
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
+
 	err := cmd.Run()
 
-	// Convert buffers to string
-	stdoutStr := stdoutBuf.String()
-	stderrStr := stderrBuf.String()
-
-	Logf("Stdout: %s", stdoutStr)
-	Logf("Stderr: %s", stderrStr)
+	// Always log the output for debugging purposes
+	Logf("Peer VNets stdout: %s", stdoutBuf.String())
+	Logf("Peer VNets stderr: %s", stderrBuf.String())
 
 	if err != nil {
-		// Command failed (non-zero exit code or something else)
-		Logf("Error: %v", err)
+		Fail(fmt.Sprintf("Failed to peer VNets: %v", err))
 	}
 
 	/*
