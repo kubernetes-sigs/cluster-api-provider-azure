@@ -18,7 +18,7 @@ providers:
     versions:
     - name: v1.8.9 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
       value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.9/core-components.yaml"
-      type: "url"
+      type: "url" # no-op
       contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
