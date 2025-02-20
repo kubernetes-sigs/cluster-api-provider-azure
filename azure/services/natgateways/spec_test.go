@@ -62,7 +62,7 @@ var (
 			Owner: &genruntime.KnownResourceReference{
 				Name: "my-rg",
 			},
-			PublicIpAddresses: []asonetworkv1.SubResource{
+			PublicIpAddresses: []asonetworkv1.ApplicationGatewaySubResource{
 				{
 					Reference: &genruntime.ResourceReference{
 						ARMID: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-natgateway-ip",
@@ -83,7 +83,7 @@ var (
 			Location:             locationPtr,
 			Name:                 ptr.To("my-natgateway"),
 			ProvisioningState:    ptr.To(asonetworkv1.ApplicationGatewayProvisioningState_STATUS_Succeeded),
-			PublicIpAddresses: []asonetworkv1.SubResource_STATUS{
+			PublicIpAddresses: []asonetworkv1.ApplicationGatewaySubResource_STATUS{
 				{
 					Id: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-natgateway-ip"),
 				},

@@ -83,7 +83,7 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 			},
 			expected: []*unstructured.Unstructured{
 				apUnstructured(g, &asocontainerservicev1.ManagedClustersAgentPool{
-					Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+					Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 						OrchestratorVersion: ptr.To("capi k8s version"),
 						Count:               ptr.To(1),
 					},
@@ -130,12 +130,12 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("user k8s version"),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("user k8s version"),
 				},
 			},
@@ -152,12 +152,12 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: nil,
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("capi k8s version"),
 				},
 			},
@@ -174,12 +174,12 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("capi k8s version"),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("capi k8s version"),
 				},
 			},
@@ -199,7 +199,7 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					OrchestratorVersion: ptr.To("user k8s version"),
 				},
 			},
@@ -333,7 +333,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			agentPool := &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					EnableAutoScaling: ptr.To(test.autoscaling),
 				},
 			}
@@ -369,12 +369,12 @@ func TestSetAgentPoolCount(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(2),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(2),
 				},
 			},
@@ -392,17 +392,17 @@ func TestSetAgentPoolCount(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: nil,
 				},
 			},
 			existingAgentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Status: asocontainerservicev1.ManagedClustersAgentPool_STATUS{
+				Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 					Count: ptr.To(2),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: nil,
 				},
 			},
@@ -415,12 +415,12 @@ func TestSetAgentPoolCount(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: nil,
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(1),
 				},
 			},
@@ -433,12 +433,12 @@ func TestSetAgentPoolCount(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(1),
 				},
 			},
 			expected: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(1),
 				},
 			},
@@ -454,7 +454,7 @@ func TestSetAgentPoolCount(t *testing.T) {
 				},
 			},
 			agentPool: &asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					Count: ptr.To(2),
 				},
 			},

@@ -58,7 +58,7 @@ func TestParameters(t *testing.T) {
 			},
 			existing: nil,
 			expected: &asonetworkv1.VirtualNetworksSubnet{
-				Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
 					AzureName: "subnet",
 					Owner: &genruntime.KnownResourceReference{
 						Name: "vnet",
@@ -110,12 +110,12 @@ func TestParameters(t *testing.T) {
 				},
 			},
 			existing: &asonetworkv1.VirtualNetworksSubnet{
-				Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 					Id: ptr.To("status is preserved"),
 				},
 			},
 			expected: &asonetworkv1.VirtualNetworksSubnet{
-				Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
 					AzureName: "subnet",
 					Owner: &genruntime.KnownResourceReference{
 						Name: "vnet",
@@ -144,7 +144,7 @@ func TestParameters(t *testing.T) {
 						},
 					},
 				},
-				Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 					Id: ptr.To("status is preserved"),
 				},
 			},

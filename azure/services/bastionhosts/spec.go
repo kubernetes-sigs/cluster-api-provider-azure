@@ -78,12 +78,12 @@ func (s *AzureBastionSpec) Parameters(_ context.Context, existingBastionHost *as
 	bastionHost.Spec.IpConfigurations = []asonetworkv1.BastionHostIPConfiguration{
 		{
 			Name: ptr.To(bastionHostIPConfigName),
-			Subnet: &asonetworkv1.SubResource{
+			Subnet: &asonetworkv1.BastionHostSubResource{
 				Reference: &genruntime.ResourceReference{
 					ARMID: s.SubnetID,
 				},
 			},
-			PublicIPAddress: &asonetworkv1.SubResource{
+			PublicIPAddress: &asonetworkv1.BastionHostSubResource{
 				Reference: &genruntime.ResourceReference{
 					ARMID: s.PublicIPID,
 				},

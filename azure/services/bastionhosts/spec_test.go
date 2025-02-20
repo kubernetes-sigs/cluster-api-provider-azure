@@ -46,12 +46,12 @@ var (
 			IpConfigurations: []asonetworkv1.BastionHostIPConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-%s", fakeAzureBastionSpec1.Name, "bastionIP")),
-					Subnet: &asonetworkv1.SubResource{
+					Subnet: &asonetworkv1.BastionHostSubResource{
 						Reference: &genruntime.ResourceReference{
 							ARMID: fakeAzureBastionSpec1.SubnetID,
 						},
 					},
-					PublicIPAddress: &asonetworkv1.SubResource{
+					PublicIPAddress: &asonetworkv1.BastionHostSubResource{
 						Reference: &genruntime.ResourceReference{
 							ARMID: fakeAzureBastionSpec1.PublicIPID,
 						},

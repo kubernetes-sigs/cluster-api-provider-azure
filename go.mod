@@ -18,7 +18,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel v0.4.0
-	github.com/Azure/azure-service-operator/v2 v2.11.0
+	github.com/Azure/azure-service-operator/v2 v2.9.0
 	github.com/Azure/go-autorest/autorest v0.11.30
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13
 	github.com/asaskevich/govalidator/v11 v11.0.2-0.20250122183457-e11347878e23
@@ -53,7 +53,7 @@ require (
 	k8s.io/component-base v0.31.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubectl v0.30.3
-	k8s.io/utils v0.0.0-20240821151609-f90d01438635
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/cloud-provider-azure v1.30.4
 	sigs.k8s.io/cluster-api v1.9.4
 	sigs.k8s.io/cluster-api/test v1.9.4
@@ -63,7 +63,6 @@ require (
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
-	cel.dev/expr v0.18.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1 // indirect
@@ -72,16 +71,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.6.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/jellydator/ttlcache/v3 v3.3.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/samber/lo v1.47.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
@@ -144,7 +141,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/cel-go v0.22.0 // indirect
+	github.com/google/cel-go v0.20.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-github/v53 v53.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -197,7 +194,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
@@ -208,7 +205,7 @@ require (
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
-	golang.org/x/time v0.8.0 // indirect
+	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
@@ -222,7 +219,7 @@ require (
 	k8s.io/cli-runtime v0.30.3 // indirect
 	k8s.io/cloud-provider v0.30.2 // indirect
 	k8s.io/component-helpers v0.30.3 // indirect
-	k8s.io/kube-openapi v0.0.0-20240827152857-f7e401e7b4c2 // indirect
+	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
