@@ -45,10 +45,10 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().UpdateSubnetID("subnet", "id")
 		scope.EXPECT().UpdateSubnetCIDRs("subnet", []string{"cidr"})
 		subnet := &asonetworkv1.VirtualNetworksSubnet{
-			Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
+			Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
 				AzureName: "subnet",
 			},
-			Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+			Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 				Id:              ptr.To("id"),
 				AddressPrefixes: []string{"cidr"},
 			},

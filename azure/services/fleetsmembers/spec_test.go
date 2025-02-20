@@ -31,7 +31,7 @@ import (
 
 var (
 	fakeAzureFleetsMember = asocontainerservicev1.FleetsMember{
-		Spec: asocontainerservicev1.FleetsMember_Spec{
+		Spec: asocontainerservicev1.Fleets_Member_Spec{
 			AzureName: fakeAzureFleetsMemberSpec.Name,
 			Owner: &genruntime.KnownResourceReference{
 				ARMID: azure.FleetID(fakeAzureFleetsMemberSpec.SubscriptionID, fakeAzureFleetsMemberSpec.ManagerResourceGroup, fakeAzureFleetsMemberSpec.ManagerName),
@@ -51,7 +51,7 @@ var (
 		ManagerName:          "fake-manager-name",
 		ManagerResourceGroup: "fake-manager-resource-group",
 	}
-	fakeFleetsMemberStatus = asocontainerservicev1.FleetsMember_STATUS{
+	fakeFleetsMemberStatus = asocontainerservicev1.Fleets_Member_STATUS{
 		Name:              ptr.To(fakeAzureFleetsMemberSpec.Name),
 		ProvisioningState: ptr.To(asocontainerservicev1.FleetMemberProvisioningState_STATUS_Succeeded),
 	}

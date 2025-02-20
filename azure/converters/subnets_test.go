@@ -38,7 +38,7 @@ func TestGetSubnetAddresses(t *testing.T) {
 		{
 			name: "subnet with single address prefix",
 			subnet: asonetworkv1.VirtualNetworksSubnet{
-				Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 					AddressPrefix: ptr.To("test-address-prefix"),
 				},
 			},
@@ -47,7 +47,7 @@ func TestGetSubnetAddresses(t *testing.T) {
 		{
 			name: "subnet with multiple address prefixes",
 			subnet: asonetworkv1.VirtualNetworksSubnet{
-				Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 					AddressPrefixes: []string{
 						"test-address-prefix-1",
 						"test-address-prefix-2",

@@ -587,7 +587,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
-										Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 											AzureName: "no",
 										},
 									}),
@@ -616,7 +616,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
-										Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 											AzureName: "no",
 										},
 									}),
@@ -645,7 +645,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
-										Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 											AzureName: "azpool0",
 										},
 									}),
@@ -674,7 +674,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 							Resources: []runtime.RawExtension{
 								{
 									Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
-										Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+										Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 											AzureName: "azpool1",
 										},
 									}),
@@ -759,14 +759,14 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 		mc := &asocontainerservicev1.ManagedCluster{}
 		pools := []conversion.Convertible{
 			&asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					AzureName: "pool0",
 					MaxCount:  ptr.To(1),
 				},
 			},
 			// Not all pools have to be the same version, or the same version as the cluster.
 			&asocontainerservicev1preview.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1preview.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1preview.ManagedClusters_AgentPool_Spec{
 					AzureName:           "pool1",
 					MinCount:            ptr.To(2),
 					EnableCustomCATrust: ptr.To(true),
@@ -796,13 +796,13 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 		mc := &asocontainerservicev1preview.ManagedCluster{}
 		pools := []conversion.Convertible{
 			&asocontainerservicev1.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 					AzureName: "pool0",
 					MaxCount:  ptr.To(1),
 				},
 			},
 			&asocontainerservicev1preview.ManagedClustersAgentPool{
-				Spec: asocontainerservicev1preview.ManagedClustersAgentPool_Spec{
+				Spec: asocontainerservicev1preview.ManagedClusters_AgentPool_Spec{
 					AzureName:           "pool1",
 					MinCount:            ptr.To(2),
 					EnableCustomCATrust: ptr.To(true),

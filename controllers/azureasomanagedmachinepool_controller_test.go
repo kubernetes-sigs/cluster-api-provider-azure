@@ -314,13 +314,13 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "ap",
 				Namespace: cluster.Namespace,
 			},
-			Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+			Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 				AzureName: "pool1",
 				Owner: &genruntime.KnownResourceReference{
 					Name: asoManagedCluster.Name,
 				},
 			},
-			Status: asocontainerservicev1.ManagedClustersAgentPool_STATUS{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				Count: ptr.To(3),
 			},
 		}
@@ -456,14 +456,14 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "ap",
 				Namespace: cluster.Namespace,
 			},
-			Spec: asocontainerservicev1.ManagedClustersAgentPool_Spec{
+			Spec: asocontainerservicev1.ManagedClusters_AgentPool_Spec{
 				AzureName: "pool1",
 				Owner: &genruntime.KnownResourceReference{
 					Name: asoManagedCluster.Name,
 				},
 				EnableAutoScaling: ptr.To(true),
 			},
-			Status: asocontainerservicev1.ManagedClustersAgentPool_STATUS{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				Count: ptr.To(3),
 			},
 		}

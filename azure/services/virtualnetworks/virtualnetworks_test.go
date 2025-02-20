@@ -75,10 +75,10 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 						labels.OwnerNameLabel: existing.Name,
 					},
 				},
-				Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
 					AzureName: "azure-name",
 				},
-				Status: asonetworkv1.VirtualNetworksSubnet_STATUS{
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
 					AddressPrefixes: []string{"address prefixes"},
 				},
 			},
@@ -86,7 +86,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "other subnet",
 				},
-				Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
 					Owner: &genruntime.KnownResourceReference{
 						Name: "not this vnet",
 					},

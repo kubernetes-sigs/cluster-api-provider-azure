@@ -49,7 +49,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
 
 		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
-			Status: asocontainerservicev1.ManagedClustersAgentPool_STATUS{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				EnableAutoScaling: ptr.To(false),
 			},
 		}
@@ -67,7 +67,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().SetCAPIMachinePoolReplicas(ptr.To(1234))
 
 		managedCluster := &asocontainerservicev1.ManagedClustersAgentPool{
-			Status: asocontainerservicev1.ManagedClustersAgentPool_STATUS{
+			Status: asocontainerservicev1.ManagedClusters_AgentPool_STATUS{
 				EnableAutoScaling: ptr.To(true),
 				Count:             ptr.To(1234),
 			},
@@ -86,7 +86,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().SetCAPIMachinePoolReplicas(ptr.To(1234))
 
 		agentPool := &asocontainerservicev1preview.ManagedClustersAgentPool{
-			Status: asocontainerservicev1preview.ManagedClustersAgentPool_STATUS{
+			Status: asocontainerservicev1preview.ManagedClusters_AgentPool_STATUS{
 				EnableAutoScaling: ptr.To(true),
 				Count:             ptr.To(1234),
 			},
