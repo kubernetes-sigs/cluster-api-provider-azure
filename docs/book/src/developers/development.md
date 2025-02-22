@@ -156,11 +156,8 @@ development will span both CAPZ and CAPI, then follow the [CAPI and CAPZ instruc
 <aside class="note warning">
   <h2>Warning</h2>
   <p>
-    To use an internal load balancer (ILB) intra-cluster node-apiserver traffic in your workload cluster, follow the
-    instructions in the
-    <a href="#tilt-for-dev-using-internal-load-balancer-ilb-for-intra-cluster-node-apiserver-traffic">
-      Tilt for Dev: Internal LB for Cluster VNet Communication
-    </a> section.
+    To use an internal load balancer (ILB) for intra-cluster node-apiserver traffic in your workload cluster, please refer to the
+    <a href="./tilt-with-aks-as-mgmt-ilb.md">Tilt with AKS as Management Cluster</a> guide.
   </p>
 </aside>
 
@@ -261,6 +258,8 @@ make delete-workload-cluster
 > Check out the [self-managed](../self-managed/troubleshooting.md) and [managed](../managed/troubleshooting.md) troubleshooting guides for common errors you might run into.
 
 #### Tilt for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic
+
+
 
 This flow is for developers who want to leverage the internal load balancer for intra-cluster node-apiserver traffic.
 You can achieve this by setting the `EXP_APISERVER_ILB` environment variable to `true` in your shell (run `export EXP_APISERVER_ILB=true`) and then create the CAPZ management cluster.

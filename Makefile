@@ -753,6 +753,7 @@ kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
 .PHONY: aks-create
 aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	./scripts/aks-as-mgmt.sh
+	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
 
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
