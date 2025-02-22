@@ -50,10 +50,55 @@ if "allowed_contexts" in settings:
 if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
+# Helper function to update settings and environment variables
+def update_settings_and_env(source_settings):
+    source_dict = settings.get(source_settings, {})
+    os.environ.update(source_dict)
+
+    # Update settings with lowercase values
+    for key, value in source_dict.items():
+        # print("key: %s, value: %s" % (key, value))
+        if key.lower() in settings:
+            settings[key.lower()] = str(value)
+
+# Update environment variables with AKS as management cluster settings
+if "aks_as_mgmt_settings" in settings:
+    update_settings_and_env("aks_as_mgmt_settings")
+
+# kustomize_substitutions takes precedence over aks_as_mgmt_settings if both are set
+if "kustomize_substitutions" in settings:
+    update_settings_and_env("kustomize_substitutions")
+
+# Pretty print settings
+def pretty_print_dict(d, indent=0):
+    for key, value in d.items():
+        indent_str = " " * indent
+        value_type = str(type(value))
+        
+        if value_type == "dict":
+            print(indent_str + str(key) + ":")
+            pretty_print_dict(value, indent + 2)
+        elif value_type == "list":
+            print(indent_str + str(key) + ":")
+            for item in value:
+                if str(type(item)) == "dict":
+                    pretty_print_dict(item, indent + 2)
+                else:
+                    print(indent_str + "  - " + str(item))
+        else:
+            print(indent_str + str(key) + ": " + str(value))
+
+print("\n=== Active Tilt Configuration Settings ===")
+pretty_print_dict(settings)
+print("=======================================\n")
+
 os_arch = str(local("go env GOARCH")).rstrip("\n")
 # set os_arch to amd64 if using AKS as management cluster
-if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", "") and settings.get("subscription-type", "") == "msft":
-    print("Using AKS as management cluster for corporte subscription and setting os_arch to amd64")
+if "aks_as_mgmt_settings" in settings:
+    YELLOW = "\033[1;33m"
+    RESET = "\033[0m"
+    print("\n" + YELLOW + "ARCHITECTURE OVERRIDE: Using AKS as management cluster requires CAPZ to be built for amd64 architecture." + RESET)
+    print(YELLOW + "Ignoring local GOARCH output and forcing CAPZ's os_arch to amd64" + RESET + "\n")
     os_arch = "amd64"
 
 # deploy CAPI
@@ -75,7 +120,6 @@ def deploy_capi():
 # deploy CAAPH
 def deploy_caaph():
     version = settings.get("caaph_version")
-
     caaph_uri = "https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/{}/addon-components.yaml".format(version)
     cmd = "curl --retry 3 -sSL {} | {} | {} apply -f -".format(caaph_uri, envsubst_cmd, kubectl_cmd)
     local(cmd, quiet = True)
@@ -247,9 +291,9 @@ def capz():
         entrypoint.extend(extra_args)
 
     # use the user REGISTRY if set, otherwise use the default
-    if settings.get("kustomize_substitutions", {}).get("REGISTRY", "") != "":
-        registry = settings.get("kustomize_substitutions", {}).get("REGISTRY", "")
-        print("Using REGISTRY: " + registry + " from tilt-settings.yaml")
+    if os.getenv("REGISTRY", "") != "":
+        registry = os.getenv("REGISTRY", "")
+        print("\nUsing REGISTRY: " + registry + "\n")
         image = registry + "/cluster-api-azure-controller"
     else:
         image = "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller"
@@ -320,7 +364,7 @@ def flavors():
 
     delete_all_workload_clusters = kubectl_cmd + " delete clusters --all --wait=false;"
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
         delete_all_workload_clusters += clear_aks_vnet_peerings()
 
     local_resource(
@@ -382,15 +426,20 @@ def deploy_worker_templates(template, substitutions):
         # AKS version support is usually a bit behind CAPI version, so use an older version
         substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
 
+    total_nodes = 0
     for substitution in substitutions:
         value = substitutions[substitution]
+        if substitution == "CONTROL_PLANE_MACHINE_COUNT" or substitution == "WORKER_MACHINE_COUNT":
+            count = yaml.count("${" + substitution + "}")
+            total_nodes += int(value) * count
         yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
     flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); "
+    settings.setdefault("total_nodes", {})[flavor_name] = total_nodes
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", "") and settings.get("subscription-type", "") == "msft":
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
         apiserver_lb_private_ip = os.getenv("AZURE_INTERNAL_LB_PRIVATE_IP", "")
         if "windows-apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
             flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"40.0.11.100\"; "
@@ -399,7 +448,7 @@ def deploy_worker_templates(template, substitutions):
 
     flavor_cmd += "export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; "
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", "") and settings.get("subscription-type", "") == "msft":
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
         flavor_cmd += peer_vnets()
     
     # wait for kubeconfig to be available
@@ -426,11 +475,13 @@ def deploy_worker_templates(template, substitutions):
         ''' + kubectl_cmd + ''' --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -;
         '''
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", "") and settings.get("subscription-type", "") == "msft":
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
         flavor_cmd += create_private_dns_zone()
 
     flavor_cmd += get_addons(flavor_name)
-    flavor_cmd += check_nodes_ready()
+    if settings.get("total_nodes", {}).get(flavor_name, 0) > 0:
+        flavor_cmd += check_nodes_ready(flavor_name)
+    flavor_cmd += "echo \"Cluster ${CLUSTER_NAME} created, don't forget to delete\"; "
 
     local_resource(
         name = flavor_name,
@@ -494,7 +545,6 @@ def waitforsystem():
 
 def peer_vnets():
     # TODO: check for az cli to be installed in local
-    # wait for AKS VNet to be in the state created
     peering_cmd = '''
     echo "--------Peering VNETs--------";
     az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
@@ -517,7 +567,6 @@ def peer_vnets():
     return peering_cmd
 
 def create_private_dns_zone():
-
     create_private_dns_zone_cmd = '''
     echo "--------Creating private DNS zone--------";
     az network private-dns zone create --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --only-show-errors --output none;
@@ -538,8 +587,8 @@ def create_private_dns_zone():
 
     return create_private_dns_zone_cmd
 
-def check_nodes_ready():
-    total_nodes = int(settings.get("control_plane_machine_count")) + int(settings.get("worker_machine_count"))
+def check_nodes_ready(flavor_name):
+    total_nodes = settings.get("total_nodes", {}).get(flavor_name, 0)
     check_nodes_ready_cmd = '''
     echo "--------Checking if all nodes are available and ready--------";
     echo "Waiting for ''' + str(total_nodes) + ''' nodes to be available...";
@@ -566,7 +615,6 @@ def check_nodes_ready():
     READY_NODES=$(''' + kubectl_cmd + ''' get nodes --kubeconfig=./${CLUSTER_NAME}.kubeconfig -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | tr ' ' '\\n' | grep -c "True");
     if [ "$READY_NODES" -eq ''' + str(total_nodes) + ''' ]; then
         echo "All ''' + str(total_nodes) + ''' nodes are ready!";
-        echo "Cluster ${CLUSTER_NAME} created, don't forget to delete";
     else
         echo "Expected ''' + str(total_nodes) + ''' nodes to be ready but got $READY_NODES ready nodes";
         exit 1;
@@ -575,7 +623,6 @@ def check_nodes_ready():
     return check_nodes_ready_cmd
 
 def clear_aks_vnet_peerings():
-    # Search the AKS resource group for the AKS MGMT VNET
     delete_peering_cmd = '''
     echo "--------Clearing AKS MGMT VNETs Peerings--------";
     az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
@@ -591,9 +638,6 @@ def clear_aks_vnet_peerings():
 ##############################
 # Actual work happens here
 ##############################
-
-# os.putenv("CLUSTER_NAME", "apiserver-ilb-25201")
-# print(check_nodes_ready())
 
 validate_auth()
 
