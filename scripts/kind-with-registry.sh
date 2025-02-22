@@ -17,6 +17,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+#TODO: add logic to clear aks_as_mgmt_settings from tilt-settings.yaml
 # Install kubectl and kind
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 # shellcheck source=hack/ensure-azcli.sh
