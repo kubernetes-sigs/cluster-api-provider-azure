@@ -1,5 +1,7 @@
 # -*- mode: Python -*-
 
+load("ext://cert_manager", "deploy_cert_manager")
+
 # Pre-requisite make targets "install-tools" and "kind-create" ensure that the below tools are already installed.
 envsubst_cmd = "./hack/tools/bin/envsubst"
 kubectl_cmd = "./hack/tools/bin/kubectl"
@@ -50,9 +52,52 @@ if "allowed_contexts" in settings:
 if "default_registry" in settings:
     default_registry(settings.get("default_registry"))
 
+# Helper function to update settings and environment variables
+def update_settings_and_env(source_settings):
+    source_dict = settings.get(source_settings, {})
+    os.environ.update(source_dict)
+
+    # Update settings with lowercase values
+    for key, value in source_dict.items():
+        # print("key: %s, value: %s" % (key, value))
+        if key.lower() in settings:
+            settings[key.lower()] = str(value)
+
+# Update environment variables with AKS as management cluster settings
+if "aks_as_mgmt_settings" in settings:
+    update_settings_and_env("aks_as_mgmt_settings")
+
+# kustomize_substitutions takes precedence over aks_as_mgmt_settings if both are set
+if "kustomize_substitutions" in settings:
+    update_settings_and_env("kustomize_substitutions")
+
+# Pretty print settings
+def pretty_print_dict(d, indent = 0):
+    for key, value in d.items():
+        indent_str = " " * indent
+        value_type = str(type(value))
+
+        if value_type == "dict":
+            print(indent_str + str(key) + ":")
+            pretty_print_dict(value, indent + 2)
+        elif value_type == "list":
+            print(indent_str + str(key) + ":")
+            for item in value:
+                if str(type(item)) == "dict":
+                    pretty_print_dict(item, indent + 2)
+                else:
+                    print(indent_str + "  - " + str(item))
+        else:
+            print(indent_str + str(key) + ": " + str(value))
+
 os_arch = str(local("go env GOARCH")).rstrip("\n")
-if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
-    print("Using AKS as management cluster, setting os_arch to amd64")
+
+# set os_arch to amd64 if using AKS as management cluster
+if "aks_as_mgmt_settings" in settings and os_arch != "amd64":
+    YELLOW = "\033[1;33m"
+    RESET = "\033[0m"
+    print("\n" + YELLOW + "ARCHITECTURE OVERRIDE: Using AKS as management cluster requires CAPZ to be built for amd64 architecture." + RESET)
+    print(YELLOW + "Ignoring local GOARCH output and forcing CAPZ's os_arch to amd64" + RESET + "\n")
     os_arch = "amd64"
 
 # deploy CAPI
@@ -74,7 +119,6 @@ def deploy_capi():
 # deploy CAAPH
 def deploy_caaph():
     version = settings.get("caaph_version")
-
     caaph_uri = "https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/{}/addon-components.yaml".format(version)
     cmd = "curl --retry 3 -sSL {} | {} | {} apply -f -".format(caaph_uri, envsubst_cmd, kubectl_cmd)
     local(cmd, quiet = True)
@@ -246,9 +290,9 @@ def capz():
         entrypoint.extend(extra_args)
 
     # use the user REGISTRY if set, otherwise use the default
-    if settings.get("kustomize_substitutions", {}).get("REGISTRY", "") != "":
-        registry = settings.get("kustomize_substitutions", {}).get("REGISTRY", "")
-        print("Using REGISTRY: " + registry + " from tilt-settings.yaml")
+    if os.getenv("REGISTRY", "") != "":
+        registry = os.getenv("REGISTRY", "")
+        print("\nUsing REGISTRY: " + registry + "\n")
         image = registry + "/cluster-api-azure-controller"
     else:
         image = "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller"
@@ -314,12 +358,14 @@ def flavors():
     template_list = [item for item in listdir("./templates")]
     template_list = [template for template in template_list if os.path.basename(template).endswith("yaml")]
 
+    if "total_nodes" not in settings:
+        settings["total_nodes"] = {}
     for template in template_list:
         deploy_worker_templates(template, substitutions)
 
     delete_all_workload_clusters = kubectl_cmd + " delete clusters --all --wait=false;"
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
         delete_all_workload_clusters += clear_aks_vnet_peerings()
 
     local_resource(
@@ -381,43 +427,64 @@ def deploy_worker_templates(template, substitutions):
         # AKS version support is usually a bit behind CAPI version, so use an older version
         substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
 
+    total_nodes = 0
     for substitution in substitutions:
         value = substitutions[substitution]
+        if substitution == "CONTROL_PLANE_MACHINE_COUNT" or substitution == "WORKER_MACHINE_COUNT":
+            count = yaml.count(substitution)
+            total_nodes += int(value) * count
+
+        # NOTE: ENV Variables of type ${VAR:=default} are not replaced below.
         yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = shlex.quote(yaml)
     flavor_name = os.path.basename(flavor)
+    if total_nodes > 0:
+        settings["total_nodes"][flavor_name] = total_nodes
+
+    # Flavor command is built from here
     flavor_cmd = "RANDOM=$(bash -c 'echo $RANDOM'); "
 
-    apiserver_lb_private_ip = os.getenv("AZURE_INTERNAL_LB_PRIVATE_IP", "")
-    if "windows-apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
-        flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"40.0.11.100\"; "
-    elif "apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
-        flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"30.0.11.100\"; "
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate" and "aks" not in flavor_name:
+        apiserver_lb_private_ip = os.getenv("AZURE_INTERNAL_LB_PRIVATE_IP", "")
+        if "windows-apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
+            flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"40.0.11.100\"; "
+        elif "apiserver-ilb" in flavor and apiserver_lb_private_ip == "":
+            flavor_cmd += "export AZURE_INTERNAL_LB_PRIVATE_IP=\"30.0.11.100\"; "
 
     flavor_cmd += "export CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; echo " + yaml + "> ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply -f -; "
-    flavor_cmd += "echo \"Cluster ${CLUSTER_NAME} created, don't forget to delete\"; "
+
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate" and "aks" not in flavor_name:
+        flavor_cmd += peer_vnets()
 
     # wait for kubeconfig to be available
-    flavor_cmd += "echo \"Waiting for kubeconfig to be available\"; "
-    flavor_cmd += "until " + kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done; "
-    flavor_cmd += kubectl_cmd + " get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig; "
-    flavor_cmd += "chmod 600 ./${CLUSTER_NAME}.kubeconfig; "
-    flavor_cmd += "echo \"Kubeconfig for ${CLUSTER_NAME} created and saved in the local\"; "
-    flavor_cmd += "echo \"Waiting for ${CLUSTER_NAME} API Server to be accessible\"; "
-    flavor_cmd += "until " + kubectl_cmd + " --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done; "
-    flavor_cmd += "echo \"API Server of ${CLUSTER_NAME} is accessible\"; "
+    flavor_cmd += '''
+    echo "Waiting for kubeconfig to be available";
+    until ''' + kubectl_cmd + """ get secret ${CLUSTER_NAME}-kubeconfig > /dev/null 2>&1; do sleep 5; done;
+    """ + kubectl_cmd + ''' get secret ${CLUSTER_NAME}-kubeconfig -o jsonpath={.data.value} | base64 --decode > ./${CLUSTER_NAME}.kubeconfig;
+    chmod 600 ./${CLUSTER_NAME}.kubeconfig;
+    echo "Kubeconfig for ${CLUSTER_NAME} created and saved in the local";
+    echo "Waiting for ${CLUSTER_NAME} API Server to be accessible";
+    until ''' + kubectl_cmd + ''' --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done;
+    echo "API Server of ${CLUSTER_NAME} is accessible";
+    '''
 
     # copy the kubeadm configmap to the calico-system namespace.
     # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
     if "windows" in flavor_name:
-        flavor_cmd += "until " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done; "
-        flavor_cmd += kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | " + kubectl_cmd + " --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -; "
+        flavor_cmd += """
+        until """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done;
+        """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml |         """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -;
+        """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml |         sed 's/namespace: kube-system/namespace: calico-system/' |         """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -;
+        """
 
-    if "aks" in settings.get("kustomize_substitutions", {}).get("MGMT_CLUSTER_NAME", ""):
-        flavor_cmd += peer_vnets()
+    if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate" and "aks" not in flavor_name:
+        flavor_cmd += create_private_dns_zone()
 
     flavor_cmd += get_addons(flavor_name)
+    if settings.get("total_nodes").get(flavor_name, 0) > 0:
+        flavor_cmd += check_nodes_ready(flavor_name)
+    flavor_cmd += "echo \"Cluster ${CLUSTER_NAME} created, don't forget to delete\"; "
 
     local_resource(
         name = flavor_name,
@@ -481,70 +548,196 @@ def waitforsystem():
 
 def peer_vnets():
     # TODO: check for az cli to be installed in local
-    # wait for AKS VNet to be in the state created
     peering_cmd = '''
-    echo \"--------Peering VNETs--------\";
+    echo "--------Peering VNETs--------";
     az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
     export MGMT_VNET_ID=$(az network vnet show --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --query id --output tsv);
-    echo \" 1/8 ${AKS_MGMT_VNET_NAME} found \"; '''
+    echo "1/4 ${AKS_MGMT_VNET_NAME} found ";
 
-    # wait for workload VNet to be created
-    peering_cmd += '''
     az network vnet wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --created --timeout 180;
     export WORKLOAD_VNET_ID=$(az network vnet show --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-vnet --query id --output tsv);
-    echo \" 2/8 ${CLUSTER_NAME}-vnet found \"; '''
+    echo "2/4 ${CLUSTER_NAME}-vnet found ";
 
-    # peer mgmt vnet
-    peering_cmd += '''
     az network vnet peering create --name mgmt-to-${CLUSTER_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --remote-vnet \"${WORKLOAD_VNET_ID}\" --allow-vnet-access true --allow-forwarded-traffic true --only-show-errors --output none;
     az network vnet peering wait --name mgmt-to-${CLUSTER_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --created --timeout 300 --only-show-errors --output none;
-    echo \" 3/8 mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}\"; '''
+    echo "3/4 mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}";
 
-    # peer workload vnet
-    peering_cmd += '''
     az network vnet peering create --name ${CLUSTER_NAME}-to-mgmt --resource-group ${CLUSTER_NAME} --vnet-name ${CLUSTER_NAME}-vnet --remote-vnet \"${MGMT_VNET_ID}\" --allow-vnet-access true --allow-forwarded-traffic true --only-show-errors --output none;
     az network vnet peering wait --name ${CLUSTER_NAME}-to-mgmt --resource-group ${CLUSTER_NAME} --vnet-name ${CLUSTER_NAME}-vnet --created --timeout 300 --only-show-errors --output none;
-    echo \" 4/8 ${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet\"; '''
-
-    # create private DNS zone
-    peering_cmd += '''
-    az network private-dns zone create --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --only-show-errors --output none;
-    az network private-dns zone wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --created --timeout 300 --only-show-errors --output none;
-    echo \" 5/8 ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com private DNS zone created in ${CLUSTER_NAME}\"; '''
-
-    # link private DNS Zone to workload vnet
-    peering_cmd += '''
-    az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --virtual-network \"${WORKLOAD_VNET_ID}\" --registration-enabled false --only-show-errors --output none;
-    az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --created --timeout 300 --only-show-errors --output none;
-    echo \" 6/8 workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone\"; '''
-
-    # link private DNS Zone to mgmt vnet
-    peering_cmd += '''
-    az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --virtual-network \"${MGMT_VNET_ID}\" --registration-enabled false --only-show-errors --output none;
-    az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --created --timeout 300 --only-show-errors --output none;
-    echo \" 7/8 management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone\"; '''
-
-    # create private DNS zone record
-    peering_cmd += '''
-    az network private-dns record-set a add-record --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --record-set-name \"@\" --ipv4-address ${AZURE_INTERNAL_LB_PRIVATE_IP} --only-show-errors --output none;
-    echo \" 8/8 \"@\" private DNS zone record created to point ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com to ${AZURE_INTERNAL_LB_PRIVATE_IP}\"; '''
+    echo "4/4 ${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet";
+    '''
 
     return peering_cmd
 
-def clear_aks_vnet_peerings():
-    #
-    delete_peering_cmd = '''
-    echo \"--------Clearing AKS MGMT VNETs Peerings--------\";
-    az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
-    echo \" VNet ${AKS_MGMT_VNET_NAME} found \"; '''
+def create_private_dns_zone():
+    create_private_dns_zone_cmd = '''
+    echo "--------Creating private DNS zone--------";
+    az network private-dns zone create --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --only-show-errors --output none;
+    az network private-dns zone wait --resource-group ${CLUSTER_NAME} --name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --created --timeout 300 --only-show-errors --output none;
+    echo "1/4 ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com private DNS zone created in ${CLUSTER_NAME}";
 
-    # List all peering names and store them in an array
-    delete_peering_cmd += '''
-    PEERING_NAMES=$(az network vnet peering list --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --query \"[].name\" --output tsv);
-    for PEERING_NAME in ${PEERING_NAMES}; do echo \"Deleting peering: ${PEERING_NAME}\"; az network vnet peering delete --name ${PEERING_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME}; done;
-    echo \"All VNETs Peerings deleted in ${AKS_MGMT_VNET_NAME}\"; '''
+    az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --virtual-network \"${WORKLOAD_VNET_ID}\" --registration-enabled false --only-show-errors --output none;
+    az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name ${CLUSTER_NAME}-to-mgmt --created --timeout 300 --only-show-errors --output none;
+    echo "2/4 workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone";
+
+    az network private-dns link vnet create --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --virtual-network \"${MGMT_VNET_ID}\" --registration-enabled false --only-show-errors --output none;
+    az network private-dns link vnet wait --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --name mgmt-to-${CLUSTER_NAME} --created --timeout 300 --only-show-errors --output none;
+    echo "3/4 management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone";
+
+    az network private-dns record-set a add-record --resource-group ${CLUSTER_NAME} --zone-name ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com --record-set-name \"@\" --ipv4-address ${AZURE_INTERNAL_LB_PRIVATE_IP} --only-show-errors --output none;
+    echo "4/4 private DNS zone record @ created to point ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com to ${AZURE_INTERNAL_LB_PRIVATE_IP}";
+    '''
+
+    return create_private_dns_zone_cmd
+
+def check_nodes_ready(flavor_name):
+    total_nodes = settings.get("total_nodes", {}).get(flavor_name, 0)
+    check_nodes_ready_cmd = '''
+    echo "--------Checking if all nodes are available and ready--------";
+    echo "Waiting for ''' + str(total_nodes) + ''' nodes to be available...";
+    TIMEOUT=600  # 10 minutes timeout
+    START_TIME=$(date +%s);
+    while true; do
+        NODE_COUNT=$(''' + kubectl_cmd + ''' get nodes --kubeconfig=./${CLUSTER_NAME}.kubeconfig --no-headers | wc -l);
+        if [ "$NODE_COUNT" -eq ''' + str(total_nodes) + ''' ]; then
+            break;
+        fi;
+        CURRENT_TIME=$(date +%s);
+        ELAPSED_TIME=$((CURRENT_TIME - START_TIME));
+        if [ $ELAPSED_TIME -gt $TIMEOUT ]; then
+            echo "Timeout waiting for nodes to be available. Found $NODE_COUNT nodes, expected ''' + str(total_nodes) + '''";
+            exit 1;
+        fi;
+        echo "Found $NODE_COUNT nodes, waiting for ''' + str(total_nodes) + ''' nodes... (${ELAPSED_TIME}s elapsed)";
+        sleep 10;
+    done;
+
+    echo "All ''' + str(total_nodes) + ''' nodes are available, waiting for them to be ready...";
+    ''' + kubectl_cmd + """ wait --for=condition=ready node --all --kubeconfig=./${CLUSTER_NAME}.kubeconfig --timeout=600s;
+
+    READY_NODES=$(""" + kubectl_cmd + ''' get nodes --kubeconfig=./${CLUSTER_NAME}.kubeconfig -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | tr ' ' '\\n' | grep -c "True");
+    if [ "$READY_NODES" -eq ''' + str(total_nodes) + ''' ]; then
+        echo "All ''' + str(total_nodes) + ''' nodes are ready!";
+    else
+        echo "Expected ''' + str(total_nodes) + ''' nodes to be ready but got $READY_NODES ready nodes";
+        exit 1;
+    fi;
+    '''
+    return check_nodes_ready_cmd
+
+def clear_aks_vnet_peerings():
+    delete_peering_cmd = '''
+    echo "--------Clearing AKS MGMT VNETs Peerings--------";
+    az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
+    echo "VNet ${AKS_MGMT_VNET_NAME} found ";
+
+    PEERING_NAMES=$(az network vnet peering list --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME} --query "[].name" --output tsv);
+    for PEERING_NAME in ${PEERING_NAMES}; do echo "Deleting peering: ${PEERING_NAME}"; az network vnet peering delete --name ${PEERING_NAME} --resource-group ${AKS_RESOURCE_GROUP} --vnet-name ${AKS_MGMT_VNET_NAME}; done;
+    echo "All VNETs Peerings deleted in ${AKS_MGMT_VNET_NAME}";
+    '''
 
     return delete_peering_cmd
+
+# allow_tcp_udp_ports is a helper function to allow TCP ports: 443,6443 and UDP ports: 53 on the management cluster when using aks as management cluster.
+def allow_tcp_udp_ports():
+    allow_tcp_udp_ports_cmd = '''
+    echo "--------Allowing TCP ports: 443,6443 and UDP port: 53 on the management cluster's API server--------";
+
+    # Define ports to allow
+    TCP_PORTS="443 6443"
+    UDP_PORTS="53"
+    TIMEOUT=3000
+    SLEEP_INTERVAL=10
+
+    echo "Waiting for NSG rules with prefix 'NRMS-Rule-101' to appear...";
+
+    # Process NSGs in each resource group
+    for RG in ${AKS_NODE_RESOURCE_GROUP} ${AKS_RESOURCE_GROUP}; do
+        echo "Processing NSGs in resource group '$RG'...";
+
+        # Wait for NSGs to appear in the resource group
+        RG_START_TIME=$(date +%s);
+        while true; do
+            NSG_LIST=$(az network nsg list --resource-group "$RG" --query "[].name" --output tsv);
+            if [ -n "$NSG_LIST" ]; then break; fi;
+            if [ $(($(date +%s) - RG_START_TIME)) -ge $TIMEOUT ]; then
+                echo "Timeout waiting for NSGs in resource group '$RG'";
+                continue 2;
+            fi;
+            echo "No NSGs found in '$RG' yet, waiting...";
+            sleep $SLEEP_INTERVAL;
+        done;
+
+        # Process each NSG in the resource group
+        for NSG in $NSG_LIST; do
+            echo "Checking for NRMS-Rule-101 rules in NSG '$NSG' in resource group '$RG'...";
+
+            # Wait for NRMS rules to appear
+            RULE_START_TIME=$(date +%s);
+            while true; do
+                TCP_RULE_FOUND=$(az network nsg rule list --resource-group "$RG" --nsg-name "$NSG" --query "[?starts_with(name, 'NRMS-Rule-101')].name" --output tsv);
+                UDP_RULE_FOUND=$(az network nsg rule list --resource-group "$RG" --nsg-name "$NSG" --query "[?starts_with(name, 'NRMS-Rule-103')].name" --output tsv);
+                if [ -n "$TCP_RULE_FOUND" ] && [ -n "$UDP_RULE_FOUND" ]; then
+                    echo "! --- Found NRMS rules in NSG '$NSG': --- !";
+                    echo "! --- TCP Rule: $TCP_RULE_FOUND --- !";
+                    echo "! --- UDP Rule: $UDP_RULE_FOUND --- !";
+                    break;
+                fi;
+                if [ $(($(date +%s) - RULE_START_TIME)) -ge $TIMEOUT ]; then
+                    echo "Timeout waiting for NRMS rules in NSG '$NSG' in RG '$RG'. Skipping NSG.";
+                    continue 2;
+                fi;
+                echo "Waiting for NRMS rules in NSG '$NSG'...";
+                if [ -z "$TCP_RULE_FOUND" ]; then echo "TCP Rule (NRMS-Rule-101) not found"; fi;
+                if [ -z "$UDP_RULE_FOUND" ]; then echo "UDP Rule (NRMS-Rule-103) not found"; fi;
+                sleep $SLEEP_INTERVAL;
+            done;
+
+            # Update TCP rule
+            if az network nsg rule show --resource-group "$RG" --nsg-name "$NSG" --name "NRMS-Rule-101" --output none 2>/dev/null; then
+                echo " - Updating NRMS-Rule-101 (TCP) in NSG '$NSG' of RG '$RG'...";
+                az network nsg rule update \
+                    --resource-group "$RG" \
+                    --nsg-name "$NSG" \
+                    --name "NRMS-Rule-101" \
+                    --access Allow \
+                    --direction Inbound \
+                    --protocol "TCP" \
+                    --destination-port-ranges $TCP_PORTS \
+                    --destination-address-prefixes "*" \
+                    --source-address-prefixes "*" \
+                    --source-port-ranges "*" \
+                    --only-show-errors --output none || echo "Failed to update NRMS-Rule-101";
+
+                # Update UDP rule
+                echo " - Updating NRMS-Rule-103 (UDP) in NSG '$NSG' of RG '$RG'...";
+                az network nsg rule update \
+                    --resource-group "$RG" \
+                    --nsg-name "$NSG" \
+                    --name "NRMS-Rule-103" \
+                    --access Allow \
+                    --direction Inbound \
+                    --protocol "UDP" \
+                    --destination-port-ranges $UDP_PORTS \
+                    --destination-address-prefixes "*" \
+                    --source-address-prefixes "*" \
+                    --source-port-ranges "*" \
+                    --only-show-errors --output none || echo "Failed to update NRMS-Rule-103";
+            fi;
+        done;
+    done;
+
+    echo "\nNSG NRMS rule check and modification complete.";
+    '''
+
+    local_resource(
+        name = "allow required ports on mgmt cluster",
+        cmd = ["sh", "-ec", allow_tcp_udp_ports_cmd],
+        auto_init = False,
+        trigger_mode = TRIGGER_MODE_MANUAL,
+        labels = ["cluster-api"],
+        allow_parallel = True,
+    )
 
 ##############################
 # Actual work happens here
@@ -553,8 +746,6 @@ def clear_aks_vnet_peerings():
 validate_auth()
 
 include_user_tilt_files()
-
-load("ext://cert_manager", "deploy_cert_manager")
 
 if settings.get("deploy_cert_manager"):
     deploy_cert_manager(version = settings.get("cert_manager_version"))
@@ -574,3 +765,10 @@ waitforsystem()
 create_crs()
 
 flavors()
+
+if "aks_as_mgmt_settings" in settings and os.getenv("SUBSCRIPTION_TYPE", "") == "corporate":
+    allow_tcp_udp_ports()
+
+print("\n\n=== Active Tilt Configuration Settings ===")
+pretty_print_dict(settings)
+print("=======================================\n")
