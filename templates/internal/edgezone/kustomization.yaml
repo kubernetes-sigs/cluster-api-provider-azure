@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../flavors/edgezone
+
+patches:
+  - path: ../../flavors/apiserver-ilb/patches/kubeadm-config-template.yaml
+  - path: ../../flavors/apiserver-ilb/patches/control-plane.yaml
+  - target:
+      kind: KubeadmConfigTemplate
+      name: .*-md-0
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/preKubeadmCommands/0
+        value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-35.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+    options:
+      allowResourceNotFound: true
+  - target:
+      kind: AzureCluster
+    patch: |-
+      - op: replace
+        path: /spec/networkSpec/apiServerLB/frontendIPs/1/privateIP
+        value: ${AZURE_INTERNAL_LB_PRIVATE_IP:-35.0.0.100}
+  - target:
+      kind: AzureCluster
+    patch: |-
+      - op: replace
+        path: /spec/networkSpec/vnet/cidrBlocks/0
+        value: 35.0.0.0/8
+  - target:
+      kind: AzureCluster
+    patch: |-
+      - op: replace
+        path: /spec/networkSpec/subnets/0/cidrBlocks/0
+        value: 35.0.0.0/16
+  - target:
+      kind: AzureCluster
+    patch: |-
+      - op: replace
+        path: /spec/networkSpec/subnets/1/cidrBlocks/0
+        value: 35.1.0.0/16
+  - target:
+      kind: KubeadmConfigTemplate
+      name: .*-md-win
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/preKubeadmCommands/0
+        value:
+          powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '${AZURE_INTERNAL_LB_PRIVATE_IP:-35.0.0.100} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
+    options:
+      allowResourceNotFound: true
+
+
+sortOptions:
+  order: fifo

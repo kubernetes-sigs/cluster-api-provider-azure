@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +45,7 @@ var _ webhook.Defaulter = &AzureCluster{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (c *AzureCluster) Default() {
+	fmt.Println("in AzureCluster's Default()")
 	c.setDefaults()
 }
 

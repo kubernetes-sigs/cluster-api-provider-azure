@@ -50,12 +50,14 @@ const (
 )
 
 func (c *AzureCluster) setDefaults() {
+	fmt.Println("in Azure Cluster's setDefaults()")
 	c.Spec.AzureClusterClassSpec.setDefaults()
 	c.setResourceGroupDefault()
 	c.setNetworkSpecDefaults()
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
+	fmt.Println("in Azure Cluster's setNetworkSpecDefaults()")
 	c.setVnetDefaults()
 	c.setBastionDefaults()
 	c.setSubnetDefaults()
@@ -85,19 +87,24 @@ func (c *AzureCluster) setAzureEnvironmentDefault() {
 }
 
 func (c *AzureCluster) setVnetDefaults() {
+	fmt.Println("in AzureCluster's setVnetDefaults()")
 	if c.Spec.NetworkSpec.Vnet.ResourceGroup == "" {
+		fmt.Println("in AzureCluster's setVnetDefaults()  setting resourceGroup")
 		c.Spec.NetworkSpec.Vnet.ResourceGroup = c.Spec.ResourceGroup
 	}
 	if c.Spec.NetworkSpec.Vnet.Name == "" {
+		fmt.Println("in AzureCluster's setVnetDefaults()  setting vnetName")
 		c.Spec.NetworkSpec.Vnet.Name = generateVnetName(c.ObjectMeta.Name)
 	}
 	c.Spec.NetworkSpec.Vnet.VnetClassSpec.setDefaults()
 }
 
 func (c *AzureCluster) setSubnetDefaults() {
+	fmt.Println("in AzureCluster's setSubnetDefaults()")
 	clusterSubnet, err := c.Spec.NetworkSpec.GetSubnet(SubnetCluster)
 	clusterSubnetExists := err == nil
 	if clusterSubnetExists {
+		fmt.Println("in AzureCluster's setSubnetDefaults() clusterSubnetExists")
 		clusterSubnet.setClusterSubnetDefaults(c.ObjectMeta.Name)
 		c.Spec.NetworkSpec.UpdateSubnet(clusterSubnet, SubnetCluster)
 	}
@@ -129,6 +136,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 
 	if !nodeSubnetFound && !clusterSubnetExists {
+		fmt.Println("in AzureCluster's setSubnetDefaults() nodeSubnetFound: ", nodeSubnetFound, " clusterSubnetExists ", clusterSubnetExists)
 		nodeSubnet := SubnetSpec{
 			SubnetClassSpec: SubnetClassSpec{
 				Role:       SubnetNode,
@@ -148,10 +156,12 @@ func (c *AzureCluster) setSubnetDefaults() {
 			},
 		}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
+		fmt.Println("in AzureCluster's setSubnetDefaults() nodeSubnetFound: ", nodeSubnetFound, " clusterSubnetExists ", clusterSubnetExists, " c.Spec.NetworkSpec.Subnets ", c.Spec.NetworkSpec.Subnets)
 	}
 }
 
 func (s *SubnetSpec) setNodeSubnetDefaults(clusterName string, index int) {
+	fmt.Println("in AzureCluster's setNodeSubnetDefaults()")
 	if s.Name == "" {
 		s.Name = withIndex(generateNodeSubnetName(clusterName), index)
 	}
@@ -193,16 +203,21 @@ func (s *SubnetSpec) setControlPlaneSubnetDefaults(clusterName string) {
 }
 
 func (s *SubnetSpec) setClusterSubnetDefaults(clusterName string) {
+	fmt.Println("in AzureCluster's setClusterSubnetDefaults() ")
 	if s.Name == "" {
+		fmt.Println("in AzureCluster's setClusterSubnetDefaults() setting s.Name")
 		s.Name = generateClusterSubnetSubnetName(clusterName)
 	}
 	if s.SecurityGroup.Name == "" {
+		fmt.Println("in AzureCluster's setClusterSubnetDefaults() setting s.SecurityGroup")
 		s.SecurityGroup.Name = generateClusterSecurityGroupName(clusterName)
 	}
 	if s.RouteTable.Name == "" {
+		fmt.Println("in AzureCluster's setClusterSubnetDefaults() setting s.RouteTable")
 		s.RouteTable.Name = generateClustereRouteTableName(clusterName)
 	}
 	if s.NatGateway.Name == "" {
+		fmt.Println("in AzureCluster's setClusterSubnetDefaults() setting s.NatGateway")
 		s.NatGateway.Name = generateClusterNatGatewayName(clusterName)
 	}
 	if !s.IsIPv6Enabled() && s.ID == "" && s.NatGateway.NatGatewayIP.Name == "" {
