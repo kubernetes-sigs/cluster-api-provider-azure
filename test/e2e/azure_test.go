@@ -598,7 +598,15 @@ var _ = Describe("Workload cluster creation", func() {
 	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
 	Context("Creating a GPU-enabled cluster [OPTIONAL]", func() {
 		It("with a single control plane node and 1 node", func() {
-			Skip("Skipping since the e2e subscription has no quota for GPU SKUs")
+			// Skip("Skipping since the e2e subscription has no quota for GPU SKUs")
+
+			Expect(os.Setenv("EXP_APISERVER_ILB", "true")).To(Succeed())
+			Expect(os.Setenv("AZURE_INTERNAL_LB_PRIVATE_IP", "40.0.0.100")).To(Succeed())
+			Expect(os.Setenv("AZURE_VNET_CIDR", "40.0.0.0/8")).To(Succeed())
+			Expect(os.Setenv("AZURE_CP_SUBNET_CIDR", "40.0.0.0/16")).To(Succeed())
+			Expect(os.Setenv("AZURE_NODE_SUBNET_CIDR", "40.1.0.0/16")).To(Succeed())
+			Expect(os.Setenv("KUBERNETES_VERSION", "1.30.2")).To(Succeed())
+
 			clusterName = getClusterName(clusterNamePrefix, "gpu")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
@@ -612,6 +620,16 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				}),
 				withPostMachinesProvisioned(func() {
+					PeerVnets(ctx, func() AzureAPIServerILBSpecInput {
+						return AzureAPIServerILBSpecInput{
+							BootstrapClusterProxy:                   bootstrapClusterProxy,
+							Cluster:                                 result.Cluster,
+							Namespace:                               namespace,
+							ClusterName:                             clusterName,
+							WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+							TemplateHasPrivateIPCustomDNSResolution: true,
+						}
+					})
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
 						return DaemonsetsSpecInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
@@ -1230,6 +1248,21 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
+					// Peer the VNets of the management cluster and workload cluster
+					// Create a private DNS zone for the fqdn of the workload cluster's API Server ILB and link them to both
+					// the management cluster and workload cluster's VNets
+					// enable TCP ports 22, 443, 5986 and 6443 on the management cluster's NSG
+					// enable UDP ports 53 and 123 on the management cluster's NSG
+					// PeerVnets(ctx, func() AzureAPIServerILBSpecInput {
+					// 	return AzureAPIServerILBSpecInput{
+					// 		BootstrapClusterProxy:                   bootstrapClusterProxy,
+					// 		Cluster:                                 result.Cluster,
+					// 		Namespace:                               namespace,
+					// 		ClusterName:                             clusterName,
+					// 		WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+					// 		TemplateHasPrivateIPCustomDNSResolution: true,
+					// 	}
+					// })
 				}),
 			), result)
 
@@ -1250,6 +1283,5 @@ var _ = Describe("Workload cluster creation", func() {
 			By("PASSED!")
 		})
 	})
-
 	// TODO: add a same test as above for a windows cluster
 })

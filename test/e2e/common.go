@@ -98,6 +98,7 @@ const (
 	OldAddonProviderUpgradeVersion    = "OLD_CAAPH_UPGRADE_VERSION"
 	LatestAddonProviderUpgradeVersion = "LATEST_CAAPH_UPGRADE_VERSION"
 	KubernetesVersionAPIUpgradeFrom   = "KUBERNETES_VERSION_API_UPGRADE_FROM"
+	PeerVNetsScriptPath               = "PEER_VNETS_SCRIPT_PATH"
 )
 
 func Byf(format string, a ...interface{}) {
