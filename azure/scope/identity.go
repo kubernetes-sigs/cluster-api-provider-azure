@@ -45,7 +45,7 @@ type CredentialsProvider interface {
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
-	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error)
+	GetTokenCredential(ctx context.Context, cloudConfig cloud.Configuration) (azcore.TokenCredential, error)
 	Type() infrav1.IdentityType
 }
 
@@ -82,7 +82,7 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 }
 
 // GetTokenCredential returns an Azure TokenCredential based on the provided azure identity.
-func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error) {
+func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, cloudConfig cloud.Configuration) (azcore.TokenCredential, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "azure.scope.AzureCredentialsProvider.GetTokenCredential")
 	defer done()
 
@@ -117,15 +117,7 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		options := azidentity.ClientSecretCredentialOptions{
 			ClientOptions: azcore.ClientOptions{
 				TracingProvider: tracingProvider,
-				Cloud: cloud.Configuration{
-					ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: tokenAudience,
-							Endpoint: resourceManagerEndpoint,
-						},
-					},
-				},
+				Cloud:           cloudConfig,
 			},
 		}
 		cred, authErr = p.cache.GetOrStoreClientSecret(p.GetTenantID(), p.Identity.Spec.ClientID, clientSecret, &options)
