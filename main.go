@@ -109,7 +109,7 @@ var (
 	azureMachineConcurrency            int
 	azureMachinePoolConcurrency        int
 	azureMachinePoolMachineConcurrency int
-	azureBootrapConfigGVK              string
+	deprecatedAzureBootrapConfigGVK    string // Deprecated in v1.19.0
 	debouncingTimer                    time.Duration
 	syncPeriod                         time.Duration
 	healthAddr                         string
@@ -258,10 +258,10 @@ func InitFlags(fs *pflag.FlagSet) {
 		"Enable tracing to the opentelemetry-collector service in the same namespace.",
 	)
 
-	fs.StringVar(&azureBootrapConfigGVK,
+	fs.StringVar(&deprecatedAzureBootrapConfigGVK,
 		"bootstrap-config-gvk",
 		"",
-		"Provide fully qualified GVK string to override default kubeadm config watch source, in the form of Kind.version.group (default: KubeadmConfig.v1beta1.bootstrap.cluster.x-k8s.io)",
+		"(Deprecated) Provide fully qualified GVK string to override default kubeadm config watch source, in the form of Kind.version.group (default: KubeadmConfig.v1beta1.bootstrap.cluster.x-k8s.io)",
 	)
 
 	flags.AddManagerOptions(fs, &managerOptions)
@@ -292,6 +292,10 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "Unable to start manager: invalid flags")
 		os.Exit(1)
+	}
+
+	if deprecatedAzureBootrapConfigGVK != "" {
+		setupLog.Error(fmt.Errorf("bootstrap-config-gvk argument is deprecated and no longer needed"), "Deprecated argument")
 	}
 
 	var watchNamespaces map[string]cache.Config
@@ -449,7 +453,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
 			timeouts,
 			watchFilterValue,
-			azureBootrapConfigGVK,
 			credCache,
 		).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}, Cache: mpCache}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
