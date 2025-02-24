@@ -3,16 +3,16 @@ kind: Kustomization
 namespace: default
 resources:
 - ../prow-machine-pool-ci-version
-# patches:
+patches:
 # - path: ../patches/no-windows.yaml
 #   target:
 #     name: .*-win.*
-# - path: ../patches/dra-kubeadmcontrolplane.yaml
-#   target:
-#     kind: KubeadmControlPlane
-# - path: ../patches/dra-kubeadmconfig.yaml
-#   target:
-#     kind: KubeadmConfig
+- path: ../patches/dra-kubeadmcontrolplane.yaml
+  target:
+    kind: KubeadmControlPlane
+- path: ../patches/dra-kubeadmconfig.yaml
+  target:
+    kind: KubeadmConfig
 
 sortOptions:
   order: fifo

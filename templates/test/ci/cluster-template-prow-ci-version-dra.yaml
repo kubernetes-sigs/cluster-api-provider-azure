@@ -59,13 +59,16 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
-        extraArgs: {}
+        extraArgs:
+          feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
+          runtime-config: resource.k8s.io/v1alpha3=true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
+          feature-gates: DynamicResourceAllocation=true
           v: "4"
       etcd:
         local:
@@ -73,6 +76,9 @@ spec:
           extraArgs:
             quota-backend-bytes: "8589934592"
       kubernetesVersion: ci/${CI_VERSION}
+      scheduler:
+        extraArgs:
+          feature-gates: DynamicResourceAllocation=true
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -190,10 +196,20 @@ spec:
       owner: root:root
       path: /tmp/kubeadm-bootstrap.sh
       permissions: "0744"
+    - content: |
+        #!/bin/bash
+
+        echo "enabling containerd CDI plugin"
+        sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+        systemctl restart containerd
+      owner: root:root
+      path: /tmp/containerd-config.sh
+      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
+          feature-gates: DynamicResourceAllocation=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -201,6 +217,7 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
+          feature-gates: DynamicResourceAllocation=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -209,6 +226,7 @@ spec:
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands:
+    - bash -c /tmp/containerd-config.sh
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -416,14 +434,25 @@ spec:
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"
+  - content: |
+      #!/bin/bash
+
+      echo "enabling containerd CDI plugin"
+      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+      systemctl restart containerd
+    owner: root:root
+    path: /tmp/containerd-config.sh
+    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
         cloud-provider: external
+        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
+  - bash -c /tmp/containerd-config.sh
   - bash -c /tmp/oot-cred-provider.sh
   - bash -c /tmp/kubeadm-bootstrap.sh
 ---
@@ -555,11 +584,21 @@ spec:
       }
     path: C:/oot-cred-provider.ps1
     permissions: "0744"
+  - content: |
+      #!/bin/bash
+
+      echo "enabling containerd CDI plugin"
+      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+      systemctl restart containerd
+    owner: root:root
+    path: /tmp/containerd-config.sh
+    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
+        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
@@ -568,6 +607,7 @@ spec:
   - nssm set kubelet start SERVICE_AUTO_START
   - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
+  - bash -c /tmp/containerd-config.sh
   - powershell c:/create-external-network.ps1
   - powershell C:/replace-k8s-binaries.ps1
   - powershell C:/oot-cred-provider.ps1
