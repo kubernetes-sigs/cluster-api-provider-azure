@@ -58,8 +58,7 @@ spec:
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
-        extraArgs:
-          cloud-provider: external
+        extraArgs: {}
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"

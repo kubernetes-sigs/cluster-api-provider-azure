@@ -49,7 +49,6 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-provider: external
           oidc-client-id: ${AZURE_SERVER_APP_ID}
           oidc-groups-claim: groups
           oidc-issuer-url: https://sts.windows.net/${AZURE_TENANT_ID}/
