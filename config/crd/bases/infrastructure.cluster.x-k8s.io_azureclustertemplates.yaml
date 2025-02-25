@@ -834,6 +834,10 @@ spec:
                             x-kubernetes-list-map-keys:
                             - name
                             x-kubernetes-list-type: map
+                          useVNETResourceGroup:
+                            description: UseVNETResourceGroup defines that Azure Private
+                              DNS zone should be present in same group as of VNET.
+                            type: boolean
                           vnet:
                             description: Vnet is the configuration for the Azure virtual
                               network.
