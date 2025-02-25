@@ -458,6 +458,10 @@ type NetworkClassSpec struct {
 	// PrivateDNSZoneName defines the zone name for the Azure Private DNS.
 	// +optional
 	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
+
+	// PrivateDNSZoneResourceGroup defines the resource group to be used for Azure Private DNS Zone.
+	// +optional
+	PrivateDNSZoneResourceGroup string `json:"privateDNSZoneResourceGroup,omitempty"`
 }
 
 // VnetClassSpec defines the VnetSpec properties that may be shared across several Azure clusters.
