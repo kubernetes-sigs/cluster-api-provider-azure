@@ -84,12 +84,13 @@ source_tilt_settings() {
     echo "All variables exported"
 }
 
-
-peer_vnets() {
+# Check that all required environment variables are set
+check_required_vars() {
     required_vars=(
         "AKS_RESOURCE_GROUP"
         "AKS_MGMT_VNET_NAME"
         "CLUSTER_NAME"
+        "CLUSTER_NAMESPACE"
         "AZURE_INTERNAL_LB_PRIVATE_IP"
         "APISERVER_LB_DNS_SUFFIX"
         "AZURE_LOCATION"
@@ -103,21 +104,24 @@ peer_vnets() {
     echo "All required environment variables are set"
 
     # Add timeout variable for better maintainability
-    WAIT_TIMEOUT=300
+    WAIT_TIMEOUT=600
 
     # Add DNS zone variable to avoid repetition
     DNS_ZONE="${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com"
+}
 
+# Peers the mgmt and workload clusters VNETs
+peer_vnets() {
     echo "--------Peering VNETs--------"
 
     # Get VNET IDs with improved error handling
-    az network vnet wait --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --created --timeout 180 || error "Timeout waiting for management VNET"
+    az network vnet wait --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --created --timeout "${WAIT_TIMEOUT}" || error "Timeout waiting for management VNET"
     MGMT_VNET_ID=$(az network vnet show --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --query id --output tsv) || error "Failed to get management VNET ID"
-    echo " 1/8 ${AKS_MGMT_VNET_NAME} found and ${MGMT_VNET_ID} found"
+    echo " 1/4 ${AKS_MGMT_VNET_NAME} found and ${MGMT_VNET_ID} found"
 
-    az network vnet wait --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --created --timeout 180 || error "Timeout waiting for workload VNET"
+    az network vnet wait --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --created --timeout "${WAIT_TIMEOUT}" || error "Timeout waiting for workload VNET"
     WORKLOAD_VNET_ID=$(az network vnet show --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --query id --output tsv) || error "Failed to get workload VNET ID"
-    echo " 2/8 ${CLUSTER_NAME}-vnet found and ${WORKLOAD_VNET_ID} found"
+    echo " 2/4 ${CLUSTER_NAME}-vnet found and ${WORKLOAD_VNET_ID} found"
 
     # Peer mgmt vnet with improved error handling
     az network vnet peering create \
@@ -128,7 +132,7 @@ peer_vnets() {
         --allow-vnet-access true \
         --allow-forwarded-traffic true \
         --only-show-errors --output none || error "Failed to create management peering"
-    echo " 3/8 mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}"
+    echo " 3/4 mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}"
 
     # Peer workload vnet with improved error handling
     az network vnet peering create \
@@ -139,8 +143,12 @@ peer_vnets() {
         --allow-vnet-access true \
         --allow-forwarded-traffic true \
         --only-show-errors --output none || error "Failed to create workload peering"
-    echo " 4/8 ${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet"
+    echo " 4/4 ${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet"
+}
 
+# Creates a private DNS zone and links it to the workload and mgmt VNETs
+create_private_dns_zone() {
+    echo "--------Creating private DNS zone--------"
     # Create private DNS zone with improved error handling
     az network private-dns zone create \
         --resource-group "${CLUSTER_NAME}" \
@@ -151,7 +159,7 @@ peer_vnets() {
         --name "${DNS_ZONE}" \
         --created --timeout "${WAIT_TIMEOUT}" \
         --only-show-errors --output none || error "Timeout waiting for private DNS zone"
-    echo " 5/8 ${DNS_ZONE} private DNS zone created in ${CLUSTER_NAME}"
+    echo " 1/4 ${DNS_ZONE} private DNS zone created in ${CLUSTER_NAME}"
 
     # Link private DNS Zone to workload vnet with improved error handling
     az network private-dns link vnet create \
@@ -167,7 +175,7 @@ peer_vnets() {
         --name "${CLUSTER_NAME}-to-mgmt" \
         --created --timeout "${WAIT_TIMEOUT}" \
         --only-show-errors --output none || error "Timeout waiting for workload DNS link"
-    echo " 6/8 workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone"
+    echo " 2/4 workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone"
 
     # Link private DNS Zone to mgmt vnet with improved error handling
     az network private-dns link vnet create \
@@ -183,7 +191,7 @@ peer_vnets() {
         --name "mgmt-to-${CLUSTER_NAME}" \
         --created --timeout "${WAIT_TIMEOUT}" \
         --only-show-errors --output none || error "Timeout waiting for management DNS link"
-    echo " 7/8 management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone"
+    echo " 3/4 management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone"
 
     # Create private DNS zone record with improved error handling
     az network private-dns record-set a add-record \
@@ -192,19 +200,21 @@ peer_vnets() {
         --record-set-name "@" \
         --ipv4-address "${AZURE_INTERNAL_LB_PRIVATE_IP}" \
         --only-show-errors --output none || error "Failed to create DNS record"
-    echo " 8/8 \"@\" private DNS zone record created to point ${DNS_ZONE} to ${AZURE_INTERNAL_LB_PRIVATE_IP}"
+    echo " 4/4 \"@\" private DNS zone record created to point ${DNS_ZONE} to ${AZURE_INTERNAL_LB_PRIVATE_IP}"
 }
 
-# New function that waits for NSG rules with prefix "NRMS-*" in the relevant resource groups,
-# then creates or modifies rule-101 to allow the specified ports.
+# New function that waits for NSG rules with prefix "NRMS-Rule-101" in the relevant resource groups,
+# then creates or modifies NRMS-Rule-101 to allow the specified ports.
 wait_and_fix_nsg_rules() {
-    local allow_ports="22,443,5986,6443,53,123"
-    local timeout=3000     # seconds to wait per NSG for the appearance of an NRMS-* rule
+    # TODO: explain what these ports are for
+    local tcp_ports="22 443 5986 6443"
+    local udp_ports="53 123"
+    local timeout=3000     # seconds to wait per NSG for the appearance of an NRMS-Rule-101 rule
     local sleep_interval=10  # seconds between checks
 
-    echo "Waiting for NSG rules with prefix 'NRMS-' to appear..."
+    echo "Waiting for NSG rules with prefix 'NRMS-Rule-101' to appear..."
 
-    local resource_groups=("$AKS_RESOURCE_GROUP" "$AKS_NODE_RESOURCE_GROUP" "$CLUSTER_NAME")
+    local resource_groups=("$AKS_NODE_RESOURCE_GROUP" "$AKS_RESOURCE_GROUP" "$CLUSTER_NAME")
 
     for rg in "${resource_groups[@]}"; do
         echo "Processing NSGs in resource group '$rg'..."
@@ -225,51 +235,57 @@ wait_and_fix_nsg_rules() {
         done
 
         for nsg in $nsg_list; do
-            echo "Checking for NRMS-* rules in NSG '$nsg' in resource group '$rg'..."
+            echo "Checking for NRMS-Rule-101 rules in NSG '$nsg' in resource group '$rg'..."
             local rule_found=""
             local rule_start_time
             rule_start_time=$(date +%s)
             while :; do
-                # Query NSG rules with names that start with "NRMS-".
-                rule_found=$(az network nsg rule list --resource-group "$rg" --nsg-name "$nsg" --query "[?starts_with(name, 'NRMS-')].name" --output tsv)
+                # Query NSG rules with names that start with "NRMS-Rule-101".
+                rule_found=$(az network nsg rule list --resource-group "$rg" --nsg-name "$nsg" --query "[?starts_with(name, 'NRMS-Rule-101')].name" --output tsv)
                 if [ -n "$rule_found" ]; then
                     echo "Found NRMS rule(s): $rule_found in NSG '$nsg'"
                     break
                 fi
                 if (( $(date +%s) - rule_start_time >= timeout )); then
-                    echo "Timeout waiting for NRMS-* rules in NSG '$nsg' in RG '$rg'. Skipping NSG."
+                    echo "Timeout waiting for NRMS-Rule-101 rules in NSG '$nsg' in RG '$rg'. Skipping NSG."
                     break
                 fi
-                echo "NRMS-* rules not found in NSG '$nsg', waiting..."
+                echo "NRMS-Rule-101 rules not found in NSG '$nsg', waiting..."
                 sleep "$sleep_interval"
             done
 
-            # If an NRMS-* rule is found in the NSG, then ensure rule-101 is enabled.
+            # If an NRMS-Rule-101 rule is found in the NSG, then ensure NRMS-Rule-101 is updated.
             if [ -n "$rule_found" ]; then
-                echo "Ensuring rule-101 is configured in NSG '$nsg' of RG '$rg' to allow ports $allow_ports..."
-                if az network nsg rule show --resource-group "$rg" --nsg-name "$nsg" --name "rule-101" --output none 2>/dev/null; then
+                echo "Ensuring NRMS-Rule-101 is configured in NSG '$nsg' of RG '$rg' to allow ports $tcp_ports..."
+                if az network nsg rule show --resource-group "$rg" --nsg-name "$nsg" --name "NRMS-Rule-101" --output none 2>/dev/null; then
                     az network nsg rule update \
                         --resource-group "$rg" \
                         --nsg-name "$nsg" \
-                        --name "rule-101" \
+                        --name "NRMS-Rule-101" \
                         --access Allow \
                         --direction Inbound \
-                        --protocol Tcp \
-                        --destination-port-ranges "$allow_ports" \
-                        --only-show-errors --output none || error "Failed to update rule-101 in NSG '$nsg' in resource group '$rg'"
-                    echo "Updated rule-101 in NSG '$nsg' in resource group '$rg'."
-                else
-                    az network nsg rule create \
+                        --protocol "TCP" \
+                        --destination-port-ranges "$tcp_ports" \
+                        --destination-address-prefixes "*" \
+                        --source-address-prefixes "*" \
+                        --source-port-ranges "*" \
+                        --only-show-errors --output none || error "Failed to update NRMS-Rule-101 in NSG '$nsg' in resource group '$rg'"
+                    echo "Updated NRMS-Rule-101 in NSG '$nsg' in resource group '$rg'."
+
+                    echo "Ensuring NRMS-Rule-103 is configured in NSG '$nsg' of RG '$rg' to allow ports $udp_ports..."
+                    az network nsg rule update \
                         --resource-group "$rg" \
                         --nsg-name "$nsg" \
-                        --name "rule-101" \
-                        --priority 101 \
-                        --direction Inbound \
+                        --name "NRMS-Rule-103" \
                         --access Allow \
-                        --protocol Tcp \
-                        --destination-port-ranges "$allow_ports" \
-                        --only-show-errors --output none || error "Failed to create rule-101 in NSG '$nsg' in resource group '$rg'"
-                    echo "Created rule-101 in NSG '$nsg' in resource group '$rg'."
+                        --direction Inbound \
+                        --protocol "UDP" \
+                        --destination-port-ranges "$udp_ports" \
+                        --destination-address-prefixes "*" \
+                        --source-address-prefixes "*" \
+                        --source-port-ranges "*" \
+                        --only-show-errors --output none || error "Failed to update NRMS-Rule-103 in NSG '$nsg' in resource group '$rg'"
+                    echo "Updated NRMS-Rule-103 in NSG '$nsg' in resource group '$rg'."
                 fi
             fi
         done
@@ -277,15 +293,59 @@ wait_and_fix_nsg_rules() {
     echo "NSG NRMS rule check and modification complete."
 }
 
+# Waits for the controlplane of the workload cluster to be ready
+wait_for_controlplane_ready() {
+    echo "Waiting for secret: ${CLUSTER_NAME}-kubeconfig to be available in the management cluster"
+    until kubectl get secret "${CLUSTER_NAME}-kubeconfig" -n "${CLUSTER_NAMESPACE}" > /dev/null 2>&1; do
+        sleep 5
+    done
+    kubectl get secret "${CLUSTER_NAME}-kubeconfig" -n "${CLUSTER_NAMESPACE}" -o jsonpath='{.data.value}' | base64 --decode > "./${CLUSTER_NAME}.kubeconfig"
+    chmod 600 "./${CLUSTER_NAME}.kubeconfig"
+
+    # Save the current (management) kubeconfig.
+    # If KUBECONFIG was not set, assume the default is $HOME/.kube/config.
+    MANAGEMENT_KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
+
+    # Now switch to the workload cluster kubeconfig.
+    export KUBECONFIG="./${CLUSTER_NAME}.kubeconfig"  # Set kubeconfig for subsequent kubectl commands
+
+    echo "Waiting for controlplane of the workload cluster to be ready..."
+
+    # Wait for the API server to be responsive and for control plane nodes to be Ready
+    until kubectl get nodes --selector='node-role.kubernetes.io/control-plane' --no-headers 2>/dev/null | grep -q "Ready"; do
+        echo "Waiting for control plane nodes to be responsive and Ready..."
+        sleep 10
+    done
+
+    # Wait for at least 2 control plane nodes to be Ready
+    # echo "Waiting for multiple control plane nodes to be Ready..."
+    # until [ "$(kubectl get nodes --selector='node-role.kubernetes.io/control-plane' --no-headers | grep -c 'Ready')" -gt 1 ]; do
+    #     echo "Waiting for multiple control plane nodes to be Ready..."
+    #     sleep 10
+    # done
+    # echo "Control plane is ready with multiple nodes in Ready state"
+
+    # Reset KUBECONFIG back to the management cluster kubeconfig.
+    export KUBECONFIG="$MANAGEMENT_KUBECONFIG"
+    echo "Reset KUBECONFIG to management cluster kubeconfig: $KUBECONFIG"
+}
+
 main() {
     source_tilt_settings "$@"
+    check_required_vars
 
+    # SKIP_PEER_VNETS can be set to true to skip the VNET peering operations
     if [ "${SKIP_PEER_VNETS:-false}" != "true" ]; then
         peer_vnets
     else
         echo "Skipping peer_vnets as requested via SKIP_PEER_VNETS."
     fi
 
+    # wait for controlplane of the workload cluster to be ready and then create the private DNS zone
+    wait_for_controlplane_ready
+    create_private_dns_zone
+
+    # SKIP_NSG_RULES can be set to true to skip the NSG rule checking and updates
     if [ "${SKIP_NSG_RULES:-false}" != "true" ]; then
         wait_and_fix_nsg_rules
     else

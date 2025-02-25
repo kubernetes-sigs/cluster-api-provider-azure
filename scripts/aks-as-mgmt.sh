@@ -95,7 +95,7 @@ main() {
   fi
 
   create_aks_cluster
-  set_env_varaibles
+  set_env_variables
 }
 
 create_aks_cluster() {
@@ -197,7 +197,11 @@ create_aks_cluster() {
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
 
-set_env_varaibles(){
+set_env_variables(){
+  # Ensure temporary files are removed on exit.
+  trap 'rm -f tilt-settings-temp.yaml tilt-settings-new.yaml combined_contexts.yaml' EXIT
+
+  # Create a temporary settings file based on current environment values.
   cat <<EOF > tilt-settings-temp.yaml
 kustomize_substitutions:
   AKS_RESOURCE_GROUP: "${AKS_RESOURCE_GROUP}"
@@ -211,19 +215,18 @@ kustomize_substitutions:
   ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE}"
   REGISTRY: "${REGISTRY}"
   APISERVER_LB_DNS_SUFFIX: "${APISERVER_LB_DNS_SUFFIX}"
+  AZURE_LOCATION: "${AZURE_LOCATION}"
 allowed_contexts:
-  - "$MGMT_CLUSTER_NAME"
+  - "${MGMT_CLUSTER_NAME}"
   - "kind-capz"
 azure_location: "${AZURE_LOCATION}"
 EOF
 
-# create tilt-settings.yaml if it does not exist
-if [ -f tilt-settings.yaml ]; then
-  echo "tilt-settings.yaml exists"
-else
-  echo "tilt-settings.yaml does not exist, creating one"
-  touch tilt-settings.yaml
-fi
+  # If tilt-settings.yaml does not exist, create it using the temp file.
+  if [ ! -f tilt-settings.yaml ]; then
+    echo "tilt-settings.yaml does not exist, creating one..."
+    cp tilt-settings-temp.yaml tilt-settings.yaml
+  fi
 
 # copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
 allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
@@ -249,9 +252,8 @@ yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-se
 # merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
 yq eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
 
+# Temporary files are removed by the trap.
 mv tilt-settings-new.yaml tilt-settings.yaml
-rm -r combined_contexts.yaml
-rm -f tilt-settings-temp.yaml
 }
 
 main
