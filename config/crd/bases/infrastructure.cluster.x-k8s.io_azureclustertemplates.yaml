@@ -576,6 +576,10 @@ spec:
                             description: PrivateDNSZoneName defines the zone name
                               for the Azure Private DNS.
                             type: string
+                          privateDNSZoneResourceGroup:
+                            description: PrivateDNSZoneResourceGroup defines the resource
+                              group to be used for Azure Private DNS Zone.
+                            type: string
                           subnets:
                             description: Subnets is the configuration for the control-plane
                               subnet and the node subnet.
@@ -834,10 +838,6 @@ spec:
                             x-kubernetes-list-map-keys:
                             - name
                             x-kubernetes-list-type: map
-                          useVNETResourceGroup:
-                            description: UseVNETResourceGroup defines that Azure Private
-                              DNS zone should be present in same group as of VNET.
-                            type: boolean
                           vnet:
                             description: Vnet is the configuration for the Azure virtual
                               network.

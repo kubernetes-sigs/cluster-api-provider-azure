@@ -559,8 +559,8 @@ func (s *ClusterScope) VNetSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20
 func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, linkSpec, recordSpec []azure.ResourceSpecGetter) {
 	if s.IsAPIServerPrivate() {
 		resourceGroup := s.ResourceGroup()
-		if s.AzureCluster.Spec.NetworkSpec.UseVNETResourceGroup {
-			resourceGroup = s.Vnet().ResourceGroup
+		if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup != "" {
+			resourceGroup = s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup
 		}
 		zone := privatedns.ZoneSpec{
 			Name:           s.GetPrivateDNSZoneName(),
