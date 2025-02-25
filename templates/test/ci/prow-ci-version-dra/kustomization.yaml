@@ -2,17 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../prow-ci-version
+- ../prow-machine-pool-ci-version
 patches:
 - path: ../patches/no-windows.yaml
   target:
     name: .*-win.*
-- path: ../patches/dra-kubeadmcontrolplane.yaml
-  target:
-    kind: KubeadmControlPlane
-- path: ../patches/dra-kubeadmconfig.yaml
-  target:
-    kind: KubeadmConfig
+# - path: ../patches/dra-kubeadmcontrolplane.yaml
+#   target:
+#     kind: KubeadmControlPlane
+# - path: ../patches/dra-kubeadmconfig.yaml
+#   target:
+#     kind: KubeadmConfig
 
 sortOptions:
   order: fifo
