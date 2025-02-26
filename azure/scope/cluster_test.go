@@ -4256,3 +4256,46 @@ func TestGroupSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIServerLBName(t *testing.T) {
+	tests := []struct {
+		name     string
+		cluster  *ClusterScope
+		expected string
+	}{
+		{
+			name: "APIServerLB is not nil",
+			cluster: &ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{
+							APIServerLB: &infrav1.LoadBalancerSpec{
+								Name: "test-lb",
+							},
+						},
+					},
+				},
+			},
+			expected: "test-lb",
+		},
+		{
+			name: "APIServerLB is nil",
+			cluster: &ClusterScope{
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						NetworkSpec: infrav1.NetworkSpec{},
+					},
+				},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			result := tt.cluster.APIServerLBName()
+			g.Expect(result).To(Equal(tt.expected))
+		})
+	}
+}
