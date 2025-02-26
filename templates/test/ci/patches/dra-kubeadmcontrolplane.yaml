@@ -21,7 +21,7 @@
   value: DynamicResourceAllocation=true
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/runtime-config
-  value: resource.k8s.io/v1alpha3=true
+  value: resource.k8s.io/v1beta1=true
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler
   value:
