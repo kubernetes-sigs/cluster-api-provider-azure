@@ -19,19 +19,17 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -41,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -63,7 +60,7 @@ type (
 		Timeouts                      reconciler.Timeouts
 		WatchFilterValue              string
 		createAzureMachinePoolService azureMachinePoolServiceCreator
-		BootstrapConfigGVK            schema.GroupVersionKind
+		externalTracker               external.ObjectTracker
 		CredentialCache               azure.CredentialCache
 	}
 
@@ -77,21 +74,13 @@ type (
 type azureMachinePoolServiceCreator func(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error)
 
 // NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance.
-func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue, bootstrapConfigGVK string, credCache azure.CredentialCache) *AzureMachinePoolReconciler {
-	gvk := schema.FromAPIVersionAndKind(kubeadmv1.GroupVersion.String(), reflect.TypeOf((*kubeadmv1.KubeadmConfig)(nil)).Elem().Name())
-	userGVK, _ := schema.ParseKindArg(bootstrapConfigGVK)
-
-	if userGVK != nil {
-		gvk = *userGVK
-	}
-
+func NewAzureMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AzureMachinePoolReconciler {
 	ampr := &AzureMachinePoolReconciler{
-		Client:             client,
-		Recorder:           recorder,
-		Timeouts:           timeouts,
-		WatchFilterValue:   watchFilterValue,
-		BootstrapConfigGVK: gvk,
-		CredentialCache:    credCache,
+		Client:           client,
+		Recorder:         recorder,
+		Timeouts:         timeouts,
+		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
 	}
 
 	ampr.createAzureMachinePoolService = newAzureMachinePoolService
@@ -127,9 +116,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachines")
 	}
 
-	config := &metav1.PartialObjectMetadata{}
-	config.SetGroupVersionKind(ampr.BootstrapConfigGVK)
-	return ctrl.NewControllerManagedBy(mgr).
+	controller, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePool{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
@@ -148,12 +135,6 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
-		// watch for changes in KubeadmConfig (or any BootstrapConfig) to sync bootstrap token
-		Watches(
-			config,
-			handler.EnqueueRequestsFromMapFunc(BootstrapConfigToInfrastructureMapFunc(ctx, ampr.Client, log)),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		).
 		Watches(
 			&infrav1exp.AzureMachinePoolMachine{},
 			handler.EnqueueRequestsFromMapFunc(AzureMachinePoolMachineMapper(mgr.GetScheme(), log)),
@@ -170,13 +151,25 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue),
 			),
-		).
-		Complete(r)
+		).Build(r)
+	if err != nil {
+		return fmt.Errorf("creating new controller manager: %w", err)
+	}
+
+	predicateLog := ptr.To(ctrl.LoggerFrom(ctx).WithValues("controller", "azuremachinepool"))
+	ampr.externalTracker = external.ObjectTracker{
+		Controller:      controller,
+		Cache:           mgr.GetCache(),
+		Scheme:          mgr.GetScheme(),
+		PredicateLogger: predicateLog,
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kubeadmconfigs;kubeadmconfigs/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=*,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines/status,verbs=get
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch;update;patch
@@ -293,6 +286,27 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	if !cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
 		return reconcile.Result{}, nil
+	}
+
+	// Add a Watch to the referenced Bootstrap Config
+	if machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.ConfigRef != nil {
+		ref := machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.ConfigRef
+		obj, err := external.Get(ctx, ampr.Client, ref)
+		if err != nil {
+			if apierrors.IsNotFound(errors.Cause(err)) {
+				return reconcile.Result{}, errors.Wrapf(err, "could not find %v %q for MachinePool %q in namespace %q, requeuing while searching for bootstrap ConfigRef",
+					ref.GroupVersionKind(), ref.Name, machinePoolScope.MachinePool.Name, ref.Namespace)
+			}
+			return reconcile.Result{}, err
+		}
+
+		// Ensure we add a watch to the external object, if there isn't one already.
+		if err := ampr.externalTracker.Watch(log, obj,
+			handler.EnqueueRequestsFromMapFunc(BootstrapConfigToInfrastructureMapFunc(ampr.Client, *ampr.externalTracker.PredicateLogger)),
+			predicates.ResourceIsChanged(ampr.Client.Scheme(), *ampr.externalTracker.PredicateLogger)); err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "could not add a watcher to the object %v %q for MachinePool %q in namespace %q, requeuing",
+				ref.GroupVersionKind(), ref.Name, machinePoolScope.MachinePool.Name, ref.Namespace)
+		}
 	}
 
 	// Make sure bootstrap data is available and populated.

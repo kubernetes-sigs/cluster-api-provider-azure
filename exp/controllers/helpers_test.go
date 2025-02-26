@@ -21,12 +21,18 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -40,6 +46,99 @@ import (
 var (
 	clusterName = "my-cluster"
 )
+
+var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
+	It("should map bootstrap config to machine pool", func() {
+		ctx := context.Background()
+		scheme := runtime.NewScheme()
+		Expect(kubeadmv1.AddToScheme(scheme)).Should(Succeed())
+		Expect(expv1.AddToScheme(scheme)).Should(Succeed())
+		Expect(clusterv1.AddToScheme(scheme)).Should(Succeed())
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+		mapFn := BootstrapConfigToInfrastructureMapFunc(fakeClient, ctrl.Log)
+		bootstrapConfig := kubeadmv1.KubeadmConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "bootstrap-test",
+				Namespace: "default",
+			},
+		}
+		Expect(fakeClient.Create(ctx, &bootstrapConfig)).Should(Succeed())
+
+		By("doing nothing if the config has no owners")
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("doing nothing if the config has no MachinePool owner")
+		bootstrapConfig.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: "cluster.x-k8s.io/v1beta1",
+				Name:       "machine-pool-test",
+				Kind:       "NotAMachinePool",
+				UID:        types.UID("foobar"),
+				Controller: ptr.To(true),
+			},
+		}
+		Expect(fakeClient.Update(ctx, &bootstrapConfig)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("doing nothing if the MachinePool is not found")
+		bootstrapConfig.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: "cluster.x-k8s.io/v1beta1",
+				Name:       "machine-pool-test",
+				Kind:       "MachinePool",
+				UID:        types.UID("foobar"),
+				Controller: ptr.To(true),
+			},
+		}
+		Expect(fakeClient.Update(ctx, &bootstrapConfig)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("doing nothing if the MachinePool has no BootstrapConfigRef")
+		machinePool := expv1.MachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "machine-pool-test",
+				Namespace: "default",
+			},
+			Spec: expv1.MachinePoolSpec{
+				ClusterName: "test-cluster",
+				Template: clusterv1.MachineTemplateSpec{
+					Spec: clusterv1.MachineSpec{
+						ClusterName: "test-cluster",
+					},
+				},
+			},
+		}
+		Expect(fakeClient.Create(ctx, &machinePool)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("doing nothing if the MachinePool has a different BootstrapConfigRef Kind")
+		machinePool.Spec.Template.Spec.Bootstrap = clusterv1.Bootstrap{
+			ConfigRef: &corev1.ObjectReference{
+				APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+				Kind:       "OtherBootstrapConfig",
+				Name:       bootstrapConfig.Name,
+				Namespace:  bootstrapConfig.Namespace,
+			},
+		}
+		Expect(fakeClient.Update(ctx, &machinePool)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("doing nothing if the MachinePool has a different BootstrapConfigRef Name")
+		machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Kind = bootstrapConfig.GetObjectKind().GroupVersionKind().Kind
+		machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Name = "other-bootstrap-config"
+		Expect(fakeClient.Update(ctx, &machinePool)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
+
+		By("enqueueing AzureMachinePool")
+		machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Name = bootstrapConfig.Name
+		Expect(fakeClient.Update(ctx, &machinePool)).Should(Succeed())
+		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{
+			{
+				NamespacedName: client.ObjectKey{Namespace: machinePool.Namespace, Name: machinePool.Name},
+			},
+		}))
+	})
+})
 
 func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 	g := NewWithT(t)
