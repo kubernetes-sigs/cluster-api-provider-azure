@@ -769,7 +769,11 @@ func (s *ClusterScope) ControlPlaneOutboundLB() *infrav1.LoadBalancerSpec {
 
 // APIServerLBName returns the API Server LB name.
 func (s *ClusterScope) APIServerLBName() string {
-	return s.APIServerLB().Name
+	apiServerLB := s.APIServerLB()
+	if apiServerLB != nil {
+		return apiServerLB.Name
+	}
+	return ""
 }
 
 // IsAPIServerPrivate returns true if the API Server LB is of type Internal.
