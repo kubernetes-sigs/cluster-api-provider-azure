@@ -21,10 +21,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -377,9 +376,9 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -458,9 +457,9 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -504,9 +503,9 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -550,7 +549,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		want         []azure.ResourceSpecGetter
 	}{
 		{
-			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Linux and cloud is AzurePublic, it returns ExtensionSpec",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -565,10 +564,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType:     azure.PublicCloudName,
+							CloudSettings: cloud.AzurePublic,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
@@ -616,13 +614,6 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -653,13 +644,6 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -691,10 +675,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType:     azure.PublicCloudName,
+							CloudSettings: cloud.AzurePublic,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
@@ -741,13 +724,6 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -778,13 +754,6 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -815,13 +784,6 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.USGovernmentCloud.Name,
-							},
-						},
-					},
 					AzureCluster: &infrav1.AzureCluster{
 						Spec: infrav1.AzureClusterSpec{
 							ResourceGroup: "my-rg",
@@ -866,10 +828,9 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 				},
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
-							Environment: azureautorest.Environment{
-								Name: azureautorest.PublicCloud.Name,
-							},
+						environmentSettings: environmentSettings{
+							CloudType:     azure.PublicCloudName,
+							CloudSettings: cloud.AzurePublic,
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
@@ -1742,9 +1703,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -1849,9 +1810,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -1963,9 +1924,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2072,9 +2033,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2177,9 +2138,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2290,9 +2251,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2399,9 +2360,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2509,9 +2470,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2619,9 +2580,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2730,9 +2691,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -2870,9 +2831,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
@@ -3008,9 +2969,9 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
 					AzureClients: AzureClients{
-						EnvironmentSettings: auth.EnvironmentSettings{
+						environmentSettings: environmentSettings{
 							Values: map[string]string{
-								auth.SubscriptionID: "123",
+								SubscriptionID: "123",
 							},
 						},
 					},
