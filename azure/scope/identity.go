@@ -20,11 +20,13 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
+	"github.com/Azure/msi-dataplane/pkg/dataplane"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,6 +161,13 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		}
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
 
+	case infrav1.UserAssignedIdentityCredential:
+		cloudType := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		cred, authErr = dataplane.NewUserAssignedIdentityCredential(ctx, p.Identity.Spec.UserAssignedIdentityCredentialsPath, dataplane.WithClientOpts(azcore.ClientOptions{Cloud: cloudType}))
+		if authErr != nil {
+			return nil, authErr
+		}
+
 	default:
 		return nil, errors.Errorf("identity type %s not supported", p.Identity.Spec.Type)
 	}
@@ -211,7 +220,7 @@ func (p *AzureCredentialsProvider) hasClientSecret() bool {
 	switch p.Identity.Spec.Type {
 	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal:
 		return true
-	case infrav1.ServicePrincipalCertificate:
+	case infrav1.ServicePrincipalCertificate, infrav1.UserAssignedIdentityCredential:
 		return p.Identity.Spec.CertPath == ""
 	default:
 		return false
@@ -258,4 +267,18 @@ func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, all
 	}
 
 	return false
+}
+
+func parseCloudType(cloudType string) cloud.Configuration {
+	cloudType = strings.ToUpper(cloudType)
+	switch cloudType {
+	case "PUBLIC":
+		return cloud.AzurePublic
+	case "CHINA":
+		return cloud.AzureChina
+	case "USGOVERNMENT":
+		return cloud.AzureGovernment
+	default:
+		return cloud.AzurePublic
+	}
 }

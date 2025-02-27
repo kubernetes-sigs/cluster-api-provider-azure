@@ -27,6 +27,10 @@ func (c *AzureClusterIdentity) validateClusterIdentity() (admission.Warnings, er
 	if c.Spec.Type != UserAssignedMSI && c.Spec.ResourceID != "" {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "resourceID"), c.Spec.ResourceID))
 	}
+	if c.Spec.Type != UserAssignedIdentityCredential && (c.Spec.UserAssignedIdentityCredentialsPath != "" || c.Spec.UserAssignedIdentityCredentialsCloudType != "") {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), c.Spec.UserAssignedIdentityCredentialsPath))
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), c.Spec.UserAssignedIdentityCredentialsCloudType))
+	}
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
