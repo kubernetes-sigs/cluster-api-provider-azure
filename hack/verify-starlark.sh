@@ -20,7 +20,7 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 ROOT_PATH="$(cd "${SCRIPT_DIR}"/.. && pwd)"
 
-VERSION="0.29.0"
+VERSION="v8.0.3"
 
 MODE="check"
 
@@ -28,10 +28,21 @@ if [[ "$*" == "fix" ]]; then
   MODE="fix"
 fi
 
-if [[ "${OSTYPE}" == "linux"* ]]; then
-  BINARY="buildifier"
-elif [[ "${OSTYPE}" == "darwin"* ]]; then
-  BINARY="buildifier.mac"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+# Determine OS-specific binary name
+if [[ "${OS}" == "Linux" ]]; then
+  BINARY="buildifier-linux"
+elif [[ "${OS}" == "Darwin" ]]; then
+  BINARY="buildifier-darwin"
+fi
+
+# Append architecture suffix for the appropriate binary
+if [[ "${ARCH}" == "x86_64" ]] || [[ "${ARCH}" == "amd64" ]]; then
+  BINARY="${BINARY}-amd64"  # No change needed, this is the default
+elif [[ "${ARCH}" == "arm64" ]] || [[ "${ARCH}" == "aarch64" ]]; then
+  BINARY="${BINARY}-arm64"
 fi
 
 # create a temporary directory
@@ -68,4 +79,4 @@ fi
 
 echo "Running buildifier..."
 cd "${ROOT_PATH}" || exit
-"${BUILDIFIER}" -mode=${MODE} Tiltfile >> "${OUT}" 2>&1
+"${BUILDIFIER}" -mode=${MODE} -v Tiltfile >> "${OUT}" 2>&1
