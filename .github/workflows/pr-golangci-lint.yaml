@@ -30,7 +30,7 @@ jobs:
           go-version: ${{ steps.vars.outputs.go_version }}
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@2e788936b09dd82dc280e845628a40d2ba6b204c # tag=v6.3.1
+        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # tag=v6.5.0
         with:
           # update the version when updating golangci-lint
           version: v1.60.2
