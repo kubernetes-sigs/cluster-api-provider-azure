@@ -60,7 +60,6 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          cloud-provider: external
           feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
           runtime-config: resource.k8s.io/v1alpha3=true
         timeoutForControlPlane: 20m
