@@ -89,6 +89,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -461,4 +462,50 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	}
 	err = wait.ExponentialBackoffWithContext(ctx, backoff, retryDSFn)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func PeerVnets(ctx context.Context, inputGetter func() AzureAPIServerILBSpecInput) {
+	var (
+		specName = "azure-apiserver-ilb"
+		input    AzureAPIServerILBSpecInput
+	)
+
+	input = inputGetter()
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+
+	peerVnetsScript := e2eConfig.GetVariable(PeerVNetsScriptPath)
+	Expect(peerVnetsScript).NotTo(BeEmpty(), "PEER_VNETS_SCRIPT_PATH env var is required")
+
+	// Execute peer_vnets directly instead of sourcing the script
+	cmd := exec.CommandContext(ctx, peerVnetsScript)
+
+	// Set the required CLUSTER_NAME environment variable
+	cmd.Env = append(os.Environ(), fmt.Sprintf("CLUSTER_NAME=%s", input.ClusterName))
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+
+	// Always log the output for debugging purposes
+	Logf("Peer VNets stdout: %s", stdoutBuf.String())
+	Logf("Peer VNets stderr: %s", stderrBuf.String())
+
+	if err != nil {
+		Fail(fmt.Sprintf("Failed to peer VNets: %v", err))
+	}
+
+	/*
+		// Replace the below block with the above block when debugging the peering VNets script
+		// The below code suppresses the StdOut and StdErr
+	*/
+
+	// cmd.Stdout = io.Discard
+	// cmd.Stderr = io.Discard
+	// err := cmd.Run()
+	// if err != nil {
+	// 	Logf("Error running peer-vnets.sh: %v", err)
+	// }
+	// ------------------------ //
 }
