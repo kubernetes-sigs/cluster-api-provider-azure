@@ -174,9 +174,6 @@ linters-settings:
       - name: exported
         arguments:
           - disableStutteringCheck
-  unused:
-    go: "1.22"
-
 issues:
   exclude-files:
     - 'zz_generated\.(\w*)\.go$'
