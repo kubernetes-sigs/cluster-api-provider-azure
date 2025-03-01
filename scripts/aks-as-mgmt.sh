@@ -95,7 +95,7 @@ main() {
   fi
 
   create_aks_cluster
-  set_env_varaibles
+  set_env_variables
 }
 
 create_aks_cluster() {
@@ -197,61 +197,75 @@ create_aks_cluster() {
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
 
-set_env_varaibles(){
+set_env_variables(){
+  # Ensure temporary files are removed on exit.
+  trap 'rm -f tilt-settings-temp.yaml tilt-settings-new.yaml combined_contexts.yaml' EXIT
+
+  # Create a temporary settings file based on current environment values.
   cat <<EOF > tilt-settings-temp.yaml
-kustomize_substitutions:
-  AKS_RESOURCE_GROUP: "${AKS_RESOURCE_GROUP}"
-  AKS_NODE_RESOURCE_GROUP: "${AKS_NODE_RESOURCE_GROUP}"
+aks_as_mgmt_settings:
   AKS_MGMT_VNET_NAME: "${AKS_MGMT_VNET_NAME}"
-  MGMT_CLUSTER_NAME: "${MGMT_CLUSTER_NAME}"
-  AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY: "${AKS_MI_CLIENT_ID}"
-  CI_RG: "${MANAGED_IDENTITY_RG}"
-  USER_IDENTITY: "${MANAGED_IDENTITY_NAME}"
-  CLUSTER_IDENTITY_TYPE: "UserAssignedMSI"
-  ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE}"
-  REGISTRY: "${REGISTRY}"
+  AKS_NODE_RESOURCE_GROUP: "${AKS_NODE_RESOURCE_GROUP}"
+  AKS_RESOURCE_GROUP: "${AKS_RESOURCE_GROUP}"
   APISERVER_LB_DNS_SUFFIX: "${APISERVER_LB_DNS_SUFFIX}"
+  ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE}"
+  AZURE_CLIENT_ID: "${AKS_MI_CLIENT_ID}"
+  AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY: "${AKS_MI_CLIENT_ID}"
+  AZURE_LOCATION: "${AZURE_LOCATION}"
+  CI_RG: "${MANAGED_IDENTITY_RG}"
+  CLUSTER_IDENTITY_TYPE: "UserAssignedMSI"
+  CONTROL_PLANE_MACHINE_COUNT: "3"
+  MGMT_CLUSTER_NAME: "${MGMT_CLUSTER_NAME}"
+  REGISTRY: "${REGISTRY}"
+  USER_IDENTITY: "${MANAGED_IDENTITY_NAME}"
+  WORKER_MACHINE_COUNT: "1"
 allowed_contexts:
-  - "$MGMT_CLUSTER_NAME"
+  - "${MGMT_CLUSTER_NAME}"
   - "kind-capz"
-azure_location: "${AZURE_LOCATION}"
 EOF
 
-# create tilt-settings.yaml if it does not exist
-if [ -f tilt-settings.yaml ]; then
-  echo "tilt-settings.yaml exists"
-else
-  echo "tilt-settings.yaml does not exist, creating one"
-  touch tilt-settings.yaml
-fi
+  # create tilt-settings.yaml if it does not exist
+  if [ -f tilt-settings.yaml ]; then
+    echo "tilt-settings.yaml exists"
+  else
+    echo "tilt-settings.yaml does not exist, creating one"
+    touch tilt-settings.yaml
+  fi
 
-# copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
-allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
-if [ "$allowed_contexts_exists" == "null" ]; then
-  yq eval '.allowed_contexts = load("tilt-settings-temp.yaml") | .allowed_contexts' tilt-settings-temp.yaml > tilt-settings.yaml
-fi
+  # copy over the existing allowed_contexts to tilt-settings.yaml if it does not exist
+  allowed_contexts_exists=$(yq eval '.allowed_contexts' tilt-settings.yaml)
+  if [ "$allowed_contexts_exists" == "null" ]; then
+    yq eval --inplace '.allowed_contexts = load("tilt-settings-temp.yaml").allowed_contexts' tilt-settings.yaml
+  fi
 
-# extract allowed_contexts from tilt-settings.yaml
-current_contexts=$(yq eval '.allowed_contexts' tilt-settings.yaml | sort -u)
+  # extract allowed_contexts from tilt-settings.yaml
+  current_contexts=$(yq eval '.allowed_contexts' tilt-settings.yaml | sort -u)
 
-# extract allowed_contexts from tilt-settings-new.yaml
-new_contexts=$(yq eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
+  # extract allowed_contexts from tilt-settings-new.yaml
+  new_contexts=$(yq eval '.allowed_contexts' tilt-settings-temp.yaml | sort -u)
 
-# combine current and new contexts, keeping the union of both
-combined_contexts=$(echo "$current_contexts"$'\n'"$new_contexts" | sort -u)
+  # combine current and new contexts, keeping the union of both
+  combined_contexts=$(echo "$current_contexts"$'\n'"$new_contexts" | sort -u)
 
-# create a temporary file since env($combined_contexts) is not supported in yq
-echo "$combined_contexts" > combined_contexts.yaml
+  # create a temporary file since env($combined_contexts) is not supported in yq
+  echo "$combined_contexts" > combined_contexts.yaml
 
-# update allowed_contexts in tilt-settings.yaml with the combined contexts
-yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
+  # update allowed_contexts in tilt-settings.yaml with the combined contexts
+  yq eval --inplace ".allowed_contexts = load(\"combined_contexts.yaml\")" tilt-settings.yaml
 
-# merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
-yq eval-all 'select(fileIndex == 0) *+ {"kustomize_substitutions": select(fileIndex == 1).kustomize_substitutions, "azure_location": select(fileIndex == 1).azure_location}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
+  # check if kustomize_substitutions exists, if not add empty one
+  kustomize_substitutions_exists=$(yq eval '.kustomize_substitutions' tilt-settings.yaml)
+  if [ "$kustomize_substitutions_exists" == "null" ]; then
+    yq eval --inplace '.kustomize_substitutions = {}' tilt-settings.yaml
+  fi
 
-mv tilt-settings-new.yaml tilt-settings.yaml
-rm -r combined_contexts.yaml
-rm -f tilt-settings-temp.yaml
+  # clear out existing aks_as_mgmt_settings before merging new settings
+  yq eval --inplace 'del(.aks_as_mgmt_settings)' tilt-settings.yaml
+
+  # merge the updated kustomize_substitution and azure_location with the existing one in tilt-settings.yaml
+  yq eval-all 'select(fileIndex == 0) *+ {"aks_as_mgmt_settings": select(fileIndex == 1).aks_as_mgmt_settings}' tilt-settings.yaml tilt-settings-temp.yaml > tilt-settings-new.yaml
+
+  mv tilt-settings-new.yaml tilt-settings.yaml
 }
 
 main
