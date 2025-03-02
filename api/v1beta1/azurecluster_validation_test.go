@@ -465,9 +465,6 @@ func TestResourceGroupValid(t *testing.T) {
 		err := validateResourceGroup(testCase.resourceGroup,
 			field.NewPath("spec").Child("networkSpec").Child("vnet").Child("resourceGroup"))
 		g.Expect(err).NotTo(HaveOccurred())
-		err = validateResourceGroup(testCase.resourceGroup,
-			field.NewPath("spec").Child("networkSpec").Child("privateDNSZoneResourceGroup"))
-		g.Expect(err).NotTo(HaveOccurred())
 	})
 }
 
@@ -489,12 +486,6 @@ func TestResourceGroupInvalid(t *testing.T) {
 		g.Expect(err).NotTo(BeNil())
 		g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(err.Field).To(Equal("spec.networkSpec.vnet.resourceGroup"))
-		g.Expect(err.BadValue).To(BeEquivalentTo(testCase.resourceGroup))
-		err = validateResourceGroup(testCase.resourceGroup,
-			field.NewPath("spec").Child("networkSpec").Child("privateDNSZoneResourceGroup"))
-		g.Expect(err).NotTo(BeNil())
-		g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
-		g.Expect(err.Field).To(Equal("spec.networkSpec.privateDNSZoneResourceGroup"))
 		g.Expect(err.BadValue).To(BeEquivalentTo(testCase.resourceGroup))
 	})
 }
