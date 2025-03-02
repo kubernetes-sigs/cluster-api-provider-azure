@@ -562,7 +562,7 @@ func validatePrivateDNSZoneResourceGroup(privateDNSZoneName string, privateDNSZo
 	var allErrs field.ErrorList
 
 	if privateDNSZoneResourceGroup != "" {
-		if valid.IsNull(privateDNSZoneName) {
+		if privateDNSZoneName == "" {
 			allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZoneName,
 				"PrivateDNSZoneResourceGroup can only be used when PrivateDNSZoneName is provided"))
 		}
