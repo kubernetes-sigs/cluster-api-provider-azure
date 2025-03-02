@@ -846,7 +846,7 @@ func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
 			expectValid: true,
 		},
 		{
-			name: "show be set if PrivateDNSZoneName is given",
+			name: "should be set if PrivateDNSZoneName is given",
 			clusterTemplate: &AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
