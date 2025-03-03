@@ -27,6 +27,23 @@ source "${REPO_ROOT}/hack/ensure-tags.sh"
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 KIND="${REPO_ROOT}/hack/tools/bin/kind"
 AZWI="${REPO_ROOT}/hack/tools/bin/azwi"
+
+# Remove aks_as_mgmt_settings from tilt-settings.yaml if it exists
+TILT_SETTINGS_FILE="${REPO_ROOT}/tilt-settings.yaml"
+if [ -f "$TILT_SETTINGS_FILE" ]; then
+    # Check if yq is installed
+    if ! command -v yq &> /dev/null; then
+        echo "yq is required but not installed. Please install yq first."
+        exit 1
+    fi
+    
+    # Check if aks_as_mgmt_settings exists in the file
+    if yq e 'has("aks_as_mgmt_settings")' "$TILT_SETTINGS_FILE" | grep -q "true"; then
+        echo "Removing aks_as_mgmt_settings from tilt-settings.yaml"
+        yq e 'del(.aks_as_mgmt_settings)' -i "$TILT_SETTINGS_FILE"
+    fi
+fi
+
 AZWI_ENABLED="${AZWI_ENABLED:-true}"
 RANDOM_SUFFIX="${RANDOM_SUFFIX:-$(od -An -N4 -tu4 /dev/urandom | tr -d ' ' | head -c 8)}"
 export AZWI_STORAGE_ACCOUNT="capzcioidcissuer${RANDOM_SUFFIX}"
