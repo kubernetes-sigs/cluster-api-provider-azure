@@ -25,26 +25,31 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	azureautorest "github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	auth.EnvironmentSettings
+	environmentSettings
 
 	TokenCredential            azcore.TokenCredential
-	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
 
 	authType infrav1.IdentityType
 }
 
+type environmentSettings struct {
+	Values        map[string]string
+	CloudType     string
+	CloudSettings cloud.Configuration
+}
+
 // CloudEnvironment returns the Azure environment the controller runs in.
 func (c *AzureClients) CloudEnvironment() string {
-	return c.Environment.Name
+	return c.environmentSettings.CloudType
 }
 
 // TenantID returns the Azure tenant id the controller runs in.
@@ -86,34 +91,28 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
 
-	settings, err := c.getSettingsFromEnvironment(environmentName)
-	if err != nil {
-		return err
-	}
+	c.environmentSettings = c.getSettingsFromEnvironment(environmentName)
 
 	if subscriptionID == "" {
-		subscriptionID = settings.GetSubscriptionID()
+		subscriptionID = c.environmentSettings.Values["AZURE_SUBSCRIPTION_ID"]
 		if subscriptionID == "" {
 			return fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
 		}
 	}
 
-	c.EnvironmentSettings = settings
-	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
-	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
-	c.Values["AZURE_SUBSCRIPTION_ID"] = strings.TrimSuffix(subscriptionID, "\n")
-	c.Values["AZURE_TENANT_ID"] = strings.TrimSuffix(credentialsProvider.GetTenantID(), "\n")
-	c.Values["AZURE_CLIENT_ID"] = strings.TrimSuffix(credentialsProvider.GetClientID(), "\n")
+	c.environmentSettings.Values["AZURE_SUBSCRIPTION_ID"] = strings.TrimSuffix(subscriptionID, "\n")
+	c.environmentSettings.Values["AZURE_TENANT_ID"] = strings.TrimSuffix(credentialsProvider.GetTenantID(), "\n")
+	c.environmentSettings.Values["AZURE_CLIENT_ID"] = strings.TrimSuffix(credentialsProvider.GetClientID(), "\n")
 
 	clientSecret, err := credentialsProvider.GetClientSecret(ctx)
 	if err != nil {
 		return err
 	}
-	c.Values["AZURE_CLIENT_SECRET"] = strings.TrimSuffix(clientSecret, "\n")
+	c.environmentSettings.Values["AZURE_CLIENT_SECRET"] = strings.TrimSuffix(clientSecret, "\n")
 
 	c.authType = credentialsProvider.Type()
 
-	tokenCredential, err := credentialsProvider.GetTokenCredential(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint, c.Environment.TokenAudience)
+	tokenCredential, err := credentialsProvider.GetTokenCredential(ctx, c.CloudSettings)
 	if err != nil {
 		return err
 	}
@@ -121,10 +120,11 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	return err
 }
 
-func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s auth.EnvironmentSettings, err error) {
-	s = auth.EnvironmentSettings{
-		Values: map[string]string{},
+func (c *AzureClients) getSettingsFromEnvironment(environmentName string) environmentSettings {
+	s := environmentSettings{
+		Values: make(map[string]string),
 	}
+
 	s.Values["AZURE_ENVIRONMENT"] = environmentName
 	setValue(s, "AZURE_SUBSCRIPTION_ID")
 	setValue(s, "AZURE_TENANT_ID")
@@ -137,19 +137,33 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	setValue(s, "AZURE_PASSWORD")
 	setValue(s, "AZURE_AD_RESOURCE")
 	if v := s.Values["AZURE_ENVIRONMENT"]; v == "" {
-		s.Environment = azureautorest.PublicCloud
+		s.CloudType = azure.PublicCloudName
+		s.CloudSettings = cloud.AzurePublic
 	} else {
-		s.Environment, err = azureautorest.EnvironmentFromName(v)
+		s.CloudType, s.CloudSettings = getCloudEnvironment(os.Getenv("AZURE_ENVIRONMENT"))
 	}
-	if s.Values["AZURE_AD_RESOURCE"] == "" {
-		s.Values["AZURE_AD_RESOURCE"] = s.Environment.ResourceManagerEndpoint
-	}
-	return
+	return s
 }
 
 // setValue adds the specified environment variable value to the Values map if it exists.
-func setValue(settings auth.EnvironmentSettings, key string) {
+func setValue(settings environmentSettings, key string) {
 	if v := os.Getenv(key); v != "" {
 		settings.Values[key] = v
+	}
+}
+
+func getCloudEnvironment(cloudType string) (string, cloud.Configuration) {
+	cloudType = strings.ToUpper(cloudType)
+	switch cloudType {
+	case "AZUREPUBLICCLOUD":
+		return azure.PublicCloudName, cloud.AzurePublic
+	case "AZURECLOUD":
+		return azure.PublicCloudName, cloud.AzurePublic
+	case "AZURECHINACLOUD":
+		return azure.ChinaCloudName, cloud.AzureChina
+	case "AZUREUSGOVERNMENT":
+		return azure.USGovernmentCloudName, cloud.AzureGovernment
+	default:
+		return azure.PublicCloudName, cloud.AzurePublic
 	}
 }
