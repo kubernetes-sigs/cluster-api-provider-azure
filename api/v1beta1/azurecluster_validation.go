@@ -203,6 +203,7 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old 
 		lbType = networkSpec.APIServerLB.Type
 	}
 	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec.PrivateDNSZoneName, controlPlaneEnabled, lbType, fldPath.Child("privateDNSZoneName"))...)
+	allErrs = append(allErrs, validatePrivateDNSZoneResourceGroup(networkSpec.PrivateDNSZoneName, networkSpec.PrivateDNSZoneResourceGroup, fldPath.Child("privateDNSZoneResourceGroup"))...)
 
 	if len(allErrs) == 0 {
 		return nil
@@ -550,6 +551,24 @@ func validatePrivateDNSZoneName(privateDNSZoneName string, controlPlaneEnabled b
 			allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZoneName,
 				"PrivateDNSZoneName can only contain alphanumeric characters, underscores and dashes, must end with an alphanumeric character",
 			))
+		}
+	}
+
+	return allErrs
+}
+
+// validatePrivateDNSZoneResourceGroup validates the PrivateDNSZoneResourceGroup.
+// A private DNS Zone's resource group is valid as long as privateDNSZoneName is provided with the private dns resource group name
+func validatePrivateDNSZoneResourceGroup(privateDNSZoneName string, privateDNSZoneResourceGroup string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if privateDNSZoneResourceGroup != "" {
+		if privateDNSZoneName == "" {
+			allErrs = append(allErrs, field.Invalid(fldPath, privateDNSZoneName,
+				"PrivateDNSZoneResourceGroup can only be used when PrivateDNSZoneName is provided"))
+		}
+		if err := validateResourceGroup(privateDNSZoneResourceGroup, fldPath); err != nil {
+			allErrs = append(allErrs, err)
 		}
 	}
 
