@@ -558,9 +558,13 @@ func (s *ClusterScope) VNetSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20
 // PrivateDNSSpec returns the private dns zone spec.
 func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, linkSpec, recordSpec []azure.ResourceSpecGetter) {
 	if s.IsAPIServerPrivate() {
+		resourceGroup := s.ResourceGroup()
+		if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup != "" {
+			resourceGroup = s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup
+		}
 		zone := privatedns.ZoneSpec{
 			Name:           s.GetPrivateDNSZoneName(),
-			ResourceGroup:  s.ResourceGroup(),
+			ResourceGroup:  resourceGroup,
 			ClusterName:    s.ClusterName(),
 			AdditionalTags: s.AdditionalTags(),
 		}
@@ -572,7 +576,7 @@ func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, link
 			SubscriptionID:    s.SubscriptionID(),
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			VNetName:          s.Vnet().Name,
-			ResourceGroup:     s.ResourceGroup(),
+			ResourceGroup:     resourceGroup,
 			ClusterName:       s.ClusterName(),
 			AdditionalTags:    s.AdditionalTags(),
 		}
@@ -583,7 +587,7 @@ func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, link
 				SubscriptionID:    s.SubscriptionID(),
 				VNetResourceGroup: peering.ResourceGroup,
 				VNetName:          peering.RemoteVnetName,
-				ResourceGroup:     s.ResourceGroup(),
+				ResourceGroup:     resourceGroup,
 				ClusterName:       s.ClusterName(),
 				AdditionalTags:    s.AdditionalTags(),
 			}
@@ -596,7 +600,7 @@ func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, link
 				IP:       s.APIServerPrivateIP(),
 			},
 			ZoneName:      s.GetPrivateDNSZoneName(),
-			ResourceGroup: s.ResourceGroup(),
+			ResourceGroup: resourceGroup,
 		}
 
 		return zone, links, records

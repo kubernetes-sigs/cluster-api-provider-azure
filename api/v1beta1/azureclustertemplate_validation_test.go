@@ -822,6 +822,96 @@ func TestValidatePrivateDNSZoneName(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
+	cases := []struct {
+		name            string
+		clusterTemplate *AzureClusterTemplate
+		expectValid     bool
+		expectedErr     field.Error
+	}{
+		{
+			name: "not set",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{},
+						},
+					},
+				},
+			},
+			expectValid: true,
+		},
+		{
+			name: "should be set if PrivateDNSZoneName is given",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								NetworkClassSpec: NetworkClassSpec{
+									PrivateDNSZoneName:          "e.f.g",
+									PrivateDNSZoneResourceGroup: "a.b.c",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: true,
+		},
+		{
+			name: "should not be set if PrivateDNSZoneName is not given",
+			clusterTemplate: &AzureClusterTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster-template",
+				},
+				Spec: AzureClusterTemplateSpec{
+					Template: AzureClusterTemplateResource{
+						Spec: AzureClusterTemplateResourceSpec{
+							NetworkSpec: NetworkTemplateSpec{
+								NetworkClassSpec: NetworkClassSpec{
+									PrivateDNSZoneResourceGroup: "a.b.c",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectValid: false,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.template.spec.networkSpec.privateDNSZoneResourceGroup",
+				BadValue: "",
+				Detail:   "PrivateDNSZoneResourceGroup can only be used when PrivateDNSZoneName is provided",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			res := tc.clusterTemplate.validatePrivateDNSZoneResourceGroup()
+
+			if tc.expectValid {
+				g.Expect(res).To(BeNil())
+			} else {
+				g.Expect(res).NotTo(BeNil())
+				g.Expect(res).To(ContainElement(MatchError(tc.expectedErr.Error())))
+			}
+		})
+	}
+}
+
 func TestValidateNetworkSpec(t *testing.T) {
 	cases := []struct {
 		name            string

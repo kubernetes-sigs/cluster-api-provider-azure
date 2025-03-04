@@ -1371,6 +1371,81 @@ func TestPrivateDNSZoneName(t *testing.T) {
 	}
 }
 
+func TestPrivateDNSZoneResourceGroup(t *testing.T) {
+	testcases := []struct {
+		name        string
+		network     NetworkSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "testEmptyPrivateDNSZoneNameAndResourceGroup",
+			network: NetworkSpec{
+				NetworkClassSpec: NetworkClassSpec{
+					PrivateDNSZoneName:          "",
+					PrivateDNSZoneResourceGroup: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "testValidPrivateDNSZoneNameAndResourceGroup",
+			network: NetworkSpec{
+				NetworkClassSpec: NetworkClassSpec{
+					PrivateDNSZoneName:          "good.dns.io",
+					PrivateDNSZoneResourceGroup: "test-rg",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "testInvalidPrivateDNSZoneResourceGroup",
+			network: NetworkSpec{
+				NetworkClassSpec: NetworkClassSpec{
+					PrivateDNSZoneName:          "good.dns.io",
+					PrivateDNSZoneResourceGroup: "inv@lid-rg",
+				},
+			},
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.networkSpec.privateDNSZoneResourceGroup",
+				BadValue: "inv@lid-rg",
+				Detail:   "resourceGroup doesn't match regex ^[-\\w\\._\\(\\)]+$",
+			},
+			wantErr: true,
+		},
+		{
+			name: "testEmptyPrivateDNSZoneNameWithValidResourceGroup",
+			network: NetworkSpec{
+				NetworkClassSpec: NetworkClassSpec{
+					PrivateDNSZoneName:          "",
+					PrivateDNSZoneResourceGroup: "test-rg",
+				},
+			},
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.networkSpec.privateDNSZoneResourceGroup",
+				BadValue: "",
+				Detail:   "PrivateDNSZoneResourceGroup can only be used when PrivateDNSZoneName is provided",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			err := validatePrivateDNSZoneResourceGroup(test.network.PrivateDNSZoneName, test.network.PrivateDNSZoneResourceGroup, field.NewPath("spec", "networkSpec", "privateDNSZoneResourceGroup"))
+			if test.wantErr {
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestValidateNodeOutboundLB(t *testing.T) {
 	testcases := []struct {
 		name        string
