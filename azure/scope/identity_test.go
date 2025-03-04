@@ -419,6 +419,27 @@ func TestGetTokenCredential(t *testing.T) {
 				}))
 			},
 		},
+		{
+			name: "UserAssignedIdentityCredential",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:                                     infrav1.UserAssignedIdentityCredential,
+					UserAssignedIdentityCredentialsPath:      "../../test/setup/credentials.json",
+					UserAssignedIdentityCredentialsCloudType: "public",
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+			},
+		},
 	}
 
 	scheme := runtime.NewScheme()
@@ -443,8 +464,11 @@ func TestGetTokenCredential(t *testing.T) {
 
 			provider, err := NewAzureCredentialsProvider(context.Background(), cache, fakeClient, tt.cluster.Spec.IdentityRef, "")
 			g.Expect(err).NotTo(HaveOccurred())
-			_, err = provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
+			creds, err := provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
 			g.Expect(err).NotTo(HaveOccurred())
+			if tt.name == "UserAssignedIdentityCredential" {
+				g.Expect(creds).NotTo(BeNil())
+			}
 		})
 	}
 }
