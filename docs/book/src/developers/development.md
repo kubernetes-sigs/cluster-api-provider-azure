@@ -21,8 +21,8 @@
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
-    - [Tilt for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic](#tilt-for-dev-using-internal-load-balancer-ilb-for-intra-cluster-node-apiserver-traffic)
-      - [Flavors for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic](#flavors-for-dev-using-internal-load-balancer-ilb-for-intra-cluster-node-apiserver-traffic)
+    - [Tilt for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic](./tilt-with-aks-as-mgmt-ilb.md#tilt-workflow-for-aks-as-management-cluster-with-internal-load-balancer)
+      - [Flavors for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic](./tilt-with-aks-as-mgmt-ilb.md#flavors-leveraging-internal-load-balancer)
     - [Viewing Telemetry](#viewing-telemetry)
     - [Debugging](#debugging)
   - [Manual Testing](#manual-testing)
@@ -256,38 +256,6 @@ make delete-workload-cluster
 ```
 
 > Check out the [self-managed](../self-managed/troubleshooting.md) and [managed](../managed/troubleshooting.md) troubleshooting guides for common errors you might run into.
-
-#### Tilt for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic
-
-
-
-This flow is for developers who want to leverage the internal load balancer for intra-cluster node-apiserver traffic.
-You can achieve this by setting the `EXP_APISERVER_ILB` environment variable to `true` in your shell (run `export EXP_APISERVER_ILB=true`) and then create the CAPZ management cluster.
-
-We also encourage you to use AKS cluster as your management cluster.
-
-Outline of the steps:
-- `make clean`
-- `make generate`
-- Set `REGISTRY` in your env. Preferably an Azure Container Registry.
-- Run `docker-build-all` to build all the images.
-- Run `make acr-login` to login to your ACR.
-- Run `docker-push-all` to push all the images to your ACR.
-- Run `make aks-create` to create an AKS cluster. _Notice the changes that get applied to the `tilt-settings.yaml` file._
-- Run `export EXP_APISERVER_ILB=true` in your shell.
-- Run `make tilt-up` to start Tilt.
-
-```
-TODO:
-1. Come up with a shorter make target to do all the above steps for MS Tenants.
-2. VNet peering should be exported out as a shell script for users to run.
-```
-
-##### Flavors for dev using internal load balancer (ILB) for intra-cluster node-apiserver traffic
-
-There are two flavors available for development in CAPZ for MSFT Tenant:
-- [apiserver-ilb](../../../../templates/cluster-template-apiserver-ilb.yaml): VM based default flavor that brings up native K8s clusters with Linux nodes.
-- [apiserver-ilb-windows](../../../../templates/cluster-template-windows-apiserver-ilb.yaml): VM based flavor that brings up native K8s clusters with Linux and Windows nodes.
 
 #### Viewing Telemetry
 
