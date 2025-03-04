@@ -558,7 +558,7 @@ func validatePrivateDNSZoneName(privateDNSZoneName string, controlPlaneEnabled b
 }
 
 // validatePrivateDNSZoneResourceGroup validates the PrivateDNSZoneResourceGroup.
-// A private DNS Zone's resource group is valid as long as privateDNSZoneName is provided with the private dns resource group name
+// A private DNS Zone's resource group is valid as long as privateDNSZoneName is provided with the private dns resource group name.
 func validatePrivateDNSZoneResourceGroup(privateDNSZoneName string, privateDNSZoneResourceGroup string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
