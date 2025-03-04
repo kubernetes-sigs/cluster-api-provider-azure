@@ -85,9 +85,11 @@ By default using Tilt with Cluster API Provider Azure (CAPZ), the management clu
    - Use 3 control plane nodes in a stacked etcd setup.
       - Using aks as management cluster sets `CONTROL_PLANE_MACHINE_COUNT` to 3 by default.
 
-### Flavors leveraging internal load balancer
-- `cluster-template-apiserver-ilb.yaml`
-- `cluster-template-windows-apiserver-ilb.yaml`
+##### Flavors leveraging internal load balancer
+
+There are two flavors available for development in CAPZ for MSFT Tenant:
+- [apiserver-ilb](../../../../templates/cluster-template-apiserver-ilb.yaml): VM based default flavor that brings up native K8s clusters with Linux nodes.
+- [apiserver-ilb-windows](../../../../templates/cluster-template-windows-apiserver-ilb.yaml): VM based flavor that brings up native K8s clusters with Linux and Windows nodes.
 
 #### Tilt Workflow for AKS as Management Cluster with Internal Load Balancer
 
