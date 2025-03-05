@@ -49,6 +49,7 @@
     - [Windows](./self-managed/windows.md)
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
+        - [AKS as management cluster](./developers/tilt-with-aks-as-mgmt-ilb.md)
     - [Releasing](./developers/releasing.md)
     - [Jobs](./developers/jobs.md)
 - [Reference](./reference/reference.md)
