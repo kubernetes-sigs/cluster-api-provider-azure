@@ -154,12 +154,11 @@ development will span both CAPZ and CAPI, then follow the [CAPI and CAPZ instruc
 #### Tilt for dev in CAPZ
 
 <aside class="note warning">
-  <h2>Warning</h2>
-  <p>
-    To use an internal load balancer (ILB) for intra-cluster node-apiserver traffic in your workload cluster, please refer to the
-    <a href="./tilt-with-aks-as-mgmt-ilb.md">Tilt with AKS as Management Cluster</a> guide.
-  </p>
+  <h1>Warning</h1>
+  To use an internal load balancer (ILB) for intra-cluster node-apiserver traffic in your workload cluster, please refer to the
+  <a href="tilt-with-aks-as-mgmt-ilb.md">Tilt with AKS as Management Cluster</a> guide.
 </aside>
+
 
 If you want to develop in CAPZ and get a local development cluster working quickly, this is the path for you.
 
