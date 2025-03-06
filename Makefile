@@ -186,6 +186,7 @@ E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
 AZWI_SKIP_CLEANUP ?= false
 SKIP_LOG_COLLECTION ?= false
+MGMT_CLUSTER_TYPE ?= kind
 # @sonasingh46: Skip creating mgmt cluster for ci as workload identity needs kind cluster
 # to be created with extra mounts for key pairs which is not yet supported
 # by existing e2e framework. A mgmt cluster(kind) is created as part of e2e suite
@@ -317,8 +318,12 @@ install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(A
 
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
-	# Create kind management cluster.
-	$(MAKE) kind-create
+	# Create management cluster based on type
+	@if [ "$(MGMT_CLUSTER_TYPE)" = "aks" ]; then \
+		$(MAKE) aks-create; \
+	else \
+		$(MAKE) kind-create; \
+	fi
 
 	# Install cert manager and wait for availability
 	./hack/install-cert-manager.sh
@@ -334,7 +339,9 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAPZ
-	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME)
+	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
+		$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME); \
+	fi
 	timeout --foreground 300 bash -c "until $(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Wait for CAPI deployments
@@ -360,7 +367,10 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until $(KUBECTL) get clusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get azureclusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get kubeadmcontrolplanes -A; do sleep 3; done"
-	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'
+
+	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then 
+		@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'
+	fi
 
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
@@ -725,6 +735,25 @@ test-cover: test ## Run tests with code coverage and generate reports.
 .PHONY: kind-create-bootstrap
 kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
 	KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh
+
+.PHONY: create-bootstrap
+create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ testing. Default is KIND.
+	@echo "Creating bootstrap cluster with type: $(MGMT_CLUSTER_TYPE)"
+	@if [ "$(MGMT_CLUSTER_TYPE)" = "aks" ]; then \
+		if [ -z "$(AZURE_SUBSCRIPTION_ID)" ]; then \
+			echo "Error: AZURE_SUBSCRIPTION_ID is required for AKS bootstrap cluster" >&2; \
+			exit 1; \
+		fi; \
+		MGMT_CLUSTER_NAME="$${MGMT_CLUSTER_NAME:-capz-e2e-$(shell date +%s)}" \
+		AKS_RESOURCE_GROUP="$${AKS_RESOURCE_GROUP:-$$MGMT_CLUSTER_NAME}" \
+		AKS_MGMT_VNET_NAME="$${AKS_MGMT_VNET_NAME:-$$MGMT_CLUSTER_NAME-vnet}" \
+		AKS_MGMT_SUBNET_NAME="$${AKS_MGMT_SUBNET_NAME:-$$MGMT_CLUSTER_NAME-subnet}" \
+		./scripts/aks-as-mgmt.sh || { echo "Failed to create AKS bootstrap cluster" >&2; exit 1; }; \
+	else \
+		KIND_CLUSTER_NAME="$${KIND_CLUSTER_NAME:-capz-e2e}" \
+		./scripts/kind-with-registry.sh || { echo "Failed to create KIND bootstrap cluster" >&2; exit 1; }; \
+	fi
+	@echo "Bootstrap cluster created successfully"
 
 .PHONY: cleanup-workload-identity
 cleanup-workload-identity: ## Cleanup CI workload-identity infra

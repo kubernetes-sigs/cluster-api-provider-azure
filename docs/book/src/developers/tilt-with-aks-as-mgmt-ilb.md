@@ -124,3 +124,154 @@ Once the tilt UI is up and running
    - Flavors that leverage internal load balancer are:
      - `apiserver-ilb`
      - `windows-apiserver-ilb`
+
+### Running e2e tests locally using API Server ILB's networking solution
+
+Building upon the [challenges and solutions](#challenges-and-solutions) from above, running an e2e test locally in a restricted environment calls from some workarounds to the prow templates and the e2e test itself.
+
+1. We need the apiserver ilb with private endpoints, opinionated CIDRs to the workload cluster's VNet & Subnets, and pre-kubeadm commands updating the etc/hosts of the worker nodes of the workload cluster.
+
+2. Once the template has been modified to be run in local environment using AKS as management cluster, we need to be able to peer the vnets, create private DNS zone for the FQDN of the workload cluster and re-enable blocked NSG ports.
+
+**Note:**
+
+- Following guidance is only for testing, and not a recommendation for any production environment.
+
+- The below steps for self-managed templates only. Does not apply to AKS workload clusters.
+
+- The below steps are for running the tests in a intuned device. If you are going to run the local tests from a dev machine in Azure, you have to first follow below steps and then proceed ahead.
+  1. Create a managed Identity
+  2. Assign that managed identity a contributor role to your subscription
+  3. Set `AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY`, `AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY`, `AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID` to the user assigned managed identity.
+
+#### Update prow template with apiserver ILB networking solution
+
+There are three sections of a prow template that needs an update.
+
+1. AzureCluster
+   - `/spec/networkSpec/apiServerLB`
+      - Add FrontendIP
+      - Add an associated private IP to be leveraged by an intern ILB
+   - `/spec/networkSpec/vnet/cidrBlocks`
+      - Add VNet CIDR
+   - `/spec/networkSpec/subnets/0/cidrBlocks`
+      - Add Subnet CIDR for the control plane
+   - `/spec/networkSpec/subnets/1/cidrBlocks`
+      - Add Subnet CIDR for the worker node
+2. `KubeadmConfigTemplate` - linux node; Identifiable by `name: .*-md-0`
+   - `/spec/template/spec/preKubeadmCommands/0`
+      - Add prekubeadm command updating the `/etc/hosts` of the worker node of the type linux.
+3. `KubeadmConfigTemplate` - windows node; Identifiable by `name: .*-md-win`
+   - `/spec/template/spec/preKubeadmCommands/0`
+      - Add prekubeadm command updating the `/etc/hosts` of the worker node of the type windows.
+
+A Sample kustomize command updating a prow template via its kustomization.yaml is pasted below.
+
+```yaml
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/apiServerLB
+      value:
+        frontendIPs:
+        - name: ${CLUSTER_NAME}-api-lb
+          publicIP:
+            dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+            name: ${CLUSTER_NAME}-api-lb
+        - name: ${CLUSTER_NAME}-internal-lb-private-ip
+          privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/vnet/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/vnet/cidrBlocks/-
+      value: ${AZURE_VNET_CIDR}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/subnets/0/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/subnets/0/cidrBlocks/-
+      value: ${AZURE_CP_SUBNET_CIDR}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/subnets/1/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/subnets/1/cidrBlocks/-
+      value: ${AZURE_NODE_SUBNET_CIDR}
+- target:
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+  patch: |-
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands
+      value: []
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands/-
+      value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+- target:
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+  patch: |-
+    - op: add
+      path: /spec/template/spec/preKubeadmCommands/-
+      value:
+        powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
+```
+
+#### Peer Vnets of the management cluster and the workload cluster
+
+Peering VNets, creation of private DNS zone with the FQDN of the workload cluster and updating of NSGs of management and workload cluster can be achieved by `peer-vnets.sh` present in `scripts/peer-vnets.sh`
+
+This script, `scripts/peer-vnets.sh`, should be run after triggering the test run locally and in a separate terminal.
+
+#### Running the test locally
+
+We recommend running the test individually while debugging the test failure. This implies that `GINKGO_FOCUS` as unique as possible. So for instance if you want to run `periodic-cluster-api-provider-azure-e2e-main`'s "With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes" test,
+
+1. We first need to add the following environment variables to the test itself. For example:
+
+   ```go
+   Expect(os.Setenv("EXP_APISERVER_ILB", "true")).To(Succeed())
+   Expect(os.Setenv("AZURE_INTERNAL_LB_PRIVATE_IP", "10.0.0.101")).To(Succeed())
+   Expect(os.Setenv("AZURE_VNET_CIDR", "10.0.0.0/8")).To(Succeed())
+   Expect(os.Setenv("AZURE_CP_SUBNET_CIDR", "10.0.0.0/16")).To(Succeed())
+   Expect(os.Setenv("AZURE_NODE_SUBNET_CIDR", "10.1.0.0/16")).To(Succeed())
+   ```
+
+   The above lines should be added before the `clusterctl.ApplyClusterTemplateAndWait()` is invoked.
+
+
+2. Open the terminal and run the below command:
+
+   ```bash
+   GINKGO_FOCUS="With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes" USE_LOCAL_KIND_REGISTRY=false SKIP_CLEANUP="true" SKIP_LOG_COLLECTION="true" REGISTRY="<>" MGMT_CLUSTER_TYPE="aks" EXP_APISERVER_ILB=true AZURE_LOCATION="<>" ARCH="amd64" scripts/ci-e2e.sh
+   ```
+
+   **Note:**
+
+   - Set `MGMT_CLUSTER_TYPE` to `"aks"` to leverage `AKS` as the management cluster.
+   - Set `EXP_APISERVER_ILB` to `true` to enable the API Server ILB feature gate.
+   - Set `AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY`, `AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY` and `AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID` to use the user assigned managed identity instead of the AKS created managed identity.
+
+3. In a new terminal, wait for AzureClusters to be created by the above command. Check it using `kubectl get AzureClusters -A`. Note that this command will fail or will not output anything unless the above command, `GINKGO_FOCUS...`, has deployed the worker template and initiated workload cluster creation.
+
+   Once the worker cluster has been created, `export` the `CLUSTER_NAME` and `CLUSTER_NAMESPACE`.
+   It is recommended that `AZURE_INTERNAL_LB_PRIVATE_IP` is set an IP of `10.0.0.x`, say `10.0.0.101`, to avoid any test updates.
+
+   Then open a new terminal at the root of the cluster api provider azure repo and run the below command.
+
+   ```bash
+   AZURE_INTERNAL_LB_PRIVATE_IP="<IP of your choice>" CLUSTER_NAME="<e2e workload cluster name>" CLUSTER_NAMESPACE="<e2e cluster namespace>" ./scripts/peer-vnets.sh ./tilt-settings.yaml
+   ```
+
+You will see that the test progresses in the first terminal window that invoked `GINKGO_FOCUS=....`

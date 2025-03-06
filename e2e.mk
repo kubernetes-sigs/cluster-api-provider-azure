@@ -5,8 +5,11 @@
 
 ##@ E2E Testing:
 .PHONY: test-e2e-run
-test-e2e-run: generate-e2e-templates install-tools kind-create-bootstrap ## Run e2e tests.
-	@$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
+test-e2e-run: generate-e2e-templates install-tools create-bootstrap ## Run e2e tests.
+	if [ "$(MGMT_CLUSTER_TYPE)" == "aks" ]; then \
+		source ./scripts/peer-vnets.sh && source_tilt_settings tilt-settings.yaml; \
+	fi; \
+	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
 	if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
@@ -17,6 +20,7 @@ test-e2e-run: generate-e2e-templates install-tools kind-create-bootstrap ## Run 
 		-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS) \
 	$(MAKE) cleanup-workload-identity
 	$(MAKE) clean-release-git
+
 
 .PHONY: test-e2e
 test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
