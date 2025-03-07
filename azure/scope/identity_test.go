@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	. "github.com/onsi/gomega"
@@ -419,6 +420,45 @@ func TestGetTokenCredential(t *testing.T) {
 				}))
 			},
 		},
+		{
+			name: "UserAssignedIdentityCredential",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:                                     infrav1.UserAssignedIdentityCredential,
+					UserAssignedIdentityCredentialsPath:      "../../test/setup/credentials.json",
+					UserAssignedIdentityCredentialsCloudType: "public",
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				ctx := context.Background()
+				credsPath := "../../test/setup/credentials.json" //nolint:gosec
+				clientOptions := azcore.ClientOptions{
+					Cloud: cloud.Configuration{
+						ActiveDirectoryAuthorityHost: "https://login.microsoftonline.com/",
+						Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+							cloud.ResourceManager: {
+								Audience: "https://management.core.windows.net/",
+								Endpoint: "https://management.azure.com",
+							},
+						},
+					},
+				}
+				cache.EXPECT().GetOrStoreUserAssignedManagedIdentityCredentials(ctx, credsPath, gomock.Cond(func(opts azcore.ClientOptions) bool {
+					return opts.Cloud.ActiveDirectoryAuthorityHost == clientOptions.Cloud.ActiveDirectoryAuthorityHost &&
+						opts.Cloud.Services[cloud.ResourceManager].Audience == clientOptions.Cloud.Services[cloud.ResourceManager].Audience &&
+						opts.Cloud.Services[cloud.ResourceManager].Endpoint == clientOptions.Cloud.Services[cloud.ResourceManager].Endpoint
+				}), gomock.Any())
+			},
+		},
 	}
 
 	scheme := runtime.NewScheme()
@@ -445,6 +485,48 @@ func TestGetTokenCredential(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			_, err = provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
 			g.Expect(err).NotTo(HaveOccurred())
+		})
+	}
+}
+
+func TestParseCloudType(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected cloud.Configuration
+	}{
+		{
+			name:     "when the input is public, expect AzurePublic",
+			input:    "public",
+			expected: cloud.AzurePublic,
+		},
+		{
+			name:     "when the input is China, expect AzureChina",
+			input:    "china",
+			expected: cloud.AzureChina,
+		},
+		{
+			name:     "when the input is usgovernment, expect AzureGovernment",
+			input:    "usgovernment",
+			expected: cloud.AzureGovernment,
+		},
+		{
+			name:     "when the input is empty, expect AzurePublic",
+			input:    "", // Test case for default value
+			expected: cloud.AzurePublic,
+		},
+		{
+			name:     "when the input is PUBLIC, expect AzurePublic",
+			input:    "PUBLIC", // Test case for uppercased input
+			expected: cloud.AzurePublic,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			g.Expect(parseCloudType(tt.input)).To(Equal(tt.expected))
 		})
 	}
 }

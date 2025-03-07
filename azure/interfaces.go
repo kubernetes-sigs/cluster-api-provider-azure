@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -172,4 +173,5 @@ type CredentialCache interface {
 	GetOrStoreClientCert(tenantID, clientID string, cert, certPassword []byte, opts *azidentity.ClientCertificateCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreManagedIdentity(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error)
+	GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error)
 }
