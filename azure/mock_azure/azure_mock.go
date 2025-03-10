@@ -33,6 +33,7 @@ import (
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	azidentity "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	logr "github.com/go-logr/logr"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -2358,6 +2359,21 @@ func (m *MockCredentialCache) GetOrStoreManagedIdentity(opts *azidentity.Managed
 func (mr *MockCredentialCacheMockRecorder) GetOrStoreManagedIdentity(opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreManagedIdentity", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreManagedIdentity), opts)
+}
+
+// GetOrStoreUserAssignedManagedIdentityCredentials mocks base method.
+func (m *MockCredentialCache) GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreUserAssignedManagedIdentityCredentials", ctx, credsPath, opts, logger)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreUserAssignedManagedIdentityCredentials indicates an expected call of GetOrStoreUserAssignedManagedIdentityCredentials.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreUserAssignedManagedIdentityCredentials(ctx, credsPath, opts, logger any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreUserAssignedManagedIdentityCredentials", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreUserAssignedManagedIdentityCredentials), ctx, credsPath, opts, logger)
 }
 
 // GetOrStoreWorkloadIdentity mocks base method.
