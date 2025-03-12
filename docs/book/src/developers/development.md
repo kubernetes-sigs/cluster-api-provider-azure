@@ -177,8 +177,11 @@ You should have these values saved from the [getting started prerequisites](../g
 To build a kind cluster and start Tilt, just run:
 
 ```shell
-make tilt-up
+make kind-create tilt-up
 ```
+
+**Note**: You can also choose an AKS cluster as a management cluster by using `aks-create` instead of `kind-create`.
+
 By default, the Cluster API components deployed by Tilt have experimental features turned off.
 If you would like to enable these features, add `extra_args` as specified in [The Cluster API Book](https://cluster-api.sigs.k8s.io/developer/tilt.html#create-a-tilt-settingsjson-file).
 
