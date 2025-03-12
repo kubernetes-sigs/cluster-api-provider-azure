@@ -1,8 +1,8 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.22.7
+go 1.23.0
 
-toolchain go1.22.12
+toolchain go1.23.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
@@ -44,7 +44,7 @@ require (
 	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.33.0
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac
-	golang.org/x/mod v0.23.0
+	golang.org/x/mod v0.24.0
 	golang.org/x/text v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.31.3
