@@ -339,7 +339,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAPZ
-	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
+	if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
 		$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=$(KIND_CLUSTER_NAME); \
 	fi
 	timeout --foreground 300 bash -c "until $(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
@@ -368,7 +368,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until $(KUBECTL) get azureclusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get kubeadmcontrolplanes -A; do sleep 3; done"
 
-	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then 
+	if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then
 		@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'
 	fi
 
@@ -738,8 +738,8 @@ kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
 
 .PHONY: create-bootstrap
 create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ testing. Default is KIND.
-	@echo "Creating bootstrap cluster with type: $(MGMT_CLUSTER_TYPE)"
-	@if [ "$(MGMT_CLUSTER_TYPE)" = "aks" ]; then \
+	echo "Creating bootstrap cluster with type: $(MGMT_CLUSTER_TYPE)"
+	if [ "$(MGMT_CLUSTER_TYPE)" == "aks" ]; then \
 		if [ -z "$(AZURE_SUBSCRIPTION_ID)" ]; then \
 			echo "Error: AZURE_SUBSCRIPTION_ID is required for AKS bootstrap cluster" >&2; \
 			exit 1; \
@@ -753,7 +753,7 @@ create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ 
 		KIND_CLUSTER_NAME="$${KIND_CLUSTER_NAME:-capz-e2e}" \
 		./scripts/kind-with-registry.sh || { echo "Failed to create KIND bootstrap cluster" >&2; exit 1; }; \
 	fi
-	@echo "Bootstrap cluster created successfully"
+	echo "Bootstrap cluster created successfully"
 
 .PHONY: cleanup-workload-identity
 cleanup-workload-identity: ## Cleanup CI workload-identity infra
