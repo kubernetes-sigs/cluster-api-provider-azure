@@ -750,8 +750,7 @@ create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ 
 		AKS_MGMT_SUBNET_NAME="$${AKS_MGMT_SUBNET_NAME:-$$MGMT_CLUSTER_NAME-subnet}" \
 		./scripts/aks-as-mgmt.sh || { echo "Failed to create AKS bootstrap cluster" >&2; exit 1; }; \
 	else \
-		KIND_CLUSTER_NAME="$${KIND_CLUSTER_NAME:-capz-e2e}" \
-		./scripts/kind-with-registry.sh || { echo "Failed to create KIND bootstrap cluster" >&2; exit 1; }; \
+		KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh || { echo "Failed to create KIND bootstrap cluster" >&2; exit 1; }; \
 	fi
 	echo "Bootstrap cluster created successfully"
 
