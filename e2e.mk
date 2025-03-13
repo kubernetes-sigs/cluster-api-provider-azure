@@ -21,7 +21,6 @@ test-e2e-run: generate-e2e-templates install-tools create-bootstrap ## Run e2e t
 	$(MAKE) cleanup-workload-identity
 	$(MAKE) clean-release-git
 
-
 .PHONY: test-e2e
 test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \

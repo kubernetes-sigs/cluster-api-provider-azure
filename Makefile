@@ -368,8 +368,8 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until $(KUBECTL) get azureclusters -A; do sleep 3; done"
 	timeout --foreground 300 bash -c "until $(KUBECTL) get kubeadmcontrolplanes -A; do sleep 3; done"
 
-	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then
-		echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'
+	@if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
+		echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-$(KIND_CLUSTER_NAME)"'; \
 	fi
 
 .PHONY: create-workload-cluster
