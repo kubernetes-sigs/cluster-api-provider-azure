@@ -215,6 +215,18 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "validate spec success: Memory is float",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				spec := newDefaultVMSSSpec()
+				spec.Size = "VM_SIZE_MEM_FLOAT"
+				spec.Capacity = 2
+				spec.SSHKeyData = sshKeyData
+				s.ScaleSetSpec(gomockinternal.AContext()).Return(&spec).AnyTimes()
+			},
+		},
+		{
 			name:          "validate spec failure: failed to get SKU",
 			expectedError: "failed to get SKU INVALID_VM_SIZE in compute api: reconcile error that cannot be recovered occurred: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
@@ -630,6 +642,34 @@ func getFakeSkus() []armcompute.ResourceSKU {
 				{
 					Name:  ptr.To(resourceskus.EphemeralOSDisk),
 					Value: ptr.To("True"),
+				},
+			},
+		},
+		{
+			Name:         ptr.To("VM_SIZE_MEM_FLOAT"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
+			Locations: []*string{
+				ptr.To("test-location"),
+			},
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
+				{
+					Location: ptr.To("test-location"),
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+				},
+			},
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
+				{
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
+				},
+				{
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("217.13"),
 				},
 			},
 		},
