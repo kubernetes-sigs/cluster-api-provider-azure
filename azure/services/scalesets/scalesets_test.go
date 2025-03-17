@@ -100,6 +100,13 @@ func getResultVMSS() armcompute.VirtualMachineScaleSet {
 	return resultVMSS
 }
 
+func getMemFloatResultVMSS() armcompute.VirtualMachineScaleSet {
+	resultVMSS := newDefaultVMSS("VM_SIZE_MEM_FLOAT")
+	resultVMSS.ID = ptr.To(defaultVMSSID)
+
+	return resultVMSS
+}
+
 func TestReconcileVMSS(t *testing.T) {
 	defaultInstances := newDefaultInstances()
 	resultVMSS := newDefaultVMSS("VM_SIZE")
@@ -211,6 +218,29 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.Capacity = 2
 				spec.SSHKeyData = sshKeyData
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&spec).AnyTimes()
+			},
+		},
+		{
+			name:          "validate spec success: Memory is float",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				spec := newVMSSSpecWithSKU(resourceskus.MemoryGB, "217.13")
+				spec.Size = "VM_SIZE_MEM_FLOAT"
+				spec.Capacity = 2
+				spec.SSHKeyData = sshKeyData
+				memFloatVMSS := newDefaultVMSS("VM_SIZE_MEM_FLOAT")
+				memFloatVMSS.ID = ptr.To(defaultVMSSID)
+
+				s.ScaleSetSpec(gomockinternal.AContext()).Return(&spec).AnyTimes()
+				m.Get(gomockinternal.AContext(), &spec).Return(memFloatVMSS, nil)
+				m.ListInstances(gomockinternal.AContext(), spec.ResourceGroup, spec.Name).Return(defaultInstances, nil)
+				fetchedMemFloatVMSS := converters.SDKToVMSS(getMemFloatResultVMSS(), defaultInstances)
+				s.ReconcileReplicas(gomockinternal.AContext(), &fetchedMemFloatVMSS).Return(nil).Times(2)
+				s.SetProviderID(azureutil.ProviderIDPrefix + defaultVMSSID).Times(2)
+				s.SetVMSSState(&fetchedMemFloatVMSS).Times(2)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &spec, serviceName).Return(getMemFloatResultVMSS(), nil)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},
 		},
 		{
@@ -634,6 +664,34 @@ func getFakeSkus() []armcompute.ResourceSKU {
 				},
 			},
 		},
+		{
+			Name:         ptr.To("VM_SIZE_MEM_FLOAT"),
+			ResourceType: ptr.To(string(resourceskus.VirtualMachines)),
+			Kind:         ptr.To(string(resourceskus.VirtualMachines)),
+			Locations: []*string{
+				ptr.To("test-location"),
+			},
+			LocationInfo: []*armcompute.ResourceSKULocationInfo{
+				{
+					Location: ptr.To("test-location"),
+					Zones:    []*string{ptr.To("1"), ptr.To("3")},
+				},
+			},
+			Capabilities: []*armcompute.ResourceSKUCapabilities{
+				{
+					Name:  ptr.To(resourceskus.AcceleratedNetworking),
+					Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  ptr.To(resourceskus.VCPUs),
+					Value: ptr.To("4"),
+				},
+				{
+					Name:  ptr.To(resourceskus.MemoryGB),
+					Value: ptr.To("217.13"),
+				},
+			},
+		},
 	}
 }
 
@@ -728,6 +786,15 @@ func newWindowsVMSSSpec() ScaleSetSpec {
 	vmss := newDefaultVMSSSpec()
 	vmss.OSDisk.OSType = azure.WindowsOS
 	return vmss
+}
+func newVMSSSpecWithSKU(capName string, capValue string) ScaleSetSpec {
+	vmsSpec := newDefaultVMSSSpec()
+	inputCapability := armcompute.ResourceSKUCapabilities{
+		Name:  ptr.To(capName),
+		Value: ptr.To(capValue),
+	}
+	vmsSpec.SKU.Capabilities = append(vmsSpec.SKU.Capabilities, &inputCapability)
+	return vmsSpec
 }
 
 func newDefaultExistingVMSS() armcompute.VirtualMachineScaleSet {
