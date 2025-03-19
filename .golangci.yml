@@ -46,7 +46,6 @@ linters:
     - reassign
     - revive
     - rowserrcheck
-    - staticcheck
     - stylecheck
     - thelper
     - typecheck
