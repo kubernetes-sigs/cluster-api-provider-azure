@@ -99,6 +99,7 @@ spec:
         - /var/lib/etcddisk
     preKubeadmCommands: []
     postKubeadmCommands: []
+    verbosity: 10
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate

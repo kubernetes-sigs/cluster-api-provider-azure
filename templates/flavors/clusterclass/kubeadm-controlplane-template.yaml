@@ -61,3 +61,4 @@ spec:
           - /var/lib/etcddisk
         postKubeadmCommands: []
         preKubeadmCommands: []
+        verbosity: 10
