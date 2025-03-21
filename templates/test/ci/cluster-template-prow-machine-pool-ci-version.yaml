@@ -837,7 +837,7 @@ data:
     for rescheduling.\n      - key: CriticalAddonsOnly\n        operator: Exists\n
     \     - effect: NoExecute\n        operator: Exists\n      initContainers:\n        #
     This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.26.1-hostprocess\n
+    on each node.\n        - name: install-cni\n          image: sigwindowstools/calico-install:v3.29.2-hostprocess\n
     \         args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/install.ps1\"]\n
     \         imagePullPolicy: Always\n          env:\n            # Name of the CNI
     config file to create.\n            - name: CNI_CONF_NAME\n              value:
