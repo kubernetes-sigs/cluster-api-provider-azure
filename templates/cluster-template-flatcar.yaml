@@ -115,6 +115,7 @@ spec:
     preKubeadmCommands:
     - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
       | jq -r .compute.name)/g" /etc/kubeadm.yml
+    verbosity: 10
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

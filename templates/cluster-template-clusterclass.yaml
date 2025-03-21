@@ -197,6 +197,7 @@ spec:
           - /var/lib/etcddisk
         postKubeadmCommands: []
         preKubeadmCommands: []
+        verbosity: 10
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
