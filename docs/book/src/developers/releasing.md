@@ -50,7 +50,7 @@ This must be done prior to generating release artifacts, so the release contains
 ### 2. Change milestone (skip for patch releases) (maintainer)
 
 - Create a [new GitHub milestone](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestones/new) for the next release.
-- Change the milestone applier so new changes can be applied to the appropriate release.
+- Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release. 
 
 #### Versioning
 
