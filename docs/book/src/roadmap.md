@@ -23,12 +23,10 @@ See deprecation timeline below.
 See the [managed clusters](./managed/managed.md) for further background and comparison of the two managed cluster APIs.
 
 Approximate timeline for deprecation of AzureManaged API:
-- Sept 2024 - 1.17 - Announcement of deprecation of AzureManaged API.
-- Nov 2024 - 1.18
-- Jan 2025 - 1.19 - move AzureASOManaged API to beta
-- Mar 2025 - 1.20 - no new features accepted for AzureManaged API. Warning message in code for deprecation.
-- May 2025 - 1.21 - GA AzureASOManaged API
-- July 2025 - 1.22
-- Sept 2025 - 1.23 - AzureManaged API is removed from code base, AzureASOManaged API is default.
+- Mar 2025 - 1.19
+- May 2025 - 1.20: Move AzurASOManaged API to beta
+- July 2025 - 1.21: No new features accepted for AzureManaged API. Warning message in code for deprecation.
+- Sept 2025 - 1.22: GA AzureASOManaged API
+- Dec 2025 - GA 1.23: AzureManaged API is removed from code base, AzureASOManaged API is default.
 
 There may be investment creating a new API definition for AKS from the [Managed Kubernetes CAPI proposal](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20220725-managed-kubernetes.md) at some point in the future.  If interested in this functionality, please file an issue on the CAPZ repository and come to the community group meeting to discuss.
