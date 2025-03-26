@@ -145,6 +145,10 @@ spec:
                     operator: In
                     values:
                       - amd64
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - capz-conf-462kx
       securityContext:
         windowsOptions:
           hostProcess: true
@@ -209,7 +213,7 @@ spec:
               runAsUserName: "NT AUTHORITY\\system"
       containers:
       - name: calico-node-startup
-        image: sigwindowstools/calico-install:v3.29.2-hostprocess
+        image: sigwindowstools/calico-node:v3.29.2-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/node-service.ps1"]
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
         imagePullPolicy: Always
@@ -236,7 +240,7 @@ spec:
         - name: VXLAN_VNI
           value: "4096"
       - name: calico-node-felix
-        image: sigwindowstools/calico-install:v3.29.2-hostprocess
+        image: sigwindowstools/calico-node:v3.29.2-hostprocess
         args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/felix-service.ps1"]
         imagePullPolicy: Always
         workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/calico/"
