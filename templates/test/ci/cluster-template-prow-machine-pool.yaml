@@ -570,6 +570,8 @@ data:
     calico-config-windows\n                  key: veth_mtu\n            # Prevents
     the container from sleeping forever.\n            - name: SLEEP\n              value:
     \"false\"\n            - name: K8S_SERVICE_CIDR\n              value: \"10.96.0.0/12\"\n
+    \           - name: CNI_BIN_DIR\n              value: \"c:\\\\opt\\\\cni\\\\bin\"\n
+    \           - name: CNI_CONF_DIR\n              value: \"c:\\\\etc\\\\cni\\\\net.d\"\n
     \         volumeMounts:\n            - mountPath: /host/opt/cni/bin\n              name:
     cni-bin-dir\n            - mountPath: /host/etc/cni/net.d\n              name:
     cni-net-dir\n            - name: kubeadm-config\n              mountPath: /etc/kubeadm-config/\n

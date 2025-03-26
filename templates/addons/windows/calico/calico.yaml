@@ -192,6 +192,10 @@ spec:
               value: "false"
             - name: K8S_SERVICE_CIDR
               value: "10.96.0.0/12"
+            - name: CNI_BIN_DIR
+              value: "c:\\opt\\cni\\bin"
+            - name: CNI_CONF_DIR
+              value: "c:\\etc\\cni\\net.d"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
