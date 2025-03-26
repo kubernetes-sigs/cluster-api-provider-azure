@@ -145,10 +145,6 @@ spec:
                     operator: In
                     values:
                       - amd64
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - capz-conf-462kx
       securityContext:
         windowsOptions:
           hostProcess: true
