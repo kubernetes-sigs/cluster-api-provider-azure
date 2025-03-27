@@ -116,6 +116,10 @@ const (
 	// StackAPIVersionProfile is the API version profile to set for ARM clients. See:
 	// https://learn.microsoft.com/en-us/azure-stack/user/azure-stack-profiles-azure-resource-manager-versions?view=azs-2408#overview-of-the-2020-09-01-hybrid-profile
 	StackAPIVersionProfile = "2020-06-01"
+
+	// StackDiskAPIVersionProfile is the API Version to set for the disk client.
+	// API Version Profile "2020-06-01" is not supported for disks.
+	StackDiskAPIVersionProfile = "2018-06-01"
 )
 
 var (
