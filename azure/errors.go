@@ -34,6 +34,12 @@ func ResourceNotFound(err error) bool {
 	return errors.As(err, &rerr) && rerr.StatusCode == http.StatusNotFound
 }
 
+// BadRequest parses an error to check if it its status code is Bad Request (400).
+func BadRequest(err error) bool {
+	var rerr *azcore.ResponseError
+	return errors.As(err, &rerr) && rerr.StatusCode == http.StatusBadRequest
+}
+
 // VMDeletedError is returned when a virtual machine is deleted outside of capz.
 type VMDeletedError struct {
 	ProviderID string
