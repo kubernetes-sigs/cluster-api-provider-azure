@@ -232,11 +232,14 @@ spec:
         type: Calico
       calicoNetwork:
         bgp: Disabled
+        windowsDataplane: HNS
         mtu: 1350
         ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
+        - {{ $cidr }}{{end}}
       registry: mcr.microsoft.com/oss
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
@@ -244,6 +247,9 @@ spec:
       registry: mcr.microsoft.com/oss
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
