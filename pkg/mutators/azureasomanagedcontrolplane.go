@@ -23,6 +23,12 @@ import (
 	"strings"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	// NOTE: when the hub API version is updated, verify the
+	// ManagedClusterAgentPoolProfile below has every field defined. If a field
+	// isn't defined, the agent pool will be created with a zero/null value, and
+	// then updated to the user-defined value. If the field is immutable, this
+	// update will fail. The linter should catch if there are missing fields,
+	// but verify that check is actually working.
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -350,12 +356,14 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			ScaleDownMode:                     hubPool.Spec.ScaleDownMode,
 			ScaleSetEvictionPolicy:            hubPool.Spec.ScaleSetEvictionPolicy,
 			ScaleSetPriority:                  hubPool.Spec.ScaleSetPriority,
+			SecurityProfile:                   hubPool.Spec.SecurityProfile,
 			SpotMaxPrice:                      hubPool.Spec.SpotMaxPrice,
 			Tags:                              hubPool.Spec.Tags,
 			Type:                              hubPool.Spec.Type,
 			UpgradeSettings:                   hubPool.Spec.UpgradeSettings,
 			VmSize:                            hubPool.Spec.VmSize,
 			VnetSubnetReference:               hubPool.Spec.VnetSubnetReference,
+			WindowsProfile:                    hubPool.Spec.WindowsProfile,
 			WorkloadRuntime:                   hubPool.Spec.WorkloadRuntime,
 		}
 

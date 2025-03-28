@@ -18,6 +18,7 @@ linters:
     - durationcheck # multiplying two durations
     - errcheck # unchecked errors
     - errchkjson # invalid types passed to json encoder
+    - exhaustruct # checks if all structure fields are initialized
     - gci # ensures imports are organized
     - ginkgolinter # ginkgo and gomega
     - goconst # strings that can be replaced by constants
@@ -54,6 +55,10 @@ linters:
     - whitespace # unnecessary newlines
 
 linters-settings:
+  exhaustruct:
+    include:
+      # Hub ASO agent pools should be fully defined to prevent unnecessary updates
+      - '.*storage\..*AgentPoolProfile$'
   gosec:
     excludes:
       - G307 # Deferring unsafe method "Close" on type "\*os.File"
@@ -185,9 +190,9 @@ issues:
     - path: (^test/|_test.go$)
       linters:
         - dogsled
+        - exhaustruct
         - goconst
         - godot
-        - prealloc
     - path: (^test/|_test.go$)
       text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
     - source: \"github.com/onsi/(ginkgo/v2|gomega)\"
