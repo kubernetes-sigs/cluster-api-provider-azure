@@ -226,7 +226,7 @@ spec:
   namespace: tigera-operator
   releaseName: projectcalico
   repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
+  valuesTemplate: |
     installation:
       cni:
         type: Calico
@@ -247,9 +247,6 @@ spec:
       registry: mcr.microsoft.com/oss
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
-    kubernetesServiceEndpoint:
-      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
-      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
