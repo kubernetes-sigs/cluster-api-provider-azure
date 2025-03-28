@@ -318,7 +318,7 @@ install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(HELM) $(GINKGO) $(KIND) $(A
 .PHONY: create-management-cluster
 create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create a management cluster.
 	# Create kind management cluster.
-	$(MAKE) kind-create
+	$(MAKE) aks-create
 
 	# Install cert manager and wait for availability
 	./hack/install-cert-manager.sh
