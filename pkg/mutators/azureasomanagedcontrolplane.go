@@ -321,7 +321,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 		}
 
 		profile := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
-			AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
+			// AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
 			CapacityReservationGroupReference: hubPool.Spec.CapacityReservationGroupReference,
 			Count:                             hubPool.Spec.Count,
 			CreationData:                      hubPool.Spec.CreationData,

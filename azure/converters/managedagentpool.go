@@ -31,7 +31,7 @@ import (
 func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1hub.ManagedClustersAgentPool) asocontainerservicev1hub.ManagedClusterAgentPoolProfile {
 	properties := pool.Spec
 	agentPool := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
-		AvailabilityZones:                 properties.AvailabilityZones,
+		// AvailabilityZones:                 properties.AvailabilityZones,
 		CapacityReservationGroupReference: properties.CapacityReservationGroupReference,
 		Count:                             properties.Count,
 		CreationData:                      properties.CreationData,
