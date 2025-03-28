@@ -1020,9 +1020,18 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 	if !s.ControlPlaneEnabled() {
 		return
 	}
-	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
+
+	subnet := s.ControlPlaneSubnet()
+
+	if subnet.SecurityGroup.SecurityRules == nil {
 		subnet := s.ControlPlaneSubnet()
-		subnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{
+
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
+	}
+
+	if subnet.GetSecurityRuleByDestination("22") == nil {
+		subnet := s.ControlPlaneSubnet()
+		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
 			infrav1.SecurityRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
@@ -1034,20 +1043,27 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Destination:      ptr.To("*"),
 				DestinationPorts: ptr.To("22"),
 				Action:           infrav1.SecurityRuleActionAllow,
-			},
-			infrav1.SecurityRule{
-				Name:             "allow_apiserver",
-				Description:      "Allow K8s API Server",
-				Priority:         2201,
-				Protocol:         infrav1.SecurityGroupProtocolTCP,
-				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           ptr.To("*"),
-				SourcePorts:      ptr.To("*"),
-				Destination:      ptr.To("*"),
-				DestinationPorts: ptr.To(strconv.Itoa(int(s.APIServerPort()))),
-				Action:           infrav1.SecurityRuleActionAllow,
-			},
-		}
+			})
+
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
+	}
+
+	port := strconv.Itoa(int(s.APIServerPort()))
+	if subnet.GetSecurityRuleByDestination(port) == nil {
+		subnet := s.ControlPlaneSubnet()
+		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules, infrav1.SecurityRule{
+			Name:             "allow_apiserver",
+			Description:      "Allow K8s API Server",
+			Priority:         2201,
+			Protocol:         infrav1.SecurityGroupProtocolTCP,
+			Direction:        infrav1.SecurityRuleDirectionInbound,
+			Source:           ptr.To("*"),
+			SourcePorts:      ptr.To("*"),
+			Destination:      ptr.To("*"),
+			DestinationPorts: ptr.To(port),
+			Action:           infrav1.SecurityRuleActionAllow,
+		})
+
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 }

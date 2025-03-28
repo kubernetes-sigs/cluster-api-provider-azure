@@ -114,8 +114,13 @@ Security Rules were previously known as `ingressRule` in v1alpha3.
 </aside>
 
 Security rules can also be customized as part of the subnet specification in a custom network spec.
-Note that ingress rules for the Kubernetes API Server port (default 6443) and SSH (22) are automatically added to the controlplane subnet only if security rules aren't specified.
-It is the responsibility of the user to supply those rules themselves if using custom rules.
+
+Note that ingress rules for the Kubernetes API Server port (default 6443) and SSH (22) are automatically added to the controlplane subnet if these security rules aren't specified.
+It is the responsibility of the user to override those rules themselves when the default configuration does not match expected ruleset.
+
+These rules are identified by `destinationPorts` value:
+- `<API_SERVER_PORT>` for the API server access. Default port is `6443`.
+- `22` for the SSH access.
 
 Here is an illustrative example of customizing rules that builds on the one above by adding an egress rule to the control plane nodes:
 
@@ -141,7 +146,7 @@ spec:
           name: my-subnet-cp-nsg
           securityRules:
             - name: "allow_ssh"
-              description: "allow SSH"
+              description: "Deny SSH"
               direction: "Inbound"
               priority: 2200
               protocol: "*"
@@ -149,14 +154,14 @@ spec:
               destinationPorts: "22"
               source: "*"
               sourcePorts: "*"
-              action: "Allow"
+              action: "Deny"
             - name: "allow_apiserver"
-              description: "Allow K8s API Server"
+              description: "Allow Custom K8s API Server"
               direction: "Inbound"
               priority: 2201
               protocol: "*"
               destination: "*"
-              destinationPorts: "6443"
+              destinationPorts: "1234" # Custom API server URL
               source: "*"
               sourcePorts: "*"
               action: "Allow"
@@ -167,6 +172,46 @@ spec:
               protocol: "Tcp"
               destination: "*"
               destinationPorts: "50000"
+              source: "*"
+              sourcePorts: "*"
+              action: "Allow"
+      - name: my-subnet-node
+        role: node
+        cidrBlocks:
+          - 10.0.2.0/24
+  resourceGroup: cluster-example
+```
+
+Alternatively, when default server `securityRules` apply, but the list needs to be extended, only required rules can be added, like so:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  location: southcentralus
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlocks:
+        - 10.0.0.0/16
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlocks:
+          - 10.0.1.0/24
+        securityGroup:
+          name: my-subnet-cp-nsg
+          securityRules:
+            - name: "allow_port_9345"
+              description: "RKE2 - allow node registration on port 9345"
+              direction: "Inbound"
+              priority: 2202
+              protocol: "Tcp"
+              destination: "*"
+              destinationPorts: "9345"
               source: "*"
               sourcePorts: "*"
               action: "Allow"

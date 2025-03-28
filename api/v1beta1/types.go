@@ -893,6 +893,17 @@ func (s SubnetSpec) IsIPv6Enabled() bool {
 	return false
 }
 
+// GetSecurityRuleByDestination returns security group rule, which matches provided destination ports.
+func (s SubnetSpec) GetSecurityRuleByDestination(ports string) *SecurityRule {
+	for _, rule := range s.SecurityGroup.SecurityRules {
+		if rule.DestinationPorts != nil && *rule.DestinationPorts == ports {
+			return &rule
+		}
+	}
+
+	return nil
+}
+
 // SecurityProfile specifies the Security profile settings for a
 // virtual machine or virtual machine scale set.
 type SecurityProfile struct {
