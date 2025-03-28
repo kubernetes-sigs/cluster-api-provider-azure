@@ -893,20 +893,6 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 	return b.String()
 }
 
-func CopyConfigMap(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
-	cm := &corev1.ConfigMap{}
-	Eventually(func(g Gomega) {
-		g.Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())
-		cm.SetNamespace(toNamespace)
-		cm.SetResourceVersion("")
-		framework.EnsureNamespace(ctx, cl, toNamespace)
-		err := cl.Create(ctx, cm.DeepCopy())
-		if !apierrors.IsAlreadyExists(err) {
-			g.Expect(err).To(Succeed())
-		}
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
-}
-
 func getSubscriptionID(g Gomega) string {
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	g.Expect(subscriptionID).NotTo(BeEmpty())
