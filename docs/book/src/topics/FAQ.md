@@ -34,3 +34,16 @@ feature and its benefits.
 4. **Collaborate with the Community:** Engage with and receive updates from other contributors and maintainers through our [Slack channel](https://kubernetes.slack.com/messages/CEX9HENG7) or 
 [mailing lists](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle) to gather support and feedback for Feature X.
 By actively participating, you can enhance CAPZ's functionalilty and ensure it meets the needs of the Kubernetes community on Azure. 
+
+## CAPZ creates a newer API version of an ASO resource, but kubectl shows me an older API version. Did the API version change?
+No, because the API version is not an integral property of Kubernetes resources. The same resource can be
+represented by several different API versions:
+https://kubernetes.io/docs/concepts/overview/kubernetes-api/#api-groups-and-versioning
+
+ASO's versioning scheme isn't compatible with Kubernetes's assumptions about API versions w.r.t. `kubectl`'s
+default version selection, so you'll usually end up seeing an older version than you might have used to create
+the resource if you do a plain `kubectl get managedcluster` vs. specifying the version explicitly like
+`kubectl get managedclusters.v1api20240402preview.containerservice.azure.com`.
+
+There is an open issue with ASO to smooth this out so the newest Azure API version is selected by default:
+https://github.com/Azure/azure-service-operator/issues/4147 for more context.
