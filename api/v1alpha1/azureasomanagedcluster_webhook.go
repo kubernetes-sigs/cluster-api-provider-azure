@@ -31,10 +31,10 @@ import (
 
 // SetupAzureASOManagedClusterWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureASOManagedClusterWebhookWithManager(mgr ctrl.Manager) error {
-	azureASOManagedClusterWebhook := &azureASOManagedClusterWebhook{}
+	w := &azureASOManagedClusterWebhook{}
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureASOManagedCluster{}).
-		WithValidator(azureASOManagedClusterWebhook).
+		WithValidator(w).
 		Complete()
 }
 
