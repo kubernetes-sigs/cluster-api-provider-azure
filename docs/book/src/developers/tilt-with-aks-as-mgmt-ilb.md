@@ -10,32 +10,75 @@ While the default Tilt setup recommends using a KIND cluster as the management c
 - Developers working in environments with strict network security requirements.
 - Teams that need to keep all Kubernetes API traffic within Azure VNet
 
-
 **Note:** This is not a production ready solution and should not be used in a production environment. This is only meant to be used for development/testing purposes.
 
-### Prerequisites
-- All [general CAPZ prerequisites](../getting-started.md#prerequisites) should be satisfied
-- Basic understanding of Azure networking concepts.
-- Familiarity with Cluster API and CAPZ.
-- Tilt installed on your development machine.
-- `export REGISTRY=<registry_of_your-choice>` set to the registry of your choice.
+## Prerequisites
+
+### Requirements
+<!-- markdown-link-check-disable-next-line -->
+- A [Microsoft Azure account](https://azure.microsoft.com/)
+  - Note: If using a new subscription, make sure to [register](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-providers-and-types) the following resource providers:
+    - `Microsoft.Compute`
+    - `Microsoft.Network`
+    - `Microsoft.ContainerService`
+    - `Microsoft.ManagedIdentity`
+    - `Microsoft.Authorization`
+    - `Microsoft.ResourceHealth` (if the `EXP_AKS_RESOURCE_HEALTH` feature flag is enabled)
+- Install the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
+- A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility) of [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start#install-clusterctl)
+- Basic understanding of Azure networking concepts, Cluster API, and CAPZ.
+- `go`, `wget`, and `tilt` installed on your development machine.
 - If `tilt-settings.yaml` file exists in the root of your repo, clear out any values in `kustomize_settings` unless you want to use them instead of the values that will be set by running `make aks-create`.
 
-## Using Tilt with AKS as the Management Cluster
+### Managed Identity & Registry Setup
+1. Have a managed identity created from Azure Portal.
+2. Add the following lines to your shell config such as `~/.bashrc` or `~/.zshrc`
+   ```shell
+   export USER_IDENTITY="<user-assigned-managed-identity-name>"
+   export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="<user-assigned-managed-identity-client-id>"
+   export AZURE_CLIENT_ID="${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}"
+   export AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY="<user-assigned-managed-identity--object-id>"
+   export AZURE_LOCATION="<azure-location-having-quota-for-B2s-and-D4s_v3-SKU>"
+   export REGISTRY=<your-container-registry>
+   ```
+3. Be sure to reload with `source ~/.bashrc` or `source ~/.zshrc` and then verify the correct env vars values return with `echo $AZURE_CLIENT_ID` and `echo $REGISTRY`.
 
-To use Tilt with AKS as the management cluster, you need to run the following commands:
-- `make clean`
-- `make generate`
-- `make acr-login`
-- `make aks-create`
-- `make tilt-up`
+## Steps to Use Tilt with AKS as the Management Cluster
 
-Using the tilt UI, click on the flavors you want to deploy and CAPZ will deploy the workload cluster with the selected flavor.
+1. In tilt-settings.yaml, set subscription_type to "corporate" and remove any other env values unless you want to override env variables created by `make aks-create`. Example:
+   ```
+   .
+   .
+   .
+   kustomize_substitutions:
+   SUBSCRIPTION_TYPE: "corporate"
+   .
+   ```
+2. `make clean`
+   - This make target does not need to be run every time. Run it to remove bin and kubeconfigs.
+3. `make generate`
+   - This make target does not need to be run every time. Run it to update your go related targets, manifests, flavors, e2e-templates and addons.
+   - Run it periodically upon updating your branch or if you want to make changes in your templates.
+4. `make acr-login`
+   - Run this make target only if you have `REGISTRY` set to an Azure Container Registry. If you used DockerHub like we recommend, you can skip this step.
+5. `make aks-create`
+   - Run this target to bring up an AKS cluster.
+   - Once the AKS cluster is created, you can reuse the cluster as many times as you like. Tilt ensures that the new image gets deployed every time there are changes in the Tiltfile and/or dependent files.
+   - Running `make aks-create` cleans up any existing variables from `aks_as_mgmt_settings` from the `tilt-settings.yaml`.
+6. `make tilt-up`
+   - Run this target to use underlying cluster being pointed by your `KUBECONFIG`.
+
+7. Once the tilt UI is up and running click on the `allow required ports on mgmt cluster` task (checkmark the box and reload) to allow the required ports on the management cluster's API server.
+   - Note: This task will wait for the NSG rules to be created and then update them to allow the required ports.
+   - This task will take a few minutes to complete. Wait for this to finish to avoid race conditions.
+8. Check the flavors you want to deploy and CAPZ will deploy the workload cluster with the selected flavor.
+      - Flavors that leverage internal load balancer and are available for development in CAPZ for MSFT Tenant:
+         - [apiserver-ilb](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/cluster-template-apiserver-ilb.yaml): VM-based default flavor that brings up native K8s clusters with Linux nodes.
+         - [apiserver-ilb-windows](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/cluster-template-windows-apiserver-ilb.yaml): VM-based flavor that brings up native K8s clusters with Linux and Windows nodes.
 
 ## Leveraging internal load balancer
 
 By default using Tilt with Cluster API Provider Azure (CAPZ), the management cluster is exposed via a public endpoint. This works well for many development scenarios but presents challenges in environments with strict network security requirements.
-
 
 ### Challenges and Solutions
 
@@ -85,42 +128,3 @@ By default using Tilt with Cluster API Provider Azure (CAPZ), the management clu
    - Use 3 control plane nodes in a stacked etcd setup.
       - Using aks as management cluster sets `CONTROL_PLANE_MACHINE_COUNT` to 3 by default.
 
-##### Flavors leveraging internal load balancer
-
-There are two flavors available for development in CAPZ for MSFT Tenant:
-- [apiserver-ilb](../../../../templates/cluster-template-apiserver-ilb.yaml): VM based default flavor that brings up native K8s clusters with Linux nodes.
-- [apiserver-ilb-windows](../../../../templates/cluster-template-windows-apiserver-ilb.yaml): VM based flavor that brings up native K8s clusters with Linux and Windows nodes.
-
-#### Tilt Workflow for AKS as Management Cluster with Internal Load Balancer
-
-- In tilt-settings.yaml, set subscription_type to "corporate" and remove any other env values unless you want to override env variables created by `make aks-create`. Example:
-   ```
-   .
-   .
-   kustomize_substitutions:
-   "SUBSCRIPTION_TYPE": "corporate"
-   .
-   ```
-- `make clean`
-  - This make target does not need to be run every time. Run it to remove bin and kubeconfigs.
-- `make generate`
-  - This make target does not need to be run every time. Run it to update your go related targets, manifests, flavors, e2e-templates and addons.
-  - Run it periodically upon updating your branch or if you want to make changes in your templates.
-- `make acr-login`
-  - Run this make target if you have `REGISTRY` set to an Azure Container Registry.
-- `make aks-create`
-  - Run this target to bring up an AKS cluster.
-  - Once the AKS cluster is created, you can reuse the cluster as many times as you like. Tilt ensures that the new image gets deployed every time there are changes in the Tiltfile and/or dependent files.
-  - Running `make aks-create` cleans up any existing `aks_as_mgmt_settings`.
-- `make tilt-up`
-  - Run this target to use underlying cluster being pointed by your `KUBECONFIG`.
-
-Once the tilt UI is up and running
-- Click on the `allow required ports on mgmt cluster` task to allow the required ports on the management cluster's API server.
-   - Note: This task will wait for the NSG rules to be created and then update them to allow the required ports.
-   - This task will take a few minutes to complete.
-   - This target can run in parallel and independent of deploying any cluster flavors.
-- Click on the flavors you want to deploy and CAPZ will deploy the workload cluster with the selected flavor.
-   - Flavors that leverage internal load balancer are:
-     - `apiserver-ilb`
-     - `windows-apiserver-ilb`
