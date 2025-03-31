@@ -29,8 +29,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/golang-lru v1.0.2
-	github.com/onsi/ginkgo/v2 v2.23.0
-	github.com/onsi/gomega v1.36.2
+	github.com/onsi/ginkgo/v2 v2.23.3
+	github.com/onsi/gomega v1.36.3
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.7
 	github.com/prometheus/client_golang v1.21.1
@@ -56,9 +56,9 @@ require (
 	k8s.io/kubectl v0.30.3
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/cloud-provider-azure v1.32.3
-	sigs.k8s.io/cluster-api v1.10.0-beta.0
-	sigs.k8s.io/cluster-api/test v1.10.0-beta.0
-	sigs.k8s.io/controller-runtime v0.20.3
+	sigs.k8s.io/cluster-api v1.10.0-beta.1
+	sigs.k8s.io/cluster-api/test v1.10.0-beta.1
+	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/kind v0.27.0
 )
 
@@ -129,7 +129,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.0.1+incompatible // indirect
+	github.com/docker/docker v28.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
