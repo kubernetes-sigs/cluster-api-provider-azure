@@ -132,11 +132,11 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Consistently(func() error {
 			ns := &corev1.Namespace{}
 			return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
-		}, "5s", "100ms").Should(BeNil(), "Failed to assert bootstrap API server stability")
+		}, "5s", "100ms").Should(Succeed(), "Failed to assert bootstrap API server stability")
 		Consistently(func() error {
 			ns := &corev1.Namespace{}
 			return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
-		}, "5s", "100ms").Should(BeNil(), "Failed to assert self-hosted API server stability")
+		}, "5s", "100ms").Should(Succeed(), "Failed to assert self-hosted API server stability")
 
 		By("Moving the cluster to self hosted")
 		clusterctl.Move(ctx, clusterctl.MoveInput{
@@ -218,11 +218,11 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			Consistently(func() error {
 				ns := &corev1.Namespace{}
 				return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
-			}, "5s", "100ms").Should(BeNil(), "Failed to assert bootstrap API server stability")
+			}, "5s", "100ms").Should(Succeed(), "Failed to assert bootstrap API server stability")
 			Consistently(func() error {
 				ns := &corev1.Namespace{}
 				return selfHostedClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
-			}, "5s", "100ms").Should(BeNil(), "Failed to assert self-hosted API server stability")
+			}, "5s", "100ms").Should(Succeed(), "Failed to assert self-hosted API server stability")
 
 			By("Moving the cluster back to bootstrap")
 			clusterctl.Move(ctx, clusterctl.MoveInput{

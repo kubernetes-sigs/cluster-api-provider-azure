@@ -916,7 +916,7 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating an AKS cluster using ClusterClass [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			// Use default as the clusterclass name so test infra can find the clusterclass template
-			os.Setenv("CLUSTER_CLASS_NAME", "default")
+			Expect(os.Setenv("CLUSTER_CLASS_NAME", "default")).To(Succeed())
 
 			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
 			clusterName = getClusterName(clusterNamePrefix, "cc")

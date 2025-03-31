@@ -99,7 +99,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	Consistently(func() error {
 		ns := &corev1.Namespace{}
 		return publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)
-	}, "5s", "100ms").Should(BeNil(), "Failed to assert public API server stability")
+	}, "5s", "100ms").Should(Succeed(), "Failed to assert public API server stability")
 
 	// **************
 	// Get the Client ID for the user assigned identity
@@ -113,10 +113,10 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		userID = "cloud-provider-user-identity"
 	}
 	resourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s", subscriptionID, identityRG, userID)
-	os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(resourceID))
+	Expect(os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(resourceID))).To(Succeed())
 
-	os.Setenv("CLUSTER_IDENTITY_NAME", "cluster-identity-user-assigned")
-	os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)
+	Expect(os.Setenv("CLUSTER_IDENTITY_NAME", "cluster-identity-user-assigned")).To(Succeed())
+	Expect(os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)).To(Succeed())
 	// *************
 
 	By("Creating a private workload cluster")
