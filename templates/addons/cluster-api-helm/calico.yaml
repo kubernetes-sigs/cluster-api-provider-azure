@@ -6,7 +6,7 @@ spec:
   clusterSelector:
     matchLabels:
       cni: calico
-  repoURL: oci://jjsacrpub.azurecr.io/helm/tigera-operator
+  repoURL: oci://jjsacrpub.azurecr.io/helm/
   chartName: tigera-operator
   version: ${CALICO_VERSION}
   releaseName: projectcalico
