@@ -46,12 +46,12 @@ linters:
     - revive # better version of golint
     - staticcheck # some of staticcheck's rules
     - stylecheck # another replacement for golint
-    - tenv # using os.Setenv instead of t.Setenv in tests
     - thelper # test helpers not starting with t.Helper()
     - unconvert # unnecessary type conversions
     - unparam # unused function parameters
     - unused # unused constants, variables,functions, types
     - usestdlibvars # using variables/constants from the standard library
+    - usetesting # reports uses of functions with replacement inside the testing package
     - whitespace # unnecessary newlines
 
 linters-settings:

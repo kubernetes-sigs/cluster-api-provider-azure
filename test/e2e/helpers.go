@@ -372,7 +372,9 @@ func describeEvents(ctx context.Context, clientset *kubernetes.Clientset, namesp
 				fmt.Fprintf(w, "%s\t%s\t%s\t%s/%s\t%s\n", e.LastTimestamp, e.Type, e.Reason,
 					strings.ToLower(e.InvolvedObject.Kind), e.InvolvedObject.Name, e.Message)
 			}
-			w.Flush()
+			if err = w.Flush(); err != nil {
+				b.WriteString(err.Error())
+			}
 		}
 	}
 	return b.String()

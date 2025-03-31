@@ -165,9 +165,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		},
 	}
 
-	os.Setenv("AZURE_CLIENT_ID", "fooClient")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
-	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret") //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
-	os.Setenv("AZURE_TENANT_ID", "fooTenant")     //nolint:tenv // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_ID", "fooClient")     //nolint:gosec,usetesting // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_CLIENT_SECRET", "fooSecret") //nolint:gosec,usetesting // we want to use os.Setenv here instead of t.Setenv
+	os.Setenv("AZURE_TENANT_ID", "fooTenant")     //nolint:gosec,usetesting // we want to use os.Setenv here instead of t.Setenv
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

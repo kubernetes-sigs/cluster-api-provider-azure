@@ -1700,7 +1700,7 @@ func TestBootstrapDataChanges(t *testing.T) {
 
 	spec := s.ScaleSetSpec(ctx)
 	sSpec := spec.(*scalesets.ScaleSetSpec)
-	g.Expect(sSpec.ShouldPatchCustomData).To(Equal(false))
+	g.Expect(sSpec.ShouldPatchCustomData).To(BeFalse())
 
 	amp.Annotations[azure.CustomDataHashAnnotation] = "old"
 
@@ -1710,7 +1710,7 @@ func TestBootstrapDataChanges(t *testing.T) {
 
 	spec = s.ScaleSetSpec(ctx)
 	sSpec = spec.(*scalesets.ScaleSetSpec)
-	g.Expect(sSpec.ShouldPatchCustomData).To(Equal(true))
+	g.Expect(sSpec.ShouldPatchCustomData).To(BeTrue())
 }
 
 func sha256Hash(text string) []byte {
