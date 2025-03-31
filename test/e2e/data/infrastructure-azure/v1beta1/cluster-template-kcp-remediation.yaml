@@ -36,7 +36,8 @@ spec:
     must match cluster service CIDR (this is the default)\n  registry: mcr.microsoft.com/oss\n#
     Image and registry configuration for the tigera/operator pod.\ntigeraOperator:\n
     \ image: tigera/operator\n  registry: mcr.microsoft.com/oss\ncalicoctl:\n  image:
-    mcr.microsoft.com/oss/calico/ctl"
+    mcr.microsoft.com/oss/calico/ctl\nkubernetesServiceEndpoint:\n  host: \"{{ .Cluster.spec.controlPlaneEndpoint.host
+    }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port }}\""
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
