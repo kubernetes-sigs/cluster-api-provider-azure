@@ -54,7 +54,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersionUpgradeFrom))
 		Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
 
-		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		identityName := e2eConfig.GetVariableOrEmpty(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 
 		logCheckpoint(specTimes)
@@ -194,8 +194,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 				identityClient, err := armmsi.NewUserAssignedIdentitiesClient(getSubscriptionID(Default), cred, nil)
 				Expect(err).NotTo(HaveOccurred())
-				identityRG := e2eConfig.GetVariable(AzureIdentityResourceGroup)
-				identityName := e2eConfig.GetVariable(AzureUserIdentity)
+				identityRG := e2eConfig.GetVariableOrEmpty(AzureIdentityResourceGroup)
+				identityName := e2eConfig.GetVariableOrEmpty(AzureUserIdentity)
 				identity, err := identityClient.Get(ctx, identityRG, identityName, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(os.Setenv("AZURE_CLIENT_ID_CLOUD_PROVIDER", *identity.Properties.ClientID)).To(Succeed())
@@ -215,13 +215,13 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 						},
-						InitWithKubernetesVersion:       e2eConfig.GetVariable(KubernetesVersionAPIUpgradeFrom),
-						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.GetVariable(OldCAPIUpgradeVersion)),
-						InitWithCoreProvider:            "cluster-api:" + e2eConfig.GetVariable(OldCAPIUpgradeVersion),
-						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariable(OldCAPIUpgradeVersion)},
-						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariable(OldCAPIUpgradeVersion)},
-						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariable(OldProviderUpgradeVersion)},
-						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariable(OldAddonProviderUpgradeVersion)},
+						InitWithKubernetesVersion:       e2eConfig.GetVariableOrEmpty(KubernetesVersionAPIUpgradeFrom),
+						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.GetVariableOrEmpty(OldCAPIUpgradeVersion)),
+						InitWithCoreProvider:            "cluster-api:" + e2eConfig.GetVariableOrEmpty(OldCAPIUpgradeVersion),
+						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariableOrEmpty(OldCAPIUpgradeVersion)},
+						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariableOrEmpty(OldCAPIUpgradeVersion)},
+						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariableOrEmpty(OldProviderUpgradeVersion)},
+						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariableOrEmpty(OldAddonProviderUpgradeVersion)},
 					}
 				})
 			})
@@ -240,13 +240,13 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 						},
-						InitWithKubernetesVersion:       e2eConfig.GetVariable(KubernetesVersionAPIUpgradeFrom),
-						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.GetVariable(LatestCAPIUpgradeVersion)),
-						InitWithCoreProvider:            "cluster-api:" + e2eConfig.GetVariable(LatestCAPIUpgradeVersion),
-						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariable(LatestCAPIUpgradeVersion)},
-						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariable(LatestCAPIUpgradeVersion)},
-						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariable(LatestProviderUpgradeVersion)},
-						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariable(LatestAddonProviderUpgradeVersion)},
+						InitWithKubernetesVersion:       e2eConfig.GetVariableOrEmpty(KubernetesVersionAPIUpgradeFrom),
+						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.GetVariableOrEmpty(LatestCAPIUpgradeVersion)),
+						InitWithCoreProvider:            "cluster-api:" + e2eConfig.GetVariableOrEmpty(LatestCAPIUpgradeVersion),
+						InitWithBootstrapProviders:      []string{"kubeadm:" + e2eConfig.GetVariableOrEmpty(LatestCAPIUpgradeVersion)},
+						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.GetVariableOrEmpty(LatestCAPIUpgradeVersion)},
+						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.GetVariableOrEmpty(LatestProviderUpgradeVersion)},
+						InitWithAddonProviders:          []string{"helm:" + e2eConfig.GetVariableOrEmpty(LatestAddonProviderUpgradeVersion)},
 					}
 				})
 			})
@@ -309,7 +309,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 	return func(clusterProxy framework.ClusterProxy) {
-		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		identityName := e2eConfig.GetVariableOrEmpty(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 	}
 }

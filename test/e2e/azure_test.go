@@ -78,23 +78,23 @@ var _ = Describe("Workload cluster creation", func() {
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		asoSecretName := e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_NAME")
+		asoSecretName := e2eConfig.GetVariableOrEmpty("ASO_CREDENTIAL_SECRET_NAME")
 		asoSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace.Name,
 				Name:      asoSecretName,
 			},
 			StringData: map[string]string{
-				config.AzureSubscriptionID: e2eConfig.GetVariable(AzureSubscriptionID),
-				config.AzureTenantID:       e2eConfig.GetVariable(AzureTenantID),
-				config.AzureClientID:       e2eConfig.GetVariable(AzureClientIDUserAssignedIdentity),
-				config.AuthMode:            e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_MODE"),
+				config.AzureSubscriptionID: e2eConfig.GetVariableOrEmpty(AzureSubscriptionID),
+				config.AzureTenantID:       e2eConfig.GetVariableOrEmpty(AzureTenantID),
+				config.AzureClientID:       e2eConfig.GetVariableOrEmpty(AzureClientIDUserAssignedIdentity),
+				config.AuthMode:            e2eConfig.GetVariableOrEmpty("ASO_CREDENTIAL_SECRET_MODE"),
 			},
 		}
 		err = bootstrapClusterProxy.GetClient().Create(ctx, asoSecret)
 		Expect(client.IgnoreAlreadyExists(err)).NotTo(HaveOccurred())
 
-		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		identityName := e2eConfig.GetVariableOrEmpty(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
 		additionalCleanup = nil
@@ -300,7 +300,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)), // AzureCNIManifest is set
+				withAzureCNIv1Manifest(e2eConfig.GetVariableOrEmpty(AzureCNIv1Manifest)), // AzureCNIManifest is set
 				withFlavor("azure-cni-v1"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
@@ -363,7 +363,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("flatcar"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(FlatcarKubernetesVersion)),
+				withKubernetesVersion(e2eConfig.GetVariableOrEmpty(FlatcarKubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -401,7 +401,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("flatcar-sysext"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(capi_e2e.KubernetesVersion)),
+				withKubernetesVersion(e2eConfig.GetVariableOrEmpty(capi_e2e.KubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -803,7 +803,7 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks"),
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
+				withAzureCNIv1Manifest(e2eConfig.GetVariableOrEmpty(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersion),

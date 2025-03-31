@@ -112,7 +112,7 @@ func getCalicoValues(cidrBlocks []string) *HelmOptions {
 			ipv4CidrBlock = cidr
 		}
 	}
-	addonsPath := e2eConfig.GetVariable(AddonsPath)
+	addonsPath := e2eConfig.GetVariableOrEmpty(AddonsPath)
 	switch {
 	case ipv6CidrBlock != "" && ipv4CidrBlock != "":
 		By("Configuring calico CNI helm chart for dual-stack configuration")
