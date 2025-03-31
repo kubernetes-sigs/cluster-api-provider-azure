@@ -111,7 +111,20 @@ type NetworkSpec struct {
 	// +optional
 	ControlPlaneOutboundLB *LoadBalancerSpec `json:"controlPlaneOutboundLB,omitempty"`
 
+	// AdditionalControlPlaneLBPorts is the configuration for the additional inbound control-plane load balancer ports
+	// +optional
+	AdditionalControlPlaneLBPorts []LoadBalancerPort `json:"additionalControlPlaneLBPorts,omitempty"`
+
 	NetworkClassSpec `json:",inline"`
+}
+
+// LoadBalancerPort specifies additional port for the API server load balancer.
+type LoadBalancerPort struct {
+	// Name for the additional port within LB definition
+	Name string `json:"name"`
+
+	// Port for the LB definition
+	Port int32 `json:"port"`
 }
 
 // VnetSpec configures an Azure virtual network.

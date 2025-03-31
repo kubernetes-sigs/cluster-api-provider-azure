@@ -266,6 +266,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
+			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -299,6 +300,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
+			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
 		}
 
 		privateIPFound := false
@@ -769,6 +771,11 @@ func (s *ClusterScope) NodeOutboundLB() *infrav1.LoadBalancerSpec {
 // ControlPlaneOutboundLB returns the cluster control plane outbound load balancer.
 func (s *ClusterScope) ControlPlaneOutboundLB() *infrav1.LoadBalancerSpec {
 	return s.AzureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB
+}
+
+// ControlPlaneAdditionalLBPorts returns the additional API server ports list.
+func (s *ClusterScope) ControlPlaneAdditionalLBPorts() []infrav1.LoadBalancerPort {
+	return s.AzureCluster.Spec.NetworkSpec.AdditionalControlPlaneLBPorts
 }
 
 // APIServerLBName returns the API Server LB name.

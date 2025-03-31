@@ -197,6 +197,9 @@ spec:
       name: my-vnet
       cidrBlocks:
         - 10.0.0.0/16
+    additionalControlPlaneLBPorts:
+      - name: RKE2
+        port: 9345
     subnets:
       - name: my-subnet-cp
         role: control-plane
