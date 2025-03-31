@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -57,7 +58,7 @@ func TestValidateUpdate(t *testing.T) {
 
 	t.Run("template is immutable", func(t *testing.T) {
 		g := NewWithT(t)
-		_, err := newClusterTemplate.ValidateUpdate(oldClusterTemplate)
+		_, err := newClusterTemplate.ValidateUpdate(context.TODO(), nil, oldClusterTemplate)
 		g.Expect(err).To(HaveOccurred())
 	})
 }

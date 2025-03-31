@@ -724,17 +724,17 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	}
 	if config.HasVariable(FlatcarKubernetesVersion) && config.HasVariable(FlatcarVersion) {
 		resolveFlatcarKubernetesVersion(config, flatcarK8sVersions, FlatcarKubernetesVersion)
-		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.GetVariable(FlatcarKubernetesVersion))
+		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.GetVariableOrEmpty(FlatcarKubernetesVersion))
 		resolveFlatcarVersion(config, flatcarVersions, FlatcarVersion)
 	}
 }
 
 func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariable(varName), versions, "capi offer"))
+	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariableOrEmpty(varName), versions, "capi offer"))
 }
 
 func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
-	oldVersion := config.GetVariable(varName)
+	oldVersion := config.GetVariableOrEmpty(varName)
 	if _, ok := os.LookupEnv(varName); ok {
 		Expect(os.Setenv(varName, v)).To(Succeed())
 	}
@@ -743,11 +743,11 @@ func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
 }
 
 func resolveFlatcarKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariable(varName), versions, "Flatcar Community Gallery"))
+	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariableOrEmpty(varName), versions, "Flatcar Community Gallery"))
 }
 
 func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	version := config.GetVariable(varName)
+	version := config.GetVariableOrEmpty(varName)
 	if version != "latest" {
 		Expect(versions).To(ContainElement(semver.MustParse(version)), fmt.Sprintf("Provided Flatcar version %q does not have a corresponding VM image in the Flatcar Community Gallery", version))
 	}
