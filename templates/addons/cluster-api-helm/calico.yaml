@@ -6,7 +6,7 @@ spec:
   clusterSelector:
     matchLabels:
       cni: calico
-  repoURL: https://docs.tigera.io/calico/charts
+  repoURL: oci://jjsacrpub.azurecr.io/helm/tigera-operator
   chartName: tigera-operator
   version: ${CALICO_VERSION}
   releaseName: projectcalico
@@ -25,7 +25,13 @@ spec:
           encapsulation: VXLAN{{end}}
       serviceCIDRs: 
         - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
-      registry: mcr.microsoft.com/oss
+    # when kubernetesServiceEndpoint need to pass dns to look up the name properly
+    dnsConfig: 
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
       image: tigera/operator
