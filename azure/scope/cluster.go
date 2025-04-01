@@ -1031,13 +1031,10 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 	subnet := s.ControlPlaneSubnet()
 
 	if subnet.SecurityGroup.SecurityRules == nil {
-		subnet := s.ControlPlaneSubnet()
-
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 
 	if subnet.GetSecurityRuleByDestination("22") == nil {
-		subnet := s.ControlPlaneSubnet()
 		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
 			infrav1.SecurityRule{
 				Name:             "allow_ssh",
@@ -1057,7 +1054,6 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 
 	port := strconv.Itoa(int(s.APIServerPort()))
 	if subnet.GetSecurityRuleByDestination(port) == nil {
-		subnet := s.ControlPlaneSubnet()
 		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules, infrav1.SecurityRule{
 			Name:             "allow_apiserver",
 			Description:      "Allow K8s API Server",

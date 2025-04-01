@@ -1,0 +1,16 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
