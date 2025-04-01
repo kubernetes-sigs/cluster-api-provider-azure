@@ -43,11 +43,11 @@ const (
 )
 
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
-func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
+func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
 	if input.CNIManifestPath != "" {
 		InstallCNIManifest(ctx, input)
 	} else {
-		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks, hasWindows)
+		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks)
 	}
 }
 
@@ -63,7 +63,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 }
 
 // EnsureCalicoIsReady copies the kubeadm configmap to the calico-system namespace and waits for the calico pods to be ready.
-func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
+func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
 	specName := "ensure-calico"
 
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
