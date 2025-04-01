@@ -40,6 +40,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -1573,6 +1574,179 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 			}
 			err := s.applyAzureMachinePoolMachines(ctx)
 			tt.Verify(g, s.AzureMachinePool, s.client, err)
+		})
+	}
+}
+
+func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = clusterv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+
+	tests := []struct {
+		Name              string
+		Setup             func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder)
+		Verify            func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client)
+		ProvisioningState infrav1.ProvisioningState
+	}{
+		{
+			Name: "if provisioning state is set to Succeeded and replicas match, MachinePool is ready and conditions match",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+				amp.Status.Replicas = 1
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeTrue())
+				g.Expect(conditions.Get(amp, infrav1.ScaleSetRunningCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition).Status).To(Equal(corev1.ConditionTrue))
+			},
+			ProvisioningState: infrav1.Succeeded,
+		},
+		{
+			Name: "if provisioning state is set to Succeeded and replicas are higher on AzureMachinePool, MachinePool is ready and ScalingDown",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+				amp.Status.Replicas = 2
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeTrue())
+				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleDownReason))
+			},
+			ProvisioningState: infrav1.Succeeded,
+		},
+		{
+			Name: "if provisioning state is set to Succeeded and replicas are lower on AzureMachinePool, MachinePool is ready and ScalingUp",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				mp.Spec.Replicas = ptr.To[int32](2)
+				amp.Status.Replicas = 1
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeTrue())
+				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleUpReason))
+			},
+			ProvisioningState: infrav1.Succeeded,
+		},
+		{
+			Name:  "if provisioning state is set to Updating, MachinePool is ready and scale set model is set to OutOfDate",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeTrue())
+				condition := conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetModelOutOfDateReason))
+			},
+			ProvisioningState: infrav1.Updating,
+		},
+		{
+			Name:  "if provisioning state is set to Creating, MachinePool is NotReady and scale set running condition is set to Creating",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeFalse())
+				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetCreatingReason))
+			},
+			ProvisioningState: infrav1.Creating,
+		},
+		{
+			Name:  "if provisioning state is set to Deleting, MachinePool is NotReady and scale set running condition is set to Deleting",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeFalse())
+				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetDeletingReason))
+			},
+			ProvisioningState: infrav1.Deleting,
+		},
+		{
+			Name:  "if provisioning state is set to Failed, MachinePool ready state is not adjusted, and scale set running condition is set to Failed",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetProvisionFailedReason))
+			},
+			ProvisioningState: infrav1.Failed,
+		},
+		{
+			Name:  "if provisioning state is set to something not explicitly handled, MachinePool ready state is not adjusted, and scale set running condition is set to the ProvisioningState",
+			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(string(infrav1.Migrating)))
+			},
+			ProvisioningState: infrav1.Migrating,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			var (
+				g        = NewWithT(t)
+				mockCtrl = gomock.NewController(t)
+				cb       = fake.NewClientBuilder().WithScheme(scheme)
+				cluster  = &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: &corev1.ObjectReference{
+							Name: "azCluster1",
+						},
+					},
+					Status: clusterv1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				}
+				mp = &expv1.MachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "mp1",
+						Namespace: "default",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Name:       "cluster1",
+								Kind:       "Cluster",
+								APIVersion: clusterv1.GroupVersion.String(),
+							},
+						},
+					},
+				}
+				amp = &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "amp1",
+						Namespace: "default",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Name:       "mp1",
+								Kind:       "MachinePool",
+								APIVersion: expv1.GroupVersion.String(),
+							},
+						},
+					},
+				}
+				vmssState = &azure.VMSS{}
+			)
+			defer mockCtrl.Finish()
+
+			tt.Setup(mp, amp, cb.WithObjects(amp, cluster))
+			s := &MachinePoolScope{
+				client: cb.Build(),
+				ClusterScoper: &ClusterScope{
+					Cluster: cluster,
+				},
+				MachinePool:      mp,
+				AzureMachinePool: amp,
+				vmssState:        vmssState,
+			}
+			s.setProvisioningStateAndConditions(tt.ProvisioningState)
+			tt.Verify(g, s.AzureMachinePool, s.client)
 		})
 	}
 }

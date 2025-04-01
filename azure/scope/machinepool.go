@@ -615,19 +615,20 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		} else {
 			conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetDesiredReplicasCondition, infrav1.ScaleSetScaleDownReason, clusterv1.ConditionSeverityInfo, "")
 		}
-		m.SetNotReady()
+		m.SetReady()
 	case v == infrav1.Updating:
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetModelUpdatedCondition, infrav1.ScaleSetModelOutOfDateReason, clusterv1.ConditionSeverityInfo, "")
-		m.SetNotReady()
+		m.SetReady()
 	case v == infrav1.Creating:
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		m.SetNotReady()
 	case v == infrav1.Deleting:
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetDeletingReason, clusterv1.ConditionSeverityInfo, "")
 		m.SetNotReady()
+	case v == infrav1.Failed:
+		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetProvisionFailedReason, clusterv1.ConditionSeverityInfo, "")
 	default:
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1.ConditionSeverityInfo, "")
-		m.SetNotReady()
 	}
 }
 
