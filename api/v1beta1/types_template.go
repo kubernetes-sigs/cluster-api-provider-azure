@@ -76,9 +76,10 @@ type NetworkTemplateSpec struct {
 	// +optional
 	ControlPlaneOutboundLB *LoadBalancerClassSpec `json:"controlPlaneOutboundLB,omitempty"`
 
-	// AdditionalControlPlaneLBPorts is the configuration for the additional inbound control-plane load balancer ports
+	// AdditionalAPIServerLBPorts is the configuration for the additional inbound control-plane load balancer ports
+	// Each port specified (e.g., 9345) creates an inbound rule where the frontend port and the backend port are the same.
 	// +optional
-	AdditionalControlPlaneLBPorts []LoadBalancerPort `json:"additionalControlPlaneLBPorts,omitempty"`
+	AdditionalAPIServerLBPorts []LoadBalancerPort `json:"additionalAPIServerLBPorts,omitempty"`
 }
 
 // GetSubnetTemplate returns the subnet template based on the subnet role.

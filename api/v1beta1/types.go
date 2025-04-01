@@ -111,9 +111,10 @@ type NetworkSpec struct {
 	// +optional
 	ControlPlaneOutboundLB *LoadBalancerSpec `json:"controlPlaneOutboundLB,omitempty"`
 
-	// AdditionalControlPlaneLBPorts is the configuration for the additional inbound control-plane load balancer ports
+	// AdditionalAPIServerLBPorts specifies extra inbound ports for the APIServer load balancer.
+	// Each port specified (e.g., 9345) creates an inbound rule where the frontend port and the backend port are the same.
 	// +optional
-	AdditionalControlPlaneLBPorts []LoadBalancerPort `json:"additionalControlPlaneLBPorts,omitempty"`
+	AdditionalAPIServerLBPorts []LoadBalancerPort `json:"additionalAPIServerLBPorts,omitempty"`
 
 	NetworkClassSpec `json:",inline"`
 }

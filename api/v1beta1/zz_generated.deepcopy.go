@@ -3131,8 +3131,8 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 		*out = new(LoadBalancerSpec)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.AdditionalControlPlaneLBPorts != nil {
-		in, out := &in.AdditionalControlPlaneLBPorts, &out.AdditionalControlPlaneLBPorts
+	if in.AdditionalAPIServerLBPorts != nil {
+		in, out := &in.AdditionalAPIServerLBPorts, &out.AdditionalAPIServerLBPorts
 		*out = make([]LoadBalancerPort, len(*in))
 		copy(*out, *in)
 	}
@@ -3172,8 +3172,8 @@ func (in *NetworkTemplateSpec) DeepCopyInto(out *NetworkTemplateSpec) {
 		*out = new(LoadBalancerClassSpec)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.AdditionalControlPlaneLBPorts != nil {
-		in, out := &in.AdditionalControlPlaneLBPorts, &out.AdditionalControlPlaneLBPorts
+	if in.AdditionalAPIServerLBPorts != nil {
+		in, out := &in.AdditionalAPIServerLBPorts, &out.AdditionalAPIServerLBPorts
 		*out = make([]LoadBalancerPort, len(*in))
 		copy(*out, *in)
 	}

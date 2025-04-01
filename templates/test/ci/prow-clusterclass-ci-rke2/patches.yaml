@@ -1,0 +1,200 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+spec:
+  workers:
+    machineDeployments:
+      - class: ${CLUSTER_NAME}-worker
+        machineHealthCheck:
+          maxUnhealthy: 100%
+          unhealthyConditions:
+            - type: E2ENodeUnhealthy
+              status: "True"
+              timeout: 30s
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: RKE2ConfigTemplate
+              name: ${CLUSTER_NAME}-worker
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: AzureMachineTemplate
+              name: ${CLUSTER_NAME}-worker
+  patches:
+    - name: controlPlaneAzureJsonSecretName
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/files/-"
+              valueFrom:
+                template: |
+                  contentFrom:
+                    secret:
+                      key: control-plane-azure.json
+                      name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+                  owner: root:root
+                  path: /etc/kubernetes/azure.json
+                  permissions: "0644"
+    - name: workerAzureJsonSecretName
+      definitions:
+        - selector:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - ${CLUSTER_NAME}-worker
+          jsonPatches:
+            - op: replace
+              path: "/spec/template/spec/files"
+              valueFrom:
+                template: |
+                  - contentFrom:
+                      secret:
+                        key: worker-node-azure.json
+                        name: "{{ .builtin.machineDeployment.infrastructureRef.name }}-azure-json"
+                    owner: root:root
+                    path: /etc/kubernetes/azure.json
+                    permissions: "0644"
+    - name: additionalTags
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/additionalTags
+              valueFrom:
+                template: |
+                  buildProvenance: {{ .buildProvenance }}
+                  creationTimestamp: {{ .timestamp }}
+                  jobName: {{ .jobName }}
+    - name: clusterIdentityRef
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/identityRef/name
+              valueFrom:
+                variable: clusterIdentityRef
+    - name: location
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/location
+              valueFrom:
+                variable: location
+    - name: subscriptionID
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/subscriptionID
+              valueFrom:
+                variable: subscriptionID
+    - name: controlPlaneMachineType
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/vmSize
+              valueFrom:
+                variable: controlPlaneMachineType
+    - name: controlPlaneMachineGalleryPatch
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                - ${CLUSTER_NAME}-worker
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/image"
+              valueFrom:
+                template: |
+                  computeGallery:
+                    version: {{ trimPrefix "v" (trimSuffix "+rke2r1" .builtin.cluster.topology.version) }}
+                    name: {{ .galleryName }}
+                    gallery: {{ .gallery }}
+    - definitions:
+      - jsonPatches:
+        - op: add
+          path: "/spec/template/spec/resourceGroup"
+          valueFrom:
+            variable: resourceGroup
+        selector:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+          kind: AzureClusterTemplate
+          matchResources:
+            infrastructureCluster: true
+      enabledIf: "{{ if .resourceGroup }}true{{end}}"
+      name: clusterResourceGroupPatch
+    - name: workerMachineType
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - ${CLUSTER_NAME}-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/vmSize
+              valueFrom:
+                variable: workerMachineType
+    - name: sshPublicKey
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - ${CLUSTER_NAME}-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/sshPublicKey
+              valueFrom:
+                variable: sshPublicKey
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azure-cluster
+spec:
+  template:
+    spec:
+      additionalTags:
+        replace_me_key: replace_me_val

@@ -1,0 +1,34 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azure-cluster
+spec:
+  template:
+    spec:
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: ${CLUSTER_IDENTITY_NAME}
+      networkSpec:
+        additionalAPIServerLBPorts:
+        - name: rke2
+          port: 9345
+        subnets:
+        - name: control-plane-subnet
+          role: control-plane
+          securityGroup:
+            securityRules:
+              - name: "allow_port_9345"
+                description: "Allow port 9345 for RKE2"
+                direction: "Inbound"
+                priority: 2203
+                protocol: "Tcp"
+                destination: "*"
+                destinationPorts: "9345"
+                source: "*"
+                sourcePorts: "*"
+                action: "Allow"
+        - name: node-subnet
+          natGateway:
+            name: node-natgateway
+          role: node

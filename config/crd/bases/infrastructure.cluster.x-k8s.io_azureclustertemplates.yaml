@@ -520,10 +520,10 @@ spec:
                         description: NetworkSpec encapsulates all things related to
                           Azure network.
                         properties:
-                          additionalControlPlaneLBPorts:
-                            description: AdditionalControlPlaneLBPorts is the configuration
-                              for the additional inbound control-plane load balancer
-                              ports
+                          additionalAPIServerLBPorts:
+                            description: |-
+                              AdditionalAPIServerLBPorts is the configuration for the additional inbound control-plane load balancer ports
+                              Each port specified (e.g., 9345) creates an inbound rule where the frontend port and the backend port are the same.
                             items:
                               description: LoadBalancerPort specifies additional port
                                 for the API server load balancer.

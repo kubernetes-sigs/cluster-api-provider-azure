@@ -146,7 +146,7 @@ spec:
           name: my-subnet-cp-nsg
           securityRules:
             - name: "allow_ssh"
-              description: "Deny SSH"
+              description: "allow SSH"
               direction: "Inbound"
               priority: 2200
               protocol: "*"
@@ -154,14 +154,14 @@ spec:
               destinationPorts: "22"
               source: "*"
               sourcePorts: "*"
-              action: "Deny"
+              action: "Allow"
             - name: "allow_apiserver"
-              description: "Allow Custom K8s API Server"
+              description: "Allow K8s API Server"
               direction: "Inbound"
               priority: 2201
               protocol: "*"
               destination: "*"
-              destinationPorts: "1234" # Custom API server URL
+              destinationPorts: "6443"
               source: "*"
               sourcePorts: "*"
               action: "Allow"
@@ -197,7 +197,7 @@ spec:
       name: my-vnet
       cidrBlocks:
         - 10.0.0.0/16
-    additionalControlPlaneLBPorts:
+    additionalAPIServerLBPorts:
       - name: RKE2
         port: 9345
     subnets:

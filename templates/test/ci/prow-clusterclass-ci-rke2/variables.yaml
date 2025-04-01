@@ -1,0 +1,81 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+spec:
+  variables:
+    - name: k8sFeatureGates
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: buildProvenance
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: timestamp
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: jobName
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: clusterIdentityRef
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: location
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: subscriptionID
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: logLevel
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: controlPlaneMachineType
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: Standard_B2s
+    - name: workerMachineType
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: Standard_B2s
+    - name: sshPublicKey
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: ""
+    - name: galleryName
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: capi-ubun2-2404
+    - name: gallery
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+    - name: resourceGroup
+      schema:
+        openAPIV3Schema:
+          description: "The Azure Resource Group where the Cluster will be created."
+          type: string

@@ -1,0 +1,26 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      registrationMethod: control-plane-endpoint
+      rolloutStrategy:
+        type: "RollingUpdate"
+        rollingUpdate:
+          maxSurge: 1
+      agentConfig: {}
+      serverConfig:
+        cni: none
+        cloudProviderName: external
+        disableComponents:
+          kubernetesComponents:
+          - cloudController
+        kubeAPIServer:
+          extraArgs:
+          - --anonymous-auth=true
+      files:
+        - owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: "0644"
