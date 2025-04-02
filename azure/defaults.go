@@ -17,7 +17,6 @@ limitations under the License.
 package azure
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -28,8 +27,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
+	"go.opentelemetry.io/otel"
 
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -380,11 +379,7 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 	opts.PerCallPolicies = append(opts.PerCallPolicies, extraPolicies...)
 	opts.Retry.MaxRetries = -1 // Less than zero means one try and no retries.
 
-	otelTP, err := ot.OTLPTracerProvider(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	opts.TracingProvider = azotel.NewTracingProvider(otelTP, nil)
+	opts.TracingProvider = azotel.NewTracingProvider(otel.GetTracerProvider(), nil)
 
 	return opts, nil
 }
