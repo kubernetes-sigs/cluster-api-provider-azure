@@ -43,18 +43,18 @@ func (c *AzureClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azureclustertemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclustertemplates,versions=v1beta1,name=default.azureclustertemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) Default(ctx context.Context, obj runtime.Object) error {
+func (c *AzureClusterTemplate) Default(_ context.Context, _ runtime.Object) error {
 	c.setDefaults()
 	return nil
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (c *AzureClusterTemplate) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return c.validateClusterTemplate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateUpdate(ctx context.Context, obj runtime.Object, oldRaw runtime.Object) (admission.Warnings, error) {
+func (c *AzureClusterTemplate) ValidateUpdate(_ context.Context, _ runtime.Object, oldRaw runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureClusterTemplate)
 	if !reflect.DeepEqual(c.Spec.Template.Spec, old.Spec.Template.Spec) {
@@ -70,6 +70,6 @@ func (c *AzureClusterTemplate) ValidateUpdate(ctx context.Context, obj runtime.O
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (c *AzureClusterTemplate) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

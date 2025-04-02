@@ -36,12 +36,12 @@ func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) e
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,versions=v1beta1,name=azuremachinepoolmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (ampm *AzureMachinePoolMachine) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateUpdate(ctx context.Context, obj runtime.Object, old runtime.Object) (admission.Warnings, error) {
+func (ampm *AzureMachinePoolMachine) ValidateUpdate(_ context.Context, _ runtime.Object, old runtime.Object) (admission.Warnings, error) {
 	oldMachine, ok := old.(*AzureMachinePoolMachine)
 	if !ok {
 		return nil, errors.New("expected and AzureMachinePoolMachine")
@@ -55,6 +55,6 @@ func (ampm *AzureMachinePoolMachine) ValidateUpdate(ctx context.Context, obj run
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (ampm *AzureMachinePoolMachine) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
