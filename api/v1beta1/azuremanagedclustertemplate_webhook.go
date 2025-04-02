@@ -35,16 +35,16 @@ func (r *AzureManagedClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) 
 // +kubebuilder:webhook:verbs=update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedclustertemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedclustertemplates,versions=v1beta1,name=validation.azuremanagedclustertemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedClusterTemplate) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (r *AzureManagedClusterTemplate) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedClusterTemplate) ValidateUpdate(ctx context.Context, obj runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+func (r *AzureManagedClusterTemplate) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureManagedClusterTemplate) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (r *AzureManagedClusterTemplate) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
