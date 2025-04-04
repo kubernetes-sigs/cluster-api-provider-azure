@@ -64,17 +64,17 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a static or dynamic public IP address.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], err error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdate")
 	defer done()
 
-	publicip, ok := parameters.(armnetwork.PublicIPAddress)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armnetwork.PublicIPAddress", parameters)
+	publicip, ok := opts.Parameters.(armnetwork.PublicIPAddress)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.PublicIPAddress", opts.Parameters)
 	}
 
-	opts := &armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = ac.publicips.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), publicip, opts)
+	beginOpts := &armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = ac.publicips.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), publicip, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

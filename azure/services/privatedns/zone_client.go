@@ -63,17 +63,17 @@ func (azc *azureZonesClient) Get(ctx context.Context, spec azure.ResourceSpecGet
 // CreateOrUpdateAsync creates or updates a private dns zone asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (azc *azureZonesClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armprivatedns.PrivateZonesClientCreateOrUpdateResponse], err error) {
+func (azc *azureZonesClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armprivatedns.PrivateZonesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureZonesClient.CreateOrUpdateAsync")
 	defer done()
 
-	zone, ok := parameters.(armprivatedns.PrivateZone)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armprivatedns.PrivateZone", parameters)
+	zone, ok := opts.Parameters.(armprivatedns.PrivateZone)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armprivatedns.PrivateZone", opts.Parameters)
 	}
 
-	opts := &armprivatedns.PrivateZonesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = azc.privatezones.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), zone, opts)
+	beginOpts := &armprivatedns.PrivateZonesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = azc.privatezones.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), zone, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

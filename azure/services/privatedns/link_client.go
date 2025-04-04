@@ -63,17 +63,17 @@ func (avc *azureVirtualNetworkLinksClient) Get(ctx context.Context, spec azure.R
 // CreateOrUpdateAsync creates or updates a virtual network link asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (avc *azureVirtualNetworkLinksClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armprivatedns.VirtualNetworkLinksClientCreateOrUpdateResponse], err error) {
+func (avc *azureVirtualNetworkLinksClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armprivatedns.VirtualNetworkLinksClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureVirtualNetworkLinksClient.CreateOrUpdateAsync")
 	defer done()
 
-	link, ok := parameters.(armprivatedns.VirtualNetworkLink)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armprivatedns.VirtualNetworkLink", parameters)
+	link, ok := opts.Parameters.(armprivatedns.VirtualNetworkLink)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armprivatedns.VirtualNetworkLink", opts.Parameters)
 	}
 
-	opts := &armprivatedns.VirtualNetworkLinksClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = avc.vnetlinks.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), link, opts)
+	beginOpts := &armprivatedns.VirtualNetworkLinksClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = avc.vnetlinks.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), link, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

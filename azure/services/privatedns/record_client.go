@@ -52,13 +52,13 @@ func (arc *azureRecordsClient) Get(_ context.Context, _ azure.ResourceSpecGetter
 
 // CreateOrUpdateAsync creates or updates a record asynchronously.
 // Creating a record set is not a long-running operation, so we don't ever return a future.
-func (arc *azureRecordsClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, _ string, parameters interface{}) (result interface{}, poller *runtime.Poller[armprivatedns.RecordSetsClientCreateOrUpdateResponse], err error) {
+func (arc *azureRecordsClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armprivatedns.RecordSetsClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "privatedns.azureRecordsClient.CreateOrUpdateAsync")
 	defer done()
 
-	set, ok := parameters.(armprivatedns.RecordSet)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armprivatedns.RecordSet", parameters)
+	set, ok := opts.Parameters.(armprivatedns.RecordSet)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armprivatedns.RecordSet", opts.Parameters)
 	}
 
 	// Determine record type.

@@ -32,7 +32,7 @@ import (
 // client wraps go-sdk.
 type client interface {
 	Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, string, interface{}) (interface{}, *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter, azure.CreateOrUpdateAsyncOpts) (interface{}, *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter, string) (*runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientDeleteResponse], error)
 }
 
@@ -70,7 +70,7 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 }
 
 // CreateOrUpdateAsync is a dummy implementation to fulfill the async.Reconciler interface.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, _ azure.ResourceSpecGetter, _ string, _ interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, _ azure.ResourceSpecGetter, _ azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetVMsClientUpdateResponse], err error) {
 	_, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.CreateOrUpdateAsync")
 	defer done()
 

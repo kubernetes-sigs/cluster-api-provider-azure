@@ -43,7 +43,7 @@ type TagsGetter interface {
 // Creator creates or updates a resource asynchronously.
 type Creator[T any] interface {
 	Getter
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[T], err error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[T], err error)
 }
 
 // Deleter deletes a resource asynchronously.

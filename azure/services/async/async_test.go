@@ -72,7 +72,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
-					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(fakeResource, nil, nil),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), createOrUpdateAsyncOpts).Return(fakeResource, nil, nil),
 					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
 				)
 			},
@@ -86,7 +86,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
-					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), createOrUpdateAsyncOpts).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
 				)
@@ -101,7 +101,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceName().Return(resourceName),
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
-					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), errors.New("foo")),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), createOrUpdateAsyncOpts).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), errors.New("foo")),
 					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
 				)
 			},
@@ -117,7 +117,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(nil),
 					c.Get(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType)).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound}),
 					r.Parameters(gomockinternal.AContext(), nil).Return(fakeParameters, nil),
-					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), "", gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), context.DeadlineExceeded),
 					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
 					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
 				)
@@ -293,17 +293,19 @@ const (
 	resourceGroupName  = "mock-resourcegroup"
 	resourceName       = "mock-resource"
 	serviceName        = "mock-service"
-	resumeToken        = "mock-resume-token"
 	invalidResumeToken = "!invalid-resume-token"
 )
 
 var (
+	createOrUpdateAsyncOpts = azure.CreateOrUpdateAsyncOpts{
+		ResumeToken: "mock-resume-token",
+	}
 	validPutFuture = &infrav1.Future{
 		Type:          infrav1.PutFuture,
 		ServiceName:   serviceName,
 		Name:          resourceName,
 		ResourceGroup: resourceGroupName,
-		Data:          base64.URLEncoding.EncodeToString([]byte(resumeToken)),
+		Data:          base64.URLEncoding.EncodeToString([]byte(createOrUpdateAsyncOpts.ResumeToken)),
 	}
 	invalidPutFuture = &infrav1.Future{
 		Type:          infrav1.PutFuture,
@@ -317,7 +319,7 @@ var (
 		ServiceName:   serviceName,
 		Name:          resourceName,
 		ResourceGroup: resourceGroupName,
-		Data:          base64.URLEncoding.EncodeToString([]byte(resumeToken)),
+		Data:          base64.URLEncoding.EncodeToString([]byte(createOrUpdateAsyncOpts.ResumeToken)),
 	}
 	invalidDeleteFuture = &infrav1.Future{
 		Type:          infrav1.DeleteFuture,

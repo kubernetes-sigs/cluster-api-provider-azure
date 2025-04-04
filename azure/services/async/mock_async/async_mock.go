@@ -277,9 +277,9 @@ func (m *MockCreator[T]) EXPECT() *MockCreatorMockRecorder[T] {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockCreator[T]) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters any) (any, *runtime.Poller[T], error) {
+func (m *MockCreator[T]) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (any, *runtime.Poller[T], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, resumeToken, parameters)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, opts)
 	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(*runtime.Poller[T])
 	ret2, _ := ret[2].(error)
@@ -287,9 +287,9 @@ func (m *MockCreator[T]) CreateOrUpdateAsync(ctx context.Context, spec azure.Res
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockCreatorMockRecorder[T]) CreateOrUpdateAsync(ctx, spec, resumeToken, parameters any) *gomock.Call {
+func (mr *MockCreatorMockRecorder[T]) CreateOrUpdateAsync(ctx, spec, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockCreator[T])(nil).CreateOrUpdateAsync), ctx, spec, resumeToken, parameters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockCreator[T])(nil).CreateOrUpdateAsync), ctx, spec, opts)
 }
 
 // Get mocks base method.

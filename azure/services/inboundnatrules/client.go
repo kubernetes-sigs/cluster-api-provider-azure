@@ -90,18 +90,18 @@ func (ac *azureClient) List(ctx context.Context, resourceGroupName, lbName strin
 // CreateOrUpdateAsync creates or updates an inbound NAT rule asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.InboundNatRulesClientCreateOrUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armnetwork.InboundNatRulesClientCreateOrUpdateResponse], err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	natRule, ok := parameters.(armnetwork.InboundNatRule)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armnetwork.InboundNatRule", parameters)
+	natRule, ok := opts.Parameters.(armnetwork.InboundNatRule)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.InboundNatRule", opts.Parameters)
 	}
 
-	opts := &armnetwork.InboundNatRulesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	log.V(4).Info("sending request", "resumeToken", resumeToken)
-	poller, err = ac.inboundnatrules.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), natRule, opts)
+	beginOpts := &armnetwork.InboundNatRulesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	log.V(4).Info("sending request", "resumeToken", opts.ResumeToken)
+	poller, err = ac.inboundnatrules.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), natRule, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

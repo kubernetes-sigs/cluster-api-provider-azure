@@ -63,17 +63,17 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a route table asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.RouteTablesClientCreateOrUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armnetwork.RouteTablesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.azureClient.CreateOrUpdateAsync")
 	defer done()
 
-	rt, ok := parameters.(armnetwork.RouteTable)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armnetwork.RouteTable", parameters)
+	rt, ok := opts.Parameters.(armnetwork.RouteTable)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.RouteTable", opts.Parameters)
 	}
 
-	opts := &armnetwork.RouteTablesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = ac.routetables.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), rt, opts)
+	beginOpts := &armnetwork.RouteTablesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = ac.routetables.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), rt, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -65,13 +65,13 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a network security group in the specified resource group.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "securitygroups.azureClient.CreateOrUpdate")
 	defer done()
 
-	sg, ok := parameters.(armnetwork.SecurityGroup)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armnetwork.SecurityGroup", parameters)
+	sg, ok := opts.Parameters.(armnetwork.SecurityGroup)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.SecurityGroup", opts.Parameters)
 	}
 
 	var extraPolicies []policy.Policy
@@ -94,8 +94,8 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	}
 	client := factory.NewSecurityGroupsClient()
 
-	opts := &armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = client.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), sg, opts)
+	beginOpts := &armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = client.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), sg, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

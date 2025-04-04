@@ -36,7 +36,7 @@ type azureClient struct {
 }
 
 // NewClient creates a new network interfaces client from an authorizer.
-func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClient, error) { //nolint:revive // leave it as is
+func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClient, error) {
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create networkinterfaces client options")
@@ -63,17 +63,17 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a network interface asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "networkinterfaces.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
-	networkInterface, ok := parameters.(armnetwork.Interface)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armnetwork.Interface", parameters)
+	networkInterface, ok := opts.Parameters.(armnetwork.Interface)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armnetwork.Interface", opts.Parameters)
 	}
 
-	opts := &armnetwork.InterfacesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = ac.interfaces.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), networkInterface, opts)
+	beginOpts := &armnetwork.InterfacesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = ac.interfaces.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), networkInterface, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

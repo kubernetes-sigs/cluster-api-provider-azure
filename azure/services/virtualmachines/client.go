@@ -40,7 +40,7 @@ type (
 	// Client provides operations on Azure virtual machine resources.
 	Client interface {
 		Get(context.Context, azure.ResourceSpecGetter) (interface{}, error)
-		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], err error)
+		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], err error)
 		DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], err error)
 	}
 )
@@ -75,17 +75,17 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a virtual machine asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], err error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
 	defer done()
 
-	vm, ok := parameters.(armcompute.VirtualMachine)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armcompute.VirtualMachine", parameters)
+	vm, ok := opts.Parameters.(armcompute.VirtualMachine)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armcompute.VirtualMachine", opts.Parameters)
 	}
 
-	opts := &armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = ac.virtualmachines.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm, opts)
+	beginOpts := &armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = ac.virtualmachines.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), vm, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

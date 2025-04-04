@@ -35,7 +35,7 @@ type Client interface {
 	List(context.Context, string) ([]armcompute.VirtualMachineScaleSet, error)
 	ListInstances(context.Context, string, string) ([]armcompute.VirtualMachineScaleSetVM, error)
 
-	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse], err error)
+	CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse], err error)
 	DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachineScaleSetsClientDeleteResponse], err error)
 }
 
@@ -146,17 +146,17 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 // CreateOrUpdateAsync creates or updates a virtual machine scale set asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a poller which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse], err error) {
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (result interface{}, poller *runtime.Poller[armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse], err error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.CreateOrUpdateAsync")
 	defer done()
 
-	scaleset, ok := parameters.(armcompute.VirtualMachineScaleSet)
-	if !ok && parameters != nil {
-		return nil, nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", parameters)
+	scaleset, ok := opts.Parameters.(armcompute.VirtualMachineScaleSet)
+	if !ok && opts.Parameters != nil {
+		return nil, nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", opts.Parameters)
 	}
 
-	opts := &armcompute.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions{ResumeToken: resumeToken}
-	poller, err = ac.scalesets.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), scaleset, opts)
+	beginOpts := &armcompute.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions{ResumeToken: opts.ResumeToken}
+	poller, err = ac.scalesets.BeginCreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), scaleset, beginOpts)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -63,20 +63,19 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	futureType := infrav1.PutFuture
 
 	// Check if there is an ongoing long-running operation.
-	resumeToken := ""
+	createOrUpdateOpts := azure.CreateOrUpdateAsyncOpts{}
 	if future := s.Scope.GetLongRunningOperationState(resourceName, serviceName, futureType); future != nil {
 		t, err := converters.FutureToResumeToken(*future)
 		if err != nil {
 			s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 			return "", errors.Wrap(err, "could not decode future data, resetting long-running operation state")
 		}
-		resumeToken = t
+		createOrUpdateOpts.ResumeToken = t
 	}
 
 	// Only when no long running operation is currently in progress do we need to get the parameters.
 	// The polling implemented by the SDK does not use parameters when a resume token exists.
-	var parameters interface{}
-	if resumeToken == "" {
+	if createOrUpdateOpts.ResumeToken == "" {
 		// Get the resource if it already exists, and use it to construct the desired resource parameters.
 		var existingResource interface{}
 		if existing, err := s.Creator.Get(ctx, spec); err != nil && !azure.ResourceNotFound(err) {
@@ -88,10 +87,10 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 		}
 
 		// Construct parameters using the resource spec and information from the existing resource, if there is one.
-		parameters, err = spec.Parameters(ctx, existingResource)
+		createOrUpdateOpts.Parameters, err = spec.Parameters(ctx, existingResource)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get desired parameters for resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-		} else if parameters == nil {
+		} else if createOrUpdateOpts.Parameters == nil {
 			// Nothing to do, don't create or update the resource and return the existing resource.
 			log.V(2).Info("resource up to date", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 			return existingResource, nil
@@ -105,7 +104,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 		}
 	}
 
-	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, resumeToken, parameters)
+	result, poller, err := s.Creator.CreateOrUpdateAsync(ctx, spec, createOrUpdateOpts)
 	errWrapped := errors.Wrapf(err, "failed to create or update resource %s/%s (service: %s)", rgName, resourceName, serviceName)
 	if poller != nil && azure.IsContextDeadlineExceededOrCanceledError(err) {
 		future, err := converters.PollerToFuture(poller, infrav1.PutFuture, serviceName, resourceName, rgName)

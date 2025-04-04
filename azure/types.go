@@ -26,6 +26,12 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
+// CreateOrUpdateAsyncOpts defines the options for CreateOrUpdateAsync async method.
+type CreateOrUpdateAsyncOpts struct {
+	ResumeToken string
+	Parameters  interface{}
+}
+
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string

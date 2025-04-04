@@ -59,9 +59,9 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CreateOrUpdateAsync mocks base method.
-func (m *MockClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters any) (any, *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
+func (m *MockClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, opts azure.CreateOrUpdateAsyncOpts) (any, *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, resumeToken, parameters)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", ctx, spec, opts)
 	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse])
 	ret2, _ := ret[2].(error)
@@ -69,9 +69,9 @@ func (m *MockClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resourc
 }
 
 // CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockClientMockRecorder) CreateOrUpdateAsync(ctx, spec, resumeToken, parameters any) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateOrUpdateAsync(ctx, spec, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), ctx, spec, resumeToken, parameters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), ctx, spec, opts)
 }
 
 // DeleteAsync mocks base method.
