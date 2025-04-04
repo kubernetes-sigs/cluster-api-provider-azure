@@ -45,7 +45,7 @@ const (
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
 func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
 	if input.CNIManifestPath != "" {
-		InstallCNIManifest(ctx, input, hasWindows)
+		InstallCNIManifest(ctx, input)
 	} else {
 		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks, hasWindows)
 	}
