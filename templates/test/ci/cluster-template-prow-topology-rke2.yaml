@@ -1,0 +1,47 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cloud-provider: azure
+    cni: calico
+    containerd-logger: enabled
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  topology:
+    class: ${CLUSTER_CLASS_NAME}
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+    variables:
+    - name: subscriptionID
+      value: ${AZURE_SUBSCRIPTION_ID}
+    - name: controlPlaneMachineType
+      value: ${AZURE_CONTROL_PLANE_MACHINE_TYPE:-""}
+    - name: workerMachineType
+      value: ${AZURE_NODE_MACHINE_TYPE:-""}
+    - name: sshPublicKey
+      value: ${AZURE_SSH_PUBLIC_KEY_B64:-""}
+    - name: buildProvenance
+      value: ${BUILD_PROVENANCE:-""}
+    - name: timestamp
+      value: ${TIMESTAMP:-""}
+    - name: jobName
+      value: ${JOB_NAME:-""}
+    - name: clusterIdentityRef
+      value: ${CLUSTER_IDENTITY_NAME}
+    - name: location
+      value: ${AZURE_LOCATION}
+    - name: k8sFeatureGates
+      value: ${K8S_FEATURE_GATES:-""}
+    - name: logLevel
+      value: "4"
+    version: ${KUBERNETES_VERSION}+rke2r1
+    workers:
+      machineDeployments:
+      - class: ${CLUSTER_NAME}-worker
+        name: md-0
+        replicas: ${WORKER_MACHINE_COUNT}

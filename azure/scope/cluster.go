@@ -266,6 +266,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
+			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -299,6 +300,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
+			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
 		}
 
 		privateIPFound := false
@@ -771,6 +773,11 @@ func (s *ClusterScope) ControlPlaneOutboundLB() *infrav1.LoadBalancerSpec {
 	return s.AzureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB
 }
 
+// ControlPlaneAdditionalLBPorts returns the additional API server ports list.
+func (s *ClusterScope) ControlPlaneAdditionalLBPorts() []infrav1.LoadBalancerPort {
+	return s.AzureCluster.Spec.NetworkSpec.AdditionalControlPlaneLBPorts
+}
+
 // APIServerLBName returns the API Server LB name.
 func (s *ClusterScope) APIServerLBName() string {
 	apiServerLB := s.APIServerLB()
@@ -1020,9 +1027,15 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 	if !s.ControlPlaneEnabled() {
 		return
 	}
-	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
-		subnet := s.ControlPlaneSubnet()
-		subnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{
+
+	subnet := s.ControlPlaneSubnet()
+
+	if subnet.SecurityGroup.SecurityRules == nil {
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
+	}
+
+	if subnet.GetSecurityRuleByDestination("22") == nil {
+		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
 			infrav1.SecurityRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
@@ -1034,20 +1047,26 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Destination:      ptr.To("*"),
 				DestinationPorts: ptr.To("22"),
 				Action:           infrav1.SecurityRuleActionAllow,
-			},
-			infrav1.SecurityRule{
-				Name:             "allow_apiserver",
-				Description:      "Allow K8s API Server",
-				Priority:         2201,
-				Protocol:         infrav1.SecurityGroupProtocolTCP,
-				Direction:        infrav1.SecurityRuleDirectionInbound,
-				Source:           ptr.To("*"),
-				SourcePorts:      ptr.To("*"),
-				Destination:      ptr.To("*"),
-				DestinationPorts: ptr.To(strconv.Itoa(int(s.APIServerPort()))),
-				Action:           infrav1.SecurityRuleActionAllow,
-			},
-		}
+			})
+
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
+	}
+
+	port := strconv.Itoa(int(s.APIServerPort()))
+	if subnet.GetSecurityRuleByDestination(port) == nil {
+		subnet.SecurityGroup.SecurityRules = append(s.ControlPlaneSubnet().SecurityGroup.SecurityRules, infrav1.SecurityRule{
+			Name:             "allow_apiserver",
+			Description:      "Allow K8s API Server",
+			Priority:         2201,
+			Protocol:         infrav1.SecurityGroupProtocolTCP,
+			Direction:        infrav1.SecurityRuleDirectionInbound,
+			Source:           ptr.To("*"),
+			SourcePorts:      ptr.To("*"),
+			Destination:      ptr.To("*"),
+			DestinationPorts: ptr.To(port),
+			Action:           infrav1.SecurityRuleActionAllow,
+		})
+
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 }
