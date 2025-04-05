@@ -67,7 +67,7 @@ func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*AzureClien
 
 // newVirtualMachineScaleSetVMsClient creates a vmss VM client from an authorizer.
 func newVirtualMachineScaleSetVMsClient(auth azure.Authorizer) (*armcompute.VirtualMachineScaleSetVMsClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create scalesetvms client options")
 	}
@@ -80,7 +80,7 @@ func newVirtualMachineScaleSetVMsClient(auth azure.Authorizer) (*armcompute.Virt
 
 // newVirtualMachineScaleSetsClient creates a vmss client from an authorizer.
 func newVirtualMachineScaleSetsClient(auth azure.Authorizer) (*armcompute.VirtualMachineScaleSetsClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create scalesets client options")
 	}

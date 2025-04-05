@@ -97,7 +97,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
 
-	if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider); err != nil {
+	if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, "", credentialsProvider); err != nil {
 		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}
 

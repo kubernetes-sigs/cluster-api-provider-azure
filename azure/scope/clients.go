@@ -81,12 +81,12 @@ func (c *AzureClients) HashKey() string {
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
 
-func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider CredentialsProvider) error {
+func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName, armEndpoint string, credentialsProvider CredentialsProvider) error {
 	if credentialsProvider == nil {
 		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
 
-	settings, err := c.getSettingsFromEnvironment(environmentName)
+	settings, err := c.getSettingsFromEnvironment(environmentName, armEndpoint)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	return err
 }
 
-func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s auth.EnvironmentSettings, err error) {
+func (c *AzureClients) getSettingsFromEnvironment(environmentName, armEndpoint string) (s auth.EnvironmentSettings, err error) {
 	s = auth.EnvironmentSettings{
 		Values: map[string]string{},
 	}
@@ -138,6 +138,8 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	setValue(s, "AZURE_AD_RESOURCE")
 	if v := s.Values["AZURE_ENVIRONMENT"]; v == "" {
 		s.Environment = azureautorest.PublicCloud
+	} else if len(armEndpoint) > 0 {
+		s.Environment, err = azureautorest.EnvironmentFromURL(armEndpoint)
 	} else {
 		s.Environment, err = azureautorest.EnvironmentFromName(v)
 	}

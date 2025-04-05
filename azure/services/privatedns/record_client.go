@@ -34,7 +34,7 @@ type azureRecordsClient struct {
 
 // newRecordSetsClient creates a record sets client from an authorizer.
 func newRecordSetsClient(auth azure.Authorizer) (*azureRecordsClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create recordsets client options")
 	}

@@ -38,6 +38,7 @@ func TestARMClientOptions(t *testing.T) {
 	tests := []struct {
 		name          string
 		cloudName     string
+		armEndpoint   string
 		expectedCloud cloud.Configuration
 		expectError   bool
 	}{
@@ -72,7 +73,7 @@ func TestARMClientOptions(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
 
-			opts, err := ARMClientOptions(tc.cloudName)
+			opts, err := ARMClientOptions(tc.cloudName, tc.armEndpoint)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
 				return
@@ -99,7 +100,7 @@ func TestPerCallPolicies(t *testing.T) {
 	defer server.Close()
 
 	// Call the factory function and ensure it has both PerCallPolicies.
-	opts, err := ARMClientOptions("")
+	opts, err := ARMClientOptions("", "")
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(opts.PerCallPolicies).To(HaveLen(2))
 	g.Expect(opts.PerCallPolicies).To(ContainElement(BeAssignableToTypeOf(correlationIDPolicy{})))
@@ -184,7 +185,7 @@ func TestCustomPutPatchHeaderPolicy(t *testing.T) {
 			// Create options with a custom PUT/PATCH header per-call policy
 			getterMock := mock_azure.NewMockResourceSpecGetterWithHeaders(mockCtrl)
 			getterMock.EXPECT().CustomHeaders().Return(tc.headers).AnyTimes()
-			opts, err := ARMClientOptions("", CustomPutPatchHeaderPolicy{Headers: tc.headers})
+			opts, err := ARMClientOptions("", "", CustomPutPatchHeaderPolicy{Headers: tc.headers})
 			g.Expect(err).NotTo(HaveOccurred())
 
 			// Create a request

@@ -48,6 +48,7 @@ type AzureClusterClassSpec struct {
 	// - GermanCloud: "AzureGermanCloud"
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	// - StackCloud: "HybridEnvironment"
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
@@ -77,6 +78,12 @@ type AzureClusterClassSpec struct {
 	// See: https://learn.microsoft.com/azure/reliability/availability-zones-overview
 	// +optional
 	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
+
+	// ARMEndpoint specifies a URL for the ARM Resource Manager endpoint.
+	// It may only be specified when the AzureEnvironment is set to AzureStackCloud,
+	// in which case it is required.
+	// +optional
+	ARMEndpoint string `json:"armEndpoint,omitempty"`
 }
 
 // AzureManagedControlPlaneClassSpec defines the AzureManagedControlPlane properties that may be shared across several azure managed control planes.
@@ -185,6 +192,7 @@ type AzureManagedControlPlaneClassSpec struct {
 	// - ChinaCloud: "AzureChinaCloud"
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	//
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does

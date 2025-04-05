@@ -37,7 +37,7 @@ type azureZonesClient struct {
 
 // newPrivateZonesClient creates a private zones client from an authorizer.
 func newPrivateZonesClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureZonesClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create privatezones client options")
 	}

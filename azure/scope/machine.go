@@ -150,7 +150,8 @@ func (m *MachineScope) InitMachineCache(ctx context.Context) error {
 		}
 
 		m.cache.availabilitySetSKU, err = skuCache.Get(ctx, string(armcompute.AvailabilitySetSKUTypesAligned), resourceskus.AvailabilitySets)
-		if err != nil {
+		// Resource SKU API for availability sets may not be available in Azure Stack environments.
+		if err != nil && !strings.EqualFold(m.CloudEnvironment(), "HybridEnvironment") {
 			return errors.Wrapf(err, "failed to get availability set SKU %s in compute api", string(armcompute.AvailabilitySetSKUTypesAligned))
 		}
 	}
@@ -494,12 +495,13 @@ func (m *MachineScope) AvailabilitySetSpec() azure.ResourceSpecGetter {
 	}
 
 	spec := &availabilitysets.AvailabilitySetSpec{
-		Name:           availabilitySetName,
-		ResourceGroup:  m.NodeResourceGroup(),
-		ClusterName:    m.ClusterName(),
-		Location:       m.Location(),
-		SKU:            nil,
-		AdditionalTags: m.AdditionalTags(),
+		Name:             availabilitySetName,
+		ResourceGroup:    m.NodeResourceGroup(),
+		ClusterName:      m.ClusterName(),
+		Location:         m.Location(),
+		CloudEnvironment: m.CloudEnvironment(),
+		SKU:              nil,
+		AdditionalTags:   m.AdditionalTags(),
 	}
 
 	if m.cache != nil {

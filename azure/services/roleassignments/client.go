@@ -34,7 +34,7 @@ type azureClient struct {
 
 // newClient creates a new role assignments client from an authorizer.
 func newClient(auth azure.Authorizer) (*azureClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create roleassignments client options")
 	}

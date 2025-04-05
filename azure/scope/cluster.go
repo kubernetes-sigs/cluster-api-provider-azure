@@ -84,7 +84,8 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
-	err = params.AzureClients.setCredentialsWithProvider(ctx, params.AzureCluster.Spec.SubscriptionID, params.AzureCluster.Spec.AzureEnvironment, credentialsProvider)
+	spec := params.AzureCluster.Spec
+	err = params.AzureClients.setCredentialsWithProvider(ctx, spec.SubscriptionID, spec.AzureEnvironment, spec.ARMEndpoint, credentialsProvider)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}
@@ -557,7 +558,7 @@ func (s *ClusterScope) VNetSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20
 
 // PrivateDNSSpec returns the private dns zone spec.
 func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, linkSpec, recordSpec []azure.ResourceSpecGetter) {
-	if s.IsAPIServerPrivate() {
+	if s.IsAPIServerPrivate() && !s.IsHybridEnvironment() {
 		resourceGroup := s.ResourceGroup()
 		if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup != "" {
 			resourceGroup = s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup
@@ -1232,4 +1233,9 @@ func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]in
 		lastAppliedSecurityRules = map[string]interface{}{}
 	}
 	return lastAppliedSecurityRules
+}
+
+// IsHybridEnvironment returns true if the cluster is running on Azure Stack.
+func (s *ClusterScope) IsHybridEnvironment() bool {
+	return strings.EqualFold(s.Environment.Name, azure.StackCloudName)
 }

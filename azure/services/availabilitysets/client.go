@@ -34,7 +34,7 @@ type AzureClient struct {
 
 // NewClient creates a new availability sets client from an authorizer.
 func NewClient(auth azure.Authorizer) (*AzureClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create availabilitysets client options")
 	}

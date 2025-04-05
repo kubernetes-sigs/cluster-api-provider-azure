@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"go.opentelemetry.io/otel"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -44,6 +45,8 @@ const (
 	ChinaCloudName = "AzureChinaCloud"
 	// USGovernmentCloudName is the name of the Azure US Government cloud.
 	USGovernmentCloudName = "AzureUSGovernmentCloud"
+	// StackCloudName is the name for Azure Stack hybrid cloud environments.
+	StackCloudName = "HybridEnvironment"
 )
 
 const (
@@ -107,6 +110,16 @@ const (
 	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
 	// AzureManagedMachinePool CR to enable creating GPU nodes by the node pool.
 	CustomHeaderPrefix = "infrastructure.cluster.x-k8s.io/custom-header-"
+)
+
+const (
+	// StackAPIVersion is the API version profile to set for ARM clients. See:
+	// https://learn.microsoft.com/en-us/azure-stack/user/azure-stack-profiles-azure-resource-manager-versions?view=azs-2408#overview-of-the-2020-09-01-hybrid-profile
+	StackAPIVersionProfile = "2020-06-01"
+
+	// StackDiskAPIVersionProfile is the API Version to set for the disk client.
+	// API Version Profile "2020-06-01" is not supported for disks.
+	StackDiskAPIVersionProfile = "2018-06-01"
 )
 
 var (
@@ -357,7 +370,7 @@ func UserAgent() string {
 }
 
 // ARMClientOptions returns default ARM client options for CAPZ SDK v2 requests.
-func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (*arm.ClientOptions, error) {
+func ARMClientOptions(azureEnvironment, armEndpoint string, extraPolicies ...policy.Policy) (*arm.ClientOptions, error) {
 	opts := &arm.ClientOptions{}
 
 	switch azureEnvironment {
@@ -367,6 +380,21 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 		opts.Cloud = cloud.AzureChina
 	case USGovernmentCloudName:
 		opts.Cloud = cloud.AzureGovernment
+	case StackCloudName:
+		cloudEnv, err := azure.EnvironmentFromURL(armEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get Azure Stack cloud environment: %w", err)
+		}
+		opts.APIVersion = StackAPIVersionProfile
+		opts.Cloud = cloud.Configuration{
+			ActiveDirectoryAuthorityHost: cloudEnv.ActiveDirectoryEndpoint,
+			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+				cloud.ResourceManager: {
+					Audience: cloudEnv.TokenAudience,
+					Endpoint: cloudEnv.ResourceManagerEndpoint,
+				},
+			},
+		}
 	case "":
 		// No cloud name provided, so leave at defaults.
 	default:

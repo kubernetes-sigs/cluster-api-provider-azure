@@ -37,7 +37,7 @@ type azureClient struct {
 
 // NewClient creates a new network interfaces client from an authorizer.
 func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClient, error) { //nolint:revive // leave it as is
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptions(auth.CloudEnvironment(), auth.BaseURI())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create networkinterfaces client options")
 	}
