@@ -32,6 +32,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -148,7 +149,7 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 
 	// Ensuring a CNI file is defined in the config and register a FileTransformation to inject the referenced file as in place of the CNI_RESOURCES envSubst variable.
 	Expect(config.Variables).To(HaveKey(capi_e2e.CNIPath), "Missing %s variable in the config", capi_e2e.CNIPath)
-	cniPath := config.GetVariable(capi_e2e.CNIPath)
+	cniPath := config.GetVariableOrEmpty(capi_e2e.CNIPath)
 	Expect(cniPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", capi_e2e.CNIPath)
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPath, capi_e2e.CNIResources)
 
@@ -171,6 +172,7 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
 	} else {
+		kubeconfigPath = clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
 		// @sonasingh46: Workaround for testing workload identity.
 		// Loading image for already created cluster
 		imagesInput := bootstrap.LoadImagesToKindClusterInput{
