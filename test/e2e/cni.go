@@ -43,16 +43,16 @@ const (
 )
 
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
-func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
+func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
 	if input.CNIManifestPath != "" {
-		InstallCNIManifest(ctx, input, cidrBlocks, hasWindows)
+		InstallCNIManifest(ctx, input, cidrBlocks)
 	} else {
-		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks, hasWindows)
+		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks)
 	}
 }
 
 // InstallCNIManifest installs the CNI manifest provided by the user
-func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) { //nolint:revive // leaving unused cidrBlocks and hasWindows for understanding
+func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string) { //nolint:revive // leaving unused cidrBlocks
 	By("Installing a CNI plugin to the workload cluster")
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 
@@ -63,7 +63,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 }
 
 // EnsureCalicoIsReady copies the kubeadm configmap to the calico-system namespace and waits for the calico pods to be ready.
-func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
+func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
 	specName := "ensure-calico"
 
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
@@ -73,14 +73,6 @@ func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomCluste
 		InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values, os.Getenv(CalicoVersion))
 	} else {
 		By("Ensuring Calico CNI is installed via CAAPH")
-	}
-
-	By("Copying kubeadm config map to calico-system namespace")
-	workloadClusterClient := clusterProxy.GetClient()
-
-	if hasWindows {
-		// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
-		CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
 	}
 
 	By("Waiting for Ready tigera-operator deployment pods")

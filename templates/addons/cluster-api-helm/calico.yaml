@@ -6,26 +6,38 @@ spec:
   clusterSelector:
     matchLabels:
       cni: calico
-  repoURL: https://docs.tigera.io/calico/charts
+  repoURL: oci://jjsacrpub.azurecr.io/helm/
   chartName: tigera-operator
   version: ${CALICO_VERSION}
   releaseName: projectcalico
   namespace: tigera-operator
-  valuesTemplate: |
+  valuesTemplate: |-
     installation:
       cni:
         type: Calico
       calicoNetwork:
         bgp: Disabled
+        windowsDataplane: HNS
         mtu: 1350
         ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      registry: mcr.microsoft.com/oss
+      serviceCIDRs: 
+        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+    # when kubernetesServiceEndpoint need to pass dns to look up the name properly
+    dnsConfig: 
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
       image: tigera/operator
       registry: mcr.microsoft.com/oss
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
