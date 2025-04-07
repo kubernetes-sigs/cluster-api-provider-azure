@@ -45,14 +45,14 @@ const (
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
 func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
 	if input.CNIManifestPath != "" {
-		InstallCNIManifest(ctx, input, cidrBlocks, hasWindows)
+		InstallCNIManifest(ctx, input)
 	} else {
 		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks, hasWindows)
 	}
 }
 
 // InstallCNIManifest installs the CNI manifest provided by the user
-func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cidrBlocks []string, hasWindows bool) { //nolint:revive // leaving unused cidrBlocks and hasWindows for understanding
+func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput) {
 	By("Installing a CNI plugin to the workload cluster")
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 
