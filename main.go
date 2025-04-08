@@ -67,6 +67,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
+	"sigs.k8s.io/cluster-api-provider-azure/util/components"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -120,6 +121,7 @@ var (
 	managerOptions                     = flags.ManagerOptions{}
 	timeouts                           reconciler.Timeouts
 	enableTracing                      bool
+	disableControllersOrWebhooks       []string
 )
 
 // InitFlags initializes all command-line flags.
@@ -266,6 +268,12 @@ func InitFlags(fs *pflag.FlagSet) {
 		"(Deprecated) Provide fully qualified GVK string to override default kubeadm config watch source, in the form of Kind.version.group (default: KubeadmConfig.v1beta1.bootstrap.cluster.x-k8s.io)",
 	)
 
+	fs.StringSliceVar(&disableControllersOrWebhooks,
+		"disable-controllers-or-webhooks",
+		[]string{},
+		"Comma-separated list of controllers or webhooks to disable. The list can contain the following values: DisableASOSecretController,DisableAzureJSONMachineController",
+	)
+
 	flags.AddManagerOptions(fs, &managerOptions)
 
 	feature.MutableGates.AddFlag(fs)
@@ -305,6 +313,16 @@ func main() {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
 		watchNamespaces = map[string]cache.Config{
 			watchNamespace: {},
+		}
+	}
+
+	// Validate valid disable components were passed in the flag
+	if len(disableControllersOrWebhooks) > 0 {
+		for _, component := range disableControllersOrWebhooks {
+			if ok := components.IsValidDisableComponent(component); !ok {
+				setupLog.Error(fmt.Errorf("invalid disable-controllers-or-webhooks value %s", component), "Invalid argument")
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -420,26 +438,30 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.AzureJSONMachineReconciler{
-		Client:           mgr.GetClient(),
-		Recorder:         mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
-		Timeouts:         timeouts,
-		WatchFilterValue: watchFilterValue,
-		CredentialCache:  credCache,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency, SkipNameValidation: ptr.To(true)}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
-		os.Exit(1)
+	if !components.IsComponentDisabled(disableControllersOrWebhooks, infrav1.DisableAzureJSONMachineController) {
+		if err := (&controllers.AzureJSONMachineReconciler{
+			Client:           mgr.GetClient(),
+			Recorder:         mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
+			Timeouts:         timeouts,
+			WatchFilterValue: watchFilterValue,
+			CredentialCache:  credCache,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency, SkipNameValidation: ptr.To(true)}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
+			os.Exit(1)
+		}
 	}
 
-	if err := (&controllers.ASOSecretReconciler{
-		Client:           mgr.GetClient(),
-		Recorder:         mgr.GetEventRecorderFor("asosecret-reconciler"),
-		Timeouts:         timeouts,
-		WatchFilterValue: watchFilterValue,
-		CredentialCache:  credCache,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ASOSecret")
-		os.Exit(1)
+	if !components.IsComponentDisabled(disableControllersOrWebhooks, infrav1.DisableASOSecretController) {
+		if err := (&controllers.ASOSecretReconciler{
+			Client:           mgr.GetClient(),
+			Recorder:         mgr.GetEventRecorderFor("asosecret-reconciler"),
+			Timeouts:         timeouts,
+			WatchFilterValue: watchFilterValue,
+			CredentialCache:  credCache,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "ASOSecret")
+			os.Exit(1)
+		}
 	}
 
 	// just use CAPI MachinePool feature flag rather than create a new one
