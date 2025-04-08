@@ -1245,3 +1245,23 @@ const (
 	// AKSAssignedIdentityUserAssigned ...
 	AKSAssignedIdentityUserAssigned AKSAssignedIdentity = "UserAssigned"
 )
+
+// DisableComponent defines a component to be disabled in CAPZ such as a controller or webhook.
+// +kubebuilder:validation:Enum=DisableASOSecretController;DisableAzureJSONMachineController
+type DisableComponent string
+
+// NOTE: when adding a new DisableComponent, please also add it to the ValidDisableableComponents map.
+const (
+	// DisableASOSecretController disables the ASOSecretController from being deployed.
+	DisableASOSecretController DisableComponent = "DisableASOSecretController"
+
+	// DisableAzureJSONMachineController disables the AzureJSONMachineController from being deployed.
+	DisableAzureJSONMachineController DisableComponent = "DisableAzureJSONMachineController"
+)
+
+// ValidDisableableComponents is a map of valid disableable components used to quickly validate whether a component is
+// valid or not.
+var ValidDisableableComponents = map[DisableComponent]struct{}{
+	DisableASOSecretController:        {},
+	DisableAzureJSONMachineController: {},
+}
