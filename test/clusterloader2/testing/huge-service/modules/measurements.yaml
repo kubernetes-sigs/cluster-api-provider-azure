@@ -1,0 +1,99 @@
+# Valid actions: "start", "gather"
+{{$action := .action}}
+{{$statefulsetEndpoints := .statefulsetEndpoints}}
+{{$serviceName := .serviceName}}
+{{$namespaceIdx := .namespaceIdx}}
+
+{{$ALLOWED_SLOW_API_CALLS := DefaultParam .CL2_ALLOWED_SLOW_API_CALLS 0}}
+{{$HUGE_SERVICE_ALLOWED_SLOW_API_CALLS := DefaultParam .CL2_HUGE_SERVICE_ALLOWED_SLOW_API_CALLS 2}}
+{{$PROBE_MEASUREMENTS_CHECK_PROBES_READY_TIMEOUT := DefaultParam .CL2_PROBE_MEASUREMENTS_CHECK_PROBES_READY_TIMEOUT "15m"}}
+{{$ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS := DefaultParam .CL2_ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS false}}
+{{$ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS_SIMPLE := DefaultParam .CL2_ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS_SIMPLE true}}
+
+{{$CUSTOM_API_CALL_THRESHOLDS := DefaultParam .CUSTOM_API_CALL_THRESHOLDS ""}}
+{{$ENABLE_IN_CLUSTER_NETWORK_LATENCY := DefaultParam .CL2_ENABLE_IN_CLUSTER_NETWORK_LATENCY true}}
+{{$ENABLE_RESTART_COUNT_CHECK := DefaultParam .ENABLE_RESTART_COUNT_CHECK true}}
+{{$ENABLE_SYSTEM_POD_METRICS := DefaultParam .ENABLE_SYSTEM_POD_METRICS true}}
+{{$RESTART_COUNT_THRESHOLD_OVERRIDES := DefaultParam .RESTART_COUNT_THRESHOLD_OVERRIDES ""}}
+{{$USE_SIMPLE_LATENCY_QUERY := DefaultParam .USE_SIMPLE_LATENCY_QUERY false}}
+{{$CLUSTER_OOMS_IGNORED_PROCESSES := DefaultParam .CL2_CLUSTER_OOMS_IGNORED_PROCESSES ""}}
+{{$ENABLE_CLUSTER_OOMS_TRACKER := DefaultParam .CL2_ENABLE_CLUSTER_OOMS_TRACKER true}}
+{{$ENABLE_CONTAINER_RESTARTS_MEASUREMENT := DefaultParam .CL2_ENABLE_CONTAINER_RESTARTS_MEASUREMENT false}}
+{{$ALLOWED_CONTAINER_RESTARTS := DefaultParam .CL2_ALLOWED_CONTAINER_RESTARTS 1}}
+{{$CUSTOM_ALLOWED_CONTAINER_RESTARTS := DefaultParam .CL2_CUSTOM_ALLOWED_CONTAINER_RESTARTS ""}}
+{{$PROBE_MEASUREMENTS_PING_SLEEP_DURATION := DefaultParam .CL2_PROBE_MEASUREMENTS_PING_SLEEP_DURATION "1s"}}
+
+{{$allowedSlowCalls := AddInt $ALLOWED_SLOW_API_CALLS $HUGE_SERVICE_ALLOWED_SLOW_API_CALLS}}
+
+# DNS propagation configs, used to measure DNS propagation latency for statefulset in statefulset.yaml
+# Flag to enable/disable the DNS propagation measurement
+{{$ENABLE_DNS_PROPAGATION_MEASUREMENT := DefaultParam .CL2_ENABLE_DNS_PROPAGATION_MEASUREMENT false}}
+# Time threshold for the DNS propagation measurement
+{{$DNS_PROPAGATION_THRESHOLD := DefaultParam .CL2_DNS_PROPAGATION_THRESHOLD "10s"}}
+
+
+steps:
+- name: {{$action}}ing measurements
+  measurements:
+  - Identifier: APIResponsivenessPrometheus
+    Method: APIResponsivenessPrometheus
+    Params:
+      action: {{$action}}
+{{if not $USE_SIMPLE_LATENCY_QUERY}}
+      enableViolations: {{$ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS}}
+      allowedSlowCalls: {{$allowedSlowCalls}}
+      customThresholds: {{YamlQuote $CUSTOM_API_CALL_THRESHOLDS 4}}
+{{end}}
+  - Identifier: APIResponsivenessPrometheusSimple
+    Method: APIResponsivenessPrometheus
+    Params:
+      action: {{$action}}
+      enableViolations: {{$ENABLE_VIOLATIONS_FOR_API_CALL_PROMETHEUS_SIMPLE}}
+      useSimpleLatencyQuery: true
+      summaryName: APIResponsivenessPrometheus_simple
+      allowedSlowCalls: {{$allowedSlowCalls}}
+      customThresholds: {{YamlQuote $CUSTOM_API_CALL_THRESHOLDS 4}}
+  - Identifier: TestMetrics
+    Method: TestMetrics
+    Params:
+      action: {{$action}}
+      systemPodMetricsEnabled: {{$ENABLE_SYSTEM_POD_METRICS}}
+      restartCountThresholdOverrides: {{YamlQuote $RESTART_COUNT_THRESHOLD_OVERRIDES 4}}
+      enableRestartCountCheck: {{$ENABLE_RESTART_COUNT_CHECK}}
+      clusterOOMsIgnoredProcesses: {{YamlQuote $CLUSTER_OOMS_IGNORED_PROCESSES 4}}
+      clusterOOMsTrackerEnabled: {{$ENABLE_CLUSTER_OOMS_TRACKER}}
+{{if $ENABLE_IN_CLUSTER_NETWORK_LATENCY}}
+  - Identifier: InClusterNetworkLatency
+    Method: InClusterNetworkLatency
+    Params:
+      action: {{$action}}
+      checkProbesReadyTimeout: {{$PROBE_MEASUREMENTS_CHECK_PROBES_READY_TIMEOUT}}
+      replicasPerProbe: {{AddInt 2 (DivideInt .Nodes 100)}}
+      pingSleepDuration: {{$PROBE_MEASUREMENTS_PING_SLEEP_DURATION}}
+{{end}}
+{{if $ENABLE_CONTAINER_RESTARTS_MEASUREMENT}}
+  - Identifier: ContainerRestarts
+    Method: ContainerRestarts
+    Params:
+      action: {{$action}}
+      enableViolations: true
+      defaultAllowedRestarts: {{$ALLOWED_CONTAINER_RESTARTS}}
+      customAllowedRestarts: {{YamlQuote $CUSTOM_ALLOWED_CONTAINER_RESTARTS 4}}
+{{end}}
+{{if $ENABLE_DNS_PROPAGATION_MEASUREMENT}}
+  - Identifier: DnsPropagation
+    Method: DnsPropagation
+    Params:
+      action: {{$action}}
+      DNSPropagationProbeStatefulSet: {{$serviceName}}
+      DNSPropagationProbeService: {{$serviceName}}
+      DNSPropagationProbeNamespaceIndex: {{$namespaceIdx}}
+      DNSPropagationProbePodCount: {{$statefulsetEndpoints}}
+      DNSPropagationProbeSampleCount: {{MinInt 25 (AddInt 15 (DivideInt $statefulsetEndpoints 1000))}}
+      replicasPerProbe: {{MinInt 10 (AddInt 2 (DivideInt .Nodes 100))}}
+      threshold: {{$DNS_PROPAGATION_THRESHOLD}}
+{{end}}
+- module:
+    path: ../load/modules/dns-performance-metrics.yaml
+    params:
+      action: {{$action}}

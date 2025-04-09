@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Name}}
+{{if not (eq (Mod .Index 20) 0 19) }} # .Index % 20 in {0,19} - only 10% deployments will have non-immutable ConfigMap.
+immutable: true
+{{end}}
+# Every pod that needs its own configmap entry should be unconditionally
+# added below. That allows us to avoid complicating it with ifs.
+data:
+  # all-queries is used by DNS tests. Since dnsperfgo counts NXDOMAINs as errors, this config contains only valid names.
+  # kubernetes.default results in 4 queries - kubernetes.default.default.svc.cluster.local(A, AAAA), kubernetes.default.svc.cluster.local(A, AAAA)
+  # metadata.google.internal is subject to 5 searchpaths(A, AAAA) + original query (A, AAAA) - 12 queries.
+  # google.com also results in 12 queries.
+  all-queries: |
+      kubernetes.default
+      metadata.google.internal
+      google.com
