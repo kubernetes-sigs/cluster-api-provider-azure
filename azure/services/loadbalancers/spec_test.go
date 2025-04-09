@@ -240,11 +240,11 @@ func newDefaultNodeOutboundLB() armnetwork.LoadBalancer {
 	}
 }
 
-func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools bool, verifyLBRules bool, verifyProbes bool, verifyOutboundRules bool, modifications ...func(*armnetwork.LoadBalancer)) armnetwork.LoadBalancer {
+func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools bool, verifyLBRules bool, verifyThreshold bool, verifyOutboundRules bool, modifications ...func(*armnetwork.LoadBalancer)) armnetwork.LoadBalancer {
 	var subnet *armnetwork.Subnet
 	var backendAddressPoolProps *armnetwork.BackendAddressPoolPropertiesFormat
 	enableFloatingIP := ptr.To(false)
-	numProbes := ptr.To[int32](4)
+	probeThreshold := ptr.To[int32](1)
 	idleTimeout := ptr.To[int32](4)
 
 	if verifyFrontendIP {
@@ -260,8 +260,8 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 	if verifyLBRules {
 		enableFloatingIP = ptr.To(true)
 	}
-	if verifyProbes {
-		numProbes = ptr.To[int32](999)
+	if verifyThreshold {
+		probeThreshold = ptr.To[int32](999)
 	}
 	if verifyOutboundRules {
 		idleTimeout = ptr.To[int32](1000)
@@ -321,7 +321,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 						Port:              ptr.To[int32](6443),
 						RequestPath:       ptr.To(httpsProbeRequestPath),
 						IntervalInSeconds: ptr.To[int32](15),
-						NumberOfProbes:    numProbes, // Add to verify that Probes aren't overwritten on update
+						ProbeThreshold:    probeThreshold, // Add to verify that Probes aren't overwritten on update
 					},
 				},
 			},
@@ -408,7 +408,7 @@ func newDefaultInternalAPIServerLB() armnetwork.LoadBalancer {
 						Port:              ptr.To[int32](6443),
 						RequestPath:       ptr.To(httpsProbeRequestPath),
 						IntervalInSeconds: ptr.To[int32](15),
-						NumberOfProbes:    ptr.To[int32](4),
+						ProbeThreshold:    ptr.To[int32](1),
 					},
 				},
 			},
