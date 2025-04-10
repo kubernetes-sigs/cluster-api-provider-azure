@@ -1,0 +1,66 @@
+{{$LARGE_BACKEND_LB_SERVICE_COUNT := DefaultParam .CL2_LARGE_BACKEND_LB_SERVICE_COUNT 2}}
+{{$MEDIUM_BACKEND_LB_SERVICE_COUNT := DefaultParam .CL2_MEDIUM_BACKEND_LB_SERVICE_COUNT 2}}
+{{$SMALL_BACKEND_LB_SERVICE_COUNT := DefaultParam .CL2_SMALL_BACKEND_LB_SERVICE_COUNT 2}}
+{{$ilbQPS := DefaultParam .CL2_ILB_TEST_QPS 20}}
+
+# Test
+name: ilbload
+namespace:
+  number: 1
+tuningSets:
+- name: ILBConstantQPS
+  qpsLoad:
+    qps: {{$ilbQPS}}
+steps:
+# Mesure each of the ILB services separately, this will provide insight on how long programming
+# ILB takes as a function of number of backends.
+- module:
+    path: /modules/measurements.yaml
+    params:
+      action: start
+- name: Start measurement for running pods
+  measurements:
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: start
+      apiVersion: apps/v1
+      kind: Deployment
+      labelSelector: group = ilb-load
+      operationTimeout: 15m
+# Create ILBs
+- module:
+    path: /modules/services.yaml
+    params:
+      actionName: Create
+      largeBackendLbServiceCount: {{$LARGE_BACKEND_LB_SERVICE_COUNT}}
+      mediumBackendLbServiceCount: {{$MEDIUM_BACKEND_LB_SERVICE_COUNT}}
+      smallBackendLbServiceCount: {{$SMALL_BACKEND_LB_SERVICE_COUNT}}
+- module:
+    path: /modules/measurements.yaml
+    params:
+      action: waitForReady
+- name: Waiting for objects creation to be completed
+  measurements:
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: gather
+# Delete ILBs
+- module:
+    path: /modules/services.yaml
+    params:
+      actionName: Delete
+      largeBackendLbServiceCount: 0
+      mediumBackendLbServiceCount: 0
+      smallBackendLbServiceCount: 0
+- name: Waiting for objects deletion to be completed
+  measurements:
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: gather
+- module:
+    path: /modules/measurements.yaml
+    params:
+      action: gather
