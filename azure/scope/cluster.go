@@ -266,7 +266,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
+			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -300,7 +300,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.ControlPlaneAdditionalLBPorts(),
+			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
 		}
 
 		privateIPFound := false
@@ -773,8 +773,8 @@ func (s *ClusterScope) ControlPlaneOutboundLB() *infrav1.LoadBalancerSpec {
 	return s.AzureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB
 }
 
-// ControlPlaneAdditionalLBPorts returns the additional API server ports list.
-func (s *ClusterScope) ControlPlaneAdditionalLBPorts() []infrav1.LoadBalancerPort {
+// AdditionalAPIServerLBPorts returns the additional API server ports list.
+func (s *ClusterScope) AdditionalAPIServerLBPorts() []infrav1.LoadBalancerPort {
 	return s.AzureCluster.Spec.NetworkSpec.AdditionalAPIServerLBPorts
 }
 
@@ -1030,8 +1030,8 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 
 	subnet := s.ControlPlaneSubnet()
 
-	missing_ssh := subnet.GetSecurityRuleByDestination("22") == nil
-	if missing_ssh {
+	missingSSH := subnet.GetSecurityRuleByDestination("22") == nil
+	if missingSSH {
 		subnet.SecurityGroup.SecurityRules = append(subnet.SecurityGroup.SecurityRules,
 			infrav1.SecurityRule{
 				Name:             "allow_ssh",
@@ -1049,8 +1049,8 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 
 	port := strconv.Itoa(int(s.APIServerPort()))
 
-	missing_api_port := subnet.GetSecurityRuleByDestination(port) == nil
-	if missing_api_port {
+	missingAPIPort := subnet.GetSecurityRuleByDestination(port) == nil
+	if missingAPIPort {
 		subnet.SecurityGroup.SecurityRules = append(subnet.SecurityGroup.SecurityRules, infrav1.SecurityRule{
 			Name:             "allow_apiserver",
 			Description:      "Allow K8s API Server",
@@ -1065,7 +1065,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 		})
 	}
 
-	if missing_ssh || missing_api_port {
+	if missingSSH || missingAPIPort {
 		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 }

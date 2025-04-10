@@ -908,9 +908,9 @@ func (s SubnetSpec) IsIPv6Enabled() bool {
 }
 
 // GetSecurityRuleByDestination returns security group rule, which matches provided destination ports.
-func (s SubnetSpec) GetSecurityRuleByDestination(ports string) *SecurityRule {
+func (s SubnetSpec) GetSecurityRuleByDestination(port string) *SecurityRule {
 	for _, rule := range s.SecurityGroup.SecurityRules {
-		if rule.DestinationPorts != nil && *rule.DestinationPorts == ports {
+		if rule.DestinationPorts != nil && *rule.DestinationPorts == port {
 			return &rule
 		}
 	}
