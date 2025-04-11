@@ -31,6 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -202,12 +203,15 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		if input.SkipCleanup {
 			return
 		}
+		kubeconfigPath := clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
+
 		if selfHostedNamespace != nil {
 			// Dump all Cluster API related resources to artifacts before pivoting back.
 			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-				Lister:    selfHostedClusterProxy.GetClient(),
-				Namespace: namespace.Name,
-				LogPath:   filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
+				Lister:         selfHostedClusterProxy.GetClient(),
+				Namespace:      namespace.Name,
+				LogPath:        filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
+				KubeConfigPath: kubeconfigPath,
 			})
 		}
 		if selfHostedCluster != nil {

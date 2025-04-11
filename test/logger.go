@@ -99,6 +99,7 @@ func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, 
 		Lister:    bootstrapClusterProxy.GetClient(),
 		Namespace: *namespace,
 		LogPath:   workLoadClusterLogPath,
+		KubeConfigPath: clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename(),
 	})
 }
 

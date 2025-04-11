@@ -166,6 +166,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		Lister:    input.ClusterProxy.GetClient(),
 		Namespace: input.Namespace.Name,
 		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		KubeConfigPath: clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename(),
 	})
 
 	if input.Cluster == nil {
