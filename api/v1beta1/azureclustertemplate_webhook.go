@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -32,44 +33,55 @@ const AzureClusterTemplateImmutableMsg = "AzureClusterTemplate spec.template.spe
 
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (c *AzureClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureClusterTemplateWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithDefaulter(&AzureClusterTemplate{}).
-		WithValidator(&AzureClusterTemplate{}).
+		WithDefaulter(w).
+		WithValidator(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azureclustertemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclustertemplates,versions=v1beta1,name=validation.azureclustertemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azureclustertemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclustertemplates,versions=v1beta1,name=default.azureclustertemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+type azureClusterTemplateWebhook struct{}
+
+var (
+	_ webhook.CustomValidator = &azureClusterTemplateWebhook{}
+	_ webhook.CustomDefaulter = &azureClusterTemplateWebhook{}
+)
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) Default(_ context.Context, _ runtime.Object) error {
+func (*azureClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
+	c := obj.(*AzureClusterTemplate)
 	c.setDefaults()
 	return nil
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateCreate(_ context.Context, newObj runtime.Object) (admission.Warnings, error) {
+	c := newObj.(*AzureClusterTemplate)
 	return c.validateClusterTemplate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateUpdate(_ context.Context, _ runtime.Object, oldRaw runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureClusterTemplate)
-	if !reflect.DeepEqual(c.Spec.Template.Spec, old.Spec.Template.Spec) {
+	oldAzureClusterTemplate := oldObj.(*AzureClusterTemplate)
+	newAzureClusterTemplate := newObj.(*AzureClusterTemplate)
+	if !reflect.DeepEqual(newAzureClusterTemplate.Spec.Template.Spec, oldAzureClusterTemplate.Spec.Template.Spec) {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureClusterTemplate", "spec", "template", "spec"), c, AzureClusterTemplateImmutableMsg),
+			field.Invalid(field.NewPath("AzureClusterTemplate", "spec", "template", "spec"), newAzureClusterTemplate, AzureClusterTemplateImmutableMsg),
 		)
 	}
 
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterTemplateKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterTemplateKind).GroupKind(), newAzureClusterTemplate.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterTemplate) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

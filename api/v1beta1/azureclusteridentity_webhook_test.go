@@ -84,7 +84,9 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := tc.clusterIdentity.ValidateCreate(context.TODO(), nil)
+			// create a new dummy AzureClusterIdentityWebhook
+			w := new(azureClusterIdentityWebhook)
+			_, err := w.ValidateCreate(context.TODO(), tc.clusterIdentity)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -164,7 +166,9 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := tc.clusterIdentity.ValidateUpdate(context.TODO(), nil, tc.oldClusterIdentity)
+			// create a new dummy AzureClusterIdentityWebhook
+			w := new(azureClusterIdentityWebhook)
+			_, err := w.ValidateUpdate(context.TODO(), tc.oldClusterIdentity, tc.clusterIdentity)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

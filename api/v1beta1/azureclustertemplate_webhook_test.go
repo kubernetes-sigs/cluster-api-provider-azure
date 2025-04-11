@@ -58,7 +58,9 @@ func TestValidateUpdate(t *testing.T) {
 
 	t.Run("template is immutable", func(t *testing.T) {
 		g := NewWithT(t)
-		_, err := newClusterTemplate.ValidateUpdate(context.TODO(), nil, oldClusterTemplate)
+		// create a new dummy AzureClusterTemplateWebhook
+		w := new(azureClusterTemplateWebhook)
+		_, err := w.ValidateUpdate(context.TODO(), oldClusterTemplate, newClusterTemplate)
 		g.Expect(err).To(HaveOccurred())
 	})
 }

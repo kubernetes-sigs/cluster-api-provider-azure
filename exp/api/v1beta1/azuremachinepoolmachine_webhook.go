@@ -22,32 +22,44 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureMachinePoolMachineWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(ampm).
-		WithValidator(&AzureMachinePoolMachine{}).
+		WithValidator(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,versions=v1beta1,name=azuremachinepoolmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+type azureMachinePoolMachineWebhook struct{}
+
+var (
+	_ webhook.CustomValidator = &azureMachinePoolMachineWebhook{}
+)
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureMachinePoolMachineWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateUpdate(_ context.Context, _ runtime.Object, old runtime.Object) (admission.Warnings, error) {
-	oldMachine, ok := old.(*AzureMachinePoolMachine)
+func (*azureMachinePoolMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldMachine, ok := oldObj.(*AzureMachinePoolMachine)
 	if !ok {
-		return nil, errors.New("expected and AzureMachinePoolMachine")
+		return nil, errors.New("expected an AzureMachinePoolMachine object for oldMachine in ValidateUpdate")
+	}
+	newMachine, ok := newObj.(*AzureMachinePoolMachine)
+	if !ok {
+		return nil, errors.New("expected an AzureMachinePoolMachine object for newMachine in ValidateUpdate")
 	}
 
-	if oldMachine.Spec.ProviderID != "" && ampm.Spec.ProviderID != oldMachine.Spec.ProviderID {
+	if oldMachine.Spec.ProviderID != "" && newMachine.Spec.ProviderID != oldMachine.Spec.ProviderID {
 		return nil, errors.New("providerID is immutable")
 	}
 
@@ -55,6 +67,6 @@ func (ampm *AzureMachinePoolMachine) ValidateUpdate(_ context.Context, _ runtime
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampm *AzureMachinePoolMachine) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureMachinePoolMachineWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
@@ -31,129 +32,141 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(AzureClusterWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithDefaulter(&AzureCluster{}).
-		WithValidator(&AzureCluster{}).
+		WithDefaulter(w).
+		WithValidator(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclusters,versions=v1beta1,name=validation.azurecluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclusters,versions=v1beta1,name=default.azurecluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+// AzureClusterWebhook is a webhook for AzureCluster.
+type AzureClusterWebhook struct{}
+
+var (
+	_ webhook.CustomValidator = &AzureClusterWebhook{}
+	_ webhook.CustomDefaulter = &AzureClusterWebhook{}
+)
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *AzureCluster) Default(_ context.Context, _ runtime.Object) error {
+func (*AzureClusterWebhook) Default(_ context.Context, obj runtime.Object) error {
+	c := obj.(*AzureCluster)
 	c.setDefaults()
 	return nil
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*AzureClusterWebhook) ValidateCreate(_ context.Context, newObj runtime.Object) (admission.Warnings, error) {
+	c := newObj.(*AzureCluster)
 	return c.validateCluster(nil)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateUpdate(_ context.Context, _ runtime.Object, oldRaw runtime.Object) (admission.Warnings, error) {
+func (*AzureClusterWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureCluster)
+	oldAzureCluster := oldObj.(*AzureCluster)
+	newAzureCluster := newObj.(*AzureCluster)
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "resourceGroup"),
-		old.Spec.ResourceGroup,
-		c.Spec.ResourceGroup); err != nil {
+		oldAzureCluster.Spec.ResourceGroup,
+		newAzureCluster.Spec.ResourceGroup); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "subscriptionID"),
-		old.Spec.SubscriptionID,
-		c.Spec.SubscriptionID); err != nil {
+		oldAzureCluster.Spec.SubscriptionID,
+		newAzureCluster.Spec.SubscriptionID); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "location"),
-		old.Spec.Location,
-		c.Spec.Location); err != nil {
+		oldAzureCluster.Spec.Location,
+		newAzureCluster.Spec.Location); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
-	if old.Spec.ControlPlaneEndpoint.Host != "" && c.Spec.ControlPlaneEndpoint.Host != old.Spec.ControlPlaneEndpoint.Host {
+	if oldAzureCluster.Spec.ControlPlaneEndpoint.Host != "" && newAzureCluster.Spec.ControlPlaneEndpoint.Host != oldAzureCluster.Spec.ControlPlaneEndpoint.Host {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("spec", "controlPlaneEndpoint", "host"),
-				c.Spec.ControlPlaneEndpoint.Host, "field is immutable"),
+				newAzureCluster.Spec.ControlPlaneEndpoint.Host, "field is immutable"),
 		)
 	}
 
-	if old.Spec.ControlPlaneEndpoint.Port != 0 && c.Spec.ControlPlaneEndpoint.Port != old.Spec.ControlPlaneEndpoint.Port {
+	if oldAzureCluster.Spec.ControlPlaneEndpoint.Port != 0 && newAzureCluster.Spec.ControlPlaneEndpoint.Port != oldAzureCluster.Spec.ControlPlaneEndpoint.Port {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("spec", "controlPlaneEndpoint", "port"),
-				c.Spec.ControlPlaneEndpoint.Port, "field is immutable"),
+				newAzureCluster.Spec.ControlPlaneEndpoint.Port, "field is immutable"),
 		)
 	}
 
-	if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
+	if !reflect.DeepEqual(newAzureCluster.Spec.AzureEnvironment, oldAzureCluster.Spec.AzureEnvironment) {
 		// The equality failure could be because of default mismatch between v1alpha3 and v1beta1. This happens because
-		// the new object `r` will have run through the default webhooks but the old object `old` would not have so.
+		// the new object `r` will have run through the default webhooks but the old object `oldAzureCluster` would not have so.
 		// This means if the old object was in v1alpha3, it would not get the new defaults set in v1beta1 resulting
 		// in object inequality. To workaround this, we set the v1beta1 defaults here so that the old object also gets
 		// the new defaults.
-		old.setAzureEnvironmentDefault()
+		oldAzureCluster.setAzureEnvironmentDefault()
 
 		// if it's still not equal, return error.
-		if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
+		if !reflect.DeepEqual(newAzureCluster.Spec.AzureEnvironment, oldAzureCluster.Spec.AzureEnvironment) {
 			allErrs = append(allErrs,
 				field.Invalid(field.NewPath("spec", "azureEnvironment"),
-					c.Spec.AzureEnvironment, "field is immutable"),
+					newAzureCluster.Spec.AzureEnvironment, "field is immutable"),
 			)
 		}
 	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "networkSpec", "privateDNSZoneName"),
-		old.Spec.NetworkSpec.PrivateDNSZoneName,
-		c.Spec.NetworkSpec.PrivateDNSZoneName); err != nil {
+		oldAzureCluster.Spec.NetworkSpec.PrivateDNSZoneName,
+		newAzureCluster.Spec.NetworkSpec.PrivateDNSZoneName); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "networkSpec", "privateDNSZoneResourceGroup"),
-		old.Spec.NetworkSpec.PrivateDNSZoneResourceGroup,
-		c.Spec.NetworkSpec.PrivateDNSZoneResourceGroup); err != nil {
+		oldAzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup,
+		newAzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	// Allow enabling azure bastion but avoid disabling it.
-	if old.Spec.BastionSpec.AzureBastion != nil && !reflect.DeepEqual(old.Spec.BastionSpec.AzureBastion, c.Spec.BastionSpec.AzureBastion) {
+	if oldAzureCluster.Spec.BastionSpec.AzureBastion != nil && !reflect.DeepEqual(oldAzureCluster.Spec.BastionSpec.AzureBastion, newAzureCluster.Spec.BastionSpec.AzureBastion) {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("spec", "bastionSpec", "azureBastion"),
-				c.Spec.BastionSpec.AzureBastion, "azure bastion cannot be removed from a cluster"),
+				newAzureCluster.Spec.BastionSpec.AzureBastion, "azure bastion cannot be removed from a cluster"),
 		)
 	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "networkSpec", "controlPlaneOutboundLB"),
-		old.Spec.NetworkSpec.ControlPlaneOutboundLB,
-		c.Spec.NetworkSpec.ControlPlaneOutboundLB); err != nil {
+		oldAzureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB,
+		newAzureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
-	allErrs = append(allErrs, c.validateSubnetUpdate(old)...)
+	allErrs = append(allErrs, newAzureCluster.validateSubnetUpdate(oldAzureCluster)...)
 
 	if len(allErrs) == 0 {
-		return c.validateCluster(old)
+		return newAzureCluster.validateCluster(oldAzureCluster)
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterKind).GroupKind(), newAzureCluster.Name, allErrs)
 }
 
 // validateSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.
-func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
+func (c *AzureCluster) validateSubnetUpdate(oldAzureCluster *AzureCluster) field.ErrorList {
 	var allErrs field.ErrorList
 
-	oldSubnetMap := make(map[string]SubnetSpec, len(old.Spec.NetworkSpec.Subnets))
-	oldSubnetIndex := make(map[string]int, len(old.Spec.NetworkSpec.Subnets))
-	for i, subnet := range old.Spec.NetworkSpec.Subnets {
+	oldSubnetMap := make(map[string]SubnetSpec, len(oldAzureCluster.Spec.NetworkSpec.Subnets))
+	oldSubnetIndex := make(map[string]int, len(oldAzureCluster.Spec.NetworkSpec.Subnets))
+	for i, subnet := range oldAzureCluster.Spec.NetworkSpec.Subnets {
 		oldSubnetMap[subnet.Name] = subnet
 		oldSubnetIndex[subnet.Name] = i
 	}
@@ -165,7 +178,7 @@ func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
 			// This technically allows the cidr block to be modified in the brief
 			// moments before the Vnet is created (because the tags haven't been
 			// set yet) but once the Vnet has been created it becomes immutable.
-			if old.Spec.NetworkSpec.Vnet.Tags.HasOwned(old.Name) && !reflect.DeepEqual(subnet.CIDRBlocks, oldSubnet.CIDRBlocks) {
+			if oldAzureCluster.Spec.NetworkSpec.Vnet.Tags.HasOwned(oldAzureCluster.Name) && !reflect.DeepEqual(subnet.CIDRBlocks, oldSubnet.CIDRBlocks) {
 				allErrs = append(allErrs,
 					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("CIDRBlocks"),
 						c.Spec.NetworkSpec.Subnets[i].CIDRBlocks, "field is immutable"),
@@ -196,6 +209,6 @@ func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*AzureClusterWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

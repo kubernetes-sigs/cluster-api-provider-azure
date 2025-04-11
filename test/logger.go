@@ -28,6 +28,8 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -104,7 +106,13 @@ func getKubeConfigPath() string {
 	config := os.Getenv("KUBECONFIG")
 	if config == "" {
 		d, _ := os.UserHomeDir()
-		return path.Join(d, ".kube", "config")
+		config = path.Join(d, ".kube", "config")
+		if config == "" {
+			if _, err := rest.InClusterConfig(); err != nil {
+				config = clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
+				return config
+			}
+		}
 	}
 
 	return config

@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
@@ -30,36 +31,45 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (c *AzureClusterIdentity) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureClusterIdentityWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithValidator(&AzureClusterIdentity{}).
+		WithValidator(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azureclusteridentity,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclusteridentities,versions=v1beta1,name=validation.azureclusteridentity.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
+type azureClusterIdentityWebhook struct{}
+
+var (
+	_ webhook.CustomValidator = &azureClusterIdentityWebhook{}
+)
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateCreate(_ context.Context, newObj runtime.Object) (admission.Warnings, error) {
+	c := newObj.(*AzureClusterIdentity)
 	return c.validateClusterIdentity()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateUpdate(_ context.Context, _ runtime.Object, oldRaw runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureClusterIdentity)
+	oldAzureClusterIdentity := oldObj.(*AzureClusterIdentity)
+	newAzureClusterIdentity := newObj.(*AzureClusterIdentity)
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "Type"),
-		old.Spec.Type,
-		c.Spec.Type); err != nil {
+		oldAzureClusterIdentity.Spec.Type,
+		newAzureClusterIdentity.Spec.Type); err != nil {
 		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) == 0 {
-		return c.validateClusterIdentity()
+		return newAzureClusterIdentity.validateClusterIdentity()
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterIdentityKind).GroupKind(), newAzureClusterIdentity.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureClusterIdentity) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
