@@ -40,21 +40,26 @@ const (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureMachineTemplateWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
-		WithValidator(r).
-		WithDefaulter(r).
+		WithValidator(w).
+		WithDefaulter(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinetemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates,versions=v1beta1,name=default.azuremachinetemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinetemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates,versions=v1beta1,name=validation.azuremachinetemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.CustomDefaulter = &AzureMachineTemplate{}
-var _ webhook.CustomValidator = &AzureMachineTemplate{}
+type azureMachineTemplateWebhook struct {}
+
+var (
+	_ webhook.CustomDefaulter = &azureMachineTemplateWebhook{}
+	_ webhook.CustomValidator = &azureMachineTemplateWebhook{}
+)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *AzureMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (r *azureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	t := obj.(*AzureMachineTemplate)
 	spec := t.Spec.Template.Spec
 
@@ -72,21 +77,21 @@ func (r *AzureMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Obj
 		)
 	}
 
-	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.SubnetName != "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
+	if (spec.NetworkInterfaces != nil) && len(spec.NetworkInterfaces) > 0 && spec.SubnetName != "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
 	}
 
-	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.AcceleratedNetworking != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "acceleratedNetworking"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine AcceleratedNetworking"))
+	if (spec.NetworkInterfaces != nil) && len(spec.NetworkInterfaces) > 0 && spec.AcceleratedNetworking != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "acceleratedNetworking"), spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine AcceleratedNetworking"))
 	}
 
-	for i, networkInterface := range r.Spec.Template.Spec.NetworkInterfaces {
+	for i, networkInterface := range spec.NetworkInterfaces {
 		if networkInterface.PrivateIPConfigs < 1 {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces", "privateIPConfigs"), r.Spec.Template.Spec.NetworkInterfaces[i].PrivateIPConfigs, "networkInterface privateIPConfigs must be set to a minimum value of 1"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces", "privateIPConfigs"), spec.NetworkInterfaces[i].PrivateIPConfigs, "networkInterface privateIPConfigs must be set to a minimum value of 1"))
 		}
 	}
 
-	if ptr.Deref(r.Spec.Template.Spec.DisableExtensionOperations, false) && len(r.Spec.Template.Spec.VMExtensions) > 0 {
+	if ptr.Deref(spec.DisableExtensionOperations, false) && len(spec.VMExtensions) > 0 {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
@@ -98,7 +103,7 @@ func (r *AzureMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Obj
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureMachineTemplate) ValidateUpdate(ctx context.Context, oldRaw runtime.Object, newRaw runtime.Object) (admission.Warnings, error) {
+func (r *azureMachineTemplateWebhook) ValidateUpdate(ctx context.Context, oldRaw runtime.Object, newRaw runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureMachineTemplate)
 	t := newRaw.(*AzureMachineTemplate)
@@ -142,12 +147,12 @@ func (r *AzureMachineTemplate) ValidateUpdate(ctx context.Context, oldRaw runtim
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *AzureMachineTemplate) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (r *azureMachineTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
-func (r *AzureMachineTemplate) Default(_ context.Context, obj runtime.Object) error {
+func (r *azureMachineTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
 	t := obj.(*AzureMachineTemplate)
 	if err := t.Spec.Template.Spec.SetDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("SetDefault").Error(err, "SetDefaultSSHPublicKey failed")

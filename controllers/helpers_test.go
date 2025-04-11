@@ -101,9 +101,14 @@ func TestGetCloudProviderConfig(t *testing.T) {
 
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
-	azureCluster.Default()
+
+	w := new(infrav1.AzureClusterWebhook)
+	err := w.Default(context.TODO(), azureCluster)
+	g.Expect(err).NotTo(HaveOccurred())
+
 	azureClusterCustomVnet := newAzureClusterWithCustomVnet("bar")
-	azureClusterCustomVnet.Default()
+	err = w.Default(context.TODO(), azureClusterCustomVnet)
+	g.Expect(err).NotTo(HaveOccurred())
 
 	cases := map[string]struct {
 		cluster                    *clusterv1.Cluster
@@ -301,7 +306,9 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	azureCluster.Default()
+	w := new(infrav1.AzureClusterWebhook)
+	err := w.Default(context.TODO(), azureCluster)
+	g.Expect(err).NotTo(HaveOccurred())
 	cluster.Name = "testCluster"
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{

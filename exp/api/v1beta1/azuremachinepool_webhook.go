@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -39,7 +40,8 @@ import (
 
 // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
+	ampw := new(azureMachinePoolWebhook)
+	ampw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureMachinePool{}).
 		WithDefaulter(ampw).
@@ -53,6 +55,11 @@ func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 type azureMachinePoolWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomDefaulter = &azureMachinePoolWebhook{}
+	_ webhook.CustomValidator = &azureMachinePoolWebhook{}
+)
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (ampw *azureMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {

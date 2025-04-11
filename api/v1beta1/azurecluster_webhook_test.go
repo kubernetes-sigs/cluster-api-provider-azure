@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -108,7 +109,9 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := tc.cluster.ValidateCreate()
+			// create a new dummy AzureClusterWebhook
+			w := new(AzureClusterWebhook)
+			_, err := w.ValidateCreate(context.TODO(), tc.cluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -344,7 +347,9 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			_, err := tc.cluster.ValidateUpdate(tc.oldCluster)
+			// create a new dummy AzureClusterWebhook
+			w := new(AzureClusterWebhook)
+			_, err := w.ValidateUpdate(context.TODO(), tc.oldCluster, tc.cluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
