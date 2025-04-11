@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
@@ -32,7 +33,8 @@ import (
 
 // SetupAzureMachineWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureMachineWebhookWithManager(mgr ctrl.Manager) error {
-	mw := &azureMachineWebhook{Client: mgr.GetClient()}
+	mw := new(azureMachineWebhook)
+	mw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureMachine{}).
 		WithDefaulter(mw).
@@ -47,6 +49,11 @@ func SetupAzureMachineWebhookWithManager(mgr ctrl.Manager) error {
 type azureMachineWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomValidator = &azureMachineWebhook{}
+	_ webhook.CustomDefaulter = &azureMachineWebhook{}
+)
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *azureMachineWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {

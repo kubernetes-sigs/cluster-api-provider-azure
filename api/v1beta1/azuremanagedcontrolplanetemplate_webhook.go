@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
@@ -33,7 +34,8 @@ import (
 
 // SetupAzureManagedControlPlaneTemplateWebhookWithManager will set up the webhook to be managed by the specified manager.
 func SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr ctrl.Manager) error {
-	mcpw := &azureManagedControlPlaneTemplateWebhook{Client: mgr.GetClient()}
+	mcpw := new(azureManagedControlPlaneTemplateWebhook)
+	mcpw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlaneTemplate{}).
 		WithDefaulter(mcpw).
@@ -47,6 +49,11 @@ func SetupAzureManagedControlPlaneTemplateWebhookWithManager(mgr ctrl.Manager) e
 type azureManagedControlPlaneTemplateWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomDefaulter = &azureManagedControlPlaneTemplateWebhook{}
+	_ webhook.CustomValidator = &azureManagedControlPlaneTemplateWebhook{}
+)
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mcpw *azureManagedControlPlaneTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {

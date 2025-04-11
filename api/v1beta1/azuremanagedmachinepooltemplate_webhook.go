@@ -27,6 +27,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
@@ -34,7 +35,8 @@ import (
 
 // SetupAzureManagedMachinePoolTemplateWebhookWithManager will set up the webhook to be managed by the specified manager.
 func SetupAzureManagedMachinePoolTemplateWebhookWithManager(mgr ctrl.Manager) error {
-	mpw := &azureManagedMachinePoolTemplateWebhook{Client: mgr.GetClient()}
+	mpw := new(azureManagedMachinePoolTemplateWebhook)
+	mpw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedMachinePoolTemplate{}).
 		WithDefaulter(mpw).
@@ -47,6 +49,11 @@ func SetupAzureManagedMachinePoolTemplateWebhookWithManager(mgr ctrl.Manager) er
 type azureManagedMachinePoolTemplateWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomDefaulter = &azureManagedMachinePoolTemplateWebhook{}
+	_ webhook.CustomValidator = &azureManagedMachinePoolTemplateWebhook{}
+)
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mpw *azureManagedMachinePoolTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {

@@ -33,6 +33,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
@@ -49,7 +50,8 @@ var (
 
 // SetupAzureManagedControlPlaneWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureManagedControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
-	mw := &azureManagedControlPlaneWebhook{Client: mgr.GetClient()}
+	mw := new(azureManagedControlPlaneWebhook)
+	mw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlane{}).
 		WithDefaulter(mw).
@@ -63,6 +65,11 @@ func SetupAzureManagedControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
 type azureManagedControlPlaneWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomDefaulter = &azureManagedControlPlaneWebhook{}
+	_ webhook.CustomValidator = &azureManagedControlPlaneWebhook{}
+)
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mw *azureManagedControlPlaneWebhook) Default(_ context.Context, obj runtime.Object) error {

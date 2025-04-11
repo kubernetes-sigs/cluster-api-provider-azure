@@ -34,6 +34,7 @@ import (
 	clusterctlv1alpha3 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -44,7 +45,8 @@ var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{
 
 // SetupAzureManagedMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureManagedMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	mw := &azureManagedMachinePoolWebhook{Client: mgr.GetClient()}
+	mw := new(azureManagedMachinePoolWebhook)
+	mw.Client = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedMachinePool{}).
 		WithDefaulter(mw).
@@ -58,6 +60,11 @@ func SetupAzureManagedMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 type azureManagedMachinePoolWebhook struct {
 	Client client.Client
 }
+
+var (
+	_ webhook.CustomDefaulter = &azureManagedMachinePoolWebhook{}
+	_ webhook.CustomValidator = &azureManagedMachinePoolWebhook{}
+)
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mw *azureManagedMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {
