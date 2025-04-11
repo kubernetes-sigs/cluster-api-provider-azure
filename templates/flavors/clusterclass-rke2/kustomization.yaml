@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- clusterclass.yaml
+- azure-cluster-template.yaml
+- azure-machine-template-controlplane.yaml
+- azure-machine-template-worker.yaml
+- rke2-controlplane-template.yaml
+- rke2-config-template.yaml
+- ../../azure-cluster-identity
+
+sortOptions:
+  order: fifo

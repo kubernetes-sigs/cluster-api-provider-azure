@@ -1,0 +1,456 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+  namespace: default
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-control-plane
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: RKE2ControlPlaneTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureClusterTemplate
+      name: ${CLUSTER_NAME}-azure-cluster
+  patches:
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/files/-
+        valueFrom:
+          template: |
+            contentFrom:
+              secret:
+                key: control-plane-azure.json
+                name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+            owner: root:root
+            path: /etc/kubernetes/azure.json
+            permissions: "0644"
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: RKE2ControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    name: controlPlaneAzureJsonSecretName
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/files
+        valueFrom:
+          template: |
+            - contentFrom:
+                secret:
+                  key: worker-node-azure.json
+                  name: "{{ .builtin.machineDeployment.infrastructureRef.name }}-azure-json"
+              owner: root:root
+              path: /etc/kubernetes/azure.json
+              permissions: "0644"
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: RKE2ConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_NAME}-worker
+    name: workerAzureJsonSecretName
+  - definitions:
+    - jsonPatches:
+      - op: replace
+        path: /spec/template/spec/additionalTags
+        valueFrom:
+          template: |
+            buildProvenance: {{ .buildProvenance }}
+            creationTimestamp: {{ .timestamp }}
+            jobName: {{ .jobName }}
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: additionalTags
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/identityRef/name
+        valueFrom:
+          variable: clusterIdentityRef
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: clusterIdentityRef
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/location
+        valueFrom:
+          variable: location
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: location
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/subscriptionID
+        valueFrom:
+          variable: subscriptionID
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: subscriptionID
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/vmSize
+        valueFrom:
+          variable: controlPlaneMachineType
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          controlPlane: true
+    name: controlPlaneMachineType
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/image
+        valueFrom:
+          template: |
+            computeGallery:
+              version: {{ trimPrefix "v" (trimSuffix "+rke2r1" .builtin.cluster.topology.version) }}
+              name: {{ .galleryName }}
+              gallery: {{ .gallery }}
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          controlPlane: true
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_NAME}-worker
+    name: controlPlaneMachineGalleryPatch
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/resourceGroup
+        valueFrom:
+          variable: resourceGroup
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    enabledIf: '{{ if .resourceGroup }}true{{end}}'
+    name: clusterResourceGroupPatch
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/vmSize
+        valueFrom:
+          variable: workerMachineType
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_NAME}-worker
+    name: workerMachineType
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/sshPublicKey
+        valueFrom:
+          variable: sshPublicKey
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        matchResources:
+          controlPlane: true
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_NAME}-worker
+    name: sshPublicKey
+  variables:
+  - name: k8sFeatureGates
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: buildProvenance
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: timestamp
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: jobName
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: clusterIdentityRef
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: location
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: subscriptionID
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: logLevel
+    required: false
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: controlPlaneMachineType
+    required: false
+    schema:
+      openAPIV3Schema:
+        default: Standard_B2s
+        type: string
+  - name: workerMachineType
+    required: false
+    schema:
+      openAPIV3Schema:
+        default: Standard_B2s
+        type: string
+  - name: sshPublicKey
+    required: true
+    schema:
+      openAPIV3Schema:
+        default: ""
+        type: string
+  - name: galleryName
+    required: true
+    schema:
+      openAPIV3Schema:
+        default: capi-ubun2-2404
+        type: string
+  - name: gallery
+    required: true
+    schema:
+      openAPIV3Schema:
+        default: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+        type: string
+  - name: resourceGroup
+    schema:
+      openAPIV3Schema:
+        description: The Azure Resource Group where the Cluster will be created.
+        type: string
+  workers:
+    machineDeployments:
+    - class: ${CLUSTER_NAME}-worker
+      machineHealthCheck:
+        maxUnhealthy: 100%
+        unhealthyConditions:
+        - status: "True"
+          timeout: 30s
+          type: E2ENodeUnhealthy
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            name: ${CLUSTER_NAME}-worker
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            name: ${CLUSTER_NAME}-worker
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      agentConfig: {}
+      files:
+      - owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      registrationMethod: control-plane-endpoint
+      rolloutStrategy:
+        rollingUpdate:
+          maxSurge: 1
+        type: RollingUpdate
+      serverConfig:
+        cloudProviderName: external
+        cni: none
+        disableComponents:
+          kubernetesComponents:
+          - cloudController
+        kubeAPIServer:
+          extraArgs:
+          - --anonymous-auth=true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azure-cluster
+  namespace: default
+spec:
+  template:
+    spec:
+      additionalTags:
+        replace_me_key: replace_me_val
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: ${CLUSTER_IDENTITY_NAME}
+      networkSpec:
+        additionalAPIServerLBPorts:
+        - name: rke2
+          port: 9345
+        subnets:
+        - name: control-plane-subnet
+          role: control-plane
+          securityGroup:
+            securityRules:
+            - action: Allow
+              description: Allow port 9345 for RKE2
+              destination: '*'
+              destinationPorts: "9345"
+              direction: Inbound
+              name: allow_port_9345
+              priority: 2203
+              protocol: Tcp
+              source: '*'
+              sourcePorts: '*'
+        - name: node-subnet
+          natGateway:
+            name: node-natgateway
+          role: node
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 30
+        osType: Linux
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: replace_me
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |-
+    installation:
+      cni:
+        type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        mtu: 1350
+        ipPools:
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      registry: mcr.microsoft.com/oss
+    # Image and registry configuration for the tigera/operator pod.
+    tigeraOperator:
+      image: tigera/operator
+      registry: mcr.microsoft.com/oss
+    calicoctl:
+      image: mcr.microsoft.com/oss/calico/ctl
+  version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
