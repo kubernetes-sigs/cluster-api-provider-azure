@@ -94,9 +94,11 @@ func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, 
 	}
 
 	framework.DumpAllResources(context.TODO(), framework.DumpAllResourcesInput{
-		Lister:    bootstrapClusterProxy.GetClient(),
-		Namespace: *namespace,
-		LogPath:   workLoadClusterLogPath,
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: getClusterctlConfigPath(),
+		Namespace:            *namespace,
+		LogPath:              workLoadClusterLogPath,
 	})
 }
 
@@ -116,4 +118,30 @@ func getArtifactsFolder() string {
 		return "_artifacts"
 	}
 	return artifacts
+}
+
+func getClusterctlConfigPath() string {
+	config := os.Getenv("CLUSTERCTL_CONFIG")
+	if config == "" {
+		config = path.Join(getArtifactsFolder(), "repository", "clusterctl-config.yaml")
+	}
+
+	if _, err := os.Stat(config); os.IsNotExist(err) {
+		// If the file does not exist, create it and the directory structure
+		if err := os.MkdirAll(filepath.Dir(config), 0750); err != nil {
+			fmt.Printf("Error creating directory: %v\n", err)
+			return ""
+		}
+		file, err := os.Create(filepath.Clean(config))
+		if err != nil {
+			fmt.Printf("Error creating file: %v\n", err)
+			return ""
+		}
+		if err = file.Close(); err != nil {
+			fmt.Printf("Error closing file: %v\n", err)
+			return ""
+		}
+	}
+
+	return config
 }

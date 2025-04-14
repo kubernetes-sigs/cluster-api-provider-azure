@@ -82,7 +82,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Expect(err).NotTo(HaveOccurred())
 		clusterResources = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		identityName := input.E2EConfig.GetVariable(ClusterIdentityName)
+		identityName := input.E2EConfig.MustGetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).To(Succeed())
 	})
@@ -151,7 +151,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		err := selfHostedClusterProxy.GetClient().Delete(ctx, &infrav1.AzureClusterIdentity{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: cluster.Namespace,
-				Name:      e2eConfig.GetVariable(ClusterIdentityName),
+				Name:      e2eConfig.MustGetVariable(ClusterIdentityName),
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -159,14 +159,14 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		Expect(err).NotTo(HaveOccurred())
 		identityClient, err := armmsi.NewUserAssignedIdentitiesClient(getSubscriptionID(Default), cred, nil)
 		Expect(err).NotTo(HaveOccurred())
-		identityRG := e2eConfig.GetVariable(AzureIdentityResourceGroup)
-		identityName := e2eConfig.GetVariable(AzureUserIdentity)
+		identityRG := e2eConfig.MustGetVariable(AzureIdentityResourceGroup)
+		identityName := e2eConfig.MustGetVariable(AzureUserIdentity)
 		identity, err := identityClient.Get(ctx, identityRG, identityName, nil)
 		Expect(err).NotTo(HaveOccurred())
 		err = selfHostedClusterProxy.GetClient().Create(ctx, &infrav1.AzureClusterIdentity{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: cluster.Namespace,
-				Name:      e2eConfig.GetVariable(ClusterIdentityName),
+				Name:      e2eConfig.MustGetVariable(ClusterIdentityName),
 				Labels: map[string]string{
 					clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
 				},
@@ -175,7 +175,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 				AllowedNamespaces: &infrav1.AllowedNamespaces{},
 				ClientID:          *identity.Properties.ClientID,
 				ResourceID:        *identity.ID,
-				TenantID:          e2eConfig.GetVariable(AzureTenantID),
+				TenantID:          e2eConfig.MustGetVariable(AzureTenantID),
 				Type:              infrav1.UserAssignedMSI,
 			},
 		})
@@ -205,9 +205,11 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		if selfHostedNamespace != nil {
 			// Dump all Cluster API related resources to artifacts before pivoting back.
 			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-				Lister:    selfHostedClusterProxy.GetClient(),
-				Namespace: namespace.Name,
-				LogPath:   filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
+				Lister:               selfHostedClusterProxy.GetClient(),
+				KubeConfigPath:       selfHostedClusterProxy.GetKubeconfigPath(),
+				ClusterctlConfigPath: clusterctlConfigPath,
+				Namespace:            namespace.Name,
+				LogPath:              filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
 			})
 		}
 		if selfHostedCluster != nil {
@@ -237,22 +239,22 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			err := input.BootstrapClusterProxy.GetClient().Delete(ctx, &infrav1.AzureClusterIdentity{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace.Name,
-					Name:      e2eConfig.GetVariable(ClusterIdentityName),
+					Name:      e2eConfig.MustGetVariable(ClusterIdentityName),
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			err = input.BootstrapClusterProxy.GetClient().Create(ctx, &infrav1.AzureClusterIdentity{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace.Name,
-					Name:      e2eConfig.GetVariable(ClusterIdentityName),
+					Name:      e2eConfig.MustGetVariable(ClusterIdentityName),
 					Labels: map[string]string{
 						clusterctlv1.ClusterctlMoveHierarchyLabel: "true",
 					},
 				},
 				Spec: infrav1.AzureClusterIdentitySpec{
 					AllowedNamespaces: &infrav1.AllowedNamespaces{},
-					ClientID:          e2eConfig.GetVariable(AzureClientIDUserAssignedIdentity),
-					TenantID:          e2eConfig.GetVariable(AzureTenantID),
+					ClientID:          e2eConfig.MustGetVariable(AzureClientIDUserAssignedIdentity),
+					TenantID:          e2eConfig.MustGetVariable(AzureTenantID),
 					Type:              infrav1.WorkloadIdentity,
 				},
 			})
