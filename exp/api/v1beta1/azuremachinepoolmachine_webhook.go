@@ -29,7 +29,7 @@ import (
 func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(ampm).
-		WithValidator(&AzureMachinePoolMachine{}).
+		WithValidator(ampm).
 		Complete()
 }
 

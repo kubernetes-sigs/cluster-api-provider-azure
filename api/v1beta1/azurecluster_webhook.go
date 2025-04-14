@@ -33,8 +33,8 @@ import (
 func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithDefaulter(&AzureCluster{}).
-		WithValidator(&AzureCluster{}).
+		WithDefaulter(c).
+		WithValidator(c).
 		Complete()
 }
 

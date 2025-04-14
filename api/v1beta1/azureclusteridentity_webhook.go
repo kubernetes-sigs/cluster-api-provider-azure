@@ -32,7 +32,7 @@ import (
 func (c *AzureClusterIdentity) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithValidator(&AzureClusterIdentity{}).
+		WithValidator(c).
 		Complete()
 }
 

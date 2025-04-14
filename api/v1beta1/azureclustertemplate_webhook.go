@@ -34,8 +34,8 @@ const AzureClusterTemplateImmutableMsg = "AzureClusterTemplate spec.template.spe
 func (c *AzureClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
-		WithDefaulter(&AzureClusterTemplate{}).
-		WithValidator(&AzureClusterTemplate{}).
+		WithDefaulter(c).
+		WithValidator(c).
 		Complete()
 }
 

@@ -28,7 +28,7 @@ import (
 func (r *AzureManagedCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
-		WithValidator(&AzureManagedCluster{}).
+		WithValidator(r).
 		Complete()
 }
 
