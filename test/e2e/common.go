@@ -189,7 +189,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		deleteTimeoutConfig = "wait-delete-cluster-aks"
 	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-		Client:         input.ClusterProxy.GetClient(),
+		ClusterProxy:   input.ClusterProxy,
 		Namespace:      input.Namespace.Name,
 		ArtifactFolder: input.ArtifactFolder,
 	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
@@ -227,7 +227,7 @@ func redactLogs() {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	//nolint:gosec // Ignore warning about running a command constructed from user input
-	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
+	cmd := exec.Command(e2eConfig.MustGetVariable(RedactLogScriptPath))
 	if err := cmd.Run(); err != nil {
 		LogWarningf("Redact logs command failed: %v", err)
 	}
@@ -363,7 +363,7 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 			Flavor:                   clusterctl.DefaultFlavor,
 			Namespace:                "default",
 			ClusterName:              "cluster",
-			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+			KubernetesVersion:        e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion),
 			ControlPlaneMachineCount: ptr.To[int64](1),
 			WorkerMachineCount:       ptr.To[int64](1),
 		},
