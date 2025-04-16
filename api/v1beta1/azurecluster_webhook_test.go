@@ -109,7 +109,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := (&azureClusterWebhook{}).ValidateCreate(context.Background(), tc.cluster)
+			_, err := (&AzureClusterWebhook{}).ValidateCreate(context.Background(), tc.cluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -345,7 +345,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			_, err := (&azureClusterWebhook{}).ValidateUpdate(context.Background(), tc.oldCluster, tc.cluster)
+			_, err := (&AzureClusterWebhook{}).ValidateUpdate(context.Background(), tc.oldCluster, tc.cluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
