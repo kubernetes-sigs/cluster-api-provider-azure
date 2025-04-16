@@ -103,7 +103,7 @@ func TestNewClusterScope(t *testing.T) {
 			},
 		},
 	}
-	azureCluster.Default()
+	(&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{
 		Spec: infrav1.AzureClusterIdentitySpec{
@@ -230,7 +230,7 @@ func TestAPIServerHost(t *testing.T) {
 		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
 			Name: cluster.Name,
 		}
-		tc.azureCluster.Default()
+		(&infrav1.AzureClusterWebhook{}).Default(context.Background(), &tc.azureCluster)
 
 		clusterScope := &ClusterScope{
 			Cluster:      cluster,
@@ -275,7 +275,7 @@ func TestGettingSecurityRules(t *testing.T) {
 			},
 		},
 	}
-	azureCluster.Default()
+	(&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
 
 	clusterScope := &ClusterScope{
 		Cluster:      cluster,
@@ -2161,7 +2161,7 @@ func TestOutboundLBName(t *testing.T) {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = tc.nodeOutboundLB
 			}
 
-			azureCluster.Default()
+			(&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
@@ -2275,7 +2275,7 @@ func TestBackendPoolName(t *testing.T) {
 				},
 			}
 
-			azureCluster.Default()
+			(&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
 
 			if tc.customAPIServerBackendPoolName != "" {
 				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
@@ -2388,7 +2388,7 @@ func TestOutboundPoolName(t *testing.T) {
 				}
 			}
 
-			azureCluster.Default()
+			(&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
