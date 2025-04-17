@@ -595,19 +595,23 @@ help: ## Display this help.
 ##@ Linting:
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase.
-	$(GOLANGCI_LINT) run -v --print-resources-usage --go=$(GO_VERSION) $(GOLANGCI_LINT_EXTRA_ARGS)
+lint: $(GOLANGCI_LINT) lint-azure-latest ## Lint the codebase.
+	$(GOLANGCI_LINT) run -v $(GOLANGCI_LINT_EXTRA_ARGS)
+
+.PHONY: lint-fast
+lint-fast: $(GOLANGCI_LINT) ## Lint the codebase with fast linters only.
+	GOLANGCI_LINT_EXTRA_ARGS+=--fast-only $(MAKE) lint
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter.
-	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
+	GOLANGCI_LINT_EXTRA_ARGS+=--fix $(MAKE) lint
 
-lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues.
-	$(GOLANGCI_LINT) run -v --fast=false --go=$(GO_VERSION)
+.PHONY: lint-full
+lint-full: $(GOLANGCI_LINT) lint ## Lint the codebase.
 
-.PHONY: lint-latest ## TODO: update the lint-latest to lint-azure-latest
-lint-latest:
-	./hack/lint-latest.sh ## TODO: update the lint-latest.sh to lint-azure-latest.sh
+.PHONY: lint-azure-latest ## Check for usage of the "latest" floating Azure API version.
+lint-azure-latest:
+	./hack/lint-azure-latest.sh
 
 ## --------------------------------------
 ## Release
@@ -830,7 +834,7 @@ $(ENVSUBST): ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
 $(KUSTOMIZE): ## Build kustomize from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v5 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
