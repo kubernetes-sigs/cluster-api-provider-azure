@@ -669,6 +669,153 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name: "recreate parameters for network interface when Azure provisioning state is Failed",
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
+			existing: armnetwork.Interface{
+				ID:       ptr.To(""),
+				Name:     ptr.To("my-net-interface"),
+				Location: ptr.To("fake-location"),
+				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
+				Properties: &armnetwork.InterfacePropertiesFormat{
+					ProvisioningState: ptr.To(armnetwork.ProvisioningStateFailed),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
+				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
+					Tags: map[string]*string{
+						"Name": ptr.To("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+					},
+					Location: ptr.To("fake-location"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						Primary:                     nil,
+						EnableAcceleratedNetworking: ptr.To(true),
+						EnableIPForwarding:          ptr.To(false),
+						DNSSettings:                 &armnetwork.InterfaceDNSSettings{},
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Name: ptr.To("pipConfig"),
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         ptr.To(true),
+									LoadBalancerBackendAddressPools: []*armnetwork.BackendAddressPool{{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
+									PrivateIPAllocationMethod:       ptr.To(armnetwork.IPAllocationMethodStatic),
+									PrivateIPAddress:                ptr.To("fake.static.ip"),
+									Subnet:                          &armnetwork.Subnet{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+								},
+							},
+						},
+					},
+				}))
+			},
+			expectedError: "",
+		},
+		{
+			name: "do not recreate parameters for network interface when Azure provisioning state is Deleting",
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
+			existing: armnetwork.Interface{
+				ID:       ptr.To(""),
+				Name:     ptr.To("my-net-interface"),
+				Location: ptr.To("fake-location"),
+				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
+				Properties: &armnetwork.InterfacePropertiesFormat{
+					ProvisioningState: ptr.To(armnetwork.ProvisioningStateDeleting),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "do not recreate parameters for network interface when Azure provisioning state is Succeeded",
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
+			existing: armnetwork.Interface{
+				ID:       ptr.To(""),
+				Name:     ptr.To("my-net-interface"),
+				Location: ptr.To("fake-location"),
+				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
+				Properties: &armnetwork.InterfacePropertiesFormat{
+					ProvisioningState: ptr.To(armnetwork.ProvisioningStateSucceeded),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "do not recreate parameters for network interface when Azure provisioning state is Updating",
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
+			existing: armnetwork.Interface{
+				ID:       ptr.To(""),
+				Name:     ptr.To("my-net-interface"),
+				Location: ptr.To("fake-location"),
+				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
+				Properties: &armnetwork.InterfacePropertiesFormat{
+					ProvisioningState: ptr.To(armnetwork.ProvisioningStateUpdating),
+				},
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "recreate parameters for network interface when Azure provisioning state nil",
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
+			existing: armnetwork.Interface{
+				ID:       ptr.To(""),
+				Name:     ptr.To("my-net-interface"),
+				Location: ptr.To("fake-location"),
+				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
+			},
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
+				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
+					Tags: map[string]*string{
+						"Name": ptr.To("my-net-interface"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
+					},
+					Location: ptr.To("fake-location"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						Primary:                     nil,
+						EnableAcceleratedNetworking: ptr.To(true),
+						EnableIPForwarding:          ptr.To(false),
+						DNSSettings:                 &armnetwork.InterfaceDNSSettings{},
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Name: ptr.To("pipConfig"),
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									Primary:                         ptr.To(true),
+									LoadBalancerBackendAddressPools: []*armnetwork.BackendAddressPool{{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
+									PrivateIPAllocationMethod:       ptr.To(armnetwork.IPAllocationMethodStatic),
+									PrivateIPAddress:                ptr.To("fake.static.ip"),
+									Subnet:                          &armnetwork.Subnet{ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+								},
+							},
+						},
+					},
+				}))
+			},
+			expectedError: "",
+		},
 	}
 	format.MaxLength = 10000
 	for _, tc := range testcases {
