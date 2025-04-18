@@ -158,10 +158,14 @@ providers:
         targetName: "cluster-template-dual-stack.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-clusterclass-ci-default.yaml"
         targetName: "clusterclass-ci-default.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-clusterclass-ci-rke2.yaml"
+        targetName: "clusterclass-ci-rke2.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-clusterclass.yaml"
         targetName: "clusterclass-default.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-topology.yaml"
         targetName: "cluster-template-topology.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-topology-rke2.yaml"
+        targetName: "cluster-template-topology-rke2.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar.yaml"
         targetName: "cluster-template-flatcar.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar-sysext.yaml"
@@ -249,6 +253,7 @@ intervals:
   default/wait-cluster: ["20m", "10s"]
   default/wait-private-cluster: ["30m", "10s"]
   default/wait-control-plane: ["20m", "10s"]
+  default/wait-control-plane-long: ["40m", "10s"]
   default/wait-control-plane-ha: ["30m", "10s"]
   default/wait-worker-nodes: ["25m", "10s"]
   default/wait-gpu-nodes: ["30m", "10s"]

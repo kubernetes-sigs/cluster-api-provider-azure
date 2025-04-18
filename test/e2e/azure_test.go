@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
@@ -1091,6 +1092,59 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating RKE2 clusters using clusterclass [OPTIONAL]", func() {
+		It("with 3 control plane node and one linux worker node", func() {
+			// Use ci-rke2 as the clusterclass name so test infra can find the clusterclass template
+			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-rke2")).To(Succeed())
+
+			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
+			clusterName = getClusterName(clusterNamePrefix, "cc")
+
+			// Init rke2 CP and bootstrap providers
+			initInput := clusterctl.InitInput{
+				// pass reference to the management cluster hosting this test
+				KubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
+				// pass the clusterctl config file that points to the local provider repository created for this test
+				ClusterctlConfigPath: clusterctlConfigPath,
+				// setup the desired list of providers for a single-tenant management cluster
+				BootstrapProviders:    []string{"rke2"},
+				ControlPlaneProviders: []string{"rke2"},
+				// setup clusterctl logs folder
+				LogFolder: filepath.Join(artifactFolder, "clusters", clusterName),
+			}
+			clusterctl.Init(ctx, initInput)
+
+			// Create a cluster using the cluster class created above
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("topology-rke2"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(3),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
+					},
+					WaitForControlPlaneMachinesReady: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
+						ensureContolPlaneReplicasMatch(ctx, input.ClusterProxy, namespace.Name, clusterName, 3, e2eConfig.GetIntervals(specName, "wait-control-plane-long"))
+					},
 				}),
 			), result)
 

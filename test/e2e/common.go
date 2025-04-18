@@ -43,6 +43,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -306,6 +307,33 @@ func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	EnsureAzureDiskCSIDriverHelmChart(ctx, input, installHelmCharts, hasWindows)
 	result.ControlPlane = controlPlane
+}
+
+// ensureContolPlaneReplicasMatch waits for the control plane machine replicas to be created.
+func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.ClusterProxy, ns, clusterName string, replicas int, intervals []interface{}) {
+	By("Waiting for all control plane nodes to exist")
+	inClustersNamespaceListOption := client.InNamespace(ns)
+	// ControlPlane labels
+	matchClusterListOption := client.MatchingLabels{
+		clusterv1.MachineControlPlaneLabel: "",
+		clusterv1.ClusterNameLabel:         clusterName,
+	}
+
+	Eventually(func() (int, error) {
+		machineList := &clusterv1.MachineList{}
+		lister := proxy.GetClient()
+		if err := lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
+			Logf("Failed to list the machines: %+v", err)
+			return 0, err
+		}
+		count := 0
+		for _, machine := range machineList.Items {
+			if condition := conditions.Get(&machine, clusterv1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
+				count++
+			}
+		}
+		return count, nil
+	}, intervals...).Should(Equal(replicas), "Timed out waiting for %d control plane machines to exist", replicas)
 }
 
 // CheckTestBeforeCleanup checks to see if the current running Ginkgo test failed, and prints
