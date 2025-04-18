@@ -59,9 +59,9 @@ setup() {
 main() {
     if ! can_reuse_artifacts; then
         echo "Building Linux Azure amd64 cloud controller manager"
-        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" ALL_ARCH.linux=amd64 push-manifest-controller-manager
         echo "Building Linux amd64 and Windows (hpc) amd64 cloud node managers"
-        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-node-image-linux-amd64 push-node-image-linux-amd64 push-node-image-windows-hpc-amd64 manifest-node-manager-image-windows-hpc-amd64
+        make -C "${AZURE_CLOUD_PROVIDER_ROOT}" WINDOWS_USE_HOST_PROCESS_CONTAINERS=true ALL_ARCH.linux=amd64 push-manifest-node-manager
 
         echo "Building and pushing Linux and Windows amd64 Azure ACR credential provider"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" bin/azure-acr-credential-provider bin/azure-acr-credential-provider.exe
