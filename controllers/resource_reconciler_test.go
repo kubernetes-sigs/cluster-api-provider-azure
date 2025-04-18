@@ -87,8 +87,9 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			resources: []*unstructured.Unstructured{},
 			owner:     &infrav1alpha.AzureASOManagedCluster{},
 		}
-
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		needsRequeue, err := r.Reconcile(ctx)
+		g.Expect(needsRequeue).To(BeFalse())
+		g.Expect(err).NotTo(HaveOccurred())
 	})
 
 	t.Run("reconcile several resources", func(t *testing.T) {
@@ -98,11 +99,16 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		c := fakeClientBuilder().
 			Build()
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+			Status: infrav1alpha.AzureASOManagedClusterStatus{
+				Resources: []infrav1alpha.ResourceStatus{
+					rgStatus("rg1"),
+				},
+			},
+		}
 
 		unpatchedRGs := map[string]struct{}{
 			"rg1": {},
-			"rg2": {},
 		}
 		r := &ResourceReconciler{
 			Client: &FakeClient{
@@ -138,16 +144,18 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: w,
 		}
 
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		needsRequeue, err := r.Reconcile(ctx)
+		g.Expect(needsRequeue).To(BeTrue())
+		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(HaveKey("ResourceGroup.resources.azure.com"))
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(2))
-		g.Expect(resourcesStatuses[0].Resource.Name).To(Equal("rg1"))
-		g.Expect(resourcesStatuses[0].Ready).To(BeTrue())
-		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
-		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
+		g.Expect(resourcesStatuses[0].Resource.Name).To(Equal("rg2"))
+		g.Expect(resourcesStatuses[0].Ready).To(BeFalse())
+		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg1"))
+		g.Expect(resourcesStatuses[1].Ready).To(BeTrue())
 	})
 
 	t.Run("delete stale resources", func(t *testing.T) {
@@ -219,7 +227,9 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: &FakeWatcher{},
 		}
 
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		needsRequeue, err := r.Reconcile(ctx)
+		g.Expect(needsRequeue).To(BeFalse())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		resourcesStatuses := owner.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(3))
@@ -263,7 +273,15 @@ func TestResourceReconcilerPause(t *testing.T) {
 		c := fakeClientBuilder().
 			Build()
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+			Status: infrav1alpha.AzureASOManagedClusterStatus{
+				Resources: []infrav1alpha.ResourceStatus{
+					rgStatus("rg1"),
+					rgStatus("rg2"),
+					rgStatus("deleted-from-spec"),
+				},
+			},
+		}
 
 		var patchedRGs []string
 		r := &ResourceReconciler{
@@ -284,6 +302,11 @@ func TestResourceReconcilerPause(t *testing.T) {
 				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "rg2",
+					},
+				}),
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "not-yet-created",
 					},
 				}),
 			},
