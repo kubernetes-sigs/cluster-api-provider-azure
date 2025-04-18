@@ -671,7 +671,10 @@ func TestParameters(t *testing.T) {
 		},
 		{
 			name: "recreate parameters for network interface when Azure provisioning state is Failed",
-			spec: &fakeStaticPrivateIPNICSpec,
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
 			existing: armnetwork.Interface{
 				ID:       ptr.To(""),
 				Name:     ptr.To("my-net-interface"),
@@ -713,7 +716,10 @@ func TestParameters(t *testing.T) {
 		},
 		{
 			name: "do not recreate parameters for network interface when Azure provisioning state is Deleting",
-			spec: &fakeStaticPrivateIPNICSpec,
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
 			existing: armnetwork.Interface{
 				ID:       ptr.To(""),
 				Name:     ptr.To("my-net-interface"),
@@ -730,7 +736,10 @@ func TestParameters(t *testing.T) {
 		},
 		{
 			name: "do not recreate parameters for network interface when Azure provisioning state is Succeeded",
-			spec: &fakeStaticPrivateIPNICSpec,
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
 			existing: armnetwork.Interface{
 				ID:       ptr.To(""),
 				Name:     ptr.To("my-net-interface"),
@@ -747,7 +756,10 @@ func TestParameters(t *testing.T) {
 		},
 		{
 			name: "do not recreate parameters for network interface when Azure provisioning state is Updating",
-			spec: &fakeStaticPrivateIPNICSpec,
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
 			existing: armnetwork.Interface{
 				ID:       ptr.To(""),
 				Name:     ptr.To("my-net-interface"),
@@ -764,7 +776,10 @@ func TestParameters(t *testing.T) {
 		},
 		{
 			name: "recreate parameters for network interface when Azure provisioning state nil",
-			spec: &fakeStaticPrivateIPNICSpec,
+			spec: func() *NICSpec {
+				s := fakeStaticPrivateIPNICSpec // value‑copy
+				return &s                       // pointer to the copy, not the global
+			}(),
 			existing: armnetwork.Interface{
 				ID:       ptr.To(""),
 				Name:     ptr.To("my-net-interface"),
