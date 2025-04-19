@@ -776,6 +776,10 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	./scripts/aks-as-mgmt.sh
 	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
 
+.PHONY: aks-reset
+aks-reset: $(KUBECTL) ## Destroys the AKS clusters created by aks-create.
+	./scripts/aks-reset.sh
+
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
@@ -791,6 +795,10 @@ delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "ca
 kind-reset: $(KIND) ## Destroys the "capz" and "capz-e2e" kind clusters.
 	$(KIND) delete cluster --name=$(KIND_CLUSTER_NAME) || true
 	$(KIND) delete cluster --name=capz-e2e || true
+
+
+
+
 
 ## --------------------------------------
 ## Tooling Binaries
