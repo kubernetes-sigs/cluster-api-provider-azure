@@ -780,6 +780,10 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	./scripts/aks-as-mgmt.sh
 	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
 
+.PHONY: aks-reset
+aks-reset: $(KUBECTL) ## Destroys the AKS clusters created by aks-create.
+	./scripts/aks-reset.sh
+
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
