@@ -715,12 +715,23 @@ func (s *ClusterScope) Subnet(name string) infrav1.SubnetSpec {
 
 // SetSubnet sets the subnet spec for the subnet with the same name.
 func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
-	for i, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+	for i, sn := range s.AzureCluster.Status.Network.Subnets {
 		if sn.Name == subnetSpec.Name {
-			s.AzureCluster.Spec.NetworkSpec.Subnets[i] = subnetSpec
+			// Update the existing subnet in the status
+			fmt.Printf("DEBUG: Updating Subnet in Status: %s, Old CIDRs: %v, New CIDRs: %v\n", sn.Name, sn.CIDRBlocks, subnetSpec.CIDRBlocks)
+			s.AzureCluster.Status.Network.Subnets[i].CIDRBlocks = subnetSpec.CIDRBlocks
+			s.AzureCluster.Status.Network.Subnets[i].ID = subnetSpec.ID
 			return
 		}
 	}
+
+	// If the subnet is not found, add it to the status
+	fmt.Printf("DEBUG: Adding Subnet to Status: %s, CIDRs: %v\n", subnetSpec.Name, subnetSpec.CIDRBlocks)
+	s.AzureCluster.Status.Network.Subnets = append(s.AzureCluster.Status.Network.Subnets, infrav1.SubnetStatus{
+		Name:       subnetSpec.Name,
+		CIDRBlocks: subnetSpec.CIDRBlocks,
+		ID:         subnetSpec.ID,
+	})
 }
 
 // SetNatGatewayIDInSubnets sets the NAT Gateway ID in the subnets with the same name.

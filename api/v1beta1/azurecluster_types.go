@@ -79,6 +79,10 @@ type AzureClusterStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
+
+	// Network stores the observed state of the network, including subnets.
+	// +optional
+	Network NetworkStatus `json:"network,omitempty"`
 }
 
 // +kubebuilder:object:root=true

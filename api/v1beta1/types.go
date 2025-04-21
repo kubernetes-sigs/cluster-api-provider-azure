@@ -119,6 +119,27 @@ type NetworkSpec struct {
 	NetworkClassSpec `json:",inline"`
 }
 
+// NetworkStatus represents the observed state of the network.
+type NetworkStatus struct {
+	// Subnets contains the observed state of the subnets.
+	// +optional
+	Subnets []SubnetStatus `json:"subnets,omitempty"`
+}
+
+// SubnetStatus represents the observed state of a subnet.
+type SubnetStatus struct {
+	// Name is the name of the subnet.
+	Name string `json:"name"`
+
+	// CIDRBlocks are the CIDR blocks assigned to the subnet.
+	// +optional
+	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
+
+	// ID is the Azure resource ID of the subnet.
+	// +optional
+	ID string `json:"id,omitempty"`
+}
+
 // LoadBalancerPort specifies additional port for the API server load balancer.
 type LoadBalancerPort struct {
 	// Name for the additional port within LB definition
