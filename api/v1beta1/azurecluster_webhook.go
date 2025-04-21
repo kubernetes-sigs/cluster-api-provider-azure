@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +45,19 @@ var _ webhook.Defaulter = &AzureCluster{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (c *AzureCluster) Default() {
+	fmt.Println("WEBHOOK DEBUGGING BEFORE SETTING DEFAULTS")
+	for _, subnet := range c.Spec.NetworkSpec.Subnets {
+		fmt.Println("DEBUG: Name: \n", subnet.Name)
+		fmt.Println("DEBUG: Role: \n", subnet.Role)
+		fmt.Println("DEBUG: CIDRBlocks: \n", subnet.CIDRBlocks)
+	}
 	c.setDefaults()
+	fmt.Println("WEBHOOK DEBUGGING AFTER SETTING DEFAULTS")
+	for _, subnet := range c.Spec.NetworkSpec.Subnets {
+		fmt.Println("DEBUG: Name: \n", subnet.Name)
+		fmt.Println("DEBUG: Role: \n", subnet.Role)
+		fmt.Println("DEBUG: CIDRBlocks: \n", subnet.CIDRBlocks)
+	}
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
