@@ -115,7 +115,7 @@ function main() {
         echo "Removed $AKS_MGMT_CONFIG_FILE"
     fi
     
-    echo "AKS reset completed successfully"
+    echo "AKS reset completed successfully."
 }
 
 main
