@@ -11,7 +11,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.test cla
+# limitations under the License.
 
 set -o errexit
 set -o nounset
@@ -37,46 +37,72 @@ function main() {
         exit 1
     fi
     
-    # Get the list of AKS contexts from tilt-settings.yaml
-    local aks_contexts
-    aks_contexts=$(yq '.allowed_contexts[]? | select(. == "*aks-mgmt-capz-*")' "$TILT_SETTINGS_FILE")
+    # Get all contexts from tilt-settings.yaml
+    local contexts
+    contexts=$(yq '.allowed_contexts[]?' "$TILT_SETTINGS_FILE")
     
-    if [ -z "$aks_contexts" ]; then
-        echo "No AKS clusters found in tilt-settings.yaml. Nothing to reset."
+    if [ -z "$contexts" ]; then
+        echo "No contexts found in tilt-settings.yaml. Nothing to reset."
         exit 0
     fi
     
-    echo "Found AKS clusters to delete:"
-    echo "$aks_contexts"
+    echo "Scanning all contexts from tilt-settings.yaml..."
     
-    # Delete each AKS cluster and its resource group
+    # Track which AKS clusters were found for cleanup
+    local found_aks_clusters=()
+    
+    # Check each context to see if it's an AKS cluster
     while IFS= read -r context; do
         if [ -n "$context" ]; then
-            # Extract resource group name from context (assuming pattern is consistent)
-            local resource_group="${context}"
+            echo "Checking context: $context"
             
-            echo "Deleting AKS cluster and resource group: $resource_group"
-            
-            # Delete the resource group (which includes the AKS cluster)
-            if az group exists --name "$resource_group" | grep -q "true"; then
-                az group delete --name "$resource_group" --yes --no-wait
-                echo "Deletion of resource group $resource_group initiated (running in background)"
+            # Try to get the AKS cluster info from Azure
+            if az aks show --name "$context" --resource-group "$context" &>/dev/null; then
+                echo "Found AKS cluster: $context"
+                found_aks_clusters+=("$context")
             else
-                echo "Resource group $resource_group does not exist"
-            fi
-            
-            # Remove the context from kubectl config
-            if kubectl config get-contexts "$context" &>/dev/null; then
-                kubectl config delete-context "$context" || true
+                echo "Context $context is not an AKS cluster or doesn't exist in Azure."
             fi
         fi
-    done <<< "$aks_contexts"
+    done <<< "$contexts"
     
-    # Clean up tilt-settings.yaml - remove AKS contexts
-    yq eval -i 'del(.allowed_contexts[] | select(. == "*aks-mgmt-capz-*"))' "$TILT_SETTINGS_FILE"
+    if [ ${#found_aks_clusters[@]} -eq 0 ]; then
+        echo "No AKS clusters found. Nothing to reset."
+        exit 0
+    fi
     
-    # Clean up aks_as_mgmt_settings
-    yq eval -i 'del(.aks_as_mgmt_settings)' "$TILT_SETTINGS_FILE"
+    echo "Found ${#found_aks_clusters[@]} AKS clusters to delete:"
+    printf "  %s\n" "${found_aks_clusters[@]}"
+    
+    # Delete each AKS cluster and its resource group
+    for cluster in "${found_aks_clusters[@]}"; do
+        echo "Deleting AKS cluster and resource group: $cluster"
+        
+        # Delete the resource group (which includes the AKS cluster)
+        if az group exists --name "$cluster" | grep -q "true"; then
+            az group delete --name "$cluster" --yes --no-wait
+            echo "Deletion of resource group $cluster initiated (running in background)"
+        else
+            echo "Resource group $cluster does not exist"
+        fi
+        
+        # Remove the context from kubectl config
+        if kubectl config get-contexts "$cluster" &>/dev/null; then
+            kubectl config delete-context "$cluster" || true
+            echo "Removed kubectl context for $cluster"
+        fi
+    done
+    
+    # Remove the AKS contexts from tilt-settings.yaml
+    for cluster in "${found_aks_clusters[@]}"; do
+        yq eval -i "del(.allowed_contexts[] | select(. == \"$cluster\"))" "$TILT_SETTINGS_FILE"
+    done
+    
+    # Clean up aks_as_mgmt_settings if it exists
+    if yq eval '.aks_as_mgmt_settings' "$TILT_SETTINGS_FILE" | grep -qv "null"; then
+        echo "Cleaning up aks_as_mgmt_settings from tilt-settings.yaml"
+        yq eval -i 'del(.aks_as_mgmt_settings)' "$TILT_SETTINGS_FILE"
+    fi
     
     # Clean up other AKS-related files
     if [ -f "$AZURE_IDENTITY_ID_FILEPATH" ]; then
