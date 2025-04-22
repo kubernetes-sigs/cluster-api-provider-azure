@@ -109,4 +109,67 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		g.Expect(vnet.Tags).To(Equal(infrav1.Tags{"actual": "tags"}))
 		g.Expect(vnet.CIDRBlocks).To(Equal([]string{"cidr"}))
 	})
+
+	t.Run("correctly handles empty and non-empty ASO Status CIDRBlocks", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+		mockCtrl := gomock.NewController(t)
+		scope := mock_virtualnetworks.NewMockVNetScope(mockCtrl)
+
+		existing := &asonetworkv1.VirtualNetwork{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "vnet",
+			},
+			Status: asonetworkv1.VirtualNetwork_STATUS{
+				Id:   ptr.To("id"),
+				Tags: map[string]string{"actual": "tags"},
+				AddressSpace: &asonetworkv1.AddressSpace_STATUS{
+					AddressPrefixes: []string{"cidr"},
+				},
+			},
+		}
+
+		vnet := &infrav1.VnetSpec{}
+		scope.EXPECT().Vnet().Return(vnet)
+
+		subnets := []client.Object{
+			&asonetworkv1.VirtualNetworksSubnet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "empty-cidr-status-subnet",
+					Labels: map[string]string{
+						labels.OwnerNameLabel: existing.Name,
+					},
+				},
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
+					AzureName: "empty-cidr-status-subnet",
+				},
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
+					AddressPrefixes: []string{},
+				},
+			},
+			&asonetworkv1.VirtualNetworksSubnet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nonempty-cidr-status-subnet",
+					Labels: map[string]string{
+						labels.OwnerNameLabel: existing.Name,
+					},
+				},
+				Spec: asonetworkv1.VirtualNetworks_Subnet_Spec{
+					AzureName: "nonempty-cidr-status-subnet",
+				},
+				Status: asonetworkv1.VirtualNetworks_Subnet_STATUS{
+					AddressPrefixes: []string{"cidr"},
+				},
+			},
+		}
+		s := runtime.NewScheme()
+		g.Expect(asonetworkv1.AddToScheme(s)).To(Succeed())
+		c := fakeclient.NewClientBuilder().
+			WithScheme(s).
+			WithObjects(subnets...).
+			Build()
+		scope.EXPECT().GetClient().Return(c)
+		scope.EXPECT().UpdateSubnetCIDRs("empty-cidr-status-subnet", []string{}).Times(0)
+		scope.EXPECT().UpdateSubnetCIDRs("nonempty-cidr-status-subnet", []string{"cidr"}).Times(1)
+		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, existing, nil)).To(Succeed())
+	})
 }
