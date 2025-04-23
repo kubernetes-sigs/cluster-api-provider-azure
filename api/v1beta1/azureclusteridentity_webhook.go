@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -45,7 +46,7 @@ type azureClusterIdentityWebhook struct{}
 var _ webhook.CustomValidator = &azureClusterIdentityWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterIdentityWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	c, ok := obj.(*AzureClusterIdentity)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterIdentity object but got %T", c)
@@ -55,7 +56,7 @@ func (_ *azureClusterIdentityWebhook) ValidateCreate(_ context.Context, obj runt
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
 	c, ok := newObj.(*AzureClusterIdentity)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterIdentity object but got %T", c)
@@ -76,6 +77,6 @@ func (_ *azureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldRaw, 
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterIdentityWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterIdentityWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,12 +41,12 @@ type azureMachinePoolMachineWebhook struct{}
 var _ webhook.CustomValidator = &azureMachinePoolMachineWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureMachinePoolMachineWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureMachinePoolMachineWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureMachinePoolMachineWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (*azureMachinePoolMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	ampm, ok := newObj.(*AzureMachinePoolMachine)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureMachinePoolMachine object but got %T", ampm)
@@ -64,6 +65,6 @@ func (_ *azureMachinePoolMachineWebhook) ValidateUpdate(ctx context.Context, old
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureMachinePoolMachineWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureMachinePoolMachineWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

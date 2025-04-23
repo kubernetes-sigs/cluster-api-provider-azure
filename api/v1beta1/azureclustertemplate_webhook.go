@@ -50,7 +50,7 @@ type azureClusterTemplateWebhook struct{}
 var _ webhook.CustomDefaulter = &azureClusterTemplateWebhook{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (_ *azureClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
+func (*azureClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
 	c, ok := obj.(*AzureClusterTemplate)
 	if !ok {
 		return fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
@@ -63,7 +63,7 @@ func (_ *azureClusterTemplateWebhook) Default(_ context.Context, obj runtime.Obj
 var _ webhook.CustomValidator = &azureClusterTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	c, ok := obj.(*AzureClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
@@ -73,7 +73,7 @@ func (_ *azureClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runt
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
 	c, ok := newObj.(*AzureClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
@@ -94,6 +94,6 @@ func (_ *azureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldRaw, 
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

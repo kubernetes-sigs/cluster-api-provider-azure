@@ -57,7 +57,7 @@ var _ webhook.CustomDefaulter = &azureMachineTemplateWebhook{}
 var _ webhook.CustomValidator = &azureMachineTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (_ *azureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (*azureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	r := obj.(*AzureMachineTemplate)
 	spec := r.Spec.Template.Spec
 
@@ -145,12 +145,12 @@ func (r *azureMachineTemplateWebhook) ValidateUpdate(ctx context.Context, oldRaw
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (_ *azureMachineTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*azureMachineTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
-func (_ *azureMachineTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
+func (*azureMachineTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
 	t := obj.(*AzureMachineTemplate)
 	if err := t.Spec.Template.Spec.SetDefaultSSHPublicKey(); err != nil {
 		ctrl.Log.WithName("SetDefault").Error(err, "SetDefaultSSHPublicKey failed")
