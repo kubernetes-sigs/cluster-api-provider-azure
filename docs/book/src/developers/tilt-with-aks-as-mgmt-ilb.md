@@ -46,15 +46,16 @@ While the default Tilt setup recommends using a KIND cluster as the management c
 
 ## Steps to Use Tilt with AKS as the Management Cluster
 
-1. In tilt-settings.yaml, set subscription_type to "corporate" and remove any other env values unless you want to override env variables created by `make aks-create`. Example:
+1. Ensure that the tilt-settings.yaml in root of the repository looks like below
+   ```yaml
+      kustomize_substitutions: {}
+      allowed_contexts:
+      - "kind-capz"
+      container_args:
+         capz-controller-manager:
+            - "--v=4"
    ```
-   .
-   .
-   .
-   kustomize_substitutions:
-   SUBSCRIPTION_TYPE: "corporate"
-   .
-   ```
+      - Add env variables in `kustomize_substitutions` if you want the added env variables to take precedence over the env values exported by running `make aks-create`
 2. `make clean`
    - This make target does not need to be run every time. Run it to remove bin and kubeconfigs.
 3. `make generate`
@@ -69,7 +70,7 @@ While the default Tilt setup recommends using a KIND cluster as the management c
 6. `make tilt-up`
    - Run this target to use underlying cluster being pointed by your `KUBECONFIG`.
 
-7. Once the tilt UI is up and running click on the `allow required ports on mgmt cluster` task (checkmark the box and reload) to allow the required ports on the management cluster's API server.
+7. [Optional for 1P users] Once the tilt UI is up and running click on the `allow required ports on mgmt cluster` task (checkmark the box and reload) to allow the required ports on the management cluster's API server.
    - Note: This task will wait for the NSG rules to be created and then update them to allow the required ports.
    - This task will take a few minutes to complete. Wait for this to finish to avoid race conditions.
 8. Check the flavors you want to deploy and CAPZ will deploy the workload cluster with the selected flavor.
