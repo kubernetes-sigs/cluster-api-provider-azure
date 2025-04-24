@@ -1,11 +1,13 @@
 # Tilt with AKS as Management Cluster with Internal Load Balancer
 
 ## Introduction
+
 This guide is explaining how to set up and use Azure Kubernetes Service (AKS) as a management cluster for Cluster API Provider Azure (CAPZ) development using Tilt and an internal load balancer (ILB).
 
 While the default Tilt setup recommends using a KIND cluster as the management cluster for faster development and experimentation, this guide demonstrates using AKS as an alternative management cluster. We also cover additional steps for working with stricter network policies - particularly useful for organizations that need to maintain all cluster communications within their Azure Virtual Network (VNet) infrastructure with enhanced access controls.
 
 ### Who is this for?
+
 - Developers who want to use AKS as the management cluster for CAPZ development.
 - Developers working in environments with strict network security requirements.
 - Teams that need to keep all Kubernetes API traffic within Azure VNet
@@ -31,8 +33,10 @@ While the default Tilt setup recommends using a KIND cluster as the management c
 - If `tilt-settings.yaml` file exists in the root of your repo, clear out any values in `kustomize_settings` unless you want to use them instead of the values that will be set by running `make aks-create`.
 
 ### Managed Identity & Registry Setup
+
 1. Have a managed identity created from Azure Portal.
 2. Add the following lines to your shell config such as `~/.bashrc` or `~/.zshrc`
+
    ```shell
    export USER_IDENTITY="<user-assigned-managed-identity-name>"
    export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="<user-assigned-managed-identity-client-id>"
@@ -42,11 +46,13 @@ While the default Tilt setup recommends using a KIND cluster as the management c
    export AZURE_LOCATION="<azure-location-having-quota-for-B2s-and-D4s_v3-SKU>"
    export REGISTRY=<your-container-registry>
    ```
+
 3. Be sure to reload with `source ~/.bashrc` or `source ~/.zshrc` and then verify the correct env vars values return with `echo $AZURE_CLIENT_ID` and `echo $REGISTRY`.
 
 ## Steps to Use Tilt with AKS as the Management Cluster
 
 1. Ensure that the tilt-settings.yaml in root of the repository looks like below
+
    ```yaml
       kustomize_substitutions: {}
       allowed_contexts:
@@ -55,7 +61,9 @@ While the default Tilt setup recommends using a KIND cluster as the management c
          capz-controller-manager:
             - "--v=4"
    ```
-      - Add env variables in `kustomize_substitutions` if you want the added env variables to take precedence over the env values exported by running `make aks-create`
+
+      - Add env variables in `kustomize_substitutions` if you want the added env variables to take precedence over the env values exported by running `make aks-create`.
+      - Port over an variables set in `tilt-settings.json` to `tilt-settings.yaml`'s `kustomize_substitution:{}` and delete `tilt-settings.json` if present in your local.
 2. `make clean`
    - This make target does not need to be run every time. Run it to remove bin and kubeconfigs.
 3. `make generate`
@@ -70,7 +78,7 @@ While the default Tilt setup recommends using a KIND cluster as the management c
 6. `make tilt-up`
    - Run this target to use underlying cluster being pointed by your `KUBECONFIG`.
 
-7. [Optional for 1P users] Once the tilt UI is up and running click on the `allow required ports on mgmt cluster` task (checkmark the box and reload) to allow the required ports on the management cluster's API server.
+7. Once the tilt UI is up and running click on the `allow required ports on mgmt cluster` task (checkmark the box and reload) to allow the required ports on the management cluster's API server.
    - Note: This task will wait for the NSG rules to be created and then update them to allow the required ports.
    - This task will take a few minutes to complete. Wait for this to finish to avoid race conditions.
 8. Check the flavors you want to deploy and CAPZ will deploy the workload cluster with the selected flavor.
@@ -97,7 +105,7 @@ Running an e2e test locally in a restricted environment calls for some workaroun
   2. Assign that managed identity a contributor role to your subscription
   3. Set `AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY`, `AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY`, and `AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID` to the user-assigned managed identity.
 
-#### Update prow template with apiserver ILB networking solution
+### Update prow template with apiserver ILB networking solution
 
 There are three sections of a prow template that need an update.
 
@@ -181,7 +189,7 @@ A sample kustomize command for updating a prow template via its kustomization.ya
         powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
 ```
 
-#### Peer Vnets of the management cluster and the workload cluster
+#### Peer VNets of the management cluster and the workload cluster
 
 Peering VNets, creating a private DNS zone with the FQDN of the workload cluster, and updating NSGs of the management and workload clusters can be achieved by running `scripts/peer-vnets.sh`.
 
