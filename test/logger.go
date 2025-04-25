@@ -94,9 +94,10 @@ func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, 
 	}
 
 	framework.DumpAllResources(context.TODO(), framework.DumpAllResourcesInput{
-		Lister:    bootstrapClusterProxy.GetClient(),
-		Namespace: *namespace,
-		LogPath:   workLoadClusterLogPath,
+		Lister:         bootstrapClusterProxy.GetClient(),
+		KubeConfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
+		Namespace:      *namespace,
+		LogPath:        workLoadClusterLogPath,
 	})
 }
 
