@@ -20,13 +20,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -38,6 +41,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const ownedKindsAnnotation = "sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds"
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
 type ResourceReconciler struct {
@@ -53,7 +58,6 @@ type watcher interface {
 
 type resourceStatusObject interface {
 	client.Object
-	GetResourceStatuses() []infrav1alpha.ResourceStatus
 	SetResourceStatuses([]infrav1alpha.ResourceStatus)
 }
 
@@ -92,13 +96,12 @@ func (r *ResourceReconciler) Pause(ctx context.Context) error {
 		return err
 	}
 
-	_, observedResources, _ := partitionResources(r.resources, r.owner.GetResourceStatuses())
-
-	for _, spec := range observedResources {
+	for _, spec := range r.resources {
+		spec.SetNamespace(r.owner.GetNamespace())
 		gvk := spec.GroupVersionKind()
 		log.V(4).Info("pausing resource", "resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
 		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"))
-		if err != nil {
+		if client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
 	}
@@ -112,26 +115,40 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 
 	var newResourceStatuses []infrav1alpha.ResourceStatus
 
-	unobservedResources, observedResources, deletedResources := partitionResources(r.resources, r.owner.GetResourceStatuses())
+	ownedKindsValue := r.owner.GetAnnotations()[ownedKindsAnnotation]
+	ownedKinds, err := parseOwnedKinds(ownedKindsValue)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse %s annotation: %s", ownedKindsAnnotation, ownedKindsValue)
+	}
 
-	// Newly-defined resources in the CAPZ spec are first recorded in the status without performing a patch
-	// that would create the resource. CAPZ only patches resources that have already been recorded in status
-	// to ensure no resources are orphaned.
-	for _, spec := range unobservedResources {
+	ownedObjs, err := r.ownedObjs(ctx, ownedKinds)
+	if err != nil {
+		return false, fmt.Errorf("failed to get owned objects: %w", err)
+	}
+
+	unobservedTypeResources, observedTypeResources, deletedResources := partitionResources(ownedKinds, r.resources, ownedObjs)
+
+	// Newly-defined types in the CAPZ spec are first recorded in the annotation without performing a
+	// patch that would create resources of that type. CAPZ only patches resources whose kinds have
+	// already been recorded to ensure no resources are orphaned.
+	for _, spec := range unobservedTypeResources {
 		newResourceStatuses = append(newResourceStatuses, infrav1alpha.ResourceStatus{
 			Resource: statusResource(spec),
 			Ready:    false,
 		})
 	}
 
-	for _, spec := range observedResources {
+	for _, spec := range observedTypeResources {
 		spec.SetNamespace(r.owner.GetNamespace())
 
 		if err := controllerutil.SetControllerReference(r.owner, spec, r.Scheme()); err != nil {
 			return false, fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
-		if err := r.watcher.Watch(log, spec, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
+		toWatch := meta.AsPartialObjectMetadata(spec)
+		toWatch.APIVersion = spec.GetAPIVersion()
+		toWatch.Kind = spec.GetKind()
+		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
 			return false, fmt.Errorf("failed to watch resource: %w", err)
 		}
 
@@ -152,34 +169,49 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		})
 	}
 
-	for _, status := range deletedResources {
-		updatedStatus, err := r.deleteResource(ctx, status.Resource)
+	for _, obj := range deletedResources {
+		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
 		}
-		if updatedStatus != nil {
-			newResourceStatuses = append(newResourceStatuses, *updatedStatus)
+		if newStatus != nil {
+			newResourceStatuses = append(newResourceStatuses, *newStatus)
 		}
 	}
 
+	newOwnedKinds := []metav1.TypeMeta{}
+	for _, status := range newResourceStatuses {
+		typeMeta := metav1.TypeMeta{
+			APIVersion: metav1.GroupVersion{Group: status.Resource.Group, Version: status.Resource.Version}.String(),
+			Kind:       status.Resource.Kind,
+		}
+		if !slices.Contains(newOwnedKinds, typeMeta) {
+			newOwnedKinds = append(newOwnedKinds, typeMeta)
+		}
+	}
+	annotations := r.owner.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[ownedKindsAnnotation] = getOwnedKindsValue(newOwnedKinds)
+	if annotations[ownedKindsAnnotation] == "" {
+		delete(annotations, ownedKindsAnnotation)
+	}
+	r.owner.SetAnnotations(annotations)
+
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
-	return len(unobservedResources) > 0, nil
+	return len(unobservedTypeResources) > 0, nil
 }
 
-func (r *ResourceReconciler) deleteResource(ctx context.Context, resource infrav1alpha.StatusResource) (*infrav1alpha.ResourceStatus, error) {
+func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav1.PartialObjectMetadata) (*infrav1alpha.ResourceStatus, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.deleteResource")
 	defer done()
 
-	spec := &unstructured.Unstructured{}
-	spec.SetGroupVersionKind(schema.GroupVersionKind{Group: resource.Group, Version: resource.Version, Kind: resource.Kind})
-	spec.SetNamespace(r.owner.GetNamespace())
-	spec.SetName(resource.Name)
-
-	log = log.WithValues("resource", klog.KObj(spec), "resourceVersion", spec.GroupVersionKind().GroupVersion(), "resourceKind", spec.GetKind())
+	log = log.WithValues("resource", klog.KObj(resource), "resourceVersion", resource.APIVersion, "resourceKind", resource.Kind)
 
 	log.V(4).Info("deleting resource")
-	err := r.Client.Delete(ctx, spec)
+	err := r.Client.Delete(ctx, resource)
 	if apierrors.IsNotFound(err) {
 		log.V(4).Info("resource has been deleted")
 		return nil, nil
@@ -188,7 +220,7 @@ func (r *ResourceReconciler) deleteResource(ctx context.Context, resource infrav
 		return nil, fmt.Errorf("failed to delete resource: %w", err)
 	}
 
-	err = r.Client.Get(ctx, client.ObjectKeyFromObject(spec), spec)
+	err = r.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource)
 	if apierrors.IsNotFound(err) {
 		log.V(4).Info("resource has been deleted")
 		return nil, nil
@@ -196,15 +228,38 @@ func (r *ResourceReconciler) deleteResource(ctx context.Context, resource infrav
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
-	ready, err := readyStatus(ctx, spec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ready status: %w", err)
+
+	gvk := resource.GroupVersionKind()
+	return &infrav1alpha.ResourceStatus{
+		Resource: infrav1alpha.StatusResource{
+			Group:   gvk.Group,
+			Version: gvk.Version,
+			Kind:    gvk.Kind,
+			Name:    resource.Name,
+		},
+		Ready: false,
+	}, nil
+}
+
+func (r *ResourceReconciler) ownedObjs(ctx context.Context, ownedTypes sets.Set[metav1.TypeMeta]) ([]*metav1.PartialObjectMetadata, error) {
+	var ownedObjs []*metav1.PartialObjectMetadata
+
+	for typeMeta := range ownedTypes {
+		objs := &metav1.PartialObjectMetadataList{TypeMeta: typeMeta}
+		err := r.List(ctx, objs, client.InNamespace(r.owner.GetNamespace()))
+		if err != nil {
+			return nil, fmt.Errorf("failed to list %s %s: %w", typeMeta.APIVersion, typeMeta.Kind, err)
+		}
+
+		for _, obj := range objs.Items {
+			controller := metav1.GetControllerOfNoCopy(&obj)
+			if controller != nil && controller.UID == r.owner.GetUID() {
+				ownedObjs = append(ownedObjs, &obj)
+			}
+		}
 	}
 
-	return &infrav1alpha.ResourceStatus{
-		Resource: resource,
-		Ready:    ready,
-	}, nil
+	return ownedObjs, nil
 }
 
 func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error) {
@@ -249,37 +304,36 @@ func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error
 	return false, nil
 }
 
-// partitionResources splits sets of resources defined in spec and status into three groups:
-// - unobservedResources exist in spec but not status.
-// - observedResources exist in both spec and status.
-// - deletedResources exist in status but not spec.
+// partitionResources splits the sets of resources in spec and the current set
+// of owned, existing resources into three groups:
+// - unobservedTypeResources are of a type not yet known to this owning CAPZ resource.
+// - observedTypeResources are of a type already known to this owning CAPZ resource.
+// - deletedResources exist but are not defined in spec.
 func partitionResources(
+	ownedKinds sets.Set[metav1.TypeMeta],
 	specs []*unstructured.Unstructured,
-	statuses []infrav1alpha.ResourceStatus,
+	ownedObjs []*metav1.PartialObjectMetadata,
 ) (
-	unobservedResources []*unstructured.Unstructured,
-	observedResources []*unstructured.Unstructured,
-	deletedResources []infrav1alpha.ResourceStatus,
+	unobservedTypeResources []*unstructured.Unstructured,
+	observedTypeResources []*unstructured.Unstructured,
+	deletedResources []*metav1.PartialObjectMetadata,
 ) {
-specs:
 	for _, spec := range specs {
-		for _, status := range statuses {
-			if statusRefersToResource(status, spec) {
-				observedResources = append(observedResources, spec)
-				continue specs
-			}
+		typeMeta := metav1.TypeMeta{
+			APIVersion: spec.GetAPIVersion(),
+			Kind:       spec.GetKind(),
 		}
-		unobservedResources = append(unobservedResources, spec)
+		if ownedKinds.Has(typeMeta) {
+			observedTypeResources = append(observedTypeResources, spec)
+		} else {
+			unobservedTypeResources = append(unobservedTypeResources, spec)
+		}
 	}
 
-statuses:
-	for _, status := range statuses {
-		for _, resource := range specs {
-			if statusRefersToResource(status, resource) {
-				continue statuses
-			}
+	for _, owned := range ownedObjs {
+		if !slices.ContainsFunc(specs, metadataRefersToResource(owned)) {
+			deletedResources = append(deletedResources, owned)
 		}
-		deletedResources = append(deletedResources, status)
 	}
 	return
 }
@@ -294,11 +348,38 @@ func statusResource(resource *unstructured.Unstructured) infrav1alpha.StatusReso
 	}
 }
 
-func statusRefersToResource(status infrav1alpha.ResourceStatus, resource *unstructured.Unstructured) bool {
-	gvk := resource.GroupVersionKind()
-	// Version is not a stable property of a particular resource. The API version of an ASO resource may
-	// change in the CAPZ spec from v1 to v2 but that still represents the same underlying resource.
-	return status.Resource.Group == gvk.Group &&
-		status.Resource.Kind == gvk.Kind &&
-		status.Resource.Name == resource.GetName()
+func metadataRefersToResource(metadata *metav1.PartialObjectMetadata) func(*unstructured.Unstructured) bool {
+	return func(u *unstructured.Unstructured) bool {
+		// Version is not a stable property of a particular resource. The API version of an ASO resource may
+		// change in the CAPZ spec from v1 to v2 but that still represents the same underlying resource.
+		return metadata.GroupVersionKind().GroupKind() == u.GroupVersionKind().GroupKind() &&
+			metadata.Name == u.GetName()
+	}
+}
+
+func parseOwnedKinds(value string) (sets.Set[metav1.TypeMeta], error) {
+	ownedKinds := sets.Set[metav1.TypeMeta]{}
+	if value == "" {
+		return nil, nil
+	}
+	for _, ownedKind := range strings.Split(value, ";") {
+		i := strings.LastIndexAny(ownedKind, "/")
+		if i < 0 {
+			return nil, fmt.Errorf("failed to parse field: %s", ownedKind)
+		}
+		apiVersion, kind := ownedKind[:i], ownedKind[i+1:]
+		ownedKinds.Insert(metav1.TypeMeta{
+			APIVersion: apiVersion,
+			Kind:       kind,
+		})
+	}
+	return ownedKinds, nil
+}
+
+func getOwnedKindsValue(ownedKinds []metav1.TypeMeta) string {
+	fields := make([]string, 0, len(ownedKinds))
+	for _, kind := range ownedKinds {
+		fields = append(fields, kind.APIVersion+"/"+kind.Kind)
+	}
+	return strings.Join(fields, ";")
 }
