@@ -205,9 +205,11 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		if selfHostedNamespace != nil {
 			// Dump all Cluster API related resources to artifacts before pivoting back.
 			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-				Lister:    selfHostedClusterProxy.GetClient(),
-				Namespace: namespace.Name,
-				LogPath:   filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
+				Lister:               selfHostedClusterProxy.GetClient(),
+				KubeConfigPath:       selfHostedClusterProxy.GetKubeconfigPath(),
+				ClusterctlConfigPath: clusterctlConfigPath,
+				Namespace:            namespace.Name,
+				LogPath:              filepath.Join(input.ArtifactFolder, "clusters", clusterResources.Cluster.Name, "resources"),
 			})
 		}
 		if selfHostedCluster != nil {
