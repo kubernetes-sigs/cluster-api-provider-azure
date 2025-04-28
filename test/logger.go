@@ -95,7 +95,21 @@ func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, 
 
 	framework.DumpAllResources(context.TODO(), framework.DumpAllResourcesInput{
 		Lister:         bootstrapClusterProxy.GetClient(),
-		KubeConfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: getClusterctlConfigPath(),
+		Namespace:            *namespace,
+		LogPath:              workLoadClusterLogPath,
+	})
+}
+
+func getClusterctlConfigPath() string {
+	config := os.Getenv("CLUSTERCTL_CONFIG")
+	if config == "" {
+		return path.Join(getArtifactsFolder(), "repository", "clusterctl-config.yaml")
+	}
+
+	return config
+}
 		Namespace:      *namespace,
 		LogPath:        workLoadClusterLogPath,
 	})
