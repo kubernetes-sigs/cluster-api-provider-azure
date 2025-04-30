@@ -198,7 +198,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				identityName := e2eConfig.GetVariable(AzureUserIdentity)
 				identity, err := identityClient.Get(ctx, identityRG, identityName, nil)
 				Expect(err).NotTo(HaveOccurred())
-				os.Setenv("AZURE_CLIENT_ID_CLOUD_PROVIDER", *identity.Properties.ClientID)
+				Expect(os.Setenv("AZURE_CLIENT_ID_CLOUD_PROVIDER", *identity.Properties.ClientID)).To(Succeed())
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {

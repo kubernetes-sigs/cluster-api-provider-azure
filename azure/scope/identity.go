@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,7 +35,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -90,11 +90,7 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 	var authErr error
 	var cred azcore.TokenCredential
 
-	otelTP, err := ot.OTLPTracerProvider(ctx)
-	if err != nil {
-		return nil, err
-	}
-	tracingProvider := azotel.NewTracingProvider(otelTP, nil)
+	tracingProvider := azotel.NewTracingProvider(otel.GetTracerProvider(), nil)
 
 	switch p.Identity.Spec.Type {
 	case infrav1.WorkloadIdentity:
@@ -134,6 +130,7 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 	case infrav1.ServicePrincipalCertificate:
 		var certsContent []byte
 		if p.Identity.Spec.CertPath != "" {
+			var err error
 			certsContent, err = os.ReadFile(p.Identity.Spec.CertPath)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to read certificate file")

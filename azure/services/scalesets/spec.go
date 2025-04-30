@@ -239,11 +239,12 @@ func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (pa
 	}
 
 	// Assign Identity to VMSS
-	if s.Identity == infrav1.VMIdentitySystemAssigned {
+	switch s.Identity {
+	case infrav1.VMIdentitySystemAssigned:
 		vmss.Identity = &armcompute.VirtualMachineScaleSetIdentity{
 			Type: ptr.To(armcompute.ResourceIdentityTypeSystemAssigned),
 		}
-	} else if s.Identity == infrav1.VMIdentityUserAssigned {
+	case infrav1.VMIdentityUserAssigned:
 		userIdentitiesMap, err := converters.UserAssignedIdentitiesToVMSSSDK(s.UserAssignedIdentities)
 		if err != nil {
 			return vmss, errors.Wrapf(err, "failed to assign identity %q", s.Name)

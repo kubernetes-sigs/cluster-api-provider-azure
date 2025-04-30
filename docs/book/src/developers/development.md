@@ -507,6 +507,8 @@ To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRI
 ./scripts/ci-e2e.sh
 ```
 
+Note: Users that have a restrictive environment and want to leverage API Server ILB in their flavors and to run e2e tests locally should refer to the detailed explanation in [running e2e tests locally leveraging apiserver ilb solution](./tilt-with-aks-as-mgmt-ilb.md#running-e2e-tests-locally-using-api-server-ilbs-networking-solution)
+
 You can optionally set the following variables:
 
 | Variable                   | Description                                                                                                                                                                                                                                                                                                                                                                | Default                                                                               |

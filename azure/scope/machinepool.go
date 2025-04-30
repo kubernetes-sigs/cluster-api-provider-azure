@@ -324,7 +324,7 @@ func (m *MachinePoolScope) NeedsRequeue() bool {
 	}
 
 	desiredMatchesActual := len(m.vmssState.Instances) == int(m.DesiredReplicas())
-	return !(state != nil && infrav1.IsTerminalProvisioningState(*state) && desiredMatchesActual)
+	return state == nil || !infrav1.IsTerminalProvisioningState(*state) || !desiredMatchesActual
 }
 
 // DesiredReplicas returns the replica count on machine pool or 0 if machine pool replicas is nil.

@@ -35,7 +35,7 @@ import (
 
 // RegisterTracing enables code tracing via OpenTelemetry.
 func RegisterTracing(ctx context.Context, log logr.Logger) error {
-	tp, err := OTLPTracerProvider(ctx)
+	tp, err := otlpTracerProvider(ctx)
 	if err != nil {
 		return err
 	}
@@ -54,8 +54,8 @@ func RegisterTracing(ctx context.Context, log logr.Logger) error {
 	return nil
 }
 
-// OTLPTracerProvider initializes an OTLP exporter and configures the corresponding tracer provider.
-func OTLPTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
+// otlpTracerProvider initializes an OTLP exporter and configures the corresponding tracer provider.
+func otlpTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String("capz"),

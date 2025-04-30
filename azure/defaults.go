@@ -17,7 +17,6 @@ limitations under the License.
 package azure
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -28,8 +27,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
+	"go.opentelemetry.io/otel"
 
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -112,7 +111,7 @@ const (
 
 var (
 	// LinuxBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Linux nodes bootstrap completes successfully.
-	LinuxBootstrapExtensionCommand = fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then exit 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
+	LinuxBootstrapExtensionCommand = fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then echo 'Error joining node to cluster: kubeadm init or join failed. To debug, check the cloud-init, kubelet, or other bootstrap logs: https://capz.sigs.k8s.io/self-managed/troubleshooting.html#checking-cloud-init-logs-ubuntu'; exit 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
 	// WindowsBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Windows nodes bootstrap completes successfully.
 	WindowsBootstrapExtensionCommand = fmt.Sprintf("powershell.exe -Command \"for ($i = 0; $i -lt %d; $i++) {if (Test-Path '%s') {exit 0} else {Start-Sleep -Seconds %d}} exit -2\"",
 		bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionSleep)
@@ -380,11 +379,7 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 	opts.PerCallPolicies = append(opts.PerCallPolicies, extraPolicies...)
 	opts.Retry.MaxRetries = -1 // Less than zero means one try and no retries.
 
-	otelTP, err := ot.OTLPTracerProvider(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	opts.TracingProvider = azotel.NewTracingProvider(otelTP, nil)
+	opts.TracingProvider = azotel.NewTracingProvider(otel.GetTracerProvider(), nil)
 
 	return opts, nil
 }

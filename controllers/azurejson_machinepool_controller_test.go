@@ -382,7 +382,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		CredentialCache: azure.NewCredentialCache(),
 	}
 	id := "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id"
-	getClient = func(auth azure.Authorizer) (identities.Client, error) {
+	getClient = func(_ azure.Authorizer) (identities.Client, error) {
 		mockClient := mock_identities.NewMockClient(ctrlr)
 		mockClient.EXPECT().GetClientID(gomock.Any(), gomock.Any()).Return(id, nil)
 		return mockClient, nil

@@ -483,7 +483,7 @@ func TestResourceGroupInvalid(t *testing.T) {
 		g := NewWithT(t)
 		err := validateResourceGroup(testCase.resourceGroup,
 			field.NewPath("spec").Child("networkSpec").Child("vnet").Child("resourceGroup"))
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(err.Field).To(Equal("spec.networkSpec.vnet.resourceGroup"))
 		g.Expect(err.BadValue).To(BeEquivalentTo(testCase.resourceGroup))
@@ -743,7 +743,7 @@ func TestSubnetNameInvalid(t *testing.T) {
 		g := NewWithT(t)
 		err := validateSubnetName(testCase.subnetName,
 			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("name"))
-		g.Expect(err).NotTo(BeNil())
+		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(err.Field).To(Equal("spec.networkSpec.subnets[0].name"))
 		g.Expect(err.BadValue).To(BeEquivalentTo(testCase.subnetName))

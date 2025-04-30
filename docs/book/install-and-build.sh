@@ -24,7 +24,7 @@ cd "${KUBE_ROOT}" || exit 1
 os=$(go env GOOS)
 arch=$(go env GOARCH)
 mdBookVersion="v0.4.40"
-genCRDAPIReferenceDocsVersion="642c3aa7441d324f54f5a9a6a1841ffffacf5aeb"
+genCRDAPIReferenceDocsVersion="ee012b7016522a56d9cef3ea9baed3e0cfc8ff0e"
 
 # translate arch to rust's conventions (if we can)
 if [[ ${arch} == "amd64" ]]; then
@@ -64,19 +64,19 @@ ${cmd} /tmp/mdbook.${ext}
 chmod +x /tmp/mdbook
 
 # Generate API docs
-genCRDAPIReferenceDocsPath="/tmp/gen-crd-api-reference-docs-${genCRDAPIReferenceDocsVersion}"
-genCRDAPIReferenceDocs="${genCRDAPIReferenceDocsPath}/gen-crd-api-reference-docs"
+genCRDAPIReferenceDocsPath="/tmp/crddoc-${genCRDAPIReferenceDocsVersion}"
+genCRDAPIReferenceDocs="${genCRDAPIReferenceDocsPath}/crddoc document crds"
 (
   cd /tmp
-  curl --retry 3 -sL -o gen-crd-api-reference-docs.zip "https://github.com/ahmetb/gen-crd-api-reference-docs/archive/${genCRDAPIReferenceDocsVersion}.zip"
-  unzip gen-crd-api-reference-docs.zip
-  cd "gen-crd-api-reference-docs-${genCRDAPIReferenceDocsVersion}"
+  curl --retry 3 -sL -o crddoc.zip "https://github.com/theunrepentantgeek/crddoc/archive/${genCRDAPIReferenceDocsVersion}.zip"
+  unzip crddoc.zip
+  cd "crddoc-${genCRDAPIReferenceDocsVersion}"
   go build .
 )
 
-${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./api/v1beta1 -out-file ./docs/book/src/reference/v1beta1-api-raw.html
-${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./exp/api/v1beta1 -out-file ./docs/book/src/reference/v1beta1-exp-api-raw.html
-${genCRDAPIReferenceDocs} -config "${genCRDAPIReferenceDocsPath}/example-config.json" -template-dir "${genCRDAPIReferenceDocsPath}/template" -api-dir ./api/v1alpha1 -out-file ./docs/book/src/reference/v1alpha1-api-raw.html
+${genCRDAPIReferenceDocs} --config "${genCRDAPIReferenceDocsPath}/docs/config/crddoc-config.yaml" --template "${genCRDAPIReferenceDocsPath}/templates" --output ./docs/book/src/reference/v1beta1-api-raw.html ./api/v1beta1
+${genCRDAPIReferenceDocs} --config "${genCRDAPIReferenceDocsPath}/docs/config/crddoc-config.yaml" --template "${genCRDAPIReferenceDocsPath}/templates" --output ./docs/book/src/reference/v1beta1-exp-api-raw.html ./exp/api/v1beta1
+${genCRDAPIReferenceDocs} --config "${genCRDAPIReferenceDocsPath}/docs/config/crddoc-config.yaml" --template "${genCRDAPIReferenceDocsPath}/templates" --output ./docs/book/src/reference/v1alpha1-api-raw.html ./api/v1alpha1
 
 # Finally build the book.
 (cd docs/book && /tmp/mdbook build)
