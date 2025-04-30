@@ -131,29 +131,40 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 }
 
 func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
-	type test struct {
+	tests := []struct {
 		name    string
 		cluster *AzureCluster
-	}
-
-	testCase := test{
-		name:    "azurecluster with pre-existing vnet - invalid",
-		cluster: createValidCluster(),
-	}
-
-	// invalid because it doesn't specify a controlplane subnet
-	testCase.cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
-		SubnetClassSpec: SubnetClassSpec{
-			Role: "random",
-			Name: "random-subnet",
+		wantErr bool
+	}{
+		{
+			name: "azurecluster with pre-existing vnet - invalid",
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				// invalid because it doesn't specify a controlplane subnet
+				cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
+					SubnetClassSpec: SubnetClassSpec{
+						Role: "random",
+						Name: "random-subnet",
+					},
+				}
+				return cluster
+			}(),
+			wantErr: true,
 		},
 	}
 
-	t.Run(testCase.name, func(t *testing.T) {
-		g := NewWithT(t)
-		_, err := testCase.cluster.validateCluster(nil)
-		g.Expect(err).To(HaveOccurred())
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			_, err := tc.cluster.validateCluster(nil)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
 }
 
 func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
@@ -2050,24 +2061,35 @@ func TestServiceEndpointsLackRequiredFieldLocations(t *testing.T) {
 }
 
 func TestClusterWithExtendedLocationInvalid(t *testing.T) {
-	type test struct {
+	tests := []struct {
 		name    string
 		cluster *AzureCluster
+		wantErr bool
+	}{
+		{
+			name: "azurecluster spec with extended location but not enable EdgeZone feature gate flag",
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.ExtendedLocation = &ExtendedLocationSpec{
+					Name: "rr4",
+					Type: "EdgeZone",
+				}
+				return cluster
+			}(),
+			wantErr: true,
+		},
 	}
 
-	testCase := test{
-		name:    "azurecluster spec with extended location but not enable EdgeZone feature gate flag",
-		cluster: createValidCluster(),
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			err := tc.cluster.validateClusterSpec(nil)
+			if tc.wantErr {
+				g.Expect(err).NotTo(BeNil())
+			} else {
+				g.Expect(err).To(BeNil())
+			}
+		})
 	}
-
-	testCase.cluster.Spec.ExtendedLocation = &ExtendedLocationSpec{
-		Name: "rr4",
-		Type: "EdgeZone",
-	}
-
-	t.Run(testCase.name, func(t *testing.T) {
-		g := NewWithT(t)
-		err := testCase.cluster.validateClusterSpec(nil)
-		g.Expect(err).NotTo(BeNil())
-	})
 }
