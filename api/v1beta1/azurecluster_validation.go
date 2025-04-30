@@ -231,7 +231,6 @@ func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, f
 		requiredSubnetRoles["control-plane"] = false
 	}
 	clusterSubnet := false
-	numberofClusterSubnets := 0
 	for i, subnet := range subnets {
 		if err := validateSubnetName(subnet.Name, fldPath.Index(i).Child("name")); err != nil {
 			allErrs = append(allErrs, err)
@@ -242,7 +241,6 @@ func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, f
 		subnetNames[subnet.Name] = true
 		if subnet.Role == SubnetCluster {
 			clusterSubnet = true
-			numberofClusterSubnets++
 		} else {
 			for role := range requiredSubnetRoles {
 				if role == string(subnet.Role) {
@@ -251,10 +249,10 @@ func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, f
 			}
 		}
 
-		for _, rule := range subnet.SecurityGroup.SecurityRules {
+		for j, rule := range subnet.SecurityGroup.SecurityRules {
 			if err := validateSecurityRule(
 				rule,
-				fldPath.Index(i).Child("securityGroup").Child("securityRules").Index(i),
+				fldPath.Index(i).Child("securityGroup").Child("securityRules").Index(j),
 			); err != nil {
 				allErrs = append(allErrs, err...)
 			}
@@ -596,7 +594,7 @@ func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancer
 
 	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Invalid(apiServerLBPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
-			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+			fmt.Sprintf("API Server load balancer idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLBIdleTimeoutInMinutes)))
 	}
 
 	return allErrs
@@ -629,7 +627,7 @@ func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBala
 
 	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
-			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLBIdleTimeoutInMinutes)))
 	}
 
 	return allErrs
@@ -651,7 +649,7 @@ func validateClassSpecForControlPlaneOutboundLB(lb *LoadBalancerClassSpec, apise
 
 		if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
-				fmt.Sprintf("Control plane outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+				fmt.Sprintf("Control plane outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLBIdleTimeoutInMinutes)))
 		}
 	}
 
