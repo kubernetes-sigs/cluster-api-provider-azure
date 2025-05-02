@@ -123,7 +123,24 @@ func getArtifactsFolder() string {
 func getClusterctlConfigPath() string {
 	config := os.Getenv("CLUSTERCTL_CONFIG")
 	if config == "" {
-		return path.Join(getArtifactsFolder(), "repository", "clusterctl-config.yaml")
+		config = path.Join(getArtifactsFolder(), "repository", "clusterctl-config.yaml")
+	}
+
+	if _, err := os.Stat(config); os.IsNotExist(err) {
+		// If the file does not exist, create it and the directory structure
+		if err := os.MkdirAll(filepath.Dir(config), 0750); err != nil {
+			fmt.Printf("Error creating directory: %v\n", err)
+			return ""
+		}
+		file, err := os.Create(filepath.Clean(config))
+		if err != nil {
+			fmt.Printf("Error creating file: %v\n", err)
+			return ""
+		}
+		if err = file.Close(); err != nil {
+			fmt.Printf("Error closing file: %v\n", err)
+			return ""
+		}
 	}
 
 	return config
