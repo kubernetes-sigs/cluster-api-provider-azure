@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.23.8
 
-require sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250416152108-4eeaa5719065
+require sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250429160156-647a1b741bc8
 
 require (
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -27,7 +27,7 @@ require (
 	k8s.io/apimachinery v0.32.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
-	sigs.k8s.io/controller-tools v0.17.0 // indirect
+	sigs.k8s.io/controller-tools v0.17.3 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
