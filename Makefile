@@ -146,7 +146,7 @@ SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 # Define Docker related variables. Releases should modify and double check these vars.
-ifeq (,$(shell command -v gcloud))
+ifneq (,$(shell command -v gcloud))
     REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
 else
     REGISTRY ?= localhost:5000
