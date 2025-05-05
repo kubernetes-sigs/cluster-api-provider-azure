@@ -42,6 +42,7 @@ import (
 type MockLBScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockLBScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockLBScopeMockRecorder is the mock recorder for MockLBScope.

@@ -41,6 +41,7 @@ import (
 type MockPrivateEndpointScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockPrivateEndpointScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockPrivateEndpointScopeMockRecorder is the mock recorder for MockPrivateEndpointScope.
