@@ -40,12 +40,26 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - ${AZURE_CP_SUBNET_CIDR}
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - ${AZURE_NODE_SUBNET_CIDR}
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - ${AZURE_VNET_CIDR}
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -453,6 +467,8 @@ spec:
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
   - bash -c /tmp/containerd-config.sh
+  - echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+    >> /etc/hosts
   - bash -c /tmp/oot-cred-provider.sh
   - bash -c /tmp/kubeadm-bootstrap.sh
 ---

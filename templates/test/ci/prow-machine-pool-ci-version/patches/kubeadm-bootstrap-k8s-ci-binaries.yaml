@@ -97,12 +97,6 @@
         curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
         chmod 644 /var/lib/kubelet/credential-provider-config.yaml
       fi
-- op: test
-  path: /spec/preKubeadmCommands
-  value: null
-- op: add
-  path: /spec/preKubeadmCommands
-  value: []
 - op: add
   path: /spec/preKubeadmCommands/-
   value:

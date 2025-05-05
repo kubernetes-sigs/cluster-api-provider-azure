@@ -35,6 +35,64 @@ patches:
 - path: ../patches/windows-containerd-labels.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/apiServerLB
+      value:
+        frontendIPs:
+        - name: ${CLUSTER_NAME}-api-lb
+          publicIP:
+            dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+            name: ${CLUSTER_NAME}-api-lb
+        - name: ${CLUSTER_NAME}-internal-lb-private-ip
+          privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/vnet/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/vnet/cidrBlocks/-
+      value: ${AZURE_VNET_CIDR}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/subnets/0/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/subnets/0/cidrBlocks/-
+      value: ${AZURE_CP_SUBNET_CIDR}
+- target:
+    kind: AzureCluster
+  patch: |-
+    - op: add
+      path: /spec/networkSpec/subnets/1/cidrBlocks
+      value: []
+    - op: add
+      path: /spec/networkSpec/subnets/1/cidrBlocks/-
+      value: ${AZURE_NODE_SUBNET_CIDR}
+- target:
+    kind: KubeadmConfig
+    name: .*-mp-0
+  patch: |-
+    - op: add
+      path: /spec/preKubeadmCommands
+      value: []
+    - op: add
+      path: /spec/preKubeadmCommands/-
+      value: echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+- target:
+    kind: KubeadmConfig
+    name: .*-mp-win
+  patch: |-
+    - op: add
+      path: /spec/preKubeadmCommands/-
+      value:
+        powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts' -Value '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
 
 sortOptions:
   order: fifo

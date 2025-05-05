@@ -40,12 +40,26 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - ${AZURE_CP_SUBNET_CIDR}
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - ${AZURE_NODE_SUBNET_CIDR}
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - ${AZURE_VNET_CIDR}
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -424,6 +438,8 @@ spec:
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
       name: '{{ ds.meta_data["local_hostname"] }}'
   preKubeadmCommands:
+  - echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+    >> /etc/hosts
   - bash -c /tmp/oot-cred-provider.sh
   - bash -c /tmp/kubeadm-bootstrap.sh
 ---
@@ -569,6 +585,8 @@ spec:
   - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
+  - powershell -Command "Add-Content -Path 'C:\\Windows\\System32\\drivers\\etc\\hosts'
+    -Value '${AZURE_INTERNAL_LB_PRIVATE_IP} ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'"
   - powershell C:/replace-k8s-binaries.ps1
   - powershell C:/oot-cred-provider.ps1
   users:
