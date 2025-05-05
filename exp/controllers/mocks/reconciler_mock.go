@@ -36,6 +36,7 @@ import (
 type MockReconciler struct {
 	ctrl     *gomock.Controller
 	recorder *MockReconcilerMockRecorder
+	isgomock struct{}
 }
 
 // MockReconcilerMockRecorder is the mock recorder for MockReconciler.
@@ -56,29 +57,29 @@ func (m *MockReconciler) EXPECT() *MockReconcilerMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockReconciler) Delete(arg0 context.Context) error {
+func (m *MockReconciler) Delete(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0)
+	ret := m.ctrl.Call(m, "Delete", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockReconcilerMockRecorder) Delete(arg0 any) *gomock.Call {
+func (mr *MockReconcilerMockRecorder) Delete(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockReconciler)(nil).Delete), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockReconciler)(nil).Delete), ctx)
 }
 
 // Reconcile mocks base method.
-func (m *MockReconciler) Reconcile(arg0 context.Context) error {
+func (m *MockReconciler) Reconcile(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reconcile", arg0)
+	ret := m.ctrl.Call(m, "Reconcile", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Reconcile indicates an expected call of Reconcile.
-func (mr *MockReconcilerMockRecorder) Reconcile(arg0 any) *gomock.Call {
+func (mr *MockReconcilerMockRecorder) Reconcile(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
 }

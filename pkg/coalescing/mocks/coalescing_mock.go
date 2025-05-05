@@ -36,6 +36,7 @@ import (
 type MockReconcileCacher struct {
 	ctrl     *gomock.Controller
 	recorder *MockReconcileCacherMockRecorder
+	isgomock struct{}
 }
 
 // MockReconcileCacherMockRecorder is the mock recorder for MockReconcileCacher.

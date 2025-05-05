@@ -37,6 +37,7 @@ import (
 type MockTagScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockTagScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockTagScopeMockRecorder is the mock recorder for MockTagScope.

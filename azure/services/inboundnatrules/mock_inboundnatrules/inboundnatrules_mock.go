@@ -40,6 +40,7 @@ import (
 type MockInboundNatScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockInboundNatScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockInboundNatScopeMockRecorder is the mock recorder for MockInboundNatScope.

@@ -41,6 +41,7 @@ import (
 type MockNatGatewayScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockNatGatewayScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockNatGatewayScopeMockRecorder is the mock recorder for MockNatGatewayScope.

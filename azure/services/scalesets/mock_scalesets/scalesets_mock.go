@@ -41,6 +41,7 @@ import (
 type MockScaleSetScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockScaleSetScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockScaleSetScopeMockRecorder is the mock recorder for MockScaleSetScope.

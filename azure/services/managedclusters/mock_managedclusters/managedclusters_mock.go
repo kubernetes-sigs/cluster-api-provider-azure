@@ -44,6 +44,7 @@ import (
 type MockManagedClusterScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagedClusterScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockManagedClusterScopeMockRecorder is the mock recorder for MockManagedClusterScope.

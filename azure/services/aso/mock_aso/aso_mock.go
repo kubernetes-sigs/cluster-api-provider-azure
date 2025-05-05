@@ -42,6 +42,7 @@ import (
 type MockReconciler[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller
 	recorder *MockReconcilerMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockReconcilerMockRecorder is the mock recorder for MockReconciler.
@@ -108,6 +109,7 @@ func (mr *MockReconcilerMockRecorder[T]) PauseResource(ctx, resource, serviceNam
 type MockTagsGetterSetter[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller
 	recorder *MockTagsGetterSetterMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockTagsGetterSetterMockRecorder is the mock recorder for MockTagsGetterSetter.
@@ -171,6 +173,7 @@ func (mr *MockTagsGetterSetterMockRecorder[T]) SetTags(resource, tags any) *gomo
 type MockPatcher struct {
 	ctrl     *gomock.Controller
 	recorder *MockPatcherMockRecorder
+	isgomock struct{}
 }
 
 // MockPatcherMockRecorder is the mock recorder for MockPatcher.
@@ -208,6 +211,7 @@ func (mr *MockPatcherMockRecorder) ExtraPatches() *gomock.Call {
 type MockScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockScopeMockRecorder is the mock recorder for MockScope.

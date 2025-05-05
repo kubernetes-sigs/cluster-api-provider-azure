@@ -40,6 +40,7 @@ import (
 type MockVnetPeeringScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockVnetPeeringScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockVnetPeeringScopeMockRecorder is the mock recorder for MockVnetPeeringScope.
