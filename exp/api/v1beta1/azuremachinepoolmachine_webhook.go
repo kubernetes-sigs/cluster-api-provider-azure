@@ -29,8 +29,10 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureMachinePoolMachineWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(ampm).
+		WithValidator(w).
 		Complete()
 }
 
