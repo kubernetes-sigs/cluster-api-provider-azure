@@ -27,8 +27,10 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureManagedCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureManagedClusterWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithValidator(w).
 		Complete()
 }
 
