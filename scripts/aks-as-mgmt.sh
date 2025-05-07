@@ -57,6 +57,12 @@ export SKIP_AKS_CREATE="${SKIP_AKS_CREATE:-false}"
 
 main() {
 
+  # if using SKIP_AKS_CREATE=true, skip creating the AKS cluster
+  if [[ "${SKIP_AKS_CREATE}" == "true" ]]; then
+    echo "Skipping AKS cluster creation"
+    return
+  fi
+
   echo "--------------------------------"
   echo "MGMT_CLUSTER_NAME:                        $MGMT_CLUSTER_NAME"
   echo "AKS_RESOURCE_GROUP:                       $AKS_RESOURCE_GROUP"
@@ -89,12 +95,6 @@ main() {
   echo "AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY:   ${AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY:-}"
   echo "AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID: ${AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID:-}"
   echo "--------------------------------"
-
-  # if using SKIP_AKS_CREATE=true, skip creating the AKS cluster
-  if [[ "${SKIP_AKS_CREATE}" == "true" ]]; then
-    echo "Skipping AKS cluster creation"
-    return
-  fi
 
   create_aks_cluster
   set_env_variables
