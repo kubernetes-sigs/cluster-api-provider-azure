@@ -800,6 +800,14 @@ kind-reset: $(KIND) ## Destroys the "capz" and "capz-e2e" kind clusters.
 	$(KIND) delete cluster --name=$(KIND_CLUSTER_NAME) || true
 	$(KIND) delete cluster --name=capz-e2e || true
 
+.PHONY: aks-cleanup
+aks-cleanup: $(KUBECTL) ## Deletes deployments, secrets and service-accounts from existing AKS as mgmt cluster
+	@ASO_CRDS_PATH=$(ASO_CRDS_PATH) \
+	CRD_ROOT=$(CRD_ROOT) \
+	DELETE_CRDS=$${DELETE_CRDS:-"false"} \
+	MGMT_CLUSTER_NAME=$${MGMT_CLUSTER_NAME:-} \
+	./scripts/reuse-existing-aks-cluster.sh
+
 ## --------------------------------------
 ## Tooling Binaries
 ## --------------------------------------
