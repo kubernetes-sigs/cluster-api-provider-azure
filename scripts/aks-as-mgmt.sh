@@ -226,14 +226,22 @@ create_aks_cluster() {
   export MANAGED_IDENTITY_RG
   echo "mgmt resource identity resource group: ${MANAGED_IDENTITY_RG}"
 
-  echo "assigning contributor role to the service principal"
+
+  echo "assigning contributor role to managed identity over the $AZURE_SUBSCRIPTION_ID subscription"
+  # Note: Even though --assignee-principal-type ServicePrincipal is specified, this does not mean that the role assignment is for a secret of type service principal.
+  # Creating a role assignment for a managed identity using other assignee-principal-type from (Group, User, ForeignGroup) will lead to RBAC error.
+  # To avoid RBAC error, we need to assign the role to the managed identity using the --assignee-principal-type ServicePrincipal.
+  # refer: https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting?tabs=bicep#symptom---assigning-a-role-to-a-new-principal-sometimes-fails
   until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Contributor" \
   --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none \
   --only-show-errors; do
-    echo "retrying to assign role to the service principal"
+    echo "retrying to assign contributor role"
     sleep 5
   done
 
+  # Set the ASO_CREDENTIAL_SECRET_MODE to podidentity to
+  # use the client ID of the managed identity created by AKS for authentication
+  # refer: https://github.com/Azure/azure-service-operator/blob/190edf60f1d84da7ae4ee5c4df9806068c0cd982/v2/internal/identity/credential_provider.go#L279-L301
   echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
   ASO_CREDENTIAL_SECRET_MODE="podidentity"
 }
