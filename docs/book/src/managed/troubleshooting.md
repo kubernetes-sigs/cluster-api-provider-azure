@@ -31,7 +31,7 @@ spec:
     metadata: {}
     spec:
       bootstrap:
-        dataSecretName: ""
+        dataSecretName: "unused"
       clusterName: capz-managed-aks
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -68,7 +68,7 @@ spec:
     metadata: {}
     spec:
       bootstrap:
-        dataSecretName: ""
+        dataSecretName: "unused"
       clusterName: capz-managed-aks
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
