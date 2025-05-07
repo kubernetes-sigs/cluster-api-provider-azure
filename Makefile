@@ -781,7 +781,7 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
 
 .PHONY: aks-reset
-aks-reset: $(KUBECTL) ## Deletes the resource group and the associated AKS cluster created by aks-create.
+aks-reset: $(KUBECTL) ## Deletes the resource group and the associated AKS clusters listed under allowed_contexts in ./tilt-settings.yaml .
 	./scripts/aks-reset.sh
 
 .PHONY: tilt-up
