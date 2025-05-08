@@ -23,7 +23,7 @@ metadata:
   name: "${CLUSTER_NAME}-pool2"
 spec:
   resources:
-  - apiVersion: "containerservice.azure.com/v1api20231001"
+  - apiVersion: "containerservice.azure.com/v1api20240901"
     kind: ManagedClustersAgentPool
     metadata:
       name: ${CLUSTER_NAME}-pool2

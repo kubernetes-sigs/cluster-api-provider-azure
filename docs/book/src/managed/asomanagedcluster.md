@@ -78,7 +78,7 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   resources:
-  - apiVersion: containerservice.azure.com/v1api20231001
+  - apiVersion: containerservice.azure.com/v1api20240901
     kind: ManagedCluster
     metadata:
       name: ${CLUSTER_NAME}
