@@ -52,7 +52,7 @@ const (
 	// DefaultLinuxGalleryImageName is the default Linux community gallery image definition.
 	DefaultLinuxGalleryImageName = "capi-ubun2-2404"
 	// DefaultWindowsGalleryImageName is the default Windows community gallery image definition.
-	DefaultWindowsGalleryImageName = "capi-win-2019-containerd"
+	DefaultWindowsGalleryImageName = "capi-win-2025-containerd"
 )
 
 const (
@@ -72,7 +72,7 @@ const (
 const (
 	// DefaultWindowsOsAndVersion is the default Windows Server version to use when
 	// generating default images for Windows nodes.
-	DefaultWindowsOsAndVersion = "windows-2019"
+	DefaultWindowsOsAndVersion = "windows-2025"
 )
 
 const (
