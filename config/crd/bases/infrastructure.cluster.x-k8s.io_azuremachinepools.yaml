@@ -235,6 +235,17 @@ spec:
                     description: 'Deprecated: AcceleratedNetworking should be set
                       in the networkInterfaces field.'
                     type: boolean
+                  additionalCapabilities:
+                    description: AdditionalCapabilities specifies additional capabilities
+                      enabled or disabled on the virtual machine.
+                    properties:
+                      ultraSSDEnabled:
+                        description: |-
+                          UltraSSDEnabled enables or disables Azure UltraSSD capability for the virtual machine.
+                          Defaults to true if Ultra SSD data disks are specified,
+                          otherwise it doesn't set the capability on the VM.
+                        type: boolean
+                    type: object
                   dataDisks:
                     description: DataDisks specifies the list of data disks to be
                       created for a Virtual Machine
