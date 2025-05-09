@@ -44,7 +44,7 @@ spec:
           template: |
             version: ${KUBERNETES_VERSION}
             resources:
-            - apiVersion: containerservice.azure.com/v1api20231001
+            - apiVersion: containerservice.azure.com/v1api20240901
               kind: ManagedCluster
               metadata:
                 name: "{{ .builtin.cluster.name }}"
@@ -74,7 +74,7 @@ spec:
         valueFrom:
           template: |
             resources:
-            - apiVersion: "containerservice.azure.com/v1api20231001"
+            - apiVersion: "containerservice.azure.com/v1api20240901"
               kind: ManagedClustersAgentPool
               metadata:
                 name: "{{ .builtin.cluster.name }}-pool0"
@@ -102,7 +102,7 @@ spec:
         valueFrom:
           template: |
             resources:
-            - apiVersion: containerservice.azure.com/v1api20231001
+            - apiVersion: containerservice.azure.com/v1api20240901
               kind: ManagedClustersAgentPool
               metadata:
                 name: "{{ .builtin.cluster.name }}-pool1"
