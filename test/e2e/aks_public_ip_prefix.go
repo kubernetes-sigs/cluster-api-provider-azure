@@ -113,7 +113,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 			Template: clusterv1.MachineTemplateSpec{
 				Spec: clusterv1.MachineSpec{
 					Bootstrap: clusterv1.Bootstrap{
-						DataSecretName: ptr.To(""),
+						DataSecretName: ptr.To("unused"),
 					},
 					ClusterName: input.Cluster.Name,
 					InfrastructureRef: corev1.ObjectReference{

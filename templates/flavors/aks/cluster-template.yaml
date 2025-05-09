@@ -58,7 +58,7 @@ spec:
     metadata: {}
     spec:
       bootstrap:
-        dataSecretName: ""
+        dataSecretName: "unused"
       clusterName: "${CLUSTER_NAME}"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -89,7 +89,7 @@ spec:
     metadata: {}
     spec:
       bootstrap:
-        dataSecretName: ""
+        dataSecretName: "unused"
       clusterName: "${CLUSTER_NAME}"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
