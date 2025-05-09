@@ -36,6 +36,7 @@ import (
 type MockLogSink struct {
 	ctrl     *gomock.Controller
 	recorder *MockLogSinkMockRecorder
+	isgomock struct{}
 }
 
 // MockLogSinkMockRecorder is the mock recorder for MockLogSink.
@@ -56,84 +57,84 @@ func (m *MockLogSink) EXPECT() *MockLogSinkMockRecorder {
 }
 
 // Enabled mocks base method.
-func (m *MockLogSink) Enabled(arg0 int) bool {
+func (m *MockLogSink) Enabled(level int) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled", arg0)
+	ret := m.ctrl.Call(m, "Enabled", level)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Enabled indicates an expected call of Enabled.
-func (mr *MockLogSinkMockRecorder) Enabled(arg0 any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) Enabled(level any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockLogSink)(nil).Enabled), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockLogSink)(nil).Enabled), level)
 }
 
 // Error mocks base method.
-func (m *MockLogSink) Error(arg0 error, arg1 string, arg2 ...any) {
+func (m *MockLogSink) Error(err error, msg string, keysAndValues ...any) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{err, msg}
+	for _, a := range keysAndValues {
 		varargs = append(varargs, a)
 	}
 	m.ctrl.Call(m, "Error", varargs...)
 }
 
 // Error indicates an expected call of Error.
-func (mr *MockLogSinkMockRecorder) Error(arg0, arg1 any, arg2 ...any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) Error(err, msg any, keysAndValues ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{err, msg}, keysAndValues...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockLogSink)(nil).Error), varargs...)
 }
 
 // Info mocks base method.
-func (m *MockLogSink) Info(arg0 int, arg1 string, arg2 ...any) {
+func (m *MockLogSink) Info(level int, msg string, keysAndValues ...any) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{level, msg}
+	for _, a := range keysAndValues {
 		varargs = append(varargs, a)
 	}
 	m.ctrl.Call(m, "Info", varargs...)
 }
 
 // Info indicates an expected call of Info.
-func (mr *MockLogSinkMockRecorder) Info(arg0, arg1 any, arg2 ...any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) Info(level, msg any, keysAndValues ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{level, msg}, keysAndValues...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogSink)(nil).Info), varargs...)
 }
 
 // Init mocks base method.
-func (m *MockLogSink) Init(arg0 logr.RuntimeInfo) {
+func (m *MockLogSink) Init(info logr.RuntimeInfo) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Init", arg0)
+	m.ctrl.Call(m, "Init", info)
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockLogSinkMockRecorder) Init(arg0 any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) Init(info any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockLogSink)(nil).Init), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockLogSink)(nil).Init), info)
 }
 
 // WithName mocks base method.
-func (m *MockLogSink) WithName(arg0 string) logr.LogSink {
+func (m *MockLogSink) WithName(name string) logr.LogSink {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", arg0)
+	ret := m.ctrl.Call(m, "WithName", name)
 	ret0, _ := ret[0].(logr.LogSink)
 	return ret0
 }
 
 // WithName indicates an expected call of WithName.
-func (mr *MockLogSinkMockRecorder) WithName(arg0 any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) WithName(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockLogSink)(nil).WithName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockLogSink)(nil).WithName), name)
 }
 
 // WithValues mocks base method.
-func (m *MockLogSink) WithValues(arg0 ...any) logr.LogSink {
+func (m *MockLogSink) WithValues(keysAndValues ...any) logr.LogSink {
 	m.ctrl.T.Helper()
 	varargs := []any{}
-	for _, a := range arg0 {
+	for _, a := range keysAndValues {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "WithValues", varargs...)
@@ -142,7 +143,7 @@ func (m *MockLogSink) WithValues(arg0 ...any) logr.LogSink {
 }
 
 // WithValues indicates an expected call of WithValues.
-func (mr *MockLogSinkMockRecorder) WithValues(arg0 ...any) *gomock.Call {
+func (mr *MockLogSinkMockRecorder) WithValues(keysAndValues ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockLogSink)(nil).WithValues), arg0...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockLogSink)(nil).WithValues), keysAndValues...)
 }
