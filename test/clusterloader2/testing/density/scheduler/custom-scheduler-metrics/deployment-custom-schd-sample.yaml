@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Name}}
+  labels:
+    group: test-deployment
+spec:
+  replicas: {{.Replicas}}
+  selector:
+    matchLabels:
+      group: test-pod-default
+  template:
+    metadata:
+      labels:
+        group: test-pod-default
+    spec:
+      schedulerName: default-scheduler
+      containers:
+      - image: registry.k8s.io/pause:3.9
+        name: {{.Name}}
