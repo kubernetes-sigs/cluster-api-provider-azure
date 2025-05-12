@@ -74,6 +74,9 @@ jobs:
                     fi
 
                     if [[ "$current" != "$latest" ]]; then
+                    echo "$tool"
+                    echo "$current"
+                    echo "$latest"
                     branch="update-tool-$tool-$latest"
                     echo "Updating $tool from $current to $latest"
                     git checkout -b "$branch"
