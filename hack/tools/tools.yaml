@@ -1,0 +1,15 @@
+tools:
+  controller-gen: v0.16.1
+  conversion-gen: v0.31.0
+  kustomize: v5.4.1
+  azwi: v1.2.2
+  mockgen: v0.4.0
+  release-notes: v0.18.0
+  kpromo: v4.0.5
+  go-apidiff: v0.8.2
+  kubectl: v1.29.10
+  helm: v3.14.4
+  yq: v4.35.2
+  kind: v0.27.0
+  codespell: 2.2.6
+  setup-envtest: release-0.19

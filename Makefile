@@ -46,20 +46,27 @@ CURL_RETRIES=3
 
 # Directories.
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+
+# Tools directory
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
+TOOLS_YAML := $(TOOLS_DIR)/tools.yaml
+ADDONS_DIR := templates/addons
+
+# Templates directory
 TEMPLATES_DIR := $(ROOT_DIR)/templates
-BIN_DIR := $(abspath $(ROOT_DIR)/bin)
-EXP_DIR := exp
-GO_INSTALL = ./scripts/go_install.sh
 E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
+AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
 KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 KUBETEST_WINDOWS_CONFIG ?= upstream-windows.yaml
 KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/$(KUBETEST_WINDOWS_CONFIG))
 KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/)
-AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
-ADDONS_DIR := templates/addons
-CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
+
+# Bin directory
+BIN_DIR := $(abspath $(ROOT_DIR)/bin)
+
+# Exp directory
+EXP_DIR := exp
 
 # use the project local tool binaries first
 export PATH := $(TOOLS_BIN_DIR):$(PATH)
@@ -69,16 +76,22 @@ ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azu
   OUTPUT_BASE := --output-base=$(ROOT_DIR)
 endif
 
+define yaml-ver
+$(shell yq '.tools.$(1)' $(TOOLS_YAML))
+endef
+
 # Binaries.
-CONTROLLER_GEN_VER := v0.16.1
+CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
+
+CONTROLLER_GEN_VER := $(call yaml-ver,controller-gen)
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
-CONVERSION_GEN_VER := v0.31.0
+CONVERSION_GEN_VER := $(call yaml-ver,conversion-gen)
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v2)
+ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v2) # Evnsubst is not updated via hack/tools/tools.yaml
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
@@ -86,27 +99,27 @@ GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep 
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-KUSTOMIZE_VER := v5.4.1
+KUSTOMIZE_VER := $(call yaml-ver,kustomize)
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
 
-AZWI_VER := v1.2.2
+AZWI_VER := $(call yaml-ver,azwi)
 AZWI_BIN := azwi
 AZWI := $(TOOLS_BIN_DIR)/$(AZWI_BIN)-$(AZWI_VER)
 
-MOCKGEN_VER := v0.4.0
+MOCKGEN_VER := $(call yaml-ver,mockgen)
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 
-RELEASE_NOTES_VER := v0.18.0
+RELEASE_NOTES_VER := $(call yaml-ver,release-notes)
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-KPROMO_VER := v4.0.5
+KPROMO_VER := $(call yaml-ver,kpromo)
 KPROMO_BIN := kpromo
 KPROMO := $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
 
-GO_APIDIFF_VER := v0.8.2
+GO_APIDIFF_VER := $(call yaml-ver,go-apidiff)
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
@@ -114,15 +127,15 @@ GINKGO_VER := $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
-KUBECTL_VER := v1.29.10
+KUBECTL_VER := $(call yaml-ver,kubectl)
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
-HELM_VER := v3.14.4
+HELM_VER := $(call yaml-ver,helm)
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-YQ_VER := v4.35.2
+YQ_VER := $(call yaml-ver,yq)
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
@@ -130,12 +143,12 @@ KIND_VER := $(shell go list -m -f '{{.Version}}' sigs.k8s.io/kind)
 KIND_BIN := kind
 KIND :=  $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
-CODESPELL_VER := 2.2.6
+CODESPELL_VER := $(call yaml-ver,codespell)
 CODESPELL_BIN := codespell
 CODESPELL_DIST_DIR := codespell_dist
 CODESPELL := $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/$(CODESPELL_BIN)
 
-SETUP_ENVTEST_VER := release-0.19
+SETUP_ENVTEST_VER := $(call yaml-ver,setup-envtest)
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
@@ -813,6 +826,7 @@ aks-cleanup: $(KUBECTL) ## Deletes deployments, secrets and service-accounts fro
 ## --------------------------------------
 
 ##@ Tooling Binaries:
+GO_INSTALL = ./scripts/go_install.sh
 
 conversion-verifier: $(CONVERSION_VERIFIER) go.mod go.sum ## Build a local copy of CAPI's conversion verifier.
 controller-gen: $(CONTROLLER_GEN) ## Build a local copy of controller-gen.
