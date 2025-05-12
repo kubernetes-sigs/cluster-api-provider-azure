@@ -164,9 +164,11 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	Logf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
-		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		Lister:               input.ClusterProxy.GetClient(),
+		KubeConfigPath:       input.ClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            input.Namespace.Name,
+		LogPath:              filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
 	})
 
 	if input.Cluster == nil {
@@ -189,9 +191,10 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		deleteTimeoutConfig = "wait-delete-cluster-aks"
 	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-		Client:         input.ClusterProxy.GetClient(),
-		Namespace:      input.Namespace.Name,
-		ArtifactFolder: input.ArtifactFolder,
+		ClusterProxy:         input.ClusterProxy,
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            input.Namespace.Name,
+		ArtifactFolder:       input.ArtifactFolder,
 	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
 
 	Logf("Deleting namespace used for hosting the %q test spec", input.SpecName)
@@ -227,7 +230,7 @@ func redactLogs() {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	//nolint:gosec // Ignore warning about running a command constructed from user input
-	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
+	cmd := exec.Command(e2eConfig.MustGetVariable(RedactLogScriptPath))
 	if err := cmd.Run(); err != nil {
 		LogWarningf("Redact logs command failed: %v", err)
 	}
@@ -363,7 +366,7 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 			Flavor:                   clusterctl.DefaultFlavor,
 			Namespace:                "default",
 			ClusterName:              "cluster",
-			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+			KubernetesVersion:        e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion),
 			ControlPlaneMachineCount: ptr.To[int64](1),
 			WorkerMachineCount:       ptr.To[int64](1),
 		},
