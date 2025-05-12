@@ -63,9 +63,7 @@ jobs:
                     repo="${repos[$tool]}"
                     current=$(yq ".tools.$tool" $file)
 
-                    if [[ "$repo" == "setup-envtest" ]]; then
-                    latest=$(get_setup_envtest_latest)
-                    elif [[ "$tool" == "kubectl" ]]; then
+                    if [[ "$tool" == "kubectl" ]]; then
                     latest="$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"
                     elif [[ "$tool" == "kustomize" ]]; then
                     latest=$(get_kustomize_latest_release)
