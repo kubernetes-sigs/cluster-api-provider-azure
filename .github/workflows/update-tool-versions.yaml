@@ -43,7 +43,6 @@ jobs:
                 declare -A repos=(
                     [controller-gen]="kubernetes-sigs/controller-tools"
                     [conversion-gen]="kubernetes/code-generator"
-                    [envsubst]="drone/envsubst"
                     [golangci-lint]="golangci/golangci-lint"
                     [kustomize]="kubernetes-sigs/kustomize"
                     [azwi]="Azure/azure-workload-identity"
@@ -68,7 +67,7 @@ jobs:
                     if [[ "$repo" == "setup-envtest" ]]; then
                     latest=$(get_setup_envtest_latest)
                     elif [[ "$tool" == "kubectl" ]]; then
-                    latest="v$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"
+                    latest="$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"
                     else
                     latest=$(get_latest_release $repo)
                     fi
@@ -80,13 +79,14 @@ jobs:
                     git config user.name "github-actions[bot]"
                     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                     git add "$file"
-                    git commit -m "chore: bump $tool to $latest"
+                    git commit -m "dependency:: bump $tool to $latest"
                     git push origin "$branch"
 
                     gh pr create \
-                        --title "chore: bump $tool to $latest" \
+                        --title "dependency:: bump $tool to $latest" \
                         --body "This PR updates \`$tool\` from \`$current\` to \`$latest\`." \
                         --base main \
+                        --label "dependency, area/dependencies, release-note/none, ok-to-test" \
                         --head "$branch"
                     else
                     echo "$tool is already up to date ($current)"

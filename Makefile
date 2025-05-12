@@ -91,7 +91,7 @@ CONVERSION_GEN_VER := $(call yaml-ver,conversion-gen)
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := $(call yaml-ver,envsubst)
+ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v2) # Evnsubst is not updated via hack/tools/tools.yaml
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 

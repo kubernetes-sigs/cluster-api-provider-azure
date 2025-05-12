@@ -1,7 +1,6 @@
 tools:
   controller-gen: v0.16.1
   conversion-gen: v0.31.0
-  envsubst: v2.0.0-20210730161058-179042472c46
   kustomize: v5.4.1
   azwi: v1.2.2
   mockgen: v0.4.0
