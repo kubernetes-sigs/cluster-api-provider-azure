@@ -106,7 +106,7 @@ func (s *Service) GetDefaultWindowsImage(ctx context.Context, _, k8sVersion, run
 		if len(match) != 2 {
 			return nil, errors.Errorf("unsupported osAndVersion %s", osAndVersion)
 		}
-		imageName = strings.Replace(imageName, "2019", match[1], 1)
+		imageName = strings.Replace(imageName, "2025", match[1], 1)
 	}
 
 	// Use the Azure Marketplace for specific older versions, to keep "clusterctl upgrade" from rolling new machines.
