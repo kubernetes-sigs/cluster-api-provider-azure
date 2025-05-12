@@ -269,7 +269,9 @@ func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (pa
 	if s.AdditionalCapabilities != nil {
 		// Set UltraSSDEnabled if a specific value is set on the spec for it.
 		if s.AdditionalCapabilities.UltraSSDEnabled != nil {
-			vmss.Properties.AdditionalCapabilities.UltraSSDEnabled = s.AdditionalCapabilities.UltraSSDEnabled
+			vmss.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{
+				UltraSSDEnabled: s.AdditionalCapabilities.UltraSSDEnabled,
+			}
 		}
 	}
 

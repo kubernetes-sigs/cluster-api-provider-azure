@@ -200,6 +200,7 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		PublicLBName:                 m.OutboundLBName(infrav1.Node),
 		PublicLBAddressPoolName:      m.OutboundPoolName(infrav1.Node),
 		AcceleratedNetworking:        m.AzureMachinePool.Spec.Template.NetworkInterfaces[0].AcceleratedNetworking,
+		AdditionalCapabilities:       m.AzureMachinePool.Spec.Template.AdditionalCapabilities,
 		Identity:                     m.AzureMachinePool.Spec.Identity,
 		UserAssignedIdentities:       m.AzureMachinePool.Spec.UserAssignedIdentities,
 		DiagnosticsProfile:           m.AzureMachinePool.Spec.Template.Diagnostics,
