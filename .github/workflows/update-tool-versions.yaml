@@ -60,7 +60,6 @@ jobs:
                 )
 
                 for tool in "${!repos[@]}"; do
-                    branch="update-tool-$tool"
                     repo="${repos[$tool]}"
                     current=$(yq ".tools.$tool" $file)
 
@@ -73,6 +72,7 @@ jobs:
                     fi
 
                     if [[ "$current" != "$latest" ]]; then
+                    branch="update-tool-$tool-$latest"
                     echo "Updating $tool from $current to $latest"
                     git checkout -b "$branch"
                     yq -i ".tools.$tool = \"$latest\"" "$file"
@@ -80,7 +80,7 @@ jobs:
                     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                     git add "$file"
                     git commit -m "dependency:: bump $tool to $latest"
-                    git push origin "$branch"
+                    git push origin "$branch" --force
 
                     gh pr create \
                         --title "dependency:: bump $tool to $latest" \
