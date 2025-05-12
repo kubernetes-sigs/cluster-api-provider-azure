@@ -35,28 +35,28 @@ jobs:
                     curl -s "https://api.github.com/repos/$repo/releases/latest" | jq -r .tag_name
                 }
 
-                get_setup_envtest_latest() {
-                    curl -s https://api.github.com/repos/kubernetes-sigs/controller-runtime/git/matching-refs/tags/setup-envtest |
-                    jq -r '.[-1].ref' | sed 's|refs/tags/setup-envtest/||' | xargs -I{} echo release-{}
+                get_kustomize_latest_release() {
+                    local repo=$1
+                    curl -s https://api.github.com/repos/$repo/releases/latest | jq -r '.tag_name' | sed 's|.*/||'
+                }
+
+                get_conversion_gen_latest_release() {
+                    local repo=$1
+                    curl -s "https://api.github.com/repos/kubernetes/code-generator/tags?per_page=100" | jq -r '.[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |sort -V | tail -n1
                 }
 
                 declare -A repos=(
                     [controller-gen]="kubernetes-sigs/controller-tools"
                     [conversion-gen]="kubernetes/code-generator"
-                    [golangci-lint]="golangci/golangci-lint"
                     [kustomize]="kubernetes-sigs/kustomize"
                     [azwi]="Azure/azure-workload-identity"
                     [mockgen]="golang/mock"
                     [release-notes]="kubernetes/release"
-                    [kpromo]="kubernetes-sigs/kpromo"
-                    [go-apidiff]="google/go-apidiff"
-                    [ginkgo]="onsi/ginkgo"
                     [kubectl]="kubernetes/kubernetes"
                     [helm]="helm/helm"
                     [yq]="mikefarah/yq"
                     [kind]="kubernetes-sigs/kind"
                     [codespell]="codespell-project/codespell"
-                    [setup-envtest]="setup-envtest"
                 )
 
                 for tool in "${!repos[@]}"; do
@@ -67,6 +67,10 @@ jobs:
                     latest=$(get_setup_envtest_latest)
                     elif [[ "$tool" == "kubectl" ]]; then
                     latest="$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"
+                    elif [[ "$tool" == "kustomize" ]]; then
+                    latest=$(get_kustomize_latest_release)
+                    elif [[ "$tool" == "conversion-gen" ]]; then
+                    latest=$(get_conversion_gen_latest_release)
                     else
                     latest=$(get_latest_release $repo)
                     fi

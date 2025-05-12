@@ -95,7 +95,7 @@ ENVSUBST_VER := $(shell go list -m -f '{{.Version}}' github.com/drone/envsubst/v
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
 
-GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
+GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //') # golangci-lint is not updated via hack/tools/tools.yaml
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
@@ -115,11 +115,13 @@ RELEASE_NOTES_VER := $(call yaml-ver,release-notes)
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-KPROMO_VER := $(call yaml-ver,kpromo)
+# TODO: update kpromo using hack/tools/tools.yaml
+KPROMO_VER := v4.0.5
 KPROMO_BIN := kpromo
 KPROMO := $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
 
-GO_APIDIFF_VER := $(call yaml-ver,go-apidiff)
+# TODO: update go-apidiff using hack/tools/tools.yaml
+GO_APIDIFF_VER := v0.8.2
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
@@ -148,7 +150,8 @@ CODESPELL_BIN := codespell
 CODESPELL_DIST_DIR := codespell_dist
 CODESPELL := $(TOOLS_BIN_DIR)/$(CODESPELL_DIST_DIR)/$(CODESPELL_BIN)
 
-SETUP_ENVTEST_VER := $(call yaml-ver,setup-envtest)
+# TODO: update setup-envtest using hack/tools/tools.yaml
+SETUP_ENVTEST_VER := release-0.19
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
