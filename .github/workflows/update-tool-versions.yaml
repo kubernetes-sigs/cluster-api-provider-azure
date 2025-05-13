@@ -66,9 +66,9 @@ jobs:
                     if [[ "$tool" == "kubectl" ]]; then
                     latest="$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"
                     elif [[ "$tool" == "kustomize" ]]; then
-                    latest=$(get_kustomize_latest_release)
+                    latest=$(get_kustomize_latest_release $repo)
                     elif [[ "$tool" == "conversion-gen" ]]; then
-                    latest=$(get_conversion_gen_latest_release)
+                    latest=$(get_conversion_gen_latest_release $repo)
                     else
                     latest=$(get_latest_release $repo)
                     fi
