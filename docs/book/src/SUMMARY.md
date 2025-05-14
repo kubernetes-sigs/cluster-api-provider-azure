@@ -1,7 +1,7 @@
 # Summary
 
 [Introduction](./introduction.md)
-[Getting Started](./getting-started.md)
+[Getting Started](./getting-started-with-aks.md)
 [Roadmap](./roadmap.md)
 - [General Topics](./topics/topics.md)
     - [Azure Service Operator](./topics/aso.md)
@@ -50,6 +50,7 @@
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
         - [AKS as management cluster](./developers/tilt-with-aks-as-mgmt-ilb.md)
+    - [Getting Started with CAPI Operator](./developers/getting-started-with-capi-operator.md)
     - [Releasing](./developers/releasing.md)
     - [Jobs](./developers/jobs.md)
 - [Reference](./reference/reference.md)
