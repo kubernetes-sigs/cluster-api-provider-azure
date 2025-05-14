@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"go.opentelemetry.io/otel"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -109,6 +110,12 @@ const (
 	// E.g. add `"infrastructure.cluster.x-k8s.io/custom-header-UseGPUDedicatedVHD": "true"` annotation to
 	// AzureManagedMachinePool CR to enable creating GPU nodes by the node pool.
 	CustomHeaderPrefix = "infrastructure.cluster.x-k8s.io/custom-header-"
+)
+
+const (
+	// StackAPIVersionProfile is the API version profile to set for ARM clients. See:
+	// https://learn.microsoft.com/en-us/azure-stack/user/azure-stack-profiles-azure-resource-manager-versions?view=azs-2408#overview-of-the-2020-09-01-hybrid-profile
+	StackAPIVersionProfile = "2020-06-01"
 )
 
 var (
@@ -369,6 +376,21 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 		opts.Cloud = cloud.AzureChina
 	case USGovernmentCloudName:
 		opts.Cloud = cloud.AzureGovernment
+	case StackCloudName:
+		cloudEnv, err := azureautorest.EnvironmentFromName(azureEnvironment)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get Azure Stack cloud environment: %w", err)
+		}
+		opts.APIVersion = StackAPIVersionProfile
+		opts.Cloud = cloud.Configuration{
+			ActiveDirectoryAuthorityHost: cloudEnv.ActiveDirectoryEndpoint,
+			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+				cloud.ResourceManager: {
+					Audience: cloudEnv.TokenAudience,
+					Endpoint: cloudEnv.ResourceManagerEndpoint,
+				},
+			},
+		}
 	case "":
 		// No cloud name provided, so leave at defaults.
 	default:
