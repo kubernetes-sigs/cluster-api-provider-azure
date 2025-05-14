@@ -13,28 +13,28 @@
     - `Microsoft.ManagedIdentity`
     - `Microsoft.Authorization`
     - `Microsoft.ResourceHealth` (if the `EXP_AKS_RESOURCE_HEALTH` feature flag is enabled)
-- Install the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
+- The [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
 - A [supported version](https://github.com/kubernetes-sigs/cluster-api-provider-azure#compatibility) of `clusterctl`
 
 ### Setting up your Azure environment
 
   1. Login with the Azure CLI.
 
-   ```bash
+  ```bash
   az login
-   ```
+  ```
 
   2. List your Azure subscriptions.
 
-   ```bash
+  ```bash
   az account list -o table
-   ```
+  ```
 
   3. If more than one account is present, select the account that you want to use.
 
-   ```bash
+  ```bash
   az account set -s <SubscriptionId>
-   ```
+  ```
 
   4. Save your Subscription ID in an environment variable.
 
@@ -61,7 +61,7 @@
   az aks get-credentials --resource-group <resource-group-name> --name <aks-cluster-name>
   ```
 
-  3. Retrieve the OIDC Issuer URL and OIDC issuer URL.
+  3. Retrieve the OIDC Issuer URL.
   ```bash
   az aks show \
   --resource-group <resource-group-name> \
@@ -70,7 +70,7 @@
   ```
   Hold onto the OIDC issuer URL for creating federated credentials.
 
-  4. Create a User Assigned Managed Identity (UAMI) to use for Workload Identity.
+  4. Create a User-Assigned Managed Identity (UAMI) to use for Workload Identity.
   ```bash
   az identity create \
   --name <uami-name> \
@@ -89,7 +89,7 @@
 
   6. Add a Federated Credential to the UAMI
 
-To configure the federated credential for the UAMI, follow the detailed instructions in the [Azure Workload Identity: Federated identity credential for an Azure AD application](https://azure.github.io/azure-workload-identity/docs/topics/federated-identity-credential.html#federated-identity-credential-for-a-user-assigned-managed-identity).
+To configure the federated credential for the UAMI, follow the detailed instructions in [Azure Workload Identity: Federated identity credential for an Azure AD application](https://azure.github.io/azure-workload-identity/docs/topics/federated-identity-credential.html#federated-identity-credential-for-a-user-assigned-managed-identity).
 For CAPZ, the federated credential should be configured for the capz-manager service account in the capz-system namespace, like the below:
 ```bash
 az identity federated-credential create \
@@ -106,8 +106,8 @@ Run the following command to initialize the management cluster with Cluster API 
 
  `clusterctl init --infrastructure azure`
  
- This command sets up the necessary components, including Cluster API Core, CAPZ, and Azure Service Operator (ASO), which is prebundled.
- View the [Cluster API Quick Start: Initialize the management cluster](https://cluster-api.sigs.k8s.io/user/quick-start.html) for more detailed instructions. Ensure you select the "Azure" tabs for Azure-specific guidance. 
+ This command sets up the necessary components, including Cluster API Core, CAPZ, and Azure Service Operator (ASO).
+ View the [Cluster API Quick Start: Initialize the management cluster](https://cluster-api.sigs.k8s.io/user/quick-start.html) documentation for more detailed instructions. Ensure you select the "Azure" tabs for Azure-specific guidance. 
 
   7. Annotate the capz-manager service account in the capz-system namespace with the UAMI's clientId:
   ```bash
