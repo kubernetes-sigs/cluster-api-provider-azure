@@ -331,11 +331,7 @@ metadata:
 spec:
   extensions:
   - name: my-extension
-    extensionType: "TraefikLabs.TraefikProxy"
-    plan:
-      name: "traefik-proxy"
-      product: "traefik-proxy"
-      publisher: "containous"
+    extensionType: "microsoft.flux"
 ```
 
 To list all of the available extensions for your cluster as well as its plan details, use the following az cli command:
