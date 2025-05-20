@@ -103,7 +103,8 @@ func TestNewClusterScope(t *testing.T) {
 			},
 		},
 	}
-	azureCluster.Default()
+	err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+	g.Expect(err).NotTo(HaveOccurred())
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{
 		Spec: infrav1.AzureClusterIdentitySpec{
@@ -117,7 +118,7 @@ func TestNewClusterScope(t *testing.T) {
 	initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-	_, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+	_, err = NewClusterScope(context.TODO(), ClusterScopeParams{
 		Cluster:         cluster,
 		AzureCluster:    azureCluster,
 		Client:          fakeClient,
@@ -230,7 +231,8 @@ func TestAPIServerHost(t *testing.T) {
 		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
 			Name: cluster.Name,
 		}
-		tc.azureCluster.Default()
+		err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), &tc.azureCluster)
+		g.Expect(err).NotTo(HaveOccurred())
 
 		clusterScope := &ClusterScope{
 			Cluster:      cluster,
@@ -388,7 +390,8 @@ func TestGettingSecurityRules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			tt.azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), tt.azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				Cluster:      tt.cluster,
@@ -2276,7 +2279,8 @@ func TestOutboundLBName(t *testing.T) {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = tc.nodeOutboundLB
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
@@ -2390,7 +2394,8 @@ func TestBackendPoolName(t *testing.T) {
 				},
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			if tc.customAPIServerBackendPoolName != "" {
 				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
@@ -2503,7 +2508,8 @@ func TestOutboundPoolName(t *testing.T) {
 				}
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
