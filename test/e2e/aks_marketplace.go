@@ -140,15 +140,6 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 		g.Expect(err).NotTo(HaveOccurred())
 		infraControlPlane.Spec.Extensions = []infrav1.AKSExtension{
 			{
-				Name:          extensionName,
-				ExtensionType: ptr.To("TraefikLabs.TraefikProxy"),
-				Plan: &infrav1.ExtensionPlan{
-					Name:      "traefik-proxy",
-					Product:   "traefik-proxy",
-					Publisher: "containous",
-				},
-			},
-			{
 				Name:          officialExtensionName,
 				ExtensionType: ptr.To("microsoft.flux"),
 			},
@@ -164,7 +155,6 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Ensuring the AKS Marketplace Extension is added to the AzureManagedControlPlane")
-	ensureAKSExtensionAdded(ctx, input, extensionName, "TraefikLabs.TraefikProxy", extensionClient, amcp)
 	ensureAKSExtensionAdded(ctx, input, officialExtensionName, "microsoft.flux", extensionClient, amcp)
 
 	By("Deleting the AKS Marketplace Extension")
