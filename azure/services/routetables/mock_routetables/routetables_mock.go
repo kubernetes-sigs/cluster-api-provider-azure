@@ -40,6 +40,7 @@ import (
 type MockRouteTableScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockRouteTableScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockRouteTableScopeMockRecorder is the mock recorder for MockRouteTableScope.
