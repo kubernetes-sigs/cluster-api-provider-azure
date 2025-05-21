@@ -132,7 +132,7 @@ providers:
         targetName: "cluster-template-nvidia-gpu.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-private.yaml"
         targetName: "cluster-template-private.yaml"
-      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-md-and-mp.yaml"
         targetName: "cluster-template-conformance-ci-artifacts.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-ipv6.yaml"
         targetName: "cluster-template-conformance-ci-artifacts-ipv6.yaml"
