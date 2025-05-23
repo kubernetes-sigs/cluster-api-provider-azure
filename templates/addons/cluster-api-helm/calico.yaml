@@ -11,7 +11,7 @@ spec:
   version: ${CALICO_VERSION}
   releaseName: projectcalico
   namespace: tigera-operator
-  valuesTemplate: |-
+  valuesTemplate: |
     installation:
       cni:
         type: Calico
@@ -19,16 +19,15 @@ spec:
         bgp: Disabled
         windowsDataplane: HNS
         mtu: 1350
-        ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      serviceCIDRs: 
+      serviceCIDRs:
         - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
-    # when kubernetesServiceEndpoint (required for windows) is added 
+    # when kubernetesServiceEndpoint (required for windows) is added
     # DNS configuration is needed to look up the api server name properly
     # https://github.com/projectcalico/calico/issues/9536
-    dnsConfig: 
+    dnsConfig:
       nameservers:
         - 127.0.0.53
       options:

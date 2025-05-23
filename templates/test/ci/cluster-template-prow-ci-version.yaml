@@ -701,16 +701,31 @@ spec:
   namespace: tigera-operator
   releaseName: projectcalico
   repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: "installation:\n  cni:\n    type: Calico\n  calicoNetwork:\n    bgp:
-    Disabled\n    windowsDataplane: HNS\n    mtu: 1350\n    ipPools:\n    ipPools:{{range
-    $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}\n    - cidr: {{ $cidr
-    }}\n      encapsulation: VXLAN{{end}}\n  serviceCIDRs: \n    - 10.96.0.0/12 #
-    must match cluster service CIDR (this is the default)\n# when kubernetesServiceEndpoint
-    (required for windows) is added \n# DNS configuration is needed to look up the
-    api server name properly\n# https://github.com/projectcalico/calico/issues/9536\ndnsConfig:
-    \n  nameservers:\n    - 127.0.0.53\n  options:\n    - name: edns0\n    - name:
-    trust-ad\nkubernetesServiceEndpoint:\n  host: \"{{ .Cluster.spec.controlPlaneEndpoint.host
-    }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port }}\""
+  valuesTemplate: |-
+    installation:
+      cni:
+        type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        windowsDataplane: HNS
+        mtu: 1350
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      serviceCIDRs:
+        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+    # when kubernetesServiceEndpoint (required for windows) is added
+    # DNS configuration is needed to look up the api server name properly
+    # https://github.com/projectcalico/calico/issues/9536
+    dnsConfig:
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
@@ -862,7 +877,7 @@ data:
     \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
     \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
     \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
-    \"Switch\"\n            }\n          }\n      ]\n    } \n---"
+    \"Switch\"\n            }\n          }\n      ]\n    } \n---\n"
 kind: ConfigMap
 metadata:
   annotations:
