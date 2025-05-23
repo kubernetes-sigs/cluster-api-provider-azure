@@ -277,18 +277,17 @@ spec:
       cni: calico
   namespace: tigera-operator
   releaseName: projectcalico
-  repoURL: oci://jjsacrpub.azurecr.io/helm/
+  repoURL: https://docs.tigera.io/calico/charts
   valuesTemplate: "installation:\n  cni:\n    type: Calico\n  calicoNetwork:\n    bgp:
     Disabled\n    windowsDataplane: HNS\n    mtu: 1350\n    ipPools:\n    ipPools:{{range
     $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}\n    - cidr: {{ $cidr
     }}\n      encapsulation: VXLAN{{end}}\n  serviceCIDRs: \n    - 10.96.0.0/12 #
     must match cluster service CIDR (this is the default)\n# when kubernetesServiceEndpoint
-    need to pass dns to look up the name properly\ndnsConfig: \n  nameservers:\n    -
-    127.0.0.53\n  options:\n    - name: edns0\n    - name: trust-ad\n# Image and registry
-    configuration for the tigera/operator pod.\ntigeraOperator:\n  image: tigera/operator\n
-    \ registry: mcr.microsoft.com/oss\ncalicoctl:\n  image: mcr.microsoft.com/oss/calico/ctl\nkubernetesServiceEndpoint:\n
-    \ host: \"{{ .Cluster.spec.controlPlaneEndpoint.host }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port
-    }}\""
+    (required for windows) is added \n# DNS configuration is needed to look up the
+    api server name properly\n# https://github.com/projectcalico/calico/issues/9536\ndnsConfig:
+    \n  nameservers:\n    - 127.0.0.53\n  options:\n    - name: edns0\n    - name:
+    trust-ad\nkubernetesServiceEndpoint:\n  host: \"{{ .Cluster.spec.controlPlaneEndpoint.host
+    }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port }}\""
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
@@ -6295,6 +6294,18 @@ data:
       - get
     ---
     apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: calico-tier-getter
+    rules:
+    - apiGroups:
+      - projectcalico.org
+      resources:
+      - tiers
+      verbs:
+      - get
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
     metadata:
       name: calico-cni-plugin
@@ -6332,6 +6343,19 @@ data:
     - kind: ServiceAccount
       name: calico-node
       namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: calico-tier-getter
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: calico-tier-getter
+    subjects:
+    - apiGroup: rbac.authorization.k8s.io
+      kind: User
+      name: system:kube-controller-manager
     ---
     apiVersion: v1
     data:
@@ -6403,7 +6427,7 @@ data:
               value: node
             - name: DATASTORE_TYPE
               value: kubernetes
-            image: docker.io/calico/kube-controllers:v3.29.2
+            image: docker.io/calico/kube-controllers:v3.29.4
             imagePullPolicy: IfNotPresent
             livenessProbe:
               exec:
@@ -6521,7 +6545,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/node:v3.29.2
+            image: docker.io/calico/node:v3.29.4
             imagePullPolicy: IfNotPresent
             lifecycle:
               preStop:
@@ -6593,7 +6617,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.29.2
+            image: docker.io/calico/cni:v3.29.4
             imagePullPolicy: IfNotPresent
             name: upgrade-ipam
             securityContext:
@@ -6628,7 +6652,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.29.2
+            image: docker.io/calico/cni:v3.29.4
             imagePullPolicy: IfNotPresent
             name: install-cni
             securityContext:
@@ -6642,7 +6666,7 @@ data:
             - calico-node
             - -init
             - -best-effort
-            image: docker.io/calico/node:v3.29.2
+            image: docker.io/calico/node:v3.29.4
             imagePullPolicy: IfNotPresent
             name: mount-bpffs
             securityContext:

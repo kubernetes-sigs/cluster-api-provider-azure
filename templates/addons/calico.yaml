@@ -5930,6 +5930,18 @@ rules:
   - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-tier-getter
+rules:
+- apiGroups:
+  - projectcalico.org
+  resources:
+  - tiers
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: calico-cni-plugin
@@ -5967,6 +5979,19 @@ subjects:
 - kind: ServiceAccount
   name: calico-node
   namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-tier-getter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-tier-getter
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:kube-controller-manager
 ---
 apiVersion: v1
 data:
@@ -6038,7 +6063,7 @@ spec:
           value: node
         - name: DATASTORE_TYPE
           value: kubernetes
-        image: docker.io/calico/kube-controllers:v3.29.2
+        image: docker.io/calico/kube-controllers:v3.29.4
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -6156,7 +6181,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/node:v3.29.2
+        image: docker.io/calico/node:v3.29.4
         imagePullPolicy: IfNotPresent
         lifecycle:
           preStop:
@@ -6228,7 +6253,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/cni:v3.29.2
+        image: docker.io/calico/cni:v3.29.4
         imagePullPolicy: IfNotPresent
         name: upgrade-ipam
         securityContext:
@@ -6263,7 +6288,7 @@ spec:
         - configMapRef:
             name: kubernetes-services-endpoint
             optional: true
-        image: docker.io/calico/cni:v3.29.2
+        image: docker.io/calico/cni:v3.29.4
         imagePullPolicy: IfNotPresent
         name: install-cni
         securityContext:
@@ -6277,7 +6302,7 @@ spec:
         - calico-node
         - -init
         - -best-effort
-        image: docker.io/calico/node:v3.29.2
+        image: docker.io/calico/node:v3.29.4
         imagePullPolicy: IfNotPresent
         name: mount-bpffs
         securityContext:

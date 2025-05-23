@@ -551,7 +551,7 @@ generate-aso-crds: $(YQ)
 		> $(ASO_CRDS_PATH)
 
 # When updating this, make sure to also update the Windows image version in templates/addons/windows/calico.
-export CALICO_VERSION := v3.29.2
+export CALICO_VERSION := v3.29.4
 # Where all downloaded Calico manifests are unpacked and stored.
 CALICO_RELEASES := $(ARTIFACTS)/calico
 # Path to manifests directory in a Calico release archive.

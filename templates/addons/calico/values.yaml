@@ -12,9 +12,3 @@ installation:
     windowsDataplane: HNS
   serviceCIDRs: 
     - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
-# Image and registry configuration for the tigera/operator pod.
-tigeraOperator:
-  image: tigera/operator
-  registry: mcr.microsoft.com/oss
-calicoctl:
-  image: mcr.microsoft.com/oss/calico/ctl

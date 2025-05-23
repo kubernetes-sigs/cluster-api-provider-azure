@@ -358,18 +358,17 @@ spec:
       cni: calico
   namespace: tigera-operator
   releaseName: projectcalico
-  repoURL: oci://jjsacrpub.azurecr.io/helm/
+  repoURL: https://docs.tigera.io/calico/charts
   valuesTemplate: "installation:\n  cni:\n    type: Calico\n  calicoNetwork:\n    bgp:
     Disabled\n    windowsDataplane: HNS\n    mtu: 1350\n    ipPools:\n    ipPools:{{range
     $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}\n    - cidr: {{ $cidr
     }}\n      encapsulation: VXLAN{{end}}\n  serviceCIDRs: \n    - 10.96.0.0/12 #
     must match cluster service CIDR (this is the default)\n# when kubernetesServiceEndpoint
-    need to pass dns to look up the name properly\ndnsConfig: \n  nameservers:\n    -
-    127.0.0.53\n  options:\n    - name: edns0\n    - name: trust-ad\n# Image and registry
-    configuration for the tigera/operator pod.\ntigeraOperator:\n  image: tigera/operator\n
-    \ registry: mcr.microsoft.com/oss\ncalicoctl:\n  image: mcr.microsoft.com/oss/calico/ctl\nkubernetesServiceEndpoint:\n
-    \ host: \"{{ .Cluster.spec.controlPlaneEndpoint.host }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port
-    }}\""
+    (required for windows) is added \n# DNS configuration is needed to look up the
+    api server name properly\n# https://github.com/projectcalico/calico/issues/9536\ndnsConfig:
+    \n  nameservers:\n    - 127.0.0.53\n  options:\n    - name: edns0\n    - name:
+    trust-ad\nkubernetesServiceEndpoint:\n  host: \"{{ .Cluster.spec.controlPlaneEndpoint.host
+    }}\"\n  port: \"{{ .Cluster.spec.controlPlaneEndpoint.port }}\""
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
