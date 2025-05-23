@@ -2,21 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../custom-builds-machine-pool
+- ../custom-builds-load
 patches:
-- patch: |-
-    - op: add
-      path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler
-      value:
-        extraArgs: {}
-  target:
-    kind: KubeadmControlPlane
 - path: ../../ci/patches/dra-kubeadmcontrolplane.yaml
   target:
     kind: KubeadmControlPlane
 - path: ../../ci/patches/dra-kubeadmconfig.yaml
   target:
     kind: KubeadmConfig
+- path: ../../ci/patches/dra-kubeadmconfigtemplate.yaml
+  target:
+    kind: KubeadmConfigTemplate
 
 sortOptions:
   order: fifo
