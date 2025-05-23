@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -58,6 +59,26 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			},
 			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
+			},
+		},
+		{
+			Name: "should not set failure properties if VMSS VM has state Failed",
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
+				objects := getReadyMachinePoolMachineClusterObjects(false, ptr.To(infrav1.Failed))
+				reconciler.Reconcile(gomock2.AContext()).Return(nil)
+				cb.WithObjects(objects...)
+			},
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+
+				ampm := &infrav1exp.AzureMachinePoolMachine{}
+				err = c.Get(context.Background(), types.NamespacedName{
+					Name:      "ampm1",
+					Namespace: "default",
+				}, ampm)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(ampm.Status.FailureReason).To(BeNil())
+				g.Expect(ampm.Status.FailureMessage).To(BeNil())
 			},
 		},
 		{
@@ -136,7 +157,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 
 			c.Setup(cb, reconciler.EXPECT())
 			cl := cb.Build()
-			controller := NewAzureMachinePoolMachineController(cl, nil, reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
+			controller := NewAzureMachinePoolMachineController(cl, record.NewFakeRecorder(1), reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
 				return reconciler, nil
 			}
