@@ -146,29 +146,6 @@ create_cluster() {
     export KUBE_SSH_USER
 }
 
-# copy_kubeadm_config_map copies the kubeadm configmap into the calico-system namespace.
-# any retryable operation in this function must return a non-zero exit code on failure so that we can
-# retry it using a `until copy_kubeadm_config_map; do sleep 5; done` pattern;
-# and any statement must be idempotent so that subsequent retry attempts can make forward progress.
-copy_kubeadm_config_map() {
-    # Copy the kubeadm configmap to the calico-system namespace.
-    # This is a workaround needed for the calico-node-windows daemonset
-    # to be able to run in the calico-system namespace.
-    # First, validate that the kubeadm-config configmap has been created.
-    "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml || return 1
-    "${KUBECTL}" create namespace calico-system --dry-run=client -o yaml | kubectl apply -f - || return 1
-    if ! "${KUBECTL}" get configmap kubeadm-config --namespace=calico-system; then
-        "${KUBECTL}" get configmap kubeadm-config --namespace=kube-system -o yaml | sed 's/namespace: kube-system/namespace: calico-system/' | "${KUBECTL}" apply -f - || return 1
-    fi
-}
-
-wait_for_copy_kubeadm_config_map() {
-    echo "Copying kubeadm ConfigMap into calico-system namespace"
-    until copy_kubeadm_config_map; do
-        sleep 5
-    done
-}
-
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
@@ -206,8 +183,6 @@ wait_for_pods() {
 }
 
 install_addons() {
-    export -f copy_kubeadm_config_map wait_for_copy_kubeadm_config_map
-    timeout --foreground 600 bash -c wait_for_copy_kubeadm_config_map
     # In order to determine the successful outcome of CNI and cloud-provider-azure,
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.
