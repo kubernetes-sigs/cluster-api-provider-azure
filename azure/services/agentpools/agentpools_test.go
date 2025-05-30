@@ -17,7 +17,6 @@ limitations under the License.
 package agentpools
 
 import (
-	"context"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -37,7 +36,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		scope := mock_agentpools.NewMockAgentPoolScope(mockCtrl)
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, nil, errors.New("an error"))
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, nil, errors.New("an error"))
 		g.Expect(err).To(HaveOccurred())
 	})
 
@@ -54,7 +53,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, managedCluster, nil)
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -73,7 +72,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, managedCluster, nil)
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -92,6 +91,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, agentPool, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, agentPool, nil)).To(Succeed())
 	})
 }

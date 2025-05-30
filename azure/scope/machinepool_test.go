@@ -507,7 +507,7 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 				AzureMachinePool: amp,
 				ClusterScoper:    clusterMock,
 			}
-			image, err := s.GetVMImage(context.TODO())
+			image, err := s.GetVMImage(t.Context())
 			c.Verify(g, amp, image, err)
 		})
 	}
@@ -741,7 +741,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 				AzureMachinePool: amp,
 				MachinePool:      mp,
 			}
-			err := s.updateReplicasAndProviderIDs(context.TODO())
+			err := s.updateReplicasAndProviderIDs(t.Context())
 			c.Verify(g, s.AzureMachinePool, err)
 		})
 	}
@@ -1347,7 +1347,7 @@ func TestMachinePoolScope_SetInfrastructureMachineKind(t *testing.T) {
 }
 
 func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
@@ -1752,7 +1752,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 }
 
 func TestBootstrapDataChanges(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)

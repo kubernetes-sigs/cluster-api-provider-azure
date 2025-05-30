@@ -17,7 +17,6 @@ limitations under the License.
 package subnets
 
 import (
-	"context"
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
@@ -155,7 +154,7 @@ func TestParameters(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
 
-			result, err := test.spec.Parameters(context.Background(), test.existing)
+			result, err := test.spec.Parameters(t.Context(), test.existing)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cmp.Diff(test.expected, result)).To(BeEmpty())
 		})

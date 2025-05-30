@@ -17,7 +17,6 @@ limitations under the License.
 package coalescing
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -93,7 +92,7 @@ func TestCoalescingReconciler_Reconcile(t *testing.T) {
 			cacherMock := mock_coalescing.NewMockReconcileCacher(mockCtrl)
 			reconcilerMock := mock_coalescing.NewMockReconciler[reconcile.Request](mockCtrl)
 			subject := c.Reconciler(g, cacherMock, reconcilerMock)
-			result, err := subject.Reconcile(context.Background(), c.Request)
+			result, err := subject.Reconcile(t.Context(), c.Request)
 			if c.Error != "" || err != nil {
 				g.Expect(err).To(And(HaveOccurred(), MatchError(c.Error)))
 				return
