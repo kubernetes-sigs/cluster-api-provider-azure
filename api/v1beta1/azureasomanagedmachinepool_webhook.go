@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"context"
@@ -31,10 +31,10 @@ import (
 
 // SetupAzureASOManagedMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureASOManagedMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	w := &azureASOManagedMachinePoolWebhook{}
+	azureASOManagedMachinePoolWebhook := &azureASOManagedMachinePoolWebhook{}
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureASOManagedMachinePool{}).
-		WithValidator(w).
+		WithValidator(azureASOManagedMachinePoolWebhook).
 		Complete()
 }
 
@@ -42,7 +42,7 @@ func SetupAzureASOManagedMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 type azureASOManagedMachinePoolWebhook struct {
 }
 
-// +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha1-azureasomanagedmachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedmachinepools,versions=v1alpha1,name=validation.azureasomanagedmachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedmachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedmachinepools,versions=v1beta1,name=validation.azureasomanagedmachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *azureASOManagedMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {

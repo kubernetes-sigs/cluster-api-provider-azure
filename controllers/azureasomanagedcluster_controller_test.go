@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 type fakeResourceReconciler struct {
@@ -70,7 +70,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1alpha.AddToScheme,
+		infrav1.AddToScheme,
 		clusterv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
@@ -78,7 +78,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1alpha.AzureASOManagedCluster{})
+			WithStatusSubresource(&infrav1.AzureASOManagedCluster{})
 	}
 
 	t.Run("AzureASOManagedCluster does not exist", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("Cluster does not exist", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: "ns",
@@ -131,11 +131,11 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1somethingelse",
-					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
+					Kind:       infrav1.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: cluster.Namespace,
@@ -173,12 +173,12 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1alpha.GroupVersion.Identifier(),
-					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1.GroupVersion.Identifier(),
+					Kind:       infrav1.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: cluster.Namespace,
@@ -196,7 +196,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Status: infrav1alpha.AzureASOManagedClusterStatus{
+			Status: infrav1.AzureASOManagedClusterStatus{
 				Ready: true,
 			},
 		}
@@ -205,11 +205,11 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
-			newResourceReconciler: func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(asoManagedCluster *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedCluster,
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						asoManagedCluster.SetResourceStatuses([]infrav1alpha.ResourceStatus{
+						asoManagedCluster.SetResourceStatuses([]infrav1.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
@@ -237,14 +237,14 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1alpha.GroupVersion.Identifier(),
-					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1.GroupVersion.Identifier(),
+					Kind:       infrav1.AzureASOManagedControlPlaneKind,
 					Name:       "amcp",
 					Namespace:  "ns",
 				},
 			},
 		}
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: cluster.Namespace,
@@ -262,16 +262,16 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 					clusterctlv1.BlockMoveAnnotation: "true",
 				},
 			},
-			Status: infrav1alpha.AzureASOManagedClusterStatus{
+			Status: infrav1.AzureASOManagedClusterStatus{
 				Ready: false,
 			},
 		}
-		asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
+		asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amcp",
 				Namespace: cluster.Namespace,
 			},
-			Status: infrav1alpha.AzureASOManagedControlPlaneStatus{
+			Status: infrav1.AzureASOManagedControlPlaneStatus{
 				ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "endpoint"},
 			},
 		}
@@ -280,7 +280,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					reconcileFunc: func(ctx context.Context, o client.Object) error {
 						return nil
@@ -309,7 +309,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Paused: true,
 			},
 		}
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: cluster.Namespace,
@@ -330,7 +330,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					pauseFunc: func(_ context.Context, _ client.Object) error {
 						return nil
@@ -349,7 +349,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("successfully reconciles in-progress delete", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: "ns",
@@ -364,13 +364,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
-			newResourceReconciler: func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(asoManagedCluster *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedCluster,
 					deleteFunc: func(ctx context.Context, o client.Object) error {
-						asoManagedCluster.SetResourceStatuses([]infrav1alpha.ResourceStatus{
+						asoManagedCluster.SetResourceStatuses([]infrav1.ResourceStatus{
 							{
-								Resource: infrav1alpha.StatusResource{
+								Resource: infrav1.StatusResource{
 									Name: "still-deleting",
 								},
 							},
@@ -392,7 +392,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("successfully reconciles finished delete", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "amc",
 				Namespace: "ns",
@@ -407,7 +407,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Build()
 		r := &AzureASOManagedClusterReconciler{
 			Client: c,
-			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+			newResourceReconciler: func(_ *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					deleteFunc: func(ctx context.Context, o client.Object) error {
 						return nil

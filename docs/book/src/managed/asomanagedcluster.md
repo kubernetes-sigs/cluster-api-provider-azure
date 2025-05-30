@@ -18,7 +18,7 @@ This new API defines new AzureASOManagedCluster, AzureASOManagedControlPlane, an
 AzureASOManagedMachinePool resources. An AzureASOManagedCluster might look like this:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedCluster
 metadata:
   name: my-cluster
@@ -72,7 +72,7 @@ to leave room for CAPZ to manage the canonical `${CLUSTER_NAME}-kubeconfig` secr
 another name must be specified for this Secret to avoid CAPZ and ASO overwriting each other:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
@@ -118,3 +118,56 @@ To migrate one cluster to the ASO-based APIs:
    - Note: the cluster infrastructure object should not have any finalizers and should already be deleted
    - Remove finalizers from the cluster: `kubectl patch cluster <name> --type merge -p '{"metadata": {"finalizers": null}}'`
    - Verify the old ASO resources like ResourceGroup and ManagedCluster managed by the old Cluster are deleted.
+
+### Migrating from v1alpha1 to v1beta1
+
+With the introduction of `v1beta1` for ASO Managed APIs in CAPZ, users should migrate their clusters and manifests from `v1alpha1` to `v1beta1`. **Note:** `v1alpha1` and `v1beta1` are equivalent — this migration is straightforward and low risk.
+
+#### Steps to Migrate
+
+1. **Upgrade CAPZ using `clusterctl upgrade`**
+
+      The CRDs will be updated automatically as part of the upgrade process.
+
+2. **Update API Versions in Manifests**
+
+   For each AzureASOManaged... resource, change the `apiVersion` from `infrastructure.cluster.x-k8s.io/v1alpha1` to `infrastructure.cluster.x-k8s.io/v1beta1`. For example:
+
+   ```yaml
+   ...
+   apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+   kind: AzureASOManagedCluster
+   ...
+   ```
+
+   Make these changes for `AzureASOManagedCluster(Template)`, `AzureASOManagedControlPlane(Template)` and `AzureASOManagedMachinePool(Template)` definitions.
+
+3. **Update References in CAPI Objects**
+
+   Update any references in CAPI objects (such as a Cluster’s `spec.infrastructureRef` and `spec.controlPlaneRef`) to point to the new `apiVersion`:
+
+   ```yaml
+   spec:
+     infrastructureRef:
+       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+       kind: AzureASOManagedCluster
+       name: my-cluster
+     controlPlaneRef:
+       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+       kind: AzureASOManagedControlPlane
+       name: my-cluster
+   ```
+
+   Similarly, update any other references to the API version for those object kinds.
+
+### What to Expect After Migration
+
+After completing the steps above, the following should be true:
+
+- All resources are healthy and visible. For an informative snapshot of your cluster and its resources, you can run:
+  ```sh
+  clusterctl describe cluster <your-cluster-name>
+  ```
+
+- The resources are now using `v1beta1` and reconciliation is working as expected.
+- The CRD storage version is set to `v1beta1`.
