@@ -69,8 +69,8 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Getting extendedLocation Name and Type from environment variables or e2e config file")
-	extendedLocationType := input.E2EConfig.GetVariable(AzureExtendedLocationType)
-	extendedLocationName := input.E2EConfig.GetVariable(AzureExtendedLocationName)
+	extendedLocationType := input.E2EConfig.MustGetVariable(AzureExtendedLocationType)
+	extendedLocationName := input.E2EConfig.MustGetVariable(AzureExtendedLocationName)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())

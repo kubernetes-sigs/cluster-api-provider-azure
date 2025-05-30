@@ -34,8 +34,8 @@ import (
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
 func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig, versionVar string) (string, error) {
-	e2eAKSVersion := e2eConfig.GetVariable(versionVar)
-	location := e2eConfig.GetVariable(AzureLocation)
+	e2eAKSVersion := e2eConfig.MustGetVariable(versionVar)
+	location := e2eConfig.MustGetVariable(AzureLocation)
 	subscriptionID := getSubscriptionID(Default)
 
 	var err error
