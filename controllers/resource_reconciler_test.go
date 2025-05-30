@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 type FakeClient struct {
@@ -69,7 +69,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1alpha.AddToScheme,
+		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
@@ -77,7 +77,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1alpha.AzureASOManagedCluster{})
+			WithStatusSubresource(&infrav1.AzureASOManagedCluster{})
 	}
 
 	t.Run("empty resources", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 
 		r := &ResourceReconciler{
 			resources: []*unstructured.Unstructured{},
-			owner:     &infrav1alpha.AzureASOManagedCluster{},
+			owner:     &infrav1.AzureASOManagedCluster{},
 		}
 
 		g.Expect(r.Reconcile(ctx)).To(Succeed())
@@ -98,7 +98,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		c := fakeClientBuilder().
 			Build()
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{}
 
 		unpatchedRGs := map[string]struct{}{
 			"rg1": {},
@@ -153,9 +153,9 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 	t.Run("delete stale resources", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		owner := &infrav1alpha.AzureASOManagedCluster{
-			Status: infrav1alpha.AzureASOManagedClusterStatus{
-				Resources: []infrav1alpha.ResourceStatus{
+		owner := &infrav1.AzureASOManagedCluster{
+			Status: infrav1.AzureASOManagedClusterStatus{
+				Resources: []infrav1.ResourceStatus{
 					rgStatus("rg0"),
 					rgStatus("rg1"),
 					rgStatus("rg2"),
@@ -235,7 +235,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1alpha.AddToScheme,
+		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
@@ -243,7 +243,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1alpha.AzureASOManagedCluster{})
+			WithStatusSubresource(&infrav1.AzureASOManagedCluster{})
 	}
 
 	t.Run("empty resources", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 
 		r := &ResourceReconciler{
 			resources: []*unstructured.Unstructured{},
-			owner:     &infrav1alpha.AzureASOManagedCluster{},
+			owner:     &infrav1.AzureASOManagedCluster{},
 		}
 
 		g.Expect(r.Pause(ctx)).To(Succeed())
@@ -263,7 +263,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 		c := fakeClientBuilder().
 			Build()
 
-		asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{}
 
 		var patchedRGs []string
 		r := &ResourceReconciler{
@@ -300,7 +300,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
-		infrav1alpha.AddToScheme,
+		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
@@ -308,7 +308,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().
 			WithScheme(s).
-			WithStatusSubresource(&infrav1alpha.AzureASOManagedCluster{})
+			WithStatusSubresource(&infrav1.AzureASOManagedCluster{})
 	}
 
 	t.Run("empty resources", func(t *testing.T) {
@@ -316,7 +316,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 
 		r := &ResourceReconciler{
 			resources: []*unstructured.Unstructured{},
-			owner:     &infrav1alpha.AzureASOManagedCluster{},
+			owner:     &infrav1.AzureASOManagedCluster{},
 		}
 
 		g.Expect(r.Delete(ctx)).To(Succeed())
@@ -325,12 +325,12 @@ func TestResourceReconcilerDelete(t *testing.T) {
 	t.Run("delete several resources", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		owner := &infrav1alpha.AzureASOManagedCluster{
+		owner := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 			},
-			Status: infrav1alpha.AzureASOManagedClusterStatus{
-				Resources: []infrav1alpha.ResourceStatus{
+			Status: infrav1.AzureASOManagedClusterStatus{
+				Resources: []infrav1.ResourceStatus{
 					rgStatus("still-deleting"),
 					rgStatus("already-gone"),
 				},
@@ -582,9 +582,9 @@ func rgJSON(g Gomega, scheme *runtime.Scheme, rg *asoresourcesv1.ResourceGroup) 
 	return u
 }
 
-func rgStatus(name string) infrav1alpha.ResourceStatus {
-	return infrav1alpha.ResourceStatus{
-		Resource: infrav1alpha.StatusResource{
+func rgStatus(name string) infrav1.ResourceStatus {
+	return infrav1.ResourceStatus{
+		Resource: infrav1.StatusResource{
 			Group:   asoresourcesv1.GroupVersion.Group,
 			Version: asoresourcesv1.GroupVersion.Version,
 			Kind:    "ResourceGroup",
