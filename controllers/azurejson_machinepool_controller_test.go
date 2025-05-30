@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -225,7 +224,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 				CredentialCache: azure.NewCredentialCache(),
 			}
 
-			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "",
 					Name:      "my-azure-machine-pool",
@@ -250,7 +249,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 	ctrlr := gomock.NewController(t)
 	defer ctrlr.Finish()
 	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "fake-machine-pool", Namespace: "fake-ns"}}
-	ctx := context.Background()
+	ctx := t.Context()
 	scheme, err := newScheme()
 	g.Expect(err).NotTo(HaveOccurred())
 

@@ -17,7 +17,6 @@ limitations under the License.
 package privatedns
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -354,7 +353,7 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				TagsGetter:         tagsGetterMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -579,7 +578,7 @@ func TestDeletePrivateDNS(t *testing.T) {
 				TagsGetter:         tagsGetterMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

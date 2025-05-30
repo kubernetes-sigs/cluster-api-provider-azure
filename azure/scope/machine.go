@@ -611,7 +611,7 @@ func (m *MachineScope) SetFailureReason(v string) {
 
 // SetConditionFalse sets the specified AzureMachine condition to false.
 func (m *MachineScope) SetConditionFalse(conditionType clusterv1.ConditionType, reason string, severity clusterv1.ConditionSeverity, message string) {
-	conditions.MarkFalse(m.AzureMachine, conditionType, reason, severity, message)
+	conditions.MarkFalse(m.AzureMachine, conditionType, reason, severity, "%s", message)
 }
 
 // SetAnnotation sets a key value annotation on the AzureMachine.
