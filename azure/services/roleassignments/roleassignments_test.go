@@ -17,7 +17,6 @@ limitations under the License.
 package roleassignments
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -159,7 +158,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 				Reconciler:            asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
@@ -253,7 +252,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 				virtualMachineScaleSetGetter: vmMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))

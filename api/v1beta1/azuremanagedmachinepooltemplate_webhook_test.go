@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -33,7 +32,7 @@ func TestManagedMachinePoolTemplateDefaultingWebhook(t *testing.T) {
 	t.Logf("Testing ammpt defaulting webhook with no baseline")
 	ammpt := getAzureManagedMachinePoolTemplate()
 	mmptw := &azureManagedMachinePoolTemplateWebhook{}
-	err := mmptw.Default(context.Background(), ammpt)
+	err := mmptw.Default(t.Context(), ammpt)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(ammpt.Labels).To(Equal(map[string]string{
 		LabelAgentPoolMode: "System",
@@ -47,7 +46,7 @@ func TestManagedMachinePoolTemplateDefaultingWebhook(t *testing.T) {
 		ammpt.Spec.Template.Spec.Name = ptr.To("barName")
 		ammpt.Spec.Template.Spec.OSType = ptr.To("Windows")
 	})
-	err = mmptw.Default(context.Background(), ammpt)
+	err = mmptw.Default(t.Context(), ammpt)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(ammpt.Labels).To(Equal(map[string]string{
 		LabelAgentPoolMode: "User",
@@ -236,7 +235,7 @@ func TestManagedMachinePoolTemplateUpdateWebhook(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mpw := &azureManagedMachinePoolTemplateWebhook{}
-			_, err := mpw.ValidateUpdate(context.Background(), tc.oldMachinePoolTemplate, tc.machinePoolTemplate)
+			_, err := mpw.ValidateUpdate(t.Context(), tc.oldMachinePoolTemplate, tc.machinePoolTemplate)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

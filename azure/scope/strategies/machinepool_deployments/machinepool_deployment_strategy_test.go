@@ -17,7 +17,6 @@ limitations under the License.
 package machinepool
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -401,7 +400,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
-			got, err := tt.strategy.SelectMachinesToDelete(context.Background(), tt.desiredReplicas, tt.input)
+			got, err := tt.strategy.SelectMachinesToDelete(t.Context(), tt.desiredReplicas, tt.input)
 			if tt.errStr == "" {
 				g.Expect(err).To(Succeed())
 				g.Expect(got).To(tt.want)

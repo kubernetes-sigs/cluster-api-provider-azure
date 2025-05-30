@@ -17,7 +17,6 @@ limitations under the License.
 package virtualmachines
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -223,7 +222,7 @@ func TestReconcileVM(t *testing.T) {
 				Reconciler:       asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
@@ -299,7 +298,7 @@ func TestDeleteVM(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

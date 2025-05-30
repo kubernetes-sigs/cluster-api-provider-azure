@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -185,7 +184,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					scaleSetsSvc:  nodelister,
 				}, nil
 			}
-			res, err := controller.Reconcile(context.TODO(), ctrl.Request{
+			res, err := controller.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "foo-ammp",
 					Namespace: "foobar",

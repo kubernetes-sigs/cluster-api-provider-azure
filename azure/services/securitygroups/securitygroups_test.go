@@ -17,7 +17,6 @@ limitations under the License.
 package securitygroups
 
 import (
-	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
@@ -197,7 +196,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				Reconciler: reconcilerMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -287,7 +286,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				Reconciler: reconcilerMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

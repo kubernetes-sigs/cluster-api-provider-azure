@@ -137,7 +137,7 @@ func TestAzureClusterReconcile(t *testing.T) {
 				Recorder: record.NewFakeRecorder(128),
 			}
 
-			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: namespace,
 					Name:      "my-azure-cluster",
@@ -225,7 +225,7 @@ func TestAzureClusterReconcileNormal(t *testing.T) {
 			reconciler, clusterScope, err := getClusterReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcileNormal(context.Background(), clusterScope)
+			result, err := reconciler.reconcileNormal(t.Context(), clusterScope)
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.ready {
@@ -244,7 +244,7 @@ func TestAzureClusterReconcileNormal(t *testing.T) {
 func TestAzureClusterReconcilePaused(t *testing.T) {
 	g := NewWithT(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
 		clusterv1.AddToScheme,
@@ -342,7 +342,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	}
 	g.Expect(c.Create(ctx, vnet)).To(Succeed())
 
-	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+	result, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 		NamespacedName: client.ObjectKey{
 			Namespace: instance.Namespace,
 			Name:      instance.Name,
@@ -418,7 +418,7 @@ func TestAzureClusterReconcileDelete(t *testing.T) {
 			reconciler, clusterScope, err := getClusterReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcileDelete(context.Background(), clusterScope)
+			result, err := reconciler.reconcileDelete(t.Context(), clusterScope)
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.expectedErr != "" {

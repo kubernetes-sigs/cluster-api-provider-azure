@@ -17,7 +17,6 @@ limitations under the License.
 package managedclusters
 
 import (
-	"context"
 	"encoding/base64"
 	"testing"
 
@@ -300,7 +299,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), nil)
+		actual, err := spec.Parameters(t.Context(), nil)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cmp.Diff(actual, expected)).To(BeEmpty())
@@ -325,7 +324,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), nil)
+		actual, err := spec.Parameters(t.Context(), nil)
 		g.Expect(err).NotTo(HaveOccurred())
 		_, ok := actual.(*asocontainerservicev1preview.ManagedCluster)
 		g.Expect(ok).To(BeTrue())
@@ -351,7 +350,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actualObj, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(t.Context(), existing)
 		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())
@@ -384,7 +383,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actualObj, err := spec.Parameters(context.Background(), existing)
+		actualObj, err := spec.Parameters(t.Context(), existing)
 		actual := actualObj.(*asocontainerservicev1.ManagedCluster)
 
 		g.Expect(err).NotTo(HaveOccurred())

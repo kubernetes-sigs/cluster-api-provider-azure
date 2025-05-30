@@ -53,7 +53,7 @@ func (c *FakeClusterTracker) GetClient(ctx context.Context, name types.Namespace
 }
 
 func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(

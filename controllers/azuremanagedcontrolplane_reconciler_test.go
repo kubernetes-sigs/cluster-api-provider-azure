@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -87,7 +86,7 @@ func TestAzureManagedControlPlaneServicePause(t *testing.T) {
 				},
 			}
 
-			err := s.Pause(context.TODO())
+			err := s.Pause(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

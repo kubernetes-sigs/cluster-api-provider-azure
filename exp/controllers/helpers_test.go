@@ -157,10 +157,10 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 	sink.EXPECT().Enabled(4).Return(true)
 	sink.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(sink)
 	sink.EXPECT().Info(4, "gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
-	mapper, err := AzureClusterToAzureMachinePoolsMapper(context.Background(), fakeClient, scheme, logr.New(sink))
+	mapper, err := AzureClusterToAzureMachinePoolsMapper(t.Context(), fakeClient, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(context.Background(), &infrav1.AzureCluster{
+	requests := mapper(t.Context(), &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "default",
@@ -244,7 +244,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				c.Setup(sink)
 			}
 			f := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), logr.New(sink))
-			reqs := f(context.TODO(), c.MapObjectFactory(g))
+			reqs := f(t.Context(), c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
 	}
@@ -388,8 +388,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			sink, mockctrl, fakeClient := c.Setup(t, g)
 			defer mockctrl.Finish()
 
-			f := AzureClusterToAzureMachinePoolsFunc(context.Background(), fakeClient, logr.New(sink))
-			reqs := f(context.TODO(), c.MapObjectFactory(g))
+			f := AzureClusterToAzureMachinePoolsFunc(t.Context(), fakeClient, logr.New(sink))
+			reqs := f(t.Context(), c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
 	}

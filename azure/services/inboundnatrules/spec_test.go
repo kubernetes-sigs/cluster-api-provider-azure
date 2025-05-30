@@ -17,7 +17,6 @@ limitations under the License.
 package inboundnatrules
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -65,7 +64,7 @@ func TestParameters(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			result, err := tc.spec.Parameters(context.Background(), tc.existing)
+			result, err := tc.spec.Parameters(t.Context(), tc.existing)
 			if tc.errorMsg != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.errorMsg))

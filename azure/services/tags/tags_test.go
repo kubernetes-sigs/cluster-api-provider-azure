@@ -17,7 +17,6 @@ limitations under the License.
 package tags
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -283,7 +282,7 @@ func TestReconcileTags(t *testing.T) {
 				client: clientMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))

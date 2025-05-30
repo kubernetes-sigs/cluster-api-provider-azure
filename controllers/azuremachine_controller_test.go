@@ -143,7 +143,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 
 			resultIdentity := &infrav1.AzureClusterIdentity{}
 			key := client.ObjectKey{Name: defaultAzureClusterIdentity.Name, Namespace: defaultAzureClusterIdentity.Namespace}
-			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
+			g.Expect(fakeClient.Get(t.Context(), key, resultIdentity)).To(Succeed())
 
 			reconciler := &AzureMachineReconciler{
 				Client:          fakeClient,
@@ -151,7 +151,7 @@ func TestAzureMachineReconcile(t *testing.T) {
 				CredentialCache: azure.NewCredentialCache(),
 			}
 
-			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "default",
 					Name:      "my-machine",
@@ -246,7 +246,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 			reconciler, machineScope, clusterScope, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcileNormal(context.Background(), machineScope, clusterScope)
+			result, err := reconciler.reconcileNormal(t.Context(), machineScope, clusterScope)
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.ready {
@@ -292,7 +292,7 @@ func TestAzureMachineReconcilePause(t *testing.T) {
 			reconciler, machineScope, _, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcilePause(context.Background(), machineScope)
+			result, err := reconciler.reconcilePause(t.Context(), machineScope)
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.expectedErr != "" {
@@ -336,7 +336,7 @@ func TestAzureMachineReconcileDelete(t *testing.T) {
 			reconciler, machineScope, clusterScope, err := getMachineReconcileInputs(tc)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcileDelete(context.Background(), machineScope, clusterScope)
+			result, err := reconciler.reconcileDelete(t.Context(), machineScope, clusterScope)
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.expectedErr != "" {
@@ -785,13 +785,13 @@ func TestConditions(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 			resultIdentity := &infrav1.AzureClusterIdentity{}
 			key := client.ObjectKey{Name: azureClusterIdentity.Name, Namespace: azureClusterIdentity.Namespace}
-			g.Expect(fakeClient.Get(context.TODO(), key, resultIdentity)).To(Succeed())
+			g.Expect(fakeClient.Get(t.Context(), key, resultIdentity)).To(Succeed())
 			recorder := record.NewFakeRecorder(10)
 
 			credCache := azure.NewCredentialCache()
 			reconciler := NewAzureMachineReconciler(fakeClient, recorder, reconciler.Timeouts{}, "", credCache)
 
-			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
+			clusterScope, err := scope.NewClusterScope(t.Context(), scope.ClusterScopeParams{
 				Client:          fakeClient,
 				Cluster:         cluster,
 				AzureCluster:    azureCluster,
@@ -808,7 +808,7 @@ func TestConditions(t *testing.T) {
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
-			_, err = reconciler.reconcileNormal(context.TODO(), machineScope, clusterScope)
+			_, err = reconciler.reconcileNormal(t.Context(), machineScope, clusterScope)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			g.Expect(machineScope.AzureMachine.GetConditions()).To(HaveLen(len(tc.expectedConditions)))
