@@ -41,6 +41,7 @@ import (
 type MockAgentPoolScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockAgentPoolScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockAgentPoolScopeMockRecorder is the mock recorder for MockAgentPoolScope.
