@@ -182,7 +182,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 
 			tc.expect(g, scopeMock.EXPECT(), creatorMock.EXPECT(), specMock.EXPECT())
 
-			result, err := svc.CreateOrUpdateResource(context.TODO(), specMock, serviceName)
+			result, err := svc.CreateOrUpdateResource(t.Context(), specMock, serviceName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
@@ -278,7 +278,7 @@ func TestServiceDeleteResource(t *testing.T) {
 
 			tc.expect(g, scopeMock.EXPECT(), deleterMock.EXPECT(), specMock.EXPECT())
 
-			err := svc.DeleteResource(context.TODO(), specMock, tc.serviceName)
+			err := svc.DeleteResource(t.Context(), specMock, tc.serviceName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

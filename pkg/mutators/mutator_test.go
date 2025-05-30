@@ -30,7 +30,7 @@ import (
 )
 
 func TestApplyMutators(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name        string
@@ -120,7 +120,7 @@ func TestApplyMutators(t *testing.T) {
 }
 
 func TestPause(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name           string

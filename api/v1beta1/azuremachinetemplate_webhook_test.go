@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
@@ -248,7 +247,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			ctx := context.Background()
+			ctx := t.Context()
 			_, err := (&azureMachineTemplateWebhook{}).ValidateCreate(ctx, test.machineTemplate)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -547,7 +546,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	for _, amt := range tests {
 		t.Run(amt.name, func(t *testing.T) {
 			g := NewWithT(t)
-			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(true)}})
+			ctx := admission.NewContextWithRequest(t.Context(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(true)}})
 			_, err := (&azureMachineTemplateWebhook{}).ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -561,7 +560,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		t.Run(amt.name, func(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
-			ctx := admission.NewContextWithRequest(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(false)}})
+			ctx := admission.NewContextWithRequest(t.Context(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{DryRun: ptr.To(false)}})
 			_, err := (&azureMachineTemplateWebhook{}).ValidateUpdate(ctx, amt.oldTemplate, amt.template)
 			if amt.wantErr {
 				g.Expect(err).To(HaveOccurred())

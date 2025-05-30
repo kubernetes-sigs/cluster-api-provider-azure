@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -37,7 +36,7 @@ import (
 func TestAgentPoolAdoptController(t *testing.T) {
 	g := NewWithT(t)
 	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "fake-agent-pool", Namespace: "fake-ns"}}
-	ctx := context.Background()
+	ctx := t.Context()
 	scheme, err := newScheme()
 	g.Expect(err).ToNot(HaveOccurred())
 
