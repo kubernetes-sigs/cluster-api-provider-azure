@@ -17,7 +17,6 @@ limitations under the License.
 package networkinterfaces
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -156,7 +155,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				fmt.Print(cmp.Diff(err.Error(), tc.expectedError))
@@ -233,7 +232,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

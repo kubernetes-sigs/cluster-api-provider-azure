@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -55,7 +54,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	mw := &azureManagedMachinePoolWebhook{
 		Client: client,
 	}
-	err := mw.Default(context.Background(), ammp)
+	err := mw.Default(t.Context(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(ammp.Labels).NotTo(BeNil())
 	val, ok := ammp.Labels[LabelAgentPoolMode]
@@ -66,21 +65,21 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	t.Logf("Testing ammp defaulting webhook with empty string name specified in Spec")
 	emptyName := ""
 	ammp.Spec.Name = &emptyName
-	err = mw.Default(context.Background(), ammp)
+	err = mw.Default(t.Context(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*ammp.Spec.Name).To(Equal("fooname"))
 
 	t.Logf("Testing ammp defaulting webhook with normal name specified in Spec")
 	normalName := "barname"
 	ammp.Spec.Name = &normalName
-	err = mw.Default(context.Background(), ammp)
+	err = mw.Default(t.Context(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*ammp.Spec.Name).To(Equal("barname"))
 
 	t.Logf("Testing ammp defaulting webhook with normal OsDiskType specified in Spec")
 	normalOsDiskType := "Ephemeral"
 	ammp.Spec.OsDiskType = &normalOsDiskType
-	err = mw.Default(context.Background(), ammp)
+	err = mw.Default(t.Context(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*ammp.Spec.OsDiskType).To(Equal("Ephemeral"))
 }
@@ -642,7 +641,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			mw := &azureManagedMachinePoolWebhook{
 				Client: client,
 			}
-			_, err := mw.ValidateUpdate(context.Background(), tc.old, tc.new)
+			_, err := mw.ValidateUpdate(t.Context(), tc.old, tc.new)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1293,7 +1292,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 			mw := &azureManagedMachinePoolWebhook{
 				Client: client,
 			}
-			_, err := mw.ValidateCreate(context.Background(), tc.ammp)
+			_, err := mw.ValidateCreate(t.Context(), tc.ammp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(HaveLen(tc.errorLen))
@@ -1325,7 +1324,7 @@ func TestAzureManagedMachinePool_ValidateCreateFailure(t *testing.T) {
 			}
 			g := NewWithT(t)
 			mw := &azureManagedMachinePoolWebhook{}
-			_, err := mw.ValidateCreate(context.Background(), tc.ammp)
+			_, err := mw.ValidateCreate(t.Context(), tc.ammp)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
 			} else {

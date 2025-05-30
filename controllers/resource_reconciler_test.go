@@ -65,7 +65,7 @@ func (w *FakeWatcher) Watch(_ logr.Logger, obj client.Object, _ handler.EventHan
 }
 
 func TestResourceReconcilerReconcile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
@@ -231,7 +231,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 }
 
 func TestResourceReconcilerPause(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
@@ -296,7 +296,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 }
 
 func TestResourceReconcilerDelete(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
@@ -373,7 +373,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 }
 
 func TestReadyStatus(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("unstructured", func(t *testing.T) {
 		tests := []struct {

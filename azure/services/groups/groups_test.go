@@ -17,7 +17,6 @@ limitations under the License.
 package groups
 
 import (
-	"context"
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -169,7 +168,7 @@ func TestIsManaged(t *testing.T) {
 			scopeMock.EXPECT().ASOOwner().Return(newOwner()).AnyTimes()
 			test.expect(scopeMock.EXPECT())
 
-			actual, err := New(scopeMock).IsManaged(context.Background())
+			actual, err := New(scopeMock).IsManaged(t.Context())
 			if test.expectedError {
 				g.Expect(err).To(HaveOccurred())
 			} else {

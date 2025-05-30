@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -82,7 +81,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				machine := &clusterv1.Machine{}
-				err = c.Get(context.Background(), types.NamespacedName{
+				err = c.Get(t.Context(), types.NamespacedName{
 					Name:      "ma1",
 					Namespace: "default",
 				}, machine)
@@ -100,7 +99,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				ampm := &infrav1exp.AzureMachinePoolMachine{}
-				err = c.Get(context.Background(), types.NamespacedName{
+				err = c.Get(t.Context(), types.NamespacedName{
 					Name:      "ampm1",
 					Namespace: "default",
 				}, ampm)
@@ -140,7 +139,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			controller.reconcilerFactory = func(_ *scope.MachinePoolMachineScope) (azure.Reconciler, error) {
 				return reconciler, nil
 			}
-			res, err := controller.Reconcile(context.TODO(), ctrl.Request{
+			res, err := controller.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "ampm1",
 					Namespace: "default",
