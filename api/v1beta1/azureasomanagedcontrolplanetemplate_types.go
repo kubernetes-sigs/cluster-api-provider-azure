@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ type AzureASOManagedControlPlaneTemplateResourceSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
 // AzureASOManagedControlPlaneTemplate is the Schema for the azureasomanagedcontrolplanetemplates API.

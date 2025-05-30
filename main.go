@@ -679,17 +679,17 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	if feature.Gates.Enabled(feature.ASOAPI) {
-		if err := infrav1alpha.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
+		if err := infrav1.SetupAzureASOManagedClusterWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedCluster")
 			os.Exit(1)
 		}
 
-		if err := infrav1alpha.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
+		if err := infrav1.SetupAzureASOManagedControlPlaneWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedControlPlane")
 			os.Exit(1)
 		}
 
-		if err := infrav1alpha.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
+		if err := infrav1.SetupAzureASOManagedMachinePoolWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureASOManagedMachinePool")
 			os.Exit(1)
 		}
