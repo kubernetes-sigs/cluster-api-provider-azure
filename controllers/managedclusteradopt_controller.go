@@ -88,7 +88,7 @@ func (r *ManagedClusterAdoptReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	for _, owner := range managedCluster.GetOwnerReferences() {
-		if owner.APIVersion == infrav1alpha.GroupVersion.Identifier() &&
+		if matchesASOManagedAPIGroup(owner.APIVersion) &&
 			owner.Kind == infrav1alpha.AzureASOManagedControlPlaneKind {
 			return ctrl.Result{}, nil
 		}

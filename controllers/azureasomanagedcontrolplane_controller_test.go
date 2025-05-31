@@ -112,7 +112,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			Spec: clusterv1.ClusterSpec{
 				InfrastructureRef: &corev1.ObjectReference{
-					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					APIVersion: "infrastructure.cluster.x-k8s.io/v1somethingelse",
 					Kind:       infrav1alpha.AzureASOManagedClusterKind,
 				},
 			},
