@@ -459,6 +459,10 @@ type NetworkClassSpec struct {
 	// +optional
 	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
 
+	// PrivateDNSZone enables private dns zone creation modes for private cluster.
+	// +optional
+	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
+
 	// PrivateDNSZoneResourceGroup defines the resource group to be used for Azure Private DNS Zone.
 	// If not specified, the resource group of the cluster will be used to create the Azure Private DNS Zone.
 	// +optional
