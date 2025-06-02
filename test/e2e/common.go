@@ -283,13 +283,11 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 		g.Expect(clusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)).To(Succeed(), "Failed to get kube-system namespace")
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
-	_, hasWindows := cluster.Labels["cni-windows"]
-
 	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != infrav1.AzureNetworkPluginName {
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
-		EnsureCNIAndCloudProviderAzureHelmChart(ctx, input, hasWindows)
+		EnsureCNIAndCloudProviderAzureHelmChart(ctx, input)
 	} else {
-		EnsureCNI(ctx, input, hasWindows)
+		EnsureCNI(ctx, input)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
 	EnsureAzureDiskCSIDriverHelmChart(ctx, input)
