@@ -65,6 +65,26 @@ type resourceStatusObject interface {
 	SetResourceStatuses([]infrav1.ResourceStatus)
 }
 
+// NewResourceReconciler creates a new ResourceReconciler.
+func NewResourceReconciler(c client.Client, resources []*unstructured.Unstructured, owner resourceStatusObject, opts ...func(*ResourceReconciler)) *ResourceReconciler {
+	r := &ResourceReconciler{
+		Client:    c,
+		resources: resources,
+		owner:     owner,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
+// WithWatcher sets the watcher for the ResourceReconciler.
+func WithWatcher(w watcher) func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.watcher = w
+	}
+}
+
 // Reconcile creates or updates the specified resources.
 func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Reconcile")
@@ -148,11 +168,16 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 			return fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
-		toWatch := meta.AsPartialObjectMetadata(spec)
-		toWatch.APIVersion = spec.GetAPIVersion()
-		toWatch.Kind = spec.GetKind()
-		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return fmt.Errorf("failed to watch resource: %w", err)
+		// Set up dynamic watch if watcher is configured
+		// This is optional - if no watcher is provided, reconciliation will still work
+		// but won't get automatic updates when ASO resources change
+		if r.watcher != nil {
+			toWatch := meta.AsPartialObjectMetadata(spec)
+			toWatch.APIVersion = spec.GetAPIVersion()
+			toWatch.Kind = spec.GetKind()
+			if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
+				return fmt.Errorf("failed to watch resource: %w", err)
+			}
 		}
 
 		gvk := spec.GroupVersionKind()

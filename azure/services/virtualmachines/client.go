@@ -133,3 +133,23 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	// if the operation completed, return a nil poller.
 	return nil, err
 }
+
+// List returns all virtualmachines in a resource group.
+func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]armcompute.VirtualMachine, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.List")
+	defer done()
+
+	var virtualMachines []armcompute.VirtualMachine
+	pager := ac.virtualmachines.NewListPager(resourceGroupName, nil)
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			return virtualMachines, errors.Wrap(err, "could not iterate virtualmachines")
+		}
+		for _, scaleSet := range nextResult.Value {
+			virtualMachines = append(virtualMachines, *scaleSet)
+		}
+	}
+
+	return virtualMachines, nil
+}

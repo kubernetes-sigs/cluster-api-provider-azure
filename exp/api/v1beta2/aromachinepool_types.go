@@ -1,0 +1,177 @@
+/*
+Copyright 2025 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1beta2
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+)
+
+// AROMachinePoolSpec defines the desired state of AROMachinePool.
+type AROMachinePoolSpec struct {
+	// Resources are embedded ASO resources to be managed by this AROMachinePool.
+	// This allows you to define the HcpOpenShiftNodePool resource directly using ASO types.
+	//
+	// Required. Must include HcpOpenShiftClustersNodePool resource.
+	Resources []runtime.RawExtension `json:"resources"`
+
+	// ProviderIDList are the identification IDs of machine instances provided by the provider.
+	// This field must match the provider IDs as seen on the node objects corresponding to a machine pool's machine instances.
+	// +optional
+	ProviderIDList []string `json:"providerIDList,omitempty"`
+}
+
+// AROMachinePoolStatus defines the observed state of AROMachinePool.
+type AROMachinePoolStatus struct {
+	// Ready denotes that the AROMachinePool nodepool has joined
+	// the cluster
+	// +kubebuilder:default=false
+	Ready bool `json:"ready"`
+	// Replicas is the most recently observed number of replicas.
+	// +optional
+	Replicas int32 `json:"replicas"`
+	// Conditions defines current service state of the managed machine pool
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// FailureMessage will be set in the event that there is a terminal problem
+	// reconciling the state and will be set to a descriptive error message.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the spec or the configuration of
+	// the controller, and that manual intervention is required.
+	//
+	// +optional
+	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// ID is the ID given by ARO.
+	ID string `json:"id,omitempty"`
+
+	// Available upgrades for the ARO MachinePool.
+	AvailableUpgrades []string `json:"availableUpgrades,omitempty"`
+
+	// ProvisioningState represents the asynchronous provisioning state of an ARM resource.
+	// Allowed values are: Succeeded, Failed, Canceled, Accepted, Deleting, Provisioning, and Updating.
+	ProvisioningState string `json:"provisioningState,omitempty"`
+
+	// ARO-HCP OpenShift version X.Y (without Z-stream), for example "4.20".
+	Version string `json:"version,omitempty"`
+
+	// Resources represents the status of ASO resources managed by this AROMachinePool.
+	// This is populated when using the Resources field in the spec.
+	// +optional
+	Resources []infrav1.ResourceStatus `json:"resources,omitempty"`
+
+	// LongRunningOperationStates saves the state for ARO long-running operations so they can be continued on the
+	// next reconciliation loop.
+	// +optional
+	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+
+	// initialization provides observations of the AROMachinePool initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization *AROMachinePoolInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AROMachinePoolInitializationStatus provides observations of the AROCluster initialization process.
+type AROMachinePoolInitializationStatus struct {
+	// provision is true when the AROMachinePoolInitializationStatus provider reports that the infra machine pool is provisioned;
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	Provisioned bool `json:"provisioned,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=aromachinepools,scope=Namespaced,categories=cluster-api,shortName=aromp
+// +kubebuilder:storageversion
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="MachinePool ready status"
+// +kubebuilder:printcolumn:name="Provisioned",type="boolean",JSONPath=".status.initialization.provisioned",description="Control plane infrastructure is provisioned"
+// +kubebuilder:printcolumn:name="Replicas",type="integer",JSONPath=".status.replicas",description="Number of replicas"
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools/finalizers,verbs=update
+
+// AROMachinePool is the Schema for the aromachinepools API.
+type AROMachinePool struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   AROMachinePoolSpec   `json:"spec,omitempty"`
+	Status AROMachinePoolStatus `json:"status,omitempty"`
+}
+
+// GetFutures returns the list of long running operation states for an AROMachinePool API object.
+func (c *AROMachinePool) GetFutures() infrav1.Futures {
+	return c.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AROMachinePool object.
+func (c *AROMachinePool) SetFutures(futures infrav1.Futures) {
+	c.Status.LongRunningOperationStates = futures
+}
+
+// GetResourceStatuses returns the status of resources.
+func (c *AROMachinePool) GetResourceStatuses() []infrav1.ResourceStatus {
+	return c.Status.Resources
+}
+
+// SetResourceStatuses sets the status of resources.
+func (c *AROMachinePool) SetResourceStatuses(r []infrav1.ResourceStatus) {
+	c.Status.Resources = r
+}
+
+const (
+	// AROMachinePoolKind is the kind for AROMachinePool.
+	AROMachinePoolKind = "AROMachinePool"
+
+	// AROMachinePoolFinalizer is the finalizer added to AROMachinePool.
+	AROMachinePoolFinalizer = "aromachinepool/finalizer"
+
+	// AROMachinePoolReadyCondition condition reports on the successful reconciliation of AROMachinePool.
+	AROMachinePoolReadyCondition clusterv1.ConditionType = "AROMachinePoolReady"
+
+	// NodePoolReadyCondition condition reports on the readiness of the HcpOpenShiftClustersNodePool.
+	NodePoolReadyCondition clusterv1.ConditionType = "NodePoolReady"
+)
+
+// +kubebuilder:object:root=true
+
+// AROMachinePoolList contains a list of AROMachinePools.
+type AROMachinePoolList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []AROMachinePool `json:"items"`
+}
+
+// GetConditions returns the observations of the operational state of the AROMachinePool resource.
+func (c *AROMachinePool) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
+}
+
+// SetConditions sets the underlying service state of the AROMachinePool to the predescribed clusterv1.Conditions.
+func (c *AROMachinePool) SetConditions(conditions []metav1.Condition) {
+	c.Status.Conditions = conditions
+}
+
+func init() {
+	SchemeBuilder.Register(&AROMachinePool{}, &AROMachinePoolList{})
+}

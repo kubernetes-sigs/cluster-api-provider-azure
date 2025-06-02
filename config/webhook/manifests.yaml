@@ -179,6 +179,27 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
+  - v1beta2
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-controlplane-cluster-x-k8s-io-v1beta2-arocontrolplane
+  failurePolicy: Fail
+  name: default.arocontrolplanes.controlplane.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - controlplane.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - arocontrolplanes
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -197,6 +218,28 @@ webhooks:
     - UPDATE
     resources:
     - azuremachinepools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta2
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-aromachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.aromachinepools.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - aromachinepools
   sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -504,6 +547,27 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
+  - v1beta2
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta2-arocontrolplane
+  failurePolicy: Fail
+  name: validation.arocontrolplanes.controlplane.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - controlplane.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - arocontrolplanes
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -543,4 +607,48 @@ webhooks:
     - UPDATE
     resources:
     - azuremachinepools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta2
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-arocluster
+  failurePolicy: Fail
+  name: validation.aroclusters.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - aroclusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta2
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-aromachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validation.aromachinepools.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - aromachinepools
   sideEffects: None
