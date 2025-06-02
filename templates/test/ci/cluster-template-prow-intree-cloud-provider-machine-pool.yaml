@@ -2,11 +2,11 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
     cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
     csi-proxy: enabled
+    windows: enabled
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -59,14 +59,26 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: ${K8S_FEATURE_GATES:-""}
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
-          cloud-provider: external
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
           v: "4"
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -100,25 +112,28 @@ spec:
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          cloud-provider: external
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          cloud-provider: external
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands: []
-    verbosity: 10
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
-  replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -129,260 +144,184 @@ metadata:
 spec:
   template:
     spec:
-      additionalTags:
-        monitoring: virtualmachine
       dataDisks:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      identity: UserAssigned
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
+kind: MachinePool
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT:=2}
-  selector: {}
+  replicas: ${WORKER_MACHINE_COUNT}
   template:
-    metadata:
-      labels:
-        nodepool: pool1
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
+kind: AzureMachinePool
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
+  location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
-    spec:
-      additionalTags:
-        monitoring: virtualmachine
-      identity: UserAssigned
-      osDisk:
-        diskSizeGB: 128
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmExtensions:
-      - name: CustomScript
-        protectedSettings:
-          commandToExecute: |
-            #!/bin/sh
-            echo "This script is a no-op used for extension testing purposes ..."
-            touch test_file
-        publisher: Microsoft.Azure.Extensions
-        version: "2.1"
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmExtensions:
+    - name: CustomScript
+      protectedSettings:
+        commandToExecute: |
+          #!/bin/sh
+          echo "This script is a no-op used for extension testing purposes ..."
+          touch test_file
+      publisher: Microsoft.Azure.Extensions
+      version: "2.1"
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
+kind: KubeadmConfig
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}-mp-0
   namespace: default
 spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-0-azure-json
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-provider: external
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+      name: '{{ ds.meta_data["local_hostname"] }}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
+kind: MachinePool
 metadata:
-  name: ${CLUSTER_NAME}-md-win
+  name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
-  selector: {}
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-win
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-win
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-win
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-win
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
+kind: AzureMachinePool
 metadata:
   annotations:
     runtime: containerd
-  name: ${CLUSTER_NAME}-md-win
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
+  name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
+  location: ${AZURE_LOCATION}
   template:
-    metadata:
-      annotations:
-        runtime: containerd
-        windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
-    spec:
-      identity: UserAssigned
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Windows
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      userAssignedIdentities:
-      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    osDisk:
+      diskSizeGB: 128
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Windows
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
+kind: KubeadmConfig
 metadata:
-  name: ${CLUSTER_NAME}-md-win
+  name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
-  template:
-    spec:
-      files:
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-win-azure-json
-        owner: root:root
-        path: c:/k/azure.json
-        permissions: "0644"
-      - content: |-
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-          Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico-ipam.exe
-        path: C:/defender-exclude-calico.ps1
-        permissions: "0744"
-      - content: |
-          # /tmp is assumed created and required for upstream e2e tests to pass
-          New-Item -ItemType Directory -Force -Path C:\tmp\
-        path: C:/create-temp-folder.ps1
-        permissions: "0744"
-      - content: |
-          $ErrorActionPreference = 'Stop'
-
-          $$CONTAINERD_URL="${WINDOWS_CONTAINERD_URL}"
-          if($$CONTAINERD_URL -ne ""){
-            # Kubelet service depends on contianerd service so make a best effort attempt to stop it
-            Stop-Service kubelet -Force -ErrorAction SilentlyContinue
-            Stop-Service containerd -Force
-            echo "downloading containerd: $$CONTAINERD_URL"
-            curl.exe --retry 10 --retry-delay 5 -L "$$CONTAINERD_URL" --output "c:/k/containerd.tar.gz"
-            tar.exe -zxvf c:/k/containerd.tar.gz -C "c:/Program Files/containerd" --strip-components 1
-
-            Start-Service containerd
-          }
-
-          containerd.exe --version
-          containerd-shim-runhcs-v1.exe --version
-        path: C:/replace-containerd.ps1
-        permissions: "0744"
-      - content: |
-          mkdir -Force c:/localdumps
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpCount /t REG_DWORD /d 50 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpType /t REG_DWORD /d 2 /f
-          reg.exe add "HKLM\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps" /V DumpFolder /t REG_EXPAND_SZ /d "c:/LocalDumps" /f
-          # Enable sftp so we can copy crash dump files during log collection of stfp
-          $sshd_config = "$env:ProgramData\ssh\sshd_config"
-          if (-not (Test-Path $sshd_config)) { mkdir -Force $sshd_config }
-          Add-Content -Path $sshd_config "Subsystem sftp              sftp-server.exe"
-          sc.exe stop sshd
-          sc.exe start sshd
-        path: C:/collect-hns-crashes.ps1
-        permissions: "0744"
-      joinConfiguration:
-        nodeRegistration:
-          criSocket: npipe:////./pipe/containerd-containerd
-          kubeletExtraArgs:
-            cloud-provider: external
-            feature-gates: ${NODE_FEATURE_GATES:-""}
-            v: "2"
-            windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
-          name: '{{ ds.meta_data["local_hostname"] }}'
-      postKubeadmCommands:
-      - nssm set kubelet start SERVICE_AUTO_START
-      - powershell C:/defender-exclude-calico.ps1
-      preKubeadmCommands:
-      - powershell C:/create-temp-folder.ps1
-      - powershell C:/replace-containerd.ps1
-      - powershell C:/collect-hns-crashes.ps1
-      users:
-      - groups: Administrators
-        name: capi
-        sshAuthorizedKeys:
-        - ${AZURE_SSH_PUBLIC_KEY:=""}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/control-plane: ""
-  unhealthyConditions:
-  - status: Unknown
-    timeout: 300s
-    type: Ready
-  - status: "False"
-    timeout: 300s
-    type: Ready
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-mhc-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  selector:
-    matchLabels:
-      nodepool: pool1
-  unhealthyConditions:
-  - status: "True"
-    timeout: 30s
-    type: E2ENodeUnhealthy
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-win-azure-json
+    owner: root:root
+    path: c:/k/azure.json
+    permissions: "0644"
+  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+    path: C:/defender-exclude-calico.ps1
+    permissions: "0744"
+  joinConfiguration:
+    nodeRegistration:
+      criSocket: npipe:////./pipe/containerd-containerd
+      kubeletExtraArgs:
+        azure-container-registry-config: c:/k/azure.json
+        cloud-config: c:/k/azure.json
+        cloud-provider: azure
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  postKubeadmCommands:
+  - nssm set kubelet start SERVICE_AUTO_START
+  - powershell C:/defender-exclude-calico.ps1
+  preKubeadmCommands:
+  - powershell c:/create-external-network.ps1
+  users:
+  - groups: Administrators
+    name: capi
+    sshAuthorizedKeys:
+    - ${AZURE_SSH_PUBLIC_KEY:=""}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
@@ -397,19 +336,6 @@ spec:
   - kind: ConfigMap
     name: cni-${CLUSTER_NAME}-calico-windows
   strategy: ApplyOnce
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
@@ -452,77 +378,31 @@ spec:
   namespace: tigera-operator
   releaseName: projectcalico
   repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |
+  valuesTemplate: |-
     installation:
       cni:
         type: Calico
         ipam:
+          strictAffinity: true
           type: Calico
       calicoNetwork:
         bgp: Disabled
         windowsDataplane: HNS
         mtu: 1350
+        ipPools:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      typhaDeployment:
-        spec:
-          template:
-            spec:
-              # By default, typha tolerates all NoSchedule taints. This breaks
-              # scale-ins when it continuously gets scheduled onto an
-              # out-of-date Node that is being deleted. Tolerate only the
-              # NoSchedule taints that are expected.
-              tolerations:
-                - effect: NoExecute
-                  operator: Exists
-                - effect: NoSchedule
-                  key: node-role.kubernetes.io/control-plane
-                  operator: Exists
-                - effect: NoSchedule
-                  key: node.kubernetes.io/not-ready
-                  operator: Exists
-              affinity:
-                nodeAffinity:
-                  preferredDuringSchedulingIgnoredDuringExecution:
-                  - weight: 50
-                    preference:
-                      matchExpressions:
-                      - key: node-role.kubernetes.io/control-plane
-                        operator: Exists
-      registry: mcr.microsoft.com/oss
+      serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
+        - {{ $cidr }}{{end}}
+      registry: docker.io/
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
-      image: tigera/operator
-      registry: mcr.microsoft.com/oss
+      image: tigera-operator
+      registry: jsturtevant
+      version: latest
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
-      serviceCIDRs:
-        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
-    # when kubernetesServiceEndpoint (required for windows) is added
-    # DNS configuration is needed to look up the api server name properly
-    # https://github.com/projectcalico/calico/issues/9536
-    dnsConfig:
-      nameservers:
-        - 127.0.0.53
-      options:
-        - name: edns0
-        - name: trust-ad
-    kubernetesServiceEndpoint:
-      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
-      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
-    # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
-    # when it continuously gets scheduled onto an out-of-date Node that is being
-    # deleted. Tolerate only the NoSchedule taints that are expected.
-    tolerations:
-      - effect: NoExecute
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
-      - effect: NoSchedule
-        key: node.kubernetes.io/not-ready
-        operator: Exists
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
@@ -544,55 +424,6 @@ spec:
       runOnControlPlane: true
     windows:
       useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      logVerbosity: 4
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha1
-kind: HelmChartProxy
-metadata:
-  name: cloud-provider-azure-chart-ci
-  namespace: default
-spec:
-  chartName: cloud-provider-azure
-  clusterSelector:
-    matchLabels:
-      cloud-provider: azure-ci
-  releaseName: cloud-provider-azure-oot
-  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
-  valuesTemplate: |
-    infra:
-      clusterName: {{ .Cluster.metadata.name }}
-    cloudControllerManager:
-      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
-      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
-      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
-      imageName: "${CCM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CCM:-""}"
-      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
-      replicas: ${CCM_COUNT:-1}
-      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
-    cloudNodeManager:
-      imageName: "${CNM_IMAGE_NAME:-""}"
-      imageRepository: "${IMAGE_REGISTRY:-""}"
-      imageTag: "${IMAGE_TAG_CNM:-""}"
 ---
 apiVersion: v1
 data:
@@ -619,7 +450,6 @@ data:
               hostProcess: true
               runAsUserName: "NT AUTHORITY\\system"
           hostNetwork: true
-          priorityClassName: system-node-critical
           containers:
           - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
             args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
@@ -656,17 +486,6 @@ data:
             name: kube-proxy
       updateStrategy:
         type: RollingUpdate
-  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
-    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
-    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
-    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
-    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
-    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
-    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
-    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
-    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
-    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
-    \"Switch\"\n            }\n          }\n      ]\n    } \n---\n"
 kind: ConfigMap
 metadata:
   annotations:
