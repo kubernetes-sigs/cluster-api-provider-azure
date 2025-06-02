@@ -128,6 +128,32 @@ rules:
   - list
   - watch
 - apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - ""
   resources:
   - nodes
@@ -138,6 +164,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters
+  - aromachinepools
   - azureasomanagedclusters
   - azureasomanagedcontrolplanes
   - azureasomanagedmachinepools
@@ -161,6 +189,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/finalizers
+  - aromachinepools/finalizers
   - azureasomanagedclusters/finalizers
   - azureasomanagedcontrolplanes/finalizers
   - azureasomanagedmachinepools/finalizers
@@ -169,6 +199,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/status
+  - aromachinepools/status
   - azureasomanagedclusters/status
   - azureasomanagedcontrolplanes/status
   - azureasomanagedmachinepools/status
