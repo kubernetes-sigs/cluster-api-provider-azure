@@ -138,6 +138,9 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters
+  - arocontrolplanes
+  - aromachinepools
   - azureasomanagedclusters
   - azureasomanagedcontrolplanes
   - azureasomanagedmachinepools
@@ -161,6 +164,9 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/finalizers
+  - arocontrolplanes/finalizers
+  - aromachinepools/finalizers
   - azureasomanagedclusters/finalizers
   - azureasomanagedcontrolplanes/finalizers
   - azureasomanagedmachinepools/finalizers
@@ -169,6 +175,9 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/status
+  - arocontrolplanes/status
+  - aromachinepools/status
   - azureasomanagedclusters/status
   - azureasomanagedcontrolplanes/status
   - azureasomanagedmachinepools/status

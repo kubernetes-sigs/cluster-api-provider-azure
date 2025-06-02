@@ -608,6 +608,31 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 	}
+	if feature.Gates.Enabled(feature.ARO) {
+		if err := (&infrav1controllersexp.AroClusterReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AroCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1controllersexp.AroControlPlaneReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AroControlPlane")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1controllersexp.AroMachinePoolReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AroMachinePool")
+			os.Exit(1)
+		}
+	}
 }
 
 func registerWebhooks(mgr manager.Manager) {
