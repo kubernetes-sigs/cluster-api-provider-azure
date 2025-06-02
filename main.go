@@ -24,6 +24,7 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
+	asoauthorizationv1api20220401 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
 	asocontainerservicev1api20210501 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20210501"
 	asocontainerservicev1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	asocontainerservicev1api20230315preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
@@ -31,9 +32,12 @@ import (
 	asocontainerservicev1api20231102preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
 	asocontainerservicev1api20240402preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240402preview"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
+	asokeyvaultv1 "github.com/Azure/azure-service-operator/v2/api/keyvault/v1api20230701"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
+	asomanagedidentityv1api20230131 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -61,7 +65,9 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	cplanev1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -80,20 +86,26 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
+	_ = cplanev1beta2exp.AddToScheme(scheme)
+	_ = infrav1beta2exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
+	_ = asoauthorizationv1api20220401.AddToScheme(scheme)
 	_ = asocontainerservicev1api20210501.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230201.AddToScheme(scheme)
 	_ = asocontainerservicev1api20231001.AddToScheme(scheme)
+	_ = asomanagedidentityv1api20230131.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230315preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20231102preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240402preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240901.AddToScheme(scheme)
+	_ = asokeyvaultv1.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -626,6 +638,58 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AgentPool")
 			os.Exit(1)
+		}
+	}
+	if feature.Gates.Enabled(feature.ARO) {
+		if err := (&infrav1controllersexp.AROClusterReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AROCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1beta2exp.AROCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROCluster")
+			os.Exit(1)
+		}
+
+		aroControlPlaneCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build aroControlPlaneCache ReconcileCache")
+		}
+
+		if err := (&infrav1controllersexp.AROControlPlaneReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+			CredentialCache:  credCache,
+			Timeouts:         timeouts,
+		}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: aroControlPlaneCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if err := cplanev1beta2exp.SetupAROControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if err := infrav1controllersexp.NewAROMachinePoolReconciler(
+				mgr.GetClient(),
+				mgr.GetEventRecorderFor("aromachinepoolmachine-reconciler"),
+				timeouts,
+				watchFilterValue,
+				credCache,
+			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: clusterCache}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
+				os.Exit(1)
+			}
+
+			if err := infrav1beta2exp.SetupAROMachinePoolWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AROMachinePool")
+				os.Exit(1)
+			}
 		}
 	}
 }

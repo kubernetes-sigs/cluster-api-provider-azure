@@ -63,7 +63,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 	AfterEach(func() {
 		CheckTestBeforeCleanup()
-		redactLogs()
+		redactLogs(context.Background())
 
 		Expect(os.Unsetenv(AzureResourceGroup)).To(Succeed())
 		Expect(os.Unsetenv(AzureVNetName)).To(Succeed())

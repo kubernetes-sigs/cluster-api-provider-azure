@@ -40,7 +40,9 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -432,4 +434,87 @@ func BootstrapConfigToInfrastructureMapFunc(c client.Client, log logr.Logger) ha
 			},
 		}
 	}
+}
+
+// AROMachinePoolToInfrastructureMapFunc returns a handler.MapFunc that watches for
+// MachinePool events and returns reconciliation requests for an infrastructure provider object.
+func AROMachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
+	return func(_ context.Context, o client.Object) []reconcile.Request {
+		m, ok := o.(*expv1.MachinePool)
+		if !ok {
+			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
+			return nil
+		}
+
+		gk := gvk.GroupKind()
+		ref := m.Spec.Template.Spec.InfrastructureRef
+		// Return early if the GroupKind doesn't match what we expect.
+		infraGK := ref.GroupVersionKind().GroupKind()
+		if gk != infraGK {
+			log.V(4).Info("gk does not match", "gk", gk, "infraGK", infraGK)
+			return nil
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: client.ObjectKey{
+					Namespace: m.Namespace,
+					Name:      ref.Name,
+				},
+			},
+		}
+	}
+}
+
+// AROControlPlaneToAROMachinePoolsMapper creates a mapping handler to transform AROControlPlanes into
+// AROMachinePools. The transform requires AROControlPlane to map to the owning Cluster, then from the
+// Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
+// to the AROMachinePools.
+func AROControlPlaneToAROMachinePoolsMapper(_ context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+	gvk, err := apiutil.GVKForObject(new(infrav2exp.AROMachinePool), scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find GVK for AROMachinePool")
+	}
+
+	return func(ctx context.Context, o client.Object) []ctrl.Request {
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
+		defer cancel()
+
+		azControlPlane, ok := o.(*cplane.AROControlPlane)
+		if !ok {
+			log.Error(errors.Errorf("expected an AROControlPlane, got %T instead", o.GetObjectKind()), "failed to map AROControlPlane")
+			return nil
+		}
+
+		log := log.WithValues("AROControlPlane", azControlPlane.Name, "Namespace", azControlPlane.Namespace)
+
+		// Don't handle deleted AROControlPlanes
+		if !azControlPlane.ObjectMeta.DeletionTimestamp.IsZero() {
+			log.V(4).Info("AROControlPlane has a deletion timestamp, skipping mapping.")
+			return nil
+		}
+
+		clusterName, ok := controllers.GetOwnerClusterName(azControlPlane.ObjectMeta)
+		if !ok {
+			log.Info("unable to get the owner cluster")
+			return nil
+		}
+
+		machineList := &expv1.MachinePoolList{}
+		machineList.SetGroupVersionKind(gvk)
+		// list all of the requested objects within the cluster namespace with the cluster name label
+		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+			return nil
+		}
+
+		mapFunc := AROMachinePoolToInfrastructureMapFunc(gvk, log)
+		var results []ctrl.Request
+		for _, machine := range machineList.Items {
+			m := machine
+			azureMachines := mapFunc(ctx, &m)
+			results = append(results, azureMachines...)
+		}
+
+		return results
+	}, nil
 }
