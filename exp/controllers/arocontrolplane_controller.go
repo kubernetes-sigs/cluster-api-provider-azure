@@ -25,7 +25,7 @@ import (
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -105,7 +105,7 @@ func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 			handler.EnqueueRequestsFromMapFunc(clusterToAROControlPlane),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
-				controllers.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitions(mgr.GetScheme(), log),
 			),
 		).
 		// User errors that CAPZ passes through agentPoolProfiles on create must be fixed in the
@@ -131,11 +131,12 @@ func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 }
 
 func clusterToAROControlPlane(_ context.Context, o client.Object) []ctrl.Request {
-	controlPlaneRef := o.(*clusterv1.Cluster).Spec.ControlPlaneRef
-	if controlPlaneRef != nil &&
-		controlPlaneRef.APIVersion == infrav2exp.GroupVersion.Identifier() &&
+	cluster := o.(*clusterv1.Cluster)
+	controlPlaneRef := cluster.Spec.ControlPlaneRef
+	if controlPlaneRef.IsDefined() &&
+		controlPlaneRef.APIGroup == infrav2exp.GroupVersion.Group &&
 		controlPlaneRef.Kind == cplane.AROControlPlaneKind {
-		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
+		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: cluster.Namespace, Name: controlPlaneRef.Name}}}
 	}
 	return nil
 }
@@ -202,19 +203,20 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Create a patch helper for the AROControlPlane to ensure status fields are persisted
 	patchHelper, err := patch.NewHelper(aroControlPlane, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
 	defer func() {
-		err := patchHelper.Patch(ctx, aroControlPlane)
-		if err != nil && resultErr == nil {
-			resultErr = err
+		patchErr := patchHelper.Patch(ctx, aroControlPlane)
+		if patchErr != nil && resultErr == nil {
+			resultErr = patchErr
 			result = ctrl.Result{}
 		}
 	}()
 
-	aroControlPlane.Status.Ready = false
+	// Initialize the Initialization status early so it's available even if reconciliation fails early
 	if aroControlPlane.Status.Initialization == nil {
 		aroControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: false}
 	}
@@ -251,7 +253,7 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		}
 	}()
 
-	if cluster != nil && cluster.Spec.Paused ||
+	if cluster != nil && cluster.Spec.Paused != nil && *cluster.Spec.Paused ||
 		annotations.HasPaused(aroControlPlane) {
 		return r.reconcilePaused(ctx, aroScope)
 	}
@@ -276,9 +278,10 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 		log.V(4).Info("Cluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
-	if cluster.Spec.InfrastructureRef == nil ||
-		cluster.Spec.InfrastructureRef.APIVersion != infrav2exp.GroupVersion.Identifier() ||
-		cluster.Spec.InfrastructureRef.Kind != infrav2exp.AROClusterKind {
+	infraRef := cluster.Spec.InfrastructureRef
+	if !infraRef.IsDefined() ||
+		infraRef.APIGroup != infrav2exp.GroupVersion.Group ||
+		infraRef.Kind != infrav2exp.AROClusterKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidClusterKind)
 	}
 
@@ -322,9 +325,11 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.ControlPlane.Status.Ready = (aroControlPlane.Status.APIURL != "")
-	if scope.ControlPlane.Status.Initialization == nil || !scope.ControlPlane.Status.Initialization.ControlPlaneInitialized {
-		scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: scope.ControlPlane.Status.Ready}
+	// Always initialize the Initialization status if not set
+	if scope.ControlPlane.Status.Initialization == nil {
+		scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{}
 	}
+	scope.ControlPlane.Status.Initialization.ControlPlaneInitialized = scope.ControlPlane.Status.Ready
 
 	return ctrl.Result{}, nil
 }

@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -54,13 +54,13 @@ func TestSetAROClusterDefaults(t *testing.T) {
 	g := NewWithT(t)
 
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = controlv1.AddToScheme(scheme)
 
 	testCases := []struct {
 		name                   string
 		aroControlPlane        *controlv1.AROControlPlane
-		cluster                *clusterv1.Cluster
+		cluster                *clusterv1beta1.Cluster
 		resources              []*unstructured.Unstructured
 		expectedError          error
 		expectMutationError    bool
@@ -73,7 +73,7 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
@@ -89,17 +89,17 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
 				},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Pods: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
-						Services: &clusterv1.NetworkRanges{
+						Services: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
 					},
@@ -141,7 +141,7 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
@@ -161,14 +161,14 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
 				},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Services: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
 					},
@@ -190,14 +190,14 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
 				},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Pods: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
 					},
@@ -219,7 +219,7 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
@@ -253,7 +253,7 @@ func TestSetAROClusterDefaults(t *testing.T) {
 					Version: "v1.25.0",
 				},
 			},
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-cluster",
 					Namespace: "default",
@@ -396,16 +396,16 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 
 	testCases := []struct {
 		name                string
-		cluster             *clusterv1.Cluster
+		cluster             *clusterv1beta1.Cluster
 		aroCluster          *unstructured.Unstructured
 		expectError         bool
 		expectedServiceCIDR string
 	}{
 		{
 			name: "no cluster network",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-				Spec: clusterv1.ClusterSpec{
+				Spec: clusterv1beta1.ClusterSpec{
 					ClusterNetwork: nil,
 				},
 			},
@@ -414,10 +414,10 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 		},
 		{
 			name: "no services config",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
 						Services: nil,
 					},
 				},
@@ -427,11 +427,11 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 		},
 		{
 			name: "empty CIDR blocks",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Services: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{},
 						},
 					},
@@ -442,11 +442,11 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 		},
 		{
 			name: "successful service CIDR setting",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Services: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
 					},
@@ -458,11 +458,11 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 		},
 		{
 			name: "conflicting service CIDR",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Services: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
 					},
@@ -505,16 +505,16 @@ func TestSetAROClusterPodCIDR(t *testing.T) {
 
 	testCases := []struct {
 		name            string
-		cluster         *clusterv1.Cluster
+		cluster         *clusterv1beta1.Cluster
 		aroCluster      *unstructured.Unstructured
 		expectError     bool
 		expectedPodCIDR string
 	}{
 		{
 			name: "no cluster network",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-				Spec: clusterv1.ClusterSpec{
+				Spec: clusterv1beta1.ClusterSpec{
 					ClusterNetwork: nil,
 				},
 			},
@@ -523,11 +523,11 @@ func TestSetAROClusterPodCIDR(t *testing.T) {
 		},
 		{
 			name: "successful pod CIDR setting",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Pods: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
 					},
@@ -539,11 +539,11 @@ func TestSetAROClusterPodCIDR(t *testing.T) {
 		},
 		{
 			name: "conflicting pod CIDR",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+				Spec: clusterv1beta1.ClusterSpec{
+					ClusterNetwork: &clusterv1beta1.ClusterNetwork{
+						Pods: &clusterv1beta1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
 					},
@@ -586,7 +586,7 @@ func TestSetAROClusterCredentials(t *testing.T) {
 
 	testCases := []struct {
 		name              string
-		cluster           *clusterv1.Cluster
+		cluster           *clusterv1beta1.Cluster
 		aroCluster        *unstructured.Unstructured
 		expectError       bool
 		expectCredentials bool
@@ -594,7 +594,7 @@ func TestSetAROClusterCredentials(t *testing.T) {
 	}{
 		{
 			name: "no existing credentials",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
 			},
 			aroCluster:        aroClusterUnstructured(g, map[string]interface{}{}),
@@ -604,7 +604,7 @@ func TestSetAROClusterCredentials(t *testing.T) {
 		},
 		{
 			name: "existing user credentials",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
 			},
 			aroCluster: aroClusterUnstructured(g, map[string]interface{}{
@@ -621,7 +621,7 @@ func TestSetAROClusterCredentials(t *testing.T) {
 		},
 		{
 			name: "existing admin credentials",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
 			},
 			aroCluster: aroClusterUnstructured(g, map[string]interface{}{

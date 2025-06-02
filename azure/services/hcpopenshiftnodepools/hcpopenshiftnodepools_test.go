@@ -26,8 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -54,7 +53,7 @@ func TestNew(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = cplane.AddToScheme(scheme)
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = v1beta2.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	_ = asoredhatopenshiftv1.AddToScheme(scheme)
@@ -90,13 +89,22 @@ func TestNew(t *testing.T) {
 		},
 	}
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-mp",
 			Namespace: "default",
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			Replicas: ptr.To[int32](3),
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: v1beta2.GroupVersion.Group,
+						Kind:     "AROMachinePool",
+						Name:     "test-amp",
+					},
+				},
+			},
 		},
 	}
 
@@ -158,7 +166,7 @@ func TestBuildHcpOpenShiftNodePool(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = cplane.AddToScheme(scheme)
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = v1beta2.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	_ = asoredhatopenshiftv1.AddToScheme(scheme)
@@ -195,13 +203,22 @@ func TestBuildHcpOpenShiftNodePool(t *testing.T) {
 		},
 	}
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-mp",
 			Namespace: "default",
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			Replicas: ptr.To[int32](3),
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: v1beta2.GroupVersion.Group,
+						Kind:     "AROMachinePool",
+						Name:     "test-amp",
+					},
+				},
+			},
 		},
 	}
 
@@ -287,7 +304,7 @@ func TestGetNodePoolName(t *testing.T) {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = cplane.AddToScheme(scheme)
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = v1beta2.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
@@ -321,13 +338,22 @@ func TestGetNodePoolName(t *testing.T) {
 		},
 	}
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-mp",
 			Namespace: "default",
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			Replicas: ptr.To[int32](3),
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: v1beta2.GroupVersion.Group,
+						Kind:     "AROMachinePool",
+						Name:     "test-amp",
+					},
+				},
+			},
 		},
 	}
 

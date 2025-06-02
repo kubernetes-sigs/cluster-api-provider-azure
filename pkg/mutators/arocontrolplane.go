@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -38,7 +38,7 @@ var (
 )
 
 // SetAROClusterDefaults propagates values defined by Cluster API to an ARO AROCluster.
-func SetAROClusterDefaults(_ client.Client, aroControlPlane *controlv1.AROControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
+func SetAROClusterDefaults(_ client.Client, aroControlPlane *controlv1.AROControlPlane, cluster *clusterv1beta1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetAROClusterDefaults")
 		defer done()
@@ -107,7 +107,7 @@ func setAROClusterKubernetesVersion(ctx context.Context, aroControlPlane *contro
 	return unstructured.SetNestedField(aroCluster.UnstructuredContent(), capzK8sVersion, k8sVersionPath...)
 }
 
-func setAROClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
+func setAROClusterServiceCIDR(ctx context.Context, cluster *clusterv1beta1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAROClusterServiceCIDR")
 	defer done()
 
@@ -140,7 +140,7 @@ func setAROClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluster, a
 	return unstructured.SetNestedField(aroCluster.UnstructuredContent(), capiCIDR, svcCIDRPath...)
 }
 
-func setAROClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
+func setAROClusterPodCIDR(ctx context.Context, cluster *clusterv1beta1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAROClusterPodCIDR")
 	defer done()
 
@@ -173,7 +173,7 @@ func setAROClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, aroCl
 	return unstructured.SetNestedField(aroCluster.UnstructuredContent(), capiCIDR, podCIDRPath...)
 }
 
-func setAROClusterCredentials(ctx context.Context, cluster *clusterv1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
+func setAROClusterCredentials(ctx context.Context, cluster *clusterv1beta1.Cluster, aroClusterPath string, aroCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAROClusterCredentials")
 	defer done()
 

@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -80,12 +80,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	if !hasReadyMachinePool {
 		log.V(4).Info("waiting for at least one machine pool to be ready before configuring external auth")
-		capiconditions.MarkFalse(
-			s.Scope.ControlPlane,
-			cplane.ExternalAuthReadyCondition,
-			"WaitingForMachinePools",
-			clusterv1.ConditionSeverityInfo,
-			"waiting for at least one machine pool to be ready")
+		capiconditions.Set(s.Scope.ControlPlane, metav1.Condition{
+			Type:    string(cplane.ExternalAuthReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "WaitingForMachinePools",
+			Message: "waiting for at least one machine pool to be ready",
+		})
 		return azure.WithTransientError(
 			errors.New("external authentication requires at least one ready machine pool"),
 			30)
@@ -118,12 +118,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		readyCondition := findCondition(appliedAuth.Status.Conditions, asoconditions.ConditionTypeReady)
 		if readyCondition == nil || readyCondition.Status != metav1.ConditionTrue {
 			log.V(4).Info("waiting for HcpOpenShiftClustersExternalAuth to be ready", "provider", provider.Name)
-			capiconditions.MarkFalse(
-				s.Scope.ControlPlane,
-				cplane.ExternalAuthReadyCondition,
-				"WaitingForExternalAuth",
-				clusterv1.ConditionSeverityInfo,
-				"waiting for HcpOpenShiftClustersExternalAuth to be ready in Azure")
+			capiconditions.Set(s.Scope.ControlPlane, metav1.Condition{
+				Type:    string(cplane.ExternalAuthReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "WaitingForExternalAuth",
+				Message: "waiting for HcpOpenShiftClustersExternalAuth to be ready in Azure",
+			})
 			return azure.WithTransientError(
 				errors.Errorf("HcpOpenShiftClustersExternalAuth %s not yet ready", provider.Name),
 				15)
@@ -145,19 +145,23 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			// Don't fail - just log and continue waiting
 		}
 
-		capiconditions.MarkFalse(
-			s.Scope.ControlPlane,
-			cplane.ExternalAuthReadyCondition,
-			"WaitingForConsoleURL",
-			clusterv1.ConditionSeverityInfo,
-			"waiting for console URL to appear in HcpOpenShiftCluster status")
+		capiconditions.Set(s.Scope.ControlPlane, metav1.Condition{
+			Type:    string(cplane.ExternalAuthReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "WaitingForConsoleURL",
+			Message: "waiting for console URL to appear in HcpOpenShiftCluster status",
+		})
 		return azure.WithTransientError(
 			errors.New("console URL not yet available after external auth configuration"),
 			15)
 	}
 
 	log.V(4).Info("external auth configured successfully with console URL available")
-	capiconditions.MarkTrue(s.Scope.ControlPlane, cplane.ExternalAuthReadyCondition)
+	capiconditions.Set(s.Scope.ControlPlane, metav1.Condition{
+		Type:   string(cplane.ExternalAuthReadyCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "Succeeded",
+	})
 	return nil
 }
 
@@ -333,7 +337,7 @@ func (s *Service) hasReadyMachinePool(ctx context.Context) (bool, error) {
 	if err := s.client.List(ctx, machinePools,
 		client.InNamespace(s.Scope.ControlPlane.Namespace),
 		client.MatchingLabels{
-			clusterv1.ClusterNameLabel: s.Scope.ClusterName(),
+			clusterv1beta1.ClusterNameLabel: s.Scope.ClusterName(),
 		}); err != nil {
 		return false, errors.Wrap(err, "failed to list AROMachinePools")
 	}

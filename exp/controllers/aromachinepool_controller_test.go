@@ -23,11 +23,11 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -133,7 +133,7 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 
 			scheme := runtime.NewScheme()
 			_ = clusterv1.AddToScheme(scheme)
-			_ = expv1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
 			_ = infrav2exp.AddToScheme(scheme)
 			_ = cplane.AddToScheme(scheme)
@@ -157,7 +157,7 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 				},
 			}
 
-			machinePool := &expv1.MachinePool{
+			machinePool := &clusterv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            testMachinePoolName,
 					Namespace:       testNamespace,
@@ -166,14 +166,13 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 						clusterv1.ClusterNameLabel: testClusterName,
 					},
 				},
-				Spec: expv1.MachinePoolSpec{
+				Spec: clusterv1.MachinePoolSpec{
 					Template: clusterv1.MachineTemplateSpec{
 						Spec: clusterv1.MachineSpec{
-							InfrastructureRef: corev1.ObjectReference{
-								APIVersion: infrav2exp.GroupVersion.String(),
-								Kind:       "AROMachinePool",
-								Name:       testMachinePoolName,
-								Namespace:  testNamespace,
+							InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+								APIGroup: infrav2exp.GroupVersion.String(),
+								Kind:     "AROMachinePool",
+								Name:     testMachinePoolName,
 							},
 						},
 					},
@@ -187,7 +186,7 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 					ResourceVersion: "999",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: expv1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "MachinePool",
 							Name:       testMachinePoolName,
 							UID:        "test-uid",
@@ -306,8 +305,9 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 					Namespace: testNamespace,
 					Name:      machinePoolName,
 				}, &aroMP)
-				g.Expect(err).NotTo(HaveOccurred())
-				// In a real scenario, finalizer would be removed, but fake client may not reflect this immediately
+				// After successful deletion with finalizer removed and DeletionTimestamp set,
+				// the fake client garbage collects the object, so it should not be found
+				g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "AROMachinePool should be deleted after finalizer removal")
 			},
 		},
 		// TODO: Fix deletion error tests - mock service integration needs work
@@ -331,7 +331,7 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 
 			scheme := runtime.NewScheme()
 			_ = clusterv1.AddToScheme(scheme)
-			_ = expv1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
 			_ = infrav2exp.AddToScheme(scheme)
 			_ = cplane.AddToScheme(scheme)
@@ -352,7 +352,7 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 				},
 			}
 
-			machinePool := &expv1.MachinePool{
+			machinePool := &clusterv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            testMachinePoolName,
 					Namespace:       testNamespace,
@@ -361,14 +361,13 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 						clusterv1.ClusterNameLabel: testClusterName,
 					},
 				},
-				Spec: expv1.MachinePoolSpec{
+				Spec: clusterv1.MachinePoolSpec{
 					Template: clusterv1.MachineTemplateSpec{
 						Spec: clusterv1.MachineSpec{
-							InfrastructureRef: corev1.ObjectReference{
-								APIVersion: infrav2exp.GroupVersion.String(),
-								Kind:       "AROMachinePool",
-								Name:       testMachinePoolName,
-								Namespace:  testNamespace,
+							InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+								APIGroup: infrav2exp.GroupVersion.String(),
+								Kind:     "AROMachinePool",
+								Name:     testMachinePoolName,
 							},
 						},
 					},
@@ -384,7 +383,7 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 					Finalizers:        []string{infrav2exp.AROMachinePoolFinalizer},
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: expv1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "MachinePool",
 							Name:       testMachinePoolName,
 							UID:        "test-uid",

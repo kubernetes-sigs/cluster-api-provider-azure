@@ -22,9 +22,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -114,15 +115,23 @@ func (s *aroControlPlaneService) reconcile(ctx context.Context) error {
 		if err := service.Reconcile(ctx); err != nil {
 			// Special handling for external auth to set condition
 			if serviceName == "hcpopenshiftclustersexternalauth" {
-				conditions.MarkFalse(s.scope.ControlPlane, cplane.ExternalAuthReadyCondition,
-					"ReconciliationFailed", clusterv1.ConditionSeverityWarning, "%s", err.Error())
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:    string(cplane.ExternalAuthReadyCondition),
+					Status:  metav1.ConditionFalse,
+					Reason:  "ReconciliationFailed",
+					Message: err.Error(),
+				})
 			}
 			return errors.Wrapf(err, "failed to reconcile AROControlPlane service %s", service.Name())
 		}
 
 		// Mark external auth as ready if reconciliation succeeded
 		if serviceName == "hcpopenshiftclustersexternalauth" && s.scope.ControlPlane.Spec.EnableExternalAuthProviders {
-			conditions.MarkTrue(s.scope.ControlPlane, cplane.ExternalAuthReadyCondition)
+			conditions.Set(s.scope.ControlPlane, metav1.Condition{
+				Type:   string(cplane.ExternalAuthReadyCondition),
+				Status: metav1.ConditionTrue,
+				Reason: "Succeeded",
+			})
 		}
 	}
 

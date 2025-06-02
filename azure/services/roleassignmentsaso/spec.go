@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
@@ -181,7 +181,7 @@ func (s *KubernetesRoleAssignmentSpec) Parameters(_ context.Context, existing *a
 	for k, v := range s.Tags {
 		roleAssignment.ObjectMeta.Labels[k] = v
 	}
-	roleAssignment.ObjectMeta.Labels[clusterv1.ClusterNameLabel] = s.ClusterName
+	roleAssignment.ObjectMeta.Labels[clusterv1beta1.ClusterNameLabel] = s.ClusterName
 
 	return roleAssignment, nil
 }

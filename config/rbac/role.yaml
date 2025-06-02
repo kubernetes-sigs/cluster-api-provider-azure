@@ -190,14 +190,6 @@ rules:
   - patch
   - update
 - apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
   - aroclusters

@@ -18,7 +18,7 @@ package v1beta2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // AROClusterSpec defines the desired state of AROCluster.
@@ -36,10 +36,10 @@ type AROClusterStatus struct {
 
 	// FailureDomains specifies a list fo available availability zones that can be used
 	// +optional
-	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
+	FailureDomains []clusterv1.FailureDomain `json:"failureDomains,omitempty"`
 
 	// Conditions define the current service state of the AROCluster.
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// initialization provides observations of the AROCluster initialization process.
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
@@ -78,12 +78,12 @@ type AROCluster struct {
 }
 
 // GetConditions returns the conditions for the AROCluster.
-func (ac *AROCluster) GetConditions() clusterv1.Conditions {
+func (ac *AROCluster) GetConditions() []metav1.Condition {
 	return ac.Status.Conditions
 }
 
 // SetConditions sets the conditions for the AROCluster.
-func (ac *AROCluster) SetConditions(conditions clusterv1.Conditions) {
+func (ac *AROCluster) SetConditions(conditions []metav1.Condition) {
 	ac.Status.Conditions = conditions
 }
 

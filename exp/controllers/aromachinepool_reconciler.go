@@ -24,7 +24,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util/annotations"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -117,7 +117,7 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 	if s.scope.InfraMachinePool.Spec.Autoscaling != nil && !annotations.ReplicasManagedByExternalAutoscaler(s.scope.MachinePool) {
 		// make sure cluster.x-k8s.io/replicas-managed-by annotation is set on CAPI MachinePool when autoscaling is enabled.
 		annotations.AddAnnotations(s.scope.MachinePool, map[string]string{
-			clusterv1.ReplicasManagedByAnnotation: "aro",
+			clusterv1beta1.ReplicasManagedByAnnotation: "aro",
 		})
 	}
 

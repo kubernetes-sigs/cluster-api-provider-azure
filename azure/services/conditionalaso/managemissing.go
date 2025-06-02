@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -110,7 +110,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	if labels == nil {
 		labels = make(map[string]string)
 	}
-	labels[clusterv1.ClusterNameLabel] = r.clusterName
+	labels[clusterv1beta1.ClusterNameLabel] = r.clusterName
 
 	annotations := parameters.GetAnnotations()
 	if annotations == nil {

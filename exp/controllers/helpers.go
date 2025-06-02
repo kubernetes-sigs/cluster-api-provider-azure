@@ -437,7 +437,7 @@ func BootstrapConfigToInfrastructureMapFunc(c client.Client, log logr.Logger) ha
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func AROMachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
 	return func(_ context.Context, o client.Object) []reconcile.Request {
-		m, ok := o.(*expv1.MachinePool)
+		m, ok := o.(*clusterv1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -446,7 +446,7 @@ func AROMachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr
 		gk := gvk.GroupKind()
 		ref := m.Spec.Template.Spec.InfrastructureRef
 		// Return early if the GroupKind doesn't match what we expect.
-		infraGK := ref.GroupVersionKind().GroupKind()
+		infraGK := ref.GroupKind()
 		if gk != infraGK {
 			log.V(4).Info("gk does not match", "gk", gk, "infraGK", infraGK)
 			return nil
@@ -497,7 +497,7 @@ func AROControlPlaneToAROMachinePoolsMapper(_ context.Context, c client.Client, 
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
