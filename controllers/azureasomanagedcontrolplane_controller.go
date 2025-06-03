@@ -114,7 +114,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 func clusterToAzureASOManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
 	controlPlaneRef := o.(*clusterv1.Cluster).Spec.ControlPlaneRef
 	if controlPlaneRef != nil &&
-		controlPlaneRef.APIVersion == infrav1alpha.GroupVersion.Identifier() &&
+		matchesASOManagedAPIGroup(controlPlaneRef.APIVersion) &&
 		controlPlaneRef.Kind == infrav1alpha.AzureASOManagedControlPlaneKind {
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
 	}
@@ -198,7 +198,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 		return ctrl.Result{}, nil
 	}
 	if cluster.Spec.InfrastructureRef == nil ||
-		cluster.Spec.InfrastructureRef.APIVersion != infrav1alpha.GroupVersion.Identifier() ||
+		!matchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIVersion) ||
 		cluster.Spec.InfrastructureRef.Kind != infrav1alpha.AzureASOManagedClusterKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidClusterKind)
 	}
