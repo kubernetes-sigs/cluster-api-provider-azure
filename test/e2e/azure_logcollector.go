@@ -308,6 +308,12 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 			"cni.log",
 			"cat", "/var/log/calico/cni/cni.log",
 		),
+		// If kube-apiserver fails to come up, its logs aren't accessible via `kubectl logs`.
+		// Grab them from the node instead.
+		execToPathFn(
+			"kube-apiserver.log",
+			crictlPodLogsCmd("kube-apiserver"),
+		),
 	}
 }
 
@@ -523,4 +529,14 @@ func writeBootLog(bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, 
 	}
 
 	return nil
+}
+
+func crictlPodLogsCmd(podNamePattern string) string {
+	//nolint: dupword // this is bash, not english
+	return `sudo crictl pods --name "` + podNamePattern + `" -o json | jq -c '.items[]' | while read -r pod; do
+    sudo crictl ps -a --pod $(jq -r .id <<< $pod) -o json | jq -c '.containers[]' | while read -r ctr; do
+        echo "========= Pod $(jq -r .metadata.name <<< $pod), container $(jq -r .metadata.name <<< $ctr) ========="
+        sudo crictl logs "$(jq -r .id <<< $ctr)" 2>&1
+    done
+done`
 }

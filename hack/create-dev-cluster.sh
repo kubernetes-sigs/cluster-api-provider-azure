@@ -66,7 +66,7 @@ capz::util::generate_ssh_key
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build
 
-setup() {
+create_cluster() {
     echo "================ MAKE CLEAN ==============="
     make clean
 
@@ -75,17 +75,14 @@ setup() {
 
     echo "================ INSTALL TOOLS ==============="
     make install-tools
-}
 
-create_cluster() {
     echo "================ CREATE CLUSTER ==============="
     make create-cluster
 }
 
 retries=$CLUSTER_CREATE_ATTEMPTS
-while ((retries > 0)); do
-    setup
-    create_cluster && break
-    sleep 5
-    ((retries --))
+until create_cluster; do
+  if ((--retries == 0)); then
+    exit 1
+  fi
 done
