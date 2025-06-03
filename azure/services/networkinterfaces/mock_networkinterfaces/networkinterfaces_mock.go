@@ -40,6 +40,7 @@ import (
 type MockNICScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockNICScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockNICScopeMockRecorder is the mock recorder for MockNICScope.

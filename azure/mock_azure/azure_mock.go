@@ -45,6 +45,7 @@ import (
 type MockReconciler struct {
 	ctrl     *gomock.Controller
 	recorder *MockReconcilerMockRecorder
+	isgomock struct{}
 }
 
 // MockReconcilerMockRecorder is the mock recorder for MockReconciler.
@@ -96,6 +97,7 @@ func (mr *MockReconcilerMockRecorder) Reconcile(ctx any) *gomock.Call {
 type MockPauser struct {
 	ctrl     *gomock.Controller
 	recorder *MockPauserMockRecorder
+	isgomock struct{}
 }
 
 // MockPauserMockRecorder is the mock recorder for MockPauser.
@@ -133,6 +135,7 @@ func (mr *MockPauserMockRecorder) Pause(arg0 any) *gomock.Call {
 type MockServiceReconciler struct {
 	ctrl     *gomock.Controller
 	recorder *MockServiceReconcilerMockRecorder
+	isgomock struct{}
 }
 
 // MockServiceReconcilerMockRecorder is the mock recorder for MockServiceReconciler.
@@ -198,6 +201,7 @@ func (mr *MockServiceReconcilerMockRecorder) Reconcile(ctx any) *gomock.Call {
 type MockAuthorizer struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthorizerMockRecorder
+	isgomock struct{}
 }
 
 // MockAuthorizerMockRecorder is the mock recorder for MockAuthorizer.
@@ -333,6 +337,7 @@ func (mr *MockAuthorizerMockRecorder) Token() *gomock.Call {
 type MockNetworkDescriber struct {
 	ctrl     *gomock.Controller
 	recorder *MockNetworkDescriberMockRecorder
+	isgomock struct{}
 }
 
 // MockNetworkDescriberMockRecorder is the mock recorder for MockNetworkDescriber.
@@ -578,6 +583,7 @@ func (mr *MockNetworkDescriberMockRecorder) Vnet() *gomock.Call {
 type MockClusterDescriber struct {
 	ctrl     *gomock.Controller
 	recorder *MockClusterDescriberMockRecorder
+	isgomock struct{}
 }
 
 // MockClusterDescriberMockRecorder is the mock recorder for MockClusterDescriber.
@@ -867,6 +873,7 @@ func (mr *MockClusterDescriberMockRecorder) Token() *gomock.Call {
 type MockAsyncStatusUpdater struct {
 	ctrl     *gomock.Controller
 	recorder *MockAsyncStatusUpdaterMockRecorder
+	isgomock struct{}
 }
 
 // MockAsyncStatusUpdaterMockRecorder is the mock recorder for MockAsyncStatusUpdater.
@@ -1006,6 +1013,7 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) UpdatePutStatus(arg0, arg1, arg2 a
 type MockAsyncReconciler struct {
 	ctrl     *gomock.Controller
 	recorder *MockAsyncReconcilerMockRecorder
+	isgomock struct{}
 }
 
 // MockAsyncReconcilerMockRecorder is the mock recorder for MockAsyncReconciler.
@@ -1071,6 +1079,7 @@ func (mr *MockAsyncReconcilerMockRecorder) DefaultedReconcilerRequeue() *gomock.
 type MockClusterScoper struct {
 	ctrl     *gomock.Controller
 	recorder *MockClusterScoperMockRecorder
+	isgomock struct{}
 }
 
 // MockClusterScoperMockRecorder is the mock recorder for MockClusterScoper.
@@ -1726,6 +1735,7 @@ func (mr *MockClusterScoperMockRecorder) Vnet() *gomock.Call {
 type MockManagedClusterScoper struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagedClusterScoperMockRecorder
+	isgomock struct{}
 }
 
 // MockManagedClusterScoperMockRecorder is the mock recorder for MockManagedClusterScoper.
@@ -2057,6 +2067,7 @@ func (mr *MockManagedClusterScoperMockRecorder) Token() *gomock.Call {
 type MockResourceSpecGetter struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceSpecGetterMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceSpecGetterMockRecorder is the mock recorder for MockResourceSpecGetter.
@@ -2137,6 +2148,7 @@ func (mr *MockResourceSpecGetterMockRecorder) ResourceName() *gomock.Call {
 type MockResourceSpecGetterWithHeaders struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceSpecGetterWithHeadersMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceSpecGetterWithHeadersMockRecorder is the mock recorder for MockResourceSpecGetterWithHeaders.
@@ -2231,6 +2243,7 @@ func (mr *MockResourceSpecGetterWithHeadersMockRecorder) ResourceName() *gomock.
 type MockASOResourceSpecGetter[T genruntime.MetaObject] struct {
 	ctrl     *gomock.Controller
 	recorder *MockASOResourceSpecGetterMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockASOResourceSpecGetterMockRecorder is the mock recorder for MockASOResourceSpecGetter.
@@ -2297,6 +2310,7 @@ func (mr *MockASOResourceSpecGetterMockRecorder[T]) WasManaged(arg0 any) *gomock
 type MockCredentialCache struct {
 	ctrl     *gomock.Controller
 	recorder *MockCredentialCacheMockRecorder
+	isgomock struct{}
 }
 
 // MockCredentialCacheMockRecorder is the mock recorder for MockCredentialCache.

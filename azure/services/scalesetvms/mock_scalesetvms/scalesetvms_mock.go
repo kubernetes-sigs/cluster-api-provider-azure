@@ -40,6 +40,7 @@ import (
 type MockScaleSetVMScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockScaleSetVMScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockScaleSetVMScopeMockRecorder is the mock recorder for MockScaleSetVMScope.

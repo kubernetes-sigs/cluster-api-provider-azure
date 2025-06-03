@@ -41,6 +41,7 @@ import (
 type MockVNetScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockVNetScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockVNetScopeMockRecorder is the mock recorder for MockVNetScope.

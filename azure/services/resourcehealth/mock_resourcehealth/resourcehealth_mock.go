@@ -38,6 +38,7 @@ import (
 type MockResourceHealthScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceHealthScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceHealthScopeMockRecorder is the mock recorder for MockResourceHealthScope.
@@ -201,6 +202,7 @@ func (mr *MockResourceHealthScopeMockRecorder) Token() *gomock.Call {
 type MockAvailabilityStatusFilterer struct {
 	ctrl     *gomock.Controller
 	recorder *MockAvailabilityStatusFiltererMockRecorder
+	isgomock struct{}
 }
 
 // MockAvailabilityStatusFiltererMockRecorder is the mock recorder for MockAvailabilityStatusFilterer.

@@ -40,6 +40,7 @@ import (
 type MockNSGScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockNSGScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockNSGScopeMockRecorder is the mock recorder for MockNSGScope.

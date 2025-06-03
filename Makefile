@@ -94,7 +94,7 @@ AZWI_VER := v1.2.2
 AZWI_BIN := azwi
 AZWI := $(TOOLS_BIN_DIR)/$(AZWI_BIN)-$(AZWI_VER)
 
-MOCKGEN_VER := v0.4.0
+MOCKGEN_VER := $(shell go list -m -f '{{.Version}}' go.uber.org/mock)
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 

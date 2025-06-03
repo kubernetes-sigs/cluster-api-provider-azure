@@ -40,6 +40,7 @@ import (
 type MockDiskScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockDiskScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockDiskScopeMockRecorder is the mock recorder for MockDiskScope.
