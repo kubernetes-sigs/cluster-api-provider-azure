@@ -747,6 +747,9 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 
 // calculateBootstrapDataHash calculates the sha256 hash of the bootstrap data.
 func (m *MachinePoolScope) calculateBootstrapDataHash(_ context.Context) (string, error) {
+	if m.cache == nil {
+		return "", fmt.Errorf("machinepool cache is nil")
+	}
 	bootstrapData := m.cache.BootstrapData
 	h := sha256.New()
 	n, err := io.WriteString(h, bootstrapData)
