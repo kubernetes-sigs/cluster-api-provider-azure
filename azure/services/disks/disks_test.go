@@ -17,7 +17,6 @@ limitations under the License.
 package disks
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -131,7 +130,7 @@ func TestDeleteDisk(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

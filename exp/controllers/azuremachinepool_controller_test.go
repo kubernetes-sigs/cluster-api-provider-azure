@@ -64,7 +64,7 @@ var _ = Describe("AzureMachinePoolReconciler", func() {
 func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	g := NewWithT(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
 		clusterv1.AddToScheme,
@@ -179,7 +179,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	}
 	g.Expect(c.Create(ctx, instance)).To(Succeed())
 
-	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+	result, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 		NamespacedName: client.ObjectKey{
 			Namespace: instance.Namespace,
 			Name:      instance.Name,

@@ -17,7 +17,6 @@ limitations under the License.
 package scalesets
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -769,7 +768,7 @@ func TestScaleSetParameters(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			param, err := tc.spec.Parameters(context.TODO(), tc.existing)
+			param, err := tc.spec.Parameters(t.Context(), tc.existing)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

@@ -17,7 +17,6 @@ limitations under the License.
 package mutators
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -37,7 +36,7 @@ import (
 )
 
 func TestSetAgentPoolDefaults(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	g := NewGomegaWithT(t)
 
 	tests := []struct {
@@ -109,7 +108,7 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 }
 
 func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name        string
@@ -351,7 +350,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 }
 
 func TestSetAgentPoolCount(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name              string
