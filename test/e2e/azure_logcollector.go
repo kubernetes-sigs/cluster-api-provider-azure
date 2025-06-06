@@ -39,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -211,13 +210,13 @@ func getAzureManagedControlPlane(ctx context.Context, managementClusterClient cl
 	return azManagedControlPlane, err
 }
 
-func getAzureASOManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1alpha.AzureASOManagedCluster, error) {
+func getAzureASOManagedCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1.AzureASOManagedCluster, error) {
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	azManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+	azManagedCluster := &infrav1.AzureASOManagedCluster{}
 	err := managementClusterClient.Get(ctx, key, azManagedCluster)
 	return azManagedCluster, err
 }
@@ -255,13 +254,13 @@ func getAzureManagedMachinePool(ctx context.Context, managementClusterClient cli
 	return azManagedMachinePool, err
 }
 
-func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1alpha.AzureASOManagedMachinePool, error) {
+func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1.AzureASOManagedMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 
-	azManagedMachinePool := &infrav1alpha.AzureASOManagedMachinePool{}
+	azManagedMachinePool := &infrav1.AzureASOManagedMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
 	return azManagedMachinePool, err
 }

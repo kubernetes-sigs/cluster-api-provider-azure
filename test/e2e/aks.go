@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -158,7 +157,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 		var capzMPs []client.Object
 
 		ammpList := &infrav1.AzureManagedMachinePoolList{}
-		asommpList := &infrav1alpha.AzureASOManagedMachinePoolList{}
+		asommpList := &infrav1.AzureASOManagedMachinePoolList{}
 
 		if err := input.Lister.List(ctx, ammpList, opt1, opt2, opt3); err != nil {
 			LogWarningf("Failed to list AzureManagedMachinePools: %+v", err)

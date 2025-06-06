@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 )
@@ -88,8 +87,8 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 					isUserPool = true
 				}
-			case infrav1alpha.AzureASOManagedMachinePoolKind:
-				ammp := &infrav1alpha.AzureASOManagedMachinePool{}
+			case infrav1.AzureASOManagedMachinePoolKind:
+				ammp := &infrav1.AzureASOManagedMachinePool{}
 				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
 					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
