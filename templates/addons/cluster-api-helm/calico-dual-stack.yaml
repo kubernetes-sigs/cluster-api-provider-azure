@@ -31,3 +31,10 @@ spec:
           encapsulation: None
           natOutgoing: Enabled
           nodeSelector: all()
+        registry: quay.io
+      # Image and registry configuration for the tigera/operator pod.Add commentMore actions
+      tigeraOperator:
+        image: tigera/operator
+        registry: quay.io
+      calicoctl:
+        image: quay.io/calico/ctl

@@ -12,3 +12,13 @@ patches:
     name: calico-kube-controllers
     namespace: kube-system
 - path: patches/azure-mtu.yaml
+images:
+- name: docker.io/calico/cni
+  newName: quay.io/calico/cni
+  newTag: v3.29.4
+- name: docker.io/calico/node
+  newName: quay.io/calico/node
+  newTag: v3.29.4
+- name: docker.io/calico/kube-controllers
+  newName: quay.io/calico/kube-controllers
+  newTag: v3.29.4
