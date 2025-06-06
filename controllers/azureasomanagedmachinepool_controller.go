@@ -232,13 +232,13 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	}
 
 	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
-	err = resourceReconciler.Reconcile(ctx)
+	needsRequeue, err := resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
 	for _, status := range asoManagedMachinePool.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{}, nil
+			return ctrl.Result{Requeue: needsRequeue}, nil
 		}
 	}
 
@@ -333,12 +333,8 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Conte
 	// If the entire cluster is being deleted, this ASO ManagedClustersAgentPool will be deleted with the rest
 	// of the ManagedCluster.
 	if cluster.DeletionTimestamp.IsZero() {
-		resources, err := mutators.ToUnstructured(ctx, asoManagedMachinePool.Spec.Resources)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
-		err = resourceReconciler.Delete(ctx)
+		resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, nil)
+		err := resourceReconciler.Delete(ctx)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 		}

@@ -39,14 +39,14 @@ import (
 
 type fakeResourceReconciler struct {
 	owner         client.Object
-	reconcileFunc func(context.Context, client.Object) error
+	reconcileFunc func(context.Context, client.Object) (bool, error)
 	pauseFunc     func(context.Context, client.Object) error
 	deleteFunc    func(context.Context, client.Object) error
 }
 
-func (r *fakeResourceReconciler) Reconcile(ctx context.Context) error {
+func (r *fakeResourceReconciler) Reconcile(ctx context.Context) (bool, error) {
 	if r.reconcileFunc == nil {
-		return nil
+		return false, nil
 	}
 	return r.reconcileFunc(ctx, r.owner)
 }
@@ -208,13 +208,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedCluster,
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
 						asoManagedCluster.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
 						})
-						return nil
+						return false, nil
 					},
 				}
 			},
@@ -282,8 +282,8 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 			Client: c,
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						return nil
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
+						return false, nil
 					},
 				}
 			},
