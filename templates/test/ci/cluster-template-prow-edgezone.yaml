@@ -240,6 +240,8 @@ spec:
     installation:
       cni:
         type: Calico
+        ipam:
+          type: Calico
       calicoNetwork:
         bgp: Disabled
         windowsDataplane: HNS
