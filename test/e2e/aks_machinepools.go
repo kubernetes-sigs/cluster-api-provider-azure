@@ -137,3 +137,32 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 	wg.Wait()
 }
+
+type AKSMachinePoolPostUpgradeSpecInput struct {
+	MgmtCluster      framework.ClusterProxy
+	ClusterName      string
+	ClusterNamespace string
+}
+
+func AKSMachinePoolPostUpgradeSpec(ctx context.Context, inputGetter func() AKSMachinePoolPostUpgradeSpecInput) {
+	input := inputGetter()
+
+	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    input.MgmtCluster.GetClient(),
+		Name:      input.ClusterName,
+		Namespace: input.ClusterNamespace,
+	})
+	mps := framework.GetMachinePoolsByCluster(ctx, framework.GetMachinePoolsByClusterInput{
+		Lister:      input.MgmtCluster.GetClient(),
+		ClusterName: input.ClusterName,
+		Namespace:   input.ClusterNamespace,
+	})
+	AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
+		return AKSMachinePoolSpecInput{
+			MgmtCluster:   input.MgmtCluster,
+			Cluster:       cluster,
+			MachinePools:  mps,
+			WaitIntervals: e2eConfig.GetIntervals("default", "wait-machine-pool-nodes"),
+		}
+	})
+}
