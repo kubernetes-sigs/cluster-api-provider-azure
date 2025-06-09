@@ -44,7 +44,7 @@ const (
 
 // EnsureCNIAndCloudProviderAzureHelmChart installs the official cloud-provider-azure helm chart
 // and a CNI and validates that expected pods exist and are Ready.
-func EnsureCNIAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
+func EnsureCNIAndCloudProviderAzureHelmChart(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
 	specName := "ensure-cloud-provider-azure"
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 
@@ -77,7 +77,7 @@ func EnsureCNIAndCloudProviderAzureHelmChart(ctx context.Context, input clusterc
 	}
 
 	// We do this before waiting for the pods to be ready because there is a co-dependency between CNI (nodes ready) and cloud-provider being initialized.
-	EnsureCNI(ctx, input, installHelmChart, cidrBlocks)
+	EnsureCNI(ctx, input, installHelmChart, cidrBlocks, hasWindows)
 
 	By("Waiting for Ready cloud-controller-manager deployment pods")
 	for _, d := range []string{"cloud-controller-manager"} {
