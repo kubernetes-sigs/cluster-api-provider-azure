@@ -10,6 +10,13 @@ installation:
     - cidr: 192.168.0.0/16
       encapsulation: VXLAN
     windowsDataplane: HNS
+  registry: quay.io
+  # Image and registry configuration for the tigera/operator pod.
+  tigeraOperator:
+    image: tigera/operator
+    registry: quay.io
+  calicoctl:
+    image: quay.io/calico/ctl
   serviceCIDRs: 
     - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
 # By default, tigera tolerates all NoSchedule taints. This breaks upgrades

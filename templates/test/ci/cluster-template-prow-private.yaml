@@ -291,8 +291,15 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      registry: quay.io
       serviceCIDRs:
         - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+      # Image and registry configuration for the tigera/operator pod
+      tigeraOperator:
+        image: tigera/operator
+        registry: quay.io
+      calicoctl:
+        image: quay.io/calico/ctl
     # when kubernetesServiceEndpoint (required for windows) is added
     # DNS configuration is needed to look up the api server name properly
     # https://github.com/projectcalico/calico/issues/9536
@@ -6456,7 +6463,7 @@ data:
               value: node
             - name: DATASTORE_TYPE
               value: kubernetes
-            image: docker.io/calico/kube-controllers:v3.29.4
+            image: quay.io/calico/kube-controllers:v3.29.4
             imagePullPolicy: IfNotPresent
             livenessProbe:
               exec:
@@ -6574,7 +6581,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/node:v3.29.4
+            image: quay.io/calico/node:v3.29.4
             imagePullPolicy: IfNotPresent
             lifecycle:
               preStop:
@@ -6646,7 +6653,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.29.4
+            image: quay.io/calico/cni:v3.29.4
             imagePullPolicy: IfNotPresent
             name: upgrade-ipam
             securityContext:
@@ -6681,7 +6688,7 @@ data:
             - configMapRef:
                 name: kubernetes-services-endpoint
                 optional: true
-            image: docker.io/calico/cni:v3.29.4
+            image: quay.io/calico/cni:v3.29.4
             imagePullPolicy: IfNotPresent
             name: install-cni
             securityContext:
@@ -6695,7 +6702,7 @@ data:
             - calico-node
             - -init
             - -best-effort
-            image: docker.io/calico/node:v3.29.4
+            image: quay.io/calico/node:v3.29.4
             imagePullPolicy: IfNotPresent
             name: mount-bpffs
             securityContext:

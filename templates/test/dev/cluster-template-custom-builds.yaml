@@ -699,8 +699,15 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      registry: quay.io
       serviceCIDRs:
         - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+      # Image and registry configuration for the tigera/operator pod
+      tigeraOperator:
+        image: tigera/operator
+        registry: quay.io
+      calicoctl:
+        image: quay.io/calico/ctl
     # when kubernetesServiceEndpoint (required for windows) is added
     # DNS configuration is needed to look up the api server name properly
     # https://github.com/projectcalico/calico/issues/9536
