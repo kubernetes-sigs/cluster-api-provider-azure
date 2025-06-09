@@ -63,6 +63,21 @@ helm repo add projectcalico https://docs.tigera.io/calico/charts && \
 helm install calico projectcalico/tigera-operator --version v3.26.1 -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/addons/calico-dual-stack/values.yaml --set-string "installation.calicoNetwork.ipPools[0].cidr=${IPV4_CIDR_BLOCK}","installation.calicoNetwork.ipPools[1].cidr=${IPV6_CIDR_BLOCK}" --namespace tigera-operator --create-namespace
 ```
 
+<aside class="note">
+
+<h1> Note </h1>
+
+For Windows nodes, you also need to copy the kubeadm-config configmap to the calico-system namespace so the calico-node-windows Daemonset can find it:
+
+```bash
+kubectl create ns calico-system
+kubectl get configmap kubeadm-config --namespace=kube-system -o yaml \
+| sed 's/namespace: kube-system/namespace: calico-system/' \
+| kubectl create -f -
+```
+
+</aside>
+
 For more information, see the [official Calico documentation](https://projectcalico.docs.tigera.io/getting-started/kubernetes/helm).
 
 ## Flannel

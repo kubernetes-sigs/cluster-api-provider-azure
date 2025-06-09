@@ -43,11 +43,11 @@ const (
 )
 
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
-func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
+func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
 	if input.CNIManifestPath != "" {
 		InstallCNIManifest(ctx, input)
 	} else {
-		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks)
+		EnsureCalicoIsReady(ctx, input, installHelmChart, cidrBlocks, hasWindows)
 	}
 }
 
@@ -63,7 +63,7 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 }
 
 // EnsureCalicoIsReady copies the kubeadm configmap to the calico-system namespace and waits for the calico pods to be ready.
-func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string) {
+func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, installHelmChart bool, cidrBlocks []string, hasWindows bool) {
 	specName := "ensure-calico"
 
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
@@ -73,6 +73,14 @@ func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomCluste
 		InstallHelmChart(ctx, clusterProxy, calicoOperatorNamespace, calicoHelmChartRepoURL, calicoHelmChartName, calicoHelmReleaseName, values, os.Getenv(CalicoVersion))
 	} else {
 		By("Ensuring Calico CNI is installed via CAAPH")
+	}
+
+	By("Copying kubeadm config map to calico-system namespace")
+	workloadClusterClient := clusterProxy.GetClient()
+
+	if hasWindows {
+		// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
+		CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
 	}
 
 	By("Waiting for Ready tigera-operator deployment pods")

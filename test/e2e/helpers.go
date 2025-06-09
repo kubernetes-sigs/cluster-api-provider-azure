@@ -46,6 +46,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -890,6 +891,20 @@ func getPodLogs(ctx context.Context, clientset *kubernetes.Clientset, pod corev1
 		return fmt.Sprintf("error copying logs for pod %s: %v", pod.Name, err)
 	}
 	return b.String()
+}
+
+func CopyConfigMap(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, cl client.Client, cmName, fromNamespace, toNamespace string) {
+	cm := &corev1.ConfigMap{}
+	Eventually(func(g Gomega) {
+		g.Expect(cl.Get(ctx, client.ObjectKey{Name: cmName, Namespace: fromNamespace}, cm)).To(Succeed())
+		cm.SetNamespace(toNamespace)
+		cm.SetResourceVersion("")
+		framework.EnsureNamespace(ctx, cl, toNamespace)
+		err := cl.Create(ctx, cm.DeepCopy())
+		if !apierrors.IsAlreadyExists(err) {
+			g.Expect(err).To(Succeed())
+		}
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed())
 }
 
 func getSubscriptionID(g Gomega) string {

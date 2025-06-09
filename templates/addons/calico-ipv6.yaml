@@ -4190,22 +4190,6 @@ rules:
   - pods/status
   verbs:
   - patch
-- apiGroups:
-  - crd.projectcalico.org
-  resources:
-  - blockaffinities
-  - ipamblocks
-  - ipamhandles
-  - clusterinformations
-  - ippools
-  - ipreservations
-  - ipamconfigs
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -4411,37 +4395,6 @@ rules:
   verbs:
   - create
   - update
-- apiGroups:
-  - crd.projectcalico.org
-  resources:
-  - blockaffinities
-  - ipamblocks
-  - ipamhandles
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-- apiGroups:
-  - crd.projectcalico.org
-  resources:
-  - ipamconfigs
-  verbs:
-  - get
-  - create
-- apiGroups:
-  - crd.projectcalico.org
-  resources:
-  - blockaffinities
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - daemonsets
-  verbs:
-  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -4484,7 +4437,6 @@ subjects:
 ---
 apiVersion: v1
 data:
-  calico_backend: vxlan
   cni_network_config: |-
     {
       "name": "k8s-pod-network",
@@ -4496,9 +4448,10 @@ data:
           "log_file_path": "/var/log/calico/cni/cni.log",
           "datastore_type": "kubernetes",
           "nodename": "__KUBERNETES_NODE_NAME__",
-          "mtu": __CNI_MTU__,
+          "mtu": 1500,
           "ipam": {
-              "type": "calico-ipam"
+              "type": "host-local",
+              "subnet": "usePodCidrIPv6"
           },
           "policy": {
               "type": "k8s"
@@ -4518,12 +4471,28 @@ data:
         }
       ]
     }
-  typha_service_name: none
+  typha_service_name: calico-typha
   veth_mtu: "1350"
 kind: ConfigMap
 metadata:
   name: calico-config
   namespace: kube-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: calico-typha
+  name: calico-typha
+  namespace: kube-system
+spec:
+  ports:
+  - name: calico-typha
+    port: 5473
+    protocol: TCP
+    targetPort: calico-typha
+  selector:
+    k8s-app: calico-typha
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -4582,6 +4551,90 @@ spec:
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: calico-typha
+  name: calico-typha
+  namespace: kube-system
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      k8s-app: calico-typha
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+      labels:
+        k8s-app: calico-typha
+    spec:
+      containers:
+      - env:
+        - name: TYPHA_LOGSEVERITYSCREEN
+          value: info
+        - name: TYPHA_LOGFILEPATH
+          value: none
+        - name: TYPHA_LOGSEVERITYSYS
+          value: none
+        - name: TYPHA_CONNECTIONREBALANCINGMODE
+          value: kubernetes
+        - name: TYPHA_DATASTORETYPE
+          value: kubernetes
+        - name: TYPHA_HEALTHENABLED
+          value: "true"
+        - name: TYPHA_SHUTDOWNTIMEOUTSECS
+          value: "300"
+        - name: USE_POD_CIDR
+          value: "true"
+        envFrom:
+        - configMapRef:
+            name: kubernetes-services-endpoint
+            optional: true
+        image: docker.io/calico/typha:v3.26.1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            host: localhost
+            path: /liveness
+            port: 9098
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+        name: calico-typha
+        ports:
+        - containerPort: 5473
+          name: calico-typha
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            host: localhost
+            path: /readiness
+            port: 9098
+          periodSeconds: 10
+          timeoutSeconds: 10
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 65534
+      serviceAccountName: calico-node
+      terminationGracePeriodSeconds: 300
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -4594,6 +4647,19 @@ spec:
   selector:
     matchLabels:
       k8s-app: calico-kube-controllers
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    k8s-app: calico-typha
+  name: calico-typha
+  namespace: kube-system
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      k8s-app: calico-typha
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -4613,12 +4679,21 @@ spec:
     spec:
       containers:
       - env:
-        - name: FELIX_FEATUREDETECTOVERRIDE
-          value: ChecksumOffloadBroken=true
-        - name: CALICO_IPV4POOL_VXLAN
-          value: Always
+        - name: CALICO_IPv6POOL_CIDR
+          value: 2001:1234:5678:9a40::/58
+        - name: IP6
+          value: autodetect
+        - name: FELIX_IPV6SUPPORT
+          value: "true"
         - name: DATASTORE_TYPE
           value: kubernetes
+        - name: USE_POD_CIDR
+          value: "true"
+        - name: FELIX_TYPHAK8SSERVICENAME
+          valueFrom:
+            configMapKeyRef:
+              key: typha_service_name
+              name: calico-config
         - name: WAIT_FOR_DATASTORE
           value: "true"
         - name: NODENAME
@@ -4626,39 +4701,15 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         - name: CALICO_NETWORKING_BACKEND
-          valueFrom:
-            configMapKeyRef:
-              key: calico_backend
-              name: calico-config
+          value: none
         - name: CLUSTER_TYPE
-          value: k8s,bgp
-        - name: IP
-          value: autodetect
-        - name: CALICO_IPV4POOL_IPIP
-          value: Never
-        - name: CALICO_IPV6POOL_VXLAN
-          value: CrossSubnet
-        - name: FELIX_IPINIPMTU
-          valueFrom:
-            configMapKeyRef:
-              key: veth_mtu
-              name: calico-config
-        - name: FELIX_VXLANMTU
-          valueFrom:
-            configMapKeyRef:
-              key: veth_mtu
-              name: calico-config
-        - name: FELIX_WIREGUARDMTU
-          valueFrom:
-            configMapKeyRef:
-              key: veth_mtu
-              name: calico-config
+          value: k8s
+        - name: CALICO_MANAGE_CNI
+          value: "false"
         - name: CALICO_DISABLE_FILE_LOGGING
           value: "true"
         - name: FELIX_DEFAULTENDPOINTTOHOSTACTION
           value: ACCEPT
-        - name: FELIX_IPV6SUPPORT
-          value: "false"
         - name: FELIX_HEALTHENABLED
           value: "true"
         envFrom:
@@ -4721,33 +4772,6 @@ spec:
       hostNetwork: true
       initContainers:
       - command:
-        - /opt/cni/bin/calico-ipam
-        - -upgrade
-        env:
-        - name: KUBERNETES_NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: CALICO_NETWORKING_BACKEND
-          valueFrom:
-            configMapKeyRef:
-              key: calico_backend
-              name: calico-config
-        envFrom:
-        - configMapRef:
-            name: kubernetes-services-endpoint
-            optional: true
-        image: docker.io/calico/cni:v3.26.1
-        imagePullPolicy: IfNotPresent
-        name: upgrade-ipam
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /var/lib/cni/networks
-          name: host-local-net-dir
-        - mountPath: /host/opt/cni/bin
-          name: cni-bin-dir
-      - command:
         - /opt/cni/bin/install
         env:
         - name: CNI_CONF_NAME
@@ -4761,11 +4785,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        - name: CNI_MTU
-          valueFrom:
-            configMapKeyRef:
-              key: veth_mtu
-              name: calico-config
         - name: SLEEP
           value: "false"
         envFrom:
@@ -4847,9 +4866,6 @@ spec:
       - hostPath:
           path: /var/log/calico/cni
         name: cni-log-dir
-      - hostPath:
-          path: /var/lib/cni/networks
-        name: host-local-net-dir
       - hostPath:
           path: /var/run/nodeagent
           type: DirectoryOrCreate
