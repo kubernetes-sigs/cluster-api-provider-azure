@@ -395,11 +395,11 @@ spec:
           encapsulation: VXLAN{{end}}
       serviceCIDRs: {{range $i, $cidr := .Cluster.spec.clusterNetwork.services.cidrBlocks }}
         - {{ $cidr }}{{end}}
-      registry: docker.io/
+      registry: quay.io/
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:
       image: tigera-operator
-      registry: jsturtevant
+      registry: quay.io
       version: latest
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
