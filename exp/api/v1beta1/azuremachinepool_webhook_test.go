@@ -258,7 +258,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			ampw := &azureMachinePoolWebhook{
 				Client: client,
 			}
-			_, err := ampw.ValidateCreate(context.Background(), tc.amp)
+			_, err := ampw.ValidateCreate(t.Context(), tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -394,7 +394,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			ampw := &azureMachinePoolWebhook{}
-			_, err := ampw.ValidateUpdate(context.Background(), tc.oldAMP, tc.amp)
+			_, err := ampw.ValidateUpdate(t.Context(), tc.oldAMP, tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -463,24 +463,24 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		Client: mockClient,
 	}
 
-	err := ampw.Default(context.Background(), roleAssignmentExistTest.amp)
+	err := ampw.Default(t.Context(), roleAssignmentExistTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(roleAssignmentExistTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Equal(existingRoleAssignmentName))
 
-	err = ampw.Default(context.Background(), publicKeyExistTest.amp)
+	err = ampw.Default(t.Context(), publicKeyExistTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
-	err = ampw.Default(context.Background(), publicKeyNotExistTest.amp)
+	err = ampw.Default(t.Context(), publicKeyNotExistTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 
-	err = ampw.Default(context.Background(), systemAssignedIdentityRoleExistTest.amp)
+	err = ampw.Default(t.Context(), systemAssignedIdentityRoleExistTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(systemAssignedIdentityRoleExistTest.amp.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal("testroledefinitionid"))
 	g.Expect(systemAssignedIdentityRoleExistTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal("testscope"))
 
-	err = ampw.Default(context.Background(), emptyTest.amp)
+	err = ampw.Default(t.Context(), emptyTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
 	_, err = guuid.Parse(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
@@ -719,7 +719,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
 			ampw := &azureMachinePoolWebhook{}
-			_, err := ampw.ValidateCreate(context.Background(), tc.amp)
+			_, err := ampw.ValidateCreate(t.Context(), tc.amp)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
 			} else {

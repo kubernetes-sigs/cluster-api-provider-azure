@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -73,10 +72,10 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 	sink := mock_log.NewMockLogSink(mockCtrl)
 	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 	sink.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
-	mapper, err := AzureClusterToAzureMachinesMapper(context.Background(), client, &infrav1.AzureMachine{}, scheme, logr.New(sink))
+	mapper, err := AzureClusterToAzureMachinesMapper(t.Context(), client, &infrav1.AzureMachine{}, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(context.TODO(), &infrav1.AzureCluster{
+	requests := mapper(t.Context(), &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "default",
@@ -102,10 +101,10 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	g.Expect((&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)).To(Succeed())
+	g.Expect((&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)).To(Succeed())
 
 	azureClusterCustomVnet := newAzureClusterWithCustomVnet("bar")
-	g.Expect((&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureClusterCustomVnet)).NotTo(HaveOccurred())
+	g.Expect((&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureClusterCustomVnet)).NotTo(HaveOccurred())
 
 	cases := map[string]struct {
 		cluster                    *clusterv1.Cluster
@@ -200,9 +199,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 			resultSecret := &corev1.Secret{}
 			key := client.ObjectKey{Name: fakeSecret.Name, Namespace: fakeSecret.Namespace}
-			g.Expect(fakeClient.Get(context.Background(), key, resultSecret)).To(Succeed())
+			g.Expect(fakeClient.Get(t.Context(), key, resultSecret)).To(Succeed())
 
-			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
+			clusterScope, err := scope.NewClusterScope(t.Context(), scope.ClusterScopeParams{
 				Cluster:         tc.cluster,
 				AzureCluster:    tc.azureCluster,
 				Client:          fakeClient,
@@ -303,7 +302,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+	err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster.Name = "testCluster"
 
@@ -323,7 +322,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 	scheme := setupScheme(g)
 	kubeclient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(t.Context(), scope.ClusterScopeParams{
 		Cluster:         cluster,
 		AzureCluster:    azureCluster,
 		Client:          kubeclient,
@@ -334,10 +333,10 @@ func TestReconcileAzureSecret(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			if tc.existingSecret != nil {
-				_ = kubeclient.Delete(context.Background(), tc.existingSecret)
-				_ = kubeclient.Create(context.Background(), tc.existingSecret)
+				_ = kubeclient.Delete(t.Context(), tc.existingSecret)
+				_ = kubeclient.Create(t.Context(), tc.existingSecret)
 				defer func() {
-					_ = kubeclient.Delete(context.Background(), tc.existingSecret)
+					_ = kubeclient.Delete(t.Context(), tc.existingSecret)
 				}()
 			}
 
@@ -350,7 +349,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
-			if err := reconcileAzureSecret(context.Background(), kubeclient, owner, cloudConfig, cluster.Name); err != nil {
+			if err := reconcileAzureSecret(t.Context(), kubeclient, owner, cloudConfig, cluster.Name); err != nil {
 				t.Error(err)
 			}
 
@@ -359,7 +358,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 				Name:      fmt.Sprintf("%s-azure-json", tc.ownerName),
 			}
 			found := &corev1.Secret{}
-			if err := kubeclient.Get(context.Background(), key, found); err != nil {
+			if err := kubeclient.Get(t.Context(), key, found); err != nil {
 				t.Error(err)
 			}
 
@@ -893,10 +892,10 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 	sink.EXPECT().Enabled(4).Return(true)
 	sink.EXPECT().WithValues("AzureManagedCluster", "my-cluster", "Namespace", "default").Return(sink)
 	sink.EXPECT().Info(4, "gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
-	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, logr.New(sink))
+	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(t.Context(), fakeClient, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(context.TODO(), &infrav1.AzureManagedCluster{
+	requests := mapper(t.Context(), &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: "default",
@@ -958,10 +957,10 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 	sink.EXPECT().Enabled(4).Return(true)
 	sink.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace).Return(sink)
 	sink.EXPECT().Info(4, "gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
-	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, logr.New(sink))
+	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t.Context(), fakeClient, scheme, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper(context.TODO(), &infrav1.AzureManagedControlPlane{
+	requests := mapper(t.Context(), &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cpName,
 			Namespace: cluster.Namespace,
@@ -1030,10 +1029,10 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 
 	sink := mock_log.NewMockLogSink(gomock.NewController(t))
 	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
-	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
+	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(t.Context(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
 
 	// system pool should trigger
-	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
+	requests := mapper(t.Context(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -1044,7 +1043,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	}))
 
 	// any other pool should not trigger
-	requests = mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
+	requests = mapper(t.Context(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
 	g.Expect(requests).To(BeNil())
 }
 
@@ -1074,10 +1073,10 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	sink.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference")
 	sink.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference") // twice because we are testing two calls
 
-	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
+	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(t.Context(), fakeClient, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind), logr.New(sink))
 
 	// default pool should trigger if owned cluster could not be fetched
-	requests := mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
+	requests := mapper(t.Context(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -1088,7 +1087,7 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	}))
 
 	// any other pool should also trigger if owned cluster could not be fetched
-	requests = mapper(context.TODO(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
+	requests = mapper(t.Context(), newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"))
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -1121,9 +1120,9 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 	sink.EXPECT().WithValues("AzureManagedCluster", "az-"+cluster.Name, "Namespace", "default")
 
-	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(context.Background(), fakeClient, logr.New(sink))
+	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(t.Context(), fakeClient, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
-	requests := mapper(context.TODO(), &infrav1.AzureManagedCluster{
+	requests := mapper(t.Context(), &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "az-" + cluster.Name,
 			Namespace: "default",
@@ -1190,9 +1189,9 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 	sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 	sink.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace)
 
-	mapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(context.Background(), fakeClient, logr.New(sink))
+	mapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(t.Context(), fakeClient, logr.New(sink))
 	g.Expect(err).NotTo(HaveOccurred())
-	requests := mapper(context.TODO(), &infrav1.AzureManagedControlPlane{
+	requests := mapper(t.Context(), &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cpName,
 			Namespace: cluster.Namespace,
@@ -1362,7 +1361,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 				c.Setup(sink)
 			}
 			f := MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), logr.New(sink))
-			reqs := f(context.TODO(), c.MapObjectFactory(g))
+			reqs := f(t.Context(), c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
 	}

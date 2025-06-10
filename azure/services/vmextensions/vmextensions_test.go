@@ -17,7 +17,6 @@ limitations under the License.
 package vmextensions
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -152,7 +151,7 @@ func TestReconcileVMExtension(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

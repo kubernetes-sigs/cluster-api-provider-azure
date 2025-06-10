@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -82,7 +81,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := (&azureManagedClusterWebhook{}).ValidateUpdate(context.Background(), tc.oldAMC, tc.amc)
+			_, err := (&azureManagedClusterWebhook{}).ValidateUpdate(t.Context(), tc.oldAMC, tc.amc)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -125,7 +124,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			_, err := (&azureManagedClusterWebhook{}).ValidateCreate(context.Background(), tc.amc)
+			_, err := (&azureManagedClusterWebhook{}).ValidateCreate(t.Context(), tc.amc)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -155,7 +154,7 @@ func TestAzureManagedCluster_ValidateCreateFailure(t *testing.T) {
 				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
 			g := NewWithT(t)
-			_, err := (&azureManagedClusterWebhook{}).ValidateCreate(context.Background(), tc.amc)
+			_, err := (&azureManagedClusterWebhook{}).ValidateCreate(t.Context(), tc.amc)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
 			} else {
