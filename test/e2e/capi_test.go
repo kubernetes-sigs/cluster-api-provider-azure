@@ -213,7 +213,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						PreInit:                   getPreInitFunc(ctx),
 						InitWithProvidersContract: "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+							WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 						},
 						InitWithKubernetesVersion:       e2eConfig.MustGetVariable(KubernetesVersionAPIUpgradeFrom),
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(OldCAPIUpgradeVersion)),
@@ -238,7 +238,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						PreInit:                   getPreInitFunc(ctx),
 						InitWithProvidersContract: "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+							WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 						},
 						InitWithKubernetesVersion:       e2eConfig.MustGetVariable(KubernetesVersionAPIUpgradeFrom),
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion)),
@@ -263,7 +263,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipCleanup:           skipCleanup,
 				SkipConformanceTests:  true,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				},
 			}
 		})
@@ -281,7 +281,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipCleanup:              skipCleanup,
 				SkipConformanceTests:     true,
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				},
 			}
 		})
@@ -300,7 +300,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 				SkipConformanceTests:     true,
 				Flavor:                   ptr.To("kcp-scale-in"),
 				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
 				},
 			}
 		})
