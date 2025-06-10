@@ -620,8 +620,8 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
-					InstallGPUOperator(ctx, func() GPUOperatorSpecInput {
-						return GPUOperatorSpecInput{
+					EnsureGPUOperator(ctx, func() EnsureGPUOperatorInput {
+						return EnsureGPUOperatorInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
 							Namespace:             namespace,
 							ClusterName:           clusterName,

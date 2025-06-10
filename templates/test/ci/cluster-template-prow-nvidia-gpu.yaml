@@ -4,6 +4,7 @@ metadata:
   labels:
     cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
+    gpu-operator: "true"
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -316,3 +317,17 @@ spec:
       imageName: "${CNM_IMAGE_NAME:-""}"
       imageRepository: "${IMAGE_REGISTRY:-""}"
       imageTag: "${IMAGE_TAG_CNM:-""}"
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: gpu-operator
+  namespace: default
+spec:
+  chartName: gpu-operator
+  clusterSelector:
+    matchLabels:
+      gpu-operator: "true"
+  namespace: default
+  releaseName: nvidia-gpu-operator
+  repoURL: https://helm.ngc.nvidia.com/nvidia
