@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestSetAgentPoolDefaults(t *testing.T) {
@@ -42,16 +42,16 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		asoManagedMachinePool *infrav1alpha.AzureASOManagedMachinePool
+		asoManagedMachinePool *infrav1.AzureASOManagedMachinePool
 		machinePool           *expv1.MachinePool
 		expected              []*unstructured.Unstructured
 		expectedErr           error
 	}{
 		{
 			name: "no ManagedClustersAgentPool",
-			asoManagedMachinePool: &infrav1alpha.AzureASOManagedMachinePool{
-				Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
-					AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
+			asoManagedMachinePool: &infrav1.AzureASOManagedMachinePool{
+				Spec: infrav1.AzureASOManagedMachinePoolSpec{
+					AzureASOManagedMachinePoolTemplateResourceSpec: infrav1.AzureASOManagedMachinePoolTemplateResourceSpec{
 						Resources: []runtime.RawExtension{},
 					},
 				},
@@ -60,9 +60,9 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 		},
 		{
 			name: "success",
-			asoManagedMachinePool: &infrav1alpha.AzureASOManagedMachinePool{
-				Spec: infrav1alpha.AzureASOManagedMachinePoolSpec{
-					AzureASOManagedMachinePoolTemplateResourceSpec: infrav1alpha.AzureASOManagedMachinePoolTemplateResourceSpec{
+			asoManagedMachinePool: &infrav1.AzureASOManagedMachinePool{
+				Spec: infrav1.AzureASOManagedMachinePoolSpec{
+					AzureASOManagedMachinePoolTemplateResourceSpec: infrav1.AzureASOManagedMachinePoolTemplateResourceSpec{
 						Resources: []runtime.RawExtension{
 							{
 								Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{}),
@@ -251,7 +251,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -267,14 +267,14 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -290,7 +290,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -301,14 +301,14 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -320,7 +320,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mp",
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -384,7 +384,7 @@ func TestSetAgentPoolCount(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1alpha.ReplicasManagedByAKS,
+						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 				Spec: expv1.MachinePoolSpec{

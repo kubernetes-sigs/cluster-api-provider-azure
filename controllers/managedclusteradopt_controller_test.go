@@ -31,7 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestManagedClusterAdoptReconcile(t *testing.T) {
@@ -72,7 +72,7 @@ func TestManagedClusterAdoptReconcile(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	err = asoresourcesv1.AddToScheme(s)
 	g.Expect(err).ToNot(HaveOccurred())
-	err = v1alpha1.AddToScheme(s)
+	err = infrav1.AddToScheme(s)
 	g.Expect(err).ToNot(HaveOccurred())
 	client := fake.NewClientBuilder().WithScheme(s).WithObjects(managedCluster, rg).Build()
 	rec := ManagedClusterAdoptReconciler{
@@ -80,10 +80,10 @@ func TestManagedClusterAdoptReconcile(t *testing.T) {
 	}
 	_, err = rec.Reconcile(ctx, req)
 	g.Expect(err).ToNot(HaveOccurred())
-	mcp := &v1alpha1.AzureASOManagedControlPlane{}
+	mcp := &infrav1.AzureASOManagedControlPlane{}
 	err = rec.Get(ctx, types.NamespacedName{Name: managedCluster.Name, Namespace: managedCluster.Namespace}, mcp)
 	g.Expect(err).ToNot(HaveOccurred())
-	asomc := &v1alpha1.AzureASOManagedCluster{}
+	asomc := &infrav1.AzureASOManagedCluster{}
 	err = rec.Get(ctx, types.NamespacedName{Name: managedCluster.Name, Namespace: managedCluster.Namespace}, asomc)
 	g.Expect(err).ToNot(HaveOccurred())
 }

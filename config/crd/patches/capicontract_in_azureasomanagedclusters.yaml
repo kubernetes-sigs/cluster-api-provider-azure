@@ -3,4 +3,4 @@ kind: CustomResourceDefinition
 metadata:
   name: azureasomanagedclusters.infrastructure.cluster.x-k8s.io
   labels:
-    cluster.x-k8s.io/v1beta1: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1beta1
