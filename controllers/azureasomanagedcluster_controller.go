@@ -57,8 +57,9 @@ type AzureASOManagedClusterReconciler struct {
 
 type resourceReconciler interface {
 	// Reconcile reconciles resources defined by this object and updates this object's status to reflect the
-	// state of the specified resources.
-	Reconcile(context.Context) error
+	// state of the specified resources. It returns a boolean indicating if controllers need to immediately
+	// requeue the object and an error if one occurred.
+	Reconcile(context.Context) (bool, error)
 
 	// Pause stops ASO from continuously reconciling the specified resources.
 	Pause(context.Context) error
@@ -246,13 +247,13 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, err
 	}
 	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
-	err = resourceReconciler.Reconcile(ctx)
+	needsRequeue, err := resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
 	for _, status := range asoManagedCluster.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{}, nil
+			return ctrl.Result{Requeue: needsRequeue}, nil
 		}
 	}
 
@@ -300,19 +301,15 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	defer done()
 	log.V(4).Info("reconciling delete")
 
-	resources, err := mutators.ToUnstructured(ctx, asoManagedCluster.Spec.Resources)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
-	err = resourceReconciler.Delete(ctx)
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, nil)
+	err := resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
-	if len(asoManagedCluster.Status.Resources) > 0 {
-		return ctrl.Result{}, nil
+
+	if len(asoManagedCluster.Status.Resources) == 0 {
+		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	}
 
-	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }

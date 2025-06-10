@@ -203,13 +203,13 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedControlPlane *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedControlPlane,
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
 						asoManagedControlPlane.SetResourceStatuses([]infrav1alpha.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
 						})
-						return nil
+						return false, nil
 					},
 				}
 			},
@@ -317,8 +317,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						return nil
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
+						return false, nil
 					},
 				}
 			},
@@ -435,7 +435,10 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Client: &FakeClient{
 				Client: c,
 				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
-					kubeconfigSecret := obj.(*corev1.Secret)
+					kubeconfigSecret, ok := obj.(*corev1.Secret)
+					if !ok {
+						return nil
+					}
 					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
 					kubeConfigPatched = true
 
@@ -451,8 +454,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						return nil
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
+						return false, nil
 					},
 				}
 			},
@@ -571,7 +574,10 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			Client: &FakeClient{
 				Client: c,
 				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
-					kubeconfigSecret := obj.(*corev1.Secret)
+					kubeconfigSecret, ok := obj.(*corev1.Secret)
+					if !ok {
+						return nil
+					}
 					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
 					kubeConfigPatched = true
 
@@ -587,8 +593,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1alpha.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) error {
-						return nil
+					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
+						return false, nil
 					},
 				}
 			},
