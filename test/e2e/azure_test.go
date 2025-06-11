@@ -821,6 +821,7 @@ var _ = Describe("Workload cluster creation", func() {
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
 					return AKSMachinePoolSpecInput{
+						MgmtCluster:   bootstrapClusterProxy,
 						Cluster:       result.Cluster,
 						MachinePools:  result.MachinePools,
 						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
@@ -982,6 +983,7 @@ var _ = Describe("Workload cluster creation", func() {
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
 					return AKSMachinePoolSpecInput{
+						MgmtCluster:   bootstrapClusterProxy,
 						Cluster:       result.Cluster,
 						MachinePools:  result.MachinePools,
 						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
