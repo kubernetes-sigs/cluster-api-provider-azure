@@ -253,19 +253,11 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 	return config
 }
 
-// EnsureControlPlaneInitializedNoAddons waits for the cluster KubeadmControlPlane object to be initialized
-// and then installs cloud-provider-azure components via Helm.
+// EnsureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
+// and then waits for cloud-provider-azure components installed via CAAPH.
 // Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
 // in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
-func EnsureControlPlaneInitializedNoAddons(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
-	ensureControlPlaneInitialized(ctx, input, result)
-}
-
-// ensureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
-// and then installs cloud-provider-azure components via Helm.
-// Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
-// in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
-func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
+func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
 	getter := input.ClusterProxy.GetClient()
 	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
 		Getter:    getter,
