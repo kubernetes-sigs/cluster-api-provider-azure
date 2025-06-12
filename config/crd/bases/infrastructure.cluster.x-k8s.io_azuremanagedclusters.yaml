@@ -30,6 +30,11 @@ spec:
       jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    deprecated: true
+    deprecationWarning: AzureManagedCluster and the AzureManaged API are deprecated.
+      Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedCluster
+      and related AzureASOManaged resources instead. AzureManagedCluster will be removed
+      in Dec 2025 (v1.23).
     name: v1beta1
     schema:
       openAPIV3Schema:
