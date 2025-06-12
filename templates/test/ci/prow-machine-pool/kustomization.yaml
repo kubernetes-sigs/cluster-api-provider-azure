@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/machinepool-windows
+- ../prow/mhc-kubeadmcontrolplane.yaml
+- ../prow/mhc-windows.yaml
 - ../prow/cni-resource-set.yaml
 - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
 - ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
@@ -35,6 +37,7 @@ patches:
 - path: ../patches/windows-containerd-labels.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: ../patches/mhc-windows-mp.yaml
 
 sortOptions:
   order: fifo

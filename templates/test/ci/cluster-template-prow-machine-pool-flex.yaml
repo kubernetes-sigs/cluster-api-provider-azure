@@ -237,6 +237,9 @@ spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
   template:
+    metadata:
+      labels:
+        windows-healthcheck: "true"
     spec:
       bootstrap:
         configRef:
@@ -309,6 +312,45 @@ spec:
     name: capi
     sshAuthorizedKeys:
     - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+  unhealthyConditions:
+  - status: Unknown
+    timeout: 300s
+    type: Ready
+  - status: "False"
+    timeout: 300s
+    type: Ready
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-windows
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  nodeStartupTimeout: 10m
+  selector:
+    matchLabels:
+      windows-healthcheck: "true"
+  unhealthyConditions:
+  - status: "false"
+    timeout: 300s
+    type: Ready
+  - status: Unknown
+    timeout: 300s
+    type: Ready
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet

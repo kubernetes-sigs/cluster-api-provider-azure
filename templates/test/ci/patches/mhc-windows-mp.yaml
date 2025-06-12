@@ -1,0 +1,11 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        "windows-healthcheck": "true"
