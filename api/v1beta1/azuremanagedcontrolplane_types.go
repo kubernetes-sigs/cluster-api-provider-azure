@@ -661,6 +661,7 @@ type AKSExtension struct {
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion:warning="AzureManagedControlPlane and the AzureManaged API are deprecated. Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedControlPlane and related AzureASOManaged resources instead."
 
 // AzureManagedControlPlane is the Schema for the azuremanagedcontrolplanes API.
 type AzureManagedControlPlane struct {
