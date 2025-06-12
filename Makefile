@@ -199,7 +199,7 @@ LDFLAGS := $(shell hack/version.sh)
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 
 export KIND_CLUSTER_NAME ?= capz
-export RANDOM_SUFFIX := $(shell /bin/bash -c "echo $$RANDOM")
+export RANDOM_SUFFIX := $(shell od -An -N8 -tx8 /dev/urandom | tr -d ' ' | head -c 16)
 export AZWI_RESOURCE_GROUP ?= capz-wi-$(RANDOM_SUFFIX)
 export CI_RG ?= $(AZWI_RESOURCE_GROUP)
 export USER_IDENTITY ?= $(addsuffix $(RANDOM_SUFFIX),$(CI_RG))
