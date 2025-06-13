@@ -29,24 +29,21 @@ import (
 )
 
 const (
-	nvidiaHelmChartRepoURL           string = "https://helm.ngc.nvidia.com/nvidia"
-	nvidiaGPUOperatorNamespace       string = "default"
-	nvidiaGPUOperatorHelmReleaseName string = "nvidia-gpu-operator"
-	nvidiaGPUOperatorHelmChartName   string = "gpu-operator"
+	nvidiaGPUOperatorNamespace string = "default"
 )
 
-// GPUOperatorSpecInput is the input for InstallGPUOperator.
-type GPUOperatorSpecInput struct {
+// EnsureGPUOperatorInput is the input for InstallGPUOperator.
+type EnsureGPUOperatorInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	Namespace             *corev1.Namespace
 	ClusterName           string
 }
 
-// InstallGPUOperator installs the official nvidia/gpu-operator helm chart.
-func InstallGPUOperator(ctx context.Context, inputGetter func() GPUOperatorSpecInput) {
+// EnsureGPUOperator installs the official nvidia/gpu-operator helm chart.
+func EnsureGPUOperator(ctx context.Context, inputGetter func() EnsureGPUOperatorInput) {
 	var (
 		specName = "nvidia-gpu-operator"
-		input    GPUOperatorSpecInput
+		input    EnsureGPUOperatorInput
 	)
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
@@ -56,12 +53,12 @@ func InstallGPUOperator(ctx context.Context, inputGetter func() GPUOperatorSpecI
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
 	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
-	InstallNvidiaGPUOperatorChart(ctx, clusterProxy)
-}
 
-// InstallNvidiaGPUOperatorChart installs the official nvidia/gpu-operator helm chart
-func InstallNvidiaGPUOperatorChart(ctx context.Context, clusterProxy framework.ClusterProxy) {
-	By("Installing nvidia/gpu-operator via helm")
-	values := &HelmOptions{}
-	InstallHelmChart(ctx, clusterProxy, nvidiaGPUOperatorNamespace, nvidiaHelmChartRepoURL, nvidiaGPUOperatorHelmChartName, nvidiaGPUOperatorHelmReleaseName, values, "")
+	By("Ensuring GPU Operator is installed via CAAPH")
+
+	By("Waiting for Ready gpu-operator deployment pods")
+	for _, d := range []string{"gpu-operator"} {
+		waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, d, nvidiaGPUOperatorNamespace, specName)
+		WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	}
 }

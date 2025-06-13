@@ -5,5 +5,12 @@ resources:
 - ../bases/md.yaml
 - ../bases/mp.yaml
 - ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
+- ../../../../../../templates/addons/cluster-api-helm/calico.yaml
+- ../../../../../../templates/addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../../../../templates/addons/cluster-api-helm/cloud-provider-azure-ci.yaml
 patches:
 - path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../../../../../templates/test/ci/patches/cluster-label-calico.yaml
+- path: ../../../../../../templates/test/ci/patches/cluster-label-cloud-provider-azure.yaml
