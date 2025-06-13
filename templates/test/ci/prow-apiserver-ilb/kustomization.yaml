@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/apiserver-ilb
+  - ../prow/mhc-kubeadmcontrolplane.yaml
+  - ../prow/mhc.yaml
   - ../../../addons/cluster-api-helm/calico.yaml
   - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
   - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
@@ -13,6 +15,7 @@ patches:
   - path: ../patches/controller-manager.yaml
   - path: ../patches/uami-md-0.yaml
   - path: ../patches/uami-control-plane.yaml
+  - path: ../patches/mhc.yaml
   - path: ../patches/cluster-label-calico.yaml
   - path: ../patches/cluster-label-cloud-provider-azure.yaml
   - target:

@@ -5,7 +5,9 @@ resources:
 - ../../../flavors/base
 - ../../../flavors/default/machine-deployment.yaml
 - ../../../flavors/windows/machine-deployment-windows.yaml
+- mhc-kubeadmcontrolplane.yaml
 - mhc.yaml
+- mhc-windows.yaml
 - cni-resource-set.yaml
 - ../../../azure-cluster-identity
 - ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
@@ -38,6 +40,7 @@ patches:
     version: v1beta1
 - path: ../patches/tags.yaml
 - path: ../patches/mhc.yaml
+- path: ../patches/mhc-windows-md.yaml
 - path: ../patches/controller-manager.yaml
 - path: ../patches/windows-machine-deployment-replicas.yaml
 - path: ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
