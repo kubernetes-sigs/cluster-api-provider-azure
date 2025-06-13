@@ -18,7 +18,11 @@ spec:
     singular: azuremanagedmachinepooltemplate
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - deprecated: true
+    deprecationWarning: AzureManagedMachinePoolTemplate and the AzureManaged API are
+      deprecated. Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedMachinePoolTemplate
+      and related AzureASOManaged resources instead.
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: AzureManagedMachinePoolTemplate is the Schema for the AzureManagedMachinePoolTemplates

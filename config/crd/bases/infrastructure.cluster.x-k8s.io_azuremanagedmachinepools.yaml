@@ -43,6 +43,10 @@ spec:
     - jsonPath: .spec.mode
       name: Mode
       type: string
+    deprecated: true
+    deprecationWarning: AzureManagedMachinePool and the AzureManaged API are deprecated.
+      Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedMachinePool
+      and related AzureASOManaged resources instead.
     name: v1beta1
     schema:
       openAPIV3Schema:
