@@ -239,6 +239,7 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
+    nodeDeletionTimeout: 600s
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   rolloutStrategy:
     rollingUpdate:
