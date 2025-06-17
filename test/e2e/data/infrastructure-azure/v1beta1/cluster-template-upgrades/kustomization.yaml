@@ -7,3 +7,4 @@ resources:
 - ../../../../../../templates/azure-cluster-identity/azure-cluster-identity.yaml
 patches:
 - path: ../../../../../../templates/azure-cluster-identity/azurecluster-identity-ref.yaml
+- path: ../../../../../../templates/test/ci/patches/kcp-node-deletion-timeout.yaml
