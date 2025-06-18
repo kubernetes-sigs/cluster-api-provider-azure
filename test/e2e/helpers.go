@@ -58,9 +58,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 const (
@@ -448,14 +446,6 @@ func getClusterName(prefix, specName string) string {
 	Expect(os.Setenv(AzureResourceGroup, clusterName)).To(Succeed())
 	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).To(Succeed())
 	return clusterName
-}
-
-func isAzureMachineWindows(am *infrav1.AzureMachine) bool {
-	return am.Spec.OSDisk.OSType == azure.WindowsOS
-}
-
-func isAzureMachinePoolWindows(amp *infrav1exp.AzureMachinePool) bool {
-	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
 }
 
 // getProxiedSSHClient creates a SSH client object that connects to a target node
