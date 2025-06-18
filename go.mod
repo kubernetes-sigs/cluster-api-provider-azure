@@ -56,8 +56,8 @@ require (
 	k8s.io/kubectl v0.30.3
 	k8s.io/utils v0.0.0-20240821151609-f90d01438635
 	sigs.k8s.io/cloud-provider-azure v1.30.4
-	sigs.k8s.io/cluster-api v1.9.8
-	sigs.k8s.io/cluster-api/test v1.9.8
+	sigs.k8s.io/cluster-api v1.9.9
+	sigs.k8s.io/cluster-api/test v1.9.9
 	sigs.k8s.io/controller-runtime v0.19.6
 	sigs.k8s.io/kind v0.27.0
 )
@@ -119,7 +119,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
