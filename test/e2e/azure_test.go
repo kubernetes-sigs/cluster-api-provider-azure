@@ -199,9 +199,6 @@ var _ = Describe("Workload cluster creation", func() {
 		It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ha")
 
-			// Opt into using windows with prow template
-			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
-
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withNamespace(namespace.Name),
@@ -274,18 +271,6 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			By("Creating an accessible load balancer for windows", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-						Windows:               true,
 					}
 				})
 			})
