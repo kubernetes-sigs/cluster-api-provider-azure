@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -37,7 +36,7 @@ import (
 
 func TestAzureManagedClusterController(t *testing.T) {
 	g := NewWithT(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	scheme := runtime.NewScheme()
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())

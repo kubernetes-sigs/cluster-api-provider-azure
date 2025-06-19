@@ -17,7 +17,6 @@ limitations under the License.
 package inboundnatrules
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -207,7 +206,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
@@ -284,7 +283,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))

@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -477,7 +476,7 @@ func TestAuthTokenForASOResource(t *testing.T) {
 				cache:  credCache,
 				client: c,
 			}
-			_, err := asoCache.authTokenForASOResource(context.Background(), test.resource)
+			_, err := asoCache.authTokenForASOResource(t.Context(), test.resource)
 			if test.expectedErr != nil {
 				g.Expect(err).To(MatchError(test.expectedErr))
 			} else {

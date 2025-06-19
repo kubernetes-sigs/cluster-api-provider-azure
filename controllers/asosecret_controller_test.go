@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -323,7 +322,7 @@ func TestASOSecretReconcile(t *testing.T) {
 				CredentialCache: azure.NewCredentialCache(),
 			}
 
-			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "default",
 					Name:      tc.clusterName,
@@ -331,7 +330,7 @@ func TestASOSecretReconcile(t *testing.T) {
 			})
 
 			existingASOSecret := &corev1.Secret{}
-			asoSecretErr := clientBuilder.Get(context.Background(), types.NamespacedName{
+			asoSecretErr := clientBuilder.Get(t.Context(), types.NamespacedName{
 				Namespace: defaultASOSecret.Namespace,
 				Name:      defaultASOSecret.Name,
 			}, existingASOSecret)
