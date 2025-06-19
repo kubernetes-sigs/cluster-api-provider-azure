@@ -5,6 +5,7 @@ resources:
 - ../../../flavors/base
 - ../../../flavors/default/machine-deployment.yaml
 - ../../../flavors/windows/machine-deployment-windows.yaml
+- mhc-kubeadmcontrolplane.yaml
 - mhc.yaml
 - cni-resource-set.yaml
 - ../../../azure-cluster-identity
