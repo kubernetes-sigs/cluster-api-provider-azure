@@ -1,0 +1,36 @@
+{
+  "Name": "Static Placement IaaS Cluster Deployer (vnet)",
+  "IsCustom": true,
+  "Description": "Can use CAPZ to deploy IaaS clusters using static placement. This role contains the permissions that must be applied at the virtual network scope level.",
+  "Actions": [
+    "Microsoft.Network/networkSecurityGroups/read",
+    "Microsoft.Network/networkSecurityGroups/securityRules/read",
+    "Microsoft.Network/privateDnsZones/A/delete",
+    "Microsoft.Network/privateDnsZones/A/read",
+    "Microsoft.Network/privateDnsZones/A/write",
+    "Microsoft.Network/privateDnsZones/delete",
+    "Microsoft.Network/privateDnsZones/read",
+    "Microsoft.Network/privateDnsZones/virtualNetworkLinks/delete",
+    "Microsoft.Network/privateDnsZones/virtualNetworkLinks/read",
+    "Microsoft.Network/privateDnsZones/virtualNetworkLinks/write",
+    "Microsoft.Network/privateDnsZones/write",
+    "Microsoft.Network/routeTables/delete",
+    "Microsoft.Network/routeTables/join/action",
+    "Microsoft.Network/routeTables/read",
+    "Microsoft.Network/routeTables/write",
+    "Microsoft.Network/virtualNetworks/join/action",
+    "Microsoft.Network/virtualNetworks/joinLoadBalancer/action",
+    "Microsoft.Network/virtualNetworks/peer/action",
+    "Microsoft.Network/virtualNetworks/read",
+    "Microsoft.Network/virtualNetworks/subnets/join/action",
+    "Microsoft.Network/virtualNetworks/subnets/joinLoadBalancer/action",
+    "Microsoft.Network/virtualNetworks/subnets/read",
+    "Microsoft.Network/virtualNetworks/subnets/virtualMachines/read",
+    "Microsoft.Network/virtualNetworks/virtualMachines/read",
+    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/read"
+  ],
+  "NotActions": [],
+  "AssignableScopes": [
+    "/subscriptions/$SUBSCRIPTION_ID"
+  ]
+}
