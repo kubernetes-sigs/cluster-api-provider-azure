@@ -21,17 +21,18 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -41,8 +42,8 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // AzureLogCollector collects logs from a CAPZ workload cluster.
@@ -57,77 +58,54 @@ var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
-	var errs []error
-
-	am, err := getAzureMachine(ctx, managementClusterClient, m)
+	infraGV, err := schema.ParseGroupVersion(m.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", m.Spec.InfrastructureRef.APIVersion, err)
+	}
+	infraKind := m.Spec.InfrastructureRef.Kind
+	infraGK := schema.GroupKind{
+		Group: infraGV.Group,
+		Kind:  infraKind,
 	}
 
-	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
-	if err != nil {
-		return err
+	switch infraGK {
+	case infrav1.GroupVersion.WithKind(infrav1.AzureMachineKind).GroupKind():
+		return collectAzureMachineLog(ctx, managementClusterClient, m, outputPath)
+	case infrav1exp.GroupVersion.WithKind(infrav1exp.AzureMachinePoolMachineKind).GroupKind():
+		// Logs collected for AzureMachinePool
+	default:
+		Logf("Unknown machine infra kind: %s", infraGV.WithKind(infraKind))
 	}
 
-	hostname := getHostname(m, isAzureMachineWindows(am))
-
-	if err := collectLogsFromNode(cluster, hostname, isAzureMachineWindows(am), outputPath); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := collectVMBootLog(ctx, am, outputPath); err != nil {
-		errs = append(errs, errors.Wrap(err, "Unable to collect VM Boot Diagnostic logs"))
-	}
-
-	return kinderrors.NewAggregate(errs)
+	return nil
 }
 
 // CollectMachinePoolLog collects logs from a machine pool.
 func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
-	var errs []error
-	var isWindows bool
-
-	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
+	infraGV, err := schema.ParseGroupVersion(mp.Spec.Template.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-		// Machine pool can be an AzureManagedMachinePool for AKS clusters.
-		_, err = getAzureManagedMachinePool(ctx, managementClusterClient, mp)
-		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return err
-			}
-			_, err = getAzureASOManagedMachinePool(ctx, managementClusterClient, mp)
-			return err
-		}
-	} else {
-		isWindows = isAzureMachinePoolWindows(am)
+		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", mp.Spec.Template.Spec.InfrastructureRef.APIVersion, err)
+	}
+	infraKind := mp.Spec.Template.Spec.InfrastructureRef.Kind
+	infraGK := schema.GroupKind{
+		Group: infraGV.Group,
+		Kind:  infraKind,
 	}
 
-	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
-	if err != nil {
-		return err
+	switch infraGK {
+	case infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind).GroupKind():
+		return collectAzureMachinePoolLog(ctx, managementClusterClient, mp, outputPath)
+	case infrav1.GroupVersion.WithKind(infrav1.AzureManagedMachinePoolKind).GroupKind():
+		// AKS node logs aren't accessible.
+		Logf("Skipping logs for %s", infrav1.AzureManagedMachinePoolKind)
+	case infrav1.GroupVersion.WithKind(infrav1.AzureASOManagedMachinePoolKind).GroupKind():
+		// AKS node logs aren't accessible.
+		Logf("Skipping logs for %s", infrav1.AzureASOManagedMachinePoolKind)
+	default:
+		Logf("Unknown machine pool infra kind: %s", infraGV.WithKind(infraKind))
 	}
 
-	for i, instance := range mp.Spec.ProviderIDList {
-		if mp.Status.NodeRefs != nil && len(mp.Status.NodeRefs) >= (i+1) {
-			hostname := mp.Status.NodeRefs[i].Name
-
-			if err := collectLogsFromNode(cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
-				errs = append(errs, err)
-			}
-
-			if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
-				errs = append(errs, errors.Wrap(err, "Unable to collect VMSS Boot Diagnostic logs"))
-			}
-		} else {
-			Logf("MachinePool instance %s does not have a corresponding NodeRef", instance)
-			Logf("Skipping log collection for MachinePool instance %s", instance)
-		}
-	}
-
-	return kinderrors.NewAggregate(errs)
+	return nil
 }
 
 // CollectInfrastructureLogs collects log from the infrastructure.
@@ -136,13 +114,221 @@ func (k AzureLogCollector) CollectInfrastructureLogs(_ context.Context, _ client
 	return nil
 }
 
+func collectAzureMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
+	am, err := getAzureMachine(ctx, managementClusterClient, m)
+	if err != nil {
+		return fmt.Errorf("get AzureMachine %s/%s: %w", m.Spec.InfrastructureRef.Namespace, m.Spec.InfrastructureRef.Name, err)
+	}
+
+	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
+	if err != nil {
+		return err
+	}
+
+	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+	if err != nil {
+		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name, err)
+	}
+	subscriptionID := azureCluster.Spec.SubscriptionID
+	resourceGroup := azureCluster.Spec.ResourceGroup
+	name := (&scope.MachineScope{AzureMachine: am}).Name()
+
+	return collectVMLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
+}
+
+func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
+	if err != nil {
+		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
+	}
+
+	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
+	if err != nil {
+		return err
+	}
+
+	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+	if err != nil {
+		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name, err)
+	}
+	subscriptionID := azureCluster.Spec.SubscriptionID
+	resourceGroup := azureCluster.Spec.ResourceGroup
+	name := (&scope.MachinePoolScope{AzureMachinePool: am}).Name()
+
+	return collectVMSSLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
+}
+
+func collectVMLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default azure credential")
+	}
+	vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create virtual machine scale sets client: %w", err)
+	}
+
+	vm, err := vmClient.Get(ctx, resourceGroup, name, nil)
+	if err != nil {
+		return fmt.Errorf("get virtual machine %s in resource group %s: %w", name, resourceGroup, err)
+	}
+	isWindows := vm.Properties != nil &&
+		vm.Properties.StorageProfile != nil &&
+		vm.Properties.StorageProfile.OSDisk != nil &&
+		vm.Properties.StorageProfile.OSDisk.OSType != nil &&
+		*vm.Properties.StorageProfile.OSDisk.OSType == armcompute.OperatingSystemTypesWindows
+
+	var errs []error
+
+	if vm.Properties == nil ||
+		vm.Properties.OSProfile == nil ||
+		vm.Properties.OSProfile.ComputerName == nil {
+		errs = append(errs, fmt.Errorf("virtual machine %s in resource group %s has no computer name, can't collect logs via SSH", name, resourceGroup))
+	} else {
+		hostname := *vm.Properties.OSProfile.ComputerName
+		if err := collectLogsFromNode(cluster, hostname, isWindows, outputPath); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if err := collectVMBootLog(ctx, vmClient, resourceGroup, name, outputPath); err != nil {
+		errs = append(errs, errors.Wrap(err, "Unable to collect VM Boot Diagnostic logs"))
+	}
+
+	return kinderrors.NewAggregate(errs)
+}
+
+func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
+	vmssID := azure.VMSSID(subscriptionID, resourceGroup, name)
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default azure credential")
+	}
+	vmssClient, err := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create virtual machine scale sets client")
+	}
+
+	vmss, err := vmssClient.Get(ctx, resourceGroup, name, nil)
+	if err != nil {
+		return fmt.Errorf("get VMSS %s: %w", vmssID, err)
+	}
+
+	var mode armcompute.OrchestrationMode
+	if vmss.Properties != nil &&
+		vmss.Properties.OrchestrationMode != nil {
+		mode = *vmss.Properties.OrchestrationMode
+	}
+	switch mode {
+	case armcompute.OrchestrationModeUniform:
+		isWindows := vmss.Properties != nil &&
+			vmss.Properties.VirtualMachineProfile != nil &&
+			vmss.Properties.VirtualMachineProfile.StorageProfile != nil &&
+			vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk != nil &&
+			vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType != nil &&
+			*vmss.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType == armcompute.OperatingSystemTypesWindows
+
+		instanceClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+		if err != nil {
+			return errors.Wrap(err, "failed to create virtual machine scale set client")
+		}
+		pager := instanceClient.NewListPager(resourceGroup, name, nil)
+		var errs []error
+		for pager.More() {
+			instances, err := pager.NextPage(ctx)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("list VMSS %s instances: %w", vmssID, err))
+				continue
+			}
+			for _, instance := range instances.Value {
+				var hostname string
+
+				if instance == nil ||
+					instance.Properties == nil ||
+					instance.Properties.OSProfile == nil ||
+					instance.Properties.OSProfile.ComputerName == nil {
+					errs = append(errs, fmt.Errorf("instance of VMSS %s in resource group %s has no computer name, can't collect logs via SSH", name, resourceGroup))
+				} else {
+					hostname = *instance.Properties.OSProfile.ComputerName
+					if err := collectLogsFromNode(cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
+						errs = append(errs, err)
+					}
+				}
+
+				if instance == nil ||
+					instance.InstanceID == nil {
+					errs = append(errs, fmt.Errorf("VMSS instance has no ID"))
+				} else {
+					outputDir := hostname
+					if outputDir == "" {
+						outputDir = "instance-" + *instance.InstanceID
+					}
+					if err := collectVMSSInstanceBootLog(ctx, instanceClient, resourceGroup, ptr.Deref(vmss.Name, ""), *instance.InstanceID, filepath.Join(outputPath, outputDir)); err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
+		}
+		return kinderrors.NewAggregate(errs)
+	case armcompute.OrchestrationModeFlexible:
+		var vmssID string
+		if vmss.ID != nil {
+			vmssID = *vmss.ID
+		} else {
+			vmssID = azure.VMSSID(subscriptionID, resourceGroup, name)
+			Logf("VMSS has no ID, guessing it's %q", vmssID)
+		}
+
+		vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+		if err != nil {
+			return errors.Wrap(err, "failed to create virtual machine client")
+		}
+		pager := vmClient.NewListPager(resourceGroup, nil)
+		var errs []error
+		for pager.More() {
+			vms, err := pager.NextPage(ctx)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("list VMs in resource group %s: %w", resourceGroup, err))
+				continue
+			}
+			for _, vm := range vms.Value {
+				if vm == nil ||
+					vm.Properties == nil ||
+					vm.Properties.VirtualMachineScaleSet == nil ||
+					vm.Properties.VirtualMachineScaleSet.ID == nil ||
+					*vm.Properties.VirtualMachineScaleSet.ID != vmssID {
+					continue
+				}
+
+				if vm.Name == nil {
+					errs = append(errs, fmt.Errorf("VM for VMSS %s in resource group %s has no name, skipping log collection", name, resourceGroup))
+				} else {
+					outputDir := *vm.Name
+					if vm.Properties != nil &&
+						vm.Properties.OSProfile != nil &&
+						vm.Properties.OSProfile.ComputerName != nil {
+						outputDir = *vm.Properties.OSProfile.ComputerName
+					}
+					if err := collectVMLog(ctx, cluster, subscriptionID, resourceGroup, *vm.Name, filepath.Join(outputPath, outputDir)); err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
+		}
+		return kinderrors.NewAggregate(errs)
+	default:
+		return fmt.Errorf("unknown orchestration mode %q", mode)
+	}
+}
+
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
 func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
 	nodeOSType := azure.LinuxOS
 	if isWindows {
 		nodeOSType = azure.WindowsOS
 	}
-	Logf("Collecting logs for %s node %s in cluster %s in namespace %s\n", nodeOSType, hostname, cluster.Name, cluster.Namespace)
+	Logf("Collecting logs for %s node %s in cluster %s in namespace %s", nodeOSType, hostname, cluster.Name, cluster.Namespace)
 
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 
@@ -172,20 +358,6 @@ func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows 
 	}
 
 	return kinderrors.AggregateConcurrent(linuxLogs(execToPathFn))
-}
-
-func getHostname(m *clusterv1.Machine, isWindows bool) string {
-	hostname := m.Spec.InfrastructureRef.Name
-	if isWindows {
-		// Windows host name ends up being different than the infra machine name
-		// due to Windows name limitations in Azure so use ip address instead.
-		if len(m.Status.Addresses) > 0 {
-			hostname = m.Status.Addresses[0].Address
-		} else {
-			Logf("Unable to collect logs as node doesn't have addresses")
-		}
-	}
-	return hostname
 }
 
 func getAzureCluster(ctx context.Context, managementClusterClient client.Client, namespace, name string) (*infrav1.AzureCluster, error) {
@@ -241,28 +413,6 @@ func getAzureMachinePool(ctx context.Context, managementClusterClient client.Cli
 	azMachinePool := &infrav1exp.AzureMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azMachinePool)
 	return azMachinePool, err
-}
-
-func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1.AzureManagedMachinePool, error) {
-	key := client.ObjectKey{
-		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
-		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
-	}
-
-	azManagedMachinePool := &infrav1.AzureManagedMachinePool{}
-	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
-	return azManagedMachinePool, err
-}
-
-func getAzureASOManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1.AzureASOManagedMachinePool, error) {
-	key := client.ObjectKey{
-		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
-		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
-	}
-
-	azManagedMachinePool := &infrav1.AzureASOManagedMachinePool{}
-	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
-	return azManagedMachinePool, err
 }
 
 func linuxLogs(execToPathFn func(outputFileName string, command string, args ...string) func() error) []func() error {
@@ -433,37 +583,10 @@ func windowsCrashDumpLogs(execToPathFn func(outputFileName string, command strin
 }
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
-func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath string) error {
-	if am == nil {
-		return errors.New("AzureMachine is nil")
-	}
-	Logf("Collecting boot logs for AzureMachine %s\n", am.GetName())
+func collectVMBootLog(ctx context.Context, vmClient *armcompute.VirtualMachinesClient, resourceGroup, name, outputPath string) error {
+	Logf("Collecting boot logs for resource group %s, VM %s", resourceGroup, name)
 
-	if am.Spec.ProviderID == nil {
-		return errors.New("AzureMachine provider ID is nil")
-	}
-
-	resource, err := azureutil.ParseResourceID(*am.Spec.ProviderID)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse resource id")
-	}
-
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return errors.New("AZURE_SUBSCRIPTION_ID is not set")
-	}
-
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to get default azure credential")
-	}
-
-	vmClient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to create virtual machines client")
-	}
-
-	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, nil)
+	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resourceGroup, name, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
@@ -471,34 +594,11 @@ func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath 
 	return writeBootLog(bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
 }
 
-// collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
-func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
-	resourceID := strings.TrimPrefix(providerID, azureutil.ProviderIDPrefix)
-	v := strings.Split(resourceID, "/")
-	instanceID := v[len(v)-1]
-	resourceID = strings.TrimSuffix(resourceID, "/virtualMachines/"+instanceID)
-	resource, err := azureutil.ParseResourceID(resourceID)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse resource id")
-	}
+// collectVMSSInstanceBootLog collects boot logs of the vmss instance by using azure boot diagnostics.
+func collectVMSSInstanceBootLog(ctx context.Context, instanceClient *armcompute.VirtualMachineScaleSetVMsClient, resourceGroup, vmssName, instanceID, outputPath string) error {
+	Logf("Collecting boot logs for resource group %s, VMSS %s, instance %s", resourceGroup, vmssName, instanceID)
 
-	Logf("Collecting boot logs for VMSS instance %s of scale set %s\n", instanceID, resource.Name)
-
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return errors.New("AZURE_SUBSCRIPTION_ID is not set")
-	}
-
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to get default azure credential")
-	}
-	vmssClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to create virtual machine scale set VMs client")
-	}
-
-	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroupName, resource.Name, instanceID, nil)
+	bootDiagnostics, err := instanceClient.RetrieveBootDiagnosticsData(ctx, resourceGroup, vmssName, instanceID, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
