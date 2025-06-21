@@ -1,0 +1,402 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: arocontrolplanes.controlplane.cluster.x-k8s.io
+spec:
+  group: controlplane.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: AROControlPlane
+    listKind: AROControlPlaneList
+    plural: arocontrolplanes
+    shortNames:
+    - arocp
+    singular: arocontrolplane
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Cluster to which this AROControl belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      type: string
+    - description: Control plane infrastructure is ready for worker nodes
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    name: v1beta2
+    schema:
+      openAPIV3Schema:
+        description: AROControlPlane is the Schema for the AROControlPlanes API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AROControlPlaneSpec defines the desired state of AROControlPlane.
+            properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags are user-defined tags to be added on the
+                  AWS resources associated with the control plane.
+                type: object
+              aroClusterName:
+                description: |-
+                  Cluster name must be valid DNS-1035 label, so it must consist of lower case alphanumeric
+                  characters or '-', start with an alphabetic character, end with an alphanumeric character
+                  and have a max length of 54 characters.
+                maxLength: 54
+                pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                type: string
+                x-kubernetes-validations:
+                - message: aroClusterName is immutable
+                  rule: self == oldSelf
+              channelGroup:
+                default: stable
+                description: OpenShift version channel group, default is stable.
+                enum:
+                - stable
+                - candidate
+                - nightly
+                type: string
+              domainPrefix:
+                description: |-
+                  DomainPrefix is an optional prefix added to the cluster's domain name. It will be used
+                  when generating a sub-domain for the cluster on openshiftapps domain. It must be valid DNS-1035 label
+                  consisting of lower case alphanumeric characters or '-', start with an alphabetic character
+                  end with an alphanumeric character and have a max length of 15 characters.
+                maxLength: 15
+                pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                type: string
+                x-kubernetes-validations:
+                - message: domainPrefix is immutable
+                  rule: self == oldSelf
+              identityRef:
+                description: |-
+                  IdentityRef is a reference to an identity to be used when reconciling the aro control plane.
+                  If no identity is specified, the default identity for this controller will be used.
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: |-
+                      If referring to a piece of an object instead of an entire object, this string
+                      should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within a pod, this would take on a value like:
+                      "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]" (container with
+                      index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                      referencing a part of an object.
+                    type: string
+                  kind:
+                    description: |-
+                      Kind of the referent.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                    type: string
+                  resourceVersion:
+                    description: |-
+                      Specific resourceVersion to which this reference is made, if any.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                    type: string
+                  uid:
+                    description: |-
+                      UID of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              network:
+                description: Network config for the ARO HCP cluster.
+                properties:
+                  hostPrefix:
+                    default: 23
+                    description: Network host prefix which is defaulted to `23` if
+                      not specified.
+                    type: integer
+                  machineCIDR:
+                    description: IP addresses block used by OpenShift while installing
+                      the cluster, for example "10.0.0.0/16".
+                    format: cidr
+                    type: string
+                  networkType:
+                    default: OVNKubernetes
+                    description: The CNI network type default is OVNKubernetes.
+                    enum:
+                    - OVNKubernetes
+                    - Other
+                    type: string
+                  podCIDR:
+                    description: IP address block from which to assign pod IP addresses,
+                      for example `10.128.0.0/14`.
+                    format: cidr
+                    type: string
+                  serviceCIDR:
+                    description: IP address block from which to assign service IP
+                      addresses, for example `172.30.0.0/16`.
+                    format: cidr
+                    type: string
+                type: object
+              platform:
+                description: AROPlatformProfileControlPlane represents the Azure platform
+                  configuration.
+                properties:
+                  location:
+                    description: Location should be valid Azure location ex; centralus
+                    type: string
+                  managedIdentities:
+                    description: ManagedIdentities Azure managed identities for ARO
+                      HCP.
+                    properties:
+                      controlPlaneOperators:
+                        description: ControlPlaneOperators Ref to Microsoft.ManagedIdentity/userAssignedIdentities
+                        properties:
+                          cloudControllerManager:
+                            description: CloudControllerManagerManagedIdentities "cloud-controller-manager"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          cloudNetworkConfigManagedIdentities:
+                            description: CloudNetworkConfigManagedIdentities "cloud-network-config"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          clusterApiAzureManagedIdentities:
+                            description: ClusterAPIAzureManagedIdentities "cluster-api-azure"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          controlPlaneOperatorsManagedIdentities:
+                            description: ControlPlaneManagedIdentities "control-plane"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          diskCsiDriverManagedIdentities:
+                            description: DiskCsiDriverManagedIdentities "disk-csi-driver"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          fileCsiDriverManagedIdentities:
+                            description: FileCsiDriverManagedIdentities "file-csi-driver"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          imageRegistryManagedIdentities:
+                            description: ImageRegistryManagedIdentities "image-registry"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          ingressManagedIdentities:
+                            description: IngressManagedIdentities "ingress" Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          kmsManagedIdentities:
+                            description: KmsManagedIdentities "kms" Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                        type: object
+                      createAROHCPManagedIdentities:
+                        description: |-
+                          CreateAROHCPManagedIdentities is used to create the required ARO-HCP managed identities if not provided.
+                          It will create UserAssignedIdentity CR for each required managed identity. Default is false.
+                        type: boolean
+                      dataPlaneOperators:
+                        description: DataPlaneOperators ref to Microsoft.ManagedIdentity/userAssignedIdentities
+                        properties:
+                          diskCsiDriverManagedIdentities:
+                            description: DiskCsiDriverManagedIdentities "disk-csi-driver"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          fileCsiDriverManagedIdentities:
+                            description: FileCsiDriverManagedIdentities "file-csi-driver"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          imageRegistryManagedIdentities:
+                            description: ImageRegistryManagedIdentities "image-registry"
+                              Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                        type: object
+                      serviceManagedIdentity:
+                        description: ServiceManagedIdentity ref to Microsoft.ManagedIdentity/userAssignedIdentities
+                        type: string
+                    type: object
+                  networkSecurityGroupId:
+                    description: Azure Network Security Group ID
+                    type: string
+                  outboundType:
+                    description: OutboundType represents a routing strategy to provide
+                      egress to the Internet. Allowed value is loadBalancer
+                    type: string
+                  resourceGroup:
+                    description: Resource group name where the ARO-hcp will be attached
+                      to it.
+                    type: string
+                  resourceGroupRef:
+                    description: ResourceGroup Ref name that is used to create the
+                      ResourceGroup CR. The ResourceGroupRef must be in the same namespace
+                      as the AROControlPlane and cannot be set with ResourceGroup.
+                    type: string
+                  subnet:
+                    description: Azure subnet id
+                    type: string
+                  subnetRef:
+                    description: Subnet Ref name that is used to create the VirtualNetworksSubnet
+                      CR. The SubnetRef must be in the same namespace as the AROControlPlane
+                      and cannot be set with Subnet.
+                    type: string
+                type: object
+              version:
+                description: OpenShift semantic version, for example "4.14.5".
+                type: string
+              versionGate:
+                default: WaitForAcknowledge
+                description: |-
+                  VersionGate requires acknowledgment when upgrading ARO-HCP y-stream versions (e.g., from 4.15 to 4.16).
+                  Default is WaitForAcknowledge.
+                  WaitForAcknowledge: If acknowledgment is required, the upgrade will not proceed until VersionGate is set to Acknowledge or AlwaysAcknowledge.
+                  Acknowledge: If acknowledgment is required, apply it for the upgrade. After upgrade is done set the version gate to WaitForAcknowledge.
+                  AlwaysAcknowledge: If acknowledgment is required, apply it and proceed with the upgrade.
+                enum:
+                - Acknowledge
+                - WaitForAcknowledge
+                - AlwaysAcknowledge
+                type: string
+              visibility:
+                description: Visibility represents the visibility of an API endpoint.
+                  Allowed values are public and private default is public.
+                type: string
+            required:
+            - aroClusterName
+            - channelGroup
+            - version
+            - versionGate
+            type: object
+          status:
+            description: AROControlPlaneStatus defines the observed state of AROControlPlane.
+            properties:
+              apiURL:
+                description: APIURL is the url for the ARO-HCP openshift cluster api
+                  endPoint.
+                type: string
+              availableUpgrades:
+                description: Available upgrades for the ARO hosted control plane.
+                items:
+                  type: string
+                type: array
+              conditions:
+                description: Conditions specifies the conditions for the managed control
+                  plane
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This field may be empty.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    reason:
+                      description: |-
+                        reason is the reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may be empty.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    severity:
+                      description: |-
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      maxLength: 32
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              consoleURL:
+                description: ConsoleURL is the url for the openshift console.
+                type: string
+              externalManagedControlPlane:
+                default: true
+                description: |-
+                  ExternalManagedControlPlane indicates to cluster-api that the control plane
+                  is managed by an external service such as AKS, EKS, GKE, etc.
+                type: boolean
+              failureMessage:
+                description: |-
+                  FailureMessage will be set in the event that there is a terminal problem
+                  reconciling the state and will be set to a descriptive error message.
+
+                  This field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over
+                  time (like service outages), but instead indicate that something is
+                  fundamentally wrong with the spec or the configuration of
+                  the controller, and that manual intervention is required.
+                type: string
+              id:
+                description: ID is the cluster ID given by ARO.
+                type: string
+              initialized:
+                description: |-
+                  Initialized denotes whether or not the control plane has the
+                  uploaded kubernetes config-map.
+                type: boolean
+              ready:
+                default: false
+                description: Ready denotes that the AROControlPlane API Server is
+                  ready to receive requests.
+                type: boolean
+              version:
+                description: ARO-HCP OpenShift semantic version, for example "4.20.0".
+                type: string
+            required:
+            - ready
+            - version
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
