@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: calico-node
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: upgrade-ipam
+        image: quay.io/calico/cni:v3.29.4
+      - name: install-cni
+        image: quay.io/calico/cni:v3.29.4
+      - name: mount-bpffs
+        image: quay.io/calico/node:v3.29.4
+      containers:
+      - name: calico-node
+        image: quay.io/calico/node:v3.29.4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calico-kube-controllers
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: calico-kube-controllers
+        image: quay.io/calico/kube-controllers:v3.29.4
