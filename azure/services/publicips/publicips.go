@@ -18,6 +18,7 @@ package publicips
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
@@ -151,6 +152,12 @@ func (s *Service) Delete(ctx context.Context) error {
 // isIPManaged returns true if the IP has an owned tag with the cluster name as value,
 // meaning that the IP's lifecycle is managed.
 func (s *Service) isIPManaged(ctx context.Context, spec azure.ResourceSpecGetter) (bool, error) {
+	if strings.EqualFold(s.Scope.CloudEnvironment(), azure.StackCloudName) {
+		// Azure Stack does not yet support getting tags with scope,
+		// so assume IPs are managed.
+		return true, nil
+	}
+
 	scope := azure.PublicIPID(s.Scope.SubscriptionID(), spec.ResourceGroupName(), spec.ResourceName())
 	result, err := s.TagsGetter.GetAtScope(ctx, scope)
 	if err != nil {
