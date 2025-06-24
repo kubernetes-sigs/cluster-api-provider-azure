@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,7 +43,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const ownedKindsAnnotation = "sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds"
+const (
+	ownedKindsAnnotation = "sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds"
+	ownedKindsSep        = ";"
+)
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
 type ResourceReconciler struct {
@@ -179,14 +183,15 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		}
 	}
 
-	newOwnedKinds := []metav1.TypeMeta{}
+	newOwnedKinds := []schema.GroupVersionKind{}
 	for _, status := range newResourceStatuses {
-		typeMeta := metav1.TypeMeta{
-			APIVersion: metav1.GroupVersion{Group: status.Resource.Group, Version: status.Resource.Version}.String(),
-			Kind:       status.Resource.Kind,
+		gvk := schema.GroupVersionKind{
+			Group:   status.Resource.Group,
+			Version: status.Resource.Version,
+			Kind:    status.Resource.Kind,
 		}
-		if !slices.Contains(newOwnedKinds, typeMeta) {
-			newOwnedKinds = append(newOwnedKinds, typeMeta)
+		if !slices.Contains(newOwnedKinds, gvk) {
+			newOwnedKinds = append(newOwnedKinds, gvk)
 		}
 	}
 	annotations := r.owner.GetAnnotations()
@@ -362,24 +367,23 @@ func parseOwnedKinds(value string) (sets.Set[metav1.TypeMeta], error) {
 	if value == "" {
 		return nil, nil
 	}
-	for _, ownedKind := range strings.Split(value, ";") {
-		i := strings.LastIndexAny(ownedKind, "/")
-		if i < 0 {
-			return nil, fmt.Errorf("failed to parse field: %s", ownedKind)
+	for _, ownedKind := range strings.Split(value, ownedKindsSep) {
+		gvk, _ := schema.ParseKindArg(ownedKind)
+		if gvk == nil {
+			return nil, fmt.Errorf("invalid field %q: expected Kind.version.group", ownedKind)
 		}
-		apiVersion, kind := ownedKind[:i], ownedKind[i+1:]
 		ownedKinds.Insert(metav1.TypeMeta{
-			APIVersion: apiVersion,
-			Kind:       kind,
+			APIVersion: gvk.GroupVersion().Identifier(),
+			Kind:       gvk.Kind,
 		})
 	}
 	return ownedKinds, nil
 }
 
-func getOwnedKindsValue(ownedKinds []metav1.TypeMeta) string {
+func getOwnedKindsValue(ownedKinds []schema.GroupVersionKind) string {
 	fields := make([]string, 0, len(ownedKinds))
-	for _, kind := range ownedKinds {
-		fields = append(fields, kind.APIVersion+"/"+kind.Kind)
+	for _, gvk := range ownedKinds {
+		fields = append(fields, strings.Join([]string{gvk.Kind, gvk.Version, gvk.Group}, "."))
 	}
-	return strings.Join(fields, ";")
+	return strings.Join(fields, ownedKindsSep)
 }

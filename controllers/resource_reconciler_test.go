@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -133,7 +134,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(BeEmpty())
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
-		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}})))
+		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(2))
@@ -149,7 +150,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		asoManagedCluster := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					ownedKindsAnnotation: getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}}),
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
@@ -209,7 +210,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(HaveKey("ResourceGroup.resources.azure.com"))
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
-		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}})))
+		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(2))
@@ -226,7 +227,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					ownedKindsAnnotation: getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}}),
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
@@ -302,7 +303,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		needsRequeue, err := r.Reconcile(ctx)
 		g.Expect(needsRequeue).To(BeFalse())
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}})))
+		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := owner.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(3))
@@ -361,7 +362,7 @@ func TestResourceReconcilerPause(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					ownedKindsAnnotation: getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}}),
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
@@ -471,7 +472,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 				Annotations: map[string]string{
-					ownedKindsAnnotation: getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}}),
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
@@ -510,7 +511,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		}
 
 		g.Expect(r.Delete(ctx)).To(Succeed())
-		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}})))
+		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 		g.Expect(apierrors.IsNotFound(r.Client.Get(ctx, client.ObjectKey{Namespace: owner.Namespace, Name: "just-deleted"}, &asoresourcesv1.ResourceGroup{}))).To(BeTrue())
 		stillDeleting := &asoresourcesv1.ResourceGroup{}
 		g.Expect(r.Client.Get(ctx, client.ObjectKey{Namespace: owner.Namespace, Name: "still-deleting"}, stillDeleting)).To(Succeed())
@@ -528,7 +529,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 				Annotations: map[string]string{
-					ownedKindsAnnotation: getOwnedKindsValue([]metav1.TypeMeta{{APIVersion: asoresourcesv1.GroupVersion.Identifier(), Kind: "ResourceGroup"}}),
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
