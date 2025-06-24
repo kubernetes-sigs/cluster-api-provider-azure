@@ -126,19 +126,19 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to get owned objects: %w", err)
 	}
 
-	unobservedTypeResources, observedTypeResources, deletedResources := partitionResources(ownedKinds, r.resources, ownedObjs)
+	unrecordedTypeResources, recordedTypeResources, toBeDeletedResources := partitionResources(ownedKinds, r.resources, ownedObjs)
 
 	// Newly-defined types in the CAPZ spec are first recorded in the annotation without performing a
 	// patch that would create resources of that type. CAPZ only patches resources whose kinds have
 	// already been recorded to ensure no resources are orphaned.
-	for _, spec := range unobservedTypeResources {
+	for _, spec := range unrecordedTypeResources {
 		newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
 			Resource: statusResource(spec),
 			Ready:    false,
 		})
 	}
 
-	for _, spec := range observedTypeResources {
+	for _, spec := range recordedTypeResources {
 		spec.SetNamespace(r.owner.GetNamespace())
 
 		if err := controllerutil.SetControllerReference(r.owner, spec, r.Scheme()); err != nil {
@@ -169,7 +169,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		})
 	}
 
-	for _, obj := range deletedResources {
+	for _, obj := range toBeDeletedResources {
 		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
 			return false, fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
@@ -201,7 +201,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
-	return len(unobservedTypeResources) > 0, nil
+	return len(unrecordedTypeResources) > 0, nil
 }
 
 func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav1.PartialObjectMetadata) (*infrav1.ResourceStatus, error) {
@@ -306,17 +306,17 @@ func readyStatus(ctx context.Context, u *unstructured.Unstructured) (bool, error
 
 // partitionResources splits the sets of resources in spec and the current set
 // of owned, existing resources into three groups:
-// - unobservedTypeResources are of a type not yet known to this owning CAPZ resource.
-// - observedTypeResources are of a type already known to this owning CAPZ resource.
-// - deletedResources exist but are not defined in spec.
+// - unrecordedTypeResources are of a type not yet known to this owning CAPZ resource.
+// - recordedTypeResources are of a type already known to this owning CAPZ resource.
+// - toBeDeletedResources exist but are not defined in spec.
 func partitionResources(
 	ownedKinds sets.Set[metav1.TypeMeta],
 	specs []*unstructured.Unstructured,
 	ownedObjs []*metav1.PartialObjectMetadata,
 ) (
-	unobservedTypeResources []*unstructured.Unstructured,
-	observedTypeResources []*unstructured.Unstructured,
-	deletedResources []*metav1.PartialObjectMetadata,
+	unrecordedTypeResources []*unstructured.Unstructured,
+	recordedTypeResources []*unstructured.Unstructured,
+	toBeDeletedResources []*metav1.PartialObjectMetadata,
 ) {
 	for _, spec := range specs {
 		typeMeta := metav1.TypeMeta{
@@ -324,15 +324,15 @@ func partitionResources(
 			Kind:       spec.GetKind(),
 		}
 		if ownedKinds.Has(typeMeta) {
-			observedTypeResources = append(observedTypeResources, spec)
+			recordedTypeResources = append(recordedTypeResources, spec)
 		} else {
-			unobservedTypeResources = append(unobservedTypeResources, spec)
+			unrecordedTypeResources = append(unrecordedTypeResources, spec)
 		}
 	}
 
 	for _, owned := range ownedObjs {
 		if !slices.ContainsFunc(specs, metadataRefersToResource(owned)) {
-			deletedResources = append(deletedResources, owned)
+			toBeDeletedResources = append(toBeDeletedResources, owned)
 		}
 	}
 	return
