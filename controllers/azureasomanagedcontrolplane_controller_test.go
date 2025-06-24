@@ -203,13 +203,13 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			newResourceReconciler: func(asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
 					owner: asoManagedControlPlane,
-					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
 						asoManagedControlPlane.SetResourceStatuses([]infrav1.ResourceStatus{
 							{Ready: true},
 							{Ready: false},
 							{Ready: true},
 						})
-						return false, nil
+						return nil
 					},
 				}
 			},
@@ -317,8 +317,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
-						return false, nil
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
 					},
 				}
 			},
@@ -454,8 +454,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
-						return false, nil
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
 					},
 				}
 			},
@@ -593,8 +593,8 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 			},
 			newResourceReconciler: func(_ *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
 				return &fakeResourceReconciler{
-					reconcileFunc: func(ctx context.Context, o client.Object) (bool, error) {
-						return false, nil
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						return nil
 					},
 				}
 			},

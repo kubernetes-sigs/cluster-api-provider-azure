@@ -232,13 +232,13 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	}
 
 	resourceReconciler := r.newResourceReconciler(asoManagedMachinePool, resources)
-	needsRequeue, err := resourceReconciler.Reconcile(ctx)
+	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
 	for _, status := range asoManagedMachinePool.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{Requeue: needsRequeue}, nil
+			return ctrl.Result{}, nil
 		}
 	}
 

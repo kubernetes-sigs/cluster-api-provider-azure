@@ -89,8 +89,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			resources: []*unstructured.Unstructured{},
 			owner:     &infrav1.AzureASOManagedCluster{},
 		}
-		needsRequeue, err := r.Reconcile(ctx)
-		g.Expect(needsRequeue).To(BeFalse())
+		err := r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -129,8 +128,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: w,
 		}
 
-		needsRequeue, err := r.Reconcile(ctx)
-		g.Expect(needsRequeue).To(BeTrue())
+		err := r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(BeEmpty())
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
@@ -205,8 +203,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: w,
 		}
 
-		needsRequeue, err := r.Reconcile(ctx)
-		g.Expect(needsRequeue).To(BeFalse())
+		err := r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(HaveKey("ResourceGroup.resources.azure.com"))
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
@@ -300,8 +297,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: &FakeWatcher{},
 		}
 
-		needsRequeue, err := r.Reconcile(ctx)
-		g.Expect(needsRequeue).To(BeFalse())
+		err = r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 

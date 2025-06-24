@@ -57,9 +57,8 @@ type AzureASOManagedClusterReconciler struct {
 
 type resourceReconciler interface {
 	// Reconcile reconciles resources defined by this object and updates this object's status to reflect the
-	// state of the specified resources. It returns a boolean indicating if controllers need to immediately
-	// requeue the object and an error if one occurred.
-	Reconcile(context.Context) (bool, error)
+	// state of the specified resources.
+	Reconcile(context.Context) error
 
 	// Pause stops ASO from continuously reconciling the specified resources.
 	Pause(context.Context) error
@@ -247,13 +246,13 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, err
 	}
 	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
-	needsRequeue, err := resourceReconciler.Reconcile(ctx)
+	err = resourceReconciler.Reconcile(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
 	for _, status := range asoManagedCluster.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{Requeue: needsRequeue}, nil
+			return ctrl.Result{}, nil
 		}
 	}
 

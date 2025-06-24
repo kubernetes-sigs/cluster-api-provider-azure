@@ -66,7 +66,7 @@ type resourceStatusObject interface {
 }
 
 // Reconcile creates or updates the specified resources.
-func (r *ResourceReconciler) Reconcile(ctx context.Context) (bool, error) {
+func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Reconcile")
 	defer done()
 	log.V(4).Info("reconciling resources")
@@ -82,8 +82,7 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 	// Delete is a special case of a normal reconciliation which is equivalent to all resources from spec
 	// being deleted.
 	r.resources = nil
-	_, err := r.reconcile(ctx)
-	return err
+	return r.reconcile(ctx)
 }
 
 // Pause pauses reconciliation of the specified resources.
@@ -113,7 +112,7 @@ func (r *ResourceReconciler) Pause(ctx context.Context) error {
 	return nil
 }
 
-func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
+func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.reconcile")
 	defer done()
 
@@ -122,12 +121,12 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 	ownedKindsValue := r.owner.GetAnnotations()[ownedKindsAnnotation]
 	ownedKinds, err := parseOwnedKinds(ownedKindsValue)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse %s annotation: %s", ownedKindsAnnotation, ownedKindsValue)
+		return fmt.Errorf("failed to parse %s annotation: %s", ownedKindsAnnotation, ownedKindsValue)
 	}
 
 	ownedObjs, err := r.ownedObjs(ctx, ownedKinds)
 	if err != nil {
-		return false, fmt.Errorf("failed to get owned objects: %w", err)
+		return fmt.Errorf("failed to get owned objects: %w", err)
 	}
 
 	unrecordedTypeResources, recordedTypeResources, toBeDeletedResources := partitionResources(ownedKinds, r.resources, ownedObjs)
@@ -146,26 +145,26 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		spec.SetNamespace(r.owner.GetNamespace())
 
 		if err := controllerutil.SetControllerReference(r.owner, spec, r.Scheme()); err != nil {
-			return false, fmt.Errorf("failed to set owner reference: %w", err)
+			return fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
 		toWatch := meta.AsPartialObjectMetadata(spec)
 		toWatch.APIVersion = spec.GetAPIVersion()
 		toWatch.Kind = spec.GetKind()
 		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return false, fmt.Errorf("failed to watch resource: %w", err)
+			return fmt.Errorf("failed to watch resource: %w", err)
 		}
 
 		gvk := spec.GroupVersionKind()
 		log.V(4).Info("applying resource", "resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
 		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
 		if err != nil {
-			return false, fmt.Errorf("failed to apply resource: %w", err)
+			return fmt.Errorf("failed to apply resource: %w", err)
 		}
 
 		ready, err := readyStatus(ctx, spec)
 		if err != nil {
-			return false, fmt.Errorf("failed to get ready status: %w", err)
+			return fmt.Errorf("failed to get ready status: %w", err)
 		}
 		newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
 			Resource: statusResource(spec),
@@ -176,7 +175,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 	for _, obj := range toBeDeletedResources {
 		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
-			return false, fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
+			return fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
 		}
 		if newStatus != nil {
 			newResourceStatuses = append(newResourceStatuses, *newStatus)
@@ -206,7 +205,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 
 	r.owner.SetResourceStatuses(newResourceStatuses)
 
-	return len(unrecordedTypeResources) > 0, nil
+	return nil
 }
 
 func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav1.PartialObjectMetadata) (*infrav1.ResourceStatus, error) {
