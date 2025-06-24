@@ -31,7 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestAgentPoolAdoptController(t *testing.T) {
@@ -62,14 +62,14 @@ func TestAgentPoolAdoptController(t *testing.T) {
 			Namespace: "fake-ns",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					Kind:       infrav1alpha.AzureASOManagedControlPlaneKind,
-					APIVersion: infrav1alpha.GroupVersion.Identifier(),
+					Kind:       infrav1.AzureASOManagedControlPlaneKind,
+					APIVersion: infrav1.GroupVersion.Identifier(),
 					Name:       "fake-managed-cluster",
 				},
 			},
 		},
 	}
-	asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
+	asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-managed-cluster",
 			Namespace: "fake-ns",
@@ -81,7 +81,7 @@ func TestAgentPoolAdoptController(t *testing.T) {
 
 	err = asocontainerservicev1.AddToScheme(scheme)
 	g.Expect(err).ToNot(HaveOccurred())
-	err = infrav1alpha.AddToScheme(scheme)
+	err = infrav1.AddToScheme(scheme)
 	g.Expect(err).ToNot(HaveOccurred())
 	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(agentPool, mc, asoManagedControlPlane).WithStatusSubresource(mc, agentPool, asoManagedControlPlane).Build()
 	aprec := &AgentPoolAdoptReconciler{
@@ -92,7 +92,7 @@ func TestAgentPoolAdoptController(t *testing.T) {
 	mp := &expv1.MachinePool{}
 	err = aprec.Get(ctx, types.NamespacedName{Name: agentPool.Name, Namespace: "fake-ns"}, mp)
 	g.Expect(err).ToNot(HaveOccurred())
-	asoMP := &infrav1alpha.AzureASOManagedMachinePool{}
+	asoMP := &infrav1.AzureASOManagedMachinePool{}
 	err = aprec.Get(ctx, types.NamespacedName{Name: agentPool.Name, Namespace: "fake-ns"}, asoMP)
 	g.Expect(err).ToNot(HaveOccurred())
 }

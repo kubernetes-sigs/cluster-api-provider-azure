@@ -40,6 +40,7 @@ import (
 type MockPublicIPScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockPublicIPScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockPublicIPScopeMockRecorder is the mock recorder for MockPublicIPScope.

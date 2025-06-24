@@ -98,6 +98,38 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name:     "load balancer exists with missing additional API server ports",
+			spec:     &fakePublicAPILBSpecWithAdditionalPorts,
+			existing: getExistingLBWithMissingFrontendIPConfigs(),
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, true, true, true, func(lb *armnetwork.LoadBalancer) {
+					lb.Properties.LoadBalancingRules = append(lb.Properties.LoadBalancingRules, &armnetwork.LoadBalancingRule{
+						Name: ptr.To("rke2-agent"),
+						Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
+							DisableOutboundSnat:  ptr.To(true),
+							Protocol:             ptr.To(armnetwork.TransportProtocolTCP),
+							FrontendPort:         ptr.To[int32](9345),
+							BackendPort:          ptr.To[int32](9345),
+							IdleTimeoutInMinutes: ptr.To[int32](4),
+							EnableFloatingIP:     ptr.To(false),
+							LoadDistribution:     ptr.To(armnetwork.LoadDistributionDefault),
+							FrontendIPConfiguration: &armnetwork.SubResource{
+								ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/frontendIPConfigurations/my-publiclb-frontEnd"),
+							},
+							BackendAddressPool: &armnetwork.SubResource{
+								ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
+							},
+							Probe: &armnetwork.SubResource{
+								ID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/HTTPSProbe"),
+							},
+						},
+					})
+				})))
+			},
+			expectedError: "",
+		},
+		{
 			name:     "load balancer exists with missing frontend IP configs",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingFrontendIPConfigs(),
@@ -208,11 +240,11 @@ func newDefaultNodeOutboundLB() armnetwork.LoadBalancer {
 	}
 }
 
-func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools bool, verifyLBRules bool, verifyProbes bool, verifyOutboundRules bool) armnetwork.LoadBalancer {
+func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools bool, verifyLBRules bool, verifyThreshold bool, verifyOutboundRules bool, modifications ...func(*armnetwork.LoadBalancer)) armnetwork.LoadBalancer {
 	var subnet *armnetwork.Subnet
 	var backendAddressPoolProps *armnetwork.BackendAddressPoolPropertiesFormat
 	enableFloatingIP := ptr.To(false)
-	numProbes := ptr.To[int32](4)
+	probeThreshold := ptr.To[int32](1)
 	idleTimeout := ptr.To[int32](4)
 
 	if verifyFrontendIP {
@@ -228,14 +260,14 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 	if verifyLBRules {
 		enableFloatingIP = ptr.To(true)
 	}
-	if verifyProbes {
-		numProbes = ptr.To[int32](999)
+	if verifyThreshold {
+		probeThreshold = ptr.To[int32](999)
 	}
 	if verifyOutboundRules {
 		idleTimeout = ptr.To[int32](1000)
 	}
 
-	return armnetwork.LoadBalancer{
+	lb := armnetwork.LoadBalancer{
 		Tags: map[string]*string{
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			"sigs.k8s.io_cluster-api-provider-azure_role":               ptr.To(infrav1.APIServerRole),
@@ -289,7 +321,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 						Port:              ptr.To[int32](6443),
 						RequestPath:       ptr.To(httpsProbeRequestPath),
 						IntervalInSeconds: ptr.To[int32](15),
-						NumberOfProbes:    numProbes, // Add to verify that Probes aren't overwritten on update
+						ProbeThreshold:    probeThreshold, // Add to verify that Probes aren't overwritten on update
 					},
 				},
 			},
@@ -310,6 +342,12 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 			},
 		},
 	}
+
+	for _, modify := range modifications {
+		modify(&lb)
+	}
+
+	return lb
 }
 
 func newDefaultInternalAPIServerLB() armnetwork.LoadBalancer {
@@ -370,7 +408,7 @@ func newDefaultInternalAPIServerLB() armnetwork.LoadBalancer {
 						Port:              ptr.To[int32](6443),
 						RequestPath:       ptr.To(httpsProbeRequestPath),
 						IntervalInSeconds: ptr.To[int32](15),
-						NumberOfProbes:    ptr.To[int32](4),
+						ProbeThreshold:    ptr.To[int32](1),
 					},
 				},
 			},

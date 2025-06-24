@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/dual-stack
+- ../prow/mhc-kubeadmcontrolplane.yaml
 - machine-pool-dualstack.yaml
 - ../../../addons/cluster-api-helm/calico-dual-stack.yaml
 - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml

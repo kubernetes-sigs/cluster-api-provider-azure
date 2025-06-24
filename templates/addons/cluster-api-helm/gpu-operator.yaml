@@ -1,0 +1,12 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: gpu-operator
+spec:
+  clusterSelector:
+    matchLabels:
+      gpu-operator: "true"
+  repoURL: https://helm.ngc.nvidia.com/nvidia
+  chartName: gpu-operator
+  releaseName: nvidia-gpu-operator
+  namespace: default

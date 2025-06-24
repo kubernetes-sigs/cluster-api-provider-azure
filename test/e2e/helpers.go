@@ -58,9 +58,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 const (
@@ -450,14 +448,6 @@ func getClusterName(prefix, specName string) string {
 	return clusterName
 }
 
-func isAzureMachineWindows(am *infrav1.AzureMachine) bool {
-	return am.Spec.OSDisk.OSType == azure.WindowsOS
-}
-
-func isAzureMachinePoolWindows(amp *infrav1exp.AzureMachinePool) bool {
-	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
-}
-
 // getProxiedSSHClient creates a SSH client object that connects to a target node
 // proxied through a control plane node.
 func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration) (*ssh.Client, error) {
@@ -724,17 +714,17 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	}
 	if config.HasVariable(FlatcarKubernetesVersion) && config.HasVariable(FlatcarVersion) {
 		resolveFlatcarKubernetesVersion(config, flatcarK8sVersions, FlatcarKubernetesVersion)
-		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.GetVariable(FlatcarKubernetesVersion))
+		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.MustGetVariable(FlatcarKubernetesVersion))
 		resolveFlatcarVersion(config, flatcarVersions, FlatcarVersion)
 	}
 }
 
 func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariable(varName), versions, "capi offer"))
+	resolveVariable(config, varName, getLatestVersionForMinor(config.MustGetVariable(varName), versions, "capi offer"))
 }
 
 func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
-	oldVersion := config.GetVariable(varName)
+	oldVersion := config.MustGetVariable(varName)
 	if _, ok := os.LookupEnv(varName); ok {
 		Expect(os.Setenv(varName, v)).To(Succeed())
 	}
@@ -743,11 +733,11 @@ func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
 }
 
 func resolveFlatcarKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	resolveVariable(config, varName, getLatestVersionForMinor(config.GetVariable(varName), versions, "Flatcar Community Gallery"))
+	resolveVariable(config, varName, getLatestVersionForMinor(config.MustGetVariable(varName), versions, "Flatcar Community Gallery"))
 }
 
 func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	version := config.GetVariable(varName)
+	version := config.MustGetVariable(varName)
 	if version != "latest" {
 		Expect(versions).To(ContainElement(semver.MustParse(version)), fmt.Sprintf("Provided Flatcar version %q does not have a corresponding VM image in the Flatcar Community Gallery", version))
 	}

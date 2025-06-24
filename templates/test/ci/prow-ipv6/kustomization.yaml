@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/ipv6
+- ../prow/mhc-kubeadmcontrolplane.yaml
 - machine-pool-ipv6.yaml
 - ../../../addons/cluster-api-helm/calico-ipv6.yaml
 - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml

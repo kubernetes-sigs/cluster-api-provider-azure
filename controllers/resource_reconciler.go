@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -58,7 +58,7 @@ type watcher interface {
 
 type resourceStatusObject interface {
 	client.Object
-	SetResourceStatuses([]infrav1alpha.ResourceStatus)
+	SetResourceStatuses([]infrav1.ResourceStatus)
 }
 
 // Reconcile creates or updates the specified resources.
@@ -113,7 +113,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.reconcile")
 	defer done()
 
-	var newResourceStatuses []infrav1alpha.ResourceStatus
+	var newResourceStatuses []infrav1.ResourceStatus
 
 	ownedKindsValue := r.owner.GetAnnotations()[ownedKindsAnnotation]
 	ownedKinds, err := parseOwnedKinds(ownedKindsValue)
@@ -132,7 +132,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 	// patch that would create resources of that type. CAPZ only patches resources whose kinds have
 	// already been recorded to ensure no resources are orphaned.
 	for _, spec := range unobservedTypeResources {
-		newResourceStatuses = append(newResourceStatuses, infrav1alpha.ResourceStatus{
+		newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
 			Resource: statusResource(spec),
 			Ready:    false,
 		})
@@ -163,7 +163,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 		if err != nil {
 			return false, fmt.Errorf("failed to get ready status: %w", err)
 		}
-		newResourceStatuses = append(newResourceStatuses, infrav1alpha.ResourceStatus{
+		newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
 			Resource: statusResource(spec),
 			Ready:    ready,
 		})
@@ -204,7 +204,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) (bool, error) {
 	return len(unobservedTypeResources) > 0, nil
 }
 
-func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav1.PartialObjectMetadata) (*infrav1alpha.ResourceStatus, error) {
+func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav1.PartialObjectMetadata) (*infrav1.ResourceStatus, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.deleteResource")
 	defer done()
 
@@ -230,8 +230,8 @@ func (r *ResourceReconciler) deleteResource(ctx context.Context, resource *metav
 	}
 
 	gvk := resource.GroupVersionKind()
-	return &infrav1alpha.ResourceStatus{
-		Resource: infrav1alpha.StatusResource{
+	return &infrav1.ResourceStatus{
+		Resource: infrav1.StatusResource{
 			Group:   gvk.Group,
 			Version: gvk.Version,
 			Kind:    gvk.Kind,
@@ -338,9 +338,9 @@ func partitionResources(
 	return
 }
 
-func statusResource(resource *unstructured.Unstructured) infrav1alpha.StatusResource {
+func statusResource(resource *unstructured.Unstructured) infrav1.StatusResource {
 	gvk := resource.GroupVersionKind()
-	return infrav1alpha.StatusResource{
+	return infrav1.StatusResource{
 		Group:   gvk.Group,
 		Version: gvk.Version,
 		Kind:    gvk.Kind,

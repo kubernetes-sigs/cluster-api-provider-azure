@@ -61,6 +61,34 @@ var (
 		APIServerPort: 6443,
 	}
 
+	fakePublicAPILBSpecWithAdditionalPorts = LBSpec{
+		Name:                 "my-publiclb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-publiclb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-publiclb-frontEnd",
+				PublicIP: &infrav1.PublicIPSpec{
+					Name:    "my-publicip",
+					DNSName: "my-cluster.12345.mydomain.com",
+				},
+			},
+		},
+		APIServerPort: 6443,
+		AdditionalPorts: []infrav1.LoadBalancerPort{{
+			Name: "rke2-agent",
+			Port: 9345,
+		}},
+	}
+
 	fakeInternalAPILBSpec = LBSpec{
 		Name:                 "my-private-lb",
 		ResourceGroup:        "my-rg",

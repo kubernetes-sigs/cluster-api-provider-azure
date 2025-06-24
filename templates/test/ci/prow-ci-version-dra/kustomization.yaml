@@ -4,9 +4,13 @@ namespace: default
 resources:
 - ../prow-machine-pool-ci-version
 patches:
-- path: ../patches/no-windows.yaml
+- patch: |-
+    - op: add
+      path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler
+      value:
+        extraArgs: {}
   target:
-    name: .*-win.*
+    kind: KubeadmControlPlane
 - path: ../patches/dra-kubeadmcontrolplane.yaml
   target:
     kind: KubeadmControlPlane

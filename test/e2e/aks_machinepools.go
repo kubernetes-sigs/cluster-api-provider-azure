@@ -33,12 +33,12 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 )
 
 type AKSMachinePoolSpecInput struct {
+	MgmtCluster   framework.ClusterProxy
 	Cluster       *clusterv1.Cluster
 	MachinePools  []*expv1.MachinePool
 	WaitIntervals []interface{}
@@ -58,7 +58,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 			Byf("Scaling machine pool %s out", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-				ClusterProxy:              bootstrapClusterProxy,
+				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) + 1,
 				MachinePools:              []*expv1.MachinePool{mp},
@@ -67,7 +67,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 			Byf("Scaling machine pool %s in", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-				ClusterProxy:              bootstrapClusterProxy,
+				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) - 1,
 				MachinePools:              []*expv1.MachinePool{mp},
@@ -79,7 +79,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			switch mp.Spec.Template.Spec.InfrastructureRef.Kind {
 			case infrav1.AzureManagedMachinePoolKind:
 				ammp := &infrav1.AzureManagedMachinePool{}
-				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+				err := input.MgmtCluster.GetClient().Get(ctx, types.NamespacedName{
 					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 				}, ammp)
@@ -88,9 +88,9 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				if ammp.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 					isUserPool = true
 				}
-			case infrav1alpha.AzureASOManagedMachinePoolKind:
-				ammp := &infrav1alpha.AzureASOManagedMachinePool{}
-				err := bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{
+			case infrav1.AzureASOManagedMachinePoolKind:
+				ammp := &infrav1.AzureASOManagedMachinePool{}
+				err := input.MgmtCluster.GetClient().Get(ctx, types.NamespacedName{
 					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 				}, ammp)
@@ -105,7 +105,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 					// mode may not be set in spec. Get the ASO object and check in status.
 					resource.SetNamespace(ammp.Namespace)
 					agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
-					Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(resource), agentPool)).To(Succeed())
+					Expect(input.MgmtCluster.GetClient().Get(ctx, client.ObjectKeyFromObject(resource), agentPool)).To(Succeed())
 					if ptr.Deref(agentPool.Status.Mode, "") != asocontainerservicev1.AgentPoolMode_STATUS_System {
 						isUserPool = true
 					}
@@ -116,7 +116,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			if isUserPool {
 				Byf("Scaling the machine pool %s to zero", mp.Name)
 				framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-					ClusterProxy:              bootstrapClusterProxy,
+					ClusterProxy:              input.MgmtCluster,
 					Cluster:                   input.Cluster,
 					Replicas:                  0,
 					MachinePools:              []*expv1.MachinePool{mp},
@@ -126,7 +126,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 			Byf("Restoring initial replica count for machine pool %s", mp.Name)
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-				ClusterProxy:              bootstrapClusterProxy,
+				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  originalReplicas,
 				MachinePools:              []*expv1.MachinePool{mp},
@@ -136,4 +136,33 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 	}
 
 	wg.Wait()
+}
+
+type AKSMachinePoolPostUpgradeSpecInput struct {
+	MgmtCluster      framework.ClusterProxy
+	ClusterName      string
+	ClusterNamespace string
+}
+
+func AKSMachinePoolPostUpgradeSpec(ctx context.Context, inputGetter func() AKSMachinePoolPostUpgradeSpecInput) {
+	input := inputGetter()
+
+	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    input.MgmtCluster.GetClient(),
+		Name:      input.ClusterName,
+		Namespace: input.ClusterNamespace,
+	})
+	mps := framework.GetMachinePoolsByCluster(ctx, framework.GetMachinePoolsByClusterInput{
+		Lister:      input.MgmtCluster.GetClient(),
+		ClusterName: input.ClusterName,
+		Namespace:   input.ClusterNamespace,
+	})
+	AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
+		return AKSMachinePoolSpecInput{
+			MgmtCluster:   input.MgmtCluster,
+			Cluster:       cluster,
+			MachinePools:  mps,
+			WaitIntervals: e2eConfig.GetIntervals("default", "wait-machine-pool-nodes"),
+		}
+	})
 }

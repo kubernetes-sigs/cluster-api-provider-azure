@@ -43,6 +43,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -163,9 +164,11 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	Logf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
-		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		Lister:               input.ClusterProxy.GetClient(),
+		KubeConfigPath:       input.ClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            input.Namespace.Name,
+		LogPath:              filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
 	})
 
 	if input.Cluster == nil {
@@ -188,9 +191,10 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		deleteTimeoutConfig = "wait-delete-cluster-aks"
 	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-		Client:         input.ClusterProxy.GetClient(),
-		Namespace:      input.Namespace.Name,
-		ArtifactFolder: input.ArtifactFolder,
+		ClusterProxy:         input.ClusterProxy,
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            input.Namespace.Name,
+		ArtifactFolder:       input.ArtifactFolder,
 	}, input.IntervalsGetter(input.SpecName, deleteTimeoutConfig)...)
 
 	Logf("Deleting namespace used for hosting the %q test spec", input.SpecName)
@@ -226,7 +230,7 @@ func redactLogs() {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	//nolint:gosec // Ignore warning about running a command constructed from user input
-	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
+	cmd := exec.Command(e2eConfig.MustGetVariable(RedactLogScriptPath))
 	if err := cmd.Run(); err != nil {
 		LogWarningf("Redact logs command failed: %v", err)
 	}
@@ -250,26 +254,10 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 }
 
 // EnsureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
-// and then installs cloud-provider-azure components via Helm.
+// and then waits for cloud-provider-azure components installed via CAAPH.
 // Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
 // in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
 func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
-	ensureControlPlaneInitialized(ctx, input, result, true)
-}
-
-// EnsureControlPlaneInitializedNoAddons waits for the cluster KubeadmControlPlane object to be initialized
-// and then installs cloud-provider-azure components via Helm.
-// Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
-// in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
-func EnsureControlPlaneInitializedNoAddons(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
-	ensureControlPlaneInitialized(ctx, input, result, false)
-}
-
-// ensureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
-// and then installs cloud-provider-azure components via Helm.
-// Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
-// in the flow of a clusterctl.ApplyClusterTemplateAndWait E2E test scenario.
-func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult, installHelmCharts bool) {
 	getter := input.ClusterProxy.GetClient()
 	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
 		Getter:    getter,
@@ -299,13 +287,40 @@ func ensureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 
 	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != infrav1.AzureNetworkPluginName {
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
-		EnsureCNIAndCloudProviderAzureHelmChart(ctx, input, installHelmCharts, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+		EnsureCNIAndCloudProviderAzureHelmChart(ctx, input, hasWindows)
 	} else {
-		EnsureCNI(ctx, input, installHelmCharts, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks, hasWindows)
+		EnsureCNI(ctx, input, hasWindows)
 	}
 	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
-	EnsureAzureDiskCSIDriverHelmChart(ctx, input, installHelmCharts, hasWindows)
+	EnsureAzureDiskCSIDriverHelmChart(ctx, input)
 	result.ControlPlane = controlPlane
+}
+
+// ensureContolPlaneReplicasMatch waits for the control plane machine replicas to be created.
+func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.ClusterProxy, ns, clusterName string, replicas int, intervals []interface{}) {
+	By("Waiting for all control plane nodes to exist")
+	inClustersNamespaceListOption := client.InNamespace(ns)
+	// ControlPlane labels
+	matchClusterListOption := client.MatchingLabels{
+		clusterv1.MachineControlPlaneLabel: "",
+		clusterv1.ClusterNameLabel:         clusterName,
+	}
+
+	Eventually(func() (int, error) {
+		machineList := &clusterv1.MachineList{}
+		lister := proxy.GetClient()
+		if err := lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
+			Logf("Failed to list the machines: %+v", err)
+			return 0, err
+		}
+		count := 0
+		for _, machine := range machineList.Items {
+			if condition := conditions.Get(&machine, clusterv1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
+				count++
+			}
+		}
+		return count, nil
+	}, intervals...).Should(Equal(replicas), "Timed out waiting for %d control plane machines to exist", replicas)
 }
 
 // CheckTestBeforeCleanup checks to see if the current running Ginkgo test failed, and prints
@@ -335,7 +350,7 @@ func createApplyClusterTemplateInput(specName string, changes ...func(*clusterct
 			Flavor:                   clusterctl.DefaultFlavor,
 			Namespace:                "default",
 			ClusterName:              "cluster",
-			KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+			KubernetesVersion:        e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion),
 			ControlPlaneMachineCount: ptr.To[int64](1),
 			WorkerMachineCount:       ptr.To[int64](1),
 		},

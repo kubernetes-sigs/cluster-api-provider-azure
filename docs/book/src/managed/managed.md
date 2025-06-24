@@ -28,7 +28,7 @@ For the complete history of this transition, see the [Managing Azure Resources w
 
 ## ASO's AKS versus CAPZ's ASOManaged AKS
 
-It is possible to not utilize CAPZ at all and simply utilize ASO to provision an [AKS cluster definition directly](https://azure.github.io/azure-service-operator/reference/containerservice/v1api20231001/#containerservice.azure.com/v1api20231001.ManagedCluster).  The advantages that CAPZ brings over this approach are the following:
+It is possible to not utilize CAPZ at all and simply utilize ASO to provision an [AKS cluster definition directly](https://azure.github.io/azure-service-operator/reference/containerservice/v1api20231001/#containerservice.azure.com/v1api20240901.ManagedCluster).  The advantages that CAPZ brings over this approach are the following:
   - Robust Testing - CAPZ is utilized to test Kubernetes and AKS using this code with numerous end-to-end tests.  ASO has no AKS-specific testing.
   - Simplification of Infrastructure as Code (IaC) definitions - With ASO you have to figure out how to put together every field and there are some small examples.  CAPZ provides `kustomize` template samples connected to `clusterctl generate template` as well as a [helm chart](https://github.com/mboersma/cluster-api-charts/).
   - Management scale - CAPZ enables use of [ClusterClass](../topics/clusterclass.md) so you can have a smaller chunk of code to manage numerous clusters with the same configuration.

@@ -18,7 +18,11 @@ spec:
     singular: azuremanagedclustertemplate
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - deprecated: true
+    deprecationWarning: AzureManagedClusterTemplate and the AzureManaged API are deprecated.
+      Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedClusterTemplate
+      and related AzureASOManaged resources instead.
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: AzureManagedClusterTemplate is the Schema for the AzureManagedClusterTemplates

@@ -1,0 +1,18 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
+      #!/bin/bash
+
+      echo "enabling containerd CDI plugin"
+      sed -i '/\[plugins."io.containerd.grpc.v1.cri"\]/a\    enable_cdi = true' /etc/containerd/config.toml
+      systemctl restart containerd
+    owner: root:root
+    path: /tmp/containerd-config.sh
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/0
+  value: bash -c /tmp/containerd-config.sh
+- op: add
+  path: /spec/template/spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
+  value: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}

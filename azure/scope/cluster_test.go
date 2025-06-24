@@ -103,7 +103,8 @@ func TestNewClusterScope(t *testing.T) {
 			},
 		},
 	}
-	azureCluster.Default()
+	err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+	g.Expect(err).NotTo(HaveOccurred())
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{
 		Spec: infrav1.AzureClusterIdentitySpec{
@@ -117,7 +118,7 @@ func TestNewClusterScope(t *testing.T) {
 	initObjects := []runtime.Object{cluster, azureCluster, fakeIdentity, fakeSecret}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-	_, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+	_, err = NewClusterScope(context.TODO(), ClusterScopeParams{
 		Cluster:         cluster,
 		AzureCluster:    azureCluster,
 		Client:          fakeClient,
@@ -230,7 +231,8 @@ func TestAPIServerHost(t *testing.T) {
 		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
 			Name: cluster.Name,
 		}
-		tc.azureCluster.Default()
+		err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), &tc.azureCluster)
+		g.Expect(err).NotTo(HaveOccurred())
 
 		clusterScope := &ClusterScope{
 			Cluster:      cluster,
@@ -242,50 +244,166 @@ func TestAPIServerHost(t *testing.T) {
 }
 
 func TestGettingSecurityRules(t *testing.T) {
-	g := NewWithT(t)
-
-	cluster := &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-cluster",
-			Namespace: "default",
-		},
-	}
-
-	azureCluster := &infrav1.AzureCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-azure-cluster",
-		},
-		Spec: infrav1.AzureClusterSpec{
-			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
-				SubscriptionID: "123",
-				IdentityRef: &corev1.ObjectReference{
-					Kind: infrav1.AzureClusterIdentityKind,
+	tests := []struct {
+		name              string
+		cluster           *clusterv1.Cluster
+		azureCluster      *infrav1.AzureCluster
+		expectedRuleCount int
+	}{
+		{
+			name: "default control plane subnet with no rules should have 2 security rules defaulted",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster",
+					Namespace: "default",
 				},
 			},
-			ControlPlaneEnabled: true,
-			NetworkSpec: infrav1.NetworkSpec{
-				Subnets: infrav1.Subnets{
-					{
-						SubnetClassSpec: infrav1.SubnetClassSpec{
-							Role: infrav1.SubnetNode,
-							Name: "node",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
+									Name: "node",
+								},
+							},
 						},
 					},
 				},
 			},
+			expectedRuleCount: 2,
+		},
+		{
+			name: "additional rules are preserved",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster",
+					Namespace: "default",
+				},
+			},
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{{
+											Name:             "allow_9345",
+											Description:      "Allow port 9345",
+											Priority:         2200,
+											Protocol:         infrav1.SecurityGroupProtocolTCP,
+											Direction:        infrav1.SecurityRuleDirectionInbound,
+											Source:           ptr.To("*"),
+											SourcePorts:      ptr.To("*"),
+											Destination:      ptr.To("*"),
+											DestinationPorts: ptr.To("9345"),
+											Action:           infrav1.SecurityRuleActionAllow,
+										}},
+									},
+								},
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
+									Name: string(infrav1.SubnetControlPlane),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRuleCount: 3,
+		},
+		{
+			name: "override rules are accepted",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster",
+					Namespace: "default",
+				},
+			},
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-cluster",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{{
+											Name:             "deny_ssh",
+											Description:      "Deny SSH",
+											Priority:         2200,
+											Protocol:         infrav1.SecurityGroupProtocolTCP,
+											Direction:        infrav1.SecurityRuleDirectionInbound,
+											Source:           ptr.To("*"),
+											SourcePorts:      ptr.To("*"),
+											Destination:      ptr.To("*"),
+											DestinationPorts: ptr.To("22"),
+											Action:           infrav1.SecurityRuleActionDeny,
+										}},
+									},
+								},
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
+									Name: string(infrav1.SubnetControlPlane),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRuleCount: 2,
 		},
 	}
-	azureCluster.Default()
 
-	clusterScope := &ClusterScope{
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), tt.azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			clusterScope := &ClusterScope{
+				Cluster:      tt.cluster,
+				AzureCluster: tt.azureCluster,
+			}
+			clusterScope.SetControlPlaneSecurityRules()
+
+			subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(subnet.SecurityGroup.SecurityRules).To(HaveLen(tt.expectedRuleCount))
+		})
 	}
-	clusterScope.SetControlPlaneSecurityRules()
-
-	subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(subnet.SecurityGroup.SecurityRules).To(HaveLen(2))
 }
 
 func TestPublicIPSpecs(t *testing.T) {
@@ -2161,7 +2279,8 @@ func TestOutboundLBName(t *testing.T) {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = tc.nodeOutboundLB
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
@@ -2275,7 +2394,8 @@ func TestBackendPoolName(t *testing.T) {
 				},
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			if tc.customAPIServerBackendPoolName != "" {
 				azureCluster.Spec.NetworkSpec.APIServerLB.BackendPool.Name = tc.customAPIServerBackendPoolName
@@ -2388,7 +2508,8 @@ func TestOutboundPoolName(t *testing.T) {
 				}
 			}
 
-			azureCluster.Default()
+			err := (&infrav1.AzureClusterWebhook{}).Default(context.Background(), azureCluster)
+			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,

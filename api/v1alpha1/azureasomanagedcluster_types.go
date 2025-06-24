@@ -68,6 +68,7 @@ type StatusResource struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:deprecatedversion:warning="infrastructure.cluster.x-k8s.io/v1alpha1 AzureASOManagedCluster is deprecated. infrastructure.cluster.x-k8s.io/v1beta1 is equivalent and should be used instead."
 
 // AzureASOManagedCluster is the Schema for the azureasomanagedclusters API.
 type AzureASOManagedCluster struct {

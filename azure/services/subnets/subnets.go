@@ -56,8 +56,11 @@ func postCreateOrUpdateResourceHook(_ context.Context, scope SubnetScope, subnet
 	}
 
 	name := subnet.AzureName()
-	scope.UpdateSubnetID(name, ptr.Deref(subnet.Status.Id, ""))
-	scope.UpdateSubnetCIDRs(name, converters.GetSubnetAddresses(*subnet))
+	statusASOCIDRs := converters.GetSubnetAddresses(*subnet)
+	if len(statusASOCIDRs) != 0 {
+		scope.UpdateSubnetID(name, ptr.Deref(subnet.Status.Id, ""))
+		scope.UpdateSubnetCIDRs(name, statusASOCIDRs)
+	}
 
 	return nil
 }

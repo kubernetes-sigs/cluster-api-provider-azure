@@ -34,30 +34,31 @@ import (
 )
 
 // MockReconciler is a mock of Reconciler interface.
-type MockReconciler struct {
+type MockReconciler[request comparable] struct {
 	ctrl     *gomock.Controller
-	recorder *MockReconcilerMockRecorder
+	recorder *MockReconcilerMockRecorder[request]
+	isgomock struct{}
 }
 
 // MockReconcilerMockRecorder is the mock recorder for MockReconciler.
-type MockReconcilerMockRecorder struct {
-	mock *MockReconciler
+type MockReconcilerMockRecorder[request comparable] struct {
+	mock *MockReconciler[request]
 }
 
 // NewMockReconciler creates a new mock instance.
-func NewMockReconciler(ctrl *gomock.Controller) *MockReconciler {
-	mock := &MockReconciler{ctrl: ctrl}
-	mock.recorder = &MockReconcilerMockRecorder{mock}
+func NewMockReconciler[request comparable](ctrl *gomock.Controller) *MockReconciler[request] {
+	mock := &MockReconciler[request]{ctrl: ctrl}
+	mock.recorder = &MockReconcilerMockRecorder[request]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockReconciler) EXPECT() *MockReconcilerMockRecorder {
+func (m *MockReconciler[request]) EXPECT() *MockReconcilerMockRecorder[request] {
 	return m.recorder
 }
 
 // Reconcile mocks base method.
-func (m *MockReconciler) Reconcile(arg0 context.Context, arg1 reconcile.Request) (reconcile.Result, error) {
+func (m *MockReconciler[request]) Reconcile(arg0 context.Context, arg1 reconcile.Request) (reconcile.Result, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reconcile", arg0, arg1)
 	ret0, _ := ret[0].(reconcile.Result)
@@ -66,7 +67,7 @@ func (m *MockReconciler) Reconcile(arg0 context.Context, arg1 reconcile.Request)
 }
 
 // Reconcile indicates an expected call of Reconcile.
-func (mr *MockReconcilerMockRecorder) Reconcile(arg0, arg1 any) *gomock.Call {
+func (mr *MockReconcilerMockRecorder[request]) Reconcile(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler[request])(nil).Reconcile), arg0, arg1)
 }

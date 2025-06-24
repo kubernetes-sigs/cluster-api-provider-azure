@@ -40,7 +40,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -50,7 +49,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
@@ -76,7 +74,6 @@ func initScheme() *runtime.Scheme {
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
-	Expect(infrav1alpha.AddToScheme(scheme)).To(Succeed())
 	Expect(expv1.AddToScheme(scheme)).To(Succeed())
 	Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1.AddToScheme(scheme)).To(Succeed())
@@ -225,45 +222,58 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	activityLogsClient, err := armmonitor.NewActivityLogsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	var groupName string
 	clusterClient := acp.GetClient()
-	workloadCluster, err := getAzureCluster(timeoutctx, clusterClient, namespace, name)
-	if apierrors.IsNotFound(err) {
-		controlPlane, err := getAzureManagedControlPlane(timeoutctx, clusterClient, namespace, name)
-		if apierrors.IsNotFound(err) {
-			asoCluster, err := getAzureASOManagedCluster(timeoutctx, clusterClient, namespace, name)
-			if err != nil {
-				// Failing to fetch logs should not cause the test to fail
-				Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureASOManagedCluster on the management cluster: %v", name, namespace, err)
-				return
-			}
-			for _, resource := range asoCluster.Spec.Resources {
-				u := &unstructured.Unstructured{}
-				Expect(u.UnmarshalJSON(resource.Raw)).To(Succeed())
-				if u.GroupVersionKind().Kind != "ResourceGroup" {
-					continue
-				}
-				// AzureName might not be specified in the CAPZ resource. GET the rg to make sure we have it.
-				rg := &asoresourcesv1.ResourceGroup{}
-				Expect(clusterClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: u.GetName()}, rg)).To(Succeed())
-				groupName = rg.AzureName()
-				break
-			}
-		} else {
-			if err != nil {
-				// Failing to fetch logs should not cause the test to fail
-				Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureManagedControlPlane on the management cluster: %v", name, namespace, err)
-				return
-			}
-			groupName = controlPlane.Spec.ResourceGroupName
-		}
-	} else {
+	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    clusterClient,
+		Name:      name,
+		Namespace: namespace,
+	})
+	if cluster.Spec.InfrastructureRef == nil {
+		Logf("No infrastructure for cluster %s/%s", namespace, name)
+		return
+	}
+
+	var groupName string
+	switch cluster.Spec.InfrastructureRef.Kind {
+	case infrav1.AzureClusterKind:
+		workloadCluster, err := getAzureCluster(timeoutctx, clusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
 		if err != nil {
 			// Failing to fetch logs should not cause the test to fail
 			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the workload cluster on the management cluster: %v", name, namespace, err)
 			return
 		}
 		groupName = workloadCluster.Spec.ResourceGroup
+	case infrav1.AzureManagedClusterKind:
+		if cluster.Spec.ControlPlaneRef == nil {
+			Logf("No control plane for cluster %s/%s", namespace, name)
+			return
+		}
+		controlPlane, err := getAzureManagedControlPlane(timeoutctx, clusterClient, cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+		if err != nil {
+			// Failing to fetch logs should not cause the test to fail
+			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureManagedControlPlane on the management cluster: %v", name, namespace, err)
+			return
+		}
+		groupName = controlPlane.Spec.ResourceGroupName
+	case infrav1.AzureASOManagedClusterKind:
+		asoCluster, err := getAzureASOManagedCluster(timeoutctx, clusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+		if err != nil {
+			// Failing to fetch logs should not cause the test to fail
+			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureASOManagedCluster on the management cluster: %v", name, namespace, err)
+			return
+		}
+		for _, resource := range asoCluster.Spec.Resources {
+			u := &unstructured.Unstructured{}
+			Expect(u.UnmarshalJSON(resource.Raw)).To(Succeed())
+			if u.GroupVersionKind().Kind != "ResourceGroup" {
+				continue
+			}
+			// AzureName might not be specified in the CAPZ resource. GET the rg to make sure we have it.
+			rg := &asoresourcesv1.ResourceGroup{}
+			Expect(clusterClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: u.GetName()}, rg)).To(Succeed())
+			groupName = rg.AzureName()
+			break
+		}
 	}
 
 	start := time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339)

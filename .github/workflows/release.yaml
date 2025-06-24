@@ -20,7 +20,7 @@ jobs:
       release_tag: ${{ steps.release-version.outputs.release_version }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@c6295a65d1254861815972266d5933fd6e532bdf # v2.11.1
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
         with:
           egress-policy: audit
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-markdown-files
-        uses: tj-actions/changed-files@c34c1c13a740b06851baff92ab9a653d93ad6ce7 # tag=v45.0.7
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # tag=v46.0.5
         with:
           files: CHANGELOG/**.md
       - name: Get release version
@@ -92,7 +92,7 @@ jobs:
     needs: push_release_tag
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@c6295a65d1254861815972266d5933fd6e532bdf # v2.11.1
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
         with:
           egress-policy: audit
       - name: Set env
@@ -107,7 +107,7 @@ jobs:
       - name: Calculate go version
         run: echo "go_version=$(make go-version)" >> $GITHUB_ENV
       - name: Set up Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # tag=v5.4.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # tag=v5.5.0
         with:
           go-version: ${{ env.go_version }}
       - name: generate release artifacts
@@ -118,7 +118,7 @@ jobs:
           curl -L "https://raw.githubusercontent.com/${{ github.repository }}/main/CHANGELOG/${{ env.RELEASE_TAG }}.md" \
           -o "${{ env.RELEASE_TAG }}.md"
       - name: Release
-        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # tag=v2.2.1
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # tag=v2.3.2
         with:
           draft: true
           files: out/*

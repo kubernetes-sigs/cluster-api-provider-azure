@@ -39,6 +39,7 @@ type AzureASOManagedClusterTemplateResourceSpec struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:deprecatedversion:warning="infrastructure.cluster.x-k8s.io/v1alpha1 AzureASOManagedClusterTemplate is deprecated. infrastructure.cluster.x-k8s.io/v1beta1 is equivalent and should be used instead."
 
 // AzureASOManagedClusterTemplate is the Schema for the azureasomanagedclustertemplates API.
 type AzureASOManagedClusterTemplate struct {

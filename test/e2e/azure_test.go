@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
@@ -78,23 +79,23 @@ var _ = Describe("Workload cluster creation", func() {
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		asoSecretName := e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_NAME")
+		asoSecretName := e2eConfig.MustGetVariable("ASO_CREDENTIAL_SECRET_NAME")
 		asoSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace.Name,
 				Name:      asoSecretName,
 			},
 			StringData: map[string]string{
-				config.AzureSubscriptionID: e2eConfig.GetVariable(AzureSubscriptionID),
-				config.AzureTenantID:       e2eConfig.GetVariable(AzureTenantID),
-				config.AzureClientID:       e2eConfig.GetVariable(AzureClientIDUserAssignedIdentity),
-				config.AuthMode:            e2eConfig.GetVariable("ASO_CREDENTIAL_SECRET_MODE"),
+				config.AzureSubscriptionID: e2eConfig.MustGetVariable(AzureSubscriptionID),
+				config.AzureTenantID:       e2eConfig.MustGetVariable(AzureTenantID),
+				config.AzureClientID:       e2eConfig.MustGetVariable(AzureClientIDUserAssignedIdentity),
+				config.AuthMode:            e2eConfig.MustGetVariable("ASO_CREDENTIAL_SECRET_MODE"),
 			},
 		}
 		err = bootstrapClusterProxy.GetClient().Create(ctx, asoSecret)
 		Expect(client.IgnoreAlreadyExists(err)).NotTo(HaveOccurred())
 
-		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		identityName := e2eConfig.MustGetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
 		additionalCleanup = nil
@@ -160,7 +161,7 @@ var _ = Describe("Workload cluster creation", func() {
 					withControlPlaneMachineCount(1),
 					withWorkerMachineCount(1),
 					withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-						WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+						WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 					}),
 					withPostMachinesProvisioned(func() {
 						EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -199,9 +200,6 @@ var _ = Describe("Workload cluster creation", func() {
 		It("With 3 control-plane nodes and 2 Linux and 2 Windows worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "ha")
 
-			// Opt into using windows with prow template
-			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
-
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withNamespace(namespace.Name),
@@ -210,7 +208,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -278,18 +276,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Creating an accessible load balancer for windows", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-						Windows:               true,
-					}
-				})
-			})
-
 			By("PASSED!")
 		})
 	})
@@ -300,7 +286,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)), // AzureCNIManifest is set
+				withAzureCNIv1Manifest(e2eConfig.MustGetVariable(AzureCNIv1Manifest)), // AzureCNIManifest is set
 				withFlavor("azure-cni-v1"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
@@ -308,7 +294,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -363,11 +349,11 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("flatcar"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(FlatcarKubernetesVersion)),
+				withKubernetesVersion(e2eConfig.MustGetVariable(FlatcarKubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -401,11 +387,11 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("flatcar-sysext"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.GetVariable(capi_e2e.KubernetesVersion)),
+				withKubernetesVersion(e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -442,7 +428,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -480,7 +466,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -540,7 +526,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneInterval(specName, "wait-control-plane"),
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -609,7 +595,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withMachineDeploymentInterval(specName, "wait-gpu-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -619,8 +605,8 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
-					InstallGPUOperator(ctx, func() GPUOperatorSpecInput {
-						return GPUOperatorSpecInput{
+					EnsureGPUOperator(ctx, func() EnsureGPUOperatorInput {
+						return EnsureGPUOperatorInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
 							Namespace:             namespace,
 							ClusterName:           clusterName,
@@ -667,7 +653,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withMachineDeploymentInterval(specName, ""),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneInterval(specName, "wait-control-plane"),
@@ -803,7 +789,7 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks"),
-				withAzureCNIv1Manifest(e2eConfig.GetVariable(AzureCNIv1Manifest)),
+				withAzureCNIv1Manifest(e2eConfig.MustGetVariable(AzureCNIv1Manifest)),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersion),
@@ -820,6 +806,7 @@ var _ = Describe("Workload cluster creation", func() {
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
 					return AKSMachinePoolSpecInput{
+						MgmtCluster:   bootstrapClusterProxy,
 						Cluster:       result.Cluster,
 						MachinePools:  result.MachinePools,
 						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
@@ -981,6 +968,7 @@ var _ = Describe("Workload cluster creation", func() {
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
 					return AKSMachinePoolSpecInput{
+						MgmtCluster:   bootstrapClusterProxy,
 						Cluster:       result.Cluster,
 						MachinePools:  result.MachinePools,
 						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
@@ -1007,7 +995,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1081,7 +1069,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1091,6 +1079,59 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterName:           clusterName,
 						}
 					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating RKE2 clusters using clusterclass [OPTIONAL]", func() {
+		It("with 3 control plane node and one linux worker node", func() {
+			// Use ci-rke2 as the clusterclass name so test infra can find the clusterclass template
+			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-rke2")).To(Succeed())
+
+			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
+			clusterName = getClusterName(clusterNamePrefix, "cc")
+
+			// Init rke2 CP and bootstrap providers
+			initInput := clusterctl.InitInput{
+				// pass reference to the management cluster hosting this test
+				KubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
+				// pass the clusterctl config file that points to the local provider repository created for this test
+				ClusterctlConfigPath: clusterctlConfigPath,
+				// setup the desired list of providers for a single-tenant management cluster
+				BootstrapProviders:    []string{"rke2"},
+				ControlPlaneProviders: []string{"rke2"},
+				// setup clusterctl logs folder
+				LogFolder: filepath.Join(artifactFolder, "clusters", clusterName),
+			}
+			clusterctl.Init(ctx, initInput)
+
+			// Create a cluster using the cluster class created above
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("topology-rke2"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(3),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
+					},
+					WaitForControlPlaneMachinesReady: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
+						ensureContolPlaneReplicasMatch(ctx, input.ClusterProxy, namespace.Name, clusterName, 3, e2eConfig.GetIntervals(specName, "wait-control-plane-long"))
+					},
 				}),
 			), result)
 
@@ -1126,7 +1167,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1169,7 +1210,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
@@ -1220,7 +1261,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitializedNoAddons,
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
 				withPostMachinesProvisioned(func() {
 					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {

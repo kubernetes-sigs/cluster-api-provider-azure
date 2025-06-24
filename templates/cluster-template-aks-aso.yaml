@@ -5,22 +5,22 @@ metadata:
   namespace: default
 spec:
   controlPlaneRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureASOManagedControlPlane
     name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureASOManagedCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
   resources:
-  - apiVersion: containerservice.azure.com/v1api20231001
+  - apiVersion: containerservice.azure.com/v1api20240901
     kind: ManagedCluster
     metadata:
       annotations:
@@ -39,7 +39,7 @@ spec:
         clientId: msi
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -70,19 +70,19 @@ spec:
         dataSecretName: ""
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureASOManagedMachinePool
         name: ${CLUSTER_NAME}-pool0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool0
   namespace: default
 spec:
   resources:
-  - apiVersion: containerservice.azure.com/v1api20231001
+  - apiVersion: containerservice.azure.com/v1api20240901
     kind: ManagedClustersAgentPool
     metadata:
       annotations:
@@ -111,19 +111,19 @@ spec:
         dataSecretName: ""
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureASOManagedMachinePool
         name: ${CLUSTER_NAME}-pool1
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureASOManagedMachinePool
 metadata:
   name: ${CLUSTER_NAME}-pool1
   namespace: default
 spec:
   resources:
-  - apiVersion: containerservice.azure.com/v1api20231001
+  - apiVersion: containerservice.azure.com/v1api20240901
     kind: ManagedClustersAgentPool
     metadata:
       annotations:

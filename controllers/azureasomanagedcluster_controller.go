@@ -23,6 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
@@ -39,7 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1alpha "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -51,7 +52,7 @@ type AzureASOManagedClusterReconciler struct {
 	client.Client
 	WatchFilterValue string
 
-	newResourceReconciler func(*infrav1alpha.AzureASOManagedCluster, []*unstructured.Unstructured) resourceReconciler
+	newResourceReconciler func(*infrav1.AzureASOManagedCluster, []*unstructured.Unstructured) resourceReconciler
 }
 
 type resourceReconciler interface {
@@ -72,20 +73,20 @@ type resourceReconciler interface {
 func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.SetupWithManager",
-		tele.KVP("controller", infrav1alpha.AzureASOManagedClusterKind),
+		tele.KVP("controller", infrav1.AzureASOManagedClusterKind),
 	)
 	defer done()
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1alpha.AzureASOManagedCluster{}).
+		For(&infrav1.AzureASOManagedCluster{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Watch clusters for pause/unpause notifications
 		Watches(
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
-				util.ClusterToInfrastructureMapFunc(ctx, infrav1alpha.GroupVersion.WithKind(infrav1alpha.AzureASOManagedClusterKind), mgr.GetClient(), &infrav1alpha.AzureASOManagedCluster{}),
+				util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureASOManagedClusterKind), mgr.GetClient(), &infrav1.AzureASOManagedCluster{}),
 			),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
@@ -93,18 +94,18 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 			),
 		).
 		Watches(
-			&infrav1alpha.AzureASOManagedControlPlane{},
+			&infrav1.AzureASOManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(asoManagedControlPlaneToManagedClusterMap(r.Client)),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 				predicate.Funcs{
 					CreateFunc: func(ev event.CreateEvent) bool {
-						controlPlane := ev.Object.(*infrav1alpha.AzureASOManagedControlPlane)
+						controlPlane := ev.Object.(*infrav1.AzureASOManagedControlPlane)
 						return !controlPlane.Status.ControlPlaneEndpoint.IsZero()
 					},
 					UpdateFunc: func(ev event.UpdateEvent) bool {
-						oldControlPlane := ev.ObjectOld.(*infrav1alpha.AzureASOManagedControlPlane)
-						newControlPlane := ev.ObjectNew.(*infrav1alpha.AzureASOManagedControlPlane)
+						oldControlPlane := ev.ObjectOld.(*infrav1.AzureASOManagedControlPlane)
+						newControlPlane := ev.ObjectNew.(*infrav1.AzureASOManagedControlPlane)
 						return oldControlPlane.Status.ControlPlaneEndpoint !=
 							newControlPlane.Status.ControlPlaneEndpoint
 					},
@@ -123,7 +124,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		PredicateLogger: &log,
 	}
 
-	r.newResourceReconciler = func(asoManagedCluster *infrav1alpha.AzureASOManagedCluster, resources []*unstructured.Unstructured) resourceReconciler {
+	r.newResourceReconciler = func(asoManagedCluster *infrav1.AzureASOManagedCluster, resources []*unstructured.Unstructured) resourceReconciler {
 		return &ResourceReconciler{
 			Client:    r.Client,
 			resources: resources,
@@ -137,7 +138,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 
 func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
-		asoManagedControlPlane := o.(*infrav1alpha.AzureASOManagedControlPlane)
+		asoManagedControlPlane := o.(*infrav1.AzureASOManagedControlPlane)
 
 		cluster, err := util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
 		if err != nil {
@@ -146,8 +147,8 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 
 		if cluster == nil ||
 			cluster.Spec.InfrastructureRef == nil ||
-			cluster.Spec.InfrastructureRef.APIVersion != infrav1alpha.GroupVersion.Identifier() ||
-			cluster.Spec.InfrastructureRef.Kind != infrav1alpha.AzureASOManagedClusterKind {
+			!matchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIVersion) ||
+			cluster.Spec.InfrastructureRef.Kind != infrav1.AzureASOManagedClusterKind {
 			return nil
 		}
 
@@ -162,6 +163,11 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 	}
 }
 
+func matchesASOManagedAPIGroup(apiVersion string) bool {
+	gv, _ := schema.ParseGroupVersion(apiVersion)
+	return gv.Group == infrav1.GroupVersion.Group
+}
+
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters/finalizers,verbs=update
@@ -172,11 +178,11 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 		"controllers.AzureASOManagedClusterReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", infrav1alpha.AzureASOManagedClusterKind),
+		tele.KVP("kind", infrav1.AzureASOManagedClusterKind),
 	)
 	defer done()
 
-	asoManagedCluster := &infrav1alpha.AzureASOManagedCluster{}
+	asoManagedCluster := &infrav1.AzureASOManagedCluster{}
 	err := r.Get(ctx, req.NamespacedName, asoManagedCluster)
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -213,7 +219,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	return r.reconcileNormal(ctx, asoManagedCluster, cluster)
 }
 
-func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1alpha.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileNormal",
 	)
@@ -225,8 +231,8 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, nil
 	}
 	if cluster.Spec.ControlPlaneRef == nil ||
-		cluster.Spec.ControlPlaneRef.APIVersion != infrav1alpha.GroupVersion.Identifier() ||
-		cluster.Spec.ControlPlaneRef.Kind != infrav1alpha.AzureASOManagedControlPlaneKind {
+		!matchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIVersion) ||
+		cluster.Spec.ControlPlaneRef.Kind != infrav1.AzureASOManagedControlPlaneKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
 	}
 
@@ -251,7 +257,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		}
 	}
 
-	asoManagedControlPlane := &infrav1alpha.AzureASOManagedControlPlane{
+	asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: cluster.Spec.ControlPlaneRef.Namespace,
 			Name:      cluster.Spec.ControlPlaneRef.Name,
@@ -268,7 +274,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, asoManagedCluster *infrav1alpha.AzureASOManagedCluster) (ctrl.Result, error) {
+func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureASOManagedClusterReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
@@ -288,7 +294,7 @@ func (r *AzureASOManagedClusterReconciler) reconcilePaused(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, asoManagedCluster *infrav1alpha.AzureASOManagedCluster) (ctrl.Result, error) {
+func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileDelete",
 	)

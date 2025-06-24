@@ -7,6 +7,7 @@ resources:
 - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
 - ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
 - ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+- ../../../addons/cluster-api-helm/gpu-operator.yaml
 patches:
 - path: patches/node-storage-type.yaml
   target:
@@ -19,6 +20,7 @@ patches:
 - path: ../patches/azurecluster-gpu.yaml
 - path: ../patches/cluster-label-calico.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: ../patches/cluster-label-gpu-operator.yaml
 
 sortOptions:
   order: fifo

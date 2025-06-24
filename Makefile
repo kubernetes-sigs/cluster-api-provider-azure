@@ -94,11 +94,11 @@ AZWI_VER := v1.2.2
 AZWI_BIN := azwi
 AZWI := $(TOOLS_BIN_DIR)/$(AZWI_BIN)-$(AZWI_VER)
 
-MOCKGEN_VER := v0.4.0
+MOCKGEN_VER := $(shell go list -m -f '{{.Version}}' go.uber.org/mock)
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 
-RELEASE_NOTES_VER := v0.16.6-0.20240222112346-71feb57b59a4
+RELEASE_NOTES_VER := v0.18.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
@@ -114,7 +114,7 @@ GINKGO_VER := $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
-KUBECTL_VER := v1.29.10
+KUBECTL_VER := v1.32.2
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
@@ -200,7 +200,7 @@ LDFLAGS := $(shell hack/version.sh)
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 
 export KIND_CLUSTER_NAME ?= capz
-export RANDOM_SUFFIX := $(shell /bin/bash -c "echo $$RANDOM")
+export RANDOM_SUFFIX := $(shell od -An -N8 -tx8 /dev/urandom | tr -d ' ' | head -c 16)
 export AZWI_RESOURCE_GROUP ?= capz-wi-$(RANDOM_SUFFIX)
 export CI_RG ?= $(AZWI_RESOURCE_GROUP)
 export USER_IDENTITY ?= $(addsuffix $(RANDOM_SUFFIX),$(CI_RG))
@@ -333,7 +333,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.6/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAAPH
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.2.5/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
@@ -531,6 +531,7 @@ generate-e2e-templates: $(KUSTOMIZE) ## Generate Azure infrastructure templates 
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-aks --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-aks.yaml
 
 .PHONY: generate-addons
 generate-addons: fetch-calico-manifests ## Generate metric-server, calico, calico-ipv6, azure cni v1 addons.
@@ -780,6 +781,10 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 	./scripts/aks-as-mgmt.sh
 	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
 
+.PHONY: aks-delete
+aks-delete: $(KUBECTL) ## Deletes the resource group and the associated AKS clusters listed under allowed_contexts in ./tilt-settings.yaml .
+	./scripts/aks-delete.sh
+
 .PHONY: tilt-up
 tilt-up: install-tools ## Start tilt and build kind cluster if needed.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
@@ -795,6 +800,14 @@ delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "ca
 kind-reset: $(KIND) ## Destroys the "capz" and "capz-e2e" kind clusters.
 	$(KIND) delete cluster --name=$(KIND_CLUSTER_NAME) || true
 	$(KIND) delete cluster --name=capz-e2e || true
+
+.PHONY: aks-cleanup
+aks-cleanup: $(KUBECTL) ## Deletes deployments, secrets and service-accounts from existing AKS as mgmt cluster
+	@ASO_CRDS_PATH=$(ASO_CRDS_PATH) \
+	CRD_ROOT=$(CRD_ROOT) \
+	DELETE_CRDS=$${DELETE_CRDS:-"false"} \
+	MGMT_CLUSTER_NAME=$${MGMT_CLUSTER_NAME:-} \
+	./scripts/reuse-existing-aks-cluster.sh
 
 ## --------------------------------------
 ## Tooling Binaries

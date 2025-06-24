@@ -53,7 +53,7 @@ export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2s}"
 export AZURE_NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2s}"
 export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.29.10}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.32.2}"
 export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE:-cluster-template.yaml}"
 
 # identity secret settings.
@@ -66,7 +66,7 @@ capz::util::generate_ssh_key
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build
 
-setup() {
+create_cluster() {
     echo "================ MAKE CLEAN ==============="
     make clean
 
@@ -75,17 +75,14 @@ setup() {
 
     echo "================ INSTALL TOOLS ==============="
     make install-tools
-}
 
-create_cluster() {
     echo "================ CREATE CLUSTER ==============="
     make create-cluster
 }
 
 retries=$CLUSTER_CREATE_ATTEMPTS
-while ((retries > 0)); do
-    setup
-    create_cluster && break
-    sleep 5
-    ((retries --))
+until create_cluster; do
+  if ((--retries == 0)); then
+    exit 1
+  fi
 done

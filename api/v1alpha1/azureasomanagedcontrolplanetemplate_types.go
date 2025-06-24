@@ -44,6 +44,7 @@ type AzureASOManagedControlPlaneTemplateResourceSpec struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:deprecatedversion:warning="infrastructure.cluster.x-k8s.io/v1alpha1 AzureASOManagedControlPlaneTemplate is deprecated. infrastructure.cluster.x-k8s.io/v1beta1 is equivalent and should be used instead."
 
 // AzureASOManagedControlPlaneTemplate is the Schema for the azureasomanagedcontrolplanetemplates API.
 type AzureASOManagedControlPlaneTemplate struct {

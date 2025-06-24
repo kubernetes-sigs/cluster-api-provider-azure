@@ -231,6 +231,25 @@ spec:
   tenantID: ${AZURE_TENANT_ID}
   type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
 ---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+  unhealthyConditions:
+  - status: Unknown
+    timeout: 300s
+    type: Ready
+  - status: "False"
+    timeout: 300s
+    type: Ready
+---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
 kind: HelmChartProxy
 metadata:
@@ -244,10 +263,12 @@ spec:
   namespace: tigera-operator
   releaseName: projectcalico
   repoURL: https://docs.tigera.io/calico/charts
-  valuesTemplate: |-
+  valuesTemplate: |
     installation:
       cni:
         type: Calico
+        ipam:
+          type: Calico
       calicoNetwork:
         bgp: Disabled
         mtu: 1350
@@ -262,6 +283,18 @@ spec:
       registry: mcr.microsoft.com/oss
     calicoctl:
       image: mcr.microsoft.com/oss/calico/ctl
+    # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
+    # when it continuously gets scheduled onto an out-of-date Node that is being
+    # deleted. Tolerate only the NoSchedule taints that are expected.
+    tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1

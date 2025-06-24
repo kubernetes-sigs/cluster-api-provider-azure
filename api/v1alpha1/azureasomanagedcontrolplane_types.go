@@ -56,6 +56,7 @@ type AzureASOManagedControlPlaneStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:deprecatedversion:warning="infrastructure.cluster.x-k8s.io/v1alpha1 AzureASOManagedControlPlane is deprecated. infrastructure.cluster.x-k8s.io/v1beta1 is equivalent and should be used instead."
 
 // AzureASOManagedControlPlane is the Schema for the azureasomanagedcontrolplanes API.
 type AzureASOManagedControlPlane struct {

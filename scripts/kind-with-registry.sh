@@ -45,8 +45,8 @@ if [ -f "$TILT_SETTINGS_FILE" ]; then
 fi
 
 AZWI_ENABLED="${AZWI_ENABLED:-true}"
-RANDOM_SUFFIX="${RANDOM_SUFFIX:-$(od -An -N4 -tu4 /dev/urandom | tr -d ' ' | head -c 8)}"
-export AZWI_STORAGE_ACCOUNT="capzcioidcissuer${RANDOM_SUFFIX}"
+RANDOM_SUFFIX="${RANDOM_SUFFIX:-$(od -An -N8 -tx8 /dev/urandom | tr -d ' ' | head -c 16)}"
+export AZWI_STORAGE_ACCOUNT="capzoidc${RANDOM_SUFFIX}"
 export AZWI_STORAGE_CONTAINER="\$web"
 export AZWI_LOCATION="${AZURE_LOCATION:-southcentralus}"
 export SERVICE_ACCOUNT_ISSUER="${SERVICE_ACCOUNT_ISSUER:-}"
@@ -191,6 +191,7 @@ EOF
       --identity-name "${USER_IDENTITY}" \
       -g "${AZWI_RESOURCE_GROUP}" \
       --issuer "${SERVICE_ACCOUNT_ISSUER}" \
+      --audiences "api://AzureADTokenExchange" \
       --subject "system:serviceaccount:capz-system:capz-manager" --output none --only-show-errors
 
     echo "Creating federated credentials for aso-federated-identity"
@@ -198,6 +199,7 @@ EOF
       --identity-name "${USER_IDENTITY}" \
       -g "${AZWI_RESOURCE_GROUP}" \
       --issuer "${SERVICE_ACCOUNT_ISSUER}" \
+      --audiences "api://AzureADTokenExchange" \
       --subject "system:serviceaccount:capz-system:azureserviceoperator-default" --output none --only-show-errors
   fi
 }

@@ -40,7 +40,7 @@ executing clusterctl.
 # Kubernetes values
 export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.27.3"
+export KUBERNETES_VERSION="v1.32.2"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
@@ -331,11 +331,7 @@ metadata:
 spec:
   extensions:
   - name: my-extension
-    extensionType: "TraefikLabs.TraefikProxy"
-    plan:
-      name: "traefik-proxy"
-      product: "traefik-proxy"
-      publisher: "containous"
+    extensionType: "microsoft.flux"
 ```
 
 To list all of the available extensions for your cluster as well as its plan details, use the following az cli command:
@@ -361,7 +357,7 @@ spec:
   resourceGroupName: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
-  version: v1.29.4
+  version: v1.32.2
   identity:
     type: UserAssigned
     userAssignedIdentityResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>

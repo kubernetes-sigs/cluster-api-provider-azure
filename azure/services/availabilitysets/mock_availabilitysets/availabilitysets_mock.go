@@ -40,6 +40,7 @@ import (
 type MockAvailabilitySetScope struct {
 	ctrl     *gomock.Controller
 	recorder *MockAvailabilitySetScopeMockRecorder
+	isgomock struct{}
 }
 
 // MockAvailabilitySetScopeMockRecorder is the mock recorder for MockAvailabilitySetScope.
