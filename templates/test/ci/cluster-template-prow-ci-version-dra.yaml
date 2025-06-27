@@ -61,7 +61,7 @@ spec:
       apiServer:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
-          runtime-config: resource.k8s.io/v1beta1=true
+          runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
