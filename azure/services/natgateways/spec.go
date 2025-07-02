@@ -36,6 +36,7 @@ type NatGatewaySpec struct {
 	Location       string
 	NatGatewayIP   infrav1.PublicIPSpec
 	ClusterName    string
+	Zone           string
 	AdditionalTags infrav1.Tags
 	IsVnetManaged  bool
 }
@@ -79,6 +80,7 @@ func (s *NatGatewaySpec) Parameters(_ context.Context, existingNatGateway *asone
 		Name:        ptr.To(s.Name),
 		Additional:  s.AdditionalTags,
 	})
+	natGateway.Spec.Zones = []string{s.Zone}
 
 	return natGateway, nil
 }
