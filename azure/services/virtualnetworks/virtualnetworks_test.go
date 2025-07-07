@@ -17,7 +17,6 @@ limitations under the License.
 package virtualnetworks
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -42,7 +41,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		scope := mock_virtualnetworks.NewMockVNetScope(mockCtrl)
 		err := errors.New("an error")
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, nil, err)).To(MatchError(err))
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, nil, err)).To(MatchError(err))
 	})
 
 	t.Run("successfully created or updated", func(t *testing.T) {
@@ -103,7 +102,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			Build()
 		scope.EXPECT().GetClient().Return(c)
 
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, existing, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, existing, nil)).To(Succeed())
 
 		g.Expect(vnet.ID).To(Equal("id"))
 		g.Expect(vnet.Tags).To(Equal(infrav1.Tags{"actual": "tags"}))
@@ -170,6 +169,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		scope.EXPECT().GetClient().Return(c)
 		scope.EXPECT().UpdateSubnetCIDRs("empty-cidr-status-subnet", []string{}).Times(0)
 		scope.EXPECT().UpdateSubnetCIDRs("nonempty-cidr-status-subnet", []string{"cidr"}).Times(1)
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, existing, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, existing, nil)).To(Succeed())
 	})
 }

@@ -118,7 +118,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			},
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -160,7 +160,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			},
 		}, nil)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
 		g.Expect(err).To(HaveOccurred())
@@ -205,7 +205,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -261,7 +261,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -313,7 +313,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -365,7 +365,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			},
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
 		g.Expect(err).To(HaveOccurred())
@@ -395,7 +395,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -442,7 +442,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			return group, nil
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -501,7 +501,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(true)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -559,7 +559,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(true)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
@@ -614,7 +614,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).Return(nil, errors.New("parameters error"))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -658,7 +658,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			},
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
@@ -704,7 +704,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -763,7 +763,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -821,7 +821,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		specMock.MockTagsGetterSetter.EXPECT().GetDesiredTags(gomock.Any()).Return(nil).Times(2)
 		specMock.MockTagsGetterSetter.EXPECT().SetTags(gomock.Any(), gomock.Any())
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -880,7 +880,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			return group, nil
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -931,7 +931,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		})
 		specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -1005,7 +1005,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			`{"metadata": {"labels": {"another": "label"}}}`,
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		result, err := s.CreateOrUpdateResource(ctx, specMock, "service")
 		g.Expect(result).To(BeNil())
@@ -1053,7 +1053,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 			`{"metadata": {"labels": {"another": "label"}}}`,
 		})
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -1109,7 +1109,7 @@ func TestDeleteResource(t *testing.T) {
 			},
 		}
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(s.DeleteResource(ctx, resource, "service")).To(Succeed())
 	})
 
@@ -1123,7 +1123,7 @@ func TestDeleteResource(t *testing.T) {
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, newOwner())
 
-		ctx := context.Background()
+		ctx := t.Context()
 		resource := &asoresourcesv1.ResourceGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "name",
@@ -1158,7 +1158,7 @@ func TestDeleteResource(t *testing.T) {
 			},
 		}
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
 		g.Expect(s.DeleteResource(ctx, resource, "service")).To(Succeed())
@@ -1181,7 +1181,7 @@ func TestDeleteResource(t *testing.T) {
 			},
 		}
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
 		err := s.DeleteResource(ctx, resource, "service")
@@ -1206,7 +1206,7 @@ func TestDeleteResource(t *testing.T) {
 			},
 		}
 
-		ctx := context.Background()
+		ctx := t.Context()
 		g.Expect(c.Create(ctx, resource)).To(Succeed())
 
 		err := s.DeleteResource(ctx, resource, "service")
@@ -1248,7 +1248,7 @@ func TestPauseResource(t *testing.T) {
 					Build()
 			},
 			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
-				ctx := context.Background()
+				ctx := t.Context()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicyManage)))
@@ -1280,7 +1280,7 @@ func TestPauseResource(t *testing.T) {
 					Build()
 			},
 			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
-				ctx := context.Background()
+				ctx := t.Context()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).To(HaveKeyWithValue(prePauseReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicySkip)))
@@ -1383,7 +1383,7 @@ func TestPauseResource(t *testing.T) {
 					Build()
 			},
 			verify: func(g Gomega, ctrlClient client.Client, resource *asoresourcesv1.ResourceGroup) {
-				ctx := context.Background()
+				ctx := t.Context()
 				actual := &asoresourcesv1.ResourceGroup{}
 				g.Expect(ctrlClient.Get(ctx, client.ObjectKeyFromObject(resource), actual)).To(Succeed())
 				g.Expect(actual.Annotations).NotTo(HaveKey(prePauseReconcilePolicyAnnotation))
@@ -1396,7 +1396,7 @@ func TestPauseResource(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			svcName := "service"
 
 			ctrlClient := test.clientBuilder(g)

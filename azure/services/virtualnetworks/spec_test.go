@@ -17,7 +17,6 @@ limitations under the License.
 package virtualnetworks
 
 import (
-	"context"
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
@@ -121,7 +120,7 @@ func TestParameters(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
-			actual, err := test.spec.Parameters(context.Background(), test.existing)
+			actual, err := test.spec.Parameters(t.Context(), test.existing)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cmp.Diff(test.expected, actual)).To(BeEmpty())
 		})

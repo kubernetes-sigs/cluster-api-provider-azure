@@ -134,7 +134,7 @@ func TestAllowedNamespaces(t *testing.T) {
 			initObjects := []runtime.Object{tc.identity, fakeNamespace}
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
-			actual := IsClusterNamespaceAllowed(context.TODO(), fakeClient, tc.identity.Spec.AllowedNamespaces, tc.clusterNamespace)
+			actual := IsClusterNamespaceAllowed(t.Context(), fakeClient, tc.identity.Spec.AllowedNamespaces, tc.clusterNamespace)
 			g.Expect(actual).To(Equal(tc.expected))
 		})
 	}
@@ -439,7 +439,7 @@ func TestGetTokenCredential(t *testing.T) {
 				},
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
-				ctx := context.Background()
+				ctx := context.Background()                      //nolint:usetesting
 				credsPath := "../../test/setup/credentials.json" //nolint:gosec
 				clientOptions := azcore.ClientOptions{
 					Cloud: cloud.Configuration{
@@ -481,9 +481,9 @@ func TestGetTokenCredential(t *testing.T) {
 			cache := mock_azure.NewMockCredentialCache(mockCtrl)
 			tt.cacheExpect(cache)
 
-			provider, err := NewAzureCredentialsProvider(context.Background(), cache, fakeClient, tt.cluster.Spec.IdentityRef, "")
+			provider, err := NewAzureCredentialsProvider(t.Context(), cache, fakeClient, tt.cluster.Spec.IdentityRef, "")
 			g.Expect(err).NotTo(HaveOccurred())
-			_, err = provider.GetTokenCredential(context.Background(), "", tt.ActiveDirectoryAuthorityHost, "")
+			_, err = provider.GetTokenCredential(t.Context(), "", tt.ActiveDirectoryAuthorityHost, "")
 			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
