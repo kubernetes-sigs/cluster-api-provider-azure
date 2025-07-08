@@ -21,16 +21,20 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+// PrivateDNSZoneMode determines if the Private DNS Zone gets created.
+// It is created by default on a private cluster and can be skipped based on a configured value.
+type PrivateDNSZoneMode string
+
 const (
 	// ManagedClusterFinalizer allows Reconcile to clean up Azure resources associated with the AzureManagedControlPlane before
 	// removing it from the apiserver.
 	ManagedClusterFinalizer = "azuremanagedcontrolplane.infrastructure.cluster.x-k8s.io"
 
 	// PrivateDNSZoneModeSystem represents mode System for azuremanagedcontrolplane.
-	PrivateDNSZoneModeSystem string = "System"
+	PrivateDNSZoneModeSystem PrivateDNSZoneMode = "System"
 
 	// PrivateDNSZoneModeNone represents mode None for azuremanagedcontrolplane.
-	PrivateDNSZoneModeNone string = "None"
+	PrivateDNSZoneModeNone PrivateDNSZoneMode = "None"
 )
 
 // UpgradeChannel determines the type of upgrade channel for automatically upgrading the cluster.
