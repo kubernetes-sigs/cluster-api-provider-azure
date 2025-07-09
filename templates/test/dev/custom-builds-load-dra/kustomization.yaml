@@ -13,6 +13,7 @@ patches:
 - path: ../../ci/patches/dra-kubeadmconfigtemplate.yaml
   target:
     kind: KubeadmConfigTemplate
+- path: patches/azuremachinetemplate-monitoring.yaml
 
 sortOptions:
   order: fifo
