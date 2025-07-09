@@ -79,11 +79,6 @@ type AzureASOManagedCluster struct {
 	Status AzureASOManagedClusterStatus `json:"status,omitempty"`
 }
 
-// GetResourceStatuses returns the status of resources.
-func (a *AzureASOManagedCluster) GetResourceStatuses() []ResourceStatus {
-	return a.Status.Resources
-}
-
 // SetResourceStatuses sets the status of resources.
 func (a *AzureASOManagedCluster) SetResourceStatuses(r []ResourceStatus) {
 	a.Status.Resources = r

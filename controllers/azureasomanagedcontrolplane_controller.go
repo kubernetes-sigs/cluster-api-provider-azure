@@ -379,20 +379,16 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 	defer done()
 	log.V(4).Info("reconciling delete")
 
-	resources, err := mutators.ToUnstructured(ctx, asoManagedControlPlane.Spec.Resources)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, resources)
-	err = resourceReconciler.Delete(ctx)
+	resourceReconciler := r.newResourceReconciler(asoManagedControlPlane, nil)
+	err := resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
-	if len(asoManagedControlPlane.Status.Resources) > 0 {
-		return ctrl.Result{}, nil
+
+	if len(asoManagedControlPlane.Status.Resources) == 0 {
+		controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1.AzureASOManagedControlPlaneFinalizer)
 	}
 
-	controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1.AzureASOManagedControlPlaneFinalizer)
 	return ctrl.Result{}, nil
 }
 
