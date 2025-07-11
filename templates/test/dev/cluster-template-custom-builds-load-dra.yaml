@@ -73,7 +73,7 @@ spec:
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
           feature-gates: DynamicResourceAllocation=true
-          v: "4"
+          v: "5"
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -85,6 +85,7 @@ spec:
           authorization-always-allow-paths: /healthz,/readyz,/livez,/metrics
           bind-address: 0.0.0.0
           feature-gates: DynamicResourceAllocation=true
+          v: "5"
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
