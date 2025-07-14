@@ -74,15 +74,10 @@ setup() {
         source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
     fi
 
-    if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
-        CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
-        export CI_VERSION="${CI_VERSION:-$(curl --retry 3 -sSL "${CI_VERSION_URL}")}"
-    fi
-    if [[ -n "${CI_VERSION:-}" ]]; then
-        echo "Using CI_VERSION ${CI_VERSION}"
-        export KUBERNETES_VERSION="${CI_VERSION}"
-    fi
-    echo "Using KUBERNETES_VERSION ${KUBERNETES_VERSION:-}"
+    # Hardcode CI_VERSION to specific Kubernetes CI version format
+    # Using the first 14 characters of commit f2de8897e7705e56481751e4df4205988249695d
+    export CI_VERSION="v1.34.0-alpha.3.117+f2de8897e7705e"
+    export KUBERNETES_VERSION="${CI_VERSION}"
 
     if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
         select_cluster_template

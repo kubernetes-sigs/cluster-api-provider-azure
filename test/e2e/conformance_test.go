@@ -94,7 +94,7 @@ var _ = Describe("Conformance Tests", func() {
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
 		// PR artifacts will replace the CI artifacts during kubeadm init
 		if useCIArtifacts || usePRArtifacts {
-			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
+			kubernetesVersion = "v1.34.0-alpha.3.117+f2de8897e7705e"
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
