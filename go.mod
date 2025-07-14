@@ -47,7 +47,7 @@ require (
 	golang.org/x/crypto v0.39.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/mod v0.26.0
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.27.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
@@ -196,7 +196,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
