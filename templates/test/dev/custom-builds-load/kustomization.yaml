@@ -5,6 +5,7 @@ resources:
 - ../custom-builds
 - storageclass-resource-set.yaml
 patches:
+- path: patches/location.yaml
 - path: patches/cluster-label-storageclass.yaml
 - path: patches/cluster-label-azuredisk.yaml
 - path: patches/kcp-scheduler.yaml

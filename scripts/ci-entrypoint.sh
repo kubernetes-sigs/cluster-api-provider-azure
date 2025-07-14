@@ -100,6 +100,8 @@ setup() {
     echo "Using AZURE_LOCATION_GPU: ${AZURE_LOCATION_GPU}"
     export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_random_region_edgezone)}"
     echo "Using AZURE_LOCATION_EDGEZONE: ${AZURE_LOCATION_EDGEZONE}"
+    export AZURE_LOCATION_LOAD="${AZURE_LOCATION_LOAD:-$(capz::util::get_random_region_load)}"
+    echo "Using AZURE_LOCATION_LOAD: ${AZURE_LOCATION_LOAD}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export CCM_COUNT="${CCM_COUNT:-1}"

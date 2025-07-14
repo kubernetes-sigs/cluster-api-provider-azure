@@ -40,7 +40,7 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
-  location: ${AZURE_LOCATION}
+  location: ${AZURE_LOCATION_LOAD}
   networkSpec:
     subnets:
     - name: control-plane-subnet
