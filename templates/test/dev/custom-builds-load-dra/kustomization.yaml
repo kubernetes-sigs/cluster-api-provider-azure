@@ -7,6 +7,7 @@ patches:
 - path: ../../ci/patches/dra-kubeadmcontrolplane.yaml
   target:
     kind: KubeadmControlPlane
+- path: ../../ci/patches/dra-kubeadmcontrolplane-load.yaml
 - path: ../../ci/patches/dra-kubeadmconfig.yaml
   target:
     kind: KubeadmConfig
