@@ -35,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/cluster-api/test/framework/kubetest"
 	"sigs.k8s.io/cluster-api/util"
 
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
@@ -100,12 +99,13 @@ var _ = Describe("Conformance Tests", func() {
 					kubernetesVersion = "v1.34.0-alpha.3.70+153c1b5c23b7c1"
 				} else if e2eConfig.MustGetVariable(capi_e2e.IPFamily) == "dual" {
 					kubernetesVersion = "v1.34.0-alpha.3.72+7a31dd60e5e2fa"
-				} else if strings.HasSuffix(flavor, "-dra") {
-					kubernetesVersion = "v1.34.0-alpha.3.78+0872760763d587"
 				} else if usePRArtifacts {
-					kubernetesVersion = "v1.34.0-alpha.3.80+d68aecabeee7c0"
+					kubernetesVersion = "v1.34.0-alpha.3.78+0872760763d587"
 				}
+			} else if strings.HasSuffix(flavor, "-dra") {
+				kubernetesVersion = "v1.34.0-alpha.3.80+d68aecabeee7c0"
 			}
+			Logf("Using Kubernetes version %s", kubernetesVersion)
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 		}
@@ -201,23 +201,6 @@ var _ = Describe("Conformance Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "INFO: Using repo-list '%s' for version '%s'\n", repoList, kubernetesVersion)
 		}
-
-		ginkgoNodes, err := strconv.Atoi(e2eConfig.MustGetVariable("CONFORMANCE_NODES"))
-		Expect(err).NotTo(HaveOccurred())
-
-		stopwatch.Reset()
-		err = kubetest.Run(context.Background(),
-			kubetest.RunInput{
-				ClusterProxy:         workloadProxy,
-				NumberOfNodes:        int(numOfConformanceNodes),
-				ConfigFilePath:       kubetestConfigFilePath,
-				KubeTestRepoListPath: repoList,
-				ConformanceImage:     e2eConfig.MustGetVariable("CONFORMANCE_IMAGE"),
-				GinkgoNodes:          ginkgoNodes,
-			},
-		)
-		Expect(err).NotTo(HaveOccurred())
-		stopwatch.Record("conformance suite")
 	})
 
 	AfterEach(func() {
