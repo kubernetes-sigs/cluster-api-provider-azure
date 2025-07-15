@@ -46,8 +46,6 @@ setup() {
     KUBE_ROOT="$(go env GOPATH)/src/k8s.io/kubernetes"
     export KUBE_ROOT
 
-    git -C "${KUBE_ROOT}" checkout 7a31dd60e5e2fa7a10771d4f058cc3a2e2b027b5
-
     # shellcheck disable=SC1091
     # extract KUBE_GIT_VERSION from k/k
     # ref: https://github.com/kubernetes/test-infra/blob/de07aa4b89f1161778856dc0fed310bd816aad72/experiment/kind-conformance-image-e2e.sh#L112-L115
