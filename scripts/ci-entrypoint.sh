@@ -77,6 +77,7 @@ setup() {
     if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
         CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
         export CI_VERSION="${CI_VERSION:-$(curl --retry 3 -sSL "${CI_VERSION_URL}")}"
+        export CI_VERSION="v1.34.0-alpha.3.72+7a31dd60e5e2fa"
     fi
     if [[ -n "${CI_VERSION:-}" ]]; then
         echo "Using CI_VERSION ${CI_VERSION}"
