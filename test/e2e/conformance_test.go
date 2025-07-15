@@ -94,8 +94,18 @@ var _ = Describe("Conformance Tests", func() {
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
 		// PR artifacts will replace the CI artifacts during kubeadm init
 		if useCIArtifacts || usePRArtifacts {
-			kubernetesVersion = "v1.34.0-alpha.3.117+f2de8897e7705e"
-			Expect(err).NotTo(HaveOccurred())
+			kubernetesVersion = "v1.34.0-alpha.3.68+e44ddbf1dae532"
+			if flavor == "" {
+				if e2eConfig.MustGetVariable(capi_e2e.IPFamily) == "IPv6" {
+					kubernetesVersion = "v1.34.0-alpha.3.70+153c1b5c23b7c1"
+				} else if e2eConfig.MustGetVariable(capi_e2e.IPFamily) == "dual" {
+					kubernetesVersion = "v1.34.0-alpha.3.72+7a31dd60e5e2fa"
+				} else if strings.HasSuffix(flavor, "-dra") {
+					kubernetesVersion = "v1.34.0-alpha.3.78+0872760763d587"
+				} else if usePRArtifacts {
+					kubernetesVersion = "v1.34.0-alpha.3.80+d68aecabeee7c0"
+				}
+			}
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 		}
