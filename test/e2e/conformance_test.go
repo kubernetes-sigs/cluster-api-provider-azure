@@ -107,7 +107,7 @@ var _ = Describe("Conformance Tests", func() {
 				flavor = "conformance-presubmit-artifacts"
 			}
 			// use the ipv6 flavor if ipv6 IP family is specified.
-			if e2eConfig.GetVariable(capi_e2e.IPFamily) == "IPv6" {
+			if e2eConfig.GetVariable(capi_e2e.IPFamily) == "ipv6" {
 				flavor += "-ipv6"
 				kubetestConfigFilePath = strings.Replace(kubetestConfigFilePath, ".yaml", "-ipv6.yaml", 1)
 			} else if e2eConfig.GetVariable(capi_e2e.IPFamily) == "dual" {
