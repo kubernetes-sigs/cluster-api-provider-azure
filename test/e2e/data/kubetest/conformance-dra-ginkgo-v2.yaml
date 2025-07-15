@@ -1,4 +1,4 @@
-ginkgo.label-filter: "Feature: containsAny DynamicResourceAllocation && Feature: isSubsetOf DynamicResourceAllocation && !Flaky"
+ginkgo.label-filter: "DRA && Feature: isSubsetOf { OffByDefault, DynamicResourceAllocation } && !Alpha && !Flaky"
 disable-log-dump: true
 ginkgo.progress: true
 ginkgo.slow-spec-threshold: 120s
