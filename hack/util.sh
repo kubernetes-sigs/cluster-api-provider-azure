@@ -76,6 +76,11 @@ capz::util::get_random_region_edgezone() {
     local REGIONS=("canadacentral")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
+# all regions below must have sufficient quota to run load tests
+capz::util::get_random_region_load() {
+    local REGIONS=("canadacentral" "francecentral" "northeurope")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
 
 capz::util::generate_ssh_key() {
     # Generate SSH key.
