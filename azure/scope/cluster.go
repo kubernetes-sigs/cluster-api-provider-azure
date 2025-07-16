@@ -559,7 +559,7 @@ func (s *ClusterScope) VNetSpec() azure.ASOResourceSpecGetter[*asonetworkv1api20
 
 // PrivateDNSSpec returns the private dns zone spec.
 func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, linkSpec, recordSpec []azure.ResourceSpecGetter) {
-	if s.IsAPIServerPrivate() {
+	if s.IsAPIServerPrivate() && s.PrivateDNSZoneMode() != infrav1.PrivateDNSZoneModeNone {
 		resourceGroup := s.ResourceGroup()
 		if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup != "" {
 			resourceGroup = s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup
@@ -1250,4 +1250,12 @@ func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]in
 		lastAppliedSecurityRules = map[string]interface{}{}
 	}
 	return lastAppliedSecurityRules
+}
+
+// PrivateDNSZoneMode returns the cluster resource group.
+func (s *ClusterScope) PrivateDNSZoneMode() string {
+	if s.AzureCluster.Spec.NetworkSpec.PrivateDNSZone == nil {
+		return infrav1.PrivateDNSZoneModeSystem
+	}
+	return *s.AzureCluster.Spec.NetworkSpec.PrivateDNSZone
 }
