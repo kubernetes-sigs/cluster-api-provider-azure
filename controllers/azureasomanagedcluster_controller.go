@@ -300,19 +300,15 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	defer done()
 	log.V(4).Info("reconciling delete")
 
-	resources, err := mutators.ToUnstructured(ctx, asoManagedCluster.Spec.Resources)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	resourceReconciler := r.newResourceReconciler(asoManagedCluster, resources)
-	err = resourceReconciler.Delete(ctx)
+	resourceReconciler := r.newResourceReconciler(asoManagedCluster, nil)
+	err := resourceReconciler.Delete(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
-	if len(asoManagedCluster.Status.Resources) > 0 {
-		return ctrl.Result{}, nil
+
+	if len(asoManagedCluster.Status.Resources) == 0 {
+		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	}
 
-	controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
