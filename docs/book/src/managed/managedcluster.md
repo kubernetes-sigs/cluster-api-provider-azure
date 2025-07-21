@@ -40,7 +40,7 @@ executing clusterctl.
 # Kubernetes values
 export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.27.3"
+export KUBERNETES_VERSION="v1.32.2"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
@@ -357,7 +357,7 @@ spec:
   resourceGroupName: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
-  version: v1.29.4
+  version: v1.32.2
   identity:
     type: UserAssigned
     userAssignedIdentityResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
