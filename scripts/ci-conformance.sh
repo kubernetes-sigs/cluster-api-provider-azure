@@ -30,6 +30,8 @@ KIND="${REPO_ROOT}/hack/tools/bin/kind"
 KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 
+WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/ensure-tags.sh
@@ -65,10 +67,18 @@ defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
 export GINKGO_NODES=1
 
-export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+if [ "${WORKER_MACHINE_COUNT}" -gt "10" ]; then
+    export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region_load)}"
+    echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+else
+    export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+    echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+fi
+# TODO these AZURE_LOCATION_* overrides may have the effect of
+# disassociating VM regions from disks, leading to attachment failures.
+# Less likely with GPU scenarios but FYI.
 export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
 export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_random_region_edgezone)}"
-export AZURE_LOCATION_LOAD="${AZURE_LOCATION_LOAD:-$(capz::util::get_random_region_load)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_B2s"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 export WINDOWS="${WINDOWS:-false}"

@@ -30,6 +30,7 @@ KIND="${REPO_ROOT}/hack/tools/bin/kind"
 KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
+WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
 export KIND_CLUSTER_NAME
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
@@ -94,14 +95,20 @@ setup() {
         echo ''
     )}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
-    export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
-    echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+    if [ "${WORKER_MACHINE_COUNT}" -gt "10" ]; then
+        export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region_load)}"
+        echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+    else
+        export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+        echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+    fi
+    # TODO these AZURE_LOCATION_* overrides may have the effect of
+    # disassociating VM regions from disks, leading to attachment failures.
+    # Less likely with GPU scenarios but FYI.
     export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
     echo "Using AZURE_LOCATION_GPU: ${AZURE_LOCATION_GPU}"
     export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_random_region_edgezone)}"
     echo "Using AZURE_LOCATION_EDGEZONE: ${AZURE_LOCATION_EDGEZONE}"
-    export AZURE_LOCATION_LOAD="${AZURE_LOCATION_LOAD:-$(capz::util::get_random_region_load)}"
-    echo "Using AZURE_LOCATION_LOAD: ${AZURE_LOCATION_LOAD}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export CCM_COUNT="${CCM_COUNT:-1}"
