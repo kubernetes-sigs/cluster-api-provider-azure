@@ -31,6 +31,8 @@ KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
 WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+EXTRA_NODES="${EXTRA_NODES:-0}"
+EXTRA_NODES_PER_SCALEOUT="${EXTRA_NODES_PER_SCALEOUT:-100}"
 export KIND_CLUSTER_NAME
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
@@ -214,6 +216,29 @@ wait_for_pods() {
     done
 }
 
+# wait_for_extra_nodes accommodates building large clusters gradually
+wait_for_extra_nodes() {
+    local existing_nodes="${WORKER_MACHINE_COUNT}"
+    local remaining_extra_nodes="${EXTRA_NODES}"
+    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
+    while [[ "${remaining_extra_nodes}" -gt "${EXTRA_NODES_PER_SCALEOUT}" ]]; do
+        NEW_REPLICA_COUNT=$((existing_nodes + "${EXTRA_NODES_PER_SCALEOUT}"))
+        "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" scale machinedeployment/"${CLUSTER_NAME}"-md-0 --replicas="${NEW_REPLICA_COUNT}"
+        total_nodes=$((total_nodes + EXTRA_NODES_PER_SCALEOUT))
+        while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+            sleep 10
+        done
+        existing_nodes=$((existing_nodes + EXTRA_NODES_PER_SCALEOUT))
+        remaining_extra_nodes=$((remaining_extra_nodes - EXTRA_NODES_PER_SCALEOUT))
+    done
+    NEW_REPLICA_COUNT=$((existing_nodes + remaining_extra_nodes))
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" scale machinedeployment/"${CLUSTER_NAME}"-md-0 --replicas="${NEW_REPLICA_COUNT}"
+    total_nodes=$((total_nodes + remaining_extra_nodes))
+    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+        sleep 10
+    done
+}
+
 install_addons() {
     export -f copy_kubeadm_config_map wait_for_copy_kubeadm_config_map
     timeout --foreground 600 bash -c wait_for_copy_kubeadm_config_map
@@ -224,6 +249,10 @@ install_addons() {
     timeout --foreground 1800 bash -c wait_for_nodes
     export -f wait_for_pods
     timeout --foreground 1800 bash -c wait_for_pods
+    if [ "${EXTRA_NODES}" -gt "0" ]; then
+        export -f wait_for_extra_nodes
+        timeout --foreground 10800 bash -c wait_for_extra_nodes
+    fi
 }
 
 copy_secret() {
