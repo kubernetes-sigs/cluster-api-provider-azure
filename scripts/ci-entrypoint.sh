@@ -30,11 +30,15 @@ KIND="${REPO_ROOT}/hack/tools/bin/kind"
 KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
-WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+EXTRA_NODES_PER_SCALEOUT="${EXTRA_NODES_PER_SCALEOUT:-100}"
+export TOTAL_WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+WORKER_MACHINE_COUNT=0
 export KIND_CLUSTER_NAME
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
 export HELM
+export REPO_ROOT
+export EXTRA_NODES_PER_SCALEOUT
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -95,7 +99,7 @@ setup() {
         echo ''
     )}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
-    if [ "${WORKER_MACHINE_COUNT}" -gt "10" ]; then
+    if [ "${TOTAL_WORKER_MACHINE_COUNT}" -gt "10" ]; then
         export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region_load)}"
         echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
     else
@@ -112,7 +116,7 @@ setup() {
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export CCM_COUNT="${CCM_COUNT:-1}"
-    export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+    export WORKER_MACHINE_COUNT
     export EXP_CLUSTER_RESOURCE_SET="true"
 
     # TODO figure out a better way to account for expected Windows node count
@@ -180,19 +184,26 @@ wait_for_copy_kubeadm_config_map() {
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
-    echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
+    while ((WORKER_MACHINE_COUNT < TOTAL_WORKER_MACHINE_COUNT)); do
+        WORKER_MACHINE_COUNT=$((WORKER_MACHINE_COUNT + EXTRA_NODES_PER_SCALEOUT))
+        WORKER_MACHINE_COUNT=$((WORKER_MACHINE_COUNT > TOTAL_WORKER_MACHINE_COUNT ? TOTAL_WORKER_MACHINE_COUNT : WORKER_MACHINE_COUNT))
 
-    # Ensure that all nodes are registered with the API server before checking for readiness
-    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
-    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
-        sleep 10
-    done
+        "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" scale --namespace default machinedeployment/"${CLUSTER_NAME}"-md-0 --replicas="${WORKER_MACHINE_COUNT}"
 
-    until "${KUBECTL}" wait --for=condition=Ready node --all --timeout=15m; do
-        sleep 5
-    done
-    until "${KUBECTL}" get nodes -o wide; do
-        sleep 5
+        echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
+
+        # Ensure that all nodes are registered with the API server before checking for readiness
+        local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
+        while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+            sleep 10
+        done
+
+        until "${KUBECTL}" wait --for=condition=Ready node --all --timeout=15m; do
+            sleep 5
+        done
+        until "${KUBECTL}" get nodes -o wide; do
+            sleep 5
+        done
     done
 }
 
@@ -221,7 +232,7 @@ install_addons() {
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.
     export -f wait_for_nodes
-    timeout --foreground 1800 bash -c wait_for_nodes
+    timeout --foreground "$((TOTAL_WORKER_MACHINE_COUNT > 100 ? 10800 : 1800))" bash -c wait_for_nodes
     export -f wait_for_pods
     timeout --foreground 1800 bash -c wait_for_pods
 }
