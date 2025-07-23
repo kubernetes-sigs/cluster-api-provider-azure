@@ -186,7 +186,7 @@ wait_for_copy_kubeadm_config_map() {
 wait_for_nodes() {
     "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" patch -n default cluster "${CLUSTER_NAME}" --type merge -p '{"spec": {"paused": true}}'
 
-    rg="$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
+    rg="$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get -n default azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
     vmssName="${CLUSTER_NAME}-mp-0"
     az vmss scale -g "$rg" -n "$vmssName" --new-capacity "${TOTAL_WORKER_MACHINE_COUNT}"
     WORKER_MACHINE_COUNT="${TOTAL_WORKER_MACHINE_COUNT}"
@@ -194,7 +194,7 @@ wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
 
     # Ensure that all nodes are registered with the API server before checking for readiness
-    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
+    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT + 1))" # +1 for monitoring node
     while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
         sleep 10
     done
