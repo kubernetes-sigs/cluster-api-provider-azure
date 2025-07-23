@@ -358,7 +358,7 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
 
 			if tc.expectedKey != "" {
-				scopeMock.EXPECT().SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI+tc.expectedKey).Times(1)
+				scopeMock.EXPECT().SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI(tc.expectedKey, tc.actualIdentities)).Times(1)
 			}
 			s := &Service{
 				Scope: scopeMock,

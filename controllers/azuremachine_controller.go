@@ -289,8 +289,8 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	if cond != nil && cond.Status == corev1.ConditionFalse && cond.Reason == infrav1.UserAssignedIdentityMissingReason {
 		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, infrav1.UserAssignedIdentityMissingReason, "VM is unhealthy")
 		machineScope.SetFailureReason(azure.UnsupportedChange)
-		machineScope.SetFailureMessage(errors.New("VM identities are not ready"))
-		return reconcile.Result{}, errors.New("VM identities are not ready")
+		machineScope.SetFailureMessage(errors.New(cond.Message))
+		return reconcile.Result{}, errors.New(cond.Message)
 	}
 
 	ams, err := amr.createAzureMachineService(machineScope)
