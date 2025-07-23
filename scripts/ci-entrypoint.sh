@@ -186,7 +186,7 @@ wait_for_copy_kubeadm_config_map() {
 wait_for_nodes() {
     "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" patch -n default cluster "${CLUSTER_NAME}" --type merge -p '{"spec": {"paused": true}}'
 
-    rg="$("${KUBECTL}" get azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
+    rg="$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
     vmssName="${CLUSTER_NAME}-mp-0"
     az vmss scale -g "$rg" -n "$vmssName" --new-capacity "${TOTAL_WORKER_MACHINE_COUNT}"
 
