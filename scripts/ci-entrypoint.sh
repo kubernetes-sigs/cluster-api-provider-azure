@@ -198,12 +198,12 @@ wait_for_nodes() {
             sleep 10
         done
 
-        until "${KUBECTL}" wait --for=condition=Ready node --all --timeout=15m; do
+        until "${KUBECTL}" wait --for=condition=Ready node --all --timeout=15m > /dev/null; do
             sleep 5
         done
-        until "${KUBECTL}" get nodes -o wide; do
-            sleep 5
-        done
+    done
+    until "${KUBECTL}" get nodes -o wide; do
+      sleep 5
     done
 }
 

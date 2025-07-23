@@ -82,8 +82,8 @@ func initScheme() *runtime.Scheme {
 }
 
 func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, namespace, name, outputPath string) {
-	Logf("Dumping workload cluster %s/%s logs", namespace, name)
-	acp.ClusterProxy.CollectWorkloadClusterLogs(ctx, namespace, name, outputPath)
+	// Logf("Dumping workload cluster %s/%s logs", namespace, name)
+	// acp.ClusterProxy.CollectWorkloadClusterLogs(ctx, namespace, name, outputPath)
 
 	aboveMachinesPath := strings.Replace(outputPath, "/machines", "", 1)
 
@@ -92,10 +92,10 @@ func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, na
 	acp.collectNodes(ctx, namespace, name, aboveMachinesPath)
 	Logf("Fetching nodes took %s", time.Since(start).String())
 
-	Logf("Dumping workload cluster %s/%s pod logs", namespace, name)
-	start = time.Now()
-	acp.collectPodLogs(ctx, namespace, name, aboveMachinesPath)
-	Logf("Fetching pod logs took %s", time.Since(start).String())
+	// Logf("Dumping workload cluster %s/%s pod logs", namespace, name)
+	// start = time.Now()
+	// acp.collectPodLogs(ctx, namespace, name, aboveMachinesPath)
+	// Logf("Fetching pod logs took %s", time.Since(start).String())
 
 	Logf("Dumping workload cluster %s/%s Azure activity log", namespace, name)
 	start = time.Now()
