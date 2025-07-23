@@ -98,7 +98,7 @@ setup() {
         echo ''
     )}"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
-    if [ "${WORKER_MACHINE_COUNT}" -gt "10" ]; then
+    if [ "${TOTAL_WORKER_MACHINE_COUNT}" -gt "10" ]; then
         export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region_load)}"
         echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
     else
