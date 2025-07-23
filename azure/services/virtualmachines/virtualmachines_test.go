@@ -27,7 +27,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -35,7 +34,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
@@ -317,106 +315,56 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 		name             string
 		specIdentities   []infrav1.UserAssignedIdentity
 		actualIdentities []infrav1.UserAssignedIdentity
-		expect           func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder)
-		expectedError    string
+		expectedKey      string
 	}{
 		{
 			name:             "no user assigned identities",
 			specIdentities:   []infrav1.UserAssignedIdentity{},
 			actualIdentities: []infrav1.UserAssignedIdentity{},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-			},
-			expectedError: "",
 		},
 		{
 			name:             "matching user assigned identities",
 			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-			},
-			expectedError: "",
 		},
 		{
 			name:             "less user assigned identities than expected",
 			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity, fakeUserAssignedIdentity2},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().AnyTimes().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity2.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity2.ProviderID, nil)
-				s.SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI+fakeUserAssignedIdentity2.ProviderID).Times(1)
-			},
-			expectedError: "",
+			expectedKey:      fakeUserAssignedIdentity2.ProviderID,
 		},
 		{
 			name:             "more user assigned identities than expected",
 			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity, fakeUserAssignedIdentity2},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-			},
-			expectedError: "",
 		},
 		{
 			name:             "mismatched user assigned identities by content",
 			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity2},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-				s.SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI+fakeUserAssignedIdentity.ProviderID).Times(1)
-			},
-			expectedError: "",
+			expectedKey:      fakeUserAssignedIdentity.ProviderID,
 		},
 		{
 			name:             "duplicate user assigned identity in spec",
 			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity, fakeUserAssignedIdentity},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().AnyTimes().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return(fakeUserAssignedIdentity.ProviderID, nil)
-			},
-			expectedError: "",
-		},
-		{
-			name:             "invalid client id",
-			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, i *mock_identities.MockClientMockRecorder) {
-				s.SubscriptionID().Return("123")
-				i.GetClientID(gomockinternal.AContext(), fakeUserAssignedIdentity.ProviderID).AnyTimes().Return("", errors.New("failed to get client id"))
-			},
-			expectedError: "failed to get client id",
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
-			asyncMock := mock_async.NewMockReconciler(mockCtrl)
-			identitiesMock := mock_identities.NewMockClient(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), identitiesMock.EXPECT())
+			if tc.expectedKey != "" {
+				scopeMock.EXPECT().SetConditionFalse(infrav1.VMIdentitiesReadyCondition, infrav1.UserAssignedIdentityMissingReason, clusterv1.ConditionSeverityWarning, vmMissingUAI+tc.expectedKey).Times(1)
+			}
 			s := &Service{
-				Scope:            scopeMock,
-				Reconciler:       asyncMock,
-				identitiesGetter: identitiesMock,
+				Scope: scopeMock,
 			}
 
-			err := s.checkUserAssignedIdentities(context.TODO(), tc.specIdentities, tc.actualIdentities)
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
+			s.checkUserAssignedIdentities(tc.specIdentities, tc.actualIdentities)
 		})
 	}
 }
