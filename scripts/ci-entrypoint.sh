@@ -30,12 +30,15 @@ KIND="${REPO_ROOT}/hack/tools/bin/kind"
 KUSTOMIZE="${REPO_ROOT}/hack/tools/bin/kustomize"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${HELM##*/}" "${KIND##*/}" "${KUSTOMIZE##*/}"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
-WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+export TOTAL_WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+WORKER_MACHINE_COUNT=0
 export KIND_CLUSTER_NAME
 # export the variables so they are available in bash -c wait_for_nodes below
 export KUBECTL
 export HELM
 
+# shellcheck source=hack/ensure-azcli.sh
+source "${REPO_ROOT}/hack/ensure-azcli.sh"
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=hack/ensure-tags.sh
@@ -138,6 +141,8 @@ select_cluster_template() {
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
     fi
+
+    export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds-machine-pool-load-dra.yaml"
 }
 
 create_cluster() {
@@ -180,6 +185,12 @@ wait_for_copy_kubeadm_config_map() {
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" patch -n default cluster "${CLUSTER_NAME}" --type merge -p '{"spec": {"paused": true}}'
+
+    rg="$("${KUBECTL}" get azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
+    vmssName="${CLUSTER_NAME}-mp-0"
+    az vmss scale -g "$rg" -n "$vmssName" --new-capacity "${TOTAL_WORKER_MACHINE_COUNT}"
+
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
 
     # Ensure that all nodes are registered with the API server before checking for readiness
@@ -270,7 +281,7 @@ if [[ ! "${CLUSTER_TEMPLATE}" =~ "aks" ]]; then
   install_addons
 fi
 
-"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait -A --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployments,machinepools
+# "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait -A --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployments,machinepools
 
 echo "Cluster ${CLUSTER_NAME} created and fully operational"
 

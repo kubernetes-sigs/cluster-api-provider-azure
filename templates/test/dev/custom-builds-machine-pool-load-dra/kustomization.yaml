@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../custom-builds-machine-pool-load
+patches:
+- path: ../../ci/patches/dra-kubeadmcontrolplane.yaml
+  target:
+    kind: KubeadmControlPlane
+- path: ../../ci/patches/dra-kubeadmcontrolplane-load.yaml
+- path: ../../ci/patches/dra-kubeadmconfig.yaml
+  target:
+    kind: KubeadmConfig
+- path: ../../ci/patches/dra-kubeadmconfigtemplate.yaml
+  target:
+    kind: KubeadmConfigTemplate
+- path: patches/azuremachinetemplate-monitoring.yaml
+
+sortOptions:
+  order: fifo
