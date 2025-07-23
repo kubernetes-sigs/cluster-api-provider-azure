@@ -23,7 +23,7 @@ set -o nounset
 set -o pipefail
 
 # Install kubectl, helm and kustomize
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+export REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 HELM="${REPO_ROOT}/hack/tools/bin/helm"
 KIND="${REPO_ROOT}/hack/tools/bin/kind"
@@ -91,6 +91,7 @@ setup() {
     if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
         select_cluster_template
     fi
+    export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds-machine-pool-load-dra.yaml"
     echo "Using cluster template: ${CLUSTER_TEMPLATE}"
 
     export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(
@@ -141,8 +142,6 @@ select_cluster_template() {
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
     fi
-
-    export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds-machine-pool-load-dra.yaml"
 }
 
 create_cluster() {
