@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
 - ../custom-builds-machine-pool
+- ../custom-builds-load/machinedeployment-monitoring.yaml
 - storageclass-resource-set.yaml
 patches:
 - path: patches/cluster-label-storageclass.yaml
