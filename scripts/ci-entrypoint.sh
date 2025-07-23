@@ -189,6 +189,7 @@ wait_for_nodes() {
     rg="$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get azurecluster "${CLUSTER_NAME}" -o jsonpath='{.spec.resourceGroup}')"
     vmssName="${CLUSTER_NAME}-mp-0"
     az vmss scale -g "$rg" -n "$vmssName" --new-capacity "${TOTAL_WORKER_MACHINE_COUNT}"
+    WORKER_MACHINE_COUNT="${TOTAL_WORKER_MACHINE_COUNT}"
 
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
 
