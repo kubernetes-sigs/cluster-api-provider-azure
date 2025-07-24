@@ -975,6 +975,18 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("Testing managedclusteradopt controller", func() {
+				AKSManagedClusterAdoptSpec(ctx, func() AKSManagedClusterAdoptSpecInput {
+					return AKSManagedClusterAdoptSpecInput{
+						MgmtCluster:   bootstrapClusterProxy,
+						ClusterName:   clusterName + "-adopt",
+						Namespace:     namespace.Name,
+						Location:      e2eConfig.MustGetVariable(AzureLocation),
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+					}
+				})
+			})
 		})
 	})
 
