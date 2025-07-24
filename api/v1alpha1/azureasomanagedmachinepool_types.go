@@ -62,11 +62,6 @@ type AzureASOManagedMachinePool struct {
 	Status AzureASOManagedMachinePoolStatus `json:"status,omitempty"`
 }
 
-// GetResourceStatuses returns the status of resources.
-func (a *AzureASOManagedMachinePool) GetResourceStatuses() []ResourceStatus {
-	return a.Status.Resources
-}
-
 // SetResourceStatuses sets the status of resources.
 func (a *AzureASOManagedMachinePool) SetResourceStatuses(r []ResourceStatus) {
 	a.Status.Resources = r

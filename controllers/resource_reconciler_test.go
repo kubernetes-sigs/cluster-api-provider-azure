@@ -29,7 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -87,11 +89,11 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			resources: []*unstructured.Unstructured{},
 			owner:     &infrav1.AzureASOManagedCluster{},
 		}
-
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		err := r.Reconcile(ctx)
+		g.Expect(err).NotTo(HaveOccurred())
 	})
 
-	t.Run("reconcile several resources", func(t *testing.T) {
+	t.Run("acknowledge new types", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		w := &FakeWatcher{}
@@ -99,6 +101,61 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			Build()
 
 		asoManagedCluster := &infrav1.AzureASOManagedCluster{}
+
+		unpatchedRGs := map[string]struct{}{}
+		r := &ResourceReconciler{
+			Client: &FakeClient{
+				Client: c,
+				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
+					delete(unpatchedRGs, o.GetName())
+					return nil
+				},
+			},
+			resources: []*unstructured.Unstructured{
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg1",
+					},
+				}),
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "rg2",
+					},
+				}),
+			},
+			owner:   asoManagedCluster,
+			watcher: w,
+		}
+
+		err := r.Reconcile(ctx)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(w.watching).To(BeEmpty())
+		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
+		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
+
+		resourcesStatuses := asoManagedCluster.Status.Resources
+		g.Expect(resourcesStatuses).To(HaveLen(2))
+		g.Expect(resourcesStatuses[0].Resource.Name).To(Equal("rg1"))
+		g.Expect(resourcesStatuses[0].Ready).To(BeFalse())
+		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
+		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
+	})
+
+	t.Run("create resources with acknowledged types", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
+				},
+			},
+		}
+
+		w := &FakeWatcher{}
+		c := fakeClientBuilder().
+			Build()
 
 		unpatchedRGs := map[string]struct{}{
 			"rg1": {},
@@ -132,15 +189,25 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "rg2",
 					},
+					Status: asoresourcesv1.ResourceGroup_STATUS{
+						Conditions: []conditions.Condition{
+							{
+								Type:   conditions.ConditionTypeReady,
+								Status: metav1.ConditionFalse,
+							},
+						},
+					},
 				}),
 			},
 			owner:   asoManagedCluster,
 			watcher: w,
 		}
 
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		err := r.Reconcile(ctx)
+		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(HaveKey("ResourceGroup.resources.azure.com"))
 		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
+		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(2))
@@ -154,40 +221,51 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		owner := &infrav1.AzureASOManagedCluster{
-			Status: infrav1.AzureASOManagedClusterStatus{
-				Resources: []infrav1.ResourceStatus{
-					rgStatus("rg0"),
-					rgStatus("rg1"),
-					rgStatus("rg2"),
-					rgStatus("rg3"),
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
+		}
+		ownerGVK, err := apiutil.GVKForObject(owner, s)
+		g.Expect(err).NotTo(HaveOccurred())
+		controlledByOwner := []metav1.OwnerReference{
+			*metav1.NewControllerRef(owner, ownerGVK),
 		}
 
 		objs := []client.Object{
 			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rg0",
-					Namespace: owner.Namespace,
+					Name:            "rg0",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
 				},
 			},
 			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rg1",
-					Namespace: owner.Namespace,
+					Name:            "rg1",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
 				},
 			},
 			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rg2",
-					Namespace: owner.Namespace,
+					Name:            "rg2",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
 				},
 			},
 			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
 				ObjectMeta: metav1.ObjectMeta{
-					Name:       "rg3",
-					Namespace:  owner.Namespace,
-					Finalizers: []string{"still deleting"},
+					Name:            "rg3",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledByOwner,
+					Finalizers:      []string{"still deleting"},
 				},
 			},
 		}
@@ -219,7 +297,9 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			watcher: &FakeWatcher{},
 		}
 
-		g.Expect(r.Reconcile(ctx)).To(Succeed())
+		err = r.Reconcile(ctx)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := owner.Status.Resources
 		g.Expect(resourcesStatuses).To(HaveLen(3))
@@ -227,6 +307,20 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(resourcesStatuses[0].Resource.Name).To(Equal("rg1"))
 		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
 		g.Expect(resourcesStatuses[2].Resource.Name).To(Equal("rg3"))
+
+		err = r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: "rg0"}, &asoresourcesv1.ResourceGroup{})
+		g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "err is not a NotFound error")
+
+		err = r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: "rg1"}, &asoresourcesv1.ResourceGroup{})
+		g.Expect(err).NotTo(HaveOccurred())
+
+		err = r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: "rg2"}, &asoresourcesv1.ResourceGroup{})
+		g.Expect(err).NotTo(HaveOccurred())
+
+		rg3 := &asoresourcesv1.ResourceGroup{}
+		err = r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: "rg3"}, rg3)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(rg3.GetDeletionTimestamp().IsZero()).To(BeFalse(), "resource does not have expected deletion timestamp")
 	})
 }
 
@@ -260,10 +354,46 @@ func TestResourceReconcilerPause(t *testing.T) {
 	t.Run("pause several resources", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		c := fakeClientBuilder().
-			Build()
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
+				},
+			},
+		}
 
-		asoManagedCluster := &infrav1.AzureASOManagedCluster{}
+		objs := []client.Object{
+			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "rg1",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "rg2",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "deleted from spec",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
+					Finalizers:      []string{"still deleting"},
+				},
+			},
+		}
+
+		c := fakeClientBuilder().
+			WithObjects(objs...).
+			Build()
 
 		var patchedRGs []string
 		r := &ResourceReconciler{
@@ -271,6 +401,10 @@ func TestResourceReconcilerPause(t *testing.T) {
 				Client: c,
 				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
 					g.Expect(o.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
+					if err := c.Get(ctx, client.ObjectKeyFromObject(o), &asoresourcesv1.ResourceGroup{}); err != nil {
+						// propagate errors like "NotFound"
+						return err
+					}
 					patchedRGs = append(patchedRGs, o.GetName())
 					return nil
 				},
@@ -286,8 +420,13 @@ func TestResourceReconcilerPause(t *testing.T) {
 						Name: "rg2",
 					},
 				}),
+				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "not-yet-created",
+					},
+				}),
 			},
-			owner: asoManagedCluster,
+			owner: owner,
 		}
 
 		g.Expect(r.Pause(ctx)).To(Succeed())
@@ -328,23 +467,30 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		owner := &infrav1.AzureASOManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
-			},
-			Status: infrav1.AzureASOManagedClusterStatus{
-				Resources: []infrav1.ResourceStatus{
-					rgStatus("still-deleting"),
-					rgStatus("already-gone"),
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
 				},
 			},
 		}
 
 		objs := []client.Object{
 			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "still-deleting",
-					Namespace: owner.Namespace,
+					Name:            "still-deleting",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
 					Finalizers: []string{
 						"ASO finalizer",
 					},
+				},
+			},
+			&asoresourcesv1.ResourceGroup{
+				TypeMeta: rgTypeMeta,
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "just-deleted",
+					Namespace:       owner.Namespace,
+					OwnerReferences: controlledBy(g, s, owner),
 				},
 			},
 		}
@@ -361,7 +507,8 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		}
 
 		g.Expect(r.Delete(ctx)).To(Succeed())
-		g.Expect(apierrors.IsNotFound(r.Client.Get(ctx, client.ObjectKey{Namespace: owner.Namespace, Name: "already-gone"}, &asoresourcesv1.ResourceGroup{}))).To(BeTrue())
+		g.Expect(owner.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
+		g.Expect(apierrors.IsNotFound(r.Client.Get(ctx, client.ObjectKey{Namespace: owner.Namespace, Name: "just-deleted"}, &asoresourcesv1.ResourceGroup{}))).To(BeTrue())
 		stillDeleting := &asoresourcesv1.ResourceGroup{}
 		g.Expect(r.Client.Get(ctx, client.ObjectKey{Namespace: owner.Namespace, Name: "still-deleting"}, stillDeleting)).To(Succeed())
 		g.Expect(stillDeleting.GetDeletionTimestamp().IsZero()).To(BeFalse())
@@ -369,6 +516,34 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Status.Resources).To(HaveLen(1))
 		g.Expect(owner.Status.Resources[0].Resource.Name).To(Equal("still-deleting"))
 		g.Expect(owner.Status.Resources[0].Ready).To(BeFalse())
+	})
+
+	t.Run("done deleting", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")}),
+				},
+			},
+		}
+
+		c := fakeClientBuilder().
+			Build()
+
+		r := &ResourceReconciler{
+			Client: &FakeClient{
+				Client: c,
+			},
+			owner: owner,
+		}
+
+		g.Expect(r.Delete(ctx)).To(Succeed())
+
+		g.Expect(owner.Annotations).NotTo(HaveKey(ownedKindsAnnotation))
+		g.Expect(owner.Status.Resources).To(BeEmpty())
 	})
 }
 
@@ -575,20 +750,22 @@ func TestReadyStatus(t *testing.T) {
 	})
 }
 
+func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []metav1.OwnerReference {
+	ownerGVK, err := apiutil.GVKForObject(owner, s)
+	g.Expect(err).NotTo(HaveOccurred())
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(owner, ownerGVK),
+	}
+}
+
+var rgTypeMeta = metav1.TypeMeta{
+	APIVersion: asoresourcesv1.GroupVersion.Identifier(),
+	Kind:       "ResourceGroup",
+}
+
 func rgJSON(g Gomega, scheme *runtime.Scheme, rg *asoresourcesv1.ResourceGroup) *unstructured.Unstructured {
 	rg.SetGroupVersionKind(asoresourcesv1.GroupVersion.WithKind("ResourceGroup"))
 	u := &unstructured.Unstructured{}
 	g.Expect(scheme.Convert(rg, u, nil)).To(Succeed())
 	return u
-}
-
-func rgStatus(name string) infrav1.ResourceStatus {
-	return infrav1.ResourceStatus{
-		Resource: infrav1.StatusResource{
-			Group:   asoresourcesv1.GroupVersion.Group,
-			Version: asoresourcesv1.GroupVersion.Version,
-			Kind:    "ResourceGroup",
-			Name:    name,
-		},
-	}
 }
