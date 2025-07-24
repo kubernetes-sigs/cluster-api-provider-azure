@@ -53,6 +53,16 @@ type AKSManagedClusterAdoptSpecInput struct {
 
 // AKSManagedClusterAdoptSpec tests the managedclusteradopt controller's ability to adopt
 // existing ASO ManagedCluster resources into CAPI management.
+//
+// The test:
+// 1. Creates an ASO ManagedCluster and ResourceGroup directly (without CAPI)
+// 2. Verifies that no CAPI resources exist initially
+// 3. Adds the adoption annotation to trigger the managedclusteradopt controller  
+// 4. Validates that the controller creates the appropriate CAPI resources:
+//    - cluster.x-k8s.io/Cluster
+//    - infrastructure.cluster.x-k8s.io/AzureASOManagedCluster
+//    - infrastructure.cluster.x-k8s.io/AzureASOManagedControlPlane
+// 5. Verifies that agent pools are removed from the original ManagedCluster
 func AKSManagedClusterAdoptSpec(ctx context.Context, inputGetter func() AKSManagedClusterAdoptSpecInput) {
 	input := inputGetter()
 	mgmtClient := input.MgmtCluster.GetClient()

@@ -976,7 +976,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Testing managedclusteradopt controller", func() {
+			By("Testing managedclusteradopt controller adoption workflow", func() {
 				AKSManagedClusterAdoptSpec(ctx, func() AKSManagedClusterAdoptSpecInput {
 					return AKSManagedClusterAdoptSpecInput{
 						MgmtCluster:   bootstrapClusterProxy,
