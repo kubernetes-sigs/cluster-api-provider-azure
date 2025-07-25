@@ -274,6 +274,9 @@ spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT:=2}
   template:
+    metadata:
+      labels:
+        nodepool: pool1
     spec:
       bootstrap:
         configRef:
@@ -636,6 +639,22 @@ spec:
     timeout: 300s
     type: Ready
 ---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
+---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
@@ -704,6 +723,18 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      typhaDeployment:
+        spec:
+          template:
+            spec:
+              affinity:
+                nodeAffinity:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 50
+                    preference:
+                      matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
       registry: mcr.microsoft.com/oss
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:

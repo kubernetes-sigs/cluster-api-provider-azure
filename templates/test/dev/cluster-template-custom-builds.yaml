@@ -699,6 +699,18 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      typhaDeployment:
+        spec:
+          template:
+            spec:
+              affinity:
+                nodeAffinity:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 50
+                    preference:
+                      matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
       registry: mcr.microsoft.com/oss
     # Image and registry configuration for the tigera/operator pod.
     tigeraOperator:

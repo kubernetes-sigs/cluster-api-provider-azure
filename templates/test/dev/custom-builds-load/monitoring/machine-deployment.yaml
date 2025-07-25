@@ -1,0 +1,60 @@
+# This is equivalent to /templates/flavors/default/machine-deployment.yaml
+# but with a different name to avoid kustomize name collisions.
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-monitoring"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-monitoring"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-monitoring"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-monitoring"
+spec:
+  template:
+    spec:
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      osDisk:
+        osType: "Linux"
+        diskSizeGB: 128
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-monitoring"
+spec:
+  template:
+    spec:
+      preKubeadmCommands: []
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            cloud-provider: external
+      files:
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-monitoring-azure-json
+            key: worker-node-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
