@@ -78,7 +78,7 @@ capz::util::get_random_region_edgezone() {
 }
 # all regions below must have sufficient quota to run load tests
 capz::util::get_random_region_load() {
-    local REGIONS=("canadacentral" "francecentral" "northeurope")
+    local REGIONS=("uksouth" "australiaeast")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 

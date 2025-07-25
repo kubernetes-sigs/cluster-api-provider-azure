@@ -87,6 +87,7 @@ spec:
           authorization-always-allow-paths: /healthz,/readyz,/livez,/metrics
           bind-address: 0.0.0.0
           feature-gates: DynamicResourceAllocation=true
+          v: "4"
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
