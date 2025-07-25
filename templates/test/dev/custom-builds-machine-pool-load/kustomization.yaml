@@ -2,13 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../custom-builds
-- monitoring
-- storageclass-resource-set.yaml
+- ../custom-builds-machine-pool
+- ../custom-builds-load/monitoring
+- ../custom-builds-load/storageclass-resource-set.yaml
 patches:
-- path: patches/cluster-label-storageclass.yaml
-- path: patches/cluster-label-azuredisk.yaml
-- path: patches/kcp-scheduler.yaml
+- path: ../custom-builds-load/patches/cluster-label-storageclass.yaml
+- path: ../custom-builds-load/patches/cluster-label-azuredisk.yaml
+- path: ../custom-builds-load/patches/kcp-scheduler.yaml
 - path: patches/azuremachinetemplate-monitoring.yaml
 generatorOptions:
   annotations:

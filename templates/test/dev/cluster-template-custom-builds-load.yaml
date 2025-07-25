@@ -1436,16 +1436,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
       - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY}
-      vmExtensions:
-      - name: CustomScript
-        protectedSettings:
-          commandToExecute: |
-            #!/bin/sh
-            echo "This script is a no-op used for extension testing purposes ..."
-            touch test_file
-        publisher: Microsoft.Azure.Extensions
-        version: "2.1"
-      vmSize: Standard_D8s_v3
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
