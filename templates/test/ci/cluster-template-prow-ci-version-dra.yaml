@@ -274,6 +274,9 @@ spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT:=2}
   template:
+    metadata:
+      labels:
+        nodepool: pool1
     spec:
       bootstrap:
         configRef:
@@ -635,6 +638,22 @@ spec:
   - status: "False"
     timeout: 300s
     type: Ready
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
