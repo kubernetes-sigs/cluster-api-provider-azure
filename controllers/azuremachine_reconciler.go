@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -101,10 +102,19 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 			virtualmachinesSvc,
 			roleAssignmentsSvc,
 			vmextensionsSvc,
-			tagsSvc,
 		},
 		skuCache: cache,
 	}
+
+	// The tags service fails in Azure Stack because the current SDK implementation
+	// will throw an error when trying to get tags at scope on Azure Stack environments.
+	// This means tags can only be provided on Azure Stack machines at creation time
+	// and will not be reconciled day-2. Once the get-tags-at-scope SDK issue is
+	// addressed, this change can be reverted to add tagsSvc in all environments.
+	if !strings.EqualFold(machineScope.CloudEnvironment(), azure.StackCloudName) {
+		ams.services = append(ams.services, tagsSvc)
+	}
+
 	ams.Reconcile = ams.reconcile
 	ams.Pause = ams.pause
 	ams.Delete = ams.delete
