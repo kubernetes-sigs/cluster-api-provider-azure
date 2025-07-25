@@ -113,6 +113,7 @@ setup() {
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export CCM_COUNT="${CCM_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+    export MONITORING_MACHINE_COUNT="${MONITORING_MACHINE_COUNT:-0}"
     export EXP_CLUSTER_RESOURCE_SET="true"
 
     # TODO figure out a better way to account for expected Windows node count
@@ -180,10 +181,10 @@ wait_for_copy_kubeadm_config_map() {
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
 wait_for_nodes() {
-    echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), and ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s) to become Ready"
+  echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s), and ${MONITORING_MACHINE_COUNT} monitoring machine(s) to become Ready"
 
     # Ensure that all nodes are registered with the API server before checking for readiness
-    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT))"
+    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT + MONITORING_MACHINE_COUNT))"
     while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
         sleep 10
     done
