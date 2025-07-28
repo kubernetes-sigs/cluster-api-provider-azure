@@ -58,10 +58,6 @@ var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
-	if m.Status.InfrastructureReady {
-		return nil
-	}
-
 	infraGV, err := schema.ParseGroupVersion(m.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
 		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", m.Spec.InfrastructureRef.APIVersion, err)
@@ -246,6 +242,10 @@ func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptio
 				continue
 			}
 			for _, instance := range instances.Value {
+				if instance != nil && instance.Properties != nil && ptr.Deref(instance.Properties.ProvisioningState, "") == "Succeeded" {
+					continue
+				}
+
 				var hostname string
 
 				if instance == nil ||
