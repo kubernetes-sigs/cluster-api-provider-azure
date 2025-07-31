@@ -40,6 +40,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -118,6 +119,11 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 	}
 
 	for _, pod := range pods.Items {
+		controller := metav1.GetControllerOf(&pod)
+		if controller.Kind == "DaemonSet" {
+			continue
+		}
+
 		podNamespace := pod.GetNamespace()
 
 		// Describe the pod.

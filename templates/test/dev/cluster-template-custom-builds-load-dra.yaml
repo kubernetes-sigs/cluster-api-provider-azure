@@ -73,8 +73,8 @@ spec:
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
           feature-gates: DynamicResourceAllocation=true
-          kube-api-burst: "400"
-          kube-api-qps: "200"
+          kube-api-burst: "800"
+          kube-api-qps: "400"
           v: "4"
       etcd:
         local:
@@ -87,6 +87,8 @@ spec:
           authorization-always-allow-paths: /healthz,/readyz,/livez,/metrics
           bind-address: 0.0.0.0
           feature-gates: DynamicResourceAllocation=true
+          kube-api-burst: "800"
+          kube-api-qps: "400"
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -132,9 +134,9 @@ spec:
         else
           echo "Using curl to download the OOT credential provider"
           mkdir -p /var/lib/kubelet/credential-provider
-          curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+          curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
           chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
-          curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
+          curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
           chmod 644 /var/lib/kubelet/credential-provider-config.yaml
         fi
       owner: root:root
@@ -361,9 +363,9 @@ spec:
           else
             echo "Use OOT credential provider"
             mkdir -p /var/lib/kubelet/credential-provider
-            curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+            curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
             chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
-            curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
+            curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
             chmod 644 /var/lib/kubelet/credential-provider-config.yaml
           fi
         owner: root:root
@@ -540,9 +542,9 @@ spec:
           } else {
             Write-Host "Using curl to download the OOT credential provider"
             mkdir C:\var\lib\kubelet\credential-provider
-            curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider
+            curl.exe --retry 10 --retry-delay 5 --retry-all-errors -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider
             cp C:\var\lib\kubelet\credential-provider\acr-credential-provider C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
-            curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
+            curl.exe --retry 10 --retry-delay 5 --retry-all-errors -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
           }
         path: C:/oot-cred-provider.ps1
         permissions: "0744"
@@ -1512,9 +1514,9 @@ spec:
           else
             echo "Use OOT credential provider"
             mkdir -p /var/lib/kubelet/credential-provider
-            curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+            curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
             chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
-            curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
+            curl --retry 10 --retry-delay 5 --retry-all-errors -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
             chmod 644 /var/lib/kubelet/credential-provider-config.yaml
           fi
         owner: root:root

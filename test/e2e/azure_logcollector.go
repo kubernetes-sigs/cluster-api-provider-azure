@@ -242,6 +242,10 @@ func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptio
 				continue
 			}
 			for _, instance := range instances.Value {
+				if instance != nil && instance.Properties != nil && ptr.Deref(instance.Properties.ProvisioningState, "") == "Succeeded" {
+					continue
+				}
+
 				var hostname string
 
 				if instance == nil ||
