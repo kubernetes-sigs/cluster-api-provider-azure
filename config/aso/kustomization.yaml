@@ -30,6 +30,24 @@ patches:
     - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
       path: /spec/template/spec/containers/0/args/6
       value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
+
+    # ASO will provide a startupProbe starting in v2.14.0.
+    # These patches should be removed when the upstream probe is set.
+    - op: test
+      path: /spec/template/spec/containers/0/startupProbe
+      value: null
+    - op: add
+      path: /spec/template/spec/containers/0/startupProbe
+      value:
+        httpGet:
+          path: /healthz
+          port: 8081
+        periodSeconds: 10
+        failureThreshold: 12
+    - op: remove
+      path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
+    - op: remove
+      path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
   target:
     group: apps
     kind: Deployment
