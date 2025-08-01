@@ -109,14 +109,21 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 // request to Azure and if accepted without error, the func will return a Poller which can be used to track the ongoing
 // progress of the operation.
 func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], err error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Delete")
 	defer done()
 
 	forceDelete := ptr.To(true)
 	opts := &armcompute.VirtualMachinesClientBeginDeleteOptions{ResumeToken: resumeToken, ForceDeletion: forceDelete}
 	poller, err = ac.virtualmachines.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
 	if err != nil {
-		return nil, err
+		if azure.BadRequest(err) {
+			log.Info("Failed to Begin VM Delete with Force Deletion, retrying without the force flag")
+			opts.ForceDeletion = ptr.To(false)
+			poller, err = ac.virtualmachines.BeginDelete(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, ac.apiCallTimeout)
