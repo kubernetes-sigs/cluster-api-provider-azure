@@ -116,6 +116,12 @@ type NetworkSpec struct {
 	// +optional
 	AdditionalAPIServerLBPorts []LoadBalancerPort `json:"additionalAPIServerLBPorts,omitempty"`
 
+	// PrivateDNSZone enables private dns zone creation modes for a private cluster.
+	// When unspecified, it defaults to PrivateDNSZoneModeSystem which creates a private DNS zone.
+	// +kubebuilder:validation:Enum=System;None
+	// +optional
+	PrivateDNSZone *PrivateDNSZoneMode `json:"privateDNSZone,omitempty"`
+
 	NetworkClassSpec `json:",inline"`
 }
 
