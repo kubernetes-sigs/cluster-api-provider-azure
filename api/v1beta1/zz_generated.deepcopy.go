@@ -3784,6 +3784,11 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 		*out = make([]LoadBalancerPort, len(*in))
 		copy(*out, *in)
 	}
+	if in.PrivateDNSZone != nil {
+		in, out := &in.PrivateDNSZone, &out.PrivateDNSZone
+		*out = new(PrivateDNSZoneMode)
+		**out = **in
+	}
 	out.NetworkClassSpec = in.NetworkClassSpec
 }
 
