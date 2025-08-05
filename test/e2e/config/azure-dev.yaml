@@ -182,6 +182,8 @@ providers:
         targetName: "cluster-template-spot.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb.yaml"
         targetName: "cluster-template-apiserver-ilb.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb-custom-images.yaml"
+        targetName: "cluster-template-apiserver-ilb-custom-images.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
