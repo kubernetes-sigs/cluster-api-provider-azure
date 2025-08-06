@@ -187,7 +187,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 	// instead of DeleteClusterAndWait
 	deleteTimeoutConfig := "wait-delete-cluster"
-	if strings.Contains(input.Cluster.Name, aksClusterNameSuffix) {
+	if input.Cluster != nil && strings.Contains(input.Cluster.Name, aksClusterNameSuffix) {
 		deleteTimeoutConfig = "wait-delete-cluster-aks"
 	}
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
@@ -218,11 +218,15 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 // ExpectResourceGroupToBe404 performs a GET request to Azure to determine if the cluster resource group still exists.
 // If it does still exist, it means the cluster was not deleted and is leaking Azure resources.
 func ExpectResourceGroupToBe404(ctx context.Context) {
+	resourceGroup := os.Getenv(AzureResourceGroup)
+	if resourceGroup == "" {
+		return
+	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
 	groupsClient, err := armresources.NewResourceGroupsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = groupsClient.Get(ctx, os.Getenv(AzureResourceGroup), nil)
+	_, err = groupsClient.Get(ctx, resourceGroup, nil)
 	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
 }
 
