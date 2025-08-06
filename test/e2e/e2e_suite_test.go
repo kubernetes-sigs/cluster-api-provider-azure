@@ -41,6 +41,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+var (
+	// watchesCtx is used in log streaming to be able to get canceled via cancelWatches after ending the test suite.
+	watchesCtx, cancelWatches = context.WithCancel(context.Background())
+)
+
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
@@ -136,7 +141,7 @@ func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	config := clusterctl.LoadE2EConfig(context.TODO(), clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
 	Expect(config).NotTo(BeNil(), "Failed to load E2E config from %s", configPath)
 
-	resolveKubernetesVersions(config)
+	resolveKubernetesVersions(ctx, config)
 
 	return config
 }
@@ -188,7 +193,7 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 }
 
 func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig, clusterctlConfig, artifactFolder string) {
-	clusterctl.InitManagementClusterAndWatchControllerLogs(context.TODO(), clusterctl.InitManagementClusterAndWatchControllerLogsInput{
+	clusterctl.InitManagementClusterAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 		ClusterProxy:            bootstrapClusterProxy,
 		ClusterctlConfigPath:    clusterctlConfig,
 		InfrastructureProviders: config.InfrastructureProviders(),
@@ -198,6 +203,7 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 }
 
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
+	cancelWatches()
 	if bootstrapClusterProxy != nil {
 		bootstrapClusterProxy.Dispose(context.TODO())
 	}
