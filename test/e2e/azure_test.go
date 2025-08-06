@@ -40,7 +40,6 @@ import (
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx                    = context.TODO()
 		specName               = "create-workload-cluster"
 		namespace              *corev1.Namespace
 		cancelWatches          context.CancelFunc

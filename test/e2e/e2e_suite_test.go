@@ -42,8 +42,10 @@ import (
 )
 
 var (
+	ctx = ctrl.SetupSignalHandler()
+
 	// watchesCtx is used in log streaming to be able to get canceled via cancelWatches after ending the test suite.
-	watchesCtx, cancelWatches = context.WithCancel(context.Background())
+	watchesCtx, cancelWatches = context.WithCancel(ctx)
 )
 
 func init() {
@@ -73,16 +75,16 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(os.MkdirAll(artifactFolder, 0o755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
 	Byf("Loading the e2e test configuration from %q", configPath)
-	e2eConfig = loadE2EConfig(configPath)
+	e2eConfig = loadE2EConfig(ctx, configPath)
 
 	Byf("Creating a clusterctl local repository into %q", artifactFolder)
-	clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
+	clusterctlConfigPath = createClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(artifactFolder, "repository"))
 
 	By("Setting up the bootstrap cluster")
-	bootstrapClusterProvider, bootstrapClusterProxy = setupBootstrapCluster(e2eConfig, useExistingCluster)
+	bootstrapClusterProvider, bootstrapClusterProxy = setupBootstrapCluster(ctx, e2eConfig, useExistingCluster)
 
 	By("Initializing the bootstrap cluster")
-	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
+	initBootstrapCluster(watchesCtx, bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
 
 	// encode the e2e config into the byte array.
 	var configBuf bytes.Buffer
@@ -133,12 +135,12 @@ var _ = SynchronizedAfterSuite(func() {
 
 	By("Tearing down the management cluster")
 	if !skipCleanup {
-		tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
+		tearDown(ctx, bootstrapClusterProvider, bootstrapClusterProxy)
 	}
 })
 
-func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
-	config := clusterctl.LoadE2EConfig(context.TODO(), clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
+func loadE2EConfig(ctx context.Context, configPath string) *clusterctl.E2EConfig {
+	config := clusterctl.LoadE2EConfig(ctx, clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
 	Expect(config).NotTo(BeNil(), "Failed to load E2E config from %s", configPath)
 
 	resolveKubernetesVersions(ctx, config)
@@ -146,7 +148,7 @@ func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	return config
 }
 
-func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFolder string) string {
+func createClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2EConfig, repositoryFolder string) string {
 	createRepositoryInput := clusterctl.CreateRepositoryInput{
 		E2EConfig:        config,
 		RepositoryFolder: repositoryFolder,
@@ -158,16 +160,16 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	Expect(cniPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", capi_e2e.CNIPath)
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPath, capi_e2e.CNIResources)
 
-	clusterctlConfig := clusterctl.CreateRepository(context.TODO(), createRepositoryInput)
+	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
 	return clusterctlConfig
 }
 
-func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool) (bootstrap.ClusterProvider, framework.ClusterProxy) {
+func setupBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, useExistingCluster bool) (bootstrap.ClusterProvider, framework.ClusterProxy) {
 	var clusterProvider bootstrap.ClusterProvider
 	kubeconfigPath := ""
 	if !useExistingCluster {
-		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(context.TODO(), bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
+		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:               config.ManagementClusterName,
 			RequiresDockerSock: config.HasDockerProvider(),
 			Images:             config.Images,
@@ -184,7 +186,7 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 			Name:   "capz-e2e",
 			Images: config.Images,
 		}
-		err := bootstrap.LoadImagesToKindCluster(context.TODO(), imagesInput)
+		err := bootstrap.LoadImagesToKindCluster(ctx, imagesInput)
 		Expect(err).NotTo(HaveOccurred(), "Failed to load images to the bootstrap cluster: %s", err)
 	}
 	clusterProxy := NewAzureClusterProxy("bootstrap", kubeconfigPath)
@@ -192,8 +194,8 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool
 	return clusterProvider, clusterProxy
 }
 
-func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig, clusterctlConfig, artifactFolder string) {
-	clusterctl.InitManagementClusterAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
+func initBootstrapCluster(ctx context.Context, bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig, clusterctlConfig, artifactFolder string) {
+	clusterctl.InitManagementClusterAndWatchControllerLogs(ctx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 		ClusterProxy:            bootstrapClusterProxy,
 		ClusterctlConfigPath:    clusterctlConfig,
 		InfrastructureProviders: config.InfrastructureProviders(),
@@ -202,12 +204,12 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }
 
-func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
+func tearDown(ctx context.Context, bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
 	cancelWatches()
 	if bootstrapClusterProxy != nil {
-		bootstrapClusterProxy.Dispose(context.TODO())
+		bootstrapClusterProxy.Dispose(ctx)
 	}
 	if bootstrapClusterProvider != nil {
-		bootstrapClusterProvider.Dispose(context.TODO())
+		bootstrapClusterProvider.Dispose(ctx)
 	}
 }

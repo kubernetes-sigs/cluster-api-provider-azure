@@ -109,9 +109,9 @@ func (b *Builder) WithStorageClass(scName string) *Builder {
 	return b
 }
 
-func (b *Builder) DeployPVC(clientset *kubernetes.Clientset) error {
+func (b *Builder) DeployPVC(ctx context.Context, clientset *kubernetes.Clientset) error {
 	Eventually(func(g Gomega) {
-		_, err := clientset.CoreV1().PersistentVolumeClaims("default").Create(context.TODO(), b.pvc, metav1.CreateOptions{})
+		_, err := clientset.CoreV1().PersistentVolumeClaims("default").Create(ctx, b.pvc, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("Error trying to deploy storage class %s in namespace %s:%s\n", b.pvc.Name, b.pvc.ObjectMeta.Namespace, err.Error())
 		}

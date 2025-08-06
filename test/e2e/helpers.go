@@ -615,12 +615,12 @@ func validateStableReleaseString(stableVersion string) (isStable bool, matches [
 
 // resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
 // Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
-func resolveCIVersion(label string) (string, error) {
+func resolveCIVersion(ctx context.Context, label string) (string, error) {
 	if ciVersion, ok := os.LookupEnv("CI_VERSION"); ok {
 		return ciVersion, nil
 	}
 	if strings.HasPrefix(label, "latest") {
-		if kubernetesVersion, err := latestCIVersion(label); err == nil {
+		if kubernetesVersion, err := latestCIVersion(ctx, label); err == nil {
 			return kubernetesVersion, nil
 		}
 	}
@@ -630,9 +630,9 @@ func resolveCIVersion(label string) (string, error) {
 }
 
 // latestCIVersion returns the latest CI version of a given label in the form of latest-1.xx.
-func latestCIVersion(label string) (string, error) {
+func latestCIVersion(ctx context.Context, label string) (string, error) {
 	ciVersionURL := fmt.Sprintf("https://dl.k8s.io/ci/%s.txt", label)
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, ciVersionURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ciVersionURL, http.NoBody)
 	if err != nil {
 		return "", err
 	}
@@ -690,10 +690,10 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 
 // resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
-func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
-	linuxVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
-	windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
-	flatcarK8sVersions := getFlatcarK8sVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
+func resolveKubernetesVersions(ctx context.Context, config *clusterctl.E2EConfig) {
+	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
+	windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
+	flatcarK8sVersions := getFlatcarK8sVersions(ctx, os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
 
 	// find the intersection of ubuntu and windows versions available, since we need an image for both.
 	var versions semver.Versions
