@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/private
+- ../prow/mhc-kubeadmcontrolplane.yaml
 - cni-resource-set.yaml
 - ../../../addons/cluster-api-helm/calico.yaml
 - ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
