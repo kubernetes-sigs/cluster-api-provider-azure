@@ -591,7 +591,7 @@ func collectVMBootLog(ctx context.Context, vmClient *armcompute.VirtualMachinesC
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
-	return writeBootLog(bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
+	return writeBootLog(ctx, bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
 }
 
 // collectVMSSInstanceBootLog collects boot logs of the vmss instance by using azure boot diagnostics.
@@ -603,12 +603,12 @@ func collectVMSSInstanceBootLog(ctx context.Context, instanceClient *armcompute.
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
-	return writeBootLog(bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
+	return writeBootLog(ctx, bootDiagnostics.RetrieveBootDiagnosticsDataResult, outputPath)
 }
 
-func writeBootLog(bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
+func writeBootLog(ctx context.Context, bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
 	var err error
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
 	}
