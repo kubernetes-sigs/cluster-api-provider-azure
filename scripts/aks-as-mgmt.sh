@@ -226,18 +226,25 @@ create_aks_cluster() {
   export MANAGED_IDENTITY_RG
   echo "mgmt resource identity resource group: ${MANAGED_IDENTITY_RG}"
 
-
-  echo "assigning contributor role to managed identity over the $AZURE_SUBSCRIPTION_ID subscription"
-  # Note: Even though --assignee-principal-type ServicePrincipal is specified, this does not mean that the role assignment is for a secret of type service principal.
-  # Creating a role assignment for a managed identity using other assignee-principal-type from (Group, User, ForeignGroup) will lead to RBAC error.
-  # To avoid RBAC error, we need to assign the role to the managed identity using the --assignee-principal-type ServicePrincipal.
-  # refer: https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting?tabs=bicep#symptom---assigning-a-role-to-a-new-principal-sometimes-fails
-  until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Contributor" \
-  --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none \
-  --only-show-errors; do
-    echo "retrying to assign contributor role"
-    sleep 5
-  done
+  # Only assign contributor role if using AKS-created managed identity (not user-provided)
+  # Check if all user-provided identity variables are set - if so, skip role assignment
+  if [[ -n "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-}" ]] && \
+     [[ -n "${AZURE_OBJECT_ID_USER_ASSIGNED_IDENTITY:-}" ]] && \
+     [[ -n "${AZURE_USER_ASSIGNED_IDENTITY_RESOURCE_ID:-}" ]]; then
+    echo "skipping contributor role assignment for user-provided managed identity (assuming it already has necessary permissions)"
+  else
+    echo "assigning contributor role to managed identity over the $AZURE_SUBSCRIPTION_ID subscription"
+    # Note: Even though --assignee-principal-type ServicePrincipal is specified, this does not mean that the role assignment is for a secret of type service principal.
+    # Creating a role assignment for a managed identity using other assignee-principal-type from (Group, User, ForeignGroup) will lead to RBAC error.
+    # To avoid RBAC error, we need to assign the role to the managed identity using the --assignee-principal-type ServicePrincipal.
+    # refer: https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting?tabs=bicep#symptom---assigning-a-role-to-a-new-principal-sometimes-fails
+    until az role assignment create --assignee-object-id "${AKS_MI_OBJECT_ID}" --role "Contributor" \
+    --scope "/subscriptions/${AZURE_SUBSCRIPTION_ID}" --assignee-principal-type ServicePrincipal --output none \
+    --only-show-errors; do
+      echo "retrying to assign contributor role"
+      sleep 5
+    done
+  fi
 
   # Set the ASO_CREDENTIAL_SECRET_MODE to podidentity to
   # use the client ID of the managed identity created by AKS for authentication
