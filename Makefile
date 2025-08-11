@@ -86,6 +86,11 @@ GOLANGCI_LINT_VER := $(shell cat .github/workflows/pr-golangci-lint.yaml | grep 
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
+GOVULNCHECK_BIN := govulncheck
+GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
+GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
+
 KUSTOMIZE_VER := v5.4.1
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
@@ -101,6 +106,8 @@ MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 RELEASE_NOTES_VER := v0.18.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
+
+TRIVY_VER := 0.64.0
 
 KPROMO_VER := v4.0.5
 KPROMO_BIN := kpromo
@@ -306,6 +313,24 @@ verify-tiltfile: ## Verify Tiltfile format.
 .PHONY: verify-codespell
 verify-codespell: codespell ## Verify codespell.
 	@$(CODESPELL) $(ROOT_DIR) --ignore-words=$(ROOT_DIR)/.codespellignore --skip="*.git,*_artifacts,*.sum,$(ROOT_DIR)/docs/book/bookout,$(ROOT_DIR)/hack/tools/bin/codespell_dist"
+
+.PHONY: verify-govulncheck
+verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
+	$(GOVULNCHECK) ./... && R1=$$? || R1=$$?; \
+	$(GOVULNCHECK) -C "$(TOOLS_DIR)" ./... && R2=$$? || R2=$$?; \
+	$(GOVULNCHECK) -C "$(TEST_DIR)" ./... && R3=$$? || R3=$$?; \
+	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ] || [ "$$R3" -ne "0" ]; then \
+		exit 1; \
+	fi
+
+.PHONY: verify-security
+verify-security: ## Verify code and images for vulnerabilities
+	$(MAKE) verify-container-images && R1=$$? || R1=$$?; \
+	$(MAKE) verify-govulncheck && R2=$$? || R2=$$?; \
+	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ]; then \
+	  echo "Check for vulnerabilities failed! There are vulnerabilities to be fixed"; \
+		exit 1; \
+	fi
 
 ## --------------------------------------
 ## Development
@@ -764,7 +789,7 @@ cleanup-workload-identity: ## Cleanup CI workload-identity infra
 
 .PHONY: verify-container-images
 verify-container-images: ## Verify container images
-	./hack/verify-container-images.sh
+	TRACE=$(TRACE) ./hack/verify-container-images.sh $(TRIVY_VER)
 
 ## --------------------------------------
 ## Tilt / Kind
@@ -845,6 +870,12 @@ $(CONVERSION_GEN): ## Build conversion-gen from tools folder.
 
 $(ENVSUBST): ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
+
+.PHONY: $(GOVULNCHECK_BIN)
+$(GOVULNCHECK_BIN): $(GOVULNCHECK) ## Build a local copy of govulncheck.
+
+$(GOVULNCHECK): # Build govulncheck.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOVULNCHECK_PKG) $(GOVULNCHECK_BIN) $(GOVULNCHECK_VER)
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
