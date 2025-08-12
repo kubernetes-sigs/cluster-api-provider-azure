@@ -681,6 +681,19 @@ spec:
         spec:
           template:
             spec:
+              # By default, typha tolerates all NoSchedule taints. This breaks
+              # scale-ins when it continuously gets scheduled onto an
+              # out-of-date Node that is being deleted. Tolerate only the
+              # NoSchedule taints that are expected.
+              tolerations:
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node.kubernetes.io/not-ready
+                  operator: Exists
               affinity:
                 nodeAffinity:
                   preferredDuringSchedulingIgnoredDuringExecution:
