@@ -1098,6 +1098,50 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "don't default NAT Gateway for cluster subnet if subnet already exists",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role: SubnetCluster,
+									Name: "cluster-test-cluster-subnet",
+								},
+								ID: "my-subnet-id",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								SubnetClassSpec: SubnetClassSpec{
+									Role:       SubnetCluster,
+									CIDRBlocks: []string{DefaultClusterSubnetCIDR},
+									Name:       "cluster-test-cluster-subnet",
+								},
+								ID:            "my-subnet-id",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
