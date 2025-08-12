@@ -202,11 +202,13 @@ func (s *SubnetSpec) setClusterSubnetDefaults(clusterName string) {
 	if s.RouteTable.Name == "" {
 		s.RouteTable.Name = generateClusterRouteTableName(clusterName)
 	}
-	if s.NatGateway.Name == "" {
-		s.NatGateway.Name = generateClusterNatGatewayName(clusterName)
-	}
-	if !s.IsIPv6Enabled() && s.ID == "" && s.NatGateway.NatGatewayIP.Name == "" {
-		s.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(s.NatGateway.Name)
+	if s.ID == "" {
+		if s.NatGateway.Name == "" {
+			s.NatGateway.Name = generateClusterNatGatewayName(clusterName)
+		}
+		if !s.IsIPv6Enabled() && s.NatGateway.NatGatewayIP.Name == "" {
+			s.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(s.NatGateway.Name)
+		}
 	}
 	s.setDefaults(DefaultClusterSubnetCIDR)
 	s.SecurityGroup.SecurityGroupClass.setDefaults()
