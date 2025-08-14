@@ -17,7 +17,6 @@ limitations under the License.
 package scope
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -69,7 +68,7 @@ func TestNewManagedMachinePoolScope(t *testing.T) {
 	g := NewWithT(t)
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(input.MachinePool, input.InfraMachinePool, input.ControlPlane).Build()
 	input.Client = fakeClient
-	_, err := NewManagedMachinePoolScope(context.TODO(), input)
+	_, err := NewManagedMachinePoolScope(t.Context(), input)
 	g.Expect(err).To(Succeed())
 }
 

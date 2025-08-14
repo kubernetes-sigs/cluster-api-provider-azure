@@ -17,7 +17,6 @@ limitations under the License.
 package loadbalancers
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -226,7 +225,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				Scope:      scopeMock,
 				Reconciler: asyncMock,
 			}
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
@@ -303,7 +302,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

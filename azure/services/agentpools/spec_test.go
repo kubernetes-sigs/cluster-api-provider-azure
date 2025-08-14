@@ -17,7 +17,6 @@ limitations under the License.
 package agentpools
 
 import (
-	"context"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -121,7 +120,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), nil)
+		actual, err := spec.Parameters(t.Context(), nil)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cmp.Diff(actual, expected)).To(BeEmpty())
@@ -217,7 +216,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), nil)
+		actual, err := spec.Parameters(t.Context(), nil)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cmp.Diff(actual, expected)).To(BeEmpty())
@@ -245,7 +244,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actual, err := spec.Parameters(t.Context(), existing)
 		actualTyped, ok := actual.(*asocontainerservicev1.ManagedClustersAgentPool)
 		g.Expect(ok).To(BeTrue())
 
@@ -280,7 +279,7 @@ func TestParameters(t *testing.T) {
 			},
 		}
 
-		actual, err := spec.Parameters(context.Background(), existing)
+		actual, err := spec.Parameters(t.Context(), existing)
 		actualTyped, ok := actual.(*asocontainerservicev1preview.ManagedClustersAgentPool)
 		g.Expect(ok).To(BeTrue())
 

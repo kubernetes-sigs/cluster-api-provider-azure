@@ -17,7 +17,6 @@ limitations under the License.
 package scope
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -449,7 +448,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 			s.instance = instance
 			s.workloadNodeGetter = mockClient
 
-			err = s.UpdateNodeStatus(context.TODO())
+			err = s.UpdateNodeStatus(t.Context())
 			if c.Err == "" {
 				g.Expect(err).To(Succeed())
 			} else {

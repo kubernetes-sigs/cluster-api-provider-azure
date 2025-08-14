@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -95,7 +94,7 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
-			err := s.reconcile(context.TODO())
+			err := s.reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -164,7 +163,7 @@ func TestAzureClusterServicePause(t *testing.T) {
 				},
 			}
 
-			err := s.pause(context.TODO())
+			err := s.pause(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -377,7 +376,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 				skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{}, ""),
 			}
 
-			err := s.delete(context.TODO())
+			err := s.delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

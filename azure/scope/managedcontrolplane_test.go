@@ -17,7 +17,6 @@ limitations under the License.
 package scope
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -88,7 +87,7 @@ func TestNewManagedControlPlaneScope(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	input.Client = fakeClient
-	_, err := NewManagedControlPlaneScope(context.TODO(), input)
+	_, err := NewManagedControlPlaneScope(t.Context(), input)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 

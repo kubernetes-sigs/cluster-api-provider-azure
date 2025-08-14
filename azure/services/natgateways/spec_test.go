@@ -17,7 +17,6 @@ limitations under the License.
 package natgateways
 
 import (
-	"context"
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
@@ -138,7 +137,7 @@ func TestParameters(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			result, _ := tc.spec.Parameters(context.TODO(), tc.existingSpec.DeepCopy())
+			result, _ := tc.spec.Parameters(t.Context(), tc.existingSpec.DeepCopy())
 			tc.expect(g, tc.existingSpec, result)
 		})
 	}

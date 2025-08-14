@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
@@ -84,7 +83,7 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(context.TODO(), &clusterv1.Cluster{
+			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(t.Context(), &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
 					ControlPlaneRef: test.controlPlaneRef,
 				},
@@ -101,7 +100,7 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	g := NewWithT(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
 		clusterv1.AddToScheme,
@@ -247,7 +246,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	}
 	g.Expect(c.Create(ctx, subnet)).To(Succeed())
 
-	result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+	result, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 		NamespacedName: client.ObjectKey{
 			Namespace: instance.Namespace,
 			Name:      instance.Name,
@@ -260,7 +259,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 
 func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 	g := NewWithT(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	cp := &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-azmp",

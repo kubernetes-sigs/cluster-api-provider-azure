@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -169,7 +168,7 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 				CredentialCache: azure.NewCredentialCache(),
 			}
 
-			_, err := reconciler.Reconcile(context.Background(), ctrl.Request{
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "",
 					Name:      "my-json-template",

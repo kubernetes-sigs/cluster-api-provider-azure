@@ -17,7 +17,6 @@ limitations under the License.
 package scalesetvms
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -153,7 +152,7 @@ func TestReconcileVMSS(t *testing.T) {
 				VMReconciler: vmAsyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError), err.Error())
@@ -227,7 +226,7 @@ func TestDeleteVMSS(t *testing.T) {
 				VMReconciler: vmAsyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError), err.Error())

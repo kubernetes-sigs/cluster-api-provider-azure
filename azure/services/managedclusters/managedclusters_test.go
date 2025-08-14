@@ -17,7 +17,6 @@ limitations under the License.
 package managedclusters
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -42,7 +41,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		scope := mock_managedclusters.NewMockManagedClusterScope(mockCtrl)
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, nil, errors.New("an error"))
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, nil, errors.New("an error"))
 		g.Expect(err).To(HaveOccurred())
 	})
 
@@ -71,7 +70,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, managedCluster, nil)
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -100,7 +99,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, managedCluster, nil)
 		g.Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -136,7 +135,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			},
 		}
 
-		err := postCreateOrUpdateResourceHook(context.Background(), scope, managedCluster, nil)
+		err := postCreateOrUpdateResourceHook(t.Context(), scope, managedCluster, nil)
 		g.Expect(err).To(HaveOccurred())
 	})
 }

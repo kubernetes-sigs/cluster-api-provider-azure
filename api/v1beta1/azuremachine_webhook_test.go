@@ -253,7 +253,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mw := &azureMachineWebhook{}
-			_, err := mw.ValidateCreate(context.Background(), tc.machine)
+			_, err := mw.ValidateCreate(t.Context(), tc.machine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -928,7 +928,7 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mw := &azureMachineWebhook{}
-			_, err := mw.ValidateUpdate(context.Background(), tc.oldMachine, tc.newMachine)
+			_, err := mw.ValidateUpdate(t.Context(), tc.oldMachine, tc.newMachine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -980,17 +980,17 @@ func TestAzureMachine_Default(t *testing.T) {
 		Client: mockClient,
 	}
 
-	err := mw.Default(context.Background(), publicKeyExistTest.machine)
+	err := mw.Default(t.Context(), publicKeyExistTest.machine)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
-	err = mw.Default(context.Background(), publicKeyNotExistTest.machine)
+	err = mw.Default(t.Context(), publicKeyNotExistTest.machine)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 
 	for _, possibleCachingType := range armcompute.PossibleCachingTypesValues() {
 		cacheTypeSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
-		err = mw.Default(context.Background(), cacheTypeSpecifiedTest.machine)
+		err = mw.Default(t.Context(), cacheTypeSpecifiedTest.machine)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
 	}

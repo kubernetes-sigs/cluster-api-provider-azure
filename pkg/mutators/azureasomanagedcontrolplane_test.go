@@ -17,7 +17,6 @@ limitations under the License.
 package mutators
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -40,7 +39,7 @@ import (
 )
 
 func TestSetManagedClusterDefaults(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	g := NewGomegaWithT(t)
 
 	tests := []struct {
@@ -136,7 +135,7 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 }
 
 func TestSetManagedClusterKubernetesVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name                   string
@@ -244,7 +243,7 @@ func TestSetManagedClusterKubernetesVersion(t *testing.T) {
 }
 
 func TestSetManagedClusterServiceCIDR(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name           string
@@ -374,7 +373,7 @@ func TestSetManagedClusterServiceCIDR(t *testing.T) {
 }
 
 func TestSetManagedClusterPodCIDR(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name           string
@@ -505,7 +504,7 @@ func TestSetManagedClusterPodCIDR(t *testing.T) {
 
 func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 	g := NewGomegaWithT(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	s := runtime.NewScheme()
 	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(s)).To(Succeed())

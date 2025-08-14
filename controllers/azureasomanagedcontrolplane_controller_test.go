@@ -47,7 +47,7 @@ import (
 )
 
 func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(

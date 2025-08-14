@@ -17,7 +17,6 @@ limitations under the License.
 package resourcehealth
 
 import (
-	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
@@ -128,7 +127,7 @@ func TestReconcileResourceHealth(t *testing.T) {
 
 			utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.AKSResourceHealth, !tc.featureDisabled)
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())

@@ -17,7 +17,6 @@ limitations under the License.
 package subnets
 
 import (
-	"context"
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
@@ -35,7 +34,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		scope := mock_subnets.NewMockSubnetScope(mockCtrl)
 		err := errors.New("an error")
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, nil, err)).To(MatchError(err))
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, nil, err)).To(MatchError(err))
 	})
 
 	t.Run("successfully created or updated", func(t *testing.T) {
@@ -53,7 +52,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 				AddressPrefixes: []string{"cidr"},
 			},
 		}
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, subnet, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, subnet, nil)).To(Succeed())
 	})
 
 	t.Run("correctly handles empty and non-empty ASO Status CIDRBlocks", func(t *testing.T) {
@@ -72,7 +71,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		}
 		scope.EXPECT().UpdateSubnetID("empty-cidr-status-subnet", "id-empty").Times(0)
 		scope.EXPECT().UpdateSubnetCIDRs("empty-cidr-status-subnet", []string{}).Times(0)
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, emptyCIDRSubnet, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, emptyCIDRSubnet, nil)).To(Succeed())
 
 		nonEmptyCIDRSubnet := &asonetworkv1.VirtualNetworksSubnet{
 			Spec: asonetworkv1.VirtualNetworksSubnet_Spec{
@@ -85,6 +84,6 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 		}
 		scope.EXPECT().UpdateSubnetID("nonempty-cidr-status-subnet", "id-nonempty").Times(1)
 		scope.EXPECT().UpdateSubnetCIDRs("nonempty-cidr-status-subnet", []string{"cidr"}).Times(1)
-		g.Expect(postCreateOrUpdateResourceHook(context.Background(), scope, nonEmptyCIDRSubnet, nil)).To(Succeed())
+		g.Expect(postCreateOrUpdateResourceHook(t.Context(), scope, nonEmptyCIDRSubnet, nil)).To(Succeed())
 	})
 }

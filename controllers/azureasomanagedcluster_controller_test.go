@@ -66,7 +66,7 @@ func (r *fakeResourceReconciler) Delete(ctx context.Context) error {
 }
 
 func TestAzureASOManagedClusterReconcile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(

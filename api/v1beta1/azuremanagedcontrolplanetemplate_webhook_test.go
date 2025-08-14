@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -31,7 +30,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	t.Logf("Testing amcp defaulting webhook with no baseline")
 	amcpt := getAzureManagedControlPlaneTemplate()
 	mcptw := &azureManagedControlPlaneTemplateWebhook{}
-	err := mcptw.Default(context.Background(), amcpt)
+	err := mcptw.Default(t.Context(), amcpt)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcpt.Spec.Template.Spec.NetworkPlugin).To(Equal("azure"))
 	g.Expect(*amcpt.Spec.Template.Spec.LoadBalancerSKU).To(Equal("Standard"))
@@ -54,7 +53,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	amcpt.Spec.Template.Spec.SKU.Tier = PaidManagedControlPlaneTier
 	amcpt.Spec.Template.Spec.EnablePreviewFeatures = ptr.To(true)
 
-	err = mcptw.Default(context.Background(), amcpt)
+	err = mcptw.Default(t.Context(), amcpt)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcpt.Spec.Template.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcpt.Spec.Template.Spec.LoadBalancerSKU).To(Equal(lbSKU))
@@ -274,7 +273,7 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			cpw := &azureManagedControlPlaneTemplateWebhook{}
-			_, err := cpw.ValidateUpdate(context.Background(), tc.oldControlPlaneTemplate, tc.controlPlaneTemplate)
+			_, err := cpw.ValidateUpdate(t.Context(), tc.oldControlPlaneTemplate, tc.controlPlaneTemplate)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
