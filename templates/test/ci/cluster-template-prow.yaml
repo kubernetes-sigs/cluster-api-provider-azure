@@ -111,7 +111,11 @@ spec:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands: []
-    preKubeadmCommands: []
+    preKubeadmCommands:
+    - |
+      # Install ca-certificates for Azure Linux
+      tdnf install -y ca-certificates
+      update-ca-trust
     verbosity: 10
   machineTemplate:
     infrastructureRef:
@@ -219,7 +223,11 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
+      preKubeadmCommands:
+      - |
+        # Install ca-certificates for Azure Linux
+        tdnf install -y ca-certificates
+        update-ca-trust
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment

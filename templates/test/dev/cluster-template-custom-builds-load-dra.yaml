@@ -225,6 +225,10 @@ spec:
     - bash -c /tmp/replace-k8s-components.sh
     preKubeadmCommands:
     - bash -c /tmp/containerd-config.sh
+    - |
+      # Install ca-certificates for Azure Linux
+      tdnf install -y ca-certificates
+      update-ca-trust
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/replace-k8s-binaries.sh
     verbosity: 5
@@ -410,6 +414,10 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash -c /tmp/containerd-config.sh
+      - |
+        # Install ca-certificates for Azure Linux
+        tdnf install -y ca-certificates
+        update-ca-trust
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/replace-k8s-binaries.sh
 ---

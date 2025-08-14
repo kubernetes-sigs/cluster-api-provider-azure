@@ -210,8 +210,10 @@ spec:
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands:
-    - bash -c /tmp/oot-cred-provider.sh
-    - bash -c /tmp/kubeadm-bootstrap.sh
+    - |
+      # Install ca-certificates for Azure Linux
+      tdnf install -y ca-certificates
+      update-ca-trust
     verbosity: 5
   machineTemplate:
     infrastructureRef:
@@ -426,6 +428,10 @@ spec:
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
+      - |
+        # Install ca-certificates for Azure Linux
+        tdnf install -y ca-certificates
+        update-ca-trust
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5

@@ -209,8 +209,10 @@ spec:
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands:
-    - bash -c /tmp/oot-cred-provider.sh
-    - bash -c /tmp/kubeadm-bootstrap.sh
+    - |
+      # Install ca-certificates for Azure Linux
+      tdnf install -y ca-certificates
+      update-ca-trust
     verbosity: 5
   machineTemplate:
     infrastructureRef:
