@@ -50,7 +50,7 @@ const (
 	// DefaultPublicGalleryName is the default Azure compute gallery.
 	DefaultPublicGalleryName = "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
 	// DefaultLinuxGalleryImageName is the default Linux community gallery image definition.
-	DefaultLinuxGalleryImageName = "capi-ubun2-2404"
+	DefaultLinuxGalleryImageName = "capi-azurelinux-3"
 	// DefaultWindowsGalleryImageName is the default Windows community gallery image definition.
 	DefaultWindowsGalleryImageName = "capi-win-2019-containerd"
 )
