@@ -43,7 +43,6 @@ import (
 
 var _ = Describe("Conformance Tests", func() {
 	var (
-		ctx           = context.TODO()
 		cancelWatches context.CancelFunc
 		result        *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName   string
@@ -94,7 +93,7 @@ var _ = Describe("Conformance Tests", func() {
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
 		// PR artifacts will replace the CI artifacts during kubeadm init
 		if useCIArtifacts || usePRArtifacts {
-			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
+			kubernetesVersion, err = resolveCIVersion(ctx, kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
