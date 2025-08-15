@@ -208,6 +208,26 @@ spec:
     postKubeadmCommands:
     - bash -c /tmp/replace-k8s-components.sh
     preKubeadmCommands:
+    - |
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
+      update-ca-trust
+
+      # Create symlinks for common certificate paths
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Ensure etcd disk is properly mounted and accessible
+      echo "Checking etcd disk mount..."
+      ls -la /var/lib/etcddisk/ || echo "etcd disk not mounted"
+      df -h /var/lib/etcddisk || echo "etcd disk mount check failed"
+
+      # Ensure the etcd directory exists and has proper permissions
+      mkdir -p /var/lib/etcddisk/etcd
+      chmod 0700 /var/lib/etcddisk/etcd
+
+      # Install additional utilities that might be needed for etcd
+      tdnf install -y util-linux e2fsprogs
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/replace-k8s-binaries.sh
     verbosity: 5
@@ -382,6 +402,10 @@ spec:
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
+      - |
+        # Install ca-certificates for Azure Linux
+        tdnf install -y ca-certificates
+        update-ca-trust
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/replace-k8s-binaries.sh
 ---
@@ -705,6 +729,8 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      certificateManagement:
+        caCert: /etc/kubernetes/pki/ca.crt
       typhaDeployment:
         spec:
           template:
@@ -787,6 +813,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
+      caCertDir: "/etc/pki/tls"
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
       logVerbosity: 4
 ---
@@ -806,6 +833,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
+      caCertDir: "/etc/pki/tls"
       cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
       cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}

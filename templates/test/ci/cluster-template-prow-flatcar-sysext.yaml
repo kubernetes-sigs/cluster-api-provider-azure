@@ -44,6 +44,8 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      certificateManagement:
+        caCert: /etc/kubernetes/pki/ca.crt
       typhaDeployment:
         spec:
           template:
@@ -348,8 +350,26 @@ spec:
       - /var/lib/etcddisk
     postKubeadmCommands: []
     preKubeadmCommands:
-    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
-      | jq -r .compute.name)/g" /etc/kubeadm.yml
+    - |
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
+      update-ca-trust
+
+      # Create symlinks for common certificate paths
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Ensure etcd disk is properly mounted and accessible
+      echo "Checking etcd disk mount..."
+      ls -la /var/lib/etcddisk/ || echo "etcd disk not mounted"
+      df -h /var/lib/etcddisk || echo "etcd disk mount check failed"
+
+      # Ensure the etcd directory exists and has proper permissions
+      mkdir -p /var/lib/etcddisk/etcd
+      chmod 0700 /var/lib/etcddisk/etcd
+
+      # Install additional utilities that might be needed for etcd
+      tdnf install -y util-linux e2fsprogs
     verbosity: 10
   machineTemplate:
     infrastructureRef:
