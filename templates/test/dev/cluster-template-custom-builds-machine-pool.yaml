@@ -637,6 +637,8 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
+      certificateManagement:
+        caCert: /etc/kubernetes/pki/ca.crt
       typhaDeployment:
         spec:
           template:
@@ -719,7 +721,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
-      caCertDir: "/etc/pki/tls/certs"
+      caCertDir: "/etc/pki/tls"
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
       logVerbosity: 4
 ---
@@ -739,7 +741,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
-      caCertDir: "/etc/pki/tls/certs"
+      caCertDir: "/etc/pki/tls"
       cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
       cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}

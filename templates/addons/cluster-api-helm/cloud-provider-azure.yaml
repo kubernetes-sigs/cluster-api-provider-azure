@@ -13,6 +13,6 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
-      caCertDir: "/etc/pki/tls/certs"
+      caCertDir: "/etc/pki/tls"
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
       logVerbosity: 4

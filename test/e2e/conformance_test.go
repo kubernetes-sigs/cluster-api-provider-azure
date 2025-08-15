@@ -225,7 +225,7 @@ var _ = Describe("Conformance Tests", func() {
 			Namespace:         namespace,
 			CancelWatches:     cancelWatches,
 			IntervalsGetter:   e2eConfig.GetIntervals,
-			SkipCleanup:       skipCleanup,
+			SkipCleanup:       true, // TODO: remove this
 			SkipLogCollection: skipLogCollection,
 			ArtifactFolder:    artifactFolder,
 		}
