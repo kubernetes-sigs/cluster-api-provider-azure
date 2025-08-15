@@ -687,8 +687,6 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      certificateManagement:
-        caCert: /etc/pki/tls/certs/ca-bundle.crt
       typhaDeployment:
         spec:
           template:

@@ -143,9 +143,16 @@ spec:
       fi
     preKubeadmCommands:
     - |
-      # Install ca-certificates for Azure Linux
-      tdnf install -y ca-certificates
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
       update-ca-trust
+
+      # Create compatibility symlinks that many container applications expect
+      mkdir -p /etc/ssl/certs
+
+      # Create symlinks for common certificate paths
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
+      ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
     verbosity: 10
   machineTemplate:
     infrastructureRef:
@@ -293,8 +300,6 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      certificateManagement:
-        caCert: /etc/pki/tls/certs/ca-bundle.crt
       typhaDeployment:
         spec:
           template:
