@@ -1285,6 +1285,69 @@ func TestValidateAPIServerLB(t *testing.T) {
 				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
 			},
 		},
+		{
+			name:        "public LB + APIServerILB: changing private IP after creation is forbidden",
+			featureGate: feature.APIServerILB,
+			old: &LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public, SKU: SKUStandard},
+				Name:                  "my-public-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name:            "ip-priv",
+						FrontendIPClass: FrontendIPClass{PrivateIPAddress: "10.0.0.10"},
+					},
+					{
+						Name:     "ip-pub",
+						PublicIP: &PublicIPSpec{Name: "pub", DNSName: "pub"},
+					},
+				},
+			},
+			lb: &LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public, SKU: SKUStandard},
+				Name:                  "my-public-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name:            "ip-priv",
+						FrontendIPClass: FrontendIPClass{PrivateIPAddress: "10.0.0.11"},
+					},
+					{
+						Name:     "ip-pub",
+						PublicIP: &PublicIPSpec{Name: "pub", DNSName: "pub"},
+					},
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "field is immutable",
+			},
+		},
+		{
+			name: "internal LB: changing private IP after creation is forbidden",
+			old: &LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal, SKU: SKUStandard},
+				Name:                  "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{Name: "ip-1", FrontendIPClass: FrontendIPClass{PrivateIPAddress: "10.1.0.3"}},
+				},
+			},
+			lb: &LoadBalancerSpec{
+				LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal, SKU: SKUStandard},
+				Name:                  "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{Name: "ip-1", FrontendIPClass: FrontendIPClass{PrivateIPAddress: "10.1.0.4"}},
+				},
+			},
+			cpCIDRS: []string{"10.1.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "field is immutable",
+			},
+		},
 	}
 
 	for _, test := range testcases {
