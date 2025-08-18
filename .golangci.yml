@@ -101,10 +101,10 @@ linters:
         - pkg: sigs.k8s.io/controller-runtime
           alias: ctrl
         # CAPI
-        - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+        - pkg: sigs.k8s.io/cluster-api/api/core/v1beta1
           alias: clusterv1
         # CAPI exp
-        - pkg: sigs.k8s.io/cluster-api/exp/api/v1beta1
+        - pkg: sigs.k8s.io/cluster-api/api/core/v1beta1
           alias: expv1
         # CAPZ
         - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
