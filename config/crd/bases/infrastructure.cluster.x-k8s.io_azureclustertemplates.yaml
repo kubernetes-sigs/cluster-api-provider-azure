@@ -106,6 +106,12 @@ spec:
                                     properties:
                                       name:
                                         type: string
+                                      zones:
+                                        description: Zones mentions the list of zones
+                                          the NAT gateway should be a part of.
+                                        items:
+                                          type: string
+                                        type: array
                                     required:
                                     - name
                                     type: object
@@ -625,6 +631,12 @@ spec:
                                   properties:
                                     name:
                                       type: string
+                                    zones:
+                                      description: Zones mentions the list of zones
+                                        the NAT gateway should be a part of.
+                                      items:
+                                        type: string
+                                      type: array
                                   required:
                                   - name
                                   type: object

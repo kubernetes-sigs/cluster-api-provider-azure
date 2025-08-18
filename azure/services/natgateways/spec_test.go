@@ -36,6 +36,7 @@ var (
 		ResourceGroup:  "my-rg",
 		SubscriptionID: "123",
 		Location:       "eastus",
+		Zones:          []string{"eastus-1"},
 		NatGatewayIP: infrav1.PublicIPSpec{
 			Name:    "my-natgateway-ip",
 			DNSName: "Standard",
@@ -59,6 +60,7 @@ var (
 			AzureName:            "my-natgateway",
 			IdleTimeoutInMinutes: ptr.To(6),
 			Location:             locationPtr,
+			Zones:                []string{"eastus-1"},
 			Owner: &genruntime.KnownResourceReference{
 				Name: "my-rg",
 			},
@@ -114,6 +116,8 @@ func TestParameters(t *testing.T) {
 				g.Expect(parameters.Spec.Owner.Name).To(Equal("my-rg"))
 				g.Expect(parameters.Spec.Location).NotTo(BeNil())
 				g.Expect(parameters.Spec.Location).To(Equal(locationPtr))
+				g.Expect(parameters.Spec.Zones).To(HaveLen(1))
+				g.Expect(parameters.Spec.Zones[0]).To(Equal("eastus-1"))
 				g.Expect(parameters.Spec.Sku.Name).NotTo(BeNil())
 				g.Expect(parameters.Spec.Sku.Name).To(Equal(standardSKUPtr))
 				g.Expect(parameters.Spec.PublicIpAddresses).To(HaveLen(1))
