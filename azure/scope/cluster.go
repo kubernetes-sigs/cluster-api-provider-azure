@@ -403,7 +403,7 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetwo
 		if subnet.IsNatGatewayEnabled() {
 			if _, ok := natGatewaySet[subnet.NatGateway.Name]; !ok {
 				natGatewaySet[subnet.NatGateway.Name] = struct{}{} // empty struct to represent hash set
-				natGateways = append(natGateways, &natgateways.NatGatewaySpec{
+				newNatGateway := &natgateways.NatGatewaySpec{
 					Name:           subnet.NatGateway.Name,
 					ResourceGroup:  s.ResourceGroup(),
 					SubscriptionID: s.SubscriptionID(),
@@ -415,7 +415,11 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.ASOResourceSpecGetter[*asonetwo
 					AdditionalTags: s.AdditionalTags(),
 					// We need to know if the VNet is managed to decide if this NAT Gateway was-managed or not.
 					IsVnetManaged: s.IsVnetManaged(),
-				})
+				}
+				if len(subnet.NatGateway.Zones) != 0 {
+					newNatGateway.Zones = subnet.NatGateway.Zones
+				}
+				natGateways = append(natGateways, newNatGateway)
 			}
 		}
 	}

@@ -259,6 +259,10 @@ type NatGateway struct {
 // NatGatewayClassSpec defines a NAT gateway class specification.
 type NatGatewayClassSpec struct {
 	Name string `json:"name"`
+
+	// Zones mentions the list of zones the NAT gateway should be a part of.
+	// +optional
+	Zones []string `json:"zones"`
 }
 
 // SecurityGroupProtocol defines the protocol type for a security group rule.
