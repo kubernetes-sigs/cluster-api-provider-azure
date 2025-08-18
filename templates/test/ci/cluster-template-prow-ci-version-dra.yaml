@@ -728,8 +728,7 @@ spec:
       calicoNetwork:
         bgp: Disabled
         mtu: 1350
-        ipPools:
-        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        ipPools: {{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
       typhaDeployment:
