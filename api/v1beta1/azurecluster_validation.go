@@ -442,12 +442,10 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 						"field is immutable"))
 				}
 			}
-		} else {
+		} else if privateIPCount > 0 {
 			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
-			if privateIPCount > 0 {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					"Public Load Balancers cannot have a Private IP"))
-			}
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+				"Public Load Balancers cannot have a Private IP"))
 		}
 	}
 
