@@ -391,7 +391,11 @@ func validateSecurityRule(rule SecurityRule, fldPath *field.Path) (allErrs field
 	return allErrs
 }
 
-func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
+func immutableAzureClusterFieldError(fldPath *field.Path, fieldName string) *field.Error {
+	return field.Forbidden(fldPath, fmt.Sprintf("%s should not be modified after AzureCluster creation.", fieldName))
+}
+
+func validateAPIServerLB(lb, old *LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	lbClassSpec := lb.LoadBalancerClassSpec
@@ -406,9 +410,19 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 	if err := validateLoadBalancerName(lb.Name, fldPath.Child("name")); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	// Name should be immutable.
-	if old != nil && old.Name != "" && old.Name != lb.Name {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
+	if old != nil {
+		// Name should be immutable.
+		if old.Name != "" && old.Name != lb.Name {
+			allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath, "API Server load balancer name"))
+		}
+		if (old.LoadBalancingRule.Name != "" && old.LoadBalancingRule.Name != lb.LoadBalancingRule.Name) ||
+			(old.LoadBalancingRule.Name == "" && lb.LoadBalancingRule.Name != DefaultLoadBalancingRuleName) {
+			allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("loadBalancingRule").Child("name"), "Load balancer rule name"))
+		}
+		if (old.HealthProbe.Name != "" && old.HealthProbe.Name != lb.HealthProbe.Name) ||
+			(old.HealthProbe.Name == "" && lb.HealthProbe.Name != DefaultHealthProbeName) {
+			allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("healthProbe").Child("name"), "Health probe name"))
+		}
 	}
 
 	publicIPCount, privateIPCount := 0, 0
@@ -458,7 +472,7 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 			}
 
 			if old != nil && len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
+				allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("name"), "API Server load balancer private IP"))
 			}
 		}
 	}
@@ -484,11 +498,11 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	}
 
 	if old != nil && old.ID != lb.ID {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("id"), "Node outbound load balancer ID should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("id"), "Node outbound load balancer ID"))
 	}
 
 	if old != nil && old.Name != lb.Name {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "Node outbound load balancer Name should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("name"), "Node outbound load balancer Name"))
 	}
 
 	if old != nil && old.FrontendIPsCount == lb.FrontendIPsCount {
@@ -598,12 +612,12 @@ func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancer
 
 	// SKU should be immutable.
 	if old != nil && old.SKU != "" && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("sku"), "API Server load balancer SKU should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, immutableAzureClusterFieldError(apiServerLBPath.Child("sku"), "API Server load balancer SKU"))
 	}
 
 	// Type should be immutable.
 	if old != nil && old.Type != "" && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Forbidden(apiServerLBPath.Child("type"), "API Server load balancer type should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, immutableAzureClusterFieldError(apiServerLBPath.Child("type"), "API Server load balancer type"))
 	}
 
 	// IdletimeoutInMinutes should be immutable.
@@ -633,7 +647,7 @@ func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBala
 	}
 
 	if old != nil && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, immutableAzureClusterFieldError(fldPath.Child("sku"), "Node outbound load balancer SKU"))
 	}
 
 	if old != nil && old.Type != lb.Type {

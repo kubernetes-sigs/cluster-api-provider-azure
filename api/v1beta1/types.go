@@ -360,8 +360,28 @@ type LoadBalancerSpec struct {
 	// BackendPool describes the backend pool of the load balancer.
 	// +optional
 	BackendPool BackendPool `json:"backendPool,omitempty"`
+	// LoadBalancingRule defines the load balancer rule configuration.
+	// +optional
+	LoadBalancingRule LoadBalancingRule `json:"loadBalancingRule,omitempty"`
+	// HealthProbe defines the health probe configuration.
+	// +optional
+	HealthProbe HealthProbe `json:"healthProbe,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`
+}
+
+// LoadBalancingRule defines the load balancer rule configuration.
+type LoadBalancingRule struct {
+	// Name specifies the name of the load balancer rule.
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// HealthProbe defines the health probe configuration.
+type HealthProbe struct {
+	// Name specifies the name of the health probe.
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
 // SKU defines an Azure load balancer SKU.
