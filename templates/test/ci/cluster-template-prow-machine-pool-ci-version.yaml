@@ -207,7 +207,11 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands: []
+    postKubeadmCommands:
+    - |
+      # Re-enable and restart kubelet after kubeadm completes
+      systemctl enable kubelet
+      systemctl restart kubelet
     preKubeadmCommands:
     - |
       # Install ca-certificates packages for Azure Linux
@@ -220,6 +224,10 @@ spec:
       # Create symlinks for common certificate paths
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Stop kubelet to prevent startup race conditions during bootstrap
+      systemctl stop kubelet || true
+      systemctl disable kubelet || true
     verbosity: 5
   machineTemplate:
     infrastructureRef:

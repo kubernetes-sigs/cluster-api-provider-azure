@@ -110,7 +110,11 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands: []
+    postKubeadmCommands:
+    - |
+      # Re-enable and restart kubelet after kubeadm completes
+      systemctl enable kubelet
+      systemctl restart kubelet
     preKubeadmCommands:
     - |
       # Install ca-certificates packages for Azure Linux
@@ -123,6 +127,10 @@ spec:
       # Create symlinks for common certificate paths
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Stop kubelet to prevent startup race conditions during bootstrap
+      systemctl stop kubelet || true
+      systemctl disable kubelet || true
     verbosity: 10
   machineTemplate:
     infrastructureRef:
@@ -230,6 +238,18 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - |
+        # Post-kubeadm kubelet management for Azure Linux 3
+        # Ensure kubelet is enabled and restarted after kubeadm completes
+        systemctl enable kubelet
+        systemctl restart kubelet
+
+        # Wait for kubelet to be ready
+        timeout 120s sh -c 'until systemctl is-active --quiet kubelet; do sleep 5; done' || echo "Warning: kubelet readiness check timed out"
+
+        # Wait for node to be ready (give CNI time to initialize)
+        timeout 300s sh -c 'until kubectl --kubeconfig=/etc/kubernetes/kubelet.conf get node $(hostname) >/dev/null 2>&1; do sleep 10; done' || echo "Warning: node readiness check timed out"
       preKubeadmCommands:
       - |
         # Install ca-certificates packages for Azure Linux
@@ -242,6 +262,18 @@ spec:
         # Create symlinks for common certificate paths
         ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
         ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+        # Kubelet timing management for Azure Linux 3
+        # Stop kubelet to ensure clean state before kubeadm init/join
+        systemctl stop kubelet || true
+        systemctl disable kubelet || true
+
+        # Ensure containerd is ready before proceeding
+        systemctl is-active --quiet containerd || systemctl start containerd
+        systemctl enable containerd
+
+        # Wait for containerd to be fully ready
+        timeout 60s sh -c 'until ctr version >/dev/null 2>&1; do sleep 2; done' || echo "Warning: containerd readiness check timed out"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment

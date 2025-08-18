@@ -138,9 +138,10 @@ spec:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands:
-    - if [ -f /tmp/kubeadm-join-config.yaml ] || [ -f /run/kubeadm/kubeadm-join-config.yaml
-      ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts;
-      fi
+    - |
+      # Re-enable and restart kubelet after kubeadm completes
+      systemctl enable kubelet
+      systemctl restart kubelet
     preKubeadmCommands:
     - |
       # Install ca-certificates packages for Azure Linux
@@ -153,6 +154,10 @@ spec:
       # Create symlinks for common certificate paths
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Stop kubelet to prevent startup race conditions during bootstrap
+      systemctl stop kubelet || true
+      systemctl disable kubelet || true
     verbosity: 10
   machineTemplate:
     infrastructureRef:

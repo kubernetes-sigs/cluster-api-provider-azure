@@ -16,6 +16,15 @@ spec:
       # Create symlinks for common certificate paths
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+      
+      # Stop kubelet to prevent startup race conditions during bootstrap
+      systemctl stop kubelet || true
+      systemctl disable kubelet || true
+    postKubeadmCommands:
+    - |
+      # Re-enable and restart kubelet after kubeadm completes
+      systemctl enable kubelet
+      systemctl restart kubelet
     clusterConfiguration:
       controllerManager:
         extraArgs:
