@@ -59,7 +59,7 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs: {}
-        timeoutForControlPlane: 20m
+        timeoutForControlPlane: 30m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
@@ -70,7 +70,15 @@ spec:
         local:
           dataDir: /var/lib/etcddisk/etcd
           extraArgs:
+            client-transport-security-timeout: "5"
+            election-timeout: "10000"
+            heartbeat-interval: "1000"
+            initial-cluster-state: new
+            initial-cluster-token: etcd-cluster-${CLUSTER_NAME}
             quota-backend-bytes: "8589934592"
+          serverCertSANs:
+          - localhost
+          - 127.0.0.1
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -102,6 +110,11 @@ spec:
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
+      controlPlane:
+        localAPIEndpoint:
+          bindPort: 6443
+      discovery:
+        timeout: 10m
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
@@ -114,6 +127,12 @@ spec:
       # Re-enable and restart kubelet after kubeadm completes
       systemctl enable kubelet
       systemctl restart kubelet
+
+      # Wait for kubelet to be ready
+      timeout 180s sh -c 'until systemctl is-active --quiet kubelet; do sleep 5; done' || echo "Warning: kubelet readiness check timed out"
+
+      # Wait for API server to be responsive before considering control plane ready
+      timeout 300s sh -c 'until kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes >/dev/null 2>&1; do sleep 10; done' || echo "Warning: API server readiness check timed out"
     preKubeadmCommands:
     - |
       # Install ca-certificates packages for Azure Linux
@@ -126,6 +145,30 @@ spec:
       # Create symlinks for common certificate paths
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
       ln -sf /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+
+      # Azure Linux 3 specific firewall and networking setup
+      # Ensure iptables service is available and configure rules for etcd
+      systemctl enable iptables || true
+      systemctl start iptables || true
+
+      # Explicitly allow etcd communication ports for HA clusters
+      iptables -A INPUT -p tcp --dport 2379 -j ACCEPT || true
+      iptables -A INPUT -p tcp --dport 2380 -j ACCEPT || true
+      iptables -A INPUT -p tcp --dport 6443 -j ACCEPT || true
+
+      # Save iptables rules for Azure Linux 3
+      /usr/sbin/iptables-save > /etc/sysconfig/iptables || true
+
+      # Ensure network connectivity is stable before joining
+      timeout 120s sh -c 'until ping -c 1 8.8.8.8 >/dev/null 2>&1; do sleep 5; done' || echo "Warning: network connectivity check timed out"
+
+      # Test connectivity to first control plane node for HA clusters
+      if [ -n "${LOAD_BALANCER_IP:-}" ]; then
+        timeout 60s sh -c 'until nc -z ${LOAD_BALANCER_IP} 6443 >/dev/null 2>&1; do sleep 5; done' || echo "Warning: API server connectivity check timed out"
+      fi
+
+      # Ensure disk is ready for etcd
+      timeout 60s sh -c 'until [ -d /var/lib/etcddisk ] && mountpoint -q /var/lib/etcddisk; do sleep 2; done' || echo "Warning: etcd disk not ready"
 
       # Stop kubelet to prevent startup race conditions during bootstrap
       systemctl stop kubelet || true

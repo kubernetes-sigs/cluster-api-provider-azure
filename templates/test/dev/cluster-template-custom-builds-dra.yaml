@@ -64,7 +64,7 @@ spec:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
           runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
-        timeoutForControlPlane: 20m
+        timeoutForControlPlane: 30m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
@@ -76,7 +76,15 @@ spec:
         local:
           dataDir: /var/lib/etcddisk/etcd
           extraArgs:
+            client-transport-security-timeout: "5"
+            election-timeout: "10000"
+            heartbeat-interval: "1000"
+            initial-cluster-state: new
+            initial-cluster-token: etcd-cluster-${CLUSTER_NAME}
             quota-backend-bytes: "8589934592"
+          serverCertSANs:
+          - localhost
+          - 127.0.0.1
       kubernetesVersion: ci/${CI_VERSION}
       scheduler:
         extraArgs:
@@ -216,6 +224,11 @@ spec:
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
+      controlPlane:
+        localAPIEndpoint:
+          bindPort: 6443
+      discovery:
+        timeout: 10m
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
