@@ -1,0 +1,63 @@
+- op: add
+  path: /spec/template/spec/files/0
+  value:
+    content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      # Allow Azure service IP addresses (required for Azure resources)
+      iptables -A INPUT -s 168.63.129.16 -j ACCEPT
+      iptables -A OUTPUT -d 168.63.129.16 -j ACCEPT
+
+      # Allow localhost traffic
+      iptables -A INPUT -i lo -j ACCEPT
+      iptables -A OUTPUT -o lo -j ACCEPT
+
+      # Allow established and related connections
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+      # SSH (port 22)
+      # iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+      # Kubelet API (port 10250)
+      iptables -A INPUT -p tcp --dport 10250 -j ACCEPT
+
+      # Allow traffic to Kubernetes service network (10.96.0.0/12)
+      iptables -A OUTPUT -d 10.96.0.0/12 -j ACCEPT
+      iptables -A INPUT -s 10.96.0.0/12 -j ACCEPT
+
+      # Allow traffic to/from Calico pod network (192.168.0.0/16)
+      iptables -A OUTPUT -d 192.168.0.0/16 -j ACCEPT
+      iptables -A INPUT -s 192.168.0.0/16 -j ACCEPT
+
+      # Allow traffic to/from node network (10.1.0.0/24)
+      iptables -A OUTPUT -d 10.1.0.0/24 -j ACCEPT
+      iptables -A INPUT -s 10.1.0.0/24 -j ACCEPT
+
+      # Calico networking requirements
+      # Calico Typha (port 5473)
+      iptables -A INPUT -p tcp --dport 5473 -j ACCEPT
+
+      # VXLAN for overlay networking (port 4789 UDP)
+      iptables -A INPUT -p udp --dport 4789 -j ACCEPT
+
+      # BGP for node-to-node communication (port 179)
+      iptables -A INPUT -p tcp --d  port 179 -j ACCEPT
+
+      # DNS (port 53)
+      iptables -A INPUT -p udp --dport 53 -j ACCEPT
+      iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+
+      # Save the rules following Azure Linux 3 approach
+      iptables-save > /etc/systemd/scripts/ip4save
+    path: /tmp/azl3-setup.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/0
+  value:
+    bash -c /tmp/azl3-setup.sh

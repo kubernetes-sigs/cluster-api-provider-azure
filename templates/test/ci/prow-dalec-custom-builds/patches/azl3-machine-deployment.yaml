@@ -1,0 +1,152 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-azl3-md-0"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${AZL3_WORKER_MACHINE_COUNT:=2}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-azl3-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-azl3-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-azl3-md-0"
+spec:
+  template:
+    spec:
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      osDisk:
+        osType: "Linux"
+        diskSizeGB: 128
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-3
+          version: ${AZL3_VERSION:="1.33.2"}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-azl3-md-0"
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          # Install ca-certificates packages for Azure Linux
+          tdnf install -y ca-certificates ca-certificates-legacy
+          update-ca-trust
+          
+          # Follow Azure Linux 3 docs exactly - completely permissive for debugging
+          # Change default policy to ACCEPT (as recommended by AZL3 docs)
+          iptables -P INPUT ACCEPT
+          iptables -P FORWARD ACCEPT
+          iptables -P OUTPUT ACCEPT
+
+          ip6tables -P INPUT ACCEPT
+          ip6tables -P FORWARD ACCEPT
+          ip6tables -P OUTPUT ACCEPT
+
+          # Flush any rules which would filter packets
+          iptables -F
+          ip6tables -F
+
+          iptables-save > /etc/systemd/scripts/ip4save
+          ip6tables-save > /etc/systemd/scripts/ip6save
+        path: /tmp/azl3-setup.sh
+        owner: "root:root"
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-azl3-md-0-azure-json
+            key: worker-node-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          systemctl stop kubelet
+
+          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+
+          # Define the base URL and version
+          BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
+          VERSION="${KUBERNETES_VERSION}"
+          VERSION=$${VERSION#v}
+          OS_VERSION="azl3"
+          ARCH="x86_64"
+
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* downloading and extracting binary: $${BINARY} $${VERSION}"
+            RPM_FILE="/tmp/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm"
+            RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm"
+
+            echo "Downloading from: $${RPM_URL}"
+            curl -L --retry 10 --retry-delay 5 "$${RPM_URL}" --output "$${RPM_FILE}"
+
+            # Extract binary from RPM package in a temporary directory
+            echo "Extracting $${BINARY} binary to /usr/bin"
+            TEMP_DIR="/tmp/$${BINARY}-extract-$$"
+            mkdir -p "$${TEMP_DIR}"
+            cd "$${TEMP_DIR}"
+            rpm2cpio "$${RPM_FILE}" | cpio -idmv
+            
+            # Move the binary to the correct location
+            if [ -f "./usr/bin/$${BINARY}" ]; then
+              mv "./usr/bin/$${BINARY}" "/usr/bin/$${BINARY}"
+              chmod +x "/usr/bin/$${BINARY}"
+            else
+              echo "Error: Binary $${BINARY} not found in RPM package"
+              exit 1
+            fi
+
+            # Clean up
+            cd /
+            rm -rf "$${TEMP_DIR}"
+            rm -f "$${RPM_FILE}"
+          done
+
+          systemctl restart kubelet
+
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true)"
+          echo "kubelet version: $(kubelet --version)"
+        path: /opt/install-custom-k8s-binaries.sh
+        owner: "root:root"
+        permissions: "0744"
+      preKubeadmCommands:
+      - bash -c /tmp/azl3-setup.sh
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com' >> /etc/hosts
+      - bash -c /opt/install-custom-k8s-binaries.sh
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            cloud-provider: external

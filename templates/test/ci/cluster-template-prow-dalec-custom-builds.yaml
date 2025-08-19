@@ -1,0 +1,696 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
+    cni: calico
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    apiServerLB:
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
+    subnets:
+    - cidrBlocks:
+      - ${AZURE_CP_SUBNET_CIDR}
+      name: control-plane-subnet
+      role: control-plane
+    - cidrBlocks:
+      - ${AZURE_NODE_SUBNET_CIDR}
+      name: node-subnet
+      role: node
+    vnet:
+      cidrBlocks:
+      - ${AZURE_VNET_CIDR}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs: {}
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-provider: external
+          cluster-name: ${CLUSTER_NAME}
+          v: "4"
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+          extraArgs:
+            quota-backend-bytes: "8589934592"
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
+    files:
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+
+        LINE_SEPARATOR="*************************************************"
+        echo "$$LINE_SEPARATOR"
+
+        # Custom image handling
+        if [[ -n "${KUBE_APISERVER_IMAGE:-}" ]]; then
+          echo "* Using custom kube-apiserver image: ${KUBE_APISERVER_IMAGE}"
+          # Remove existing image if present
+          echo "* Removing existing kube-apiserver image if present"
+          $${SUDO} ctr -n k8s.io images rm "registry.k8s.io/kube-apiserver:${KUBERNETES_VERSION}" 2>/dev/null || true
+          echo "* Pulling kube-apiserver: ${KUBE_APISERVER_IMAGE}"
+          $${SUDO} ctr -n k8s.io images pull "${KUBE_APISERVER_IMAGE}"
+          echo "* Tagging kube-apiserver: ${KUBE_APISERVER_IMAGE} as registry.k8s.io/kube-apiserver:${KUBERNETES_VERSION}"
+          $${SUDO} ctr -n k8s.io images tag "${KUBE_APISERVER_IMAGE}" "registry.k8s.io/kube-apiserver:${KUBERNETES_VERSION}"
+        else
+          echo "* Custom kube-apiserver image environment variable not set, using default"
+        fi
+
+        if [[ -n "${KUBE_CONTROLLER_MANAGER_IMAGE:-}" ]]; then
+          echo "* Using custom kube-controller-manager image: ${KUBE_CONTROLLER_MANAGER_IMAGE}"
+          # Remove existing image if present
+          echo "* Removing existing kube-controller-manager image if present"
+          $${SUDO} ctr -n k8s.io images rm "registry.k8s.io/kube-controller-manager:${KUBERNETES_VERSION}" 2>/dev/null || true
+          echo "* Pulling kube-controller-manager: ${KUBE_CONTROLLER_MANAGER_IMAGE}"
+          $${SUDO} ctr -n k8s.io images pull "${KUBE_CONTROLLER_MANAGER_IMAGE}"
+          echo "* Tagging kube-controller-manager: ${KUBE_CONTROLLER_MANAGER_IMAGE} as registry.k8s.io/kube-controller-manager:${KUBERNETES_VERSION}"
+          $${SUDO} ctr -n k8s.io images tag "${KUBE_CONTROLLER_MANAGER_IMAGE}" "registry.k8s.io/kube-controller-manager:${KUBERNETES_VERSION}"
+        else
+          echo "* Custom kube-controller-manager image environment variable not set, using default"
+        fi
+
+        if [[ -n "${KUBE_SCHEDULER_IMAGE:-}" ]]; then
+          echo "* Using custom kube-scheduler image: ${KUBE_SCHEDULER_IMAGE}"
+          # Remove existing image if present
+          echo "* Removing existing kube-scheduler image if present"
+          $${SUDO} ctr -n k8s.io images rm "registry.k8s.io/kube-scheduler:${KUBERNETES_VERSION}" 2>/dev/null || true
+          echo "* Pulling kube-scheduler: ${KUBE_SCHEDULER_IMAGE}"
+          $${SUDO} ctr -n k8s.io images pull "${KUBE_SCHEDULER_IMAGE}"
+          echo "* Tagging kube-scheduler: ${KUBE_SCHEDULER_IMAGE} as registry.k8s.io/kube-scheduler:${KUBERNETES_VERSION}"
+          $${SUDO} ctr -n k8s.io images tag "${KUBE_SCHEDULER_IMAGE}" "registry.k8s.io/kube-scheduler:${KUBERNETES_VERSION}"
+        else
+          echo "* Custom kube-scheduler image environment variable not set, using default"
+        fi
+
+        if [[ -n "${KUBE_PROXY_IMAGE:-}" ]]; then
+          echo "* Using custom kube-proxy image: ${KUBE_PROXY_IMAGE}"
+          # Remove existing image if present
+          echo "* Removing existing kube-proxy image if present"
+          $${SUDO} ctr -n k8s.io images rm "registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}" 2>/dev/null || true
+          echo "* Pulling kube-proxy: ${KUBE_PROXY_IMAGE}"
+          $${SUDO} ctr -n k8s.io images pull "${KUBE_PROXY_IMAGE}"
+          echo "* Tagging kube-proxy: ${KUBE_PROXY_IMAGE} as registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}"
+          $${SUDO} ctr -n k8s.io images tag "${KUBE_PROXY_IMAGE}" "registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}"
+        else
+          echo "* Custom kube-proxy image environment variable not set, using default"
+        fi
+
+        echo "* checking binary versions"
+        echo "ctr version: " $(ctr version)
+        echo "kubeadm version: " $(kubeadm version -o=short)
+        echo "kubectl version: " $(kubectl version --client=true)
+        echo "kubelet version: " $(kubelet --version)
+        echo "$$LINE_SEPARATOR"
+      owner: root:root
+      path: /tmp/kubeadm-bootstrap.sh
+      permissions: "0744"
+    - content: |
+        #!/bin/bash
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+        systemctl stop kubelet
+        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        # Define the base URL and version
+        BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
+        VERSION="${KUBERNETES_VERSION}"
+        VERSION=$${VERSION#v}
+        OS_VERSION="ubuntu24.04"
+        ARCH="amd64"
+        for BINARY in "$${BINARIES[@]}"; do
+          if [[ "$${BINARY}" == "kubelet" ]]; then
+            DEB_VERSION="ubuntu24.04u1"
+          else
+            DEB_VERSION="ubuntu24.04u2"
+          fi
+          echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
+          DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+          DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+          echo "Downloading from: $${DEB_URL}"
+          curl -L --retry 10 --retry-delay 5 "$${DEB_URL}" --output "$${DEB_FILE}"
+          # Extract just the binary from the deb package directly to /usr/bin
+          echo "Extracting $${BINARY} binary to /usr/bin"
+          dpkg-deb --fsys-tarfile "$${DEB_FILE}" | tar -xf - --strip-components=3 -C /usr/bin ./usr/bin/$${BINARY}
+          chmod +x "/usr/bin/$${BINARY}"
+          # Clean up the downloaded deb file
+          rm -f "$${DEB_FILE}"
+        done
+        systemctl restart kubelet
+        echo "kubeadm version: $(kubeadm version -o=short)"
+        echo "kubectl version: $(kubectl version --client=true)"
+        echo "kubelet version: $(kubelet --version)"
+      owner: root:root
+      path: /tmp/replace-k8s-binaries.sh
+      permissions: "0744"
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - bash -c /tmp/kubeadm-bootstrap.sh
+    - bash -c /tmp/replace-k8s-binaries.sh
+    verbosity: 5
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      identity: UserAssigned
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      identity: UserAssigned
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+          [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+
+          LINE_SEPARATOR="*************************************************"
+          echo "$$LINE_SEPARATOR"
+
+          # Custom image handling
+          if [[ -n "${KUBE_PROXY_IMAGE:-}" ]]; then
+            echo "* Using custom kube-proxy image: ${KUBE_PROXY_IMAGE}"
+            # Remove existing image if present
+            echo "* Removing existing kube-proxy image if present"
+            $${SUDO} ctr -n k8s.io images rm "registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}" 2>/dev/null || true
+            echo "* Pulling kube-proxy: ${KUBE_PROXY_IMAGE}"
+            $${SUDO} ctr -n k8s.io images pull "${KUBE_PROXY_IMAGE}"
+            echo "* Tagging kube-proxy: ${KUBE_PROXY_IMAGE} as registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}"
+            $${SUDO} ctr -n k8s.io images tag "${KUBE_PROXY_IMAGE}" "registry.k8s.io/kube-proxy:${KUBERNETES_VERSION}"
+          else
+            echo "* Custom kube-proxy image environment variable not set, using default"
+          fi
+          echo "* checking binary versions"
+          echo "ctr version: " $(ctr version)
+          echo "kubeadm version: " $(kubeadm version -o=short)
+          echo "kubectl version: " $(kubectl version --client=true)
+          echo "kubelet version: " $(kubelet --version)
+          echo "$$LINE_SEPARATOR"
+        owner: root:root
+        path: /tmp/kubeadm-bootstrap.sh
+        permissions: "0744"
+      - content: |
+          #!/bin/bash
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+          systemctl stop kubelet
+          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+          # Define the base URL and version
+          BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
+          VERSION="${KUBERNETES_VERSION}"
+          VERSION=$${VERSION#v}
+          OS_VERSION="ubuntu24.04"
+          ARCH="amd64"
+          for BINARY in "$${BINARIES[@]}"; do
+            if [[ "$${BINARY}" == "kubelet" ]]; then
+              DEB_VERSION="ubuntu24.04u1"
+            else
+              DEB_VERSION="ubuntu24.04u2"
+            fi
+            echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
+            DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+            DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+            echo "Downloading from: $${DEB_URL}"
+            curl -L --retry 10 --retry-delay 5 "$${DEB_URL}" --output "$${DEB_FILE}"
+            # Extract just the binary from the deb package directly to /usr/bin
+            echo "Extracting $${BINARY} binary to /usr/bin"
+            dpkg-deb --fsys-tarfile "$${DEB_FILE}" | tar -xf - --strip-components=3 -C /usr/bin ./usr/bin/$${BINARY}
+            chmod +x "/usr/bin/$${BINARY}"
+            # Clean up the downloaded deb file
+            rm -f "$${DEB_FILE}"
+          done
+          systemctl restart kubelet
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true)"
+          echo "kubelet version: $(kubelet --version)"
+        owner: root:root
+        path: /tmp/replace-k8s-binaries.sh
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands:
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
+      - bash -c /tmp/kubeadm-bootstrap.sh
+      - bash -c /tmp/replace-k8s-binaries.sh
+      verbosity: 5
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |
+    installation:
+      cni:
+        type: Calico
+        ipam:
+          type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        windowsDataplane: HNS
+        mtu: 1350
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      typhaDeployment:
+        spec:
+          template:
+            spec:
+              # By default, typha tolerates all NoSchedule taints. This breaks
+              # scale-ins when it continuously gets scheduled onto an
+              # out-of-date Node that is being deleted. Tolerate only the
+              # NoSchedule taints that are expected.
+              tolerations:
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node.kubernetes.io/not-ready
+                  operator: Exists
+              affinity:
+                nodeAffinity:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 50
+                    preference:
+                      matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+      registry: capzcicommunity.azurecr.io
+      serviceCIDRs:
+        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+    # Image and registry configuration for the tigera/operator pod
+    tigeraOperator:
+      image: tigera/operator
+      registry: capzcicommunity.azurecr.io
+    calicoctl:
+      image: capzcicommunity.azurecr.io/calico/ctl
+    # when kubernetesServiceEndpoint (required for windows) is added
+    # DNS configuration is needed to look up the api server name properly
+    # https://github.com/projectcalico/calico/issues/9536
+    dnsConfig:
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
+    # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
+    # when it continuously gets scheduled onto an out-of-date Node that is being
+    # deleted. Tolerate only the NoSchedule taints that are expected.
+    tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+  version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-ci
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
+      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: "${CCM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CCM:-""}"
+      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
+      replicas: ${CCM_COUNT:-1}
+      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
+    cloudNodeManager:
+      imageName: "${CNM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CNM:-""}"
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-azl3-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${AZL3_WORKER_MACHINE_COUNT:=2}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-azl3-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-azl3-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azl3-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-3
+          version: ${AZL3_VERSION:="1.33.2"}
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-azl3-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          # Install ca-certificates packages for Azure Linux
+          tdnf install -y ca-certificates ca-certificates-legacy
+          update-ca-trust
+
+          # Follow Azure Linux 3 docs exactly - completely permissive for debugging
+          # Change default policy to ACCEPT (as recommended by AZL3 docs)
+          iptables -P INPUT ACCEPT
+          iptables -P FORWARD ACCEPT
+          iptables -P OUTPUT ACCEPT
+
+          ip6tables -P INPUT ACCEPT
+          ip6tables -P FORWARD ACCEPT
+          ip6tables -P OUTPUT ACCEPT
+
+          # Flush any rules which would filter packets
+          iptables -F
+          ip6tables -F
+
+          iptables-save > /etc/systemd/scripts/ip4save
+          ip6tables-save > /etc/systemd/scripts/ip6save
+        owner: root:root
+        path: /tmp/azl3-setup.sh
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-azl3-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      - content: "#!/bin/bash\n\nset -o nounset\nset -o pipefail\nset -o errexit\n\nsystemctl
+          stop kubelet\n\ndeclare -a BINARIES=(\"kubeadm\" \"kubectl\" \"kubelet\")\n\n#
+          Define the base URL and version\nBASE_URL=\"https://kubernetesreleases.blob.core.windows.net/dalec-packages\"\nVERSION=\"${KUBERNETES_VERSION}\"\nVERSION=$${VERSION#v}\nOS_VERSION=\"azl3\"\nARCH=\"x86_64\"\n\nfor
+          BINARY in \"$${BINARIES[@]}\"; do\n  echo \"* downloading and extracting
+          binary: $${BINARY} $${VERSION}\"\n  RPM_FILE=\"/tmp/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm\"\n
+          \ RPM_URL=\"$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm\"\n\n
+          \ echo \"Downloading from: $${RPM_URL}\"\n  curl -L --retry 10 --retry-delay
+          5 \"$${RPM_URL}\" --output \"$${RPM_FILE}\"\n\n  # Extract binary from RPM
+          package in a temporary directory\n  echo \"Extracting $${BINARY} binary
+          to /usr/bin\"\n  TEMP_DIR=\"/tmp/$${BINARY}-extract-$$\"\n  mkdir -p \"$${TEMP_DIR}\"\n
+          \ cd \"$${TEMP_DIR}\"\n  rpm2cpio \"$${RPM_FILE}\" | cpio -idmv\n  \n  #
+          Move the binary to the correct location\n  if [ -f \"./usr/bin/$${BINARY}\"
+          ]; then\n    mv \"./usr/bin/$${BINARY}\" \"/usr/bin/$${BINARY}\"\n    chmod
+          +x \"/usr/bin/$${BINARY}\"\n  else\n    echo \"Error: Binary $${BINARY}
+          not found in RPM package\"\n    exit 1\n  fi\n\n  # Clean up\n  cd /\n  rm
+          -rf \"$${TEMP_DIR}\"\n  rm -f \"$${RPM_FILE}\"\ndone\n\nsystemctl restart
+          kubelet\n\necho \"kubeadm version: $(kubeadm version -o=short)\"\necho \"kubectl
+          version: $(kubectl version --client=true)\"\necho \"kubelet version: $(kubelet
+          --version)\"\n"
+        owner: root:root
+        path: /opt/install-custom-k8s-binaries.sh
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands:
+      - bash -c /tmp/azl3-setup.sh
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
+      - bash -c /opt/install-custom-k8s-binaries.sh
