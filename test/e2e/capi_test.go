@@ -43,7 +43,6 @@ const (
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
 	var (
-		ctx       = context.TODO()
 		specTimes = map[string]time.Time{}
 	)
 	BeforeEach(func() {
@@ -73,7 +72,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Running the quick-start spec", func() {
-		capi_e2e.QuickStartSpec(context.TODO(), func() capi_e2e.QuickStartSpecInput {
+		capi_e2e.QuickStartSpec(ctx, func() capi_e2e.QuickStartSpecInput {
 			return capi_e2e.QuickStartSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
@@ -88,7 +87,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Running the MachineDeployment rollout spec", func() {
-		capi_e2e.MachineDeploymentRolloutSpec(context.TODO(), func() capi_e2e.MachineDeploymentRolloutSpecInput {
+		capi_e2e.MachineDeploymentRolloutSpec(ctx, func() capi_e2e.MachineDeploymentRolloutSpecInput {
 			return capi_e2e.MachineDeploymentRolloutSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
@@ -104,7 +103,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		Context("Running the self-hosted spec", func() {
-			SelfHostedSpec(context.TODO(), func() SelfHostedSpecInput {
+			SelfHostedSpec(ctx, func() SelfHostedSpecInput {
 				return SelfHostedSpecInput{
 					E2EConfig:             e2eConfig,
 					ClusterctlConfigPath:  clusterctlConfigPath,
@@ -121,7 +120,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 	// TODO: Add test using KCPRemediationSpec
 	Context("Should successfully remediate unhealthy worker machines with MachineHealthCheck", func() {
-		capi_e2e.MachineDeploymentRemediationSpec(context.TODO(), func() capi_e2e.MachineDeploymentRemediationSpecInput {
+		capi_e2e.MachineDeploymentRemediationSpec(ctx, func() capi_e2e.MachineDeploymentRemediationSpecInput {
 			return capi_e2e.MachineDeploymentRemediationSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
@@ -136,7 +135,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Should successfully exercise machine pools", func() {
-		capi_e2e.MachinePoolSpec(context.TODO(), func() capi_e2e.MachinePoolInput {
+		capi_e2e.MachinePoolSpec(ctx, func() capi_e2e.MachinePoolInput {
 			return capi_e2e.MachinePoolInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
@@ -151,7 +150,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Should successfully scale out and scale in a MachineDeployment", func() {
-		capi_e2e.MachineDeploymentScaleSpec(context.TODO(), func() capi_e2e.MachineDeploymentScaleSpecInput {
+		capi_e2e.MachineDeploymentScaleSpec(ctx, func() capi_e2e.MachineDeploymentScaleSpecInput {
 			return capi_e2e.MachineDeploymentScaleSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
@@ -166,7 +165,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	// Context("Should successfully set and use node drain timeout", func() {
-	// 	capi_e2e.NodeDrainTimeoutSpec(context.TODO(), func() capi_e2e.NodeDrainTimeoutSpecInput {
+	// 	capi_e2e.NodeDrainTimeoutSpec(ctx, func() capi_e2e.NodeDrainTimeoutSpecInput {
 	// 		return capi_e2e.NodeDrainTimeoutSpecInput{
 	// 			E2EConfig:             e2eConfig,
 	// 			ClusterctlConfigPath:  clusterctlConfigPath,
@@ -352,7 +351,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Running KCP upgrade in a HA cluster [K8s-Upgrade]", func() {
-		capi_e2e.ClusterUpgradeConformanceSpec(context.TODO(), func() capi_e2e.ClusterUpgradeConformanceSpecInput {
+		capi_e2e.ClusterUpgradeConformanceSpec(ctx, func() capi_e2e.ClusterUpgradeConformanceSpecInput {
 			return capi_e2e.ClusterUpgradeConformanceSpecInput{
 				E2EConfig:                e2eConfig,
 				ClusterctlConfigPath:     clusterctlConfigPath,
@@ -370,7 +369,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Running KCP upgrade in a HA cluster using scale in rollout [K8s-Upgrade]", func() {
-		capi_e2e.ClusterUpgradeConformanceSpec(context.TODO(), func() capi_e2e.ClusterUpgradeConformanceSpecInput {
+		capi_e2e.ClusterUpgradeConformanceSpec(ctx, func() capi_e2e.ClusterUpgradeConformanceSpecInput {
 			return capi_e2e.ClusterUpgradeConformanceSpecInput{
 				E2EConfig:                e2eConfig,
 				ClusterctlConfigPath:     clusterctlConfigPath,
