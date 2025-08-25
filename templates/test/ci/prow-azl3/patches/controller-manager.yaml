@@ -1,0 +1,28 @@
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  kubeadmConfigSpec:
+    preKubeadmCommands:
+    - |
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
+      update-ca-trust
+
+      # Follow Azure Linux 3 docs exactly - completely permissive for debugging
+      # Change default policy to ACCEPT (as recommended by AZL3 docs)
+      iptables -P INPUT ACCEPT
+      iptables -P FORWARD ACCEPT
+      iptables -P OUTPUT ACCEPT
+
+      ip6tables -P INPUT ACCEPT
+      ip6tables -P FORWARD ACCEPT
+      ip6tables -P OUTPUT ACCEPT
+
+      # Flush any rules which would filter packets
+      iptables -F
+      ip6tables -F
+
+      iptables-save > /etc/systemd/scripts/ip4save
+      ip6tables-save > /etc/systemd/scripts/ip6save

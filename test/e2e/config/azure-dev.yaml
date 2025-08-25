@@ -184,6 +184,8 @@ providers:
         targetName: "cluster-template-apiserver-ilb.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb-custom-images.yaml"
         targetName: "cluster-template-apiserver-ilb-custom-images.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azl3.yaml"
+        targetName: "cluster-template-azl3.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
