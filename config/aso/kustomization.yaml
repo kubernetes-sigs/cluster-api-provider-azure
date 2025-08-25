@@ -2,81 +2,80 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-- https://github.com/Azure/azure-service-operator/releases/download/v2.11.0/azureserviceoperator_v2.11.0.yaml
-- crds.yaml
-- settings.yaml
-
+  # The ASO version here is managed by `make generate-aso-crds`
+  - https://github.com/Azure/azure-service-operator/releases/download/v2.13.0/azureserviceoperator_v2.13.0.yaml
+  - crds.yaml
+  - settings.yaml
 patches:
-- path: patches/visualizer_label_in_bastionhosts.yaml
-- path: patches/visualizer_label_in_extensions.yaml
-- path: patches/visualizer_label_in_fleetmembers.yaml
-- path: patches/visualizer_label_in_managedclusteragentpools.yaml
-- path: patches/visualizer_label_in_managed_clusters.yaml
-- path: patches/visualizer_label_in_natgateways.yaml
-- path: patches/visualizer_label_in_privateendpoints.yaml
-- path: patches/visualizer_label_in_resourcegroups.yaml
-- path: patches/visualizer_label_in_subnets.yaml
-- path: patches/visualizer_label_in_virtualnetworks.yaml
-- patch: |- # default kustomization includes a namespace already
-    $patch: delete
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: azureserviceoperator-system
-- patch: |-
-    - op: test
-      path: /spec/template/spec/containers/0/args/6
-      value: --crd-pattern=
-    - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
-      path: /spec/template/spec/containers/0/args/6
-      value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
+  - path: patches/visualizer_label_in_bastionhosts.yaml
+  - path: patches/visualizer_label_in_extensions.yaml
+  - path: patches/visualizer_label_in_fleetmembers.yaml
+  - path: patches/visualizer_label_in_managedclusteragentpools.yaml
+  - path: patches/visualizer_label_in_managed_clusters.yaml
+  - path: patches/visualizer_label_in_natgateways.yaml
+  - path: patches/visualizer_label_in_privateendpoints.yaml
+  - path: patches/visualizer_label_in_resourcegroups.yaml
+  - path: patches/visualizer_label_in_subnets.yaml
+  - path: patches/visualizer_label_in_virtualnetworks.yaml
+  - patch: |- # default kustomization includes a namespace already
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: azureserviceoperator-system
+  - patch: |-
+      - op: test
+        path: /spec/template/spec/containers/0/args/6
+        value: --crd-pattern=
+      - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
+        path: /spec/template/spec/containers/0/args/6
+        value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
 
-    # ASO will provide a startupProbe starting in v2.14.0.
-    # These patches should be removed when the upstream probe is set.
-    - op: test
-      path: /spec/template/spec/containers/0/startupProbe
-      value: null
-    - op: add
-      path: /spec/template/spec/containers/0/startupProbe
-      value:
-        httpGet:
-          path: /healthz
-          port: 8081
-        periodSeconds: 10
-        failureThreshold: 12
-    - op: remove
-      path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
-    - op: remove
-      path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
-  target:
-    group: apps
-    kind: Deployment
-    name: azureserviceoperator-controller-manager
-    version: v1
-
-replacements:
-- source:
-    fieldPath: metadata.namespace
-    group: cert-manager.io
-    kind: Certificate
-    name: azureserviceoperator-serving-cert
-    version: v1
-  targets:
-  - fieldPaths:
-    - metadata.annotations.cert-manager\.io/inject-ca-from
-    options:
-      delimiter: /
-    select:
-      annotationSelector: cert-manager.io/inject-ca-from
+      # ASO will provide a startupProbe starting in v2.14.0.
+      # These patches should be removed when the upstream probe is set.
+      - op: test
+        path: /spec/template/spec/containers/0/startupProbe
+        value: null
+      - op: add
+        path: /spec/template/spec/containers/0/startupProbe
+        value:
+          httpGet:
+            path: /healthz
+            port: 8081
+          periodSeconds: 10
+          failureThreshold: 12
+      - op: remove
+        path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
+      - op: remove
+        path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
+    target:
+      group: apps
+      kind: Deployment
+      name: azureserviceoperator-controller-manager
       version: v1
-  - fieldPaths:
-    - spec.dnsNames.0
-    - spec.dnsNames.1
-    options:
-      delimiter: .
-      index: 1
-    select:
+replacements:
+  - source:
+      fieldPath: metadata.namespace
       group: cert-manager.io
       kind: Certificate
       name: azureserviceoperator-serving-cert
       version: v1
+    targets:
+      - fieldPaths:
+          - metadata.annotations.cert-manager\.io/inject-ca-from
+        options:
+          delimiter: /
+        select:
+          annotationSelector: cert-manager.io/inject-ca-from
+          version: v1
+      - fieldPaths:
+          - spec.dnsNames.0
+          - spec.dnsNames.1
+        options:
+          delimiter: .
+          index: 1
+        select:
+          group: cert-manager.io
+          kind: Certificate
+          name: azureserviceoperator-serving-cert
+          version: v1

@@ -175,7 +175,7 @@ CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
-ASO_VERSION := v2.11.0
+ASO_VERSION := $(shell go list -m -f '{{ .Version }}' github.com/Azure/azure-service-operator/v2)
 ASO_CRDS := resourcegroups.resources.azure.com natgateways.network.azure.com managedclusters.containerservice.azure.com managedclustersagentpools.containerservice.azure.com bastionhosts.network.azure.com virtualnetworks.network.azure.com virtualnetworkssubnets.network.azure.com privateendpoints.network.azure.com fleetsmembers.containerservice.azure.com extensions.kubernetesconfiguration.azure.com
 
 # Allow overriding the imagePullPolicy
@@ -572,6 +572,7 @@ generate-addons: fetch-calico-manifests ## Generate metric-server, calico, calic
 # envsubst, '$$$$' changes back to '$$' so ASO will not detect a diff and try to
 # update the CRDs for which we don't give it permission.
 generate-aso-crds: $(YQ)
+	$(YQ) e -i '.resources[] |= sub("^(https://github\.com/Azure/azure-service-operator/releases/download/)[^/]+(/.*_).*(\.yaml)$$", "$${1}$(ASO_VERSION)$${2}$(ASO_VERSION)$${3}")' $(ROOT_DIR)/config/aso/kustomization.yaml
 	curl -fSsL "https://github.com/Azure/azure-service-operator/releases/download/$(ASO_VERSION)/azureserviceoperator_customresourcedefinitions_$(ASO_VERSION).yaml" | \
 		$(YQ) e '. | select($(foreach name,$(ASO_CRDS),.metadata.name == "$(name)" or )false)' - | \
 		sed 's/\$$\$$/$$$$$$$$/g' \
