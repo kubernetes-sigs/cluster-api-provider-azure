@@ -29,9 +29,7 @@ import (
 
 const (
 	serviceName           = "loadbalancers"
-	httpsProbe            = "HTTPSProbe"
 	httpsProbeRequestPath = "/readyz"
-	lbRuleHTTPS           = "LBRuleHTTPS"
 	outboundNAT           = "OutboundNATAllProtocols"
 )
 
