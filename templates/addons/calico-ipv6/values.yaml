@@ -12,7 +12,7 @@ installation:
       encapsulation: None
       natOutgoing: Enabled
       nodeSelector: all()
-  registry: quay.io
+  registry: capzcicommunity.azurecr.io
 # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
 # when it continuously gets scheduled onto an out-of-date Node that is being
 # deleted. Tolerate only the NoSchedule taints that are expected.
@@ -28,6 +28,6 @@ tolerations:
 # Image and registry configuration for the tigera/operator pod.Add commentMore actions
 tigeraOperator:
   image: tigera/operator
-  registry: quay.io
+  registry: capzcicommunity.azurecr.io
 calicoctl:
-  image: quay.io/calico/ctl
+  image: capzcicommunity.azurecr.io/calico/ctl

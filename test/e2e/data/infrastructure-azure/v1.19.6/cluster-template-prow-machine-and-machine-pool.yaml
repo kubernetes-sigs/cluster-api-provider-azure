@@ -516,11 +516,11 @@ spec:
         ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
         - cidr: {{ $cidr }}
           encapsulation: VXLAN{{end}}
-      registry: quay.io
+      registry: capzcicommunity.azurecr.io
       # Image and registry configuration for the tigera/operator pod.Add commentMore actions
       tigeraOperator:
         image: tigera/operator
-        registry: quay.io
+        registry: capzcicommunity.azurecr.io
   version: ${CALICO_VERSION}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1

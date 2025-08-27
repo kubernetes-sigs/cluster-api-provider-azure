@@ -12,4 +12,4 @@ patches:
     name: calico-kube-controllers
     namespace: kube-system
 - path: patches/azure-mtu.yaml
-- path: patches/replace-docker-with-quay.yaml
+- path: patches/use-capz-acr.yaml
