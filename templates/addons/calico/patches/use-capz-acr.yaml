@@ -8,14 +8,14 @@ spec:
     spec:
       initContainers:
       - name: upgrade-ipam
-        image: quay.io/calico/cni:v3.29.4
+        image: capzcicommunity.azurecr.io/calico/cni:${CALICO_VERSION}
       - name: install-cni
-        image: quay.io/calico/cni:v3.29.4
+        image: capzcicommunity.azurecr.io/calico/cni:${CALICO_VERSION}
       - name: mount-bpffs
-        image: quay.io/calico/node:v3.29.4
+        image: capzcicommunity.azurecr.io/calico/node:${CALICO_VERSION}
       containers:
       - name: calico-node
-        image: quay.io/calico/node:v3.29.4
+        image: capzcicommunity.azurecr.io/calico/node:${CALICO_VERSION}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -27,4 +27,4 @@ spec:
     spec:
       containers:
       - name: calico-kube-controllers
-        image: quay.io/calico/kube-controllers:v3.29.4
+        image: capzcicommunity.azurecr.io/calico/kube-controllers:${CALICO_VERSION}

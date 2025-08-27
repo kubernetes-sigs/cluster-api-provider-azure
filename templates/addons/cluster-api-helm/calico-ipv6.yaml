@@ -51,13 +51,13 @@ spec:
                       matchExpressions:
                       - key: node-role.kubernetes.io/control-plane
                         operator: Exists
-      registry: quay.io
-      # Image and registry configuration for the tigera/operator pod.
-      tigeraOperator:
-        image: tigera/operator
-        registry: quay.io
-      calicoctl:
-        image: quay.io/calico/ctl
+      registry: capzcicommunity.azurecr.io
+    # Image and registry configuration for the tigera/operator pod.
+    tigeraOperator:
+      image: tigera/operator
+      registry: capzcicommunity.azurecr.io
+    calicoctl:
+      image: capzcicommunity.azurecr.io/calico/ctl
     # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
     # when it continuously gets scheduled onto an out-of-date Node that is being
     # deleted. Tolerate only the NoSchedule taints that are expected.
