@@ -492,6 +492,10 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 			"cni.log",
 			`Get-Content "C:\\cni.log"`,
 		),
+		execToPathFn(
+			"containerd.log",
+			`Get-Content "C:\\var\\log\\containerd\\containerd.log"`,
+		),
 	}
 }
 
