@@ -33,8 +33,8 @@ import (
 	"k8s.io/utils/net"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -93,7 +93,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		params.Cache = &ClusterCache{}
 	}
 
-	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
 		return nil, errors.Errorf("failed to init patch helper: %v", err)
 	}
@@ -112,7 +112,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	Client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 	cache       *ClusterCache
 
 	AzureClients
@@ -936,12 +936,12 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ClusterScope.PatchObject")
 	defer done()
 
-	conditions.SetSummary(s.AzureCluster)
+	v1beta1conditions.SetSummary(s.AzureCluster)
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.RouteTablesReadyCondition,
@@ -1127,11 +1127,11 @@ func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType
 func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
 	default:
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
 	}
 }
 
@@ -1139,11 +1139,11 @@ func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, ser
 func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.AzureCluster, condition)
+		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
 	}
 }
 
@@ -1151,11 +1151,11 @@ func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, servic
 func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.AzureCluster, condition)
+		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
 	default:
-		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
 	}
 }
 

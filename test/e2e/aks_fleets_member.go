@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -109,7 +109,7 @@ func AKSFleetsMemberSpec(ctx context.Context, inputGetter func() AKSFleetsMember
 			},
 		}
 		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
-		g.Expect(conditions.IsTrue(infraControlPlane, infrav1.FleetReadyCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(infraControlPlane, infrav1.FleetReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Ensuring the fleet member is created and attached to the managed cluster")

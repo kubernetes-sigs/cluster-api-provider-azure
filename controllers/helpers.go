@@ -39,8 +39,8 @@ import (
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -654,7 +654,7 @@ func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) stri
 }
 
 // EnsureClusterIdentity ensures that the identity ref is allowed in the namespace and sets a finalizer.
-func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
+func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
 	name := object.GetName()
 	namespace := object.GetNamespace()
 	identity, err := GetClusterIdentityFromRef(ctx, c, namespace, identityRef)
@@ -663,7 +663,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	}
 
 	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
-		conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+		v1beta1conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 	}
 
@@ -672,7 +672,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	needsPatch = controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) || needsPatch
 	if needsPatch {
 		// finalizers are added/removed then patch the object
-		identityHelper, err := patch.NewHelper(identity, c)
+		identityHelper, err := v1beta1patch.NewHelper(identity, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to init patch helper")
 		}
@@ -690,7 +690,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 	if err != nil {
 		return err
 	}
-	identityHelper, err := patch.NewHelper(identity, c)
+	identityHelper, err := v1beta1patch.NewHelper(identity, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to init patch helper")
 	}

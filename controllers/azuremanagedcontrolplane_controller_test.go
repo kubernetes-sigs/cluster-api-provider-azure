@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -283,7 +283,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 		Client: client,
 	}
 
-	helper, err := patch.NewHelper(cp, client)
+	helper, err := v1beta1patch.NewHelper(cp, client)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	scopes := &scope.ManagedControlPlaneScope{

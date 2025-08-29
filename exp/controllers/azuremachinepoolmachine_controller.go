@@ -29,7 +29,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -303,7 +303,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
 
-	bootstrappingCondition := conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+	bootstrappingCondition := v1beta1conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
 	if bootstrappingCondition != nil && bootstrappingCondition.Reason == infrav1.BootstrapFailedReason {
 		return reconcile.Result{}, nil
 	}

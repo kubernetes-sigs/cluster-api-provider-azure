@@ -43,7 +43,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -317,7 +317,7 @@ func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.Cluster
 		}
 		count := 0
 		for _, machine := range machineList.Items {
-			if condition := conditions.Get(&machine, clusterv1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
+			if condition := v1beta1conditions.Get(&machine, clusterv1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
 				count++
 			}
 		}

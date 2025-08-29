@@ -28,7 +28,7 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -269,8 +269,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 		scope.SetAgentPoolReady(false)
 		// Ensure the ready condition is false, but do not overwrite an existing
 		// error condition which might provide more details.
-		if conditions.IsTrue(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition) {
-			conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		if v1beta1conditions.IsTrue(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition) {
+			v1beta1conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		}
 
 		// Handle transient and terminal errors

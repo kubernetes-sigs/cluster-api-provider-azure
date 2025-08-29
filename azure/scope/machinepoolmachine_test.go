@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -354,7 +354,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
 			},
 		},
 		{
@@ -369,7 +369,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeConditionsFailedReason, clusterv1.ConditionSeverityWarning, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeConditionsFailedReason, clusterv1.ConditionSeverityWarning, ""))
 			},
 		},
 		{
@@ -387,7 +387,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				assertCondition(t, scope.AzureMachinePoolMachine, conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, ""))
 			},
 		},
 		{
@@ -406,7 +406,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
 			},
 		},
 	}
@@ -503,16 +503,16 @@ func getNotReadyNode() *corev1.Node {
 // asserts whether a condition of type is set on the Getter object
 // when the condition is true, asserting the reason/severity/message
 // for the condition are avoided.
-func assertCondition(t *testing.T, from conditions.Getter, condition *clusterv1.Condition) {
+func assertCondition(t *testing.T, from v1beta1conditions.Getter, condition *clusterv1.Condition) {
 	t.Helper()
 
 	g := NewWithT(t)
-	g.Expect(conditions.Has(from, condition.Type)).To(BeTrue())
+	g.Expect(v1beta1conditions.Has(from, condition.Type)).To(BeTrue())
 
 	if condition.Status == corev1.ConditionTrue {
-		conditions.IsTrue(from, condition.Type)
+		v1beta1conditions.IsTrue(from, condition.Type)
 	} else {
-		conditionToBeAsserted := conditions.Get(from, condition.Type)
+		conditionToBeAsserted := v1beta1conditions.Get(from, condition.Type)
 		g.Expect(conditionToBeAsserted.Status).To(Equal(condition.Status))
 		g.Expect(conditionToBeAsserted.Severity).To(Equal(condition.Severity))
 		g.Expect(conditionToBeAsserted.Reason).To(Equal(condition.Reason))

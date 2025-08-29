@@ -31,7 +31,7 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -162,7 +162,7 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 		pool := &infrav1exp.AzureMachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, infrav1.BootstrapSucceededCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(pool, infrav1.BootstrapSucceededCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Adding the expected AKS labels to the nodes")
@@ -185,6 +185,6 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 		pool := &expv1.MachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, clusterv1.ReadyCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(pool, clusterv1.ReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }
