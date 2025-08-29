@@ -96,7 +96,9 @@ type filterUnclonedMachinesPredicate struct {
 }
 
 func (f filterUnclonedMachinesPredicate) Create(e event.CreateEvent) bool {
-	return f.Generic(event.GenericEvent(e))
+	return f.Generic(event.GenericEvent{
+		Object: e.Object,
+	})
 }
 
 func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {
