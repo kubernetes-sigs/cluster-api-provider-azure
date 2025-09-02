@@ -104,7 +104,7 @@ func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, na
 }
 
 func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace string, name string, aboveMachinesPath string) {
-	workload := acp.GetWorkloadCluster(ctx, namespace, name)
+	workload := acp.ClusterProxy.GetWorkloadCluster(ctx, namespace, name)
 	pods := &corev1.PodList{}
 
 	Expect(workload.GetClient().List(ctx, pods)).To(Succeed())
@@ -187,7 +187,7 @@ func collectContainerLogs(ctx context.Context, pod corev1.Pod, container corev1.
 }
 
 func (acp *AzureClusterProxy) collectNodes(ctx context.Context, namespace string, name string, aboveMachinesPath string) {
-	workload := acp.GetWorkloadCluster(ctx, namespace, name)
+	workload := acp.ClusterProxy.GetWorkloadCluster(ctx, namespace, name)
 	nodes := &corev1.NodeList{}
 
 	Expect(workload.GetClient().List(ctx, nodes)).To(Succeed())
@@ -222,7 +222,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	activityLogsClient, err := armmonitor.NewActivityLogsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	clusterClient := acp.GetClient()
+	clusterClient := acp.ClusterProxy.GetClient()
 	cluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
 		Getter:    clusterClient,
 		Name:      name,
