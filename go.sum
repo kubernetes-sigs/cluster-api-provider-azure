@@ -624,10 +624,10 @@ sigs.k8s.io/cloud-provider-azure/pkg/azclient v0.5.9 h1:+ngbNuuzAIy4mIA09/ALZxx0
 sigs.k8s.io/cloud-provider-azure/pkg/azclient v0.5.9/go.mod h1:wlb5KMXferSuS9asjIlqjU7yHnCUEtAGnwjYdDtqdmk=
 sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.4.1 h1:F5qZPS35TGb0ghlLGcHrbwzoO3mFnCBMM4ADGAlY+rI=
 sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.4.1/go.mod h1:rEQnoF3pmD1kmAFQCwA/SqHiiftLFeMwdQt0gsuKWbM=
-sigs.k8s.io/cluster-api v1.11.0 h1:4ZqKxjhdP3F/vvHMd675rGsDrT/siggnFPt5eKQ8nkI=
-sigs.k8s.io/cluster-api v1.11.0/go.mod h1:gGmNlHrtJe3z0YV3J6JRy5Rwh9SfzokjQaS+Fv3DBPE=
-sigs.k8s.io/cluster-api/test v1.11.0 h1:dvwMAb5rm4Z7Kj3l9FkeYTWfSthpN0oX3gvUrd8ej24=
-sigs.k8s.io/cluster-api/test v1.11.0/go.mod h1:2f489Lp5TKPGVhNL6V3huq8fp6eb23APlY2cLbhuDBU=
+sigs.k8s.io/cluster-api v1.11.1 h1:7CyGCTxv1p3Y2kRe1ljTj/w4TcdIdWNj0CTBc4i1aBo=
+sigs.k8s.io/cluster-api v1.11.1/go.mod h1:zyrjgJ5RbXhwKcAdUlGPNK5YOHpcmxXvur+5I8lkMUQ=
+sigs.k8s.io/cluster-api/test v1.11.1 h1:p9tT2HupKHW1URQDsZ3QNdEC/YPc8nrkiV6RCtNgi5k=
+sigs.k8s.io/cluster-api/test v1.11.1/go.mod h1:COviHWIKTcip0VADeIh8Rm5bjqzyZ1LuzKBW1EqjJRc=
 sigs.k8s.io/controller-runtime v0.21.0 h1:CYfjpEuicjUecRk+KAeyYh+ouUBn4llGyDYytIGcJS8=
 sigs.k8s.io/controller-runtime v0.21.0/go.mod h1:OSg14+F65eWqIu4DceX7k/+QRAbTTvxeQSNSOQpukWM=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE=
