@@ -30,8 +30,8 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 )
 
 // MockResourceHealthScope is a mock of ResourceHealthScope interface.
