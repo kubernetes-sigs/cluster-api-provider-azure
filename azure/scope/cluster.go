@@ -32,7 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/net"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,7 +60,7 @@ import (
 type ClusterScopeParams struct {
 	AzureClients
 	Client          client.Client
-	Cluster         *clusterv1.Cluster
+	Cluster         *clusterv1beta1.Cluster
 	AzureCluster    *infrav1.AzureCluster
 	Cache           *ClusterCache
 	Timeouts        azure.AsyncReconciler
@@ -116,7 +116,7 @@ type ClusterScope struct {
 	cache       *ClusterCache
 
 	AzureClients
-	Cluster      *clusterv1.Cluster
+	Cluster      *clusterv1beta1.Cluster
 	AzureCluster *infrav1.AzureCluster
 	azure.AsyncReconciler
 }
@@ -927,7 +927,7 @@ func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
 func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 	return client.MatchingLabels(map[string]string{
-		clusterv1.ClusterNameLabel: s.Cluster.Name,
+		clusterv1beta1.ClusterNameLabel: s.Cluster.Name,
 	})
 }
 
@@ -941,8 +941,8 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
+		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
+			clusterv1beta1.ReadyCondition,
 			infrav1.ResourceGroupReadyCondition,
 			infrav1.RouteTablesReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
@@ -993,9 +993,9 @@ func (s *ClusterScope) APIServerHost() string {
 
 // SetFailureDomain sets a failure domain in a cluster's status by its id.
 // The provided failure domain spec may be overridden to false by cluster's spec property.
-func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
+func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1beta1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
-		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
+		s.AzureCluster.Status.FailureDomains = make(clusterv1beta1.FailureDomains)
 	}
 
 	if fd, ok := s.AzureCluster.Spec.FailureDomains[id]; ok && !fd.ControlPlane {
@@ -1124,38 +1124,38 @@ func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType
 }
 
 // UpdateDeleteStatus updates a condition on the AzureCluster status after a DELETE operation.
-func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
 	}
 }
 
 // UpdatePutStatus updates a condition on the AzureCluster status after a PUT operation.
-func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+func (s *ClusterScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
 		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
 	}
 }
 
 // UpdatePatchStatus updates a condition on the AzureCluster status after a PATCH operation.
-func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+func (s *ClusterScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
 		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
 	}
 }
 

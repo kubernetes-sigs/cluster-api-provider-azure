@@ -28,8 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -48,7 +47,7 @@ const (
 
 func TestNewMachinePoolMachineScope(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 
 	cases := []struct {
@@ -61,15 +60,15 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Input: MachinePoolMachineScopeParams{
 				Client: fake.NewClientBuilder().WithScheme(scheme).Build(),
 				ClusterScope: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "clusterName",
 						},
 					},
 				},
-				MachinePool:             new(expv1.MachinePool),
+				MachinePool:             new(clusterv1beta1.MachinePool),
 				AzureMachinePool:        new(infrav1exp.AzureMachinePool),
-				Machine:                 new(clusterv1.Machine),
+				Machine:                 new(clusterv1beta1.Machine),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
 		},
@@ -77,9 +76,9 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Name: "no client",
 			Input: MachinePoolMachineScopeParams{
 				ClusterScope:            new(ClusterScope),
-				MachinePool:             new(expv1.MachinePool),
+				MachinePool:             new(clusterv1beta1.MachinePool),
 				AzureMachinePool:        new(infrav1exp.AzureMachinePool),
-				Machine:                 new(clusterv1.Machine),
+				Machine:                 new(clusterv1beta1.Machine),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
 			Err: "client is required when creating a MachinePoolScope",
@@ -88,9 +87,9 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Name: "no ClusterScope",
 			Input: MachinePoolMachineScopeParams{
 				Client:                  fake.NewClientBuilder().WithScheme(scheme).Build(),
-				MachinePool:             new(expv1.MachinePool),
+				MachinePool:             new(clusterv1beta1.MachinePool),
 				AzureMachinePool:        new(infrav1exp.AzureMachinePool),
-				Machine:                 new(clusterv1.Machine),
+				Machine:                 new(clusterv1beta1.Machine),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
 			Err: "cluster scope is required when creating a MachinePoolScope",
@@ -101,7 +100,7 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 				Client:                  fake.NewClientBuilder().WithScheme(scheme).Build(),
 				ClusterScope:            new(ClusterScope),
 				AzureMachinePool:        new(infrav1exp.AzureMachinePool),
-				Machine:                 new(clusterv1.Machine),
+				Machine:                 new(clusterv1beta1.Machine),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
 			Err: "machine pool is required when creating a MachinePoolScope",
@@ -111,8 +110,8 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Input: MachinePoolMachineScopeParams{
 				Client:                  fake.NewClientBuilder().WithScheme(scheme).Build(),
 				ClusterScope:            new(ClusterScope),
-				MachinePool:             new(expv1.MachinePool),
-				Machine:                 new(clusterv1.Machine),
+				MachinePool:             new(clusterv1beta1.MachinePool),
+				Machine:                 new(clusterv1beta1.Machine),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
 			Err: "azure machine pool is required when creating a MachinePoolScope",
@@ -122,8 +121,8 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Input: MachinePoolMachineScopeParams{
 				Client:           fake.NewClientBuilder().WithScheme(scheme).Build(),
 				ClusterScope:     new(ClusterScope),
-				MachinePool:      new(expv1.MachinePool),
-				Machine:          new(clusterv1.Machine),
+				MachinePool:      new(clusterv1beta1.MachinePool),
+				Machine:          new(clusterv1beta1.Machine),
 				AzureMachinePool: new(infrav1exp.AzureMachinePool),
 			},
 			Err: "azure machine pool machine is required when creating a MachinePoolScope",
@@ -133,7 +132,7 @@ func TestNewMachinePoolMachineScope(t *testing.T) {
 			Input: MachinePoolMachineScopeParams{
 				Client:                  fake.NewClientBuilder().WithScheme(scheme).Build(),
 				ClusterScope:            new(ClusterScope),
-				MachinePool:             new(expv1.MachinePool),
+				MachinePool:             new(clusterv1beta1.MachinePool),
 				AzureMachinePool:        new(infrav1exp.AzureMachinePool),
 				AzureMachinePoolMachine: new(infrav1exp.AzureMachinePoolMachine),
 			},
@@ -164,7 +163,7 @@ func TestMachinePoolMachineScope_ScaleSetVMSpecs(t *testing.T) {
 		{
 			name: "return vmss vm spec for uniform vmss",
 			machinePoolMachineScope: MachinePoolMachineScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1beta1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -215,7 +214,7 @@ func TestMachinePoolMachineScope_ScaleSetVMSpecs(t *testing.T) {
 		{
 			name: "return vmss vm spec for vmss flex",
 			machinePoolMachineScope: MachinePoolMachineScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1beta1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -275,15 +274,15 @@ func TestMachinePoolMachineScope_ScaleSetVMSpecs(t *testing.T) {
 func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 	cases := []struct {
 		name    string
-		machine clusterv1.Machine
+		machine clusterv1beta1.Machine
 		ampm    infrav1exp.AzureMachinePoolMachine
 	}{
 		{
 			name: "add annotation to ampm",
-			machine: clusterv1.Machine{
+			machine: clusterv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.DeleteMachineAnnotation: "true",
+						clusterv1beta1.DeleteMachineAnnotation: "true",
 					},
 				},
 			},
@@ -291,12 +290,12 @@ func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 		},
 		{
 			name:    "do not add annotation to ampm when machine annotations are nil",
-			machine: clusterv1.Machine{},
+			machine: clusterv1beta1.Machine{},
 			ampm:    infrav1exp.AzureMachinePoolMachine{},
 		},
 		{
 			name: "do not add annotation to ampm",
-			machine: clusterv1.Machine{
+			machine: clusterv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
@@ -315,8 +314,8 @@ func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 			}
 
 			machineScope.updateDeleteMachineAnnotation()
-			_, machineHasAnnotation := machineScope.Machine.Annotations[clusterv1.DeleteMachineAnnotation]
-			_, ampmHasAnnotation := machineScope.AzureMachinePoolMachine.Annotations[clusterv1.DeleteMachineAnnotation]
+			_, machineHasAnnotation := machineScope.Machine.Annotations[clusterv1beta1.DeleteMachineAnnotation]
+			_, ampmHasAnnotation := machineScope.AzureMachinePoolMachine.Annotations[clusterv1beta1.DeleteMachineAnnotation]
 			g.Expect(machineHasAnnotation).To(Equal(ampmHasAnnotation))
 		})
 	}
@@ -324,7 +323,7 @@ func TestMachineScope_updateDeleteMachineAnnotation(t *testing.T) {
 
 func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 
 	mockCtrl := gomock.NewController(t)
@@ -354,7 +353,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1beta1.MachineNodeHealthyCondition))
 			},
 		},
 		{
@@ -369,7 +368,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeConditionsFailedReason, clusterv1.ConditionSeverityWarning, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.NodeConditionsFailedReason, clusterv1beta1.ConditionSeverityWarning, ""))
 			},
 		},
 		{
@@ -387,7 +386,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1.NodeProvisioningReason, clusterv1.ConditionSeverityInfo, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.NodeProvisioningReason, clusterv1beta1.ConditionSeverityInfo, ""))
 			},
 		},
 		{
@@ -406,7 +405,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1beta1.MachineNodeHealthyCondition))
 			},
 		},
 	}
@@ -420,17 +419,17 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				params     = MachinePoolMachineScopeParams{
 					Client:       fake.NewClientBuilder().WithScheme(scheme).Build(),
 					ClusterScope: clusterScope,
-					MachinePool: &expv1.MachinePool{
-						Spec: expv1.MachinePoolSpec{
-							Template: clusterv1.MachineTemplateSpec{
-								Spec: clusterv1.MachineSpec{
+					MachinePool: &clusterv1beta1.MachinePool{
+						Spec: clusterv1beta1.MachinePoolSpec{
+							Template: clusterv1beta1.MachineTemplateSpec{
+								Spec: clusterv1beta1.MachineSpec{
 									Version: ptr.To("v1.19.11"),
 								},
 							},
 						},
 					},
 					AzureMachinePool: new(infrav1exp.AzureMachinePool),
-					Machine:          new(clusterv1.Machine),
+					Machine:          new(clusterv1beta1.Machine),
 				}
 			)
 
@@ -503,7 +502,7 @@ func getNotReadyNode() *corev1.Node {
 // asserts whether a condition of type is set on the Getter object
 // when the condition is true, asserting the reason/severity/message
 // for the condition are avoided.
-func assertCondition(t *testing.T, from v1beta1conditions.Getter, condition *clusterv1.Condition) {
+func assertCondition(t *testing.T, from v1beta1conditions.Getter, condition *clusterv1beta1.Condition) {
 	t.Helper()
 
 	g := NewWithT(t)

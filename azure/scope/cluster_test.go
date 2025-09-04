@@ -33,7 +33,7 @@ import (
 	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -78,11 +78,11 @@ func TestNewClusterScope(t *testing.T) {
 	g := NewWithT(t)
 
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
-	cluster := &clusterv1.Cluster{
+	cluster := &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-cluster",
 			Namespace: "default",
@@ -271,7 +271,7 @@ func TestAPIServerHost(t *testing.T) {
 	for _, tc := range tests {
 		g := NewWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-cluster",
 				Namespace: "default",
@@ -296,13 +296,13 @@ func TestAPIServerHost(t *testing.T) {
 func TestGettingSecurityRules(t *testing.T) {
 	tests := []struct {
 		name              string
-		cluster           *clusterv1.Cluster
+		cluster           *clusterv1beta1.Cluster
 		azureCluster      *infrav1.AzureCluster
 		expectedRuleCount int
 	}{
 		{
 			name: "default control plane subnet with no rules should have 2 security rules defaulted",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-cluster",
 					Namespace: "default",
@@ -336,7 +336,7 @@ func TestGettingSecurityRules(t *testing.T) {
 		},
 		{
 			name: "additional rules are preserved",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-cluster",
 					Namespace: "default",
@@ -386,7 +386,7 @@ func TestGettingSecurityRules(t *testing.T) {
 		},
 		{
 			name: "override rules are accepted",
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-cluster",
 					Namespace: "default",
@@ -469,7 +469,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -502,7 +502,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -539,7 +539,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -599,7 +599,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -697,7 +697,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -754,7 +754,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -814,7 +814,7 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1.FailureDomainSpec{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 						"failure-domain-id-1": {},
 						"failure-domain-id-2": {},
 						"failure-domain-id-3": {},
@@ -905,7 +905,7 @@ func TestPublicIPSpecs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.azureCluster.Name,
 					Namespace: "default",
@@ -946,7 +946,7 @@ func TestRouteTableSpecs(t *testing.T) {
 		{
 			name: "returns specified route tables if present",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1037,7 +1037,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 		{
 			name: "returns specified node NAT gateway if present",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1107,7 +1107,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 		{
 			name: "returns specified node NAT gateway if present and ignores duplicate",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1195,7 +1195,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 		{
 			name: "returns specified node NAT gateway if present and ignores control plane nat gateway",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1317,7 +1317,7 @@ func TestSetNatGatewayIDInSubnets(t *testing.T) {
 		{
 			name: "sets nat gateway id in the matching subnet",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1401,7 +1401,7 @@ func TestNSGSpecs(t *testing.T) {
 		{
 			name: "returns specified security groups if present",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1491,7 +1491,7 @@ func TestSubnetSpecs(t *testing.T) {
 		{
 			name: "returns specified subnet spec",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1568,7 +1568,7 @@ func TestSubnetSpecs(t *testing.T) {
 		{
 			name: "returns specified subnet spec and bastion spec if enabled",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1722,7 +1722,7 @@ func TestIsVnetManaged(t *testing.T) {
 		{
 			name: "Wrong tags",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1753,7 +1753,7 @@ func TestIsVnetManaged(t *testing.T) {
 		{
 			name: "Has owning tags",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -1860,7 +1860,7 @@ func TestAzureBastionSpec(t *testing.T) {
 		{
 			name: "returns bastion spec if enabled",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
@@ -2129,7 +2129,7 @@ func TestGetPrivateDNSZoneName(t *testing.T) {
 		t.Run(tc.clusterName, func(t *testing.T) {
 			g := NewWithT(t)
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
 					Namespace: "default",
@@ -2379,7 +2379,7 @@ func TestBackendPoolName(t *testing.T) {
 				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)
 			}
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
 					Namespace: "default",
@@ -2582,7 +2582,7 @@ func TestGenerateFQDN(t *testing.T) {
 		t.Run(tc.clusterName, func(t *testing.T) {
 			g := NewWithT(t)
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
 					Namespace: "default",
@@ -2677,7 +2677,7 @@ func TestAPIServerPort(t *testing.T) {
 	tests := []struct {
 		name                string
 		clusterName         string
-		clusterNetowrk      *clusterv1.ClusterNetwork
+		clusterNetowrk      *clusterv1beta1.ClusterNetwork
 		expectAPIServerPort int32
 	}{
 		{
@@ -2689,13 +2689,13 @@ func TestAPIServerPort(t *testing.T) {
 		{
 			name:                "Non nil cluster network but nil apiserverport",
 			clusterName:         "my-cluster",
-			clusterNetowrk:      &clusterv1.ClusterNetwork{},
+			clusterNetowrk:      &clusterv1beta1.ClusterNetwork{},
 			expectAPIServerPort: 6443,
 		},
 		{
 			name:        "Non nil cluster network and non nil apiserverport",
 			clusterName: "my-cluster",
-			clusterNetowrk: &clusterv1.ClusterNetwork{
+			clusterNetowrk: &clusterv1beta1.ClusterNetwork{
 				APIServerPort: ptr.To[int32](7000),
 			},
 			expectAPIServerPort: 7000,
@@ -2705,12 +2705,12 @@ func TestAPIServerPort(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
 					Namespace: "default",
 				},
-				Spec: clusterv1.ClusterSpec{
+				Spec: clusterv1beta1.ClusterSpec{
 					ClusterNetwork: tc.clusterNetowrk,
 				},
 			}
@@ -2748,7 +2748,7 @@ func TestFailureDomains(t *testing.T) {
 			expectFailureDomains: []*string{ptr.To("failure-domain-id")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
-				FailureDomains: map[string]clusterv1.FailureDomainSpec{
+				FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 					"failure-domain-id": {},
 				},
 			},
@@ -2758,7 +2758,7 @@ func TestFailureDomains(t *testing.T) {
 			expectFailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
-				FailureDomains: map[string]clusterv1.FailureDomainSpec{
+				FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 					"failure-domain-id-1": {},
 					"failure-domain-id-2": {},
 					"failure-domain-id-3": {},
@@ -3310,7 +3310,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			if tc.featureGate == feature.APIServerILB {
 				featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, tc.featureGate, true)
 			}
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.azureCluster.Name,
 					Namespace: "default",
@@ -3616,7 +3616,7 @@ func TestVNetPeerings(t *testing.T) {
 			clusterName := "my-cluster"
 			clusterNamespace := "default"
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      clusterName,
 					Namespace: clusterNamespace,
@@ -3691,7 +3691,7 @@ func TestPrivateEndpointSpecs(t *testing.T) {
 		{
 			name: "returns list of private endpoint specs if private endpoints are specified",
 			clusterScope: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-cluster",
 						Namespace: "dummy-ns",
@@ -3891,37 +3891,37 @@ func TestSetFailureDomain(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {
-		discoveredFDs clusterv1.FailureDomains
-		specifiedFDs  clusterv1.FailureDomains
-		expectedFDs   clusterv1.FailureDomains
+		discoveredFDs clusterv1beta1.FailureDomains
+		specifiedFDs  clusterv1beta1.FailureDomains
+		expectedFDs   clusterv1beta1.FailureDomains
 	}{
 		"no failure domains specified": {
-			discoveredFDs: clusterv1.FailureDomains{
-				"fd1": clusterv1.FailureDomainSpec{ControlPlane: true},
-				"fd2": clusterv1.FailureDomainSpec{ControlPlane: false},
+			discoveredFDs: clusterv1beta1.FailureDomains{
+				"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true},
+				"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false},
 			},
-			expectedFDs: clusterv1.FailureDomains{
-				"fd1": clusterv1.FailureDomainSpec{ControlPlane: true},
-				"fd2": clusterv1.FailureDomainSpec{ControlPlane: false},
+			expectedFDs: clusterv1beta1.FailureDomains{
+				"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true},
+				"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false},
 			},
 		},
 		"no failure domains discovered": {
-			specifiedFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
 		},
 		"failure domain specified without intersection": {
-			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
-			specifiedFDs:  clusterv1.FailureDomains{"fd2": clusterv1.FailureDomainSpec{ControlPlane: false}},
-			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
+			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs:  clusterv1beta1.FailureDomains{"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
+			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
 		},
 		"failure domain override to false succeeds": {
-			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
-			specifiedFDs:  clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
-			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs:  clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
+			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
 		},
 		"failure domain override to true fails": {
-			discoveredFDs: clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
-			specifiedFDs:  clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: true}},
-			expectedFDs:   clusterv1.FailureDomains{"fd1": clusterv1.FailureDomainSpec{ControlPlane: false}},
+			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
+			specifiedFDs:  clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
+			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
 		},
 	}
 
@@ -3968,7 +3968,7 @@ func TestGroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to a different resource group",
 			input: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "cluster1",
 					},
@@ -4004,7 +4004,7 @@ func TestGroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to a same resource group",
 			input: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "cluster1",
 					},
@@ -4033,7 +4033,7 @@ func TestGroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork resource group not specified",
 			input: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -4063,7 +4063,7 @@ func TestGroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to different resource group with non-k8s name",
 			input: ClusterScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -4223,7 +4223,7 @@ func TestPrivateDNSSpec(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tc.clusterName,
 					Namespace: "default",

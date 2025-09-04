@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 func TestAzureCluster_ValidateCreate(t *testing.T) {
@@ -38,7 +38,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}
@@ -129,7 +129,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
 			oldCluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}
@@ -137,7 +137,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			}(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.io",
 					Port: 6443,
 				}
@@ -150,7 +150,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			oldCluster: createValidCluster(),
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}

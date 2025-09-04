@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -38,7 +38,7 @@ func TestDefaultingWebhook(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fooName",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "fooCluster",
+				clusterv1beta1.ClusterNameLabel: "fooCluster",
 			},
 		},
 		Spec: AzureManagedControlPlaneSpec{
@@ -1560,7 +1560,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name: "set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Host: "my-host",
 					},
 					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
@@ -1582,7 +1582,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Port: 444,
 					},
 					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
@@ -4037,7 +4037,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
+						clusterv1beta1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4066,7 +4066,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
+						clusterv1beta1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4095,7 +4095,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
+						clusterv1beta1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4124,7 +4124,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "fooCluster",
+						clusterv1beta1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{

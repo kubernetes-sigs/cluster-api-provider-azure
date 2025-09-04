@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -247,7 +247,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
-		clusterv1.AddToScheme,
+		clusterv1beta1.AddToScheme,
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
 		asonetworkv1.AddToScheme,
@@ -279,12 +279,12 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 	name := test.RandomName("paused", 10)
 	namespace := namespace
 
-	cluster := &clusterv1.Cluster{
+	cluster := &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: clusterv1.ClusterSpec{
+		Spec: clusterv1beta1.ClusterSpec{
 			Paused: true,
 		},
 	}
@@ -300,7 +300,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 					Name:       cluster.Name,
 					UID:        cluster.UID,
 				},

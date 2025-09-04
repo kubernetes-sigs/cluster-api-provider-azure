@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -196,7 +196,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should fail if identities are not ready": {
 			azureMachineOptions: func(am *infrav1.AzureMachine) {
-				am.Status.Conditions = clusterv1.Conditions{
+				am.Status.Conditions = clusterv1beta1.Conditions{
 					{
 						Type:   infrav1.VMIdentitiesReadyCondition,
 						Reason: infrav1.UserAssignedIdentityMissingReason,
@@ -366,8 +366,8 @@ func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineRecon
 	azureCluster := getFakeAzureCluster(func(ac *infrav1.AzureCluster) {
 		ac.Spec.Location = "westus2"
 	})
-	machine := getFakeMachine(azureMachine, func(m *clusterv1.Machine) {
-		m.Spec.Bootstrap = clusterv1.Bootstrap{
+	machine := getFakeMachine(azureMachine, func(m *clusterv1beta1.Machine) {
+		m.Spec.Bootstrap = clusterv1beta1.Bootstrap{
 			DataSecretName: ptr.To("fooSecret"),
 		}
 	})
@@ -529,20 +529,20 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 	}
 }
 
-func getFakeCluster() *clusterv1.Cluster {
-	return &clusterv1.Cluster{
+func getFakeCluster() *clusterv1beta1.Cluster {
+	return &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-cluster",
 			Namespace: "default",
 		},
-		Spec: clusterv1.ClusterSpec{
+		Spec: clusterv1beta1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				Kind:       infrav1.AzureClusterKind,
 				Name:       "my-azure-cluster",
 			},
 		},
-		Status: clusterv1.ClusterStatus{
+		Status: clusterv1beta1.ClusterStatus{
 			InfrastructureReady: true,
 		},
 	}
@@ -585,7 +585,7 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 					},
 				},
 			},
-			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 				Port: 6443,
 			},
 		},
@@ -603,7 +603,7 @@ func getFakeAzureMachine(changes ...func(*infrav1.AzureMachine)) *infrav1.AzureM
 			Name:      "my-machine",
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "my-cluster",
+				clusterv1beta1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -644,20 +644,20 @@ func getFakeAzureClusterIdentity(changes ...func(*infrav1.AzureClusterIdentity))
 	return input
 }
 
-func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*clusterv1.Machine)) *clusterv1.Machine {
-	input := &clusterv1.Machine{
+func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*clusterv1beta1.Machine)) *clusterv1beta1.Machine {
+	input := &clusterv1beta1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-machine",
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "my-cluster",
+				clusterv1beta1.ClusterNameLabel: "my-cluster",
 			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "cluster.x-k8s.io/v1beta1",
 			Kind:       "Machine",
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv1beta1.MachineSpec{
 			InfrastructureRef: corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				Kind:       "AzureMachine",
@@ -681,20 +681,20 @@ func TestConditions(t *testing.T) {
 
 	testcases := []struct {
 		name               string
-		clusterStatus      clusterv1.ClusterStatus
-		machine            *clusterv1.Machine
+		clusterStatus      clusterv1beta1.ClusterStatus
+		machine            *clusterv1beta1.Machine
 		azureMachine       *infrav1.AzureMachine
-		expectedConditions []clusterv1.Condition
+		expectedConditions []clusterv1beta1.Condition
 	}{
 		{
 			name: "cluster infrastructure is not ready yet",
-			clusterStatus: clusterv1.ClusterStatus{
+			clusterStatus: clusterv1beta1.ClusterStatus{
 				InfrastructureReady: false,
 			},
-			machine: &clusterv1.Machine{
+			machine: &clusterv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "my-cluster",
+						clusterv1beta1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},
@@ -704,29 +704,29 @@ func TestConditions(t *testing.T) {
 					Name: "azure-test1",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: clusterv1.GroupVersion.String(),
+							APIVersion: clusterv1beta1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "test1",
 						},
 					},
 				},
 			},
-			expectedConditions: []clusterv1.Condition{{
+			expectedConditions: []clusterv1beta1.Condition{{
 				Type:     "VMRunning",
 				Status:   corev1.ConditionFalse,
-				Severity: clusterv1.ConditionSeverityInfo,
+				Severity: clusterv1beta1.ConditionSeverityInfo,
 				Reason:   "WaitingForClusterInfrastructure",
 			}},
 		},
 		{
 			name: "bootstrap data secret reference is not yet available",
-			clusterStatus: clusterv1.ClusterStatus{
+			clusterStatus: clusterv1beta1.ClusterStatus{
 				InfrastructureReady: true,
 			},
-			machine: &clusterv1.Machine{
+			machine: &clusterv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "my-cluster",
+						clusterv1beta1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},
@@ -736,24 +736,24 @@ func TestConditions(t *testing.T) {
 					Name: "azure-test1",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: clusterv1.GroupVersion.String(),
+							APIVersion: clusterv1beta1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "test1",
 						},
 					},
 				},
 			},
-			expectedConditions: []clusterv1.Condition{{
+			expectedConditions: []clusterv1beta1.Condition{{
 				Type:     "VMRunning",
 				Status:   corev1.ConditionFalse,
-				Severity: clusterv1.ConditionSeverityInfo,
+				Severity: clusterv1beta1.ConditionSeverityInfo,
 				Reason:   "WaitingForBootstrapData",
 			}},
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "my-cluster",
 				},
@@ -819,7 +819,7 @@ func TestConditions(t *testing.T) {
 	}
 }
 
-func conditionsMatch(i, j clusterv1.Condition) bool {
+func conditionsMatch(i, j clusterv1beta1.Condition) bool {
 	return i.Type == j.Type &&
 		i.Status == j.Status &&
 		i.Reason == j.Reason &&

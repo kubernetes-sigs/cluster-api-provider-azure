@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -76,7 +76,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 		// set in Clusters created from a ClusterClass.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineTemplateMapper),
 			builder.WithPredicates(
 				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),

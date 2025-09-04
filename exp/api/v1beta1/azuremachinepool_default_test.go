@@ -26,8 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -139,18 +138,17 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
-			_ = clusterv1.AddToScheme(scheme)
-			_ = expv1.AddToScheme(scheme)
+			_ = clusterv1beta1.AddToScheme(scheme)
 
-			machinePool := &expv1.MachinePool{
+			machinePool := &clusterv1beta1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
 					Namespace: "default",
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel: "testcluster",
+						clusterv1beta1.ClusterNameLabel: "testcluster",
 					},
 				},
-				Spec: expv1.MachinePoolSpec{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					ClusterName: "testcluster",
 				},
 			}
@@ -165,12 +163,12 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 					},
 				},
 			}
-			cluster := &clusterv1.Cluster{
+			cluster := &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcluster",
 					Namespace: "default",
 				},
-				Spec: clusterv1.ClusterSpec{
+				Spec: clusterv1beta1.ClusterSpec{
 					InfrastructureRef: &corev1.ObjectReference{
 						Name:      "testcluster",
 						Namespace: "default",

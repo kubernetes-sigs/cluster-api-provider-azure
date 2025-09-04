@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -75,9 +75,9 @@ func TestAzureMachineServiceReconcile(t *testing.T) {
 				scope: &scope.MachineScope{
 					ClusterScoper: &scope.ClusterScope{
 						AzureCluster: &infrav1.AzureCluster{},
-						Cluster:      &clusterv1.Cluster{},
+						Cluster:      &clusterv1beta1.Cluster{},
 					},
-					Machine: &clusterv1.Machine{},
+					Machine: &clusterv1beta1.Machine{},
 					AzureMachine: &infrav1.AzureMachine{
 						Spec: infrav1.AzureMachineSpec{
 							SubnetName: "test-subnet",
@@ -214,9 +214,9 @@ func TestAzureMachineServiceDelete(t *testing.T) {
 				scope: &scope.MachineScope{
 					ClusterScoper: &scope.ClusterScope{
 						AzureCluster: &infrav1.AzureCluster{},
-						Cluster:      &clusterv1.Cluster{},
+						Cluster:      &clusterv1beta1.Cluster{},
 					},
-					Machine:      &clusterv1.Machine{},
+					Machine:      &clusterv1beta1.Machine{},
 					AzureMachine: &infrav1.AzureMachine{},
 				},
 				services: []azure.ServiceReconciler{

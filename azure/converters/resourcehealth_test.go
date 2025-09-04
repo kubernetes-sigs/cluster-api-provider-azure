@@ -23,19 +23,19 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 	tests := []struct {
 		name     string
 		avail    armresourcehealth.AvailabilityStatus
-		expected *clusterv1.Condition
+		expected *clusterv1beta1.Condition
 	}{
 		{
 			name:  "empty",
 			avail: armresourcehealth.AvailabilityStatus{},
-			expected: &clusterv1.Condition{
+			expected: &clusterv1beta1.Condition{
 				Status: corev1.ConditionFalse,
 			},
 		},
@@ -46,7 +46,7 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					AvailabilityState: ptr.To(armresourcehealth.AvailabilityStateValuesAvailable),
 				},
 			},
-			expected: &clusterv1.Condition{
+			expected: &clusterv1beta1.Condition{
 				Status: corev1.ConditionTrue,
 			},
 		},
@@ -59,9 +59,9 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					Summary:           ptr.To("The Summary"),
 				},
 			},
-			expected: &clusterv1.Condition{
+			expected: &clusterv1beta1.Condition{
 				Status:   corev1.ConditionFalse,
-				Severity: clusterv1.ConditionSeverityError,
+				Severity: clusterv1beta1.ConditionSeverityError,
 				Reason:   "ThisIsAReason",
 				Message:  "The Summary",
 			},
@@ -75,9 +75,9 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					Summary:           ptr.To("The Summary"),
 				},
 			},
-			expected: &clusterv1.Condition{
+			expected: &clusterv1beta1.Condition{
 				Status:   corev1.ConditionFalse,
-				Severity: clusterv1.ConditionSeverityWarning,
+				Severity: clusterv1beta1.ConditionSeverityWarning,
 				Reason:   "TheReason",
 				Message:  "The Summary",
 			},

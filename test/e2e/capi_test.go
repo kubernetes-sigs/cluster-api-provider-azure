@@ -30,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -279,7 +279,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(OldProviderUpgradeVersion)},
 						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
 							{
-								Contract: clusterv1.GroupVersion.Version,
+								Contract: clusterv1beta1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
 									AKSMachinePoolPostUpgradeSpec(ctx, func() AKSMachinePoolPostUpgradeSpecInput {
 										return AKSMachinePoolPostUpgradeSpecInput{
@@ -317,7 +317,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(LatestProviderUpgradeVersion)},
 						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
 							{
-								Contract: clusterv1.GroupVersion.Version,
+								Contract: clusterv1beta1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
 									AKSMachinePoolPostUpgradeSpec(ctx, func() AKSMachinePoolPostUpgradeSpecInput {
 										return AKSMachinePoolPostUpgradeSpecInput{

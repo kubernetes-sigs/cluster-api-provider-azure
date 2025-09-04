@@ -24,8 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capiexputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -90,12 +89,12 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		).
 		// watch MachinePool resources
 		Watches(
-			&expv1.MachinePool{},
+			&clusterv1beta1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		).
-		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
+		// Add a watch on clusterv1beta1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -156,7 +155,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	// Fetch all the ManagedMachinePools owned by this Cluster.
 	opt1 := client.InNamespace(azureControlPlane.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
-		clusterv1.ClusterNameLabel: cluster.Name,
+		clusterv1beta1.ClusterNameLabel: cluster.Name,
 	})
 
 	ammpList := &infrav1.AzureManagedMachinePoolList{}
@@ -338,7 +337,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 // ClusterToAzureManagedControlPlane is a handler.ToRequestsFunc to be used to enqueue requests for
 // reconciliation for AzureManagedControlPlane based on updates to a Cluster.
 func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
-	c, ok := o.(*clusterv1.Cluster)
+	c, ok := o.(*clusterv1beta1.Cluster)
 	if !ok {
 		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
 	}

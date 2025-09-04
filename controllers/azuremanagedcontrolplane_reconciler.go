@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -142,11 +142,11 @@ func (r *azureManagedControlPlaneService) reconcileKubeconfig(ctx context.Contex
 
 			// When upgrading from an older version of CAPI, the kubeconfig secret may not have the required
 			// cluster name label. Add it here to avoid kubeconfig issues during upgrades.
-			if _, ok := kubeConfigSecret.Labels[clusterv1.ClusterNameLabel]; !ok {
+			if _, ok := kubeConfigSecret.Labels[clusterv1beta1.ClusterNameLabel]; !ok {
 				if kubeConfigSecret.Labels == nil {
 					kubeConfigSecret.Labels = make(map[string]string)
 				}
-				kubeConfigSecret.Labels[clusterv1.ClusterNameLabel] = r.scope.ClusterName()
+				kubeConfigSecret.Labels[clusterv1beta1.ClusterNameLabel] = r.scope.ClusterName()
 			}
 			return nil
 		}); err != nil {

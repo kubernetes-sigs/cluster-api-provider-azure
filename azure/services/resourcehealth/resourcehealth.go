@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -44,7 +44,7 @@ type ResourceHealthScope interface {
 // availability status to allow the condition to be overridden in specific
 // circumstances.
 type AvailabilityStatusFilterer interface {
-	AvailabilityStatusFilter(cond *clusterv1.Condition) *clusterv1.Condition
+	AvailabilityStatusFilter(cond *clusterv1beta1.Condition) *clusterv1beta1.Condition
 }
 
 // Service provides operations on Azure resources.

@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -85,9 +85,9 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, asos.WatchFilterValue),
 			),
 		).
-		// Add a watch on clusterv1.Cluster object for unpause notifications.
+		// Add a watch on clusterv1beta1.Cluster object for unpause notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 			builder.WithPredicates(
 				predicates.ClusterUnpaused(mgr.GetScheme(), log),
@@ -150,7 +150,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	var clusterIdentity *corev1.ObjectReference
-	var cluster *clusterv1.Cluster
+	var cluster *clusterv1beta1.Cluster
 	var azureClient scope.AzureClients
 
 	switch ownerType := asoSecretOwner.(type) {
@@ -251,7 +251,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Context, clusterIdentity *corev1.ObjectReference, cluster *clusterv1.Cluster, azureClient scope.AzureClients) (*corev1.Secret, error) {
+func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Context, clusterIdentity *corev1.ObjectReference, cluster *clusterv1beta1.Cluster, azureClient scope.AzureClients) (*corev1.Secret, error) {
 	newASOSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aso.GetASOSecretName(cluster.GetName()),

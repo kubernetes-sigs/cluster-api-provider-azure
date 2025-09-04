@@ -27,8 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -77,10 +76,10 @@ func AzureClusterToAzureMachinePoolsMapper(_ context.Context, c client.Client, s
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			log.V(4).Info(fmt.Sprintf("unable to list machine pools in cluster %s", clusterName))
 			return nil
 		}
@@ -130,10 +129,10 @@ func AzureManagedControlPlaneToAzureMachinePoolsMapper(_ context.Context, c clie
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			log.V(4).Info(fmt.Sprintf("unable to list machine pools in cluster %s", clusterName))
 			return nil
 		}
@@ -197,7 +196,7 @@ func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) hand
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
 	return func(_ context.Context, o client.Object) []reconcile.Request {
-		m, ok := o.(*expv1.MachinePool)
+		m, ok := o.(*clusterv1beta1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -247,7 +246,7 @@ func AzureClusterToAzureMachinePoolsFunc(_ context.Context, c client.Client, log
 			return nil
 		}
 
-		labels := map[string]string{clusterv1.ClusterNameLabel: cluster.Name}
+		labels := map[string]string{clusterv1beta1.ClusterNameLabel: cluster.Name}
 		ampl := &infrav1exp.AzureMachinePoolList{}
 		if err := c.List(ctx, ampl, client.InNamespace(ac.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list AzureMachinePools")
@@ -283,7 +282,7 @@ func AzureMachinePoolToAzureMachinePoolMachines(_ context.Context, c client.Clie
 		logWithValues := log.WithValues("AzureMachinePool", amp.Name, "Namespace", amp.Namespace)
 
 		labels := map[string]string{
-			clusterv1.ClusterNameLabel:      amp.Labels[clusterv1.ClusterNameLabel],
+			clusterv1beta1.ClusterNameLabel: amp.Labels[clusterv1beta1.ClusterNameLabel],
 			infrav1exp.MachinePoolNameLabel: amp.Name,
 		}
 		ampml := &infrav1exp.AzureMachinePoolMachineList{}
@@ -396,7 +395,7 @@ func BootstrapConfigToInfrastructureMapFunc(c client.Client, log logr.Logger) ha
 			Namespace: o.GetNamespace(),
 			Name:      mpName,
 		}
-		mp := &expv1.MachinePool{}
+		mp := &clusterv1beta1.MachinePool{}
 		if err := c.Get(ctx, mpKey, mp); err != nil {
 			if !apierrors.IsNotFound(err) {
 				log.Error(err, "failed to fetch MachinePool to validate Bootstrap.ConfigRef")

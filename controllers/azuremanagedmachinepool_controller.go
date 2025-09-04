@@ -24,8 +24,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -103,7 +102,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&expv1.MachinePool{},
+			&clusterv1beta1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
 		).
 		// watch for changes in AzureManagedControlPlanes
@@ -111,9 +110,9 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 			&infrav1.AzureManagedControlPlane{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
-		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
+		// Add a watch on clusterv1beta1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -270,7 +269,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 		// Ensure the ready condition is false, but do not overwrite an existing
 		// error condition which might provide more details.
 		if v1beta1conditions.IsTrue(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition) {
-			v1beta1conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+			v1beta1conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s", err.Error())
 		}
 
 		// Handle transient and terminal errors

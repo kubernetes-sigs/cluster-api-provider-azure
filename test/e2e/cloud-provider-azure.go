@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
@@ -64,7 +64,7 @@ func EnsureAzureDiskCSIDriverHelmChart(ctx context.Context, input clusterctl.App
 	mgmtClient := input.ClusterProxy.GetClient()
 
 	By("Ensuring azure-disk CSI driver is installed via CAAPH")
-	cluster := &clusterv1.Cluster{}
+	cluster := &clusterv1beta1.Cluster{}
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, types.NamespacedName{
 			Namespace: input.Namespace,

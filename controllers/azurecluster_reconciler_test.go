@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -83,7 +83,7 @@ func TestAzureClusterServiceReconcile(t *testing.T) {
 
 			s := &azureClusterService{
 				scope: &scope.ClusterScope{
-					Cluster:      &clusterv1.Cluster{},
+					Cluster:      &clusterv1beta1.Cluster{},
 					AzureCluster: &infrav1.AzureCluster{},
 				},
 				services: []azure.ServiceReconciler{
@@ -358,7 +358,7 @@ func TestAzureClusterServiceDelete(t *testing.T) {
 							},
 						},
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:              clusterName,
 							Namespace:         namespace,

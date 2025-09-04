@@ -45,7 +45,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/utils/ptr"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -74,7 +73,7 @@ func initScheme() *runtime.Scheme {
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
-	Expect(expv1.AddToScheme(scheme)).To(Succeed())
+	Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1preview.AddToScheme(scheme)).To(Succeed())

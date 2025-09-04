@@ -22,7 +22,7 @@ import (
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -69,10 +69,10 @@ func postCreateOrUpdateResourceHook(_ context.Context, scope AgentPoolScope, obj
 
 	// When autoscaling is set, add the annotation to the machine pool and update the replica count.
 	if ptr.Deref(agentPool.Status.EnableAutoScaling, false) {
-		scope.SetCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation, "true")
+		scope.SetCAPIMachinePoolAnnotation(clusterv1beta1.ReplicasManagedByAnnotation, "true")
 		scope.SetCAPIMachinePoolReplicas(agentPool.Status.Count)
 	} else { // Otherwise, remove the annotation.
-		scope.RemoveCAPIMachinePoolAnnotation(clusterv1.ReplicasManagedByAnnotation)
+		scope.RemoveCAPIMachinePoolAnnotation(clusterv1beta1.ReplicasManagedByAnnotation)
 	}
 	return nil
 }

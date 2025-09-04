@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -80,7 +80,7 @@ func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr c
 		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 		// set in Clusters created from a ClusterClass.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
 				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
@@ -117,7 +117,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	// or machinedeployment, we already created a secret for the template. All machines
 	// in the machinedeployment will share that one secret.
 	gvk := infrav1.GroupVersion.WithKind("AzureMachineTemplate")
-	isClonedFromTemplate := e.Object.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
+	isClonedFromTemplate := e.Object.GetAnnotations()[clusterv1beta1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
 
 	return !isClonedFromTemplate
 }

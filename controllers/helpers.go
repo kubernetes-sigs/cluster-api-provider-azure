@@ -34,8 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
@@ -119,10 +118,10 @@ func AzureClusterToAzureMachinesMapper(_ context.Context, c client.Client, obj r
 			return nil
 		}
 
-		machineList := &clusterv1.MachineList{}
+		machineList := &clusterv1beta1.MachineList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -138,7 +137,7 @@ func AzureClusterToAzureMachinesMapper(_ context.Context, c client.Client, obj r
 	}, nil
 }
 
-// GetOwnerClusterName returns the name of the owning Cluster by finding a clusterv1.Cluster in the ownership references.
+// GetOwnerClusterName returns the name of the owning Cluster by finding a clusterv1beta1.Cluster in the ownership references.
 func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind != "Cluster" {
@@ -148,7 +147,7 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 		if err != nil {
 			return "", false
 		}
-		if gv.Group == clusterv1.GroupVersion.Group {
+		if gv.Group == clusterv1beta1.GroupVersion.Group {
 			return ref.Name, true
 		}
 	}
@@ -158,7 +157,7 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 // GetObjectsToRequestsByNamespaceAndClusterName returns the slice of ctrl.Requests consisting the list items contained in the unstructured list.
 func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client.Client, clusterKey client.ObjectKey, list *unstructured.UnstructuredList) []ctrl.Request {
 	// list all of the requested objects within the cluster namespace with the cluster name label
-	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterKey.Name}); err != nil {
+	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterKey.Name}); err != nil {
 		return nil
 	}
 
@@ -537,7 +536,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 }
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
-func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*expv1.MachinePool, error) {
+func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*clusterv1beta1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetOwnerMachinePool")
 	defer done()
 
@@ -550,7 +549,7 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 			return nil, errors.WithStack(err)
 		}
 
-		if gv.Group == expv1.GroupVersion.Group {
+		if gv.Group == clusterv1beta1.GroupVersion.Group {
 			return GetMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
@@ -580,11 +579,11 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 }
 
 // GetMachinePoolByName finds and return a MachinePool object using the specified params.
-func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*expv1.MachinePool, error) {
+func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*clusterv1beta1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetMachinePoolByName")
 	defer done()
 
-	m := &expv1.MachinePool{}
+	m := &clusterv1beta1.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
 		return nil, err
@@ -663,7 +662,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1c
 	}
 
 	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
-		v1beta1conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+		v1beta1conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1beta1.ConditionSeverityError, "")
 		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 	}
 
@@ -706,7 +705,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
 	return func(_ context.Context, o client.Object) []reconcile.Request {
-		m, ok := o.(*expv1.MachinePool)
+		m, ok := o.(*clusterv1beta1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -766,10 +765,10 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(_ context.Context, c cl
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -819,10 +818,10 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(_ context.Context,
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -943,7 +942,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(_ context.Context, c client.Cl
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		machinePool, ok := o.(*expv1.MachinePool)
+		machinePool, ok := o.(*clusterv1beta1.MachinePool)
 		if !ok {
 			log.Info("expected a MachinePool, got wrong type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -1048,14 +1047,14 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			log := logger.WithValues("predicate", "ClusterUpdatePauseChange", "eventType", "update")
 
-			oldCluster, ok := e.ObjectOld.(*clusterv1.Cluster)
+			oldCluster, ok := e.ObjectOld.(*clusterv1beta1.Cluster)
 			if !ok {
 				log.V(4).Info("Expected Cluster", "type", fmt.Sprintf("%T", e.ObjectOld))
 				return false
 			}
 			log = log.WithValues("Cluster", klog.KObj(oldCluster))
 
-			newCluster := e.ObjectNew.(*clusterv1.Cluster)
+			newCluster := e.ObjectNew.(*clusterv1beta1.Cluster)
 
 			if oldCluster.Spec.Paused != newCluster.Spec.Paused {
 				log.V(4).Info("Cluster paused status changed, allowing further processing")
@@ -1078,7 +1077,7 @@ func ClusterPauseChangeAndInfrastructureReady(scheme *runtime.Scheme, log logr.L
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
-func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster, timeouts reconciler.Timeouts, credCache azure.CredentialCache) (ClusterScoper, error) {
+func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1beta1.Cluster, timeouts reconciler.Timeouts, credCache azure.CredentialCache) (ClusterScoper, error) {
 	infraRef := cluster.Spec.InfrastructureRef
 	switch infraRef.Kind {
 	case "AzureCluster":

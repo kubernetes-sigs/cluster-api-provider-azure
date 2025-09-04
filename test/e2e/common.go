@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
 	kubeadmv1 "sigs.k8s.io/cluster-api/api/controlplane/kubeadm/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -147,7 +147,7 @@ type cleanupInput struct {
 	ArtifactFolder         string
 	Namespace              *corev1.Namespace
 	CancelWatches          context.CancelFunc
-	Cluster                *clusterv1.Cluster
+	Cluster                *clusterv1beta1.Cluster
 	IntervalsGetter        func(spec, key string) []interface{}
 	SkipCleanup            bool
 	SkipLogCollection      bool
@@ -304,12 +304,12 @@ func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.Cluster
 	inClustersNamespaceListOption := client.InNamespace(ns)
 	// ControlPlane labels
 	matchClusterListOption := client.MatchingLabels{
-		clusterv1.MachineControlPlaneLabel: "",
-		clusterv1.ClusterNameLabel:         clusterName,
+		clusterv1beta1.MachineControlPlaneLabel: "",
+		clusterv1beta1.ClusterNameLabel:         clusterName,
 	}
 
 	Eventually(func() (int, error) {
-		machineList := &clusterv1.MachineList{}
+		machineList := &clusterv1beta1.MachineList{}
 		lister := proxy.GetClient()
 		if err := lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
 			Logf("Failed to list the machines: %+v", err)
@@ -317,7 +317,7 @@ func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.Cluster
 		}
 		count := 0
 		for _, machine := range machineList.Items {
-			if condition := v1beta1conditions.Get(&machine, clusterv1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
+			if condition := v1beta1conditions.Get(&machine, clusterv1beta1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
 				count++
 			}
 		}

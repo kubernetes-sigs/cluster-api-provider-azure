@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -40,7 +40,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			oldAMC: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 					},
 				},
@@ -48,7 +48,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			amc: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 						Port: 443,
 					},
@@ -61,7 +61,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			oldAMC: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Port: 443,
 					},
 				},
@@ -69,7 +69,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			amc: &AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 						Port: 443,
 					},
@@ -102,7 +102,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amc: &AzureManagedCluster{
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Host: "my-host",
 					},
 				},
@@ -113,7 +113,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amc: &AzureManagedCluster{
 				Spec: AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 						Port: 4443,
 					},
 				},

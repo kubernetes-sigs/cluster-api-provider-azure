@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -947,7 +947,7 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 	switch obj := obj.(type) {
 	case *AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
-	case *clusterv1.Cluster:
+	case *clusterv1beta1.Cluster:
 		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
 			Kind: AzureClusterKind,
 			Name: "test-cluster",
@@ -972,7 +972,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey("")}
 	testObjectMeta := metav1.ObjectMeta{
 		Labels: map[string]string{
-			clusterv1.ClusterNameLabel: "test-cluster",
+			clusterv1beta1.ClusterNameLabel: "test-cluster",
 		},
 	}
 

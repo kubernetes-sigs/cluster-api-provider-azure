@@ -30,7 +30,7 @@ import (
 	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -90,7 +90,7 @@ func TestMachineScope_Name(t *testing.T) {
 			name: "Windows name with long MachineName and short cluster name",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -116,7 +116,7 @@ func TestMachineScope_Name(t *testing.T) {
 			name: "Windows name with long MachineName and long cluster name",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster8901234",
 						},
@@ -275,7 +275,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					},
 				},
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "my-cluster",
 							// Note: m.ClusterName() takes the value from the Cluster object, not the AzureCluster object
@@ -286,7 +286,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 							Name: "my-cluster",
 						},
 						Status: infrav1.AzureClusterStatus{
-							FailureDomains: map[string]clusterv1.FailureDomainSpec{
+							FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 								"failure-domain-id-1": {},
 								"failure-domain-id-2": {},
 								"failure-domain-id-3": {},
@@ -348,7 +348,7 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 		{
 			name: "returns empty when infra is not control plane",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -360,10 +360,10 @@ func TestMachineScope_InboundNatSpecs(t *testing.T) {
 		{
 			name: "returns InboundNatSpec when infra is control plane",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "",
+							clusterv1beta1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -425,7 +425,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 		{
 			name: "returns empty if VM identity is not system assigned",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -437,7 +437,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 		{
 			name: "returns RoleAssignmentSpec if VM identity is system assigned",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -477,7 +477,7 @@ func TestMachineScope_RoleAssignmentSpecs(t *testing.T) {
 		{
 			name: "returns RoleAssignmentSpec with specified scope and role assignment id",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -537,7 +537,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -584,7 +584,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Linux and cloud is AzurePublicCloud and DisableExtensionOperations is true, it returns empty",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -618,7 +618,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Linux and cloud is not AzurePublicCloud, it returns empty",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -651,7 +651,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -698,7 +698,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Windows and cloud is not AzurePublicCloud, it returns empty",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -731,7 +731,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is not Linux or Windows and cloud is AzurePublicCloud, it returns empty",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -764,7 +764,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is not Windows or Linux and cloud is not AzurePublicCloud, it returns empty",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -797,7 +797,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If a custom VM extension is specified, it returns the custom VM extension",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -873,7 +873,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		{
 			name: "If a custom VM extension is specified and bootstrap extension is disabled, it returns only the custom VM extension",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1053,8 +1053,8 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 		{
 			name: "returns empty if no failure domain is present",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{},
+				Machine: &clusterv1beta1.Machine{
+					Spec: clusterv1beta1.MachineSpec{},
 				},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1068,8 +1068,8 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 		{
 			name: "returns failure domain from the machine spec",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				Machine: &clusterv1beta1.Machine{
+					Spec: clusterv1beta1.MachineSpec{
 						FailureDomain: ptr.To("dummy-failure-domain-from-machine-spec"),
 					},
 				},
@@ -1087,8 +1087,8 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 		{
 			name: "returns failure domain from the azuremachine spec",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{},
+				Machine: &clusterv1beta1.Machine{
+					Spec: clusterv1beta1.MachineSpec{},
 				},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1159,7 +1159,7 @@ func TestMachineScope_IsControlPlane(t *testing.T) {
 		{
 			name: "returns false when machine is not control plane",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1171,10 +1171,10 @@ func TestMachineScope_IsControlPlane(t *testing.T) {
 		{
 			name: "returns true when machine is control plane",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "",
+							clusterv1beta1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1205,7 +1205,7 @@ func TestMachineScope_Role(t *testing.T) {
 		{
 			name: "returns node when machine is worker",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{},
+				Machine: &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -1217,10 +1217,10 @@ func TestMachineScope_Role(t *testing.T) {
 		{
 			name: "returns control-plane when machine is control plane",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "",
+							clusterv1beta1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1253,20 +1253,20 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			name: "returns empty and false if availability set is not enabled",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
 					},
 					AzureCluster: &infrav1.AzureCluster{
 						Status: infrav1.AzureClusterStatus{
-							FailureDomains: clusterv1.FailureDomains{
-								"foo-failure-domain": clusterv1.FailureDomainSpec{},
+							FailureDomains: clusterv1beta1.FailureDomains{
+								"foo-failure-domain": clusterv1beta1.FailureDomainSpec{},
 							},
 						},
 					},
 				},
-				Machine:      &clusterv1.Machine{},
+				Machine:      &clusterv1beta1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{},
 			},
 			wantAvailabilitySetName:      "",
@@ -1277,7 +1277,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1286,10 +1286,10 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "",
+							clusterv1beta1.MachineControlPlaneLabel: "",
 						},
 					},
 				},
@@ -1303,7 +1303,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1312,10 +1312,10 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1beta1.MachineDeploymentNameLabel: "foo-machine-deployment",
 						},
 					},
 				},
@@ -1328,7 +1328,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			name: "returns empty and false if machine is using spot instances",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1337,10 +1337,10 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1beta1.MachineDeploymentNameLabel: "foo-machine-deployment",
 						},
 					},
 				},
@@ -1358,7 +1358,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1367,10 +1367,10 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineSetNameLabel: "foo-machine-set",
+							clusterv1beta1.MachineSetNameLabel: "foo-machine-set",
 						},
 					},
 				},
@@ -1384,7 +1384,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1393,11 +1393,11 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
-							clusterv1.MachineSetNameLabel:        "foo-machine-set",
+							clusterv1beta1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1beta1.MachineSetNameLabel:        "foo-machine-set",
 						},
 					},
 				},
@@ -1411,7 +1411,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			machineScope: MachineScope{
 
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1420,7 +1420,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{},
 					},
@@ -1434,7 +1434,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			name: "returns empty and false if machine has failureDomain set",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1443,13 +1443,13 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1beta1.MachineDeploymentNameLabel: "foo-machine-deployment",
 						},
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						FailureDomain: ptr.To("1"),
 					},
 				},
@@ -1464,7 +1464,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			name: "returns empty and false if azureMachine has failureDomain set",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -1473,10 +1473,10 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						Status: infrav1.AzureClusterStatus{},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+							clusterv1beta1.MachineDeploymentNameLabel: "foo-machine-deployment",
 						},
 					},
 				},
@@ -1587,11 +1587,11 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows, returns windows containerd image",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						Version: ptr.To("1.20.1"),
 					},
 				},
@@ -1616,11 +1616,11 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with annotation dockershim, returns error",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						Version: ptr.To("1.22.1"),
 					},
 				},
@@ -1648,11 +1648,11 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2019, returns error",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						Version: ptr.To("1.23.3"),
 					},
 				},
@@ -1680,11 +1680,11 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image is specified and os specified is windows with windowsServerVersion annotation set to 2022, retrurns 2022 image",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						Version: ptr.To("1.23.3"),
 					},
 				},
@@ -1712,11 +1712,11 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		{
 			name: "if no image and OS is specified, returns linux image",
 			machineScope: MachineScope{
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
 					},
-					Spec: clusterv1.MachineSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						Version: ptr.To("1.20.1"),
 					},
 				},
@@ -1761,7 +1761,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -1819,11 +1819,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabel: "true",
+							// clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -1864,7 +1864,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -1922,11 +1922,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabel: "true",
+							// clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -1974,7 +1974,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2034,11 +2034,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabel: "true",
+							// clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2079,7 +2079,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2135,11 +2135,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						AllocatePublicIP: true,
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{
-							// clusterv1.MachineControlPlaneLabel: "true",
+							// clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2180,7 +2180,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2244,11 +2244,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "true",
+							clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2289,7 +2289,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2350,11 +2350,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "true",
+							clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2394,7 +2394,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2455,11 +2455,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						}},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "true",
+							clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2500,7 +2500,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2562,11 +2562,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						DNSServers: []string{"123.123.123.123", "124.124.124.124"},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "true",
+							clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2606,7 +2606,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2668,11 +2668,11 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						DNSServers: []string{"123.123.123.123", "124.124.124.124"},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 						Labels: map[string]string{
-							clusterv1.MachineControlPlaneLabel: "true",
+							clusterv1beta1.MachineControlPlaneLabel: "true",
 						},
 					},
 				},
@@ -2713,7 +2713,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2782,7 +2782,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{},
@@ -2849,7 +2849,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -2916,7 +2916,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{},
@@ -2983,7 +2983,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					AzureClients: AzureClients{
 						subscriptionID: "123",
 					},
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cluster",
 							Namespace: "default",
@@ -3047,7 +3047,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "machine",
 						Labels: map[string]string{},
@@ -3108,7 +3108,7 @@ func TestDiskSpecs(t *testing.T) {
 			name: "only os disk",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -3133,7 +3133,7 @@ func TestDiskSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 					},
@@ -3150,7 +3150,7 @@ func TestDiskSpecs(t *testing.T) {
 			name: "os and data disks",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -3180,7 +3180,7 @@ func TestDiskSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 					},
@@ -3200,7 +3200,7 @@ func TestDiskSpecs(t *testing.T) {
 			name: "os and multiple data disks",
 			machineScope: MachineScope{
 				ClusterScoper: &ClusterScope{
-					Cluster: &clusterv1.Cluster{
+					Cluster: &clusterv1beta1.Cluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "cluster",
 						},
@@ -3233,7 +3233,7 @@ func TestDiskSpecs(t *testing.T) {
 						},
 					},
 				},
-				Machine: &clusterv1.Machine{
+				Machine: &clusterv1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine",
 					},

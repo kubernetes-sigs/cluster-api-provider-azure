@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterctlv1alpha3 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -1349,7 +1349,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 	tests := []struct {
 		name    string
 		ammp    *AzureManagedMachinePool
-		cluster *clusterv1.Cluster
+		cluster *clusterv1beta1.Cluster
 		wantErr bool
 	}{
 		{
@@ -1357,9 +1357,9 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			// Note that Owner Cluster's deletion timestamp is nil and Owner cluster being paused does not matter anymore.
 			name: "AzureManagedMachinePool (AMMP) should be deleted if this AMMP has the annotation 'cluster.x-k8s.io/move-to-delete' with the owner cluster being paused and 'No' deletion timestamp",
 			ammp: systemMachinePoolWithDeletionAnnotation,
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:       systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
+					Name:       systemMachinePool.GetLabels()[clusterv1beta1.ClusterNameLabel],
 					Namespace:  systemMachinePool.Namespace,
 					Finalizers: finalizers,
 				},
@@ -1370,9 +1370,9 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			// AzureManagedMachinePool will be deleted since Owner Cluster has been marked for deletion
 			name: "AzureManagedMachinePool should be deleted since the Cluster is paused with a deletion timestamp",
 			ammp: systemMachinePool,
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
+					Name:              systemMachinePool.GetLabels()[clusterv1beta1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 					Finalizers:        finalizers,
@@ -1383,9 +1383,9 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 		{
 			name: "AzureManagedMachinePool should not be deleted without a deletion timestamp on Owner Cluster and having one system pool node(invalid delete)",
 			ammp: systemMachinePool,
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
+					Name:      systemMachinePool.GetLabels()[clusterv1beta1.ClusterNameLabel],
 					Namespace: systemMachinePool.Namespace,
 				},
 			},
@@ -1394,9 +1394,9 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 		{
 			name: "AzureManagedMachinePool should be deleted when Cluster is set with a deletion timestamp having one system pool node(valid delete)",
 			ammp: systemMachinePool,
-			cluster: &clusterv1.Cluster{
+			cluster: &clusterv1beta1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              systemMachinePool.GetLabels()[clusterv1.ClusterNameLabel],
+					Name:              systemMachinePool.GetLabels()[clusterv1beta1.ClusterNameLabel],
 					Namespace:         systemMachinePool.Namespace,
 					DeletionTimestamp: &deletionTime,
 					Finalizers:        finalizers,
@@ -1411,7 +1411,7 @@ func TestAzureManagedMachinePool_validateLastSystemNodePool(t *testing.T) {
 			g := NewWithT(t)
 			scheme := runtime.NewScheme()
 			_ = AddToScheme(scheme)
-			_ = clusterv1.AddToScheme(scheme)
+			_ = clusterv1beta1.AddToScheme(scheme)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.cluster, tc.ammp).Build()
 			err := validateLastSystemNodePool(fakeClient, tc.ammp.Spec.NodeLabels, tc.ammp.Namespace, tc.ammp.Annotations)
 			if tc.wantErr {
@@ -1439,14 +1439,14 @@ func getManagedMachinePoolWithSystemMode() *AzureManagedMachinePool {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "test-cluster",
-				LabelAgentPoolMode:         string(NodePoolModeSystem),
+				clusterv1beta1.ClusterNameLabel: "test-cluster",
+				LabelAgentPoolMode:              string(NodePoolModeSystem),
 			},
 		},
 		Spec: AzureManagedMachinePoolSpec{
 			AzureManagedMachinePoolClassSpec: AzureManagedMachinePoolClassSpec{
 				NodeLabels: map[string]string{
-					clusterv1.ClusterNameLabel: "test-cluster",
+					clusterv1beta1.ClusterNameLabel: "test-cluster",
 				},
 			},
 		},

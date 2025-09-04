@@ -28,16 +28,15 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 type AKSAutoscaleSpecInput struct {
-	Cluster       *clusterv1.Cluster
-	MachinePool   *expv1.MachinePool
+	Cluster       *clusterv1beta1.Cluster
+	MachinePool   *clusterv1beta1.MachinePool
 	WaitIntervals []interface{}
 }
 

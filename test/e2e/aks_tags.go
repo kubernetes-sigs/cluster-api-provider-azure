@@ -30,8 +30,7 @@ import (
 	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -39,8 +38,8 @@ import (
 )
 
 type AKSAdditionalTagsSpecInput struct {
-	Cluster       *clusterv1.Cluster
-	MachinePools  []*expv1.MachinePool
+	Cluster       *clusterv1beta1.Cluster
+	MachinePools  []*clusterv1beta1.MachinePool
 	WaitForUpdate []interface{}
 }
 
@@ -143,7 +142,7 @@ func AKSAdditionalTagsSpec(ctx context.Context, inputGetter func() AKSAdditional
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1beta1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 

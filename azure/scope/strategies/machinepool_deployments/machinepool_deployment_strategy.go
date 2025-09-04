@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -145,7 +145,7 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		}()
 	)
 
-	// Order AzureMachinePoolMachines with the clusterv1.DeleteMachineAnnotation to the front so that they have delete priority.
+	// Order AzureMachinePoolMachines with the clusterv1beta1.DeleteMachineAnnotation to the front so that they have delete priority.
 	// This allows MachinePool Machines to work with the autoscaler.
 	failedMachines = orderByDeleteMachineAnnotation(failedMachines)
 	deletingMachines = orderByDeleteMachineAnnotation(deletingMachines)
@@ -235,7 +235,7 @@ func getDeleteAnnotatedMachines(machinesByProviderID map[string]infrav1exp.Azure
 	var machines []infrav1exp.AzureMachinePoolMachine
 	for _, v := range machinesByProviderID {
 		if v.Annotations != nil {
-			if _, hasDeleteAnnotation := v.Annotations[clusterv1.DeleteMachineAnnotation]; hasDeleteAnnotation {
+			if _, hasDeleteAnnotation := v.Annotations[clusterv1beta1.DeleteMachineAnnotation]; hasDeleteAnnotation {
 				machines = append(machines, v)
 			}
 		}
@@ -323,11 +323,11 @@ func orderRandom(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.Azu
 	return machines
 }
 
-// orderByDeleteMachineAnnotation will sort AzureMachinePoolMachines with the clusterv1.DeleteMachineAnnotation to the front of the list.
+// orderByDeleteMachineAnnotation will sort AzureMachinePoolMachines with the clusterv1beta1.DeleteMachineAnnotation to the front of the list.
 // It will preserve the existing order of the list otherwise so that it respects the existing delete priority otherwise.
 func orderByDeleteMachineAnnotation(machines []infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
 	sort.SliceStable(machines, func(i, _ int) bool {
-		_, iHasAnnotation := machines[i].Annotations[clusterv1.DeleteMachineAnnotation]
+		_, iHasAnnotation := machines[i].Annotations[clusterv1beta1.DeleteMachineAnnotation]
 
 		return iHasAnnotation
 	})

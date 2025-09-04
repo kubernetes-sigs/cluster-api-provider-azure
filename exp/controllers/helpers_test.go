@@ -29,9 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	kubeadmv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	bootstrapv1beta1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,12 +50,11 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 	It("should map bootstrap config to machine pool", func() {
 		ctx := context.Background()
 		scheme := runtime.NewScheme()
-		Expect(kubeadmv1.AddToScheme(scheme)).Should(Succeed())
-		Expect(expv1.AddToScheme(scheme)).Should(Succeed())
-		Expect(clusterv1.AddToScheme(scheme)).Should(Succeed())
+		Expect(bootstrapv1beta1.AddToScheme(scheme)).Should(Succeed())
+		Expect(clusterv1beta1.AddToScheme(scheme)).Should(Succeed())
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 		mapFn := BootstrapConfigToInfrastructureMapFunc(fakeClient, ctrl.Log)
-		bootstrapConfig := kubeadmv1.KubeadmConfig{
+		bootstrapConfig := bootstrapv1beta1.KubeadmConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "bootstrap-test",
 				Namespace: "default",
@@ -94,15 +92,15 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
 
 		By("doing nothing if the MachinePool has no BootstrapConfigRef")
-		machinePool := expv1.MachinePool{
+		machinePool := clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "machine-pool-test",
 				Namespace: "default",
 			},
-			Spec: expv1.MachinePoolSpec{
+			Spec: clusterv1beta1.MachinePoolSpec{
 				ClusterName: "test-cluster",
-				Template: clusterv1.MachineTemplateSpec{
-					Spec: clusterv1.MachineSpec{
+				Template: clusterv1beta1.MachineTemplateSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						ClusterName: "test-cluster",
 					},
 				},
@@ -112,7 +110,7 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
 
 		By("doing nothing if the MachinePool has a different BootstrapConfigRef Kind")
-		machinePool.Spec.Template.Spec.Bootstrap = clusterv1.Bootstrap{
+		machinePool.Spec.Template.Spec.Bootstrap = clusterv1beta1.Bootstrap{
 			ConfigRef: &corev1.ObjectReference{
 				APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
 				Kind:       "OtherBootstrapConfig",
@@ -168,7 +166,7 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 				{
 					Name:       clusterName,
 					Kind:       "Cluster",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 				},
 			},
 		},

@@ -33,8 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,7 +56,7 @@ const (
 var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
-func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
+func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1beta1.Machine, outputPath string) error {
 	infraGV, err := schema.ParseGroupVersion(m.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
 		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", m.Spec.InfrastructureRef.APIVersion, err)
@@ -81,7 +80,7 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 }
 
 // CollectMachinePoolLog collects logs from a machine pool.
-func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool, outputPath string) error {
 	infraGV, err := schema.ParseGroupVersion(mp.Spec.Template.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
 		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", mp.Spec.Template.Spec.InfrastructureRef.APIVersion, err)
@@ -110,11 +109,11 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 
 // CollectInfrastructureLogs collects log from the infrastructure.
 // This is currently a no-op implementation to satisfy the LogCollector interface.
-func (k AzureLogCollector) CollectInfrastructureLogs(_ context.Context, _ client.Client, _ *clusterv1.Cluster, _ string) error {
+func (k AzureLogCollector) CollectInfrastructureLogs(_ context.Context, _ client.Client, _ *clusterv1beta1.Cluster, _ string) error {
 	return nil
 }
 
-func collectAzureMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
+func collectAzureMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1beta1.Machine, outputPath string) error {
 	am, err := getAzureMachine(ctx, managementClusterClient, m)
 	if err != nil {
 		return fmt.Errorf("get AzureMachine %s/%s: %w", m.Spec.InfrastructureRef.Namespace, m.Spec.InfrastructureRef.Name, err)
@@ -136,7 +135,7 @@ func collectAzureMachineLog(ctx context.Context, managementClusterClient client.
 	return collectVMLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
 }
 
-func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool, outputPath string) error {
 	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
 	if err != nil {
 		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
@@ -158,7 +157,7 @@ func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient cli
 	return collectVMSSLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
 }
 
-func collectVMLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
+func collectVMLog(ctx context.Context, cluster *clusterv1beta1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get default azure credential")
@@ -198,7 +197,7 @@ func collectVMLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionI
 	return kinderrors.NewAggregate(errs)
 }
 
-func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
+func collectVMSSLog(ctx context.Context, cluster *clusterv1beta1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
 	vmssID := azure.VMSSID(subscriptionID, resourceGroup, name)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
@@ -323,7 +322,7 @@ func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptio
 }
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
-func collectLogsFromNode(cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
+func collectLogsFromNode(cluster *clusterv1beta1.Cluster, hostname string, isWindows bool, outputPath string) error {
 	nodeOSType := azure.LinuxOS
 	if isWindows {
 		nodeOSType = azure.WindowsOS
@@ -393,7 +392,7 @@ func getAzureASOManagedCluster(ctx context.Context, managementClusterClient clie
 	return azManagedCluster, err
 }
 
-func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
+func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1beta1.Machine) (*infrav1.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,
 		Name:      m.Spec.InfrastructureRef.Name,
@@ -404,7 +403,7 @@ func getAzureMachine(ctx context.Context, managementClusterClient client.Client,
 	return azMachine, err
 }
 
-func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,

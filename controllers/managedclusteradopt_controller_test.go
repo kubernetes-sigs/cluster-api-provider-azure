@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -67,7 +67,7 @@ func TestManagedClusterAdoptReconcile(t *testing.T) {
 	s := runtime.NewScheme()
 	err := asocontainerservicev1.AddToScheme(s)
 	g.Expect(err).ToNot(HaveOccurred())
-	err = clusterv1.AddToScheme(s)
+	err = clusterv1beta1.AddToScheme(s)
 	g.Expect(err).ToNot(HaveOccurred())
 	err = asoresourcesv1.AddToScheme(s)
 	g.Expect(err).ToNot(HaveOccurred())

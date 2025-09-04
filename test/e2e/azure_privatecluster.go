@@ -34,7 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -63,7 +63,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		publicClusterProxy  framework.ClusterProxy
 		publicNamespace     *corev1.Namespace
 		publicCancelWatches context.CancelFunc
-		cluster             *clusterv1.Cluster
+		cluster             *clusterv1beta1.Cluster
 		clusterName         string
 	)
 

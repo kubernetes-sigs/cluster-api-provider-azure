@@ -24,7 +24,7 @@ import (
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
@@ -441,7 +441,7 @@ func makeAMPM(opts ampmOptions) infrav1exp.AzureMachinePoolMachine {
 	}
 
 	if opts.HasDeleteMachineAnnotation {
-		ampm.Annotations[clusterv1.DeleteMachineAnnotation] = "true"
+		ampm.Annotations[clusterv1beta1.DeleteMachineAnnotation] = "true"
 	}
 
 	return ampm
