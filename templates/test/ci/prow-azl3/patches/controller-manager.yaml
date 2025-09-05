@@ -11,21 +11,73 @@
       # Install ca-certificates packages for Azure Linux
       tdnf install -y ca-certificates ca-certificates-legacy
       update-ca-trust
+
+      # Azure Linux 3 firewall configuration following their best practices
+      # Keep the default DROP policy for security, only add specific ACCEPT rules
+
+      # Allow Azure service IP addresses (required for Azure resources)
+      iptables -A INPUT -s 168.63.129.16 -j ACCEPT
+      iptables -A OUTPUT -d 168.63.129.16 -j ACCEPT
+      ip6tables -A INPUT -s fe80::1234:5678:9abc -j ACCEPT
+      ip6tables -A OUTPUT -d fe80::1234:5678:9abc -j ACCEPT
+
+      # Allow localhost traffic
+      iptables -A INPUT -i lo -j ACCEPT
+      iptables -A OUTPUT -o lo -j ACCEPT
+      ip6tables -A INPUT -i lo -j ACCEPT
+      ip6tables -A OUTPUT -o lo -j ACCEPT
+
+      # Allow established and related connections
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+      # Essential Kubernetes ports for control plane
+      # API Server
+      iptables -A INPUT -p tcp --dport 6443 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 6443 -j ACCEPT
+
+      # etcd server communication
+      iptables -A INPUT -p tcp --dport 2379:2380 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 2379:2380 -j ACCEPT
+
+      # Kubelet API
+      iptables -A INPUT -p tcp --dport 10250 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 10250 -j ACCEPT
+
+      # SSH
+      iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+      # HTTPS and HTTP for Azure APIs, container registries
+      iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+      iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 443 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 80 -j ACCEPT
+
+      # Calico networking requirements
+      # BGP for node-to-node communication
+      iptables -A INPUT -p tcp --dport 179 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 179 -j ACCEPT
       
-      # Follow Azure Linux 3 docs exactly - completely permissive for debugging
-      # Change default policy to ACCEPT (as recommended by AZL3 docs)
-      iptables -P INPUT ACCEPT
-      iptables -P FORWARD ACCEPT
-      iptables -P OUTPUT ACCEPT
+      # VXLAN for overlay networking (if used)
+      iptables -A INPUT -p udp --dport 4789 -j ACCEPT
+      ip6tables -A INPUT -p udp --dport 4789 -j ACCEPT
+      
+      # Typha for scaling (if enabled)
+      iptables -A INPUT -p tcp --dport 5473 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 5473 -j ACCEPT
+      
+      # Felix metrics
+      iptables -A INPUT -p tcp --dport 9091 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 9091 -j ACCEPT
+      
+      # IP-in-IP protocol for Calico
+      iptables -A INPUT -p 4 -j ACCEPT
+      ip6tables -A INPUT -p 41 -j ACCEPT
 
-      ip6tables -P INPUT ACCEPT
-      ip6tables -P FORWARD ACCEPT
-      ip6tables -P OUTPUT ACCEPT
-
-      # Flush any rules which would filter packets
-      iptables -F
-      ip6tables -F
-
+      # Save the rules following Azure Linux 3 approach
       iptables-save > /etc/systemd/scripts/ip4save
       ip6tables-save > /etc/systemd/scripts/ip6save
     path: /tmp/azl3-setup.sh
