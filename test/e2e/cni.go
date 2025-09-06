@@ -40,11 +40,11 @@ const (
 )
 
 // EnsureCNI installs the CNI plugin depending on the input.CNIManifestPath
-func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, hasWindows bool) {
+func EnsureCNI(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput) {
 	if input.CNIManifestPath != "" {
 		InstallCNIManifest(ctx, input)
 	} else {
-		EnsureCalicoIsReady(ctx, input, hasWindows)
+		EnsureCalicoIsReady(ctx, input)
 	}
 }
 
@@ -60,19 +60,11 @@ func InstallCNIManifest(ctx context.Context, input clusterctl.ApplyCustomCluster
 }
 
 // EnsureCalicoIsReady copies the kubeadm configmap to the calico-system namespace and waits for the calico pods to be ready.
-func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, hasWindows bool) {
+func EnsureCalicoIsReady(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput) {
 	specName := "ensure-calico"
 
 	clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
 	By("Ensuring Calico CNI is installed via CAAPH")
-
-	By("Copying kubeadm config map to calico-system namespace")
-	workloadClusterClient := clusterProxy.GetClient()
-
-	if hasWindows {
-		// Copy the kubeadm configmap to the calico-system namespace. This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
-		CopyConfigMap(ctx, input, workloadClusterClient, kubeadmConfigMapName, kubesystem, CalicoSystemNamespace)
-	}
 
 	By("Waiting for Ready tigera-operator deployment pods")
 	for _, d := range []string{"tigera-operator"} {

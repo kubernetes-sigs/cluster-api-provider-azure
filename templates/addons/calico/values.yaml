@@ -1,19 +1,24 @@
 installation:
   cni:
     type: Calico
+    ipam:
+      type: Calico
   calicoNetwork:
     bgp: Disabled
     mtu: 1350
     ipPools:
     - cidr: 192.168.0.0/16
       encapsulation: VXLAN
-  registry: mcr.microsoft.com/oss
-# Image and registry configuration for the tigera/operator pod.
-tigeraOperator:
-  image: tigera/operator
-  registry: mcr.microsoft.com/oss
-calicoctl:
-  image: mcr.microsoft.com/oss/calico/ctl
+    windowsDataplane: HNS
+  registry: capzcicommunity.azurecr.io
+  # Image and registry configuration for the tigera/operator pod.
+  tigeraOperator:
+    image: tigera/operator
+    registry: capzcicommunity.azurecr.io
+  calicoctl:
+    image: capzcicommunity.azurecr.io/calico/ctl
+  serviceCIDRs: 
+    - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
 # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
 # when it continuously gets scheduled onto an out-of-date Node that is being
 # deleted. Tolerate only the NoSchedule taints that are expected.
