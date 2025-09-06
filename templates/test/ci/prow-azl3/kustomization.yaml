@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../../../flavors/default
+- ../../../addons/cluster-api-helm/calico.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+patches:
+- path: ../patches/tags.yaml
+- path: ../patches/mhc.yaml
+- path: ../patches/controller-manager.yaml
+- path: ../patches/uami-md-0.yaml
+- path: ../patches/uami-control-plane.yaml
+- path: ../patches/cluster-label-calico.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: patches/controller-manager.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: patches/kubeadm-config-template-azl3.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+    version: v1beta1
+- path: patches/azuremachinetemplate-azl3-image.yaml
+- path: patches/cloud-provider-azure-cacertdir.yaml
+- path: patches/cloud-provider-azure-ci-cacertdir.yaml
+
+sortOptions:
+  order: fifo
