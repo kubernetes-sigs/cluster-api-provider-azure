@@ -104,7 +104,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.RELEASE_TAG }}
-      - name: Calculate go version
+      - name: Get Go version
         run: echo "go_version=$(make go-version)" >> $GITHUB_ENV
       - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # tag=v6.0.0
