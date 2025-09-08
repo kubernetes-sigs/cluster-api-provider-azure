@@ -20,7 +20,7 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
-GO_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
+GO_VERSION ?= $(shell sed -n 's/^toolchain go//p' go.mod)
 GOPATH  := $(shell go env GOPATH)
 GOARCH  := $(shell go env GOARCH)
 GOOS    := $(shell go env GOOS)
