@@ -12,6 +12,7 @@ installation:
       encapsulation: None
       natOutgoing: Enabled
       nodeSelector: all()
+  registry: capzcicommunity.azurecr.io
 # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
 # when it continuously gets scheduled onto an out-of-date Node that is being
 # deleted. Tolerate only the NoSchedule taints that are expected.
@@ -24,3 +25,9 @@ tolerations:
   - effect: NoSchedule
     key: node.kubernetes.io/not-ready
     operator: Exists
+# Image and registry configuration for the tigera/operator pod.Add commentMore actions
+tigeraOperator:
+  image: tigera/operator
+  registry: capzcicommunity.azurecr.io
+calicoctl:
+  image: capzcicommunity.azurecr.io/calico/ctl

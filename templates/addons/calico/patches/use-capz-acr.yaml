@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: calico-node
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: upgrade-ipam
+        image: capzcicommunity.azurecr.io/calico/cni:${CALICO_VERSION}
+      - name: install-cni
+        image: capzcicommunity.azurecr.io/calico/cni:${CALICO_VERSION}
+      - name: mount-bpffs
+        image: capzcicommunity.azurecr.io/calico/node:${CALICO_VERSION}
+      containers:
+      - name: calico-node
+        image: capzcicommunity.azurecr.io/calico/node:${CALICO_VERSION}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calico-kube-controllers
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: calico-kube-controllers
+        image: capzcicommunity.azurecr.io/calico/kube-controllers:${CALICO_VERSION}

@@ -455,7 +455,7 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 		),
 		execToPathFn(
 			"cni.log",
-			"cat", "/var/log/calico/cni/cni.log",
+			"sudo", "cat", "/var/log/calico/cni/cni.log",
 		),
 		// If kube-apiserver fails to come up, its logs aren't accessible via `kubectl logs`.
 		// Grab them from the node instead.
