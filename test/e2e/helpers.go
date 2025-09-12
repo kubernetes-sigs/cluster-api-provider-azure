@@ -488,7 +488,7 @@ func getProxiedSSHClient(controlPlaneEndpoint, hostname, port string, ioTimeout 
 
 // execOnHost runs the specified command directly on a node's host, using a SSH connection
 // proxied through a control plane host and copies the output to a file.
-func execOnHost(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration, f io.StringWriter, command string,
+func execOnHost(controlPlaneEndpoint, hostname, port string, ioTimeout time.Duration, f io.Writer, command string,
 	args ...string) error {
 	client, err := getProxiedSSHClient(controlPlaneEndpoint, hostname, port, ioTimeout)
 	if err != nil {
@@ -502,16 +502,14 @@ func execOnHost(controlPlaneEndpoint, hostname, port string, ioTimeout time.Dura
 	defer session.Close()
 
 	// Run the command and write the captured stdout to the file
-	var stdoutBuf bytes.Buffer
-	session.Stdout = &stdoutBuf
+	var stderrBuf bytes.Buffer
+	session.Stdout = f
+	session.Stderr = &stderrBuf
 	if len(args) > 0 {
 		command += " " + strings.Join(args, " ")
 	}
 	if err = session.Run(command); err != nil {
-		return errors.Wrapf(err, "running command \"%s\"", command)
-	}
-	if _, err = f.WriteString(stdoutBuf.String()); err != nil {
-		return errors.Wrap(err, "writing output to file")
+		return fmt.Errorf("running command %q: %w, stderr: %s", command, err, strings.TrimSpace(stderrBuf.String()))
 	}
 
 	return nil
