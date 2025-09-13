@@ -443,15 +443,15 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 		),
 		execToPathFn(
 			"cloud-init.log",
-			"cat", "/var/log/cloud-init.log",
+			"sudo", "sh", "-c", "if [ -f /var/log/cloud-init.log ]; then sudo cat /var/log/cloud-init.log; else echo 'cloud-init.log not found'; fi",
 		),
 		execToPathFn(
 			"cloud-init-output.log",
-			"cat", "/var/log/cloud-init-output.log",
+			"sudo", "sh", "-c", "echo 'Waiting for cloud-init to complete before collecting output log...' && cloud-init status --wait && echo 'Cloud-init completed, collecting output log...' && if [ -f /var/log/cloud-init-output.log ]; then echo 'Found cloud-init-output.log, reading contents:' && sudo cat /var/log/cloud-init-output.log; else echo 'cloud-init-output.log not found after cloud-init completion'; fi",
 		),
 		execToPathFn(
 			"sentinel-file-dir.txt",
-			"ls", "/run/cluster-api/",
+			"ls", "-la", "/run/cluster-api/",
 		),
 		execToPathFn(
 			"cni.log",

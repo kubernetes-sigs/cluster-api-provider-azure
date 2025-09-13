@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
@@ -1279,6 +1280,95 @@ var _ = Describe("Workload cluster creation", func() {
 						ExpectedWorkerNodes:                     result.ExpectedWorkerNodes(),
 						WaitIntervals:                           e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 						TemplateHasPrivateIPCustomDNSResolution: true,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating a highly-available cluster with Azure Linux 3 [OPTIONAL]", func() {
+		It("with three controlplane node and two worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "azl3")
+			kubernetesVersion := e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)
+			kubernetesVersion = strings.TrimPrefix(kubernetesVersion, "v")
+			Expect(os.Setenv("AZL3_VERSION", kubernetesVersion)).To(Succeed())
+			skipResourceGroupCheck = true
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withFlavor("azl3"),
+				withControlPlaneMachineCount(3),
+				withWorkerMachineCount(2),
+				withControlPlaneInterval(specName, "wait-control-plane-ha"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Verifying security rules are deleted on azure side", func() {
+				AzureSecurityGroupsSpec(ctx, func() AzureSecurityGroupsSpecInput {
+					return AzureSecurityGroupsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						Cluster:               result.Cluster,
+						WaitForUpdate:         e2eConfig.GetIntervals(specName, "wait-nsg-update"),
+					}
+				})
+			})
+
+			By("Validating failure domains", func() {
+				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
+					return AzureFailureDomainsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Cluster:               result.Cluster,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Creating an accessible load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("Validating network policies", func() {
+				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
+					return AzureNetPolSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
 					}
 				})
 			})

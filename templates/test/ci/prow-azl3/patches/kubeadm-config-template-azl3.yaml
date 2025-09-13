@@ -1,0 +1,104 @@
+- op: add
+  path: /spec/template/spec/files/0
+  value:
+    content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
+      update-ca-trust
+
+      # Azure Linux 3 firewall configuration for worker nodes
+      # Keep the default DROP policy for security, only add specific ACCEPT rules
+
+      # Allow Azure service IP addresses (required for Azure resources)
+      iptables -A INPUT -s 168.63.129.16 -j ACCEPT
+      iptables -A OUTPUT -d 168.63.129.16 -j ACCEPT
+      ip6tables -A INPUT -s fe80::1234:5678:9abc -j ACCEPT
+      ip6tables -A OUTPUT -d fe80::1234:5678:9abc -j ACCEPT
+
+      # Allow localhost traffic (required for many localhost-bound services)
+      iptables -A INPUT -i lo -j ACCEPT
+      iptables -A OUTPUT -o lo -j ACCEPT
+      ip6tables -A INPUT -i lo -j ACCEPT
+      ip6tables -A OUTPUT -o lo -j ACCEPT
+
+      # Allow established and related connections
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+      # SSH (port 22) - bound to all interfaces, needs external access
+      iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+      # Kubelet API (port 10250) - bound to all IPv6 interfaces, needs cluster access
+      iptables -A INPUT -p tcp --dport 10250 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 10250 -j ACCEPT
+
+      # kube-proxy (port 10256) - bound to all IPv6 interfaces, needs cluster access
+      iptables -A INPUT -p tcp --dport 10256 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 10256 -j ACCEPT
+
+      # Calico networking requirements
+      # Calico Typha (port 5473) - bound to all IPv6 interfaces, needs cluster access
+      iptables -A INPUT -p tcp --dport 5473 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 5473 -j ACCEPT
+      
+      # VXLAN for overlay networking (port 4789 UDP) - bound to all interfaces
+      iptables -A INPUT -p udp --dport 4789 -j ACCEPT
+      ip6tables -A INPUT -p udp --dport 4789 -j ACCEPT
+
+      # Calico metrics ports (29603, 29605) - bound to all IPv6 interfaces
+      iptables -A INPUT -p tcp --dport 29603 -j ACCEPT
+      iptables -A INPUT -p tcp --dport 29605 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 29603 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 29605 -j ACCEPT
+      
+      # BGP for node-to-node communication (port 179) - not in netstat but needed for Calico
+      iptables -A INPUT -p tcp --dport 179 -j ACCEPT
+      ip6tables -A INPUT -p tcp --dport 179 -j ACCEPT
+      
+      # IP-in-IP protocol for Calico
+      iptables -A INPUT -p 4 -j ACCEPT
+      ip6tables -A INPUT -p 41 -j ACCEPT
+
+      # DHCP client (port 68 UDP) - for IP assignment
+      iptables -A INPUT -p udp --dport 68 -j ACCEPT
+      ip6tables -A INPUT -p udp --dport 68 -j ACCEPT
+
+      # NTP (port 323 UDP) - for time synchronization  
+      iptables -A INPUT -p udp --dport 323 -j ACCEPT
+      ip6tables -A INPUT -p udp --dport 323 -j ACCEPT
+
+      # Allow ICMP for connectivity checks
+      iptables -A INPUT -p icmp -j ACCEPT
+      ip6tables -A INPUT -p ipv6-icmp -j ACCEPT
+
+      # Allow traffic to Kubernetes service network (10.96.0.0/12) - required for pod-to-service communication
+      iptables -A OUTPUT -d 10.96.0.0/12 -j ACCEPT
+      iptables -A INPUT -s 10.96.0.0/12 -j ACCEPT
+
+      # Allow traffic to/from Calico pod network (192.168.0.0/16) - required for pod-to-pod communication
+      iptables -A OUTPUT -d 192.168.0.0/16 -j ACCEPT
+      iptables -A INPUT -s 192.168.0.0/16 -j ACCEPT
+
+      # Allow traffic to/from node network (10.1.0.0/24) - required for node-to-node communication
+      iptables -A OUTPUT -d 10.1.0.0/24 -j ACCEPT
+      iptables -A INPUT -s 10.1.0.0/24 -j ACCEPT
+
+      # Save the rules following Azure Linux 3 approach
+      iptables-save > /etc/systemd/scripts/ip4save
+      ip6tables-save > /etc/systemd/scripts/ip6save
+    path: /tmp/azl3-setup.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/0
+  value:
+    bash -c /tmp/azl3-setup.sh
