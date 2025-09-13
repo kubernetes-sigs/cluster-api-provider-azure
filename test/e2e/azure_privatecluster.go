@@ -113,7 +113,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		userID = "cloud-provider-user-identity"
 	}
 	resourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s", subscriptionID, identityRG, userID)
-	Expect(os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(resourceID))).To(Succeed())
+	Expect(os.Setenv("UAMI_CLIENT_ID", getClientIDforMSI(ctx, resourceID))).To(Succeed())
 
 	Expect(os.Setenv("CLUSTER_IDENTITY_NAME", "cluster-identity-user-assigned")).To(Succeed())
 	Expect(os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)).To(Succeed())
@@ -407,7 +407,7 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 }
 
 // getClientIDforMSI fetches the client ID of a user assigned identity.
-func getClientIDforMSI(resourceID string) string {
+func getClientIDforMSI(ctx context.Context, resourceID string) string {
 	subscriptionID := getSubscriptionID(Default)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -418,7 +418,7 @@ func getClientIDforMSI(resourceID string) string {
 	parsed, err := azureutil.ParseResourceID(resourceID)
 	Expect(err).NotTo(HaveOccurred())
 
-	resp, err := msiClient.Get(context.TODO(), parsed.ResourceGroupName, parsed.Name, nil)
+	resp, err := msiClient.Get(ctx, parsed.ResourceGroupName, parsed.Name, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	return *resp.Properties.ClientID

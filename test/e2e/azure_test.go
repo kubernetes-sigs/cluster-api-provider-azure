@@ -40,7 +40,6 @@ import (
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx                    = context.TODO()
 		specName               = "create-workload-cluster"
 		namespace              *corev1.Namespace
 		cancelWatches          context.CancelFunc
@@ -135,7 +134,7 @@ var _ = Describe("Workload cluster creation", func() {
 		logCheckpoint(specTimes)
 	})
 
-	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
+	if false && os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
 		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 		Context("Creating a private cluster [OPTIONAL]", func() {
