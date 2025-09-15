@@ -689,15 +689,27 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	linuxVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
-	windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
 	flatcarK8sVersions := getFlatcarK8sVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
 
-	// find the intersection of ubuntu and windows versions available, since we need an image for both.
 	var versions semver.Versions
-	for k, v := range linuxVersions {
-		if _, ok := windowsVersions[k]; ok {
+
+	// Check if Windows testing is explicitly disabled via TEST_WINDOWS environment variable
+	testWindows := os.Getenv("TEST_WINDOWS")
+	windowsRequired := testWindows != "false"
+
+	if windowsRequired {
+		windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
+		for k, v := range linuxVersions {
+			if _, ok := windowsVersions[k]; ok {
+				versions = append(versions, v)
+			}
+		}
+		Logf("Windows machines required, using intersection of Linux and Windows versions")
+	} else {
+		for _, v := range linuxVersions {
 			versions = append(versions, v)
 		}
+		Logf("No Windows machines required, using Linux versions only")
 	}
 
 	if config.HasVariable(capi_e2e.KubernetesVersion) {
