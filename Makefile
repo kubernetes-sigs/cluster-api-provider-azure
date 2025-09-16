@@ -768,7 +768,7 @@ kind-create-bootstrap: $(KUBECTL) ## Create capz kind bootstrap cluster.
 create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ testing. Default is KIND.
 	@echo "Creating bootstrap cluster with type: $(MGMT_CLUSTER_TYPE)"
 	@if [ "$(MGMT_CLUSTER_TYPE)" == "aks" ]; then \
-		MGMT_CLUSTER_NAME="$${MGMT_CLUSTER_NAME:-capz-e2e-$(shell date +%s)}" \
+		MGMT_CLUSTER_NAME="$${MGMT_CLUSTER_NAME:-capz-e2e-$(RANDOM_SUFFIX)}" \
 		./scripts/aks-as-mgmt.sh || { echo "Failed to create AKS bootstrap cluster" >&2; exit 1; }; \
 	else \
 		KIND_CLUSTER_NAME=capz-e2e ./scripts/kind-with-registry.sh || { echo "Failed to create KIND bootstrap cluster" >&2; exit 1; }; \
