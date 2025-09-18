@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -236,7 +235,7 @@ func AzureClusterToAzureMachinePoolsFunc(_ context.Context, c client.Client, log
 		}
 		logWithValues := log.WithValues("AzureCluster", ac.Name, "Namespace", ac.Namespace)
 
-		cluster, err := util.GetOwnerCluster(ctx, c, ac.ObjectMeta)
+		cluster, err := clusterv1beta1.GetOwnerCluster(ctx, c, ac.ObjectMeta)
 		switch {
 		case apierrors.IsNotFound(err) || cluster == nil:
 			logWithValues.V(4).Info("owning cluster not found")

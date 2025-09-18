@@ -28,7 +28,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -155,7 +154,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	logger.V(2).Info("Fetching cluster for AzureMachinePoolMachine", "ampm", azureMachine.Name)
 
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, ampmr.Client, azureMachine.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, ampmr.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		logger.Info("AzureMachinePoolMachine is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
@@ -164,7 +163,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	logger = logger.WithValues("cluster", cluster.Name)
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azureMachine) {
+	if clusterv1beta1util.IsPaused(cluster, azureMachine) {
 		logger.Info("AzureMachinePoolMachine or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}

@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureMachineReconciler reconciles an AzureMachine object.
@@ -152,7 +152,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Fetch the Machine.
-	machine, err := util.GetOwnerMachine(ctx, amr.Client, azureMachine.ObjectMeta)
+	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, amr.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -165,7 +165,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log = log.WithValues("machine", machine.Name)
 
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, amr.Client, machine.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, amr.Client, machine.ObjectMeta)
 	if err != nil {
 		amr.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "Unable to get cluster from metadata", "Machine is missing cluster label or cluster does not exist")
 		log.Info("Machine is missing cluster label or cluster does not exist")
@@ -219,7 +219,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azureMachine) {
+	if clusterv1beta1util.IsPaused(cluster, azureMachine) {
 		log.Info("AzureMachine or linked Cluster is marked as paused. Won't reconcile normally")
 		return amr.reconcilePause(ctx, machineScope)
 	}

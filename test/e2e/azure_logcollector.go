@@ -35,7 +35,6 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 
@@ -119,7 +118,7 @@ func collectAzureMachineLog(ctx context.Context, managementClusterClient client.
 		return fmt.Errorf("get AzureMachine %s/%s: %w", m.Spec.InfrastructureRef.Namespace, m.Spec.InfrastructureRef.Name, err)
 	}
 
-	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
 	if err != nil {
 		return err
 	}
@@ -141,7 +140,7 @@ func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient cli
 		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
 	}
 
-	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
 	if err != nil {
 		return err
 	}

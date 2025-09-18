@@ -31,7 +31,6 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -46,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // ASOSecretReconciler reconciles ASO secrets associated with AzureCluster objects.
@@ -158,7 +158,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		clusterIdentity = ownerType.Spec.IdentityRef
 
 		// Fetch the Cluster.
-		cluster, err = util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
+		cluster, err = clusterv1beta1util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -185,7 +185,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		clusterIdentity = ownerType.Spec.IdentityRef
 
 		// Fetch the Cluster.
-		cluster, err = util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
+		cluster, err = clusterv1beta1util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -219,7 +219,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log = log.WithValues("cluster", cluster.Name)
 
 	// Return early if the ASO Secret Owner(AzureCluster or AzureManagedControlPlane) or Cluster is paused.
-	if annotations.IsPaused(cluster, asoSecretOwner) {
+	if clusterv1beta1util.IsPaused(cluster, asoSecretOwner) {
 		log.Info(fmt.Sprintf("%T or linked Cluster is marked as paused. Won't reconcile", asoSecretOwner))
 		asos.Recorder.Eventf(asoSecretOwner, corev1.EventTypeNormal, "ClusterPaused",
 			fmt.Sprintf("%T or linked Cluster is marked as paused. Won't reconcile", asoSecretOwner))

@@ -25,9 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	capiexputil "sigs.k8s.io/cluster-api/exp/util"
-	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -42,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureManagedControlPlaneReconciler reconciles an AzureManagedControlPlane object.
@@ -141,7 +139,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	}
 
 	// Fetch the Cluster.
-	cluster, err := util.GetOwnerCluster(ctx, amcpr.Client, azureControlPlane.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, amcpr.Client, azureControlPlane.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -167,7 +165,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	for i, ammp := range ammpList.Items {
 		// Fetch the owner MachinePool.
-		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, amcpr.Client, ammp.ObjectMeta)
+		ownerPool, err := clusterv1beta1util.GetOwnerMachinePool(ctx, amcpr.Client, ammp.ObjectMeta)
 		if err != nil || ownerPool == nil {
 			return reconcile.Result{}, errors.Wrapf(err, "failed to fetch owner MachinePool for AzureManagedMachinePool: %s", ammp.Name)
 		}
@@ -198,7 +196,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azureControlPlane) {
+	if clusterv1beta1util.IsPaused(cluster, azureControlPlane) {
 		log.Info("AzureManagedControlPlane or linked Cluster is marked as paused. Won't reconcile normally")
 		return amcpr.reconcilePause(ctx, mcpScope)
 	}
