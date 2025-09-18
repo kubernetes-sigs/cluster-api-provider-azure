@@ -1,0 +1,46 @@
+- op: add
+  path: /spec/kubeadmConfigSpec/files/0
+  value:
+    content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      # Install ca-certificates packages for Azure Linux
+      tdnf install -y ca-certificates ca-certificates-legacy
+      update-ca-trust
+
+      # Allow Azure service IP addresses (required for Azure resources)
+      iptables -A INPUT -s 168.63.129.16 -j ACCEPT
+      iptables -A OUTPUT -d 168.63.129.16 -j ACCEPT
+
+      # Kubernetes API Server (port 6443) - bound to all IPv6 interfaces, needs external access
+      iptables -A INPUT -p tcp --dport 6443 -j ACCEPT
+
+      # etcd server communication
+      iptables -A INPUT -p tcp --dport 2379 -j ACCEPT
+      iptables -A INPUT -p tcp --dport 2380 -j ACCEPT
+
+      # Allow traffic to Kubernetes service network (10.96.0.0/12)
+      iptables -A OUTPUT -d 10.96.0.0/12 -j ACCEPT
+      iptables -A INPUT -s 10.96.0.0/12 -j ACCEPT
+
+      # Allow traffic to/from node network (10.1.0.0/24)
+      iptables -A OUTPUT -d 10.1.0.0/24 -j ACCEPT
+      iptables -A INPUT -s 10.1.0.0/24 -j ACCEPT
+
+      # Allow traffic to/from Calico pod network
+      iptables -A OUTPUT -d 192.168.0.0/24 -j ACCEPT
+      iptables -A INPUT -s 192.168.0.0/24 -j ACCEPT
+
+      # Save the rules following Azure Linux 3 approach
+      iptables-save > /etc/systemd/scripts/ip4save
+    path: /tmp/azl3-setup.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/kubeadmConfigSpec/preKubeadmCommands/0
+  value:
+    bash -c /tmp/azl3-setup.sh

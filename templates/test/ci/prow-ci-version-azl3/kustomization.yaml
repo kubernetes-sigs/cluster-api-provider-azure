@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../prow-ci-version
+patches:
+- path: ../prow-azl3/patches/controller-manager.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: ../prow-azl3/patches/kubeadm-config-template-azl3.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+    version: v1beta1
+- path: ../prow-azl3/patches/azuremachinetemplate-azl3-image.yaml
+- path: ../prow-azl3/patches/remove-marketplace-image.yaml
+- path: ../prow-azl3/patches/cloud-provider-azure-cacertdir.yaml
+- path: ../prow-azl3/patches/cloud-provider-azure-ci-cacertdir.yaml
+
+sortOptions:
+  order: fifo

@@ -1,0 +1,10 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    contentFrom:
+      secret:
+        name: ${CLUSTER_NAME}-azl3-md-0-azure-json
+        key: worker-node-azure.json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"

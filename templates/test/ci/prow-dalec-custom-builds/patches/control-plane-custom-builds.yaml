@@ -1,0 +1,46 @@
+- op: add
+  path: /spec/kubeadmConfigSpec/files/-
+  value:
+    content: |
+      #!/bin/bash
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+      systemctl stop kubelet
+      declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+      # Define the base URL and version
+      BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
+      VERSION="${KUBERNETES_VERSION}"
+      VERSION=$${VERSION#v}
+      OS_VERSION="ubuntu24.04"
+      ARCH="amd64"
+      for BINARY in "$${BINARIES[@]}"; do
+        if [[ "$${BINARY}" == "kubelet" ]]; then
+          DEB_VERSION="ubuntu24.04u1"
+        else
+          DEB_VERSION="ubuntu24.04u2"
+        fi
+        echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
+        DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+        DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
+        echo "Downloading from: $${DEB_URL}"
+        curl -L --retry 10 --retry-delay 5 "$${DEB_URL}" --output "$${DEB_FILE}"
+        # Extract just the binary from the deb package directly to /usr/bin
+        echo "Extracting $${BINARY} binary to /usr/bin"
+        dpkg-deb --fsys-tarfile "$${DEB_FILE}" | tar -xf - --strip-components=3 -C /usr/bin ./usr/bin/$${BINARY}
+        chmod +x "/usr/bin/$${BINARY}"
+        # Clean up the downloaded deb file
+        rm -f "$${DEB_FILE}"
+      done
+      systemctl restart kubelet
+      echo "kubeadm version: $(kubeadm version -o=short)"
+      echo "kubectl version: $(kubectl version --client=true)"
+      echo "kubelet version: $(kubelet --version)"
+    path: /tmp/replace-k8s-binaries.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/kubeadmConfigSpec/preKubeadmCommands/-
+  value:
+    bash -c /tmp/replace-k8s-binaries.sh
+  
