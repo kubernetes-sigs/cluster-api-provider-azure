@@ -24,6 +24,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -123,14 +131,6 @@ rules:
   - fleetsmembers/status
   - managedclusters/status
   - managedclustersagentpools/status
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes
   verbs:
   - get
   - list
