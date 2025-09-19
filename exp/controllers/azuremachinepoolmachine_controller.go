@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (
@@ -203,7 +204,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the CAPI Machine.
-	machine, err := util.GetOwnerMachine(ctx, ampmr.Client, azureMachine.ObjectMeta)
+	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, ampmr.Client, azureMachine.ObjectMeta)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return reconcile.Result{}, err
 	}

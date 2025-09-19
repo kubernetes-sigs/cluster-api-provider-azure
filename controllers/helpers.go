@@ -1071,10 +1071,10 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 	}
 }
 
-// ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureReady, but
+// ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureProvisioned, but
 // additionally accepts Cluster pause events.
 func ClusterPauseChangeAndInfrastructureReady(scheme *runtime.Scheme, log logr.Logger) predicate.Funcs {
-	return predicates.Any(scheme, log, predicates.ClusterCreateInfraReady(scheme, log), predicates.ClusterUpdateInfraReady(scheme, log), ClusterUpdatePauseChange(log)) //nolint:staticcheck
+	return predicates.Any(scheme, log, predicates.ClusterCreateInfraProvisioned(scheme, log), predicates.ClusterUpdateInfraProvisioned(scheme, log), ClusterUpdatePauseChange(log)) //nolint:staticcheck
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.

@@ -83,7 +83,7 @@ func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr c
 			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
-				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
@@ -96,7 +96,9 @@ type filterUnclonedMachinesPredicate struct {
 }
 
 func (f filterUnclonedMachinesPredicate) Create(e event.CreateEvent) bool {
-	return f.Generic(event.GenericEvent(e))
+	return f.Generic(event.GenericEvent{
+		Object: e.Object,
+	})
 }
 
 func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {

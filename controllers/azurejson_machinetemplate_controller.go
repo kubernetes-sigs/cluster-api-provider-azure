@@ -79,7 +79,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineTemplateMapper),
 			builder.WithPredicates(
-				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).

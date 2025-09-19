@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (

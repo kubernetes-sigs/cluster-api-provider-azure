@@ -168,7 +168,7 @@ func InitFlags(fs *pflag.FlagSet) {
 		&watchFilterValue,
 		"watch-filter",
 		"",
-		fmt.Sprintf("Label value that the controller watches to reconcile cluster-api objects. Label key is always %s. If unspecified, the controller watches for all cluster-api objects.", clusterv1.WatchLabel),
+		fmt.Sprintf("Label value that the controller watches to reconcile cluster-api objects. Label key is always %s. If unspecified, the controller watches for all cluster-api objects.", clusterv1beta1.WatchLabel),
 	)
 
 	fs.StringVar(

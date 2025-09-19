@@ -78,7 +78,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
-				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
