@@ -88,6 +88,7 @@ capz::util::generate_ssh_key
 
 capz::ci-conformance::cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
+    make test-e2e-run-cleanup || true
 }
 
 trap capz::ci-conformance::cleanup EXIT
