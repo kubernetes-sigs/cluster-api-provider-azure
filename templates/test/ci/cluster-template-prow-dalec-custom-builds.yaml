@@ -194,11 +194,7 @@ spec:
         OS_VERSION="ubuntu24.04"
         ARCH="amd64"
         for BINARY in "$${BINARIES[@]}"; do
-          if [[ "$${BINARY}" == "kubelet" ]]; then
-            DEB_VERSION="ubuntu24.04u1"
-          else
-            DEB_VERSION="ubuntu24.04u2"
-          fi
+          DEB_VERSION=$${$${BINARY^^}_REVISION}
           echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
           DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
           DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
@@ -369,11 +365,7 @@ spec:
           OS_VERSION="ubuntu24.04"
           ARCH="amd64"
           for BINARY in "$${BINARIES[@]}"; do
-            if [[ "$${BINARY}" == "kubelet" ]]; then
-              DEB_VERSION="ubuntu24.04u1"
-            else
-              DEB_VERSION="ubuntu24.04u2"
-            fi
+            DEB_VERSION=$${$${BINARY^^}_REVISION}
             echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
             DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
             DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
@@ -662,25 +654,60 @@ spec:
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
-      - content: "#!/bin/bash\n\nset -o nounset\nset -o pipefail\nset -o errexit\n\nsystemctl
-          stop kubelet\n\ndeclare -a BINARIES=(\"kubeadm\" \"kubectl\" \"kubelet\")\n\n#
-          Define the base URL and version\nBASE_URL=\"https://kubernetesreleases.blob.core.windows.net/dalec-packages\"\nVERSION=\"${KUBERNETES_VERSION}\"\nVERSION=$${VERSION#v}\nOS_VERSION=\"azl3\"\nARCH=\"x86_64\"\n\nfor
-          BINARY in \"$${BINARIES[@]}\"; do\n  echo \"* downloading and extracting
-          binary: $${BINARY} $${VERSION}\"\n  RPM_FILE=\"/tmp/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm\"\n
-          \ RPM_URL=\"$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-1.$${OS_VERSION}.$${ARCH}.rpm\"\n\n
-          \ echo \"Downloading from: $${RPM_URL}\"\n  curl -L --retry 10 --retry-delay
-          5 \"$${RPM_URL}\" --output \"$${RPM_FILE}\"\n\n  # Extract binary from RPM
-          package in a temporary directory\n  echo \"Extracting $${BINARY} binary
-          to /usr/bin\"\n  TEMP_DIR=\"/tmp/$${BINARY}-extract-$$\"\n  mkdir -p \"$${TEMP_DIR}\"\n
-          \ cd \"$${TEMP_DIR}\"\n  rpm2cpio \"$${RPM_FILE}\" | cpio -idmv\n  \n  #
-          Move the binary to the correct location\n  if [ -f \"./usr/bin/$${BINARY}\"
-          ]; then\n    mv \"./usr/bin/$${BINARY}\" \"/usr/bin/$${BINARY}\"\n    chmod
-          +x \"/usr/bin/$${BINARY}\"\n  else\n    echo \"Error: Binary $${BINARY}
-          not found in RPM package\"\n    exit 1\n  fi\n\n  # Clean up\n  cd /\n  rm
-          -rf \"$${TEMP_DIR}\"\n  rm -f \"$${RPM_FILE}\"\ndone\n\nsystemctl restart
-          kubelet\n\necho \"kubeadm version: $(kubeadm version -o=short)\"\necho \"kubectl
-          version: $(kubectl version --client=true)\"\necho \"kubelet version: $(kubelet
-          --version)\"\n"
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          systemctl stop kubelet
+
+          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+
+          # Define the base URL and version
+          BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
+          VERSION="${KUBERNETES_VERSION}"
+          VERSION=$${VERSION#v}
+          OS_VERSION="azl3"
+          ARCH="x86_64"
+
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* downloading and extracting binary: $${BINARY} $${VERSION}"
+            REVISION=$${$${BINARY^^}_REVISION}
+            RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
+            RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
+
+            echo "Downloading from: $${RPM_URL}"
+            curl -L --retry 10 --retry-delay 5 "$${RPM_URL}" --output "$${RPM_FILE}"
+
+            # Extract binary from RPM package in a temporary directory
+            echo "Extracting $${BINARY} binary to /usr/bin"
+            TEMP_DIR="/tmp/$${BINARY}-extract-$$"
+            mkdir -p "$${TEMP_DIR}"
+            cd "$${TEMP_DIR}"
+            rpm2cpio "$${RPM_FILE}" | cpio -idmv
+
+            # Move the binary to the correct location
+            if [ -f "./usr/bin/$${BINARY}" ]; then
+              mv "./usr/bin/$${BINARY}" "/usr/bin/$${BINARY}"
+              chmod +x "/usr/bin/$${BINARY}"
+            else
+              echo "Error: Binary $${BINARY} not found in RPM package"
+              exit 1
+            fi
+
+            # Clean up
+            cd /
+            rm -rf "$${TEMP_DIR}"
+            rm -f "$${RPM_FILE}"
+          done
+
+          systemctl restart kubelet
+
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true)"
+          echo "kubelet version: $(kubelet --version)"
         owner: root:root
         path: /opt/install-custom-k8s-binaries.sh
         permissions: "0744"

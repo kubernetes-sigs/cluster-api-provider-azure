@@ -15,11 +15,7 @@
       OS_VERSION="ubuntu24.04"
       ARCH="amd64"
       for BINARY in "$${BINARIES[@]}"; do
-        if [[ "$${BINARY}" == "kubelet" ]]; then
-          DEB_VERSION="ubuntu24.04u1"
-        else
-          DEB_VERSION="ubuntu24.04u2"
-        fi
+        DEB_VERSION=$${$${BINARY^^}_REVISION}
         echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
         DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
         DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
