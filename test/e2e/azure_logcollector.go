@@ -494,7 +494,7 @@ func windowsK8sLogs(execToPathFn func(outputFileName string, command string, arg
 		),
 		execToPathFn(
 			"containerd.log",
-			`Get-Content "C:\\var\\log\\containerd\\containerd.log"`,
+			"$p = 'C:\\var\\log\\containerd\\containerd.log' ; if (Test-Path $p) { Get-Content $p } else { Write-Host \"No containerd logs found at $p\" }",
 		),
 	}
 }
