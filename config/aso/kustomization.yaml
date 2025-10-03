@@ -3,7 +3,7 @@ kind: Component
 namespace: capz-system
 resources:
   # The ASO version here is managed by `make generate-aso-crds`
-  - https://github.com/Azure/azure-service-operator/releases/download/v2.13.0/azureserviceoperator_v2.13.0.yaml
+  - https://github.com/Azure/azure-service-operator/releases/download/v2.15.1/azureserviceoperator_v2.15.1.yaml
   - crds.yaml
   - settings.yaml
 patches:
