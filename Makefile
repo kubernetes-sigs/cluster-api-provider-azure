@@ -778,7 +778,7 @@ create-bootstrap: $(KUBECTL) ## Create bootstrap cluster (AKS or KIND) for CAPZ 
 .PHONY: cleanup-workload-identity
 cleanup-workload-identity: ## Cleanup CI workload-identity infra
 	@if ! [ "$(AZWI_SKIP_CLEANUP)" == "true" ]; then \
-		./scripts/cleanup-workload-identity.sh \
+		./scripts/cleanup-workload-identity.sh; \
 	fi
 
 ## --------------------------------------
