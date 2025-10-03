@@ -186,12 +186,45 @@ create_aks_cluster() {
     export USER_IDENTITY
 
     echo "assigning user-assigned managed identity to the AKS cluster"
-    az aks update --resource-group "${AKS_RESOURCE_GROUP}" \
+    
+    # Wait for any ongoing cluster operations to complete before proceeding
+    echo "waiting for cluster to be in a ready state"
+    az aks wait --resource-group "${AKS_RESOURCE_GROUP}" --name "${MGMT_CLUSTER_NAME}" --created --timeout 600 --only-show-errors
+    
+    # Temporarily mitigate PDB issues by scaling up metrics-server before the update
+    echo "temporarily scaling up metrics-server to avoid PDB drain issues"
+    kubectl scale deployment metrics-server --replicas=3 -n kube-system || true
+    
+    # Wait a moment for the pods to be scheduled
+    sleep 15
+    
+    # Retry the managed identity assignment with exponential backoff
+    retry_count=0
+    max_retries=5
+    base_sleep=30
+    until az aks update --resource-group "${AKS_RESOURCE_GROUP}" \
     --name "${MGMT_CLUSTER_NAME}" \
     --enable-managed-identity \
     --assign-identity "${AKS_MI_RESOURCE_ID}" \
     --assign-kubelet-identity "${AKS_MI_RESOURCE_ID}" \
-    --output none --only-show-errors --yes
+    --output none --only-show-errors --yes; do
+      retry_count=$((retry_count + 1))
+      if [ $retry_count -ge $max_retries ]; then
+        echo "Failed to assign managed identity after $max_retries attempts"
+        # Restore original metrics-server replicas before failing
+        kubectl scale deployment metrics-server --replicas=2 -n kube-system || true
+        exit 1
+      fi
+      
+      # Exponential backoff with jitter: base_sleep * (2^retry_count) + random(0-10)
+      sleep_time=$((base_sleep * (1 << retry_count) + RANDOM % 11))
+      echo "Attempt $retry_count failed, retrying in $sleep_time seconds..."
+      sleep $sleep_time
+    done
+    
+    # Restore original metrics-server replica count
+    echo "restoring metrics-server to original replica count"
+    kubectl scale deployment metrics-server --replicas=2 -n kube-system || true
 
   else
     # echo "fetching Client ID for ${MGMT_CLUSTER_NAME}"
