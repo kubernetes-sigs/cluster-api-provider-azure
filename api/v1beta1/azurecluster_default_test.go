@@ -138,9 +138,14 @@ func TestVnetDefaults(t *testing.T) {
 									},
 								},
 							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
-
+								SKU:  SKUStandard,
 								Type: Public,
 							},
 						},
@@ -1321,6 +1326,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
 							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
@@ -1370,6 +1381,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
 							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Public,
@@ -1413,6 +1430,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							},
 							BackendPool: BackendPool{
 								Name: "cluster-test-internal-lb-backendPool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1459,6 +1482,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							},
 							BackendPool: BackendPool{
 								Name: "cluster-test-internal-lb-backendPool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1508,6 +1537,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							BackendPool: BackendPool{
 								Name: "custom-backend-pool",
 							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
+							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
 								Type:                 Internal,
@@ -1556,6 +1591,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							},
 							BackendPool: BackendPool{
 								Name: "custom-backend-pool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
@@ -1629,6 +1670,132 @@ func TestAPIServerLBDefaults(t *testing.T) {
 							},
 							BackendPool: BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
+								Type:                 Public,
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "load balancer with custom rule and probe names",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							LoadBalancingRule: LoadBalancingRule{
+								Name: "CustomLBRule",
+							},
+							HealthProbe: HealthProbe{
+								Name: "CustomProbe",
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Public,
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							Name: "cluster-test-public-lb",
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-public-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name:    "pip-cluster-test-apiserver",
+										DNSName: "",
+									},
+								},
+							},
+							BackendPool: BackendPool{
+								Name: "cluster-test-public-lb-backendPool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: "CustomLBRule",
+							},
+							HealthProbe: HealthProbe{
+								Name: "CustomProbe",
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								SKU:                  SKUStandard,
+								Type:                 Public,
+								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "load balancer with empty rule and probe names should use defaults",
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							LoadBalancingRule: LoadBalancingRule{
+								Name: "",
+							},
+							HealthProbe: HealthProbe{
+								Name: "",
+							},
+							LoadBalancerClassSpec: LoadBalancerClassSpec{
+								Type: Public,
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							Name: "cluster-test-public-lb",
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-public-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name:    "pip-cluster-test-apiserver",
+										DNSName: "",
+									},
+								},
+							},
+							BackendPool: BackendPool{
+								Name: "cluster-test-public-lb-backendPool",
+							},
+							LoadBalancingRule: LoadBalancingRule{
+								Name: DefaultLoadBalancingRuleName,
+							},
+							HealthProbe: HealthProbe{
+								Name: DefaultHealthProbeName,
 							},
 							LoadBalancerClassSpec: LoadBalancerClassSpec{
 								SKU:                  SKUStandard,
