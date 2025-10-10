@@ -33,23 +33,20 @@ test-e2e-run-cleanup: ## Run e2e cleanup tasks.
 test-e2e: ## Run "docker-build" and "docker-push" rules then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(MAKE) docker-build docker-push \
-	test-e2e-run; \
-	$(MAKE) test-e2e-run-cleanup
+	test-e2e-run;
 
 .PHONY: test-e2e-skip-push
 test-e2e-skip-push: ## Run "docker-build" rule then run e2e tests.
 	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(MAKE) docker-build \
-	test-e2e-run; \
-	$(MAKE) test-e2e-run-cleanup
+	test-e2e-run;
 
 .PHONY: test-e2e-skip-build-and-push
 test-e2e-skip-build-and-push:
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/capz/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/capz/manager_pull_policy.yaml" PULL_POLICY=IfNotPresent
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	$(MAKE) test-e2e-run; \
-	$(MAKE) test-e2e-run-cleanup
+	$(MAKE) test-e2e-run;
 
 .PHONY: test-e2e-custom-image
 test-e2e-custom-image: ## Run e2e tests with a custom image format (use MANAGER_IMAGE env var).
@@ -59,5 +56,4 @@ test-e2e-custom-image: ## Run e2e tests with a custom image format (use MANAGER_
 	fi
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(shell echo $(MANAGER_IMAGE) | cut -d: -f1) MANIFEST_TAG=$(shell echo $(MANAGER_IMAGE) | cut -d: -f2) TARGET_RESOURCE="./config/capz/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/capz/manager_pull_policy.yaml" PULL_POLICY=IfNotPresent
-	$(MAKE) test-e2e-run; \
-	$(MAKE) test-e2e-run-cleanup
+	$(MAKE) test-e2e-run;
