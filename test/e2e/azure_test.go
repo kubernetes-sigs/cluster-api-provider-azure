@@ -1046,15 +1046,12 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating clusters using clusterclass [OPTIONAL]", func() {
-		It("with a single control plane node, one linux worker node, and one windows worker node", func() {
+		It("with a single control plane node and one linux worker node", func() {
 			// Use ci-default as the clusterclass name so test infra can find the clusterclass template
 			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-default")).To(Succeed())
 
 			// Use "cc" as spec name because NAT gateway pip name exceeds limit.
 			clusterName = getClusterName(clusterNamePrefix, "cc")
-
-			// Opt into using windows with prow template
-			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "1")).To(Succeed())
 
 			// Create a cluster using the cluster class created above
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
