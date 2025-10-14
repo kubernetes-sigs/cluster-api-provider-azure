@@ -518,7 +518,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("machine-pool"),
+				withFlavor("machine-pool-windows"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
