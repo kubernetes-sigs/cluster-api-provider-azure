@@ -27,7 +27,6 @@ patches:
 - path: ../../../flavors/dual-stack/patches/kubeadm-controlplane.yaml
 - path: ../prow-dual-stack/patches/cluster-label-calico-dual-stack.yaml
 - path: patches/machine-deployment.yaml
-- path: ../patches/windows-addons-disabled.yaml
 
 sortOptions:
   order: fifo

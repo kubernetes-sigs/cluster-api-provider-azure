@@ -1,0 +1,26 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      identity: UserAssigned
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: ubuntu-2204-gen1
+          version: latest
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}

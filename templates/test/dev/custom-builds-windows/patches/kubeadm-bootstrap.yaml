@@ -1,0 +1,29 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      systemctl stop kubelet
+      declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+      az login --identity
+      for BINARY in "$${BINARIES[@]}"; do
+        echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
+      done
+      systemctl restart kubelet
+
+      echo "kubeadm version: $(kubeadm version -o=short)"
+      echo "kubectl version: $(kubectl version --client=true)"
+      echo "kubelet version: $(kubelet --version)"
+    path: /tmp/replace-k8s-binaries.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/-
+  value:
+    bash -c /tmp/replace-k8s-binaries.sh

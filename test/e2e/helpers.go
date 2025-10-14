@@ -695,7 +695,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 
 	// Check if Windows testing is explicitly disabled via TEST_WINDOWS environment variable
 	testWindows := os.Getenv("TEST_WINDOWS")
-	windowsRequired := testWindows != "false"
+	windowsRequired := testWindows == "true"
 
 	if windowsRequired {
 		windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")

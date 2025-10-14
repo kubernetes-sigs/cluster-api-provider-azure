@@ -4,7 +4,6 @@ metadata:
   labels:
     cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
     cni: calico
-    cni-windows: ${CLUSTER_NAME}-calico
     containerd-logger: enabled
     csi-proxy: enabled
   name: ${CLUSTER_NAME}
@@ -24,8 +23,6 @@ spec:
     - name: controlPlaneMachineType
       value: ${AZURE_CONTROL_PLANE_MACHINE_TYPE:-""}
     - name: workerMachineType
-      value: ${AZURE_NODE_MACHINE_TYPE:-""}
-    - name: workerMachineTypeWin
       value: ${AZURE_NODE_MACHINE_TYPE:-""}
     - name: sshPublicKey
       value: ${AZURE_SSH_PUBLIC_KEY_B64:-""}
@@ -49,37 +46,6 @@ spec:
       - class: ${CLUSTER_NAME}-worker
         name: md-0
         replicas: ${WORKER_MACHINE_COUNT}
-      - class: ${CLUSTER_NAME}-worker-win
-        name: md-win
-        replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-calico
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni-windows: ${CLUSTER_NAME}-calico
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-calico-windows
-  strategy: ApplyOnce
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: csi-proxy
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      csi-proxy: enabled
-  resources:
-  - kind: ConfigMap
-    name: csi-proxy-addon
-  strategy: ApplyOnce
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha1
 kind: HelmChartProxy
@@ -235,123 +201,3 @@ spec:
       imageName: "${CNM_IMAGE_NAME:-""}"
       imageRepository: "${IMAGE_REGISTRY:-""}"
       imageTag: "${IMAGE_TAG_CNM:-""}"
----
-apiVersion: v1
-data:
-  proxy: |
-    apiVersion: apps/v1
-    kind: DaemonSet
-    metadata:
-      labels:
-        k8s-app: kube-proxy
-      name: kube-proxy-windows
-      namespace: kube-system
-    spec:
-      selector:
-        matchLabels:
-          k8s-app: kube-proxy-windows
-      template:
-        metadata:
-          labels:
-            k8s-app: kube-proxy-windows
-        spec:
-          serviceAccountName: kube-proxy
-          securityContext:
-            windowsOptions:
-              hostProcess: true
-              runAsUserName: "NT AUTHORITY\\system"
-          hostNetwork: true
-          priorityClassName: system-node-critical
-          containers:
-          - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
-            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
-            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
-            name: kube-proxy
-            env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: KUBEPROXY_PATH
-              valueFrom:
-                configMapKeyRef:
-                  name: windows-kubeproxy-ci
-                  key: KUBEPROXY_PATH
-                  optional: true
-            volumeMounts:
-            - mountPath: /var/lib/kube-proxy
-              name: kube-proxy
-          nodeSelector:
-            kubernetes.io/os: windows
-          tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
-          - operator: Exists
-          volumes:
-          - configMap:
-              name: kube-proxy
-            name: kube-proxy
-      updateStrategy:
-        type: RollingUpdate
-  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
-    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
-    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
-    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
-    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
-    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
-    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
-    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
-    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
-    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
-    \"Switch\"\n            }\n          }\n      ]\n    } \n---\n"
-kind: ConfigMap
-metadata:
-  annotations:
-    note: generated
-  labels:
-    type: generated
-  name: cni-${CLUSTER_NAME}-calico-windows
-  namespace: default
----
-apiVersion: v1
-data:
-  csi-proxy: |
-    apiVersion: apps/v1
-    kind: DaemonSet
-    metadata:
-      labels:
-        k8s-app: csi-proxy
-      name: csi-proxy
-      namespace: kube-system
-    spec:
-      selector:
-        matchLabels:
-          k8s-app: csi-proxy
-      template:
-        metadata:
-          labels:
-            k8s-app: csi-proxy
-        spec:
-          nodeSelector:
-            "kubernetes.io/os": windows
-          securityContext:
-            windowsOptions:
-              hostProcess: true
-              runAsUserName: "NT AUTHORITY\\SYSTEM"
-          hostNetwork: true
-          containers:
-            - name: csi-proxy
-              image: ghcr.io/kubernetes-sigs/sig-windows/csi-proxy:v1.0.2
-kind: ConfigMap
-metadata:
-  annotations:
-    note: generated
-  labels:
-    type: generated
-  name: csi-proxy-addon
-  namespace: default

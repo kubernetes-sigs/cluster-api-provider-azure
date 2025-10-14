@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../../../flavors/machinepool-windows
+- ../prow-windows/mhc-kubeadmcontrolplane.yaml
+- ../prow-windows/mhc.yaml
+- ../prow-windows/cni-resource-set.yaml
+- ../../../addons/windows/csi-proxy/csi-proxy-resource-set.yaml
+- ../../../addons/windows/containerd-logging/containerd-logger-resource-set.yaml
+- ../../../addons/cluster-api-helm/calico.yaml
+- ../../../addons/cluster-api-helm/azuredisk-csi-driver.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure.yaml
+- ../../../addons/cluster-api-helm/cloud-provider-azure-ci.yaml
+configMapGenerator:
+- files:
+  - windows-cni=../../../addons/windows/calico/calico.yaml
+  - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
+  name: cni-${CLUSTER_NAME}-calico-windows
+- files:
+  - csi-proxy=../../../addons/windows/csi-proxy/csi-proxy.yaml
+  name: csi-proxy-addon
+- files:
+  - containerd-windows-logger=../../../addons/windows/containerd-logging/containerd-logger.yaml
+  name: containerd-logger-${CLUSTER_NAME}
+generatorOptions:
+  annotations:
+    note: generated
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+patches:
+- path: ../patches/azuremachinepool-vmextension.yaml
+- path: ../patches/tags.yaml
+- path: ../patches/controller-manager.yaml
+- path: ../patches/machine-pool-win-worker-counts.yaml
+- path: ../patches/windows-containerd-labels.yaml
+- path: ../patches/cluster-label-calico.yaml
+- path: ../patches/cluster-label-cloud-provider-azure.yaml
+- path: ../patches/mhc-machinepool.yaml
+
+sortOptions:
+  order: fifo

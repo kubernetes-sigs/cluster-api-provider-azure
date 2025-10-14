@@ -4,15 +4,7 @@ namespace: default
 resources:
 - ../prow-ci-version
 - ../../../flavors/machinepool/machine-pool-deployment.yaml 
-- ../../../flavors/machinepool-windows/machine-pool-deployment-windows.yaml
 patches: 
-- path: ../prow-machine-pool-ci-version/patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml 
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfig
-    name: .*-mp-win
-    namespace: default
-    version: v1beta1
 - path: ../prow-machine-pool-ci-version/patches/kubeadm-bootstrap-k8s-ci-binaries.yaml
   target:
     group: bootstrap.cluster.x-k8s.io
@@ -21,8 +13,6 @@ patches:
     namespace: default
     version: v1beta1
 - path: ../prow-machine-pool-ci-version/patches/machine-pool-ci-version.yaml 
-- path: ../patches/machine-pool-worker-counts.yaml
-- path: ../prow-machine-pool-ci-version/patches/machine-pool-ci-version-windows.yaml
 - path: ../patches/uami-mp-0.yaml
 sortOptions:
   order: fifo

@@ -17,13 +17,6 @@ patches:
     name: .*-control-plane
     namespace: default
     version: v1beta1
-- path: patches/kubeadm-bootstrap-windows-k8s-ci-binaries.yaml
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfig
-    name: .*-mp-win
-    namespace: default
-    version: v1beta1
 - path: patches/kubeadm-bootstrap-k8s-ci-binaries.yaml
   target:
     group: bootstrap.cluster.x-k8s.io
@@ -34,14 +27,7 @@ patches:
 - path: ../patches/control-plane-image-ci-version.yaml
 - path: ../patches/controller-manager.yaml
 - path: patches/machine-pool-ci-version.yaml
-- path: ../patches/machine-pool-worker-counts.yaml
-- path: patches/machine-pool-ci-version-windows.yaml
 - path: ../patches/uami-mp-0.yaml
-configMapGenerator:
-- behavior: merge
-  files:
-  - kube-proxy-patch=../patches/windows-kubeproxy-ci.yaml
-  name: cni-${CLUSTER_NAME}-calico-windows
 
 sortOptions:
   order: fifo

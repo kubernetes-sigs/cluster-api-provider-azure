@@ -1,0 +1,71 @@
+- op: add
+  path: /spec/files/-
+  value:
+    content: |
+      $ErrorActionPreference = 'Stop'
+
+      Stop-Service kubelet -Force
+
+      $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
+      if($$KUBE_GIT_VERSION -ne "")
+      {
+        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        foreach ( $$binary in $$binaries )
+        {
+          echo "downloading binary: $$ci_url/$$binary.exe"
+          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+        }
+      }
+
+      # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
+      # that is applied at at this stage (windows-kubeproxy-ci.yaml)
+      ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
+      ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+
+      kubeadm.exe version -o=short
+      kubectl.exe version --client=true
+      kubelet.exe --version
+      kube-proxy.exe --version
+    path: C:/replace-pr-binaries.ps1
+    permissions: "0744"
+- op: add
+  path: /spec/files/-
+  value:
+    content: |
+      $ErrorActionPreference = 'Stop'
+      
+      Write-Host "Attempting to log in to Azure with managed identity"
+      az login --identity > $null 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "Logged in Azure with managed identity"
+        Write-Host "Use OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" -f C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe --auth-mode login
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" -f C:\var\lib\kubelet\credential-provider-config.yaml --auth-mode login
+      } else {
+        Write-Host "Using curl to download the OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
+      }
+    path: C:/oot-cred-provider.ps1
+    permissions: "0744"
+- op: add
+  path: /spec/preKubeadmCommands/-
+  value:
+    powershell C:/replace-pr-binaries.ps1
+- op: add
+  path: /spec/preKubeadmCommands/-
+  value:
+    powershell C:/oot-cred-provider.ps1
+- op: add
+  path: /spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/image-credential-provider-bin-dir
+  value:
+    /var/lib/kubelet/credential-provider
+- op: add
+  path: /spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/image-credential-provider-config
+  value:
+    /var/lib/kubelet/credential-provider-config.yaml  
