@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-azure
 
 go 1.24.0
 
-toolchain go1.24.8
+toolchain go1.24.9
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
