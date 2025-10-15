@@ -564,7 +564,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a VMSS cluster with Windows [WINDOWS]", func() {
 		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
-			clusterName = getClusterName(clusterNamePrefix, "vmss-windows")
+			clusterName = getClusterName(clusterNamePrefix, "vmss-win")
 
 			// Opt into using windows with prow template
 			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
