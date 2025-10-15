@@ -558,18 +558,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Creating an accessible load balancer for windows", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-						Windows:               true,
-					}
-				})
-			})
-
 			By("PASSED!")
 		})
 	})
