@@ -698,7 +698,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	windowsRequired := testWindows != "false"
 
 	if windowsRequired {
-		windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
+		windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2025-containerd")
 		for k, v := range linuxVersions {
 			if _, ok := windowsVersions[k]; ok {
 				versions = append(versions, v)
