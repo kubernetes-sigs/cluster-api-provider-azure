@@ -510,8 +510,73 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating a VMSS cluster [REQUIRED]", func() {
-		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
+		It("with a single control plane node and an AzureMachinePool with 2 Linux nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vmss")
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("machine-pool"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(2),
+				withMachineDeploymentInterval(specName, ""),
+				withControlPlaneInterval(specName, "wait-control-plane"),
+				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Creating an accessible load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("Creating an accessible load balancer for windows", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+						Windows:               true,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating a VMSS cluster with Windows [WINDOWS]", func() {
+		It("with a single control plane node and an AzureMachinePool with 2 Linux and 2 Windows worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vmss-windows")
 
 			// Opt into using windows with prow template
 			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "2")).To(Succeed())
