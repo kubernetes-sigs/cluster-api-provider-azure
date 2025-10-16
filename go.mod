@@ -58,8 +58,8 @@ require (
 	k8s.io/kubectl v0.32.3
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
 	sigs.k8s.io/cloud-provider-azure v1.32.3
-	sigs.k8s.io/cluster-api v1.10.4
-	sigs.k8s.io/cluster-api/test v1.10.4
+	sigs.k8s.io/cluster-api v1.10.7
+	sigs.k8s.io/cluster-api/test v1.10.7
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/kind v0.29.0
 )
@@ -121,7 +121,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
