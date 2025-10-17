@@ -1,0 +1,1015 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
+    cni: calico
+    cni-windows: ${CLUSTER_NAME}-calico
+    containerd-logger: enabled
+    csi-proxy: enabled
+    windows: enabled
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      role: node
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  annotations:
+    controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs: {}
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-provider: external
+          cluster-name: ${CLUSTER_NAME}
+          v: "4"
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+          extraArgs:
+            quota-backend-bytes: "8589934592"
+      kubernetesVersion: ci/${CI_VERSION}
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
+    files:
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        systemctl stop kubelet
+
+        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+
+        # Run the az login command with managed identity
+        if az login --identity > /dev/null 2>&1; then
+          echo "Logged in Azure with managed identity"
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+            az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
+          done
+        else
+          echo "Using curl to download the binaries"
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+            curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          done
+        fi
+        systemctl restart kubelet
+
+        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
+        # registry.k8s.io so kubeadm can fetch correct images no matter what
+        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        IMAGE_REGISTRY_PREFIX=registry.k8s.io
+        for IMAGE in "$${IMAGES[@]}"; do
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$IMAGE:"${CI_VERSION//+/_}"
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$IMAGE:"${CI_VERSION//+/_}"
+        done
+
+        echo "kubeadm version: $(kubeadm version -o=short)"
+        echo "kubectl version: $(kubectl version --client=true)"
+        echo "kubelet version: $(kubelet --version)"
+      owner: root:root
+      path: /tmp/replace-k8s-binaries.sh
+      permissions: "0744"
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
+        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
+        rm /tmp/yq_linux_amd64.tar.gz
+
+        export KUBECONFIG=/etc/kubernetes/admin.conf
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${KUBE_IMAGE_TAG}"
+        systemctl stop kubelet
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
+        systemctl restart kubelet
+      owner: root:root
+      path: /tmp/replace-k8s-components.sh
+      permissions: "0744"
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+
+        # Run the az login command with managed identity
+        if az login --identity > /dev/null 2>&1; then
+          echo "Logged in Azure with managed identity"
+          echo "Use OOT credential provider"
+          mkdir -p /var/lib/kubelet/credential-provider
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider" -f /var/lib/kubelet/credential-provider/acr-credential-provider --auth-mode login
+          chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml" -f /var/lib/kubelet/credential-provider-config.yaml --auth-mode login
+          chmod 644 /var/lib/kubelet/credential-provider-config.yaml
+        else
+          echo "Using curl to download the OOT credential provider"
+          mkdir -p /var/lib/kubelet/credential-provider
+          curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+          chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
+          curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
+          chmod 644 /var/lib/kubelet/credential-provider-config.yaml
+        fi
+      owner: root:root
+      path: /tmp/oot-cred-provider.sh
+      permissions: "0744"
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+          image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
+          image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+          image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
+          image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands:
+    - bash -c /tmp/replace-k8s-components.sh
+    preKubeadmCommands:
+    - bash -c /tmp/replace-k8s-binaries.sh
+    - bash -c /tmp/oot-cred-provider.sh
+    verbosity: 5
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      identity: UserAssigned
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: ubuntu-2204-gen1
+          version: latest
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  template:
+    metadata:
+      labels:
+        nodepool: pool1
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    image:
+      marketplace:
+        offer: capi
+        publisher: cncf-upstream
+        sku: ubuntu-2204-gen1
+        version: latest
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmExtensions:
+    - name: CustomScript
+      protectedSettings:
+        commandToExecute: |
+          #!/bin/sh
+          echo "This script is a no-op used for extension testing purposes ..."
+          touch test_file
+      publisher: Microsoft.Azure.Extensions
+      version: "2.1"
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  files:
+  - content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+      [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+
+      # Run the az login command with managed identity
+      if az login --identity > /dev/null 2>&1; then
+        echo "Logged in Azure with managed identity"
+        echo "Use OOT credential provider"
+        mkdir -p /var/lib/kubelet/credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider" -f /var/lib/kubelet/credential-provider/acr-credential-provider --auth-mode login
+        chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml" -f /var/lib/kubelet/credential-provider-config.yaml --auth-mode login
+        chmod 644 /var/lib/kubelet/credential-provider-config.yaml
+      else
+        echo "Using curl to download the OOT credential provider"
+        mkdir -p /var/lib/kubelet/credential-provider
+        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider/acr-credential-provider "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider"
+        chmod 755 /var/lib/kubelet/credential-provider/acr-credential-provider
+        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" -Lo /var/lib/kubelet/credential-provider-config.yaml "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config.yaml"
+        chmod 644 /var/lib/kubelet/credential-provider-config.yaml
+      fi
+    owner: root:root
+    path: /tmp/oot-cred-provider.sh
+    permissions: "0744"
+  - content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      systemctl stop kubelet
+      declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+      for BINARY in "$${BINARIES[@]}"; do
+        echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+        curl --retry 10 --retry-delay 5 -w "response status code is %{http_code}" "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+      done
+      systemctl restart kubelet
+
+      echo "kubeadm version: $(kubeadm version -o=short)"
+      echo "kubectl version: $(kubectl version --client=true)"
+      echo "kubelet version: $(kubelet --version)"
+    owner: root:root
+    path: /tmp/replace-k8s-binaries.sh
+    permissions: "0744"
+  - contentFrom:
+      secret:
+        key: control-plane-azure.json
+        name: ${CLUSTER_NAME}-control-plane-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
+  joinConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-provider: external
+        image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
+        image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  preKubeadmCommands:
+  - bash -c /tmp/oot-cred-provider.sh
+  - bash -c /tmp/replace-k8s-binaries.sh
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfig
+          name: ${CLUSTER_NAME}-mp-win
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-mp-win
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachinePool
+metadata:
+  annotations:
+    runtime: containerd
+    windowsServerVersion: ${WINDOWS_SERVER_VERSION:=""}
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  location: ${AZURE_LOCATION}
+  template:
+    image:
+      marketplace:
+        offer: capi-windows
+        publisher: cncf-upstream
+        sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
+        version: latest
+    osDisk:
+      diskSizeGB: 128
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Windows
+    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-mp-win
+  namespace: default
+spec:
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-mp-win-azure-json
+    owner: root:root
+    path: c:/k/azure.json
+    permissions: "0644"
+  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+    path: C:/defender-exclude-calico.ps1
+    permissions: "0744"
+  - content: |
+      $ErrorActionPreference = 'Stop'
+
+      Stop-Service kubelet -Force
+
+      $$KUBE_GIT_VERSION="${KUBE_GIT_VERSION}"
+      if($$KUBE_GIT_VERSION -ne "")
+      {
+        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+        $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+        foreach ( $$binary in $$binaries )
+        {
+          echo "downloading binary: $$ci_url/$$binary.exe"
+          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+        }
+      }
+
+      # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
+      # that is applied at at this stage (windows-kubeproxy-ci.yaml)
+      ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess
+      ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.23.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+
+      kubeadm.exe version -o=short
+      kubectl.exe version --client=true
+      kubelet.exe --version
+      kube-proxy.exe --version
+    path: C:/replace-pr-binaries.ps1
+    permissions: "0744"
+  - content: |
+      $ErrorActionPreference = 'Stop'
+
+      Write-Host "Attempting to log in to Azure with managed identity"
+      az login --identity > $null 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "Logged in Azure with managed identity"
+        Write-Host "Use OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" -f C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe --auth-mode login
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" -f C:\var\lib\kubelet\credential-provider-config.yaml --auth-mode login
+      } else {
+        Write-Host "Using curl to download the OOT credential provider"
+        mkdir C:\var\lib\kubelet\credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/azure-acr-credential-provider.exe" --output C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe
+        cp C:\var\lib\kubelet\credential-provider\acr-credential-provider.exe C:\var\lib\kubelet\credential-provider\acr-credential-provider
+        curl.exe --retry 10 --retry-delay 5 -L "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${IMAGE_TAG_ACR_CREDENTIAL_PROVIDER}/credential-provider-config-win.yaml" --output C:\var\lib\kubelet\credential-provider-config.yaml
+      }
+    path: C:/oot-cred-provider.ps1
+    permissions: "0744"
+  joinConfiguration:
+    nodeRegistration:
+      criSocket: npipe:////./pipe/containerd-containerd
+      kubeletExtraArgs:
+        cloud-provider: external
+        image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
+        image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
+      name: '{{ ds.meta_data["local_hostname"] }}'
+  postKubeadmCommands:
+  - nssm set kubelet start SERVICE_AUTO_START
+  - powershell C:/defender-exclude-calico.ps1
+  preKubeadmCommands:
+  - powershell c:/create-external-network.ps1
+  - powershell C:/replace-pr-binaries.ps1
+  - powershell C:/oot-cred-provider.ps1
+  users:
+  - groups: Administrators
+    name: capi
+    sshAuthorizedKeys:
+    - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+  unhealthyConditions:
+  - status: Unknown
+    timeout: 300s
+    type: Ready
+  - status: "False"
+    timeout: 300s
+    type: Ready
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-calico-windows
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni-windows: ${CLUSTER_NAME}-calico
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-calico-windows
+  strategy: ApplyOnce
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: csi-proxy
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      csi-proxy: enabled
+  resources:
+  - kind: ConfigMap
+    name: csi-proxy-addon
+  strategy: ApplyOnce
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: containerd-logger-${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      containerd-logger: enabled
+  resources:
+  - kind: ConfigMap
+    name: containerd-logger-${CLUSTER_NAME}
+  strategy: ApplyOnce
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |
+    installation:
+      cni:
+        type: Calico
+        ipam:
+          type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        windowsDataplane: HNS
+        mtu: 1350
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      typhaDeployment:
+        spec:
+          template:
+            spec:
+              # By default, typha tolerates all NoSchedule taints. This breaks
+              # scale-ins when it continuously gets scheduled onto an
+              # out-of-date Node that is being deleted. Tolerate only the
+              # NoSchedule taints that are expected.
+              tolerations:
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node.kubernetes.io/not-ready
+                  operator: Exists
+              affinity:
+                nodeAffinity:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 50
+                    preference:
+                      matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+      registry: capzcicommunity.azurecr.io
+      serviceCIDRs:
+        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+    # Image and registry configuration for the tigera/operator pod
+    tigeraOperator:
+      image: tigera/operator
+      registry: capzcicommunity.azurecr.io
+    calicoctl:
+      image: capzcicommunity.azurecr.io/calico/ctl
+    # when kubernetesServiceEndpoint (required for windows) is added
+    # DNS configuration is needed to look up the api server name properly
+    # https://github.com/projectcalico/calico/issues/9536
+    dnsConfig:
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
+    # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
+    # when it continuously gets scheduled onto an out-of-date Node that is being
+    # deleted. Tolerate only the NoSchedule taints that are expected.
+    tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+  version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-ci
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
+      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: "${CCM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CCM:-""}"
+      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
+      replicas: ${CCM_COUNT:-1}
+      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
+    cloudNodeManager:
+      imageName: "${CNM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CNM:-""}"
+---
+apiVersion: v1
+data:
+  kube-proxy-patch: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: windows-kubeproxy-ci
+      namespace: kube-system
+    data:
+      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
+  proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+      name: kube-proxy-windows
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: kube-proxy-windows
+      template:
+        metadata:
+          labels:
+            k8s-app: kube-proxy-windows
+        spec:
+          serviceAccountName: kube-proxy
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          priorityClassName: system-node-critical
+          containers:
+          - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess
+            args: ["$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1"]
+            workingDir: "$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/"
+            name: kube-proxy
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: KUBEPROXY_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: windows-kubeproxy-ci
+                  key: KUBEPROXY_PATH
+                  optional: true
+            volumeMounts:
+            - mountPath: /var/lib/kube-proxy
+              name: kube-proxy
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: kube-proxy
+            name: kube-proxy
+      updateStrategy:
+        type: RollingUpdate
+  windows-cni: "# strictAffinity required for windows\napiVersion: crd.projectcalico.org/v1\nkind:
+    IPAMConfig\nmetadata:\n  name: default\nspec:\n  autoAllocateBlocks: true\n  strictAffinity:
+    true\n---\nkind: ConfigMap\napiVersion: v1\nmetadata:\n  name: calico-static-rules\n
+    \ namespace: calico-system\n  labels:\n    tier: node\n    app: calico\ndata:\n
+    \ static-rules.json: |\n    {\n      \"Provider\": \"azure\",\n      \"Version\":
+    \"0.1\",\n      \"Rules\": [\n        {\n          \"Name\": \"EndpointPolicy\",\n
+    \         \"Rule\": {\n              \"Id\": \"wireserver\",\n              \"Type\":
+    \"ACL\",\n              \"Protocol\": 6,\n              \"Action\": \"Block\",\n
+    \             \"Direction\": \"Out\",\n              \"RemoteAddresses\": \"168.63.129.16/32\",\n
+    \             \"RemotePorts\": \"80\",\n              \"Priority\": 200,\n              \"RuleType\":
+    \"Switch\"\n            }\n          }\n      ]\n    } \n---\n"
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: cni-${CLUSTER_NAME}-calico-windows
+  namespace: default
+---
+apiVersion: v1
+data:
+  csi-proxy: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: csi-proxy
+      name: csi-proxy
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: csi-proxy
+      template:
+        metadata:
+          labels:
+            k8s-app: csi-proxy
+        spec:
+          nodeSelector:
+            "kubernetes.io/os": windows
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
+          hostNetwork: true
+          containers:
+            - name: csi-proxy
+              image: ghcr.io/kubernetes-sigs/sig-windows/csi-proxy:v1.0.2
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: csi-proxy-addon
+  namespace: default
+---
+apiVersion: v1
+data:
+  containerd-windows-logger: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        k8s-app: containerd-logger
+      name: containerd-logger
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: containerd-logger
+      template:
+        metadata:
+          labels:
+            k8s-app: containerd-logger
+        spec:
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\system"
+          hostNetwork: true
+          containers:
+          - image: ghcr.io/kubernetes-sigs/sig-windows/eventflow-logger:v0.1.0
+            args: [ "config.json" ]
+            name: containerd-logger
+            imagePullPolicy: Always
+            volumeMounts:
+            - name: containerd-logger-config
+              mountPath: /config.json
+              subPath: config.json
+          nodeSelector:
+            kubernetes.io/os: windows
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - operator: Exists
+          volumes:
+          - configMap:
+              name: containerd-logger-config
+            name: containerd-logger-config
+      updateStrategy:
+        type: RollingUpdate
+    ---
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: containerd-logger-config
+      namespace: kube-system
+    data:
+      config.json: |
+        {
+          "inputs": [
+            {
+              "type": "ETW",
+              "sessionNamePrefix": "containerd",
+              "cleanupOldSessions": true,
+              "reuseExistingSession": true,
+              "providers": [
+                {
+                  "providerName": "Microsoft.Virtualization.RunHCS",
+                  "providerGuid": "0B52781F-B24D-5685-DDF6-69830ED40EC3",
+                  "level": "Verbose"
+                },
+                {
+                  "providerName": "ContainerD",
+                  "providerGuid": "2acb92c0-eb9b-571a-69cf-8f3410f383ad",
+                  "level": "Verbose"
+                }
+              ]
+            }
+          ],
+          "filters": [
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::LayerID && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == hcsshim::NameToGuid && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.Stats && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == containerd.task.v2.Task.State && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetProcessProperties && hasnoproperty error"
+            },
+            {
+                "type": "drop",
+                "include": "ProviderName == Microsoft.Virtualization.RunHCS && name == HcsGetComputeSystemProperties && hasnoproperty error"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "StdOutput"
+            }
+          ],
+          "schemaVersion": "2016-08-11"
+        }
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: containerd-logger-${CLUSTER_NAME}
+  namespace: default

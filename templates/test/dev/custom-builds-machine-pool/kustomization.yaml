@@ -5,7 +5,6 @@ resources:
 - ../../../test/ci/prow-machine-pool
 patches:
 - path: ../patches/control-plane-custom-builds.yaml
-- path: patches/machine-pool-deployment-pr-version-windows.yaml
 - path: patches/custom-builds.yaml
 - path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
   target:
@@ -13,23 +12,5 @@ patches:
     kind: KubeadmControlPlane
     name: .*-control-plane
     version: v1beta1
-- path: patches/kubeadm-bootstrap-machine-pool-windows-k8s-pr-binaries.yaml
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfig
-    name: .*-mp-win
-    namespace: default
-    version: v1beta1
-configMapGenerator:
-- behavior: merge
-  files:
-    - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
-  name: cni-${CLUSTER_NAME}-calico-windows
-generatorOptions:
-  annotations:
-    note: generated
-  disableNameSuffixHash: true
-  labels:
-    type: generated
 sortOptions:
   order: fifo
