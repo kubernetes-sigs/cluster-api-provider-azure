@@ -611,8 +611,9 @@ func collectVMSSInstanceBootLog(ctx context.Context, instanceClient *armcompute.
 }
 
 func writeBootLog(bootDiagnostics armcompute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
+	ctx := context.TODO()
 	var err error
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *bootDiagnostics.SerialConsoleLogBlobURI, http.NoBody)
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
 	}

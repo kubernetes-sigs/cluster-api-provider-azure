@@ -36,8 +36,9 @@ const (
 
 // retryWithTimeout retries a function that returns an error until a timeout is reached
 func retryWithTimeout(interval, timeout time.Duration, fn func() error) error {
+	ctx := context.TODO()
 	var pollError error
-	err := wait.PollUntilContextTimeout(context.TODO(), interval, timeout, true, func(context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(context.Context) (bool, error) {
 		pollError = nil
 		err := fn()
 		if err != nil {

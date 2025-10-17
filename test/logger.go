@@ -75,25 +75,27 @@ func main() {
 	managementClusterLogPath := filepath.Join(*artifactFolder, "clusters", "bootstrap", "controllers")
 
 	fmt.Printf("Collecting logs for cluster %s in namespace %s and dumping logs to %s\n", *clustername, *namespace, *artifactFolder)
+	ctx := context.TODO()
 	collectManagementClusterLogs(bootstrapClusterProxy, managementClusterLogPath, namespace, resourcesYaml)
-	bootstrapClusterProxy.CollectWorkloadClusterLogs(context.TODO(), *namespace, *clustername, clusterLogPath)
+	bootstrapClusterProxy.CollectWorkloadClusterLogs(ctx, *namespace, *clustername, clusterLogPath)
 }
 
 func collectManagementClusterLogs(bootstrapClusterProxy *e2e.AzureClusterProxy, managementClusterLogPath string, namespace *string, workLoadClusterLogPath string) {
-	controllersDeployments := framework.GetControllerDeployments(context.TODO(), framework.GetControllerDeploymentsInput{
+	ctx := context.TODO()
+	controllersDeployments := framework.GetControllerDeployments(ctx, framework.GetControllerDeploymentsInput{
 		Lister: bootstrapClusterProxy.GetClient(),
 	})
 	for _, deployment := range controllersDeployments {
-		framework.WatchDeploymentLogsByName(context.TODO(), framework.WatchDeploymentLogsByNameInput{
+		framework.WatchDeploymentLogsByName(ctx, framework.WatchDeploymentLogsByNameInput{
 			GetLister:  bootstrapClusterProxy.GetClient(),
-			Cache:      bootstrapClusterProxy.GetCache(context.TODO()),
+			Cache:      bootstrapClusterProxy.GetCache(ctx),
 			ClientSet:  bootstrapClusterProxy.GetClientSet(),
 			Deployment: deployment,
 			LogPath:    managementClusterLogPath,
 		})
 	}
 
-	framework.DumpAllResources(context.TODO(), framework.DumpAllResourcesInput{
+	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
 		Lister:               bootstrapClusterProxy.GetClient(),
 		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
 		ClusterctlConfigPath: getClusterctlConfigPath(),
