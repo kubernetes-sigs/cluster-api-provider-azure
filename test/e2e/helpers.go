@@ -628,8 +628,9 @@ func resolveCIVersion(label string) (string, error) {
 
 // latestCIVersion returns the latest CI version of a given label in the form of latest-1.xx.
 func latestCIVersion(label string) (string, error) {
+	ctx := context.TODO()
 	ciVersionURL := fmt.Sprintf("https://dl.k8s.io/ci/%s.txt", label)
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, ciVersionURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ciVersionURL, http.NoBody)
 	if err != nil {
 		return "", err
 	}
@@ -688,8 +689,9 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // resolveKubernetesVersions looks at Kubernetes versions set as variables in the e2e config and sets them to a valid k8s version
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
-	linuxVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
-	flatcarK8sVersions := getFlatcarK8sVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
+	ctx := context.TODO()
+	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
+	flatcarK8sVersions := getFlatcarK8sVersions(ctx, os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
 
 	var versions semver.Versions
 
@@ -698,7 +700,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	windowsRequired := testWindows == "true"
 
 	if windowsRequired {
-		windowsVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
+		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
 		for k, v := range linuxVersions {
 			if _, ok := windowsVersions[k]; ok {
 				versions = append(versions, v)
@@ -723,7 +725,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	}
 	if config.HasVariable(FlatcarKubernetesVersion) && config.HasVariable(FlatcarVersion) {
 		resolveFlatcarKubernetesVersion(config, flatcarK8sVersions, FlatcarKubernetesVersion)
-		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.MustGetVariable(FlatcarKubernetesVersion))
+		flatcarVersions := getFlatcarVersions(ctx, os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.MustGetVariable(FlatcarKubernetesVersion))
 		resolveFlatcarVersion(config, flatcarVersions, FlatcarVersion)
 	}
 }
