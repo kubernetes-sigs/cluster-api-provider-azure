@@ -10,17 +10,12 @@ spec:
         - class: ${CLUSTER_NAME}-worker
           name: md-0
           replicas: ${WORKER_MACHINE_COUNT}
-        - class: ${CLUSTER_NAME}-worker-win
-          name: md-win
-          replicas: ${WINDOWS_WORKER_MACHINE_COUNT:-0}
     variables:
       - name: subscriptionID
         value: ${AZURE_SUBSCRIPTION_ID}
       - name: controlPlaneMachineType
         value: ${AZURE_CONTROL_PLANE_MACHINE_TYPE:-""}
       - name: workerMachineType
-        value: ${AZURE_NODE_MACHINE_TYPE:-""}
-      - name: workerMachineTypeWin
         value: ${AZURE_NODE_MACHINE_TYPE:-""}
       - name: sshPublicKey
         value: ${AZURE_SSH_PUBLIC_KEY_B64:-""}

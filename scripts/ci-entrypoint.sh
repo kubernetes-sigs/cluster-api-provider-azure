@@ -117,7 +117,7 @@ setup() {
     export EXP_CLUSTER_RESOURCE_SET="true"
 
     # TODO figure out a better way to account for expected Windows node count
-    if [[ -n "${TEST_WINDOWS:-}" ]]; then
+    if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
     fi
 }
@@ -138,6 +138,10 @@ select_cluster_template() {
         elif [[ "${CLUSTER_TEMPLATE}" =~ "custom-builds" ]]; then
             export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/custom-builds/custom-builds-machine-pool}"
         fi
+    fi
+
+    if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
+        export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/.yaml/-windows.yaml}"
     fi
 }
 

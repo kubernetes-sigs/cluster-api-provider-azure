@@ -12,13 +12,6 @@ patches:
     name: .*-md-0
     namespace: default
     version: v1beta1
-- path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-win.yaml
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfigTemplate
-    name: .*-md-win
-    namespace: default
-    version: v1beta1
 - path: ../../../test/ci/prow-ci-version/patches/oot-credential-provider-kcp.yaml
   target:
     group: controlplane.cluster.x-k8s.io
@@ -38,24 +31,9 @@ patches:
     kind: KubeadmControlPlane
     name: .*-control-plane
     version: v1beta1
-- path: patches/kubeadm-bootstrap-windows-k8s-pr-binaries.yaml
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfigTemplate
-    name: .*-md-win
-    namespace: default
-    version: v1beta1
 - path: patches/machine-deployment-pr-version.yaml
-- path: patches/machine-deployment-pr-version-windows.yaml
-- path: ../../../test/ci/patches/windows-feature-gates.yaml
-- path: ../../../test/ci/patches/windows-containerd-labels.yaml
-- path: ../../../test/ci/patches/windows-machine-deployment-replicas.yaml
 - path: ../../../test/ci/patches/metrics-server-enabled-cluster.yaml
 configMapGenerator:
-- behavior: merge
-  files:
-  - kube-proxy-patch=../../../test/ci/patches/windows-kubeproxy-ci.yaml
-  name: cni-${CLUSTER_NAME}-calico-windows
 - files:
   - metrics-server=../../../addons/metrics-server/metrics-server.yaml
   name: metrics-server-${CLUSTER_NAME}
