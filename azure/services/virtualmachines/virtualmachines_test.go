@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines/mock_virtualmachines"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -112,10 +113,16 @@ var (
 		},
 	}
 	fakeUserAssignedIdentity = infrav1.UserAssignedIdentity{
-		ProviderID: "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id",
+		ProviderID: "/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id",
+	}
+	fakeUserAssignedIdentityWithPrefix = infrav1.UserAssignedIdentity{
+		ProviderID: azureutil.ProviderIDPrefix + fakeUserAssignedIdentity.ProviderID,
 	}
 	fakeUserAssignedIdentity2 = infrav1.UserAssignedIdentity{
-		ProviderID: "azure:///subscriptions/123/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/fake-provider-id-2",
+		ProviderID: fakeUserAssignedIdentity.ProviderID + "-2",
+	}
+	fakeUserAssignedIdentity2WithPrefix = infrav1.UserAssignedIdentity{
+		ProviderID: azureutil.ProviderIDPrefix + fakeUserAssignedIdentity2.ProviderID,
 	}
 )
 
@@ -323,14 +330,14 @@ func TestCheckUserAssignedIdentities(t *testing.T) {
 		},
 		{
 			name:             "matching user assigned identities",
-			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
+			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentityWithPrefix},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
 		},
 		{
 			name:             "less user assigned identities than expected",
-			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity, fakeUserAssignedIdentity2},
+			specIdentities:   []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity, fakeUserAssignedIdentity2WithPrefix},
 			actualIdentities: []infrav1.UserAssignedIdentity{fakeUserAssignedIdentity},
-			expectedKey:      fakeUserAssignedIdentity2.ProviderID,
+			expectedKey:      fakeUserAssignedIdentity2WithPrefix.ProviderID,
 		},
 		{
 			name:             "more user assigned identities than expected",
