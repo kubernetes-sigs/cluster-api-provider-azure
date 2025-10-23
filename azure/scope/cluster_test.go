@@ -25,7 +25,6 @@ import (
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -1044,11 +1043,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -1118,11 +1113,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -1210,11 +1201,7 @@ func TestNatGatewaySpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -1510,11 +1497,7 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -1591,11 +1574,7 @@ func TestSubnetSpecs(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -1887,11 +1866,7 @@ func TestAzureBastionSpec(t *testing.T) {
 					},
 				},
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: "123",
-						},
-					},
+					subscriptionID: "123",
 				},
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
@@ -3346,11 +3321,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: tc.azureCluster.Spec.SubscriptionID,
-						},
-					},
+					subscriptionID: tc.azureCluster.Spec.SubscriptionID,
 				},
 			}
 			if got := clusterScope.LBSpecs(); !reflect.DeepEqual(got, tc.want) {
@@ -3668,11 +3639,7 @@ func TestVNetPeerings(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 				AzureClients: AzureClients{
-					EnvironmentSettings: auth.EnvironmentSettings{
-						Values: map[string]string{
-							auth.SubscriptionID: tc.subscriptionID,
-						},
-					},
+					subscriptionID: tc.subscriptionID,
 				},
 			}
 			got := clusterScope.VnetPeeringSpecs()
