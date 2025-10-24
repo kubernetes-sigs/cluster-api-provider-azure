@@ -12,7 +12,7 @@ The template comes with a [systemd-sysupdate](https://www.freedesktop.org/softwa
   * Update the template to enable the `systemd-sysupdate.timer`
   * Or run the following command on the nodes: `sudo systemctl enable --now systemd-sysupdate.timer`
 
-When the Kubernetes release reaches end-of-life it will not receive updates anymore. To switch to a new major version, do a `sudo rm /etc/sysupdate.kubernetes.d/kubernetes-*.conf` and download the new update config into the folder with `cd /etc/sysupdate.kubernetes.d && sudo wget https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-${KUBERNETES_VERSION%.*}.conf`.
+When the Kubernetes release reaches end-of-life it will not receive updates anymore. To switch to a new major version, do a `sudo rm /etc/sysupdate.kubernetes.d/kubernetes-*.conf` and download the new update config into the folder with `cd /etc/sysupdate.kubernetes.d && sudo wget https://extensions.flatcar.org/extensions/kubernetes/kubernetes-${KUBERNETES_VERSION%.*}.conf`.
 
 To coordinate the node reboot, we recommend using [Kured](https://github.com/kubereboot/kured). Note that running `kubeadm upgrade apply` on the first controller and `kubeadm upgrade node` on all other nodes is not automated (yet): see the [docs](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/).
 
