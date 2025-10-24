@@ -114,3 +114,7 @@ capz::util::ensure_azure_envs() {
     : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
     : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
 }
+
+capz::util::random_suffix() {
+    od -An -N8 -tx8 /dev/urandom | tr -d ' ' | head -c 16
+}
