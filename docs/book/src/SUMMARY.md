@@ -36,6 +36,7 @@
     - [Externally managed Azure infrastructure](./self-managed/externally-managed-azure-infrastructure.md)
     - [Failure Domains](./self-managed/failure-domains.md)
     - [Flatcar](./self-managed/flatcar.md)
+    - [Load Balancer Zone Redundancy](./self-managed/load-balancer-zone-redundancy.md)
     - [GPU-enabled Clusters](./self-managed/gpu.md)
     - [IPv6](./self-managed/ipv6.md)
     - [Machine Pools (VMSS)](./self-managed/machinepools.md)
