@@ -70,6 +70,8 @@ export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"St
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 CALICO_VERSION=$(make get-calico-version)
 export CALICO_VERSION
+AZWI_RESOURCE_GROUP="${AZWI_RESOURCE_GROUP:-capz-wi-$(capz::util::random_suffix)}"
+export AZWI_RESOURCE_GROUP
 
 
 capz::util::generate_ssh_key

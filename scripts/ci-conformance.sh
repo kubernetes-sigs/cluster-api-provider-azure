@@ -82,6 +82,8 @@ export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_ran
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_B2s"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 export WINDOWS="${WINDOWS:-false}"
+AZWI_RESOURCE_GROUP="${AZWI_RESOURCE_GROUP:-capz-wi-$(capz::util::random_suffix)}"
+export AZWI_RESOURCE_GROUP
 
 # Generate SSH key.
 capz::util::generate_ssh_key
