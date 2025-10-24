@@ -17,9 +17,11 @@ limitations under the License.
 package mutators
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -263,6 +265,11 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 	if err != nil {
 		return nil, fmt.Errorf("failed to list AzureASOManagedMachinePools: %w", err)
 	}
+
+	// Make sure we don't update the ManagedCluster with different orders of the same set of agent pools.
+	slices.SortFunc(asoManagedMachinePools.Items, func(a, b infrav1.AzureASOManagedMachinePool) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	var agentPools []conversion.Convertible
 	for _, asoManagedMachinePool := range asoManagedMachinePools.Items {

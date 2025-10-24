@@ -17,7 +17,9 @@ limitations under the License.
 package mutators
 
 import (
+	"context"
 	"encoding/json"
+	"slices"
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
@@ -25,6 +27,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +35,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
@@ -727,9 +731,11 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 			},
 		}
 
-		c := fakeClientBuilder().
-			WithLists(asoManagedMachinePools, machinePools).
-			Build()
+		c := reverseListingClient{
+			WithWatch: fakeClientBuilder().
+				WithLists(asoManagedMachinePools, machinePools).
+				Build(),
+		}
 
 		cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: clusterName}}
 		err := setManagedClusterAgentPoolProfiles(ctx, c, namespace, cluster, "", umc)
@@ -854,4 +860,22 @@ func apUnstructured(g Gomega, ap *asocontainerservicev1.ManagedClustersAgentPool
 	u := &unstructured.Unstructured{}
 	g.Expect(s.Convert(ap, u, nil)).To(Succeed())
 	return u
+}
+
+// reverseListingClient lists objects in the reverse order of the testing client.
+type reverseListingClient struct {
+	client.WithWatch
+}
+
+func (c reverseListingClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	err := c.WithWatch.List(ctx, list, opts...)
+	if err != nil {
+		return err
+	}
+	objs, err := meta.ExtractList(list)
+	if err != nil {
+		return err
+	}
+	slices.Reverse(objs)
+	return meta.SetList(list, objs)
 }
