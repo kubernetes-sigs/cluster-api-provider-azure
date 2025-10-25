@@ -35,6 +35,8 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
+# shellcheck source=./scripts/ci-e2e-lib.sh
+source "${REPO_ROOT}/scripts/ci-e2e-lib.sh"
 
 # Verify the required Environment Variables are present.
 capz::util::ensure_azure_envs
@@ -80,6 +82,11 @@ capz::ci-e2e::cleanup() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
     make test-e2e-run-cleanup || true
 }
+
+# pre-pull all the images that will be used in the e2e, thus making the actual test run
+# less sensible to the network speed. This includes:
+# - cert-manager images
+kind:prepullAdditionalImages
 
 trap capz::ci-e2e::cleanup EXIT
 # Image is configured as `${CONTROLLER_IMG}-${ARCH}:${TAG}` where `CONTROLLER_IMG` is defaulted to `${REGISTRY}/${IMAGE_NAME}`.
