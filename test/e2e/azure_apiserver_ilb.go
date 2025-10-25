@@ -99,6 +99,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -254,6 +255,22 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 					},
 				},
 				Spec: corev1.PodSpec{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "node-role.kubernetes.io/control-plane",
+												Operator: corev1.NodeSelectorOpDoesNotExist,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					Containers: []corev1.Container{
 						{
 							Name:  "node-debug",
@@ -303,6 +320,12 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 	err = workloadClusterClient.Create(ctx, nodeDebugDS)
 	Expect(err).NotTo(HaveOccurred())
 
+	WaitForDaemonset(ctx, WaitForDaemonsetInput{
+		DaemonSet: nodeDebugDS,
+		Getter:    workloadClusterClient,
+		Clientset: workloadClusterClientSet,
+	}, e2eConfig.GetIntervals(specName, "wait-daemonset")...)
+
 	backoff = wait.Backoff{
 		Duration: 100 * time.Second,
 		Factor:   0.5,
@@ -310,60 +333,29 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 		Steps:    5,
 	}
 	retryDSFn := func(ctx context.Context) (bool, error) {
-		defer GinkgoRecover()
-
-		By("Saving all the nodes")
-		allNodes := &corev1.NodeList{}
-		err = workloadClusterClient.List(ctx, allNodes)
-		if err != nil {
-			return false, fmt.Errorf("failed to list nodes in the workload cluster: %v", err)
-		}
-
-		if len(allNodes.Items) == 0 {
-			return false, fmt.Errorf("no nodes found in the workload cluster")
-		}
-
-		By("Saving all the worker nodes")
-		workerNodes := make(map[string]corev1.Node, 0)
-		for i, node := range allNodes.Items {
-			if strings.Contains(node.Name, input.ClusterName+"-md-0") {
-				workerNodes[node.Name] = allNodes.Items[i]
-			}
-		}
-		if len(workerNodes) != int(input.ExpectedWorkerNodes) {
-			return false, fmt.Errorf("expected number of worker nodes: %d, got: %d", input.ExpectedWorkerNodes, len(workerNodes))
-		}
-
 		By("Saving all the node-debug pods running on the worker nodes")
-		allNodeDebugPods, err := workloadClusterClientSet.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
-			LabelSelector: "app=node-debug",
+		workerDSPods, err := workloadClusterClientSet.CoreV1().Pods(nodeDebugDS.Namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: labels.FormatLabels(nodeDebugDS.Spec.Selector.MatchLabels),
 		})
 		if err != nil {
-			return false, fmt.Errorf("failed to list node-debug pods in the workload cluster: %v", err)
+			Logf("failed to list node-debug pods in the workload cluster: %v", err)
+			return false, nil
 		}
 
-		workerDSPods := make(map[string]corev1.Pod, 0)
 		workerDSPodsTestResult := make(map[string]bool, 0)
-		for _, daemonsetPod := range allNodeDebugPods.Items {
-			if _, ok := workerNodes[daemonsetPod.Spec.NodeName]; ok {
-				workerDSPods[daemonsetPod.Name] = daemonsetPod
-				workerDSPodsTestResult[daemonsetPod.Name] = false
-			}
+		for _, daemonsetPod := range workerDSPods.Items {
+			workerDSPodsTestResult[daemonsetPod.Name] = false
 		}
-		if len(workerDSPods) != int(input.ExpectedWorkerNodes) {
-			return false, fmt.Errorf("expected number of worker node-debug daemonset pods: %d, got: %d", input.ExpectedWorkerNodes, len(workerDSPods))
-		}
-
 		By("Getting the kubeconfig path for the workload cluster")
 		workloadClusterKubeConfigPath := workloadClusterProxy.GetKubeconfigPath()
 		workloadClusterKubeConfig, err := clientcmd.BuildConfigFromFlags("", workloadClusterKubeConfigPath)
-
 		if err != nil {
-			return false, fmt.Errorf("failed to build workload cluster kubeconfig from flags: %v", err)
+			Logf("failed to build workload cluster kubeconfig from flags: %v", err)
+			return false, nil
 		}
 
-		Logf("Number of node debug pods deployed on worker nodes: %v\n", len(workerDSPods))
-		for _, nodeDebugPod := range workerDSPods {
+		Logf("Number of node debug pods deployed on worker nodes: %v\n", len(workerDSPods.Items))
+		for _, nodeDebugPod := range workerDSPods.Items {
 			Logf("node-debug pod %v is deployed on node %v\n", nodeDebugPod.Name, nodeDebugPod.Spec.NodeName)
 
 			By("Checking the status of the node-debug pod")
@@ -374,7 +366,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 			case corev1.PodRunning:
 				Logf("Pod %s is in Running phase. Proceeding\n", nodeDebugPod.Name)
 			default:
-				return false, fmt.Errorf("node-debug pod %s is in an unexpected phase: %v", nodeDebugPod.Name, nodeDebugPod.Status.Phase)
+				Logf("node-debug pod %s is in an unexpected phase: %v", nodeDebugPod.Name, nodeDebugPod.Status.Phase)
+				return false, nil
 			}
 
 			helloFromTheNodeDebugPod := "Hello from node-debug pod"
@@ -408,7 +401,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 				Logf("Creating executor for the pod %s using the URL %v\n", nodeDebugPod.Name, execRequest.URL())
 				exec, err := remotecommand.NewSPDYExecutor(workloadClusterKubeConfig, "POST", execRequest.URL())
 				if err != nil {
-					return false, fmt.Errorf("failed to create executor: %v", err)
+					Logf("failed to create executor: %v", err)
+					return false, nil
 				}
 
 				By("Streaming stdout/err from the daemonset")
@@ -420,7 +414,8 @@ func AzureAPIServerILBSpec(ctx context.Context, inputGetter func() AzureAPIServe
 					Tty:    false,
 				})
 				if err != nil {
-					return false, fmt.Errorf("failed to stream stdout/err from the daemonset: %v", err)
+					Logf("failed to stream stdout/err from the daemonset: %v", err)
+					return false, nil
 				}
 				output := stdout.String()
 				Logf("Captured output:\n%s\n", output)
