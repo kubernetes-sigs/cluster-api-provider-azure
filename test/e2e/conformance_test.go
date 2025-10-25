@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -144,6 +145,29 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		stopwatch := experiment.NewStopwatch()
+
+		validating := &admissionregistrationv1.ValidatingWebhookConfigurationList{}
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, validating)).To(Succeed())
+		mutating := &admissionregistrationv1.MutatingWebhookConfigurationList{}
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, mutating)).To(Succeed())
+
+		Logf("Looking for webhooks to have a caBundle")
+		for _, w := range validating.Items {
+			for _, webhook := range w.Webhooks {
+				if len(webhook.ClientConfig.CABundle) == 0 {
+					Logf("validatingwebhookconfiguration %s webhook %s has no caBundle", w.Name, webhook.Name)
+				}
+			}
+		}
+		for _, w := range mutating.Items {
+			for _, webhook := range w.Webhooks {
+				if len(webhook.ClientConfig.CABundle) == 0 {
+					Logf("mutatingwebhookconfiguration %s webhook %s has no caBundle", w.Name, webhook.Name)
+				}
+			}
+		}
+		Logf("Done looking for webhooks to have a caBundle")
+
 		clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 			specName,
 			withFlavor(flavor),
