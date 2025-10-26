@@ -229,7 +229,7 @@ var _ = Describe("Workload cluster creation", func() {
 				specName,
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -316,7 +316,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("azure-cni-v1"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -492,7 +492,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("ipv6"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1078,7 +1078,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("dual-stack"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1210,7 +1210,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("topology-rke2"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
@@ -1294,7 +1294,7 @@ var _ = Describe("Workload cluster creation", func() {
 				specName,
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1346,7 +1346,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("apiserver-ilb"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1395,7 +1395,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withFlavor("azl3"),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{

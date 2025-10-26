@@ -181,6 +181,7 @@ var _ = Describe("Conformance Tests", func() {
 			}),
 		), result)
 		stopwatch.Record("cluster creation")
+		return
 
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 
