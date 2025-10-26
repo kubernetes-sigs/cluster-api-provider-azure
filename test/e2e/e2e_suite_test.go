@@ -125,6 +125,49 @@ var _ = SynchronizedAfterSuite(func() {
 	// After each ParallelNode.
 }, func() {
 	// After all ParallelNodes.
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "thesearentnamespaced",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "admissionregistration.k8s.io/v1",
+				Kind:       "ValidatingWebhookConfiguration",
+			},
+			{
+				APIVersion: "admissionregistration.k8s.io/v1",
+				Kind:       "MutatingWebhookConfiguration",
+			},
+		},
+	})
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "capz-system",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+		},
+	})
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "capi-system",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+		},
+	})
 
 	By("Tearing down the management cluster")
 	if !skipCleanup {

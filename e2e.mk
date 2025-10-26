@@ -54,6 +54,6 @@ test-e2e-custom-image: ## Run e2e tests with a custom image format (use MANAGER_
 		echo "MANAGER_IMAGE must be set"; \
 		exit 1; \
 	fi
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(shell echo $(MANAGER_IMAGE) | cut -d: -f1) MANIFEST_TAG=$(shell echo $(MANAGER_IMAGE) | cut -d: -f2) TARGET_RESOURCE="./config/capz/manager_image_patch.yaml"
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(shell echo $${MANAGER_IMAGE%:*}) MANIFEST_TAG=$(shell echo $${MANAGER_IMAGE##*:}) TARGET_RESOURCE="./config/capz/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/capz/manager_pull_policy.yaml" PULL_POLICY=IfNotPresent
 	$(MAKE) test-e2e-run;

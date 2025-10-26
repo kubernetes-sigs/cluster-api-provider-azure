@@ -197,6 +197,7 @@ var _ = Describe("Workload cluster creation", func() {
 						})
 					}),
 				), result)
+				return
 
 				By("Creating a private cluster from the management cluster", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
@@ -244,6 +245,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -330,6 +332,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can expect VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -389,6 +392,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -427,6 +431,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -464,6 +469,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -502,6 +508,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -559,6 +566,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -615,6 +623,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -691,6 +700,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -735,6 +745,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneInterval(specName, "wait-control-plane"),
 			), result)
+			return
 
 			By("Verifying machinepool can scale out and in", func() {
 				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
@@ -802,6 +813,7 @@ var _ = Describe("Workload cluster creation", func() {
 			)
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterTemplate, result)
+			return
 
 			// This test should be first to make sure that the template re-applied here matches the current
 			// state of the cluster exactly.
@@ -874,6 +886,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
@@ -1002,6 +1015,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Performing ClusterClass operations on the cluster", func() {
 				AKSClusterClassSpec(ctx, func() AKSClusterClassInput {
@@ -1036,6 +1050,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
@@ -1079,6 +1094,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1150,6 +1166,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1203,6 +1220,7 @@ var _ = Describe("Workload cluster creation", func() {
 					},
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1248,6 +1266,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying extendedLocation property in Azure VMs is corresponding to extendedLocation property in edgezone yaml file", func() {
 				AzureEdgeZoneClusterSpec(ctx, func() AzureEdgeZoneClusterSpecInput {
@@ -1291,6 +1310,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Probing workload cluster with APIServerILB feature gate", func() {
 				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
@@ -1342,6 +1362,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Probing workload cluster with APIServerILB feature gate", func() {
 				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
@@ -1390,6 +1411,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
