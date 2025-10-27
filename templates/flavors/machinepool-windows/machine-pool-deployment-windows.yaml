@@ -51,7 +51,7 @@ spec:
   preKubeadmCommands:
     - powershell c:/create-external-network.ps1
   postKubeadmCommands:
-    - nssm set kubelet start SERVICE_AUTO_START
+    - powershell C:/KubeletRestart_nssm_sc.ps1
     - powershell C:/defender-exclude-calico.ps1
   joinConfiguration:
     nodeRegistration:
@@ -67,6 +67,21 @@ spec:
     owner: root:root
     path: c:/k/azure.json
     permissions: "0644"
+  - content: |
+      # This script restarts the kubelet service.
+      # It supports both nssm and Windows service configurations,
+      # ensuring a smooth transition between service managers without interruption.
+      # This script will eventually be removed once nssm is no longer used.
+      $scriptPath = "$env:SYSTEMDRIVE/k/RestartKubelet.ps1"
+      if (Test-Path $scriptPath) {
+          Write-Host "Found RestartKubelet.ps1, executing..."
+          & $scriptPath
+      } else {
+          Write-Host "RestartKubelet.ps1 not found. Running fallback command..."
+          & "$env:SYSTEMDRIVE\k\nssm.exe" set kubelet start SERVICE_AUTO_START
+      }
+    path: C:/KubeletRestart_nssm_sc.ps1
+    permissions: "0744"
   - path: C:/defender-exclude-calico.ps1
     permissions: "0744"
     content: |-
