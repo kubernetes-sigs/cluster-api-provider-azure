@@ -26,7 +26,7 @@ source "${REPO_ROOT}/hack/ensure-tags.sh" # set the right timestamp and job name
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-$(date +%s)}" # management cluster name
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-"${MGMT_CLUSTER_NAME}"}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}-nodes"
-export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.30.2}"
+export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.33.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
 export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
 export AKS_NODE_COUNT="${AKS_NODE_COUNT:-2}"
