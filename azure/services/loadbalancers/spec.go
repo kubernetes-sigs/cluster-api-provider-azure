@@ -30,24 +30,26 @@ import (
 
 // LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
-	Name                 string
-	ResourceGroup        string
-	SubscriptionID       string
-	ClusterName          string
-	Location             string
-	ExtendedLocation     *infrav1.ExtendedLocationSpec
-	Role                 string
-	Type                 infrav1.LBType
-	SKU                  infrav1.SKU
-	VNetName             string
-	VNetResourceGroup    string
-	SubnetName           string
-	BackendPoolName      string
-	FrontendIPConfigs    []infrav1.FrontendIP
-	APIServerPort        int32
-	IdleTimeoutInMinutes *int32
-	AdditionalTags       map[string]string
-	AdditionalPorts      []infrav1.LoadBalancerPort
+	Name                  string
+	ResourceGroup         string
+	SubscriptionID        string
+	ClusterName           string
+	Location              string
+	ExtendedLocation      *infrav1.ExtendedLocationSpec
+	Role                  string
+	Type                  infrav1.LBType
+	SKU                   infrav1.SKU
+	VNetName              string
+	VNetResourceGroup     string
+	SubnetName            string
+	BackendPoolName       string
+	FrontendIPConfigs     []infrav1.FrontendIP
+	APIServerPort         int32
+	IdleTimeoutInMinutes  *int32
+	AdditionalTags        map[string]string
+	AdditionalPorts       []infrav1.LoadBalancerPort
+	LoadBalancingRuleName string
+	HealthProbeName       string
 }
 
 // ResourceName returns the name of the load balancer.
@@ -222,9 +224,17 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource)
 		if len(frontendIDs) != 0 {
 			frontendIPConfig = frontendIDs[0]
 		}
+		ruleName := infrav1.DefaultLoadBalancingRuleName
+		if lbSpec.LoadBalancingRuleName != "" {
+			ruleName = lbSpec.LoadBalancingRuleName
+		}
+		probeName := infrav1.DefaultHealthProbeName
+		if lbSpec.HealthProbeName != "" {
+			probeName = lbSpec.HealthProbeName
+		}
 		rules := []*armnetwork.LoadBalancingRule{
 			{
-				Name: ptr.To(lbRuleHTTPS),
+				Name: ptr.To(ruleName),
 				Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 					DisableOutboundSnat:     ptr.To(true),
 					Protocol:                ptr.To(armnetwork.TransportProtocolTCP),
@@ -238,7 +248,7 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource)
 						ID: ptr.To(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &armnetwork.SubResource{
-						ID: ptr.To(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, httpsProbe)),
+						ID: ptr.To(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, probeName)),
 					},
 				},
 			},
@@ -260,7 +270,7 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource)
 						ID: ptr.To(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &armnetwork.SubResource{
-						ID: ptr.To(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, httpsProbe)),
+						ID: ptr.To(azure.ProbeID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, infrav1.DefaultHealthProbeName)),
 					},
 				},
 			})
@@ -281,9 +291,13 @@ func getBackendAddressPools(lbSpec LBSpec) []*armnetwork.BackendAddressPool {
 
 func getProbes(lbSpec LBSpec) []*armnetwork.Probe {
 	if lbSpec.Role == infrav1.APIServerRole || lbSpec.Role == infrav1.APIServerRoleInternal {
+		probeName := infrav1.DefaultHealthProbeName
+		if lbSpec.HealthProbeName != "" {
+			probeName = lbSpec.HealthProbeName
+		}
 		return []*armnetwork.Probe{
 			{
-				Name: ptr.To(httpsProbe),
+				Name: ptr.To(probeName),
 				Properties: &armnetwork.ProbePropertiesFormat{
 					Protocol:          ptr.To(armnetwork.ProbeProtocolHTTPS),
 					Port:              ptr.To[int32](lbSpec.APIServerPort),
