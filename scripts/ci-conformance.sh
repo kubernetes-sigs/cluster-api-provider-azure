@@ -38,6 +38,8 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
+# shellcheck source=./scripts/ci-e2e-lib.sh
+source "${REPO_ROOT}/scripts/ci-e2e-lib.sh"
 
 # Verify the required Environment Variables are present.
 capz::util::ensure_azure_envs
@@ -94,6 +96,11 @@ capz::ci-conformance::cleanup() {
 }
 
 trap capz::ci-conformance::cleanup EXIT
+
+# pre-pull all the images that will be used in the e2e, thus making the actual test run
+# less sensible to the network speed. This includes:
+# - cert-manager images
+kind:prepullAdditionalImages
 
 if [[ "${WINDOWS}" == "true" ]]; then
   make test-windows-upstream

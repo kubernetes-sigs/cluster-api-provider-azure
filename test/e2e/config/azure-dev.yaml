@@ -11,6 +11,12 @@ images:
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.4.1
     loadBehavior: tryLoad
+  - name: quay.io/jetstack/cert-manager-cainjector:v1.19.1
+    loadBehavior: tryLoad
+  - name: quay.io/jetstack/cert-manager-webhook:v1.19.1
+    loadBehavior: tryLoad
+  - name: quay.io/jetstack/cert-manager-controller:v1.19.1
+    loadBehavior: tryLoad
 
 providers:
   - name: cluster-api

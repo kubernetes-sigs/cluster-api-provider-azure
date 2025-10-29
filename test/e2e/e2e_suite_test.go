@@ -32,6 +32,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -39,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func init() {
@@ -125,6 +128,49 @@ var _ = SynchronizedAfterSuite(func() {
 	// After each ParallelNode.
 }, func() {
 	// After all ParallelNodes.
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "thesearentnamespaced",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "admissionregistration.k8s.io/v1",
+				Kind:       "ValidatingWebhookConfiguration",
+			},
+			{
+				APIVersion: "admissionregistration.k8s.io/v1",
+				Kind:       "MutatingWebhookConfiguration",
+			},
+		},
+	})
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "capz-system",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+		},
+	})
+	framework.DumpAllResources(context.Background(), framework.DumpAllResourcesInput{
+		Lister:               bootstrapClusterProxy.GetClient(),
+		KubeConfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: clusterctlConfigPath,
+		Namespace:            "capi-system",
+		LogPath:              filepath.Join(artifactFolder, "clusters", "bootstrap", "resources"),
+		IncludeTypes: []ctrl.TypeMeta{
+			{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+		},
+	})
 
 	By("Tearing down the management cluster")
 	if !skipCleanup {
@@ -199,6 +245,52 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 		AddonProviders:          config.AddonProviders(),
 		LogFolder:               filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	certManager := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "cert-manager",
+			Name:      "cert-manager",
+		},
+	}
+	Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(certManager), certManager)).To(Succeed())
+	framework.WatchDeploymentLogsByName(ctx, framework.WatchDeploymentLogsByNameInput{
+		GetLister:  bootstrapClusterProxy.GetClient(),
+		Cache:      bootstrapClusterProxy.GetCache(ctx),
+		ClientSet:  bootstrapClusterProxy.GetClientSet(),
+		Deployment: certManager,
+		LogPath:    filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "logs", certManager.GetNamespace()),
+	})
+
+	certManagerCAInjector := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "cert-manager",
+			Name:      "cert-manager-cainjector",
+		},
+	}
+	Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(certManagerCAInjector), certManagerCAInjector)).To(Succeed())
+	framework.WatchDeploymentLogsByName(ctx, framework.WatchDeploymentLogsByNameInput{
+		GetLister:  bootstrapClusterProxy.GetClient(),
+		Cache:      bootstrapClusterProxy.GetCache(ctx),
+		ClientSet:  bootstrapClusterProxy.GetClientSet(),
+		Deployment: certManagerCAInjector,
+		LogPath:    filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "logs", certManagerCAInjector.GetNamespace()),
+	})
+
+	certManagerWebhook := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "cert-manager",
+			Name:      "cert-manager-webhook",
+		},
+	}
+	Expect(bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(certManagerWebhook), certManagerWebhook)).To(Succeed())
+	framework.WatchDeploymentLogsByName(ctx, framework.WatchDeploymentLogsByNameInput{
+		GetLister:  bootstrapClusterProxy.GetClient(),
+		Cache:      bootstrapClusterProxy.GetCache(ctx),
+		ClientSet:  bootstrapClusterProxy.GetClientSet(),
+		Deployment: certManagerWebhook,
+		LogPath:    filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "logs", certManagerWebhook.GetNamespace()),
+	})
+
 }
 
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
