@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -35,8 +35,8 @@ import (
 )
 
 type AKSUpgradeSpecInput struct {
-	Cluster                    *clusterv1beta1.Cluster
-	MachinePools               []*clusterv1beta1.MachinePool
+	Cluster                    *clusterv1.Cluster
+	MachinePools               []*clusterv1.MachinePool
 	KubernetesVersionUpgradeTo string
 	WaitForControlPlane        []interface{}
 	WaitForMachinePools        []interface{}

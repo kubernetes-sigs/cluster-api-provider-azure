@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,7 +38,7 @@ import (
 )
 
 type AKSSpotSpecInput struct {
-	Cluster           *clusterv1beta1.Cluster
+	Cluster           *clusterv1.Cluster
 	KubernetesVersion string
 	WaitIntervals     []interface{}
 }
@@ -79,17 +79,17 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 	err = mgmtClient.Create(ctx, infraMachinePool)
 	Expect(err).NotTo(HaveOccurred())
 
-	machinePool := &clusterv1beta1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: infraMachinePool.Namespace,
 			Name:      infraMachinePool.Name,
 		},
-		Spec: clusterv1beta1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
 			Replicas:    ptr.To[int32](0),
-			Template: clusterv1beta1.MachineTemplateSpec{
-				Spec: clusterv1beta1.MachineSpec{
-					Bootstrap: clusterv1beta1.Bootstrap{
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					Bootstrap: clusterv1.Bootstrap{
 						DataSecretName: ptr.To(""),
 					},
 					ClusterName: input.Cluster.Name,
@@ -112,7 +112,7 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &clusterv1beta1.MachinePool{})
+			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &clusterv1.MachinePool{})
 			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		}, input.WaitIntervals...).Should(Succeed(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
 

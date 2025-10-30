@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,8 +38,8 @@ import (
 
 type AKSMachinePoolSpecInput struct {
 	MgmtCluster   framework.ClusterProxy
-	Cluster       *clusterv1beta1.Cluster
-	MachinePools  []*clusterv1beta1.MachinePool
+	Cluster       *clusterv1.Cluster
+	MachinePools  []*clusterv1.MachinePool
 	WaitIntervals []interface{}
 }
 
@@ -49,7 +49,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *clusterv1beta1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 
@@ -60,7 +60,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) + 1,
-				MachinePools:              []*clusterv1beta1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 
@@ -69,7 +69,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) - 1,
-				MachinePools:              []*clusterv1beta1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 
@@ -118,7 +118,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 					ClusterProxy:              input.MgmtCluster,
 					Cluster:                   input.Cluster,
 					Replicas:                  0,
-					MachinePools:              []*clusterv1beta1.MachinePool{mp},
+					MachinePools:              []*clusterv1.MachinePool{mp},
 					WaitForMachinePoolToScale: input.WaitIntervals,
 				})
 			}
@@ -128,7 +128,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  originalReplicas,
-				MachinePools:              []*clusterv1beta1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 		}(mp)

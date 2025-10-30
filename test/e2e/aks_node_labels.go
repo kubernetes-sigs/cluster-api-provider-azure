@@ -29,15 +29,15 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 type AKSNodeLabelsSpecInput struct {
-	Cluster       *clusterv1beta1.Cluster
-	MachinePools  []*clusterv1beta1.MachinePool
+	Cluster       *clusterv1.Cluster
+	MachinePools  []*clusterv1.MachinePool
 	WaitForUpdate []interface{}
 }
 
@@ -64,7 +64,7 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *clusterv1beta1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 

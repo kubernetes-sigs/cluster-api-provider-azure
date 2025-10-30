@@ -31,7 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,7 +40,7 @@ import (
 )
 
 type AKSMarketplaceExtensionSpecInput struct {
-	Cluster       *clusterv1beta1.Cluster
+	Cluster       *clusterv1.Cluster
 	WaitIntervals []interface{}
 }
 
