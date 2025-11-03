@@ -59,7 +59,6 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
-        pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:3.9"
   files:
   - contentFrom:
       secret:
