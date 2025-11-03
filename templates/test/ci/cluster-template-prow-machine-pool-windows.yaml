@@ -294,7 +294,6 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START

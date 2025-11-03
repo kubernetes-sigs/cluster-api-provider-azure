@@ -519,7 +519,6 @@ spec:
         cloud-provider: external
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.9
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
