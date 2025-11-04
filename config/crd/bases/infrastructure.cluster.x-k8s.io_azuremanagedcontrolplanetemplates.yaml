@@ -575,7 +575,6 @@ spec:
                           LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
                           Immutable.
                         enum:
-                        - Basic
                         - Standard
                         type: string
                       location:

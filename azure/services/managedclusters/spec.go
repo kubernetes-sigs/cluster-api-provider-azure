@@ -69,7 +69,7 @@ type ManagedClusterSpec struct {
 	// Version defines the desired Kubernetes version.
 	Version string
 
-	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to Standard.
+	// LoadBalancerSKU for the managed cluster. 'Standard' is the only supported value. Defaults to Standard.
 	LoadBalancerSKU string
 
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
