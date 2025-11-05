@@ -7,8 +7,7 @@ spec:
     image:
       # we use the latest image as a workaround there is no published marketplace image for k8s CI versions.
       # latest binaries and images will get replaced to the desired version by the script above.
-      marketplace:
-        publisher: cncf-upstream
-        offer: capi
-        sku: ubuntu-2204-gen1
+      computeGallery:
+        gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+        name: capi-ubun2-2404
         version: latest
