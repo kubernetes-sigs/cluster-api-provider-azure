@@ -416,10 +416,9 @@ spec:
     spec:
       identity: UserAssigned
       image:
-        marketplace:
-          offer: capi-windows
-          publisher: cncf-upstream
-          sku: ${WINDOWS_SERVER_VERSION:=windows-2019}-containerd-gen1
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-win-${WINDOWS_SERVER_VERSION#windows-}-containerd
           version: latest
       osDisk:
         diskSizeGB: 128

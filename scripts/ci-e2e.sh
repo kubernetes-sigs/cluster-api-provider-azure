@@ -72,6 +72,7 @@ CALICO_VERSION=$(make get-calico-version)
 export CALICO_VERSION
 AZWI_RESOURCE_GROUP="${AZWI_RESOURCE_GROUP:-capz-wi-$(capz::util::random_suffix)}"
 export AZWI_RESOURCE_GROUP
+export WINDOWS_SERVER_VERSION="${WINDOWS_SERVER_VERSION:-windows-2022}"
 
 
 capz::util::generate_ssh_key
