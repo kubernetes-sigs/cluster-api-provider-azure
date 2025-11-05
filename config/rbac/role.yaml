@@ -67,6 +67,7 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusters/status
+  - clusters/finalizers
   verbs:
   - get
   - list
@@ -87,6 +88,7 @@ rules:
   - cluster.x-k8s.io
   resources:
   - machinepools/status
+  - machinepools/finalizers
   verbs:
   - get
   - list
@@ -98,6 +100,7 @@ rules:
   resources:
   - machines
   - machines/status
+  - machines/finalizers
   verbs:
   - delete
   - get
@@ -170,15 +173,25 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - azureasomanagedclusters/status
+  - azureasomanagedclusters/finalizers
   - azureasomanagedcontrolplanes/status
+  - azureasomanagedcontrolplanes/finalizers
   - azureasomanagedmachinepools/status
+  - azureasomanagedmachinepools/finalizers
   - azureclusters/status
+  - azureclusters/finalizers
   - azuremachinepoolmachines/status
+  - azuremachinepoolmachines/finalizers
   - azuremachinepools/status
+  - azuremachinepools/finalizers
   - azuremachines/status
+  - azuremachines/finalizers
   - azuremanagedclusters/status
+  - azuremanagedclusters/finalizers
   - azuremanagedcontrolplanes/status
+  - azuremanagedcontrolplanes/finalizers
   - azuremanagedmachinepools/status
+  - azuremanagedmachinepools/finalizers
   verbs:
   - get
   - patch
@@ -196,6 +209,7 @@ rules:
   - kubernetesconfiguration.azure.com
   resources:
   - extensions
+  - extensions/finalizers
   verbs:
   - create
   - delete
@@ -216,10 +230,15 @@ rules:
   - network.azure.com
   resources:
   - bastionhosts
+  - bastionhosts/finalizers
   - natgateways
+  - natgateways/finalizers
   - privateendpoints
+  - privateendpoints/finalizers
   - virtualnetworks
+  - virtualnetworks/finalizers
   - virtualnetworkssubnets
+  - virtualnetworkssubnets/finalizers
   verbs:
   - create
   - delete
@@ -244,6 +263,7 @@ rules:
   - resources.azure.com
   resources:
   - resourcegroups
+  - resourcegroups/finalizers
   verbs:
   - create
   - delete
