@@ -119,6 +119,7 @@ setup() {
     # TODO figure out a better way to account for expected Windows node count
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
         export WINDOWS_WORKER_MACHINE_COUNT="${WINDOWS_WORKER_MACHINE_COUNT:-2}"
+        export WINDOWS_SERVER_VERSION="${WINDOWS_SERVER_VERSION:-windows-2022}"
     fi
 }
 
