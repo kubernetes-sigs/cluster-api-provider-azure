@@ -338,7 +338,7 @@ spec:
         privateLinkServiceConnections:
         - name: my-pls # optional
           privateLinkServiceID: /subscriptions/<Subscription ID>/resourceGroups/<Remote Resource Group Name>/providers/Microsoft.Storage/storageAccounts/<Name>
-          groupIds:
+          groupIDs:
           - "blob"
 ```
 
