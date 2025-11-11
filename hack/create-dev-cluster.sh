@@ -29,6 +29,10 @@ make envsubst
 export REGISTRY="${REGISTRY:-registry.local/fake}"
 
 export CLUSTER_CREATE_ATTEMPTS="${CLUSTER_CREATE_ATTEMPTS:-3}"
+EXTRA_NODES="${EXTRA_NODES:-}"
+if [[ -n "${EXTRA_NODES}" ]]; then
+  CLUSTER_CREATE_ATTEMPTS=1
+fi
 
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-test}"
