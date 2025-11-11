@@ -105,7 +105,8 @@ spec:
 
           for BINARY in "$${BINARIES[@]}"; do
             echo "* downloading and extracting binary: $${BINARY} $${VERSION}"
-            REVISION=$${$${BINARY^^}_REVISION}
+            BINARY_VAR="$${BINARY^^}_REVISION"
+            REVISION=$${!BINARY_VAR}
             RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
             RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
 

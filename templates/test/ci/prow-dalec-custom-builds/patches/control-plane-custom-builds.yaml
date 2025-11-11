@@ -15,7 +15,8 @@
       OS_VERSION="ubuntu24.04"
       ARCH="amd64"
       for BINARY in "$${BINARIES[@]}"; do
-        DEB_VERSION=$${$${BINARY^^}_REVISION}
+        BINARY_VAR="$${BINARY^^}_REVISION"
+        DEB_VERSION=$${!BINARY_VAR}
         echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
         DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
         DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
