@@ -194,7 +194,8 @@ spec:
         OS_VERSION="ubuntu24.04"
         ARCH="amd64"
         for BINARY in "$${BINARIES[@]}"; do
-          DEB_VERSION=$${$${BINARY^^}_REVISION}
+          BINARY_VAR="$${BINARY^^}_REVISION"
+          DEB_VERSION=$${!BINARY_VAR}
           echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
           DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
           DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
@@ -365,7 +366,8 @@ spec:
           OS_VERSION="ubuntu24.04"
           ARCH="amd64"
           for BINARY in "$${BINARIES[@]}"; do
-            DEB_VERSION=$${$${BINARY^^}_REVISION}
+            BINARY_VAR="$${BINARY^^}_REVISION"
+            DEB_VERSION=$${!BINARY_VAR}
             echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
             DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
             DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
@@ -674,7 +676,8 @@ spec:
 
           for BINARY in "$${BINARIES[@]}"; do
             echo "* downloading and extracting binary: $${BINARY} $${VERSION}"
-            REVISION=$${$${BINARY^^}_REVISION}
+            BINARY_VAR="$${BINARY^^}_REVISION"
+            REVISION=$${!BINARY_VAR}
             RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
             RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
 
