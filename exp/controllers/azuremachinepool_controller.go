@@ -28,11 +28,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -49,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (
@@ -122,7 +121,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&expv1.MachinePool{},
+			&clusterv1beta1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), log)),
 		).
 		// watch for changes in AzureCluster resources
@@ -143,9 +142,9 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue),
 			),
 		).
-		// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+		// Add a watch on clusterv1beta1.Cluster object for unpause & ready notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -214,7 +213,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger = logger.WithValues("machinePool", machinePool.Name)
 
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
 	if err != nil {
 		logger.V(2).Info("MachinePool is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
@@ -246,7 +245,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azMachinePool) {
+	if clusterv1beta1util.IsPaused(cluster, azMachinePool) {
 		logger.V(2).Info("AzureMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ampr.reconcilePause(ctx, machinePoolScope)
 	}
@@ -260,7 +259,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	return ampr.reconcileNormal(ctx, machinePoolScope, cluster)
 }
 
-func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1.Cluster) (_ reconcile.Result, reterr error) {
+func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1beta1.Cluster) (_ reconcile.Result, reterr error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.reconcileNormal")
 	defer done()
 
@@ -273,7 +272,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	}
 
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
+	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
 	needsPatch = machinePoolScope.SetInfrastructureMachineKind() || needsPatch
 	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
 	needsPatch = infracontroller.AddBlockMoveAnnotation(machinePoolScope.AzureMachinePool) || needsPatch
@@ -451,6 +450,6 @@ func (ampr *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, mac
 
 	// Delete succeeded, remove finalizer
 	log.V(4).Info("removing finalizer for AzureMachinePool")
-	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
+	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
 	return reconcile.Result{}, nil
 }
