@@ -33,7 +33,7 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 	err := mcptw.Default(t.Context(), amcpt)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(*amcpt.Spec.Template.Spec.NetworkPlugin).To(Equal("azure"))
-	g.Expect(*amcpt.Spec.Template.Spec.LoadBalancerSKU).To(Equal("Standard"))
+	g.Expect(*amcpt.Spec.Template.Spec.LoadBalancerSKU).To(Equal(LoadBalancerSKUStandard))
 	g.Expect(amcpt.Spec.Template.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.CIDRBlock).To(Equal(defaultAKSVnetCIDR))
 	g.Expect(amcpt.Spec.Template.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
@@ -42,10 +42,9 @@ func TestControlPlaneTemplateDefaultingWebhook(t *testing.T) {
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
-	lbSKU := "Basic"
+	lbSKU := "Standard"
 	netPol := "azure"
 	amcpt.Spec.Template.Spec.NetworkPlugin = &netPlug
-	amcpt.Spec.Template.Spec.LoadBalancerSKU = &lbSKU
 	amcpt.Spec.Template.Spec.NetworkPolicy = &netPol
 	amcpt.Spec.Template.Spec.Version = "9.99.99"
 	amcpt.Spec.Template.Spec.VirtualNetwork.Name = "fooVnetName"
@@ -131,10 +130,10 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 		{
 			name: "azuremanagedcontrolplanetemplate LoadBalancerSKU is immutable",
 			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
-				cpt.Spec.Template.Spec.LoadBalancerSKU = ptr.To("foo")
+				cpt.Spec.Template.Spec.LoadBalancerSKU = ptr.To(LoadBalancerSKUStandard)
 			}),
 			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
-				cpt.Spec.Template.Spec.LoadBalancerSKU = ptr.To("bar")
+				cpt.Spec.Template.Spec.LoadBalancerSKU = ptr.To("Basic")
 			}),
 			wantErr: true,
 		},
