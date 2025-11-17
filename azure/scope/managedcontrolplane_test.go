@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -51,7 +51,7 @@ func TestNewManagedControlPlaneScope(t *testing.T) {
 	_ = corev1.AddToScheme(scheme)
 
 	input := ManagedControlPlaneScopeParams{
-		Cluster: &clusterv1.Cluster{
+		Cluster: &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster1",
 				Namespace: "default",
@@ -101,7 +101,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		{
 			Name: "With Explicit OutboundType defined",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -120,7 +120,7 @@ func TestManagedControlPlaneScope_OutboundType(t *testing.T) {
 		{
 			Name: "Without OutboundType defined",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -156,7 +156,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "Without Version",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -195,7 +195,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "With Version",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -236,7 +236,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 		{
 			Name: "With bad version",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -287,7 +287,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		{
 			Name: "Without add-ons",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -312,7 +312,7 @@ func TestManagedControlPlaneScope_AddonProfiles(t *testing.T) {
 		{
 			Name: "With add-ons",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -365,7 +365,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		{
 			Name: "with Linux and Windows pools",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -433,7 +433,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 		{
 			Name: "system pool required",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -493,7 +493,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "no Cache value",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -535,7 +535,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "with Cache value of true",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -577,7 +577,7 @@ func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 		{
 			Name: "with Cache value of false",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -640,7 +640,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		{
 			Name: "Without AADProfile",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -665,7 +665,7 @@ func TestManagedControlPlaneScope_AADProfile(t *testing.T) {
 		{
 			Name: "With AADProfile",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -719,7 +719,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "Without DisableLocalAccounts",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -744,7 +744,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "Without AAdProfile and With DisableLocalAccounts",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -773,7 +773,7 @@ func TestManagedControlPlaneScope_DisableLocalAccounts(t *testing.T) {
 		{
 			Name: "With AAdProfile and With DisableLocalAccounts",
 			Scope: &ManagedControlPlaneScope{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -921,7 +921,7 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns empty private endpoints list if no subnets are specified",
 			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -945,7 +945,7 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns empty private endpoints list if no private endpoints are specified",
 			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -975,7 +975,7 @@ func TestManagedControlPlaneScope_PrivateEndpointSpecs(t *testing.T) {
 		{
 			Name: "returns list of private endpoint specs if private endpoints are specified",
 			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-cluster",
 						Namespace: "dummy-ns",
@@ -1083,7 +1083,7 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 		{
 			Name: "returns empty AKS extensions list if no extensions are specified",
 			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "dummy-ns",
@@ -1103,7 +1103,7 @@ func TestManagedControlPlaneScope_AKSExtensionSpecs(t *testing.T) {
 		{
 			Name: "returns list of AKS extensions if extensions are specified",
 			Input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-cluster",
 						Namespace: "dummy-ns",
@@ -1185,7 +1185,7 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 		{
 			name: "Without AutoUpgradeProfile",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -1214,7 +1214,7 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 		{
 			name: "With AutoUpgradeProfile UpgradeChannelNodeImage",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -1270,7 +1270,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to a different resource group",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "cluster1",
 					},
@@ -1306,7 +1306,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to a same resource group",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "cluster1",
 					},
@@ -1335,7 +1335,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork resource group not specified",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
@@ -1365,7 +1365,7 @@ func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 		{
 			name: "virtualNetwork belongs to different resource group with non-k8s name",
 			input: ManagedControlPlaneScopeParams{
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",

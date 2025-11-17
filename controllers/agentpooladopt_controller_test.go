@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -73,7 +73,7 @@ func TestAgentPoolAdoptController(t *testing.T) {
 			Name:      "fake-managed-cluster",
 			Namespace: "fake-ns",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "cluster-name",
+				clusterv1beta1.ClusterNameLabel: "cluster-name",
 			},
 		},
 	}

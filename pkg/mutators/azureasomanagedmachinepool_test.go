@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -73,8 +73,8 @@ func TestSetAgentPoolDefaults(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
 					Replicas: ptr.To[int32](1),
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("vcapi k8s version"),
 						},
 					},
@@ -121,8 +121,8 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 			name: "no CAPI opinion",
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: nil,
 						},
 					},
@@ -143,8 +143,8 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 			name: "set from CAPI opinion",
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("vcapi k8s version"),
 						},
 					},
@@ -165,8 +165,8 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 			name: "user value matching CAPI ok",
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("vcapi k8s version"),
 						},
 					},
@@ -190,8 +190,8 @@ func TestSetAgentPoolOrchestratorVersion(t *testing.T) {
 					Name: "mp",
 				},
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("vcapi k8s version"),
 						},
 					},
@@ -250,7 +250,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -266,14 +266,14 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -289,7 +289,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -300,14 +300,14 @@ func TestReconcileAutoscaling(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
 			expected: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -319,7 +319,7 @@ func TestReconcileAutoscaling(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mp",
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: "not-" + infrav1.ReplicasManagedByAKS,
 					},
 				},
 			},
@@ -383,7 +383,7 @@ func TestSetAgentPoolCount(t *testing.T) {
 			machinePool: &expv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+						clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 					},
 				},
 				Spec: expv1.MachinePoolSpec{

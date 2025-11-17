@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -41,7 +41,7 @@ import (
 type DiscoverAndWaitForAKSControlPlaneInput struct {
 	Lister  framework.Lister
 	Getter  framework.Getter
-	Cluster *clusterv1.Cluster
+	Cluster *clusterv1beta1.Cluster
 }
 
 // WaitForAKSControlPlaneInitialized waits for the Azure managed control plane to be initialized.
@@ -148,7 +148,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 	Eventually(func() bool {
 		opt1 := client.InNamespace(input.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			clusterv1.ClusterNameLabel: input.ClusterName,
+			clusterv1beta1.ClusterNameLabel: input.ClusterName,
 		})
 		opt3 := client.MatchingLabels(map[string]string{
 			infrav1.LabelAgentPoolMode: string(infrav1.NodePoolModeSystem),

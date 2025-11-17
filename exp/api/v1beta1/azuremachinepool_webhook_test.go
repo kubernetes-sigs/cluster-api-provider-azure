@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -281,7 +281,7 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 	switch obj := obj.(type) {
 	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
-	case *clusterv1.Cluster:
+	case *clusterv1beta1.Cluster:
 		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
 			Kind: infrav1.AzureClusterKind,
 			Name: "test-cluster",
@@ -296,8 +296,8 @@ func (m mockDefaultClient) List(ctx context.Context, list client.ObjectList, opt
 	list.(*expv1.MachinePoolList).Items = []expv1.MachinePool{
 		{
 			Spec: expv1.MachinePoolSpec{
-				Template: clusterv1.MachineTemplateSpec{
-					Spec: clusterv1.MachineSpec{
+				Template: clusterv1beta1.MachineTemplateSpec{
+					Spec: clusterv1beta1.MachineSpec{
 						InfrastructureRef: corev1.ObjectReference{
 							Name: m.Name,
 						},

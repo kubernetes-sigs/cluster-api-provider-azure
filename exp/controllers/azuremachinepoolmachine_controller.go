@@ -26,10 +26,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -109,7 +109,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 		).
 		// Add a watch on CAPI Machines for MachinePool Machines
 		Watches(
-			&clusterv1.Machine{},
+			&clusterv1beta1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePoolMachine"))),
 			builder.WithPredicates(
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, ampmr.WatchFilterValue),
@@ -303,7 +303,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
 
-	bootstrappingCondition := conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+	bootstrappingCondition := v1beta1conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
 	if bootstrappingCondition != nil && bootstrappingCondition.Reason == infrav1.BootstrapFailedReason {
 		return reconcile.Result{}, nil
 	}

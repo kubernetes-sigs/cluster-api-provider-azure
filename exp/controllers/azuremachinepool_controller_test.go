@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +67,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
-		clusterv1.AddToScheme,
+		clusterv1beta1.AddToScheme,
 		infrav1.AddToScheme,
 		expv1.AddToScheme,
 		infrav1exp.AddToScheme,
@@ -85,12 +85,12 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	name := test.RandomName("paused", 10)
 	namespace := "default"
 
-	cluster := &clusterv1.Cluster{
+	cluster := &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: clusterv1.ClusterSpec{
+		Spec: clusterv1beta1.ClusterSpec{
 			Paused: true,
 			InfrastructureRef: &corev1.ObjectReference{
 				Kind:      "AzureCluster",
@@ -150,13 +150,13 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: name,
+				clusterv1beta1.ClusterNameLabel: name,
 			},
 		},
 		Spec: expv1.MachinePoolSpec{
 			ClusterName: name,
-			Template: clusterv1.MachineTemplateSpec{
-				Spec: clusterv1.MachineSpec{
+			Template: clusterv1beta1.MachineTemplateSpec{
+				Spec: clusterv1beta1.MachineSpec{
 					ClusterName: name,
 				},
 			},

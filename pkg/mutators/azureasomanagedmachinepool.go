@@ -23,7 +23,7 @@ import (
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -109,20 +109,20 @@ func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *exp
 	// Update the MachinePool replica manager annotation. This isn't wrapped in a mutation object because
 	// it's not modifying an ASO resource and users are not expected to set this manually. This behavior
 	// is documented by CAPI as expected of a provider.
-	replicaManager, ok := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]
+	replicaManager, ok := machinePool.Annotations[clusterv1beta1.ReplicasManagedByAnnotation]
 	if autoscaling {
 		if !ok {
 			if machinePool.Annotations == nil {
 				machinePool.Annotations = make(map[string]string)
 			}
-			machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation] = infrav1.ReplicasManagedByAKS
+			machinePool.Annotations[clusterv1beta1.ReplicasManagedByAnnotation] = infrav1.ReplicasManagedByAKS
 		} else if replicaManager != infrav1.ReplicasManagedByAKS {
-			return fmt.Errorf("failed to enable autoscaling, replicas are already being managed by %s according to MachinePool %s's %s annotation", replicaManager, machinePool.Name, clusterv1.ReplicasManagedByAnnotation)
+			return fmt.Errorf("failed to enable autoscaling, replicas are already being managed by %s according to MachinePool %s's %s annotation", replicaManager, machinePool.Name, clusterv1beta1.ReplicasManagedByAnnotation)
 		}
 	} else if !autoscaling && replicaManager == infrav1.ReplicasManagedByAKS {
 		// Removing this annotation informs the MachinePool controller that this MachinePool is no longer
 		// being autoscaled.
-		delete(machinePool.Annotations, clusterv1.ReplicasManagedByAnnotation)
+		delete(machinePool.Annotations, clusterv1beta1.ReplicasManagedByAnnotation)
 	}
 
 	return nil
@@ -139,7 +139,7 @@ func setAgentPoolCount(ctx context.Context, ctrlClient client.Client, machinePoo
 	// When managed by any autoscaler, CAPZ should not provide any spec.count to the ManagedClustersAgentPool
 	// to prevent ASO from overwriting the autoscaler's opinion of the replica count.
 	// The MachinePool's spec.replicas is used to seed an initial value as required by AKS.
-	if _, autoscaling := machinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]; autoscaling {
+	if _, autoscaling := machinePool.Annotations[clusterv1beta1.ReplicasManagedByAnnotation]; autoscaling {
 		existingAgentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
 		err := ctrlClient.Get(ctx, client.ObjectKey{Namespace: machinePool.GetNamespace(), Name: agentPool.GetName()}, existingAgentPool)
 		if client.IgnoreNotFound(err) != nil {

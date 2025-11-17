@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -49,11 +49,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		t.Error(err)
 	}
 
-	cluster := &clusterv1.Cluster{
+	cluster := &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-cluster",
 		},
-		Spec: clusterv1.ClusterSpec{
+		Spec: clusterv1beta1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
 				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				Kind:       infrav1.AzureClusterKind,
@@ -99,7 +99,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine-pool",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "my-cluster",
+				clusterv1beta1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -169,11 +169,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 		"infra ref is nil": {
 			objects: []runtime.Object{
-				&clusterv1.Cluster{
+				&clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1.ClusterSpec{
+					Spec: clusterv1beta1.ClusterSpec{
 						InfrastructureRef: nil,
 					},
 				},
@@ -187,11 +187,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 		"infra ref is not an azure cluster": {
 			objects: []runtime.Object{
-				&clusterv1.Cluster{
+				&clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1.ClusterSpec{
+					Spec: clusterv1beta1.ClusterSpec{
 						InfrastructureRef: &corev1.ObjectReference{
 							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 							Kind:       "FooCluster",
@@ -258,7 +258,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 			Name:      "fake-machine-pool",
 			Namespace: "fake-ns",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "fake-cluster",
+				clusterv1beta1.ClusterNameLabel: "fake-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -278,12 +278,12 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		},
 	}
 
-	cluster := &clusterv1.Cluster{
+	cluster := &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-cluster",
 			Namespace: "fake-ns",
 		},
-		Spec: clusterv1.ClusterSpec{
+		Spec: clusterv1beta1.ClusterSpec{
 			InfrastructureRef: &corev1.ObjectReference{
 				Kind:      "AzureCluster",
 				Name:      "fake-azure-cluster",
@@ -297,7 +297,7 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 			Name:      "fake-other-machine-pool",
 			Namespace: "fake-ns",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "fake-cluster",
+				clusterv1beta1.ClusterNameLabel: "fake-cluster",
 			},
 		},
 	}

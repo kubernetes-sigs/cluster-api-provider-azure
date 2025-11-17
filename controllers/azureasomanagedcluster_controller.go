@@ -24,11 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -83,7 +83,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Watch clusters for pause/unpause notifications
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureASOManagedClusterKind), mgr.GetClient(), &infrav1.AzureASOManagedCluster{}),
 			),
@@ -187,7 +187,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := patch.NewHelper(asoManagedCluster, r.Client)
+	patchHelper, err := v1beta1patch.NewHelper(asoManagedCluster, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
@@ -218,7 +218,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	return r.reconcileNormal(ctx, asoManagedCluster, cluster)
 }
 
-func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster, cluster *clusterv1beta1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileNormal",
 	)
@@ -235,7 +235,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
 	}
 
-	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
+	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1beta1.ClusterFinalizer)
 	needsPatch = AddBlockMoveAnnotation(asoManagedCluster) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
@@ -307,7 +307,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	}
 
 	if len(asoManagedCluster.Status.Resources) == 0 {
-		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
+		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1beta1.ClusterFinalizer)
 	}
 
 	return ctrl.Result{}, nil

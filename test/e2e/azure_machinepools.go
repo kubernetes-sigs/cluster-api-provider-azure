@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,7 +50,7 @@ const (
 // AzureMachinePoolsSpecInput is the input for AzureMachinePoolsSpec.
 type (
 	AzureMachinePoolsSpecInput struct {
-		Cluster               *clusterv1.Cluster
+		Cluster               *clusterv1beta1.Cluster
 		BootstrapClusterProxy framework.ClusterProxy
 		Namespace             *corev1.Namespace
 		ClusterName           string
@@ -70,7 +70,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	var (
 		bootstrapClusterProxy = input.BootstrapClusterProxy
 		workloadClusterProxy  = bootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
-		clusterLabels         = map[string]string{clusterv1.ClusterNameLabel: workloadClusterProxy.GetName()}
+		clusterLabels         = map[string]string{clusterv1beta1.ClusterNameLabel: workloadClusterProxy.GetName()}
 	)
 
 	Expect(workloadClusterProxy).NotTo(BeNil())
