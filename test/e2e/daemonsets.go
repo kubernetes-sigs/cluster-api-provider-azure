@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/api/controlplane/kubeadm/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,14 +58,14 @@ func EnsureDaemonsets(ctx context.Context, inputGetter func() DaemonsetsSpecInpu
 		Name:      input.ClusterName,
 		Namespace: input.Namespace.Name,
 	})
-	kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
+	kubeadmControlPlane := &controlplanev1.KubeadmControlPlane{}
 	key := client.ObjectKey{
-		Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: cluster.Namespace,
 		Name:      cluster.Spec.ControlPlaneRef.Name,
 	}
 	Eventually(func() error {
 		return mgmtClient.Get(ctx, key, kubeadmControlPlane)
-	}, e2eConfig.GetIntervals(specName, "wait-daemonset")...).Should(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+	}, e2eConfig.GetIntervals(specName, "wait-daemonset")...).Should(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
 
 	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	By("Waiting for all DaemonSet Pods to be Running")
