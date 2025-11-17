@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -157,7 +156,6 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					for _, addTo := range []func(s *runtime.Scheme) error{
 						scheme.AddToScheme,
 						clusterv1beta1.AddToScheme,
-						expv1.AddToScheme,
 						infrav1.AddToScheme,
 						corev1.AddToScheme,
 					} {
@@ -195,7 +193,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 	}
 }
 
-func newReadyAzureManagedMachinePoolCluster() (*clusterv1beta1.Cluster, *infrav1.AzureManagedCluster, *infrav1.AzureManagedControlPlane, *infrav1.AzureManagedMachinePool, *expv1.MachinePool) {
+func newReadyAzureManagedMachinePoolCluster() (*clusterv1beta1.Cluster, *infrav1.AzureManagedCluster, *infrav1.AzureManagedControlPlane, *infrav1.AzureManagedMachinePool, *clusterv1beta1.MachinePool) {
 	// AzureManagedCluster
 	azManagedCluster := &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -284,7 +282,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1beta1.Cluster, *infrav1
 		},
 	}
 	// MachinePool
-	mp := &expv1.MachinePool{
+	mp := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo-mp1",
 			Namespace: "foobar",
@@ -299,7 +297,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1beta1.Cluster, *infrav1
 				},
 			},
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			Template: clusterv1beta1.MachineTemplateSpec{
 				Spec: clusterv1beta1.MachineSpec{
 					ClusterName: cluster.Name,

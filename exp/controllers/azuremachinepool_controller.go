@@ -30,7 +30,6 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -122,7 +121,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&expv1.MachinePool{},
+			&clusterv1beta1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), log)),
 		).
 		// watch for changes in AzureCluster resources
@@ -273,7 +272,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	}
 
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
+	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
 	needsPatch = machinePoolScope.SetInfrastructureMachineKind() || needsPatch
 	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
 	needsPatch = infracontroller.AddBlockMoveAnnotation(machinePoolScope.AzureMachinePool) || needsPatch
@@ -451,6 +450,6 @@ func (ampr *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, mac
 
 	// Delete succeeded, remove finalizer
 	log.V(4).Info("removing finalizer for AzureMachinePool")
-	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, expv1.MachinePoolFinalizer)
+	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
 	return reconcile.Result{}, nil
 }

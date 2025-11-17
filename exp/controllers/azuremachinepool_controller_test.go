@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -69,7 +68,6 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		clusterv1beta1.AddToScheme,
 		infrav1.AddToScheme,
-		expv1.AddToScheme,
 		infrav1exp.AddToScheme,
 		corev1.AddToScheme,
 	)
@@ -145,7 +143,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())
 	g.Expect(c.Create(ctx, fakeSecret)).To(Succeed())
 
-	mp := &expv1.MachinePool{
+	mp := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -153,7 +151,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 				clusterv1beta1.ClusterNameLabel: name,
 			},
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: name,
 			Template: clusterv1beta1.MachineTemplateSpec{
 				Spec: clusterv1beta1.MachineSpec{
@@ -171,7 +169,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "MachinePool",
-					APIVersion: expv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 					Name:       mp.Name,
 				},
 			},

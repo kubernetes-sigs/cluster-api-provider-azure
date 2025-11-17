@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -102,12 +101,12 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 	err = mgmtClient.Create(ctx, infraMachinePool)
 	Expect(err).NotTo(HaveOccurred())
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: infraMachinePool.Namespace,
 			Name:      infraMachinePool.Name,
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
 			Replicas:    ptr.To[int32](2),
 			Template: clusterv1beta1.MachineTemplateSpec{
@@ -135,7 +134,7 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &expv1.MachinePool{})
+			err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), &clusterv1beta1.MachinePool{})
 			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		}, input.WaitIntervals...).Should(Succeed(), "Deleted MachinePool %s/%s still exists", machinePool.Namespace, machinePool.Name)
 

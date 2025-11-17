@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
@@ -80,7 +79,6 @@ func newScheme(g *GomegaWithT) *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
 		clusterv1beta1.AddToScheme,
-		expv1.AddToScheme,
 		infrav1.AddToScheme,
 		infrav1exp.AddToScheme,
 	} {
@@ -89,8 +87,8 @@ func newScheme(g *GomegaWithT) *runtime.Scheme {
 	return scheme
 }
 
-func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
-	return &expv1.MachinePool{
+func newMachinePool(clusterName, poolName string) *clusterv1beta1.MachinePool {
+	return &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				clusterv1beta1.ClusterNameLabel: clusterName,
@@ -98,7 +96,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 			Name:      poolName,
 			Namespace: "default",
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			Replicas: ptr.To[int32](2),
 		},
 	}
@@ -116,7 +114,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 	}
 }
 
-func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *expv1.MachinePool {
+func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1beta1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
 		Kind:       infrav1.AzureMachinePoolKind,

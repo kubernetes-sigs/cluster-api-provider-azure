@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -140,7 +139,6 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 					s := runtime.NewScheme()
 					for _, addTo := range []func(s *runtime.Scheme) error{
 						clusterv1beta1.AddToScheme,
-						expv1.AddToScheme,
 						infrav1.AddToScheme,
 						infrav1exp.AddToScheme,
 						corev1.AddToScheme,
@@ -212,7 +210,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 		},
 	}
 
-	mp := &expv1.MachinePool{
+	mp := &clusterv1beta1.MachinePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MachinePool",
 		},
@@ -236,7 +234,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: expv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 				},
 			},
 		},
@@ -250,7 +248,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: expv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 				},
 			},
 			Labels: map[string]string{
@@ -362,7 +360,7 @@ func getDeletingMachinePoolObjects() []client.Object {
 		},
 	}
 
-	mp := &expv1.MachinePool{
+	mp := &clusterv1beta1.MachinePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MachinePool",
 		},
@@ -394,7 +392,7 @@ func getDeletingMachinePoolObjects() []client.Object {
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: expv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 				},
 			},
 		},

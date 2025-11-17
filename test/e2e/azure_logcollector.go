@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -81,7 +80,7 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 }
 
 // CollectMachinePoolLog collects logs from a machine pool.
-func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool, outputPath string) error {
 	infraGV, err := schema.ParseGroupVersion(mp.Spec.Template.Spec.InfrastructureRef.APIVersion)
 	if err != nil {
 		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", mp.Spec.Template.Spec.InfrastructureRef.APIVersion, err)
@@ -136,7 +135,7 @@ func collectAzureMachineLog(ctx context.Context, managementClusterClient client.
 	return collectVMLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
 }
 
-func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool, outputPath string) error {
 	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
 	if err != nil {
 		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
@@ -404,7 +403,7 @@ func getAzureMachine(ctx context.Context, managementClusterClient client.Client,
 	return azMachine, err
 }
 
-func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *clusterv1beta1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
 	key := client.ObjectKey{
 		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,

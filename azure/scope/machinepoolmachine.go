@@ -28,7 +28,6 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,7 +64,7 @@ type (
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		Client                  client.Client
 		ClusterScope            azure.ClusterScoper
-		MachinePool             *expv1.MachinePool
+		MachinePool             *clusterv1beta1.MachinePool
 		Machine                 *clusterv1beta1.Machine
 
 		// workloadNodeGetter is only used for testing purposes and provides a way for mocking requests to the workload cluster
@@ -77,7 +76,7 @@ type (
 		azure.ClusterScoper
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		AzureMachinePool        *infrav1exp.AzureMachinePool
-		MachinePool             *expv1.MachinePool
+		MachinePool             *clusterv1beta1.MachinePool
 		Machine                 *clusterv1beta1.Machine
 		MachinePoolScope        *MachinePoolScope
 		client                  client.Client

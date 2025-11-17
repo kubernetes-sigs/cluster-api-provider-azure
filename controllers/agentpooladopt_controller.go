@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -161,12 +160,12 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      agentPool.Name,
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: clusterName,
 			Replicas:    replicas,
 			Template: clusterv1beta1.MachineTemplateSpec{

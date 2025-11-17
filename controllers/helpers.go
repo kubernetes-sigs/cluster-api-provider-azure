@@ -36,7 +36,6 @@ import (
 	"k8s.io/klog/v2"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -537,7 +536,7 @@ func reconcileAzureSecret(ctx context.Context, kubeclient client.Client, owner m
 }
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
-func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*expv1.MachinePool, error) {
+func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*clusterv1beta1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetOwnerMachinePool")
 	defer done()
 
@@ -550,7 +549,7 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 			return nil, errors.WithStack(err)
 		}
 
-		if gv.Group == expv1.GroupVersion.Group {
+		if gv.Group == clusterv1beta1.GroupVersion.Group {
 			return GetMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
@@ -580,11 +579,11 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 }
 
 // GetMachinePoolByName finds and return a MachinePool object using the specified params.
-func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*expv1.MachinePool, error) {
+func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*clusterv1beta1.MachinePool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetMachinePoolByName")
 	defer done()
 
-	m := &expv1.MachinePool{}
+	m := &clusterv1beta1.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
 		return nil, err
@@ -706,7 +705,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.MapFunc {
 	return func(_ context.Context, o client.Object) []reconcile.Request {
-		m, ok := o.(*expv1.MachinePool)
+		m, ok := o.(*clusterv1beta1.MachinePool)
 		if !ok {
 			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o))
 			return nil
@@ -766,7 +765,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(_ context.Context, c cl
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
@@ -819,7 +818,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(_ context.Context,
 			return nil
 		}
 
-		machineList := &expv1.MachinePoolList{}
+		machineList := &clusterv1beta1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
@@ -943,7 +942,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(_ context.Context, c client.Cl
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		machinePool, ok := o.(*expv1.MachinePool)
+		machinePool, ok := o.(*clusterv1beta1.MachinePool)
 		if !ok {
 			log.Info("expected a MachinePool, got wrong type", "type", fmt.Sprintf("%T", o))
 			return nil

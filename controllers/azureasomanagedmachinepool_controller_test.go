@@ -33,7 +33,6 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -59,7 +58,6 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
 		clusterv1beta1.AddToScheme,
-		expv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
@@ -91,7 +89,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: "ns",
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -119,14 +117,14 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: "ns",
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
 				},
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: asoManagedMachinePool.Namespace,
@@ -168,14 +166,14 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
 				},
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
@@ -220,7 +218,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -249,7 +247,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Ready: true,
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
@@ -330,7 +328,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -355,7 +353,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Ready: false,
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
@@ -363,7 +361,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
-			Spec: expv1.MachinePoolSpec{
+			Spec: clusterv1beta1.MachinePoolSpec{
 				Replicas: ptr.To[int32](1),
 			},
 		}
@@ -473,7 +471,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -498,7 +496,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Ready: false,
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
@@ -559,7 +557,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -569,7 +567,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
@@ -620,7 +618,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: expv1.GroupVersion.Identifier(),
+						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
 						Kind:       "MachinePool",
 						Name:       "mp",
 					},
@@ -631,7 +629,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 		}
-		machinePool := &expv1.MachinePool{
+		machinePool := &clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp",
 				Namespace: cluster.Namespace,
