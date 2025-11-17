@@ -22,13 +22,14 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -129,9 +130,10 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: "ns",
 			},
 			Spec: clusterv1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1somethingelse",
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: "infrastructure.cluster.x-k8s.io",
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+					Name:     "amcp",
 				},
 			},
 		}
@@ -172,9 +174,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: "ns",
 			},
 			Spec: clusterv1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1.GroupVersion.Identifier(),
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
@@ -236,11 +238,10 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: "ns",
 			},
 			Spec: clusterv1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1.GroupVersion.Identifier(),
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
-					Name:       "amcp",
-					Namespace:  "ns",
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+					Name:     "amcp",
 				},
 			},
 		}
@@ -272,7 +273,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "endpoint"},
+				ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{Host: "endpoint"},
 			},
 		}
 		c := fakeClientBuilder().
@@ -306,7 +307,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: "ns",
 			},
 			Spec: clusterv1.ClusterSpec{
-				Paused: true,
+				Paused: ptr.To(true),
 			},
 		}
 		asoManagedCluster := &infrav1.AzureASOManagedCluster{
