@@ -31,7 +31,6 @@ import (
 	"k8s.io/utils/ptr"
 	bootstrapv1beta1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -52,7 +51,6 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 		ctx := context.Background()
 		scheme := runtime.NewScheme()
 		Expect(bootstrapv1beta1.AddToScheme(scheme)).Should(Succeed())
-		Expect(expv1.AddToScheme(scheme)).Should(Succeed())
 		Expect(clusterv1beta1.AddToScheme(scheme)).Should(Succeed())
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 		mapFn := BootstrapConfigToInfrastructureMapFunc(fakeClient, ctrl.Log)
@@ -94,12 +92,12 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
 
 		By("doing nothing if the MachinePool has no BootstrapConfigRef")
-		machinePool := expv1.MachinePool{
+		machinePool := clusterv1beta1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "machine-pool-test",
 				Namespace: "default",
 			},
-			Spec: expv1.MachinePoolSpec{
+			Spec: clusterv1beta1.MachinePoolSpec{
 				ClusterName: "test-cluster",
 				Template: clusterv1beta1.MachineTemplateSpec{
 					Spec: clusterv1beta1.MachineSpec{

@@ -24,7 +24,6 @@ import (
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -36,7 +35,7 @@ import (
 var ErrNoManagedClustersAgentPoolDefined = fmt.Errorf("no %s ManagedClustersAgentPools defined in AzureASOManagedMachinePool spec.resources", asocontainerservicev1.GroupVersion.Group)
 
 // SetAgentPoolDefaults propagates config from a MachinePool to an AzureASOManagedMachinePool's defined ManagedClustersAgentPool.
-func SetAgentPoolDefaults(ctrlClient client.Client, machinePool *expv1.MachinePool) ResourcesMutator {
+func SetAgentPoolDefaults(ctrlClient client.Client, machinePool *clusterv1beta1.MachinePool) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetAgentPoolDefaults")
 		defer done()
@@ -71,7 +70,7 @@ func SetAgentPoolDefaults(ctrlClient client.Client, machinePool *expv1.MachinePo
 	}
 }
 
-func setAgentPoolOrchestratorVersion(ctx context.Context, machinePool *expv1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
+func setAgentPoolOrchestratorVersion(ctx context.Context, machinePool *clusterv1beta1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAgentPoolOrchestratorVersion")
 	defer done()
 
@@ -100,7 +99,7 @@ func setAgentPoolOrchestratorVersion(ctx context.Context, machinePool *expv1.Mac
 	return unstructured.SetNestedField(agentPool.UnstructuredContent(), capiK8sVersion, k8sVersionPath...)
 }
 
-func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *expv1.MachinePool) error {
+func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *clusterv1beta1.MachinePool) error {
 	autoscaling, _, err := unstructured.NestedBool(agentPool.UnstructuredContent(), "spec", "enableAutoScaling")
 	if err != nil {
 		return err
@@ -128,7 +127,7 @@ func reconcileAutoscaling(agentPool *unstructured.Unstructured, machinePool *exp
 	return nil
 }
 
-func setAgentPoolCount(ctx context.Context, ctrlClient client.Client, machinePool *expv1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
+func setAgentPoolCount(ctx context.Context, ctrlClient client.Client, machinePool *clusterv1beta1.MachinePool, agentPoolPath string, agentPool *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setAgentPoolCount")
 	defer done()
 

@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -38,7 +37,7 @@ import (
 
 func TestNewManagedMachinePoolScope(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 
 	input := ManagedMachinePoolScopeParams{
@@ -752,7 +751,7 @@ func TestManagedMachinePoolScope_EnablePreviewFeatures(t *testing.T) {
 						},
 					},
 				},
-				MachinePool:      &expv1.MachinePool{},
+				MachinePool:      &clusterv1beta1.MachinePool{},
 				InfraMachinePool: &infrav1.AzureManagedMachinePool{},
 			}
 			agentPoolGetter := s.AgentPoolSpec()
@@ -768,7 +767,7 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 	cases := []struct {
 		name                string
 		managedControlPlane *infrav1.AzureManagedControlPlane
-		machinePool         *expv1.MachinePool
+		machinePool         *clusterv1beta1.MachinePool
 		expected            *string
 	}{
 		{
@@ -786,8 +785,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 		{
 			name:                "Only machine pool is available",
 			managedControlPlane: nil,
-			machinePool: &expv1.MachinePool{
-				Spec: expv1.MachinePoolSpec{
+			machinePool: &clusterv1beta1.MachinePool{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					Template: clusterv1beta1.MachineTemplateSpec{
 						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
@@ -800,8 +799,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 		{
 			name:                "Only machine pool is available and cp is nil",
 			managedControlPlane: nil,
-			machinePool: &expv1.MachinePool{
-				Spec: expv1.MachinePoolSpec{
+			machinePool: &clusterv1beta1.MachinePool{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					Template: clusterv1beta1.MachineTemplateSpec{
 						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
@@ -818,8 +817,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 					AutoUpgradeVersion: "1.20.3",
 				},
 			},
-			machinePool: &expv1.MachinePool{
-				Spec: expv1.MachinePoolSpec{
+			machinePool: &clusterv1beta1.MachinePool{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					Template: clusterv1beta1.MachineTemplateSpec{
 						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
@@ -836,8 +835,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 					AutoUpgradeVersion: "v1.20.3",
 				},
 			},
-			machinePool: &expv1.MachinePool{
-				Spec: expv1.MachinePoolSpec{
+			machinePool: &clusterv1beta1.MachinePool{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					Template: clusterv1beta1.MachineTemplateSpec{
 						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
@@ -854,8 +853,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 					AutoUpgradeVersion: "v1.20.3",
 				},
 			},
-			machinePool: &expv1.MachinePool{
-				Spec: expv1.MachinePoolSpec{
+			machinePool: &clusterv1beta1.MachinePool{
+				Spec: clusterv1beta1.MachinePoolSpec{
 					Template: clusterv1beta1.MachineTemplateSpec{
 						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.21.0"),
@@ -957,8 +956,8 @@ func getAzureMachinePoolWithAdditionalTags(name string, additionalTags infrav1.T
 	return managedPool
 }
 
-func getMachinePool(name string) *expv1.MachinePool {
-	return &expv1.MachinePool{
+func getMachinePool(name string) *clusterv1beta1.MachinePool {
+	return &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -966,7 +965,7 @@ func getMachinePool(name string) *expv1.MachinePool {
 				clusterv1beta1.ClusterNameLabel: "cluster1",
 			},
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: "cluster1",
 		},
 	}
@@ -984,7 +983,7 @@ func getWindowsAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {
 	return managedPool
 }
 
-func getMachinePoolWithVersion(name, version string) *expv1.MachinePool {
+func getMachinePoolWithVersion(name, version string) *clusterv1beta1.MachinePool {
 	machine := getMachinePool(name)
 	machine.Spec.Template.Spec.Version = ptr.To(version)
 	return machine

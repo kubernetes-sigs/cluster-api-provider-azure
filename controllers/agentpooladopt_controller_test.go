@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -88,7 +87,7 @@ func TestAgentPoolAdoptController(t *testing.T) {
 	}
 	_, err = aprec.Reconcile(ctx, req)
 	g.Expect(err).ToNot(HaveOccurred())
-	mp := &expv1.MachinePool{}
+	mp := &clusterv1beta1.MachinePool{}
 	err = aprec.Get(ctx, types.NamespacedName{Name: agentPool.Name, Namespace: "fake-ns"}, mp)
 	g.Expect(err).ToNot(HaveOccurred())
 	asoMP := &infrav1.AzureASOManagedMachinePool{}

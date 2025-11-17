@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -133,7 +132,7 @@ const (
 )
 
 // value returns the integer equivalent of controlPlaneReplicas
-func (r controlPlaneReplicas) value(mp *expv1.MachinePool) int {
+func (r controlPlaneReplicas) value(mp *clusterv1beta1.MachinePool) int {
 	switch r {
 	case atLeastOne:
 		return 1
@@ -202,7 +201,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 					continue
 				}
 
-				ownerMachinePool := &expv1.MachinePool{}
+				ownerMachinePool := &clusterv1beta1.MachinePool{}
 				if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: ref.Name},
 					ownerMachinePool); err != nil {
 					LogWarningf("Failed to get machinePool: %+v", err)

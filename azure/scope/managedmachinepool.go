@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,7 +50,7 @@ type ManagedMachinePoolScopeParams struct {
 // ManagedMachinePool defines the scope interface for a managed machine pool.
 type ManagedMachinePool struct {
 	InfraMachinePool *infrav1.AzureManagedMachinePool
-	MachinePool      *expv1.MachinePool
+	MachinePool      *clusterv1beta1.MachinePool
 }
 
 // NewManagedMachinePoolScope creates a new Scope from the supplied parameters.
@@ -98,7 +97,7 @@ type ManagedMachinePoolScope struct {
 
 	azure.ManagedClusterScoper
 	Cluster          *clusterv1beta1.Cluster
-	MachinePool      *expv1.MachinePool
+	MachinePool      *clusterv1beta1.MachinePool
 	ControlPlane     *infrav1.AzureManagedControlPlane
 	InfraMachinePool *infrav1.AzureManagedMachinePool
 }
@@ -159,7 +158,7 @@ func getAgentPoolSubnet(controlPlane *infrav1.AzureManagedControlPlane, infraMac
 }
 
 func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
-	machinePool *expv1.MachinePool,
+	machinePool *clusterv1beta1.MachinePool,
 	managedMachinePool *infrav1.AzureManagedMachinePool) azure.ASOResourceSpecGetter[genruntime.MetaObject] {
 	normalizedVersion := getManagedMachinePoolVersion(managedControlPlane, machinePool)
 
@@ -353,7 +352,7 @@ func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (succ
 	return ok, val
 }
 
-func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedControlPlane, machinePool *expv1.MachinePool) *string {
+func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedControlPlane, machinePool *clusterv1beta1.MachinePool) *string {
 	var v, av string
 	if machinePool != nil {
 		v = ptr.Deref(machinePool.Spec.Template.Spec.Version, "")

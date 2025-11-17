@@ -30,7 +30,6 @@ import (
 	"k8s.io/utils/ptr"
 	bootstrapv1beta1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -120,12 +119,12 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 	err = mgmtClient.Create(ctx, kubeadmConfig)
 	Expect(err).NotTo(HaveOccurred())
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: infraMachinePool.Namespace,
 			Name:      infraMachinePool.Name,
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
 			Replicas:    ptr.To[int32](2),
 			Template: clusterv1beta1.MachineTemplateSpec{
@@ -182,7 +181,7 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 
 	By("Verifying the MachinePool becomes ready")
 	Eventually(func(g Gomega) {
-		pool := &expv1.MachinePool{}
+		pool := &clusterv1beta1.MachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(v1beta1conditions.IsTrue(pool, clusterv1beta1.ReadyCondition)).To(BeTrue())

@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -46,7 +45,7 @@ func TestNewManagedControlPlaneScope(t *testing.T) {
 	g := NewWithT(t)
 
 	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
@@ -481,7 +480,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 
 func TestManagedControlPlaneScope_IsVnetManagedCache(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = expv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
