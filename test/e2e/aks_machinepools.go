@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +39,7 @@ import (
 
 type AKSMachinePoolSpecInput struct {
 	MgmtCluster   framework.ClusterProxy
-	Cluster       *clusterv1.Cluster
+	Cluster       *clusterv1beta1.Cluster
 	MachinePools  []*expv1.MachinePool
 	WaitIntervals []interface{}
 }

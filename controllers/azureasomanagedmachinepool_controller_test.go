@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,7 +58,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
-		clusterv1.AddToScheme,
+		clusterv1beta1.AddToScheme,
 		expv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
 	)
@@ -131,7 +131,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: asoManagedMachinePool.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}
@@ -150,12 +150,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("adds a finalizer and block-move annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1somethingelse",
 					Kind:       infrav1.AzureASOManagedControlPlaneKind,
@@ -180,7 +180,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}
@@ -195,19 +195,19 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
-		g.Expect(asoManagedMachinePool.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
+		g.Expect(asoManagedMachinePool.GetFinalizers()).To(ContainElement(clusterv1beta1.ClusterFinalizer))
 		g.Expect(asoManagedMachinePool.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("reconciles resources that are not ready", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1.GroupVersion.Identifier(),
 					Kind:       infrav1.AzureASOManagedControlPlaneKind,
@@ -226,7 +226,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 				Finalizers: []string{
-					clusterv1.ClusterFinalizer,
+					clusterv1beta1.ClusterFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
@@ -254,7 +254,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}
@@ -288,12 +288,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1.GroupVersion.Identifier(),
 					Kind:       infrav1.AzureASOManagedControlPlaneKind,
@@ -336,7 +336,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 				Finalizers: []string{
-					clusterv1.ClusterFinalizer,
+					clusterv1beta1.ClusterFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
@@ -360,7 +360,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 			Spec: expv1.MachinePoolSpec{
@@ -430,12 +430,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("successfully reconciles normally with autoscaling", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1.GroupVersion.Identifier(),
 					Kind:       infrav1.AzureASOManagedControlPlaneKind,
@@ -479,7 +479,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 					},
 				},
 				Finalizers: []string{
-					clusterv1.ClusterFinalizer,
+					clusterv1beta1.ClusterFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
@@ -503,7 +503,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}
@@ -540,12 +540,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("successfully reconciles pause", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				Paused: true,
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1.GroupVersion.Identifier(),
@@ -574,7 +574,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}
@@ -602,12 +602,12 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 	t.Run("successfully reconciles delete", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1.Cluster{
+		cluster := &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
 					APIVersion: infrav1.GroupVersion.Identifier(),
 					Kind:       infrav1.AzureASOManagedControlPlaneKind,
@@ -627,7 +627,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
 				Finalizers: []string{
-					clusterv1.ClusterFinalizer,
+					clusterv1beta1.ClusterFinalizer,
 				},
 			},
 		}
@@ -636,7 +636,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				Name:      "mp",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "cluster",
+					clusterv1beta1.ClusterNameLabel: "cluster",
 				},
 			},
 		}

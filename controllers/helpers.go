@@ -34,13 +34,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -119,10 +119,10 @@ func AzureClusterToAzureMachinesMapper(_ context.Context, c client.Client, obj r
 			return nil
 		}
 
-		machineList := &clusterv1.MachineList{}
+		machineList := &clusterv1beta1.MachineList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -148,7 +148,7 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 		if err != nil {
 			return "", false
 		}
-		if gv.Group == clusterv1.GroupVersion.Group {
+		if gv.Group == clusterv1beta1.GroupVersion.Group {
 			return ref.Name, true
 		}
 	}
@@ -158,7 +158,7 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 // GetObjectsToRequestsByNamespaceAndClusterName returns the slice of ctrl.Requests consisting the list items contained in the unstructured list.
 func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client.Client, clusterKey client.ObjectKey, list *unstructured.UnstructuredList) []ctrl.Request {
 	// list all of the requested objects within the cluster namespace with the cluster name label
-	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterKey.Name}); err != nil {
+	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterKey.Name}); err != nil {
 		return nil
 	}
 
@@ -654,7 +654,7 @@ func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) stri
 }
 
 // EnsureClusterIdentity ensures that the identity ref is allowed in the namespace and sets a finalizer.
-func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
+func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
 	name := object.GetName()
 	namespace := object.GetNamespace()
 	identity, err := GetClusterIdentityFromRef(ctx, c, namespace, identityRef)
@@ -663,7 +663,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	}
 
 	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
-		conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+		v1beta1conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1beta1.ConditionSeverityError, "")
 		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 	}
 
@@ -672,7 +672,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditio
 	needsPatch = controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) || needsPatch
 	if needsPatch {
 		// finalizers are added/removed then patch the object
-		identityHelper, err := patch.NewHelper(identity, c)
+		identityHelper, err := v1beta1patch.NewHelper(identity, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to init patch helper")
 		}
@@ -690,7 +690,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 	if err != nil {
 		return err
 	}
-	identityHelper, err := patch.NewHelper(identity, c)
+	identityHelper, err := v1beta1patch.NewHelper(identity, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to init patch helper")
 	}
@@ -769,7 +769,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(_ context.Context, c cl
 		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -822,7 +822,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(_ context.Context,
 		machineList := &expv1.MachinePoolList{}
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterName}); err != nil {
+		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1beta1.ClusterNameLabel: clusterName}); err != nil {
 			return nil
 		}
 
@@ -1048,14 +1048,14 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			log := logger.WithValues("predicate", "ClusterUpdatePauseChange", "eventType", "update")
 
-			oldCluster, ok := e.ObjectOld.(*clusterv1.Cluster)
+			oldCluster, ok := e.ObjectOld.(*clusterv1beta1.Cluster)
 			if !ok {
 				log.V(4).Info("Expected Cluster", "type", fmt.Sprintf("%T", e.ObjectOld))
 				return false
 			}
 			log = log.WithValues("Cluster", klog.KObj(oldCluster))
 
-			newCluster := e.ObjectNew.(*clusterv1.Cluster)
+			newCluster := e.ObjectNew.(*clusterv1beta1.Cluster)
 
 			if oldCluster.Spec.Paused != newCluster.Spec.Paused {
 				log.V(4).Info("Cluster paused status changed, allowing further processing")
@@ -1078,7 +1078,7 @@ func ClusterPauseChangeAndInfrastructureReady(scheme *runtime.Scheme, log logr.L
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
-func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1.Cluster, timeouts reconciler.Timeouts, credCache azure.CredentialCache) (ClusterScoper, error) {
+func GetClusterScoper(ctx context.Context, logger logr.Logger, c client.Client, cluster *clusterv1beta1.Cluster, timeouts reconciler.Timeouts, credCache azure.CredentialCache) (ClusterScoper, error) {
 	infraRef := cluster.Spec.InfrastructureRef
 	switch infraRef.Kind {
 	case "AzureCluster":

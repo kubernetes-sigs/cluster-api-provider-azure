@@ -31,9 +31,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -41,7 +41,7 @@ import (
 )
 
 type AKSPublicIPPrefixSpecInput struct {
-	Cluster           *clusterv1.Cluster
+	Cluster           *clusterv1beta1.Cluster
 	KubernetesVersion string
 	WaitIntervals     []interface{}
 }
@@ -110,9 +110,9 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		Spec: expv1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
 			Replicas:    ptr.To[int32](2),
-			Template: clusterv1.MachineTemplateSpec{
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
+			Template: clusterv1beta1.MachineTemplateSpec{
+				Spec: clusterv1beta1.MachineSpec{
+					Bootstrap: clusterv1beta1.Bootstrap{
 						DataSecretName: ptr.To(""),
 					},
 					ClusterName: input.Cluster.Name,
@@ -150,6 +150,6 @@ func AKSPublicIPPrefixSpec(ctx context.Context, inputGetter func() AKSPublicIPPr
 		infraMachinePool := &infrav1.AzureManagedMachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), infraMachinePool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(infraMachinePool, infrav1.AgentPoolsReadyCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(infraMachinePool, infrav1.AgentPoolsReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }

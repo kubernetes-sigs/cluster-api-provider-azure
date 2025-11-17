@@ -36,9 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -633,7 +633,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 
 func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 	_ = expv1.AddToScheme(scheme)
 
@@ -675,7 +675,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			Name: "should only count machines with matching cluster name label",
 			Setup: func(cb *fake.ClientBuilder) {
 				machines := getReadyAzureMachinePoolMachines(3)
-				machines[0].Labels[clusterv1.ClusterNameLabel] = "not_correct"
+				machines[0].Labels[clusterv1beta1.ClusterNameLabel] = "not_correct"
 				for _, machine := range machines {
 					obj := machine
 					cb.WithObjects(&obj)
@@ -694,17 +694,17 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 				g        = NewWithT(t)
 				mockCtrl = gomock.NewController(t)
 				cb       = fake.NewClientBuilder().WithScheme(scheme)
-				cluster  = &clusterv1.Cluster{
+				cluster  = &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: clusterv1.ClusterSpec{
+					Spec: clusterv1beta1.ClusterSpec{
 						InfrastructureRef: &corev1.ObjectReference{
 							Name: "azCluster1",
 						},
 					},
-					Status: clusterv1.ClusterStatus{
+					Status: clusterv1beta1.ClusterStatus{
 						InfrastructureReady: true,
 					},
 				}
@@ -1184,10 +1184,10 @@ func getReadyAzureMachinePoolMachines(count int32) []infrav1exp.AzureMachinePool
 					},
 				},
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel:      "cluster1",
-					infrav1exp.MachinePoolNameLabel: "amp1",
-					clusterv1.MachinePoolNameLabel:  "mp1",
-					"cluster1":                      string(infrav1.ResourceLifecycleOwned),
+					clusterv1beta1.ClusterNameLabel:     "cluster1",
+					infrav1exp.MachinePoolNameLabel:     "amp1",
+					clusterv1beta1.MachinePoolNameLabel: "mp1",
+					"cluster1":                          string(infrav1.ResourceLifecycleOwned),
 				},
 			},
 			Spec: infrav1exp.AzureMachinePoolMachineSpec{
@@ -1216,10 +1216,10 @@ func getAzureMachinePoolMachine(index int) infrav1exp.AzureMachinePoolMachine {
 				},
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:      "cluster1",
-				infrav1exp.MachinePoolNameLabel: "amp1",
-				clusterv1.MachinePoolNameLabel:  "mp1",
-				"cluster1":                      string(infrav1.ResourceLifecycleOwned),
+				clusterv1beta1.ClusterNameLabel:     "cluster1",
+				infrav1exp.MachinePoolNameLabel:     "amp1",
+				clusterv1beta1.MachinePoolNameLabel: "mp1",
+				"cluster1":                          string(infrav1.ResourceLifecycleOwned),
 			},
 		},
 		Spec: infrav1exp.AzureMachinePoolMachineSpec{
@@ -1232,9 +1232,9 @@ func getAzureMachinePoolMachine(index int) infrav1exp.AzureMachinePoolMachine {
 	}
 }
 
-func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1.Machine, infrav1exp.AzureMachinePoolMachine) {
+func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1beta1.Machine, infrav1exp.AzureMachinePoolMachine) {
 	ampm := getAzureMachinePoolMachine(index)
-	machine := clusterv1.Machine{
+	machine := clusterv1beta1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("mpm%d", index),
 			Namespace: "default",
@@ -1246,11 +1246,11 @@ func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1.Machine, i
 				},
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:     "cluster1",
-				clusterv1.MachinePoolNameLabel: "mp1",
+				clusterv1beta1.ClusterNameLabel:     "cluster1",
+				clusterv1beta1.MachinePoolNameLabel: "mp1",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv1beta1.MachineSpec{
 			ProviderID: &ampm.Spec.ProviderID,
 			InfrastructureRef: corev1.ObjectReference{
 				Kind:      "AzureMachinePoolMachine",
@@ -1263,7 +1263,7 @@ func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1.Machine, i
 	ampm.OwnerReferences = append(ampm.OwnerReferences, metav1.OwnerReference{
 		Name:       machine.Name,
 		Kind:       "Machine",
-		APIVersion: clusterv1.GroupVersion.String(),
+		APIVersion: clusterv1beta1.GroupVersion.String(),
 	})
 
 	return machine, ampm
@@ -1312,7 +1312,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 
 	tests := []struct {
@@ -1323,7 +1323,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		{
 			Name: "if MachinePool is externally managed and overProvisionCount > 0, do not try to reduce replicas",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
-				mp.Annotations = map[string]string{clusterv1.ReplicasManagedByAnnotation: "cluster-autoscaler"}
+				mp.Annotations = map[string]string{clusterv1beta1.ReplicasManagedByAnnotation: "cluster-autoscaler"}
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
@@ -1344,7 +1344,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
-				list := clusterv1.MachineList{}
+				list := clusterv1beta1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
 				g.Expect(list.Items).Should(HaveLen(2))
 			},
@@ -1373,7 +1373,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
-				list := clusterv1.MachineList{}
+				list := clusterv1beta1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
 				g.Expect(list.Items).Should(HaveLen(1))
 			},
@@ -1387,7 +1387,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 
 				mpm2, ampm2 := getAzureMachinePoolMachineWithOwnerMachine(2)
 				mpm2.Annotations = map[string]string{
-					clusterv1.DeleteMachineAnnotation: time.Now().String(),
+					clusterv1beta1.DeleteMachineAnnotation: time.Now().String(),
 				}
 
 				mpm3, ampm3 := getAzureMachinePoolMachineWithOwnerMachine(3)
@@ -1411,7 +1411,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
-				list := clusterv1.MachineList{}
+				list := clusterv1beta1.MachineList{}
 				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
 				g.Expect(list.Items).Should(HaveLen(2))
 				g.Expect(list.Items[0].Name).Should(Equal("mpm1"))
@@ -1480,17 +1480,17 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 				g        = NewWithT(t)
 				mockCtrl = gomock.NewController(t)
 				cb       = fake.NewClientBuilder().WithScheme(scheme)
-				cluster  = &clusterv1.Cluster{
+				cluster  = &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: clusterv1.ClusterSpec{
+					Spec: clusterv1beta1.ClusterSpec{
 						InfrastructureRef: &corev1.ObjectReference{
 							Name: "azCluster1",
 						},
 					},
-					Status: clusterv1.ClusterStatus{
+					Status: clusterv1beta1.ClusterStatus{
 						InfrastructureReady: true,
 					},
 				}
@@ -1502,7 +1502,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 							{
 								Name:       "cluster1",
 								Kind:       "Cluster",
-								APIVersion: clusterv1.GroupVersion.String(),
+								APIVersion: clusterv1beta1.GroupVersion.String(),
 							},
 						},
 					},
@@ -1542,7 +1542,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 
 func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 
 	tests := []struct {
@@ -1559,9 +1559,9 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetRunningCondition).Status).To(Equal(corev1.ConditionTrue))
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition).Status).To(Equal(corev1.ConditionTrue))
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition).Status).To(Equal(corev1.ConditionTrue))
 			},
 			ProvisioningState: infrav1.Succeeded,
 		},
@@ -1573,7 +1573,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleDownReason))
 			},
@@ -1587,7 +1587,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleUpReason))
 			},
@@ -1598,7 +1598,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetModelOutOfDateReason))
 			},
@@ -1609,7 +1609,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeFalse())
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetCreatingReason))
 			},
@@ -1620,7 +1620,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeFalse())
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetDeletingReason))
 			},
@@ -1630,7 +1630,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			Name:  "if provisioning state is set to Failed, MachinePool ready state is not adjusted, and scale set running condition is set to Failed",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetProvisionFailedReason))
 			},
@@ -1640,7 +1640,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			Name:  "if provisioning state is set to something not explicitly handled, MachinePool ready state is not adjusted, and scale set running condition is set to the ProvisioningState",
 			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(string(infrav1.Migrating)))
 			},
@@ -1653,17 +1653,17 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 				g        = NewWithT(t)
 				mockCtrl = gomock.NewController(t)
 				cb       = fake.NewClientBuilder().WithScheme(scheme)
-				cluster  = &clusterv1.Cluster{
+				cluster  = &clusterv1beta1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cluster1",
 						Namespace: "default",
 					},
-					Spec: clusterv1.ClusterSpec{
+					Spec: clusterv1beta1.ClusterSpec{
 						InfrastructureRef: &corev1.ObjectReference{
 							Name: "azCluster1",
 						},
 					},
-					Status: clusterv1.ClusterStatus{
+					Status: clusterv1beta1.ClusterStatus{
 						InfrastructureReady: true,
 					},
 				}
@@ -1675,7 +1675,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 							{
 								Name:       "cluster1",
 								Kind:       "Cluster",
-								APIVersion: clusterv1.GroupVersion.String(),
+								APIVersion: clusterv1beta1.GroupVersion.String(),
 							},
 						},
 					},
@@ -1717,7 +1717,7 @@ func TestBootstrapDataChanges(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
@@ -1726,17 +1726,17 @@ func TestBootstrapDataChanges(t *testing.T) {
 		g        = NewWithT(t)
 		mockCtrl = gomock.NewController(t)
 		cb       = fake.NewClientBuilder().WithScheme(scheme)
-		cluster  = &clusterv1.Cluster{
+		cluster  = &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster1",
 				Namespace: "default",
 			},
-			Spec: clusterv1.ClusterSpec{
+			Spec: clusterv1beta1.ClusterSpec{
 				InfrastructureRef: &corev1.ObjectReference{
 					Name: "azCluster1",
 				},
 			},
-			Status: clusterv1.ClusterStatus{
+			Status: clusterv1beta1.ClusterStatus{
 				InfrastructureReady: true,
 			},
 		}
@@ -1759,14 +1759,14 @@ func TestBootstrapDataChanges(t *testing.T) {
 					{
 						Name:       "cluster1",
 						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
+						APIVersion: clusterv1beta1.GroupVersion.String(),
 					},
 				},
 			},
 			Spec: expv1.MachinePoolSpec{
-				Template: clusterv1.MachineTemplateSpec{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
+				Template: clusterv1beta1.MachineTemplateSpec{
+					Spec: clusterv1beta1.MachineSpec{
+						Bootstrap: clusterv1beta1.Bootstrap{
 							DataSecretName: ptr.To("mp-secret"),
 						},
 						Version: ptr.To("v1.31.0"),

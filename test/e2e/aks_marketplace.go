@@ -31,8 +31,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -40,7 +40,7 @@ import (
 )
 
 type AKSMarketplaceExtensionSpecInput struct {
-	Cluster       *clusterv1.Cluster
+	Cluster       *clusterv1beta1.Cluster
 	WaitIntervals []interface{}
 }
 
@@ -150,7 +150,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(infraControlPlane, infrav1.AKSExtensionsReadyCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(infraControlPlane, infrav1.AKSExtensionsReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Ensuring the AKS Marketplace Extension is added to the AzureManagedControlPlane")

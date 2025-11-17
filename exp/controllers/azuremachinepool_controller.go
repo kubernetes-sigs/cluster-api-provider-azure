@@ -28,7 +28,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -145,7 +145,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		).
 		// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -260,7 +260,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	return ampr.reconcileNormal(ctx, machinePoolScope, cluster)
 }
 
-func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1.Cluster) (_ reconcile.Result, reterr error) {
+func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1beta1.Cluster) (_ reconcile.Result, reterr error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.reconcileNormal")
 	defer done()
 

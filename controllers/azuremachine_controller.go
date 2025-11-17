@@ -24,10 +24,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -101,7 +101,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, amr.WatchFilterValue)).
 		// watch for changes in CAPI Machine resources
 		Watches(
-			&clusterv1.Machine{},
+			&clusterv1beta1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine"))),
 		).
 		// watch for changes in AzureCluster
@@ -111,7 +111,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		).
 		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1.Cluster{},
+			&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -257,14 +257,14 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	// Make sure the Cluster Infrastructure is ready.
 	if !clusterScope.Cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
+		v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1beta1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
 	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret reference is not yet available")
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo, "")
+		v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForBootstrapDataReason, clusterv1beta1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
 	}
 
@@ -285,7 +285,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	}
 
 	// Mark the AzureMachine as failed if the identities are not ready.
-	cond := conditions.Get(machineScope.AzureMachine, infrav1.VMIdentitiesReadyCondition)
+	cond := v1beta1conditions.Get(machineScope.AzureMachine, infrav1.VMIdentitiesReadyCondition)
 	if cond != nil && cond.Status == corev1.ConditionFalse && cond.Reason == infrav1.UserAssignedIdentityMissingReason {
 		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, infrav1.UserAssignedIdentityMissingReason, "VM is unhealthy")
 		machineScope.SetFailureReason(azure.UnsupportedChange)
@@ -364,7 +364,7 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 	defer done()
 
 	log.Info("Handling deleted AzureMachine")
-	conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
+	v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1beta1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "")
 	if err := machineScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}

@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -42,7 +42,7 @@ func TestNewManagedMachinePoolScope(t *testing.T) {
 	_ = infrav1.AddToScheme(scheme)
 
 	input := ManagedMachinePoolScopeParams{
-		Cluster: &clusterv1.Cluster{
+		Cluster: &clusterv1beta1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster1",
 				Namespace: "default",
@@ -788,8 +788,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 			managedControlPlane: nil,
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
 						},
 					},
@@ -802,8 +802,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 			managedControlPlane: nil,
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
 						},
 					},
@@ -820,8 +820,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 			},
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
 						},
 					},
@@ -838,8 +838,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 			},
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.15.0"),
 						},
 					},
@@ -856,8 +856,8 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 			},
 			machinePool: &expv1.MachinePool{
 				Spec: expv1.MachinePoolSpec{
-					Template: clusterv1.MachineTemplateSpec{
-						Spec: clusterv1.MachineSpec{
+					Template: clusterv1beta1.MachineTemplateSpec{
+						Spec: clusterv1beta1.MachineSpec{
 							Version: ptr.To("v1.21.0"),
 						},
 					},
@@ -886,7 +886,7 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "cluster1",
+				clusterv1beta1.ClusterNameLabel: "cluster1",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -963,7 +963,7 @@ func getMachinePool(name string) *expv1.MachinePool {
 			Name:      name,
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: "cluster1",
+				clusterv1beta1.ClusterNameLabel: "cluster1",
 			},
 		},
 		Spec: expv1.MachinePoolSpec{

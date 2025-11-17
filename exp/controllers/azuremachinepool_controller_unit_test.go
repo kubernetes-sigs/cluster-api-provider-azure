@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -79,7 +79,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 func newScheme(g *GomegaWithT) *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
-		clusterv1.AddToScheme,
+		clusterv1beta1.AddToScheme,
 		expv1.AddToScheme,
 		infrav1.AddToScheme,
 		infrav1exp.AddToScheme,
@@ -93,7 +93,7 @@ func newMachinePool(clusterName, poolName string) *expv1.MachinePool {
 	return &expv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: clusterName,
+				clusterv1beta1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",
@@ -108,7 +108,7 @@ func newAzureMachinePool(clusterName, poolName string) *infrav1exp.AzureMachineP
 	return &infrav1exp.AzureMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: clusterName,
+				clusterv1beta1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",
@@ -134,7 +134,7 @@ func newAzureCluster(clusterName string) *infrav1.AzureCluster {
 			Namespace: "default",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv1beta1.GroupVersion.String(),
 					Kind:       "Cluster",
 					Name:       clusterName,
 				},
@@ -143,8 +143,8 @@ func newAzureCluster(clusterName string) *infrav1.AzureCluster {
 	}
 }
 
-func newCluster(name string) *clusterv1.Cluster {
-	return &clusterv1.Cluster{
+func newCluster(name string) *clusterv1beta1.Cluster {
+	return &clusterv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
