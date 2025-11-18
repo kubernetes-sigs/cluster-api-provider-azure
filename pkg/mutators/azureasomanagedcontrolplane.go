@@ -34,7 +34,6 @@ import (
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	exputil "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -43,6 +42,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var (
@@ -273,7 +273,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 
 	var agentPools []conversion.Convertible
 	for _, asoManagedMachinePool := range asoManagedMachinePools.Items {
-		machinePool, err := exputil.GetOwnerMachinePool(ctx, ctrlClient, asoManagedMachinePool.ObjectMeta)
+		machinePool, err := clusterv1beta1util.GetOwnerMachinePool(ctx, ctrlClient, asoManagedMachinePool.ObjectMeta)
 		if err != nil {
 			return nil, err
 		}

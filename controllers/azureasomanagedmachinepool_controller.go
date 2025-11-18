@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	utilexp "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,6 +44,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureASOManagedMachinePoolReconciler reconciles a AzureASOManagedMachinePool object.
@@ -156,7 +156,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 
 	asoManagedMachinePool.Status.Ready = false
 
-	machinePool, err := utilexp.GetOwnerMachinePool(ctx, r.Client, asoManagedMachinePool.ObjectMeta)
+	machinePool, err := clusterv1beta1util.GetOwnerMachinePool(ctx, r.Client, asoManagedMachinePool.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -175,7 +175,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 		}
 	}()
 
-	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machinePool.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, r.Client, machinePool.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("AzureASOManagedMachinePool owner MachinePool is missing cluster label or cluster does not exist: %w", err)
 	}
@@ -189,7 +189,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("AzureASOManagedMachinePool cannot be used without AzureASOManagedControlPlane"))
 	}
 
-	if annotations.IsPaused(cluster, asoManagedMachinePool) {
+	if clusterv1beta1util.IsPaused(cluster, asoManagedMachinePool) {
 		return r.reconcilePaused(ctx, asoManagedMachinePool)
 	}
 

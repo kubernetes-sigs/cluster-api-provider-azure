@@ -48,6 +48,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var errInvalidClusterKind = errors.New("AzureASOManagedControlPlane cannot be used without AzureASOManagedCluster")
@@ -169,7 +170,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 	asoManagedControlPlane.Status.Ready = false
 	asoManagedControlPlane.Status.Initialized = false
 
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
