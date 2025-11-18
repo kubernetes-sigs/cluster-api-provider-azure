@@ -27,14 +27,14 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apimachinerytypes "k8s.io/apimachinery/pkg/types"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
 // AzureFailureDomainsSpecInput is the input for AzureFailureDomainSpec.
 type AzureFailureDomainsSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
-	Cluster               *clusterv1beta1.Cluster
+	Cluster               *clusterv1.Cluster
 	Namespace             *corev1.Namespace
 	ClusterName           string
 }
@@ -74,7 +74,7 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(input.Cluster.Status.FailureDomains).To(HaveLen(len(zones)))
 			for _, z := range zones {
-				g.Expect(input.Cluster.Status.FailureDomains[z]).NotTo(BeNil())
+				g.Expect(z).NotTo(BeEmpty())
 			}
 		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 

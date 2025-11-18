@@ -35,15 +35,15 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/api/controlplane/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -147,7 +147,7 @@ type cleanupInput struct {
 	ArtifactFolder         string
 	Namespace              *corev1.Namespace
 	CancelWatches          context.CancelFunc
-	Cluster                *clusterv1beta1.Cluster
+	Cluster                *clusterv1.Cluster
 	IntervalsGetter        func(spec, key string) []interface{}
 	SkipCleanup            bool
 	SkipLogCollection      bool
@@ -268,17 +268,17 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 		Name:      input.ClusterName,
 		Namespace: input.Namespace,
 	})
-	kubeadmControlPlane := &kubeadmv1.KubeadmControlPlane{}
+	kubeadmControlPlane := &controlplanev1.KubeadmControlPlane{}
 	key := client.ObjectKey{
-		Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: cluster.Namespace,
 		Name:      cluster.Spec.ControlPlaneRef.Name,
 	}
 
 	By("Ensuring KubeadmControlPlane is initialized")
 	Eventually(func(g Gomega) {
-		g.Expect(getter.Get(ctx, key, kubeadmControlPlane)).To(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
-		g.Expect(kubeadmControlPlane.Status.Initialized).To(BeTrue(), "KubeadmControlPlane is not yet initialized")
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "KubeadmControlPlane object %s/%s was not initialized in time", cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+		g.Expect(getter.Get(ctx, key, kubeadmControlPlane)).To(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
+		g.Expect(ptr.Deref(kubeadmControlPlane.Status.Initialization.ControlPlaneInitialized, false)).To(BeTrue(), "KubeadmControlPlane is not yet initialized")
+	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "KubeadmControlPlane object %s/%s was not initialized in time", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
 
 	By("Ensuring API Server is reachable before applying Helm charts")
 	Eventually(func(g Gomega) {
@@ -287,7 +287,14 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 		g.Expect(clusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: kubesystem}, ns)).To(Succeed(), "Failed to get kube-system namespace")
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
 
-	if kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs["cloud-provider"] != infrav1.AzureNetworkPluginName {
+	cloudProviderValue := ""
+	for _, extraArg := range kubeadmControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.ControllerManager.ExtraArgs {
+		if extraArg.Name != "cloud-provider" {
+			continue
+		}
+		cloudProviderValue = ptr.Deref(extraArg.Value, "")
+	}
+	if cloudProviderValue != infrav1.AzureNetworkPluginName {
 		// There is a co-dependency between cloud-provider and CNI so we install both together if cloud-provider is external.
 		EnsureCNIAndCloudProviderAzureHelmChart(ctx, input)
 	} else {
@@ -304,12 +311,12 @@ func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.Cluster
 	inClustersNamespaceListOption := client.InNamespace(ns)
 	// ControlPlane labels
 	matchClusterListOption := client.MatchingLabels{
-		clusterv1beta1.MachineControlPlaneLabel: "",
-		clusterv1beta1.ClusterNameLabel:         clusterName,
+		clusterv1.MachineControlPlaneLabel: "",
+		clusterv1.ClusterNameLabel:         clusterName,
 	}
 
 	Eventually(func() (int, error) {
-		machineList := &clusterv1beta1.MachineList{}
+		machineList := &clusterv1.MachineList{}
 		lister := proxy.GetClient()
 		if err := lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
 			Logf("Failed to list the machines: %+v", err)
@@ -317,7 +324,7 @@ func ensureContolPlaneReplicasMatch(ctx context.Context, proxy framework.Cluster
 		}
 		count := 0
 		for _, machine := range machineList.Items {
-			if condition := v1beta1conditions.Get(&machine, clusterv1beta1.MachineReadyV1Beta2Condition); condition != nil && condition.Status == corev1.ConditionTrue {
+			if meta.IsStatusConditionTrue(machine.GetConditions(), clusterv1.MachineReadyCondition) {
 				count++
 			}
 		}
@@ -334,7 +341,7 @@ func CheckTestBeforeCleanup() {
 	Logf("Cleaning up after \"%s\" spec", CurrentSpecReport().FullText())
 }
 
-func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
+func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) *controlplanev1.KubeadmControlPlane {
 	return framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,

@@ -31,7 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,7 +40,7 @@ import (
 )
 
 type AKSMarketplaceExtensionSpecInput struct {
-	Cluster       *clusterv1beta1.Cluster
+	Cluster       *clusterv1.Cluster
 	WaitIntervals []interface{}
 }
 
@@ -59,7 +59,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 
 	amcp := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, types.NamespacedName{
-		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: input.Cluster.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, amcp)
 	Expect(err).NotTo(HaveOccurred())
@@ -133,7 +133,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	var infraControlPlane = &infrav1.AzureManagedControlPlane{}
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, client.ObjectKey{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -148,7 +148,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 
 	By("Ensuring the AKS Marketplace Extension status is ready on the AzureManagedControlPlane")
 	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(v1beta1conditions.IsTrue(infraControlPlane, infrav1.AKSExtensionsReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
@@ -159,7 +159,7 @@ func AKSMarketplaceExtensionSpec(ctx context.Context, inputGetter func() AKSMark
 	By("Deleting the AKS Marketplace Extension")
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, client.ObjectKey{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())

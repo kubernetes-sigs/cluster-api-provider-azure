@@ -299,7 +299,7 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
 		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(armcompute.OrchestrationModeFlexible) {
-			parent, err := azureutil.FindParentMachinePoolWithRetry(amp.Name, c, 5)
+			parent, err := azureutil.FindParentMachinePoolWithRetryV1Beta1(amp.Name, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to find parent MachinePool")
 			}
