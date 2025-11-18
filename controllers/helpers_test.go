@@ -35,6 +35,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -82,7 +83,7 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 				{
 					Name:       clusterName,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -376,14 +377,15 @@ func setupScheme(g *WithT) *runtime.Scheme {
 	g.Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	g.Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
-func newMachine(clusterName, machineName string) *clusterv1beta1.Machine {
-	return &clusterv1beta1.Machine{
+func newMachine(clusterName, machineName string) *clusterv1.Machine {
+	return &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
@@ -391,13 +393,12 @@ func newMachine(clusterName, machineName string) *clusterv1beta1.Machine {
 	}
 }
 
-func newMachineWithInfrastructureRef(clusterName, machineName string) *clusterv1beta1.Machine {
+func newMachineWithInfrastructureRef(clusterName, machineName string) *clusterv1.Machine {
 	m := newMachine(clusterName, machineName)
-	m.Spec.InfrastructureRef = corev1.ObjectReference{
-		Kind:       "AzureMachine",
-		Namespace:  "default",
-		Name:       "azure" + machineName,
-		APIVersion: infrav1.GroupVersion.String(),
+	m.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
+		Kind:     "AzureMachine",
+		Name:     "azure" + machineName,
+		APIGroup: infrav1.GroupVersion.Group,
 	}
 	return m
 }
