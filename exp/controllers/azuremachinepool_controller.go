@@ -31,7 +31,6 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -48,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (
@@ -213,7 +213,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger = logger.WithValues("machinePool", machinePool.Name)
 
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
 	if err != nil {
 		logger.V(2).Info("MachinePool is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
@@ -245,7 +245,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(cluster, azMachinePool) {
+	if clusterv1beta1util.IsPaused(cluster, azMachinePool) {
 		logger.V(2).Info("AzureMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ampr.reconcilePause(ctx, machinePoolScope)
 	}

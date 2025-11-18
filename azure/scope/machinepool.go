@@ -33,7 +33,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
@@ -52,6 +51,7 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // ScalesetsServiceName is the name of the scalesets service.
@@ -409,7 +409,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 
 	existingMachinesByProviderID := make(map[string]infrav1exp.AzureMachinePoolMachine, len(ampms))
 	for _, ampm := range ampms {
-		machine, err := util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
+		machine, err := clusterv1beta1util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
 		if err != nil {
 			return fmt.Errorf("failed to find owner machine for %s/%s: %w", ampm.Namespace, ampm.Name, err)
 		}
@@ -557,7 +557,7 @@ func (m *MachinePoolScope) DeleteMachine(ctx context.Context, ampm infrav1exp.Az
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.DeleteMachine")
 	defer done()
 
-	machine, err := util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
+	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
 	if err != nil {
 		return errors.Wrapf(err, "error getting owner Machine for AzureMachinePoolMachine %s/%s", ampm.Namespace, ampm.Name)
 	}

@@ -43,6 +43,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var errInvalidControlPlaneKind = errors.New("AzureASOManagedCluster cannot be used without AzureASOManagedControlPlane")
@@ -139,7 +140,7 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		asoManagedControlPlane := o.(*infrav1.AzureASOManagedControlPlane)
 
-		cluster, err := util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
+		cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
 		if err != nil {
 			return nil
 		}
@@ -201,7 +202,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 
 	asoManagedCluster.Status.Ready = false
 
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

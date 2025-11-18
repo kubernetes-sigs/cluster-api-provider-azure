@@ -60,6 +60,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 const (
@@ -859,7 +860,7 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(_ context.Context, c cl
 			return nil
 		}
 
-		cluster, err := util.GetOwnerCluster(ctx, c, azCluster.ObjectMeta)
+		cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, c, azCluster.ObjectMeta)
 		if err != nil {
 			log.Error(err, "failed to get the owning cluster")
 			return nil
@@ -908,7 +909,7 @@ func AzureManagedControlPlaneToAzureManagedClusterMapper(_ context.Context, c cl
 			return nil
 		}
 
-		cluster, err := util.GetOwnerCluster(ctx, c, azManagedControlPlane.ObjectMeta)
+		cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, c, azManagedControlPlane.ObjectMeta)
 		if err != nil {
 			log.Error(err, "failed to get the owning cluster")
 			return nil
@@ -948,7 +949,7 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(_ context.Context, c client.Cl
 			return nil
 		}
 
-		cluster, err := util.GetClusterByName(ctx, c, machinePool.ObjectMeta.Namespace, machinePool.Spec.ClusterName)
+		cluster, err := clusterv1beta1util.GetClusterByName(ctx, c, machinePool.ObjectMeta.Namespace, machinePool.Spec.ClusterName)
 		if err != nil {
 			log.Error(err, "failed to get the owning cluster")
 			return nil
@@ -1073,7 +1074,7 @@ func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
 // ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureReady, but
 // additionally accepts Cluster pause events.
 func ClusterPauseChangeAndInfrastructureReady(scheme *runtime.Scheme, log logr.Logger) predicate.Funcs {
-	return predicates.Any(scheme, log, predicates.ClusterCreateInfraReady(scheme, log), predicates.ClusterUpdateInfraReady(scheme, log), ClusterUpdatePauseChange(log)) //nolint:staticcheck
+	return predicates.Any(scheme, log, clusterv1beta1util.ClusterCreateInfraReady(scheme, log), clusterv1beta1util.ClusterUpdateInfraReady(scheme, log), ClusterUpdatePauseChange(log)) //nolint:staticcheck
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.

@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureManagedMachinePoolReconciler reconciles an AzureManagedMachinePool object.
@@ -162,7 +162,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the Cluster.
-	ownerCluster, err := util.GetOwnerCluster(ctx, ammpr.Client, ownerPool.ObjectMeta)
+	ownerCluster, err := clusterv1beta1util.GetOwnerCluster(ctx, ammpr.Client, ownerPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -229,7 +229,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if annotations.IsPaused(ownerCluster, infraPool) {
+	if clusterv1beta1util.IsPaused(ownerCluster, infraPool) {
 		log.Info("AzureManagedMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ammpr.reconcilePause(ctx, mcpScope)
 	}
