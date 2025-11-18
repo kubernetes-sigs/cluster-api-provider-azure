@@ -108,7 +108,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -117,7 +117,7 @@ import (
 // AzureAPIServerILBSpecInput is the input for AzureAPIServerILBSpec.
 type AzureAPIServerILBSpecInput struct {
 	BootstrapClusterProxy                   framework.ClusterProxy
-	Cluster                                 *clusterv1beta1.Cluster
+	Cluster                                 *clusterv1.Cluster
 	Namespace                               *corev1.Namespace
 	ClusterName                             string
 	ExpectedWorkerNodes                     int32

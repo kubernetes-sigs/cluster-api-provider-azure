@@ -73,7 +73,6 @@ func initScheme() *runtime.Scheme {
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
-	Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1preview.AddToScheme(scheme)).To(Succeed())
@@ -227,7 +226,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 		Name:      name,
 		Namespace: namespace,
 	})
-	if cluster.Spec.InfrastructureRef == nil {
+	if !cluster.Spec.InfrastructureRef.IsDefined() {
 		Logf("No infrastructure for cluster %s/%s", namespace, name)
 		return
 	}
@@ -235,7 +234,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 	var groupName string
 	switch cluster.Spec.InfrastructureRef.Kind {
 	case infrav1.AzureClusterKind:
-		workloadCluster, err := getAzureCluster(timeoutctx, clusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+		workloadCluster, err := getAzureCluster(timeoutctx, clusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
 		if err != nil {
 			// Failing to fetch logs should not cause the test to fail
 			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the workload cluster on the management cluster: %v", name, namespace, err)
@@ -243,11 +242,11 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 		}
 		groupName = workloadCluster.Spec.ResourceGroup
 	case infrav1.AzureManagedClusterKind:
-		if cluster.Spec.ControlPlaneRef == nil {
+		if !cluster.Spec.ControlPlaneRef.IsDefined() {
 			Logf("No control plane for cluster %s/%s", namespace, name)
 			return
 		}
-		controlPlane, err := getAzureManagedControlPlane(timeoutctx, clusterClient, cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name)
+		controlPlane, err := getAzureManagedControlPlane(timeoutctx, clusterClient, cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
 		if err != nil {
 			// Failing to fetch logs should not cause the test to fail
 			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureManagedControlPlane on the management cluster: %v", name, namespace, err)
@@ -255,7 +254,7 @@ func (acp *AzureClusterProxy) collectActivityLogs(ctx context.Context, namespace
 		}
 		groupName = controlPlane.Spec.ResourceGroupName
 	case infrav1.AzureASOManagedClusterKind:
-		asoCluster, err := getAzureASOManagedCluster(timeoutctx, clusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+		asoCluster, err := getAzureASOManagedCluster(timeoutctx, clusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
 		if err != nil {
 			// Failing to fetch logs should not cause the test to fail
 			Logf("Error fetching activity logs for cluster %s in namespace %s.  Not able to find the AzureASOManagedCluster on the management cluster: %v", name, namespace, err)

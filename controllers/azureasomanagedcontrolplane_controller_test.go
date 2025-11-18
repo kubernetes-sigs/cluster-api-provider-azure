@@ -465,7 +465,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		}
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(result.Requeue).To(BeFalse())
+		g.Expect(result.Requeue).To(BeFalse()) //nolint:staticcheck
 		g.Expect(result.RequeueAfter).NotTo(BeZero())
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())

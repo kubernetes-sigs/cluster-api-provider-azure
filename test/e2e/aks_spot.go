@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,7 +39,7 @@ import (
 )
 
 type AKSSpotSpecInput struct {
-	Cluster           *clusterv1beta1.Cluster
+	Cluster           *clusterv1.Cluster
 	KubernetesVersion string
 	WaitIntervals     []interface{}
 }
@@ -50,7 +51,7 @@ func AKSSpotSpec(ctx context.Context, inputGetter func() AKSSpotSpecInput) {
 	Expect(mgmtClient).NotTo(BeNil())
 
 	infraControlPlane := &infrav1.AzureManagedControlPlane{}
-	err := mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+	err := mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 	Expect(err).NotTo(HaveOccurred())
 
 	scaling := infrav1.ManagedMachinePoolScaling{

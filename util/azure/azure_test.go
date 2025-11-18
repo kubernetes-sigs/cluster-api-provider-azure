@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -113,9 +113,9 @@ type mockClient struct {
 }
 
 func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	mp := &clusterv1beta1.MachinePool{}
+	mp := &clusterv1.MachinePool{}
 	mp.Spec.Template.Spec.InfrastructureRef.Name = "mock-machinepool-mp-0"
-	list.(*clusterv1beta1.MachinePoolList).Items = []clusterv1beta1.MachinePool{*mp}
+	list.(*clusterv1.MachinePoolList).Items = []clusterv1.MachinePool{*mp}
 
 	return nil
 }
