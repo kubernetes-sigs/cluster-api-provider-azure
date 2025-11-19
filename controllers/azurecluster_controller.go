@@ -95,7 +95,7 @@ func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctr
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 			builder.WithPredicates(
-				ClusterUpdatePauseChange(log),
+				predicates.ClusterPausedTransitions(mgr.GetScheme(), log),
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, acr.WatchFilterValue),
 			),
 		).
