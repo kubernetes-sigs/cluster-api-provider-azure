@@ -29,8 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -45,7 +46,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/aso"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // ASOSecretReconciler reconciles ASO secrets associated with AzureCluster objects.
@@ -87,7 +87,7 @@ func (asos *ASOSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 		).
 		// Add a watch on clusterv1.Cluster object for unpause notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind), mgr.GetClient(), &infrav1.AzureCluster{})),
 			builder.WithPredicates(
 				predicates.ClusterUnpaused(mgr.GetScheme(), log),
@@ -150,7 +150,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	var clusterIdentity *corev1.ObjectReference
-	var cluster *clusterv1beta1.Cluster
+	var cluster *clusterv1.Cluster
 	var azureClient scope.AzureClients
 
 	switch ownerType := asoSecretOwner.(type) {
@@ -158,7 +158,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		clusterIdentity = ownerType.Spec.IdentityRef
 
 		// Fetch the Cluster.
-		cluster, err = clusterv1beta1util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
+		cluster, err = util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -185,7 +185,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		clusterIdentity = ownerType.Spec.IdentityRef
 
 		// Fetch the Cluster.
-		cluster, err = clusterv1beta1util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
+		cluster, err = util.GetOwnerCluster(ctx, asos.Client, ownerType.ObjectMeta)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -219,7 +219,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log = log.WithValues("cluster", cluster.Name)
 
 	// Return early if the ASO Secret Owner(AzureCluster or AzureManagedControlPlane) or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, asoSecretOwner) {
+	if annotations.IsPaused(cluster, asoSecretOwner) {
 		log.Info(fmt.Sprintf("%T or linked Cluster is marked as paused. Won't reconcile", asoSecretOwner))
 		asos.Recorder.Eventf(asoSecretOwner, corev1.EventTypeNormal, "ClusterPaused",
 			fmt.Sprintf("%T or linked Cluster is marked as paused. Won't reconcile", asoSecretOwner))
@@ -251,7 +251,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Context, clusterIdentity *corev1.ObjectReference, cluster *clusterv1beta1.Cluster, azureClient scope.AzureClients) (*corev1.Secret, error) {
+func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Context, clusterIdentity *corev1.ObjectReference, cluster *clusterv1.Cluster, azureClient scope.AzureClients) (*corev1.Secret, error) {
 	newASOSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aso.GetASOSecretName(cluster.GetName()),

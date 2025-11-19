@@ -28,7 +28,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -44,7 +44,7 @@ func TestASOSecretReconcile(t *testing.T) {
 	os.Setenv("AZURE_SUBSCRIPTION_ID", "fooSubscription") //nolint:gosec,usetesting // we want to use os.Setenv here instead of t.Setenv
 
 	scheme := runtime.NewScheme()
-	_ = clusterv1beta1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = clientgoscheme.AddToScheme(scheme)
 
@@ -64,7 +64,7 @@ func TestASOSecretReconcile(t *testing.T) {
 		"should not fail if the azure cluster is not found": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
-				getASOCluster(func(c *clusterv1beta1.Cluster) {
+				getASOCluster(func(c *clusterv1.Cluster) {
 					c.Spec.InfrastructureRef.Name = defaultAzureCluster.Name
 					c.Spec.InfrastructureRef.Kind = defaultAzureCluster.Kind
 				}),
@@ -282,8 +282,8 @@ func TestASOSecretReconcile(t *testing.T) {
 		"should return if cluster is paused": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
-				getASOCluster(func(c *clusterv1beta1.Cluster) {
-					c.Spec.Paused = true
+				getASOCluster(func(c *clusterv1.Cluster) {
+					c.Spec.Paused = ptr.To(true)
 				}),
 				getASOAzureCluster(func(c *infrav1.AzureCluster) {
 					c.Spec.IdentityRef = &corev1.ObjectReference{
@@ -354,19 +354,21 @@ func TestASOSecretReconcile(t *testing.T) {
 	}
 }
 
-func getASOCluster(changes ...func(*clusterv1beta1.Cluster)) *clusterv1beta1.Cluster {
-	input := &clusterv1beta1.Cluster{
+func getASOCluster(changes ...func(*clusterv1.Cluster)) *clusterv1.Cluster {
+	input := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-cluster",
 			Namespace: "default",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: infrav1.GroupVersion.String(),
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: infrav1.GroupVersion.Group,
 			},
 		},
-		Status: clusterv1beta1.ClusterStatus{
-			InfrastructureReady: true,
+		Status: clusterv1.ClusterStatus{
+			Initialization: clusterv1.ClusterInitializationStatus{
+				InfrastructureProvisioned: ptr.To(true),
+			},
 		},
 	}
 
@@ -384,7 +386,7 @@ func getASOAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureCl
 			Namespace: "default",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
@@ -412,7 +414,7 @@ func getASOAzureManagedControlPlane(changes ...func(*infrav1.AzureManagedControl
 				{
 					Name:       "my-cluster",
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},

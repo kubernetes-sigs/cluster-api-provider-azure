@@ -26,11 +26,10 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -564,15 +563,14 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	switch obj := obj.(type) {
 	case *AzureCluster:
 		obj.Spec.SubscriptionID = "test-subscription-id"
-	case *clusterv1beta1.Cluster:
-		obj.Spec = clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				Kind:      AzureClusterKind,
-				Name:      "test-cluster",
-				Namespace: "default",
+	case *clusterv1.Cluster:
+		obj.Spec = clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind: AzureClusterKind,
+				Name: "test-cluster",
 			},
-			ClusterNetwork: &clusterv1beta1.ClusterNetwork{
-				Services: &clusterv1beta1.NetworkRanges{
+			ClusterNetwork: clusterv1.ClusterNetwork{
+				Services: clusterv1.NetworkRanges{
 					CIDRBlocks: []string{"192.168.0.0/26"},
 				},
 			},
@@ -607,7 +605,7 @@ func hardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
 	return &AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "test-cluster",
+				clusterv1.ClusterNameLabel: "test-cluster",
 			},
 		},
 		Spec: AzureMachineSpec{

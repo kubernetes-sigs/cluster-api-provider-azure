@@ -26,7 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -66,7 +67,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
-		clusterv1beta1.AddToScheme,
+		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
 		infrav1exp.AddToScheme,
 		corev1.AddToScheme,
@@ -83,17 +84,16 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	name := test.RandomName("paused", 10)
 	namespace := "default"
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			Paused: true,
-			InfrastructureRef: &corev1.ObjectReference{
-				Kind:      "AzureCluster",
-				Name:      name,
-				Namespace: namespace,
+		Spec: clusterv1.ClusterSpec{
+			Paused: ptr.To(true),
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind: "AzureCluster",
+				Name: name,
 			},
 		},
 	}
@@ -143,18 +143,18 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	g.Expect(c.Create(ctx, fakeIdentity)).To(Succeed())
 	g.Expect(c.Create(ctx, fakeSecret)).To(Succeed())
 
-	mp := &clusterv1beta1.MachinePool{
+	mp := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: name,
+				clusterv1.ClusterNameLabel: name,
 			},
 		},
-		Spec: clusterv1beta1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			ClusterName: name,
-			Template: clusterv1beta1.MachineTemplateSpec{
-				Spec: clusterv1beta1.MachineSpec{
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
 					ClusterName: name,
 				},
 			},
@@ -169,7 +169,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "MachinePool",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 					Name:       mp.Name,
 				},
 			},

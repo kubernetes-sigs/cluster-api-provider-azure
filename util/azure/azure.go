@@ -23,7 +23,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/pkg/errors"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -74,9 +73,9 @@ func FindParentMachinePoolWithRetry(ampName string, cli client.Client, maxAttemp
 
 // FindParentMachinePoolV1Beta1 finds the parent MachinePool for the AzureMachinePool.
 // TODO: delete after reconciliation is using v1beta2.
-func FindParentMachinePoolV1Beta1(ampName string, cli client.Client) (*clusterv1beta1.MachinePool, error) {
+func FindParentMachinePoolV1Beta1(ampName string, cli client.Client) (*clusterv1.MachinePool, error) {
 	ctx := context.Background()
-	machinePoolList := &clusterv1beta1.MachinePoolList{}
+	machinePoolList := &clusterv1.MachinePoolList{}
 	if err := cli.List(ctx, machinePoolList); err != nil {
 		return nil, errors.Wrapf(err, "failed to list MachinePools for %s", ampName)
 	}
@@ -90,7 +89,7 @@ func FindParentMachinePoolV1Beta1(ampName string, cli client.Client) (*clusterv1
 
 // FindParentMachinePoolWithRetryV1Beta1 finds the parent MachinePool for the AzureMachinePool with retry.
 // TODO: delete after reconciliation is using v1beta2.
-func FindParentMachinePoolWithRetryV1Beta1(ampName string, cli client.Client, maxAttempts int) (*clusterv1beta1.MachinePool, error) {
+func FindParentMachinePoolWithRetryV1Beta1(ampName string, cli client.Client, maxAttempts int) (*clusterv1.MachinePool, error) {
 	for i := 1; ; i++ {
 		p, err := FindParentMachinePoolV1Beta1(ampName, cli)
 		if err != nil {

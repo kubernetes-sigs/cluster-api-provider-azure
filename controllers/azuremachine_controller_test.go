@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -366,8 +367,8 @@ func getMachineReconcileInputs(tc TestMachineReconcileInput) (*AzureMachineRecon
 	azureCluster := getFakeAzureCluster(func(ac *infrav1.AzureCluster) {
 		ac.Spec.Location = "westus2"
 	})
-	machine := getFakeMachine(azureMachine, func(m *clusterv1beta1.Machine) {
-		m.Spec.Bootstrap = clusterv1beta1.Bootstrap{
+	machine := getFakeMachine(azureMachine, func(m *clusterv1.Machine) {
+		m.Spec.Bootstrap = clusterv1.Bootstrap{
 			DataSecretName: ptr.To("fooSecret"),
 		}
 	})
@@ -529,21 +530,23 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 	}
 }
 
-func getFakeCluster() *clusterv1beta1.Cluster {
-	return &clusterv1beta1.Cluster{
+func getFakeCluster() *clusterv1.Cluster {
+	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-cluster",
 			Namespace: "default",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureClusterKind,
-				Name:       "my-azure-cluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: infrav1.GroupVersion.Group,
+				Kind:     infrav1.AzureClusterKind,
+				Name:     "my-azure-cluster",
 			},
 		},
-		Status: clusterv1beta1.ClusterStatus{
-			InfrastructureReady: true,
+		Status: clusterv1.ClusterStatus{
+			Initialization: clusterv1.ClusterInitializationStatus{
+				InfrastructureProvisioned: ptr.To(true),
+			},
 		},
 	}
 }
@@ -603,7 +606,7 @@ func getFakeAzureMachine(changes ...func(*infrav1.AzureMachine)) *infrav1.AzureM
 			Name:      "my-machine",
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -644,27 +647,26 @@ func getFakeAzureClusterIdentity(changes ...func(*infrav1.AzureClusterIdentity))
 	return input
 }
 
-func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*clusterv1beta1.Machine)) *clusterv1beta1.Machine {
-	input := &clusterv1beta1.Machine{
+func getFakeMachine(azureMachine *infrav1.AzureMachine, changes ...func(*clusterv1.Machine)) *clusterv1.Machine {
+	input := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-machine",
 			Namespace: "default",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "cluster.x-k8s.io/v1beta1",
 			Kind:       "Machine",
 		},
-		Spec: clusterv1beta1.MachineSpec{
-			InfrastructureRef: corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       "AzureMachine",
-				Name:       azureMachine.Name,
-				Namespace:  azureMachine.Namespace,
+		Spec: clusterv1.MachineSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: infrav1.GroupVersion.Group,
+				Kind:     "AzureMachine",
+				Name:     azureMachine.Name,
 			},
-			Version: ptr.To("v1.22.0"),
+			Version: "v1.22.0",
 		},
 	}
 	for _, change := range changes {
@@ -681,20 +683,22 @@ func TestConditions(t *testing.T) {
 
 	testcases := []struct {
 		name               string
-		clusterStatus      clusterv1beta1.ClusterStatus
-		machine            *clusterv1beta1.Machine
+		clusterStatus      clusterv1.ClusterStatus
+		machine            *clusterv1.Machine
 		azureMachine       *infrav1.AzureMachine
 		expectedConditions []clusterv1beta1.Condition
 	}{
 		{
 			name: "cluster infrastructure is not ready yet",
-			clusterStatus: clusterv1beta1.ClusterStatus{
-				InfrastructureReady: false,
+			clusterStatus: clusterv1.ClusterStatus{
+				Initialization: clusterv1.ClusterInitializationStatus{
+					InfrastructureProvisioned: ptr.To(false),
+				},
 			},
-			machine: &clusterv1beta1.Machine{
+			machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "my-cluster",
+						clusterv1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},
@@ -704,7 +708,7 @@ func TestConditions(t *testing.T) {
 					Name: "azure-test1",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: clusterv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "test1",
 						},
@@ -720,13 +724,15 @@ func TestConditions(t *testing.T) {
 		},
 		{
 			name: "bootstrap data secret reference is not yet available",
-			clusterStatus: clusterv1beta1.ClusterStatus{
-				InfrastructureReady: true,
+			clusterStatus: clusterv1.ClusterStatus{
+				Initialization: clusterv1.ClusterInitializationStatus{
+					InfrastructureProvisioned: ptr.To(true),
+				},
 			},
-			machine: &clusterv1beta1.Machine{
+			machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "my-cluster",
+						clusterv1.ClusterNameLabel: "my-cluster",
 					},
 					Name: "my-machine",
 				},
@@ -736,7 +742,7 @@ func TestConditions(t *testing.T) {
 					Name: "azure-test1",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: clusterv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "test1",
 						},
@@ -753,7 +759,7 @@ func TestConditions(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			cluster := &clusterv1beta1.Cluster{
+			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "my-cluster",
 				},

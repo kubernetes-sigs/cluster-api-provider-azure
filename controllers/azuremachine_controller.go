@@ -24,8 +24,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,7 +44,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureMachineReconciler reconciles an AzureMachine object.
@@ -101,7 +103,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, amr.WatchFilterValue)).
 		// watch for changes in CAPI Machine resources
 		Watches(
-			&clusterv1beta1.Machine{},
+			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine"))),
 		).
 		// watch for changes in AzureCluster
@@ -111,7 +113,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 		).
 		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -152,7 +154,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Fetch the Machine.
-	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, amr.Client, azureMachine.ObjectMeta)
+	machine, err := util.GetOwnerMachine(ctx, amr.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -165,7 +167,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log = log.WithValues("machine", machine.Name)
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, amr.Client, machine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, amr.Client, machine.ObjectMeta)
 	if err != nil {
 		amr.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "Unable to get cluster from metadata", "Machine is missing cluster label or cluster does not exist")
 		log.Info("Machine is missing cluster label or cluster does not exist")
@@ -219,7 +221,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, azureMachine) {
+	if annotations.IsPaused(cluster, azureMachine) {
 		log.Info("AzureMachine or linked Cluster is marked as paused. Won't reconcile normally")
 		return amr.reconcilePause(ctx, machineScope)
 	}
@@ -254,9 +256,9 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		}
 	}
 
-	// Make sure the Cluster Infrastructure is ready.
-	if !clusterScope.Cluster.Status.InfrastructureReady {
-		log.Info("Cluster infrastructure is not ready yet")
+	// Make sure the Cluster Infrastructure is provisioned.
+	if !ptr.Deref(clusterScope.Cluster.Status.Initialization.InfrastructureProvisioned, false) {
+		log.Info("Cluster infrastructure is not provisioned yet")
 		v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1beta1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
 	}

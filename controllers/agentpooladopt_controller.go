@@ -21,11 +21,10 @@ import (
 	"fmt"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -144,7 +143,7 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get AzureASOManagedControlPlane %s: %w", managedControlPlaneKey, err)
 	}
-	clusterName := asoManagedControlPlane.Labels[clusterv1beta1.ClusterNameLabel]
+	clusterName := asoManagedControlPlane.Labels[clusterv1.ClusterNameLabel]
 
 	asoManagedMachinePool := &infrav1.AzureASOManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -160,24 +159,24 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	machinePool := &clusterv1beta1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      agentPool.Name,
 		},
-		Spec: clusterv1beta1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			ClusterName: clusterName,
 			Replicas:    replicas,
-			Template: clusterv1beta1.MachineTemplateSpec{
-				Spec: clusterv1beta1.MachineSpec{
-					Bootstrap: clusterv1beta1.Bootstrap{
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					Bootstrap: clusterv1.Bootstrap{
 						DataSecretName: ptr.To(""),
 					},
 					ClusterName: clusterName,
-					InfrastructureRef: corev1.ObjectReference{
-						APIVersion: infrav1.GroupVersion.Identifier(),
-						Kind:       infrav1.AzureASOManagedMachinePoolKind,
-						Name:       asoManagedMachinePool.Name,
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: infrav1.GroupVersion.Group,
+						Kind:     infrav1.AzureASOManagedMachinePoolKind,
+						Name:     asoManagedMachinePool.Name,
 					},
 				},
 			},
@@ -186,7 +185,7 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if ptr.Deref(agentPool.Spec.EnableAutoScaling, false) {
 		machinePool.Annotations = map[string]string{
-			clusterv1beta1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
+			clusterv1.ReplicasManagedByAnnotation: infrav1.ReplicasManagedByAKS,
 		}
 	}
 

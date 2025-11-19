@@ -29,6 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,14 +51,13 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
 	Client       client.Client
 	ClusterScope azure.ClusterScoper
-	Machine      *clusterv1beta1.Machine
+	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	Cache        *MachineCache
 	SKUCache     SKUCacher
@@ -97,7 +98,7 @@ type MachineScope struct {
 	patchHelper *v1beta1patch.Helper
 
 	azure.ClusterScoper
-	Machine      *clusterv1beta1.Machine
+	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 	cache        *MachineCache
 	skuCache     SKUCacher
@@ -434,8 +435,8 @@ func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 //  2. AzureMachine.Spec.FailureDomain (This is to support deprecated AZ)
 //  3. No AZ
 func (m *MachineScope) AvailabilityZone() string {
-	if m.Machine.Spec.FailureDomain != nil {
-		return *m.Machine.Spec.FailureDomain
+	if m.Machine.Spec.FailureDomain != "" {
+		return m.Machine.Spec.FailureDomain
 	}
 	// Deprecated: to support old clients
 	if m.AzureMachine.Spec.FailureDomain != nil {
@@ -464,12 +465,12 @@ func (m *MachineScope) Namespace() string {
 
 // IsControlPlane returns true if the machine is a control plane.
 func (m *MachineScope) IsControlPlane() bool {
-	return clusterv1beta1util.IsControlPlaneMachine(m.Machine)
+	return util.IsControlPlaneMachine(m.Machine)
 }
 
 // Role returns the machine role from the labels.
 func (m *MachineScope) Role() string {
-	if clusterv1beta1util.IsControlPlaneMachine(m.Machine) {
+	if util.IsControlPlaneMachine(m.Machine) {
 		return infrav1.ControlPlane
 	}
 	return infrav1.Node
@@ -517,7 +518,7 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 	// AvailabilitySet service is not supported on EdgeZone currently.
 	// AvailabilitySet cannot be used with Spot instances.
 	if !m.AvailabilitySetEnabled() || m.AzureMachine.Spec.SpotVMOptions != nil || m.ExtendedLocation() != nil ||
-		m.AzureMachine.Spec.FailureDomain != nil || m.Machine.Spec.FailureDomain != nil {
+		m.AzureMachine.Spec.FailureDomain != nil || m.Machine.Spec.FailureDomain != "" {
 		return "", false
 	}
 
@@ -526,12 +527,12 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 	}
 
 	// get machine deployment name from labels for machines that maybe part of a machine deployment.
-	if mdName, ok := m.Machine.Labels[clusterv1beta1.MachineDeploymentNameLabel]; ok {
+	if mdName, ok := m.Machine.Labels[clusterv1.MachineDeploymentNameLabel]; ok {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), mdName), true
 	}
 
 	// if machine deployment name label is not available, use machine set name.
-	if msName, ok := m.Machine.Labels[clusterv1beta1.MachineSetNameLabel]; ok {
+	if msName, ok := m.Machine.Labels[clusterv1.MachineSetNameLabel]; ok {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), msName), true
 	}
 
@@ -728,11 +729,11 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return svc.GetDefaultWindowsImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""), runtime, windowsServerVersion)
+		return svc.GetDefaultWindowsImage(ctx, m.Location(), m.Machine.Spec.Version, runtime, windowsServerVersion)
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultLinuxImage(ctx, m.Location(), ptr.Deref(m.Machine.Spec.Version, ""))
+	return svc.GetDefaultLinuxImage(ctx, m.Location(), m.Machine.Spec.Version)
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.

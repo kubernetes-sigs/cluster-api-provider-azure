@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -50,7 +50,7 @@ func TestUnclonedMachinesPredicate(t *testing.T) {
 		"uncloned control plane node should return true": {
 			expected: true,
 			labels: map[string]string{
-				clusterv1beta1.MachineControlPlaneLabel: "",
+				clusterv1.MachineControlPlaneLabel: "",
 			},
 			annotations: nil,
 		},
@@ -58,7 +58,7 @@ func TestUnclonedMachinesPredicate(t *testing.T) {
 			expected: false,
 			labels:   nil,
 			annotations: map[string]string{
-				clusterv1beta1.TemplateClonedFromGroupKindAnnotation: infrav1.GroupVersion.WithKind("AzureMachineTemplate").GroupKind().String(),
+				clusterv1.TemplateClonedFromGroupKindAnnotation: infrav1.GroupVersion.WithKind("AzureMachineTemplate").GroupKind().String(),
 			},
 		},
 	}
@@ -89,15 +89,15 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		t.Error(err)
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-cluster",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureClusterKind,
-				Name:       "my-azure-cluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: infrav1.GroupVersion.Group,
+				Kind:     infrav1.AzureClusterKind,
+				Name:     "my-azure-cluster",
 			},
 		},
 	}
@@ -138,7 +138,7 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -186,12 +186,12 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		},
 		"infra ref is nil": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: nil,
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{},
 					},
 				},
 				azureCluster,
@@ -203,15 +203,15 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		},
 		"infra ref is not an azure cluster": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-							Kind:       "FooCluster",
-							Name:       "my-foo-cluster",
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: infrav1.GroupVersion.Group,
+							Kind:     "FooCluster",
+							Name:     "my-foo-cluster",
 						},
 					},
 				},
@@ -258,7 +258,7 @@ func newScheme() (*runtime.Scheme, error) {
 	schemeFn := []func(*runtime.Scheme) error{
 		clientgoscheme.AddToScheme,
 		infrav1.AddToScheme,
-		clusterv1beta1.AddToScheme,
+		clusterv1.AddToScheme,
 		infrav1exp.AddToScheme,
 		corev1.AddToScheme,
 	}

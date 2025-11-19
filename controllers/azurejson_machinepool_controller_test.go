@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -48,15 +48,15 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		t.Error(err)
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-cluster",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureClusterKind,
-				Name:       "my-azure-cluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: "infrastructure.cluster.x-k8s.io",
+				Kind:     infrav1.AzureClusterKind,
+				Name:     "my-azure-cluster",
 			},
 		},
 	}
@@ -94,11 +94,11 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 	}
 
-	machinePool := &clusterv1beta1.MachinePool{
+	machinePool := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-machine-pool",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -168,12 +168,12 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 		"infra ref is nil": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: nil,
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{},
 					},
 				},
 				azureCluster,
@@ -186,15 +186,15 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 		},
 		"infra ref is not an azure cluster": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-							Kind:       "FooCluster",
-							Name:       "my-foo-cluster",
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: "infrastructure.cluster.x-k8s.io",
+							Kind:     "FooCluster",
+							Name:     "my-foo-cluster",
 						},
 					},
 				},
@@ -257,11 +257,11 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 			Name:      "fake-machine-pool",
 			Namespace: "fake-ns",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "fake-cluster",
+				clusterv1.ClusterNameLabel: "fake-cluster",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: fmt.Sprintf("%s/%s", clusterv1beta1.GroupVersion.Group, clusterv1beta1.GroupVersion.Version),
+					APIVersion: fmt.Sprintf("%s/%s", clusterv1.GroupVersion.Group, clusterv1.GroupVersion.Version),
 					Kind:       "MachinePool",
 					Name:       "fake-other-machine-pool",
 					Controller: to.Ptr(true),
@@ -277,26 +277,25 @@ func TestAzureJSONPoolReconcilerUserAssignedIdentities(t *testing.T) {
 		},
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-cluster",
 			Namespace: "fake-ns",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				Kind:      "AzureCluster",
-				Name:      "fake-azure-cluster",
-				Namespace: "fake-ns",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind: "AzureCluster",
+				Name: "fake-azure-cluster",
 			},
 		},
 	}
 
-	ownerMP := &clusterv1beta1.MachinePool{
+	ownerMP := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-other-machine-pool",
 			Namespace: "fake-ns",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "fake-cluster",
+				clusterv1.ClusterNameLabel: "fake-cluster",
 			},
 		},
 	}

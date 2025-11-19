@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/net"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,7 +61,7 @@ import (
 type ClusterScopeParams struct {
 	AzureClients
 	Client          client.Client
-	Cluster         *clusterv1beta1.Cluster
+	Cluster         *clusterv1.Cluster
 	AzureCluster    *infrav1.AzureCluster
 	Cache           *ClusterCache
 	Timeouts        azure.AsyncReconciler
@@ -116,7 +117,7 @@ type ClusterScope struct {
 	cache       *ClusterCache
 
 	AzureClients
-	Cluster      *clusterv1beta1.Cluster
+	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
 	azure.AsyncReconciler
 }
@@ -927,7 +928,7 @@ func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
 func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 	return client.MatchingLabels(map[string]string{
-		clusterv1beta1.ClusterNameLabel: s.Cluster.Name,
+		clusterv1.ClusterNameLabel: s.Cluster.Name,
 	})
 }
 
@@ -977,8 +978,8 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
 func (s *ClusterScope) APIServerPort() int32 {
-	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
-		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
+	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
+		return s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return 6443
 }

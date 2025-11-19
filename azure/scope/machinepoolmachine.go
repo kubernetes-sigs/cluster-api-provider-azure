@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -64,8 +65,8 @@ type (
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		Client                  client.Client
 		ClusterScope            azure.ClusterScoper
-		MachinePool             *clusterv1beta1.MachinePool
-		Machine                 *clusterv1beta1.Machine
+		MachinePool             *clusterv1.MachinePool
+		Machine                 *clusterv1.Machine
 
 		// workloadNodeGetter is only used for testing purposes and provides a way for mocking requests to the workload cluster
 		workloadNodeGetter nodeGetter
@@ -76,8 +77,8 @@ type (
 		azure.ClusterScoper
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		AzureMachinePool        *infrav1exp.AzureMachinePool
-		MachinePool             *clusterv1beta1.MachinePool
-		Machine                 *clusterv1beta1.Machine
+		MachinePool             *clusterv1.MachinePool
+		Machine                 *clusterv1.Machine
 		MachinePoolScope        *MachinePoolScope
 		client                  client.Client
 		patchHelper             *v1beta1patch.Helper
@@ -287,12 +288,12 @@ func (s *MachinePoolMachineScope) ProviderID() string {
 // updateDeleteMachineAnnotation sets the clusterv1.DeleteMachineAnnotation on the AzureMachinePoolMachine if it exists on the owner Machine.
 func (s *MachinePoolMachineScope) updateDeleteMachineAnnotation() {
 	if s.Machine.Annotations != nil {
-		if _, ok := s.Machine.Annotations[clusterv1beta1.DeleteMachineAnnotation]; ok {
+		if _, ok := s.Machine.Annotations[clusterv1.DeleteMachineAnnotation]; ok {
 			if s.AzureMachinePoolMachine.Annotations == nil {
 				s.AzureMachinePoolMachine.Annotations = map[string]string{}
 			}
 
-			s.AzureMachinePoolMachine.Annotations[clusterv1beta1.DeleteMachineAnnotation] = "true"
+			s.AzureMachinePoolMachine.Annotations[clusterv1.DeleteMachineAnnotation] = "true"
 		}
 	}
 }
@@ -306,7 +307,7 @@ func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
 		s.AzureMachinePoolMachine,
 		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			clusterv1beta1.ReadyCondition,
-			clusterv1beta1.MachineNodeHealthyCondition,
+			clusterv1.MachineNodeHealthyCondition,
 		}})
 }
 
@@ -354,24 +355,24 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 	switch {
 	case err != nil && apierrors.IsNotFound(err) && nodeRef != nil && nodeRef.Name != "":
 		// Node was not found due to 404 when finding by ObjectReference.
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.NodeNotFoundReason, clusterv1beta1.ConditionSeverityError, "")
+		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeNotFoundReason, clusterv1beta1.ConditionSeverityError, "")
 	case err != nil:
 		// Failed due to an unexpected error
 		return err
 	case !found && s.ProviderID() == "":
 		// Node was not found due to not having a providerID set
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.WaitingForNodeRefReason, clusterv1beta1.ConditionSeverityInfo, "")
+		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.WaitingForNodeRefReason, clusterv1beta1.ConditionSeverityInfo, "")
 	case !found && s.ProviderID() != "":
 		// Node was not found due to not finding a matching node by providerID
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.NodeProvisioningReason, clusterv1beta1.ConditionSeverityInfo, "")
+		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeProvisioningReason, clusterv1beta1.ConditionSeverityInfo, "")
 	default:
 		// Node was found. Check if it is ready.
 		nodeReady := noderefutil.IsNodeReady(node)
 		s.AzureMachinePoolMachine.Status.Ready = nodeReady
 		if nodeReady {
-			v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1beta1.MachineNodeHealthyCondition)
+			v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition)
 		} else {
-			v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1beta1.MachineNodeHealthyCondition, clusterv1beta1.NodeConditionsFailedReason, clusterv1beta1.ConditionSeverityWarning, "")
+			v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeConditionsFailedReason, clusterv1beta1.ConditionSeverityWarning, "")
 		}
 
 		s.AzureMachinePoolMachine.Status.NodeRef = &corev1.ObjectReference{

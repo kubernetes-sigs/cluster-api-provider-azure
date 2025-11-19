@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,7 +43,7 @@ import (
 type ManagedMachinePoolScopeParams struct {
 	ManagedMachinePool
 	Client                   client.Client
-	Cluster                  *clusterv1beta1.Cluster
+	Cluster                  *clusterv1.Cluster
 	ControlPlane             *infrav1.AzureManagedControlPlane
 	ManagedControlPlaneScope azure.ManagedClusterScoper
 }
@@ -50,7 +51,7 @@ type ManagedMachinePoolScopeParams struct {
 // ManagedMachinePool defines the scope interface for a managed machine pool.
 type ManagedMachinePool struct {
 	InfraMachinePool *infrav1.AzureManagedMachinePool
-	MachinePool      *clusterv1beta1.MachinePool
+	MachinePool      *clusterv1.MachinePool
 }
 
 // NewManagedMachinePoolScope creates a new Scope from the supplied parameters.
@@ -96,8 +97,8 @@ type ManagedMachinePoolScope struct {
 	capiMachinePoolPatchHelper *v1beta1patch.Helper
 
 	azure.ManagedClusterScoper
-	Cluster          *clusterv1beta1.Cluster
-	MachinePool      *clusterv1beta1.MachinePool
+	Cluster          *clusterv1.Cluster
+	MachinePool      *clusterv1.MachinePool
 	ControlPlane     *infrav1.AzureManagedControlPlane
 	InfraMachinePool *infrav1.AzureManagedMachinePool
 }
@@ -158,7 +159,7 @@ func getAgentPoolSubnet(controlPlane *infrav1.AzureManagedControlPlane, infraMac
 }
 
 func buildAgentPoolSpec(managedControlPlane *infrav1.AzureManagedControlPlane,
-	machinePool *clusterv1beta1.MachinePool,
+	machinePool *clusterv1.MachinePool,
 	managedMachinePool *infrav1.AzureManagedMachinePool) azure.ASOResourceSpecGetter[genruntime.MetaObject] {
 	normalizedVersion := getManagedMachinePoolVersion(managedControlPlane, machinePool)
 
@@ -352,10 +353,10 @@ func (s *ManagedMachinePoolScope) GetCAPIMachinePoolAnnotation(key string) (succ
 	return ok, val
 }
 
-func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedControlPlane, machinePool *clusterv1beta1.MachinePool) *string {
+func getManagedMachinePoolVersion(managedControlPlane *infrav1.AzureManagedControlPlane, machinePool *clusterv1.MachinePool) *string {
 	var v, av string
 	if machinePool != nil {
-		v = ptr.Deref(machinePool.Spec.Template.Spec.Version, "")
+		v = machinePool.Spec.Template.Spec.Version
 	}
 	if managedControlPlane != nil {
 		av = managedControlPlane.Status.AutoUpgradeVersion

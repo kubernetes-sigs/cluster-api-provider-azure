@@ -31,7 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,7 +40,7 @@ import (
 )
 
 type AKSFleetsMemberInput struct {
-	Cluster       *clusterv1beta1.Cluster
+	Cluster       *clusterv1.Cluster
 	WaitIntervals []interface{}
 }
 
@@ -63,7 +63,7 @@ func AKSFleetsMemberSpec(ctx context.Context, inputGetter func() AKSFleetsMember
 
 	amcp := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, types.NamespacedName{
-		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: input.Cluster.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, amcp)
 	Expect(err).NotTo(HaveOccurred())
@@ -99,7 +99,7 @@ func AKSFleetsMemberSpec(ctx context.Context, inputGetter func() AKSFleetsMember
 	By("Joining the cluster to the fleet hub")
 	var infraControlPlane = &infrav1.AzureManagedControlPlane{}
 	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
 		infraControlPlane.Spec.FleetsMember = &infrav1.FleetsMember{
 			FleetsMemberClassSpec: infrav1.FleetsMemberClassSpec{
@@ -126,7 +126,7 @@ func AKSFleetsMemberSpec(ctx context.Context, inputGetter func() AKSFleetsMember
 
 	By("Remove the FleetsMember spec from the AzureManagedControlPlane")
 	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
 		infraControlPlane.Spec.FleetsMember = nil
 		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())

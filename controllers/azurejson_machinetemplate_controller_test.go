@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -39,15 +39,15 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		t.Error(err)
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-cluster",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureClusterKind,
-				Name:       "my-azure-cluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: "infrastructure.cluster.x-k8s.io",
+				Kind:     infrav1.AzureClusterKind,
+				Name:     "my-azure-cluster",
 			},
 		},
 	}
@@ -124,12 +124,12 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		},
 		"infra ref is nil": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: nil,
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{},
 					},
 				},
 				azureCluster,
@@ -139,15 +139,15 @@ func TestAzureJSONTemplateReconciler(t *testing.T) {
 		},
 		"infra ref is not an azure cluster": {
 			objects: []runtime.Object{
-				&clusterv1beta1.Cluster{
+				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-cluster",
 					},
-					Spec: clusterv1beta1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-							Kind:       "FooCluster",
-							Name:       "my-foo-cluster",
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: "infrastructure.cluster.x-k8s.io",
+							Kind:     "FooCluster",
+							Name:     "my-foo-cluster",
 						},
 					},
 				},

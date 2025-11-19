@@ -30,7 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,27 +48,29 @@ import (
 func TestClusterToAzureManagedControlPlane(t *testing.T) {
 	tests := []struct {
 		name            string
-		controlPlaneRef *corev1.ObjectReference
+		controlPlaneRef clusterv1.ContractVersionedObjectReference
 		expected        []ctrl.Request
 	}{
 		{
 			name:            "nil",
-			controlPlaneRef: nil,
+			controlPlaneRef: clusterv1.ContractVersionedObjectReference{},
 			expected:        nil,
 		},
 		{
 			name: "bad kind",
-			controlPlaneRef: &corev1.ObjectReference{
-				Kind: "NotAzureManagedControlPlane",
+			controlPlaneRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "NotAzureManagedControlPlane",
+				Name:     "foo",
+				APIGroup: infrav1.GroupVersion.Group,
 			},
 			expected: nil,
 		},
 		{
 			name: "ok",
-			controlPlaneRef: &corev1.ObjectReference{
-				Kind:      infrav1.AzureManagedControlPlaneKind,
-				Name:      "name",
-				Namespace: "namespace",
+			controlPlaneRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     infrav1.AzureManagedControlPlaneKind,
+				Name:     "name",
+				APIGroup: infrav1.GroupVersion.Group,
 			},
 			expected: []ctrl.Request{
 				{
@@ -83,8 +86,8 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
-			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(t.Context(), &clusterv1beta1.Cluster{
-				Spec: clusterv1beta1.ClusterSpec{
+			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(t.Context(), &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
 					ControlPlaneRef: test.controlPlaneRef,
 				},
 			})
@@ -103,7 +106,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	ctx := t.Context()
 
 	sb := runtime.NewSchemeBuilder(
-		clusterv1beta1.AddToScheme,
+		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
@@ -130,13 +133,13 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	name := test.RandomName("paused", 10)
 	namespace := "default"
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			Paused: true,
+		Spec: clusterv1.ClusterSpec{
+			Paused: ptr.To(true),
 		},
 	}
 	g.Expect(c.Create(ctx, cluster)).To(Succeed())
@@ -174,7 +177,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 					Name:       cluster.Name,
 				},
 			},
@@ -287,7 +290,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 
 	scopes := &scope.ManagedControlPlaneScope{
-		Cluster: &clusterv1beta1.Cluster{
+		Cluster: &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "fake-cluster",
 				Namespace: "fake-ns",

@@ -33,7 +33,8 @@ import (
 	// but verify that check is actually working.
 	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	utilexp "sigs.k8s.io/cluster-api/exp/util"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -42,7 +43,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var (
@@ -54,7 +54,7 @@ var (
 )
 
 // SetManagedClusterDefaults propagates values defined by Cluster API to an ASO ManagedCluster.
-func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1beta1.Cluster) ResourcesMutator {
+func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetManagedClusterDefaults")
 		defer done()
@@ -127,13 +127,11 @@ func setManagedClusterKubernetesVersion(ctx context.Context, asoManagedControlPl
 	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capzK8sVersion, k8sVersionPath...)
 }
 
-func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1beta1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterServiceCIDR")
 	defer done()
 
-	if cluster.Spec.ClusterNetwork == nil ||
-		cluster.Spec.ClusterNetwork.Services == nil ||
-		len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) == 0 {
+	if len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) == 0 {
 		return nil
 	}
 
@@ -160,13 +158,11 @@ func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1beta1.C
 	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capiCIDR, svcCIDRPath...)
 }
 
-func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1beta1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterPodCIDR")
 	defer done()
 
-	if cluster.Spec.ClusterNetwork == nil ||
-		cluster.Spec.ClusterNetwork.Pods == nil ||
-		len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {
+	if len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {
 		return nil
 	}
 
@@ -193,7 +189,7 @@ func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1beta1.Clust
 	return unstructured.SetNestedField(managedCluster.UnstructuredContent(), capiCIDR, podCIDRPath...)
 }
 
-func setManagedClusterAgentPoolProfiles(ctx context.Context, ctrlClient client.Client, namespace string, cluster *clusterv1beta1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+func setManagedClusterAgentPoolProfiles(ctx context.Context, ctrlClient client.Client, namespace string, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterAgentPoolProfiles")
 	defer done()
 
@@ -259,7 +255,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 	err := ctrlClient.List(ctx, asoManagedMachinePools,
 		client.InNamespace(namespace),
 		client.MatchingLabels{
-			clusterv1beta1.ClusterNameLabel: clusterName,
+			clusterv1.ClusterNameLabel: clusterName,
 		},
 	)
 	if err != nil {
@@ -273,7 +269,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 
 	var agentPools []conversion.Convertible
 	for _, asoManagedMachinePool := range asoManagedMachinePools.Items {
-		machinePool, err := clusterv1beta1util.GetOwnerMachinePool(ctx, ctrlClient, asoManagedMachinePool.ObjectMeta)
+		machinePool, err := utilexp.GetOwnerMachinePool(ctx, ctrlClient, asoManagedMachinePool.ObjectMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -380,7 +376,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 	return managedCluster.ConvertFrom(hubMC)
 }
 
-func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1beta1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
+func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluster, managedClusterPath string, managedCluster *unstructured.Unstructured) error {
 	_, log, done := tele.StartSpanWithLogger(ctx, "mutators.setManagedClusterCredentials")
 	defer done()
 
