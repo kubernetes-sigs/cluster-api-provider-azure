@@ -45,6 +45,7 @@ import (
 	"k8s.io/utils/ptr"
 	bootstrapv1beta1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capifeature "sigs.k8s.io/cluster-api/feature"
@@ -80,6 +81,7 @@ func init() {
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 	_ = clusterv1beta1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1beta1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
 	_ = asocontainerservicev1api20210501.AddToScheme(scheme)
