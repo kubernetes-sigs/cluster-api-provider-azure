@@ -116,7 +116,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 			builder.WithPredicates(
-				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ammpr.WatchFilterValue),
 			),
 		).

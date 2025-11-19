@@ -85,7 +85,7 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 				predicates.Any(mgr.GetScheme(), log,
 					predicates.ClusterControlPlaneInitialized(mgr.GetScheme(), log),
-					ClusterUpdatePauseChange(log),
+					predicates.ClusterPausedTransitions(mgr.GetScheme(), log),
 				),
 			),
 		).

@@ -96,7 +96,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
 			builder.WithPredicates(
-				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, amcpr.WatchFilterValue),
 			),
 		).

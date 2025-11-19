@@ -116,7 +116,7 @@ func (amr *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctr
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
-				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, amr.WatchFilterValue),
 			),
 		).

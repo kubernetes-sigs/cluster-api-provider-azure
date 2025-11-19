@@ -89,7 +89,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 			),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
-				ClusterUpdatePauseChange(log),
+				predicates.ClusterPausedTransitions(mgr.GetScheme(), log),
 			),
 		).
 		Watches(

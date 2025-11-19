@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
@@ -42,15 +41,12 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
-	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -1006,42 +1002,6 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(_ context.Context, c client.Cl
 		// By default, return nothing for a machine pool which is not the default pool for a control plane.
 		return nil
 	}
-}
-
-// ClusterUpdatePauseChange returns a predicate that returns true for an update event when a cluster's
-// Spec.Paused changes between any two distinct values.
-func ClusterUpdatePauseChange(logger logr.Logger) predicate.Funcs {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			log := logger.WithValues("predicate", "ClusterUpdatePauseChange", "eventType", "update")
-
-			oldCluster, ok := e.ObjectOld.(*clusterv1beta1.Cluster)
-			if !ok {
-				log.V(4).Info("Expected Cluster", "type", fmt.Sprintf("%T", e.ObjectOld))
-				return false
-			}
-			log = log.WithValues("Cluster", klog.KObj(oldCluster))
-
-			newCluster := e.ObjectNew.(*clusterv1beta1.Cluster)
-
-			if oldCluster.Spec.Paused != newCluster.Spec.Paused {
-				log.V(4).Info("Cluster paused status changed, allowing further processing")
-				return true
-			}
-
-			log.V(6).Info("Cluster paused status remained the same, blocking further processing")
-			return false
-		},
-		CreateFunc:  func(_ event.CreateEvent) bool { return false },
-		DeleteFunc:  func(_ event.DeleteEvent) bool { return false },
-		GenericFunc: func(_ event.GenericEvent) bool { return false },
-	}
-}
-
-// ClusterPauseChangeAndInfrastructureReady is based on ClusterUnpausedAndInfrastructureReady, but
-// additionally accepts Cluster pause events.
-func ClusterPauseChangeAndInfrastructureReady(scheme *runtime.Scheme, log logr.Logger) predicate.Funcs {
-	return predicates.Any(scheme, log, util.ClusterCreateInfraReady(scheme, log), util.ClusterUpdateInfraReady(scheme, log), ClusterUpdatePauseChange(log)) //nolint:staticcheck
 }
 
 // GetClusterScoper returns a ClusterScoper for the given cluster using the infra ref pointing to either an AzureCluster or an AzureManagedCluster.
