@@ -45,6 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/utils/ptr"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -71,6 +72,7 @@ func NewAzureClusterProxy(name string, kubeconfigPath string, options ...framewo
 func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
+	Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
 	Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
