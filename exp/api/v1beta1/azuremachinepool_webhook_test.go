@@ -29,13 +29,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -56,7 +55,7 @@ type mockClient struct {
 }
 
 func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	obj.(*clusterv1beta1.MachinePool).Spec.Template.Spec.Version = &m.Version
+	obj.(*clusterv1.MachinePool).Spec.Template.Spec.Version = m.Version
 	return nil
 }
 
@@ -64,9 +63,9 @@ func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...cl
 	if m.ReturnError {
 		return errors.New("MachinePool.cluster.x-k8s.io \"mock-machinepool-mp-0\" not found")
 	}
-	mp := &clusterv1beta1.MachinePool{}
-	mp.Spec.Template.Spec.Version = &m.Version
-	list.(*clusterv1beta1.MachinePoolList).Items = []clusterv1beta1.MachinePool{*mp}
+	mp := &clusterv1.MachinePool{}
+	mp.Spec.Template.Spec.Version = m.Version
+	list.(*clusterv1.MachinePoolList).Items = []clusterv1.MachinePool{*mp}
 
 	return nil
 }
@@ -280,8 +279,8 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 	switch obj := obj.(type) {
 	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
-	case *clusterv1beta1.Cluster:
-		obj.Spec.InfrastructureRef = &corev1.ObjectReference{
+	case *clusterv1.Cluster:
+		obj.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
 			Kind: infrav1.AzureClusterKind,
 			Name: "test-cluster",
 		}
@@ -292,12 +291,12 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 }
 
 func (m mockDefaultClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	list.(*clusterv1beta1.MachinePoolList).Items = []clusterv1beta1.MachinePool{
+	list.(*clusterv1.MachinePoolList).Items = []clusterv1.MachinePool{
 		{
-			Spec: clusterv1beta1.MachinePoolSpec{
-				Template: clusterv1beta1.MachineTemplateSpec{
-					Spec: clusterv1beta1.MachineSpec{
-						InfrastructureRef: corev1.ObjectReference{
+			Spec: clusterv1.MachinePoolSpec{
+				Template: clusterv1.MachineTemplateSpec{
+					Spec: clusterv1.MachineSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 							Name: m.Name,
 						},
 					},

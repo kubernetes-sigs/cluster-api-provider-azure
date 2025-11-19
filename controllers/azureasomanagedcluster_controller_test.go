@@ -22,13 +22,14 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,7 +72,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	s := runtime.NewScheme()
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
-		clusterv1beta1.AddToScheme,
+		clusterv1.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -103,7 +104,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: "ns",
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
+						APIVersion: clusterv1.GroupVersion.Identifier(),
 						Kind:       "Cluster",
 						Name:       "cluster",
 					},
@@ -123,15 +124,16 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("adds a finalizer and block-move annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1beta1.Cluster{
+		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1beta1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1somethingelse",
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: "infrastructure.cluster.x-k8s.io",
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+					Name:     "amcp",
 				},
 			},
 		}
@@ -141,7 +143,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
+						APIVersion: clusterv1.GroupVersion.Identifier(),
 						Kind:       "Cluster",
 						Name:       cluster.Name,
 					},
@@ -159,22 +161,22 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
-		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1beta1.ClusterFinalizer))
+		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
 		g.Expect(asoManagedCluster.GetAnnotations()).To(HaveKey(clusterctlv1.BlockMoveAnnotation))
 	})
 
 	t.Run("reconciles resources that are not ready", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1beta1.Cluster{
+		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1beta1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1.GroupVersion.Identifier(),
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
 				},
 			},
 		}
@@ -184,13 +186,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
+						APIVersion: clusterv1.GroupVersion.Identifier(),
 						Kind:       "Cluster",
 						Name:       cluster.Name,
 					},
 				},
 				Finalizers: []string{
-					clusterv1beta1.ClusterFinalizer,
+					clusterv1.ClusterFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
@@ -230,17 +232,16 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1beta1.Cluster{
+		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1beta1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: infrav1.GroupVersion.Identifier(),
-					Kind:       infrav1.AzureASOManagedControlPlaneKind,
-					Name:       "amcp",
-					Namespace:  "ns",
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+					Name:     "amcp",
 				},
 			},
 		}
@@ -250,13 +251,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
+						APIVersion: clusterv1.GroupVersion.Identifier(),
 						Kind:       "Cluster",
 						Name:       cluster.Name,
 					},
 				},
 				Finalizers: []string{
-					clusterv1beta1.ClusterFinalizer,
+					clusterv1.ClusterFinalizer,
 				},
 				Annotations: map[string]string{
 					clusterctlv1.BlockMoveAnnotation: "true",
@@ -300,13 +301,13 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 	t.Run("successfully reconciles pause", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
-		cluster := &clusterv1beta1.Cluster{
+		cluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster",
 				Namespace: "ns",
 			},
-			Spec: clusterv1beta1.ClusterSpec{
-				Paused: true,
+			Spec: clusterv1.ClusterSpec{
+				Paused: ptr.To(true),
 			},
 		}
 		asoManagedCluster := &infrav1.AzureASOManagedCluster{
@@ -315,7 +316,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: clusterv1beta1.GroupVersion.Identifier(),
+						APIVersion: clusterv1.GroupVersion.Identifier(),
 						Kind:       "Cluster",
 						Name:       cluster.Name,
 					},
@@ -354,7 +355,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Name:      "amc",
 				Namespace: "ns",
 				Finalizers: []string{
-					clusterv1beta1.ClusterFinalizer,
+					clusterv1.ClusterFinalizer,
 				},
 				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
 			},
@@ -386,7 +387,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 
 		err = c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1beta1.ClusterFinalizer))
+		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
 	})
 
 	t.Run("successfully reconciles finished delete", func(t *testing.T) {
@@ -397,7 +398,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Name:      "amc",
 				Namespace: "ns",
 				Finalizers: []string{
-					clusterv1beta1.ClusterFinalizer,
+					clusterv1.ClusterFinalizer,
 				},
 				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
 			},

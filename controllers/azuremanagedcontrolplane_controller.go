@@ -24,7 +24,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -39,7 +41,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureManagedControlPlaneReconciler reconciles an AzureManagedControlPlane object.
@@ -87,12 +88,12 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 		).
 		// watch MachinePool resources
 		Watches(
-			&clusterv1beta1.MachinePool{},
+			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		).
 		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(amcpr.ClusterToAzureManagedControlPlane),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -139,7 +140,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	}
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, amcpr.Client, azureControlPlane.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, amcpr.Client, azureControlPlane.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -153,7 +154,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	// Fetch all the ManagedMachinePools owned by this Cluster.
 	opt1 := client.InNamespace(azureControlPlane.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
-		clusterv1beta1.ClusterNameLabel: cluster.Name,
+		clusterv1.ClusterNameLabel: cluster.Name,
 	})
 
 	ammpList := &infrav1.AzureManagedMachinePoolList{}
@@ -165,7 +166,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 
 	for i, ammp := range ammpList.Items {
 		// Fetch the owner MachinePool.
-		ownerPool, err := clusterv1beta1util.GetOwnerMachinePool(ctx, amcpr.Client, ammp.ObjectMeta)
+		ownerPool, err := GetOwnerMachinePool(ctx, amcpr.Client, ammp.ObjectMeta)
 		if err != nil || ownerPool == nil {
 			return reconcile.Result{}, errors.Wrapf(err, "failed to fetch owner MachinePool for AzureManagedMachinePool: %s", ammp.Name)
 		}
@@ -196,7 +197,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, azureControlPlane) {
+	if annotations.IsPaused(cluster, azureControlPlane) {
 		log.Info("AzureManagedControlPlane or linked Cluster is marked as paused. Won't reconcile normally")
 		return amcpr.reconcilePause(ctx, mcpScope)
 	}
@@ -335,14 +336,14 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Con
 // ClusterToAzureManagedControlPlane is a handler.ToRequestsFunc to be used to enqueue requests for
 // reconciliation for AzureManagedControlPlane based on updates to a Cluster.
 func (amcpr *AzureManagedControlPlaneReconciler) ClusterToAzureManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
-	c, ok := o.(*clusterv1beta1.Cluster)
+	c, ok := o.(*clusterv1.Cluster)
 	if !ok {
 		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
 	}
 
 	controlPlaneRef := c.Spec.ControlPlaneRef
-	if controlPlaneRef != nil && controlPlaneRef.Kind == infrav1.AzureManagedControlPlaneKind {
-		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
+	if controlPlaneRef.IsDefined() && controlPlaneRef.Kind == infrav1.AzureManagedControlPlaneKind {
+		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: c.Namespace, Name: controlPlaneRef.Name}}}
 	}
 
 	return nil

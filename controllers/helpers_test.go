@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,7 +93,7 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 func TestGetCloudProviderConfig(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
-	_ = clusterv1beta1.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
@@ -107,7 +106,7 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	g.Expect((&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureClusterCustomVnet)).NotTo(HaveOccurred())
 
 	cases := map[string]struct {
-		cluster                    *clusterv1beta1.Cluster
+		cluster                    *clusterv1.Cluster
 		azureCluster               *infrav1.AzureCluster
 		identityType               infrav1.VMIdentity
 		identityID                 string
@@ -376,7 +375,6 @@ func setupScheme(g *WithT) *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	g.Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
-	g.Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
 	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
@@ -403,8 +401,8 @@ func newMachineWithInfrastructureRef(clusterName, machineName string) *clusterv1
 	return m
 }
 
-func newCluster(name string) *clusterv1beta1.Cluster {
-	return &clusterv1beta1.Cluster{
+func newCluster(name string) *clusterv1.Cluster {
+	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -903,7 +901,7 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 				{
 					Name:       clusterName,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -935,11 +933,10 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 	scheme, err := newScheme()
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster := newCluster("my-cluster")
-	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedControlPlaneKind,
-		Name:       cpName,
-		Namespace:  cluster.Namespace,
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedControlPlaneKind,
+		Name:     cpName,
 	}
 	initObjects := []runtime.Object{
 		cluster,
@@ -968,7 +965,7 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 				{
 					Name:       cluster.Name,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -1001,11 +998,10 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster := newCluster(clusterName)
 	controlPlane := newAzureManagedControlPlane(cpName)
-	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedControlPlaneKind,
-		Name:       cpName,
-		Namespace:  cluster.Namespace,
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedControlPlaneKind,
+		Name:     cpName,
 	}
 
 	managedMachinePool0 := newManagedMachinePoolInfraReference(clusterName, "my-mmp-0")
@@ -1052,11 +1048,10 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	scheme, err := newScheme()
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster := newCluster(clusterName)
-	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedControlPlaneKind,
-		Name:       cpName,
-		Namespace:  cluster.Namespace,
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedControlPlaneKind,
+		Name:     cpName,
 	}
 	managedMachinePool := newManagedMachinePoolInfraReference(clusterName, "my-mmp-0")
 	managedMachinePool.Spec.ClusterName = clusterName
@@ -1103,11 +1098,10 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 	scheme, err := newScheme()
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster := newCluster("my-cluster")
-	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedControlPlaneKind,
-		Name:       cpName,
-		Namespace:  cluster.Namespace,
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedControlPlaneKind,
+		Name:     cpName,
 	}
 
 	initObjects := []runtime.Object{
@@ -1130,7 +1124,7 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 				{
 					Name:       cluster.Name,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -1159,23 +1153,21 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 				{
 					Name:       cluster.Name,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
 	}
 
-	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedControlPlaneKind,
-		Name:       cpName,
-		Namespace:  cluster.Namespace,
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedControlPlaneKind,
+		Name:     cpName,
 	}
-	cluster.Spec.InfrastructureRef = &corev1.ObjectReference{
-		APIVersion: infrav1.GroupVersion.String(),
-		Kind:       infrav1.AzureManagedClusterKind,
-		Name:       azManagedCluster.Name,
-		Namespace:  azManagedCluster.Namespace,
+	cluster.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
+		APIGroup: infrav1.GroupVersion.Group,
+		Kind:     infrav1.AzureManagedClusterKind,
+		Name:     azManagedCluster.Name,
 	}
 
 	initObjects := []runtime.Object{
@@ -1199,7 +1191,7 @@ func TestAzureManagedControlPlaneToAzureManagedClusterMapper(t *testing.T) {
 				{
 					Name:       cluster.Name,
 					Kind:       "Cluster",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -1224,14 +1216,13 @@ func newAzureManagedControlPlane(cpName string) *infrav1.AzureManagedControlPlan
 	}
 }
 
-func newManagedMachinePoolInfraReference(clusterName, poolName string) *clusterv1beta1.MachinePool {
+func newManagedMachinePoolInfraReference(clusterName, poolName string) *clusterv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
 	m.Spec.ClusterName = clusterName
-	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
-		Kind:       "AzureManagedMachinePool",
-		Namespace:  m.Namespace,
-		Name:       "azure" + poolName,
-		APIVersion: infrav1.GroupVersion.String(),
+	m.Spec.Template.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
+		Kind:     "AzureManagedMachinePool",
+		Name:     "azure" + poolName,
+		APIGroup: infrav1.GroupVersion.Group,
 	}
 	return m
 }
@@ -1244,7 +1235,7 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 	return &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",
@@ -1267,28 +1258,27 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 	}
 }
 
-func newMachinePool(clusterName, poolName string) *clusterv1beta1.MachinePool {
-	return &clusterv1beta1.MachinePool{
+func newMachinePool(clusterName, poolName string) *clusterv1.MachinePool {
+	return &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      poolName,
 			Namespace: "default",
 		},
-		Spec: clusterv1beta1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			Replicas: ptr.To[int32](2),
 		},
 	}
 }
 
-func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1beta1.MachinePool {
+func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1.MachinePool {
 	m := newMachinePool(clusterName, poolName)
-	m.Spec.Template.Spec.InfrastructureRef = corev1.ObjectReference{
-		Kind:       "AzureManagedMachinePool",
-		Namespace:  m.Namespace,
-		Name:       "azure" + poolName,
-		APIVersion: infrav1.GroupVersion.String(),
+	m.Spec.Template.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
+		Kind:     "AzureManagedMachinePool",
+		Name:     "azure" + poolName,
+		APIGroup: infrav1.GroupVersion.Group,
 	}
 	return m
 }
@@ -1376,12 +1366,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "create cluster infra not ready, not paused",
 			event: event.CreateEvent{
-				Object: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
 			},
@@ -1390,12 +1382,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "create cluster infra ready, not paused",
 			event: event.CreateEvent{
-				Object: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
 			},
@@ -1404,12 +1398,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "create cluster infra not ready, paused",
 			event: event.CreateEvent{
-				Object: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
 			},
@@ -1418,12 +1414,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "create cluster infra ready, paused",
 			event: event.CreateEvent{
-				Object: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				Object: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
 			},
@@ -1432,14 +1430,18 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster infra ready true->true",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
 			},
@@ -1448,14 +1450,18 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster infra ready false->true",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
 			},
@@ -1464,14 +1470,18 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster infra ready true->false",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: true,
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
 			},
@@ -1480,14 +1490,18 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster infra ready false->false",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+				ObjectOld: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Status: clusterv1beta1.ClusterStatus{
-						InfrastructureReady: false,
+				ObjectNew: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(false),
+						},
 					},
 				},
 			},
@@ -1496,14 +1510,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster paused false->false",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
 				},
 			},
@@ -1512,14 +1526,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster paused false->true",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
 				},
 			},
@@ -1528,14 +1542,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster paused true->false",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: false,
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(false),
 					},
 				},
 			},
@@ -1544,14 +1558,14 @@ func TestClusterPauseChangeAndInfrastructureReady(t *testing.T) {
 		{
 			name: "update cluster paused true->true",
 			event: event.UpdateEvent{
-				ObjectOld: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				ObjectOld: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
 				},
-				ObjectNew: &clusterv1beta1.Cluster{
-					Spec: clusterv1beta1.ClusterSpec{
-						Paused: true,
+				ObjectNew: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						Paused: ptr.To(true),
 					},
 				},
 			},

@@ -25,7 +25,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,7 +43,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureManagedMachinePoolReconciler reconciles an AzureManagedMachinePool object.
@@ -102,7 +103,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&clusterv1beta1.MachinePool{},
+			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureManagedMachinePool"), log)),
 		).
 		// watch for changes in AzureManagedControlPlanes
@@ -112,7 +113,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Con
 		).
 		// Add a watch on clusterv1.Cluster object for pause/unpause & ready notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 			builder.WithPredicates(
 				ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -162,7 +163,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the Cluster.
-	ownerCluster, err := clusterv1beta1util.GetOwnerCluster(ctx, ammpr.Client, ownerPool.ObjectMeta)
+	ownerCluster, err := util.GetOwnerCluster(ctx, ammpr.Client, ownerPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -176,7 +177,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	// Fetch the corresponding control plane which has all the interesting data.
 	controlPlane := &infrav1.AzureManagedControlPlane{}
 	controlPlaneName := client.ObjectKey{
-		Namespace: ownerCluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: ownerCluster.Namespace,
 		Name:      ownerCluster.Spec.ControlPlaneRef.Name,
 	}
 	if err := ammpr.Client.Get(ctx, controlPlaneName, controlPlane); err != nil {
@@ -229,7 +230,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(ownerCluster, infraPool) {
+	if annotations.IsPaused(ownerCluster, infraPool) {
 		log.Info("AzureManagedMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ammpr.reconcilePause(ctx, mcpScope)
 	}

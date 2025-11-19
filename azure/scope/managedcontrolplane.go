@@ -39,6 +39,7 @@ import (
 	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
@@ -70,7 +71,7 @@ const (
 type ManagedControlPlaneScopeParams struct {
 	AzureClients
 	Client              client.Client
-	Cluster             *clusterv1beta1.Cluster
+	Cluster             *clusterv1.Cluster
 	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 	Cache               *ManagedControlPlaneCache
@@ -131,7 +132,7 @@ type ManagedControlPlaneScope struct {
 	cache               *ManagedControlPlaneCache
 
 	AzureClients
-	Cluster             *clusterv1beta1.Cluster
+	Cluster             *clusterv1.Cluster
 	ControlPlane        *infrav1.AzureManagedControlPlane
 	ManagedMachinePools []ManagedMachinePool
 	azure.AsyncReconciler
@@ -581,13 +582,11 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() azure.ASOResourceSpecGet
 		managedClusterSpec.LoadBalancerSKU = strings.ToLower(*s.ControlPlane.Spec.LoadBalancerSKU)
 	}
 
-	if clusterNetwork := s.Cluster.Spec.ClusterNetwork; clusterNetwork != nil {
-		if clusterNetwork.Services != nil && len(clusterNetwork.Services.CIDRBlocks) == 1 {
-			managedClusterSpec.ServiceCIDR = clusterNetwork.Services.CIDRBlocks[0]
-		}
-		if clusterNetwork.Pods != nil && len(clusterNetwork.Pods.CIDRBlocks) == 1 {
-			managedClusterSpec.PodCIDR = clusterNetwork.Pods.CIDRBlocks[0]
-		}
+	if len(s.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks) == 1 {
+		managedClusterSpec.ServiceCIDR = s.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
+	}
+	if len(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 1 {
+		managedClusterSpec.PodCIDR = s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
 	}
 
 	if s.ControlPlane.Spec.AADProfile != nil {
@@ -736,8 +735,8 @@ func (s *ManagedControlPlaneScope) GetAllAgentPoolSpecs() ([]azure.ASOResourceSp
 	)
 	for _, pool := range s.ManagedMachinePools {
 		// TODO: this should be in a webhook: https://github.com/kubernetes-sigs/cluster-api/issues/6040
-		if pool.MachinePool != nil && pool.MachinePool.Spec.Template.Spec.Version != nil {
-			version := *pool.MachinePool.Spec.Template.Spec.Version
+		if pool.MachinePool != nil && pool.MachinePool.Spec.Template.Spec.Version != "" {
+			version := pool.MachinePool.Spec.Template.Spec.Version
 			if semver.Compare(version, s.ControlPlane.Spec.Version) > 0 {
 				return nil, errors.New("MachinePool version cannot be greater than the AzureManagedControlPlane version")
 			}
@@ -773,7 +772,7 @@ func (s *ManagedControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
 			},
-			Labels: map[string]string{clusterv1beta1.ClusterNameLabel: s.Cluster.Name},
+			Labels: map[string]string{clusterv1.ClusterNameLabel: s.Cluster.Name},
 		},
 	}
 }

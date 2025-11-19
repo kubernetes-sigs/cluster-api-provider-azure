@@ -26,8 +26,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,7 +48,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (
@@ -109,7 +110,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 		).
 		// Add a watch on CAPI Machines for MachinePool Machines
 		Watches(
-			&clusterv1beta1.Machine{},
+			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePoolMachine"))),
 			builder.WithPredicates(
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, ampmr.WatchFilterValue),
@@ -155,7 +156,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	logger.V(2).Info("Fetching cluster for AzureMachinePoolMachine", "ampm", azureMachine.Name)
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, ampmr.Client, azureMachine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, ampmr.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		logger.Info("AzureMachinePoolMachine is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
@@ -164,7 +165,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	logger = logger.WithValues("cluster", cluster.Name)
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, azureMachine) {
+	if annotations.IsPaused(cluster, azureMachine) {
 		logger.Info("AzureMachinePoolMachine or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -204,7 +205,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	}
 
 	// Fetch the CAPI Machine.
-	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, ampmr.Client, azureMachine.ObjectMeta)
+	machine, err := util.GetOwnerMachine(ctx, ampmr.Client, azureMachine.ObjectMeta)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return reconcile.Result{}, err
 	}
@@ -246,8 +247,8 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 		return ampmr.reconcileDelete(ctx, machineScope, clusterScope)
 	}
 
-	if !cluster.Status.InfrastructureReady {
-		logger.Info("Cluster infrastructure is not ready yet")
+	if !ptr.Deref(cluster.Status.Initialization.InfrastructureProvisioned, false) {
+		logger.Info("Cluster infrastructure is not provisioned yet")
 		return reconcile.Result{}, nil
 	}
 

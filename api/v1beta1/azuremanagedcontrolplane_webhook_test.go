@@ -25,6 +25,7 @@ import (
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -38,7 +39,7 @@ func TestDefaultingWebhook(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fooName",
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: "fooCluster",
+				clusterv1.ClusterNameLabel: "fooCluster",
 			},
 		},
 		Spec: AzureManagedControlPlaneSpec{
@@ -4037,7 +4038,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "fooCluster",
+						clusterv1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4066,7 +4067,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "fooCluster",
+						clusterv1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4095,7 +4096,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "fooCluster",
+						clusterv1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{
@@ -4124,7 +4125,7 @@ func TestValidateAMCPVirtualNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fooName",
 					Labels: map[string]string{
-						clusterv1beta1.ClusterNameLabel: "fooCluster",
+						clusterv1.ClusterNameLabel: "fooCluster",
 					},
 				},
 				Spec: AzureManagedControlPlaneSpec{

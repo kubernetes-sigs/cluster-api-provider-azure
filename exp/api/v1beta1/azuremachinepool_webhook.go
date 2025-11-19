@@ -304,10 +304,10 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 				return errors.Wrap(err, "failed to find parent MachinePool")
 			}
 			// Kubernetes must be >= 1.26.0 for cloud-provider-azure Helm chart support.
-			if parent.Spec.Template.Spec.Version == nil {
+			if parent.Spec.Template.Spec.Version == "" {
 				return errors.New("could not find Kubernetes version in MachinePool")
 			}
-			k8sVersion, err := semver.ParseTolerant(*parent.Spec.Template.Spec.Version)
+			k8sVersion, err := semver.ParseTolerant(parent.Spec.Template.Spec.Version)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse Kubernetes version")
 			}

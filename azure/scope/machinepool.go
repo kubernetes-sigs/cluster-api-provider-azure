@@ -33,6 +33,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
@@ -51,7 +53,6 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // ScalesetsServiceName is the name of the scalesets service.
@@ -63,7 +64,7 @@ type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
 	MachinePoolScopeParams struct {
 		Client           client.Client
-		MachinePool      *clusterv1beta1.MachinePool
+		MachinePool      *clusterv1.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		ClusterScope     azure.ClusterScoper
 		Cache            *MachinePoolCache
@@ -73,7 +74,7 @@ type (
 	MachinePoolScope struct {
 		azure.ClusterScoper
 		AzureMachinePool           *infrav1exp.AzureMachinePool
-		MachinePool                *clusterv1beta1.MachinePool
+		MachinePool                *clusterv1.MachinePool
 		client                     client.Client
 		patchHelper                *v1beta1patch.Helper
 		capiMachinePoolPatchHelper *v1beta1patch.Helper
@@ -373,10 +374,10 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 
 func (m *MachinePoolScope) getMachinePoolMachineLabels() map[string]string {
 	return map[string]string{
-		clusterv1beta1.ClusterNameLabel:     m.ClusterName(),
-		infrav1exp.MachinePoolNameLabel:     m.AzureMachinePool.Name,
-		clusterv1beta1.MachinePoolNameLabel: format.MustFormatValue(m.MachinePool.Name),
-		m.ClusterName():                     string(infrav1.ResourceLifecycleOwned),
+		clusterv1.ClusterNameLabel:      m.ClusterName(),
+		infrav1exp.MachinePoolNameLabel: m.AzureMachinePool.Name,
+		clusterv1.MachinePoolNameLabel:  format.MustFormatValue(m.MachinePool.Name),
+		m.ClusterName():                 string(infrav1.ResourceLifecycleOwned),
 	}
 }
 
@@ -409,23 +410,23 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 
 	existingMachinesByProviderID := make(map[string]infrav1exp.AzureMachinePoolMachine, len(ampms))
 	for _, ampm := range ampms {
-		machine, err := clusterv1beta1util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
+		machine, err := util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
 		if err != nil {
 			return fmt.Errorf("failed to find owner machine for %s/%s: %w", ampm.Namespace, ampm.Name, err)
 		}
 
-		if _, ampmHasDeleteAnnotation := ampm.Annotations[clusterv1beta1.DeleteMachineAnnotation]; !ampmHasDeleteAnnotation {
+		if _, ampmHasDeleteAnnotation := ampm.Annotations[clusterv1.DeleteMachineAnnotation]; !ampmHasDeleteAnnotation {
 			// fetch Machine delete annotation from owner machine to AzureMachinePoolMachine.
 			// This ensures setting a deleteMachine annotation on the Machine has an effect on the AzureMachinePoolMachine
 			// and the deployment strategy, in case the automatic propagation of the annotation from Machine to AzureMachinePoolMachine
 			// hasn't been done yet.
 			if machine != nil && machine.Annotations != nil {
-				if _, hasDeleteAnnotation := machine.Annotations[clusterv1beta1.DeleteMachineAnnotation]; hasDeleteAnnotation {
+				if _, hasDeleteAnnotation := machine.Annotations[clusterv1.DeleteMachineAnnotation]; hasDeleteAnnotation {
 					log.V(4).Info("fetched DeleteMachineAnnotation", "machine", ampm.Spec.ProviderID)
 					if ampm.Annotations == nil {
 						ampm.Annotations = make(map[string]string)
 					}
-					ampm.Annotations[clusterv1beta1.DeleteMachineAnnotation] = machine.Annotations[clusterv1beta1.DeleteMachineAnnotation]
+					ampm.Annotations[clusterv1.DeleteMachineAnnotation] = machine.Annotations[clusterv1.DeleteMachineAnnotation]
 				}
 			}
 		} else {
@@ -557,7 +558,7 @@ func (m *MachinePoolScope) DeleteMachine(ctx context.Context, ampm infrav1exp.Az
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.DeleteMachine")
 	defer done()
 
-	machine, err := clusterv1beta1util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
+	machine, err := util.GetOwnerMachine(ctx, m.client, ampm.ObjectMeta)
 	if err != nil {
 		return errors.Wrapf(err, "error getting owner Machine for AzureMachinePoolMachine %s/%s", ampm.Namespace, ampm.Name)
 	}
@@ -801,9 +802,9 @@ func (m *MachinePoolScope) GetVMImage(ctx context.Context) (*infrav1.Image, erro
 		runtime := m.AzureMachinePool.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachinePool.Annotations["windowsServerVersion"]
 		log.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), ptr.Deref(m.MachinePool.Spec.Template.Spec.Version, ""), runtime, windowsServerVersion)
+		defaultImage, err = svc.GetDefaultWindowsImage(ctx, m.Location(), m.MachinePool.Spec.Template.Spec.Version, runtime, windowsServerVersion)
 	} else {
-		defaultImage, err = svc.GetDefaultLinuxImage(ctx, m.Location(), ptr.Deref(m.MachinePool.Spec.Template.Spec.Version, ""))
+		defaultImage, err = svc.GetDefaultLinuxImage(ctx, m.Location(), m.MachinePool.Spec.Template.Spec.Version)
 	}
 
 	if err != nil {

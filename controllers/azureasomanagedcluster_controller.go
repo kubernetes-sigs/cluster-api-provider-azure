@@ -23,8 +23,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -43,7 +43,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var errInvalidControlPlaneKind = errors.New("AzureASOManagedCluster cannot be used without AzureASOManagedControlPlane")
@@ -84,7 +83,7 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Watch clusters for pause/unpause notifications
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureASOManagedClusterKind), mgr.GetClient(), &infrav1.AzureASOManagedCluster{}),
 			),
@@ -140,14 +139,14 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		asoManagedControlPlane := o.(*infrav1.AzureASOManagedControlPlane)
 
-		cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
+		cluster, err := util.GetOwnerCluster(ctx, c, asoManagedControlPlane.ObjectMeta)
 		if err != nil {
 			return nil
 		}
 
 		if cluster == nil ||
-			cluster.Spec.InfrastructureRef == nil ||
-			!matchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIVersion) ||
+			!cluster.Spec.InfrastructureRef.IsDefined() ||
+			!matchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIGroup) ||
 			cluster.Spec.InfrastructureRef.Kind != infrav1.AzureASOManagedClusterKind {
 			return nil
 		}
@@ -155,7 +154,7 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 		return []reconcile.Request{
 			{
 				NamespacedName: client.ObjectKey{
-					Namespace: cluster.Spec.InfrastructureRef.Namespace,
+					Namespace: cluster.Namespace,
 					Name:      cluster.Spec.InfrastructureRef.Name,
 				},
 			},
@@ -163,9 +162,8 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 	}
 }
 
-func matchesASOManagedAPIGroup(apiVersion string) bool {
-	gv, _ := schema.ParseGroupVersion(apiVersion)
-	return gv.Group == infrav1.GroupVersion.Group
+func matchesASOManagedAPIGroup(group string) bool {
+	return group == infrav1.GroupVersion.Group
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters,verbs=get;list;watch;create;update;patch;delete
@@ -202,12 +200,12 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 
 	asoManagedCluster.Status.Ready = false
 
-	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if cluster != nil && cluster.Spec.Paused ||
+	if cluster != nil && ptr.Deref(cluster.Spec.Paused, false) ||
 		annotations.HasPaused(asoManagedCluster) {
 		return r.reconcilePaused(ctx, asoManagedCluster)
 	}
@@ -219,7 +217,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	return r.reconcileNormal(ctx, asoManagedCluster, cluster)
 }
 
-func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster, cluster *clusterv1beta1.Cluster) (ctrl.Result, error) {
+func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, asoManagedCluster *infrav1.AzureASOManagedCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedClusterReconciler.reconcileNormal",
 	)
@@ -230,13 +228,13 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		log.V(4).Info("Cluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
-	if cluster.Spec.ControlPlaneRef == nil ||
-		!matchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIVersion) ||
+	if !cluster.Spec.ControlPlaneRef.IsDefined() ||
+		!matchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIGroup) ||
 		cluster.Spec.ControlPlaneRef.Kind != infrav1.AzureASOManagedControlPlaneKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
 	}
 
-	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1beta1.ClusterFinalizer)
+	needsPatch := controllerutil.AddFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	needsPatch = AddBlockMoveAnnotation(asoManagedCluster) || needsPatch
 	if needsPatch {
 		return ctrl.Result{Requeue: true}, nil
@@ -259,7 +257,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 
 	asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: cluster.Namespace,
 			Name:      cluster.Spec.ControlPlaneRef.Name,
 		},
 	}
@@ -308,7 +306,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 	}
 
 	if len(asoManagedCluster.Status.Resources) == 0 {
-		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1beta1.ClusterFinalizer)
+		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	}
 
 	return ctrl.Result{}, nil

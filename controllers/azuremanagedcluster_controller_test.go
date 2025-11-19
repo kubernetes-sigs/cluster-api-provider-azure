@@ -20,11 +20,11 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -39,15 +39,15 @@ func TestAzureManagedClusterController(t *testing.T) {
 	ctx := t.Context()
 	scheme := runtime.NewScheme()
 	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
-	g.Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
+	g.Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-capi-cluster",
 			Namespace: "fake-namespace",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			ControlPlaneRef: &corev1.ObjectReference{
+		Spec: clusterv1.ClusterSpec{
+			ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
 				Name: "fake-control-plane",
 			},
 		},

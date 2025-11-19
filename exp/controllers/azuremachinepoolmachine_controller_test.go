@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -100,7 +100,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 
-				machine := &clusterv1beta1.Machine{}
+				machine := &clusterv1.Machine{}
 				err = c.Get(t.Context(), types.NamespacedName{
 					Name:      "ma1",
 					Namespace: "default",
@@ -138,7 +138,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				scheme     = func() *runtime.Scheme {
 					s := runtime.NewScheme()
 					for _, addTo := range []func(s *runtime.Scheme) error{
-						clusterv1beta1.AddToScheme,
+						clusterv1.AddToScheme,
 						infrav1.AddToScheme,
 						infrav1exp.AddToScheme,
 						corev1.AddToScheme,
@@ -190,7 +190,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 		},
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Cluster",
 		},
@@ -198,19 +198,20 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 			Name:      "cluster1",
 			Namespace: "default",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				Name:      azCluster.Name,
-				Namespace: "default",
-				Kind:      "AzureCluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Name: azCluster.Name,
+				Kind: "AzureCluster",
 			},
 		},
-		Status: clusterv1beta1.ClusterStatus{
-			InfrastructureReady: true,
+		Status: clusterv1.ClusterStatus{
+			Initialization: clusterv1.ClusterInitializationStatus{
+				InfrastructureProvisioned: ptr.To(true),
+			},
 		},
 	}
 
-	mp := &clusterv1beta1.MachinePool{
+	mp := &clusterv1.MachinePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MachinePool",
 		},
@@ -234,13 +235,13 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
 	}
 
-	ma := &clusterv1beta1.Machine{
+	ma := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ma1",
 			Namespace: "default",
@@ -248,7 +249,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 			Labels: map[string]string{
@@ -263,7 +264,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 			Namespace:  "default",
 			Finalizers: []string{"test"},
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: cluster.Name,
+				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -274,7 +275,7 @@ func getReadyMachinePoolMachineClusterObjects(ampmIsDeleting bool, ampmProvision
 				{
 					Name:       ma.Name,
 					Kind:       "Machine",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -340,7 +341,7 @@ func getDeletingMachinePoolObjects() []client.Object {
 		},
 	}
 
-	cluster := &clusterv1beta1.Cluster{
+	cluster := &clusterv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Cluster",
 		},
@@ -348,19 +349,20 @@ func getDeletingMachinePoolObjects() []client.Object {
 			Name:      "cluster1",
 			Namespace: "default",
 		},
-		Spec: clusterv1beta1.ClusterSpec{
-			InfrastructureRef: &corev1.ObjectReference{
-				Name:      azCluster.Name,
-				Namespace: "default",
-				Kind:      "AzureCluster",
+		Spec: clusterv1.ClusterSpec{
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Name: azCluster.Name,
+				Kind: "AzureCluster",
 			},
 		},
-		Status: clusterv1beta1.ClusterStatus{
-			InfrastructureReady: true,
+		Status: clusterv1.ClusterStatus{
+			Initialization: clusterv1.ClusterInitializationStatus{
+				InfrastructureProvisioned: ptr.To(true),
+			},
 		},
 	}
 
-	mp := &clusterv1beta1.MachinePool{
+	mp := &clusterv1.MachinePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "MachinePool",
 		},
@@ -392,7 +394,7 @@ func getDeletingMachinePoolObjects() []client.Object {
 				{
 					Name:       mp.Name,
 					Kind:       "MachinePool",
-					APIVersion: clusterv1beta1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -407,7 +409,7 @@ func getDeletingMachinePoolObjects() []client.Object {
 			},
 			Finalizers: []string{infrav1exp.AzureMachinePoolMachineFinalizer},
 			Labels: map[string]string{
-				clusterv1beta1.ClusterNameLabel: cluster.Name,
+				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{

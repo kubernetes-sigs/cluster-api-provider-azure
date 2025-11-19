@@ -23,8 +23,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,7 +38,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureManagedClusterReconciler reconciles an AzureManagedCluster object.
@@ -79,7 +79,7 @@ func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context,
 		).
 		// Add a watch on clusterv1.Cluster object for unpause notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.AzureManagedClusterKind), mgr.GetClient(), &infrav1.AzureManagedCluster{})),
 			builder.WithPredicates(
 				predicates.ClusterUnpaused(mgr.GetScheme(), log),
@@ -119,7 +119,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, amcr.Client, aksCluster.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, amcr.Client, aksCluster.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -137,7 +137,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	log = log.WithValues("cluster", cluster.Name)
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, aksCluster) {
+	if annotations.IsPaused(cluster, aksCluster) {
 		log.Info("AzureManagedCluster or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}

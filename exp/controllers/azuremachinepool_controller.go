@@ -28,9 +28,10 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -47,7 +48,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 type (
@@ -121,7 +121,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
-			&clusterv1beta1.MachinePool{},
+			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind), log)),
 		).
 		// watch for changes in AzureCluster resources
@@ -144,7 +144,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		).
 		// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 			builder.WithPredicates(
 				infracontroller.ClusterPauseChangeAndInfrastructureReady(mgr.GetScheme(), log),
@@ -214,7 +214,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger = logger.WithValues("machinePool", machinePool.Name)
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, ampr.Client, machinePool.ObjectMeta)
 	if err != nil {
 		logger.V(2).Info("MachinePool is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
@@ -246,7 +246,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	}()
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, azMachinePool) {
+	if annotations.IsPaused(cluster, azMachinePool) {
 		logger.V(2).Info("AzureMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ampr.reconcilePause(ctx, machinePoolScope)
 	}
@@ -260,7 +260,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	return ampr.reconcileNormal(ctx, machinePoolScope, cluster)
 }
 
-func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1beta1.Cluster) (_ reconcile.Result, reterr error) {
+func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, cluster *clusterv1.Cluster) (_ reconcile.Result, reterr error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.reconcileNormal")
 	defer done()
 
@@ -273,7 +273,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	}
 
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
+	needsPatch := controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, clusterv1.MachinePoolFinalizer)
 	needsPatch = machinePoolScope.SetInfrastructureMachineKind() || needsPatch
 	// Register the block-move annotation immediately to avoid moving un-paused ASO resources
 	needsPatch = infracontroller.AddBlockMoveAnnotation(machinePoolScope.AzureMachinePool) || needsPatch
@@ -283,19 +283,19 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 		}
 	}
 
-	if !cluster.Status.InfrastructureReady {
+	if !ptr.Deref(cluster.Status.Initialization.InfrastructureProvisioned, false) {
 		log.Info("Cluster infrastructure is not ready yet")
 		return reconcile.Result{}, nil
 	}
 
 	// Add a Watch to the referenced Bootstrap Config
-	if machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.ConfigRef != nil {
+	if machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.ConfigRef.IsDefined() {
 		ref := machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.ConfigRef
-		obj, err := external.Get(ctx, ampr.Client, ref)
+		obj, err := external.GetObjectFromContractVersionedRef(ctx, ampr.Client, ref, machinePoolScope.MachinePool.Namespace)
 		if err != nil {
 			if apierrors.IsNotFound(errors.Cause(err)) {
 				return reconcile.Result{}, errors.Wrapf(err, "could not find %v %q for MachinePool %q in namespace %q, requeuing while searching for bootstrap ConfigRef",
-					ref.GroupVersionKind(), ref.Name, machinePoolScope.MachinePool.Name, ref.Namespace)
+					ref.GroupKind(), ref.Name, machinePoolScope.MachinePool.Name, machinePoolScope.MachinePool.Namespace)
 			}
 			return reconcile.Result{}, err
 		}
@@ -305,7 +305,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 			handler.EnqueueRequestsFromMapFunc(BootstrapConfigToInfrastructureMapFunc(ampr.Client, *ampr.externalTracker.PredicateLogger)),
 			predicates.ResourceIsChanged(ampr.Client.Scheme(), *ampr.externalTracker.PredicateLogger)); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "could not add a watcher to the object %v %q for MachinePool %q in namespace %q, requeuing",
-				ref.GroupVersionKind(), ref.Name, machinePoolScope.MachinePool.Name, ref.Namespace)
+				ref.GroupKind(), ref.Name, machinePoolScope.MachinePool.Name, machinePoolScope.MachinePool.Namespace)
 		}
 	}
 
@@ -451,6 +451,6 @@ func (ampr *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, mac
 
 	// Delete succeeded, remove finalizer
 	log.V(4).Info("removing finalizer for AzureMachinePool")
-	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, clusterv1beta1.MachinePoolFinalizer)
+	controllerutil.RemoveFinalizer(machinePoolScope.AzureMachinePool, clusterv1.MachinePoolFinalizer)
 	return reconcile.Result{}, nil
 }

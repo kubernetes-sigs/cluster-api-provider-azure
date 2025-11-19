@@ -28,8 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -47,7 +48,6 @@ import (
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 // AzureJSONMachineReconciler reconciles Azure json secrets for AzureMachine objects.
@@ -80,10 +80,10 @@ func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr c
 		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
 		// set in Clusters created from a ClusterClass.
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 			builder.WithPredicates(
-				clusterv1beta1util.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
+				util.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), log),
 				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
@@ -119,7 +119,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	// or machinedeployment, we already created a secret for the template. All machines
 	// in the machinedeployment will share that one secret.
 	gvk := infrav1.GroupVersion.WithKind("AzureMachineTemplate")
-	isClonedFromTemplate := e.Object.GetAnnotations()[clusterv1beta1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
+	isClonedFromTemplate := e.Object.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
 
 	return !isClonedFromTemplate
 }
@@ -150,7 +150,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Fetch the Cluster.
-	cluster, err := clusterv1beta1util.GetClusterFromMetadata(ctx, r.Client, azureMachine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -162,7 +162,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	log = log.WithValues("cluster", cluster.Name)
 
 	// Return early if the object or Cluster is paused.
-	if clusterv1beta1util.IsPaused(cluster, azureMachine) {
+	if annotations.IsPaused(cluster, azureMachine) {
 		log.Info("AzureMachine or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -170,8 +170,8 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	_, kind := infrav1.GroupVersion.WithKind(infrav1.AzureClusterKind).ToAPIVersionAndKind()
 
 	// only look at azure clusters
-	if cluster.Spec.InfrastructureRef == nil {
-		log.Info("infra ref is nil")
+	if !cluster.Spec.InfrastructureRef.IsDefined() {
+		log.Info("infra ref is not defined")
 		return ctrl.Result{}, nil
 	}
 	if cluster.Spec.InfrastructureRef.Kind != kind {
