@@ -14,7 +14,7 @@
       systemctl stop kubelet
 
       BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
-      VERSION="${KUBERNETES_VERSION}"
+      VERSION="${DALEC_KUBERNETES_VERSION}"
       VERSION=$${VERSION#v}
       OS_VERSION="ubuntu24.04"
       ARCH="amd64"
