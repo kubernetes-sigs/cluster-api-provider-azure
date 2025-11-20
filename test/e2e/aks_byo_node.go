@@ -28,10 +28,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	bootstrapv1beta1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -39,7 +37,7 @@ import (
 )
 
 type AKSBYONodeSpecInput struct {
-	Cluster             *clusterv1.Cluster
+	Cluster             *clusterv1beta1.Cluster
 	KubernetesVersion   string
 	WaitIntervals       []interface{}
 	ExpectedWorkerNodes int32
@@ -71,16 +69,16 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 	err = mgmtClient.Create(ctx, infraMachinePool)
 	Expect(err).NotTo(HaveOccurred())
 
-	kubeadmConfig := &bootstrapv1.KubeadmConfig{
+	kubeadmConfig := &bootstrapv1beta1.KubeadmConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: infraMachinePool.Namespace,
 			Name:      infraMachinePool.Name,
 		},
-		Spec: bootstrapv1.KubeadmConfigSpec{
-			Files: []bootstrapv1.File{
+		Spec: bootstrapv1beta1.KubeadmConfigSpec{
+			Files: []bootstrapv1beta1.File{
 				{
-					ContentFrom: &bootstrapv1.FileSource{
-						Secret: bootstrapv1.SecretFileSource{
+					ContentFrom: &bootstrapv1beta1.FileSource{
+						Secret: bootstrapv1beta1.SecretFileSource{
 							Name: infraMachinePool.Name + "-azure-json",
 							Key:  "worker-node-azure.json",
 						},
@@ -90,8 +88,8 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 					Owner:       "root:root",
 				},
 				{
-					ContentFrom: &bootstrapv1.FileSource{
-						Secret: bootstrapv1.SecretFileSource{
+					ContentFrom: &bootstrapv1beta1.FileSource{
+						Secret: bootstrapv1beta1.SecretFileSource{
 							Name: input.Cluster.Name + "-kubeconfig",
 							Key:  "value",
 						},
@@ -101,13 +99,13 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 					Owner:       "root:root",
 				},
 			},
-			JoinConfiguration: &bootstrapv1.JoinConfiguration{
-				Discovery: bootstrapv1.Discovery{
-					File: &bootstrapv1.FileDiscovery{
+			JoinConfiguration: &bootstrapv1beta1.JoinConfiguration{
+				Discovery: bootstrapv1beta1.Discovery{
+					File: &bootstrapv1beta1.FileDiscovery{
 						KubeConfigPath: "/etc/kubernetes/admin.conf",
 					},
 				},
-				NodeRegistration: bootstrapv1.NodeRegistrationOptions{
+				NodeRegistration: bootstrapv1beta1.NodeRegistrationOptions{
 					Name: "{{ ds.meta_data[\"local_hostname\"] }}",
 					KubeletExtraArgs: map[string]string{
 						"cloud-provider": "external",
@@ -120,19 +118,19 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 	err = mgmtClient.Create(ctx, kubeadmConfig)
 	Expect(err).NotTo(HaveOccurred())
 
-	machinePool := &expv1.MachinePool{
+	machinePool := &clusterv1beta1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: infraMachinePool.Namespace,
 			Name:      infraMachinePool.Name,
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1beta1.MachinePoolSpec{
 			ClusterName: input.Cluster.Name,
 			Replicas:    ptr.To[int32](2),
-			Template: clusterv1.MachineTemplateSpec{
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
+			Template: clusterv1beta1.MachineTemplateSpec{
+				Spec: clusterv1beta1.MachineSpec{
+					Bootstrap: clusterv1beta1.Bootstrap{
 						ConfigRef: &corev1.ObjectReference{
-							APIVersion: bootstrapv1.GroupVersion.String(),
+							APIVersion: bootstrapv1beta1.GroupVersion.String(),
 							Kind:       "KubeadmConfig",
 							Name:       kubeadmConfig.Name,
 						},
@@ -162,7 +160,7 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 		pool := &infrav1exp.AzureMachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(infraMachinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, infrav1.BootstrapSucceededCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(pool, infrav1.BootstrapSucceededCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 
 	By("Adding the expected AKS labels to the nodes")
@@ -182,9 +180,9 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 
 	By("Verifying the MachinePool becomes ready")
 	Eventually(func(g Gomega) {
-		pool := &expv1.MachinePool{}
+		pool := &clusterv1beta1.MachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, clusterv1.ReadyCondition)).To(BeTrue())
+		g.Expect(v1beta1conditions.IsTrue(pool, clusterv1beta1.ReadyCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }
