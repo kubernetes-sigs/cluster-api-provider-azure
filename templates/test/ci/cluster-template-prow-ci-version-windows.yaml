@@ -611,6 +611,7 @@ spec:
             feature-gates: ${NODE_FEATURE_GATES:-""}
             image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
             image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
+            register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'

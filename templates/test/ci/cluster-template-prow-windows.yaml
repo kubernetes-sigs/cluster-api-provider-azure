@@ -348,6 +348,7 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
             feature-gates: ${NODE_FEATURE_GATES:-""}
+            register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'

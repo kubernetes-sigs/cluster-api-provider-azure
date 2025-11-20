@@ -297,6 +297,7 @@ spec:
           criSocket: npipe:////./pipe/containerd-containerd
           kubeletExtraArgs:
             cloud-provider: external
+            register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
             v: "2"
             windows-priorityclass: ABOVE_NORMAL_PRIORITY_CLASS
           name: '{{ ds.meta_data["local_hostname"] }}'

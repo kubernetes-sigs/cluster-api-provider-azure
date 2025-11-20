@@ -289,6 +289,7 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
+        register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - powershell C:/KubeletRestart_nssm_sc.ps1

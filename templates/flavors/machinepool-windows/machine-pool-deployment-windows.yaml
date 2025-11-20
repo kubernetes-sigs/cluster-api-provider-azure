@@ -59,6 +59,7 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
+        register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
   files:
   - contentFrom:
       secret:
