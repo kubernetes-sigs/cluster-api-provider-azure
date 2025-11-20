@@ -185,38 +185,62 @@ spec:
         set -o nounset
         set -o pipefail
         set -o errexit
+
+        export KUBEADM_REVISION="${KUBEADM_REVISION:-""}"
+        export KUBECTL_REVISION="${KUBECTL_REVISION:-""}"
+        export KUBELET_REVISION="${KUBELET_REVISION:-""}"
+
         systemctl stop kubelet
-        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-        # Define the base URL and version
+
         BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
         VERSION="${KUBERNETES_VERSION}"
         VERSION=$${VERSION#v}
         OS_VERSION="ubuntu24.04"
         ARCH="amd64"
+
+        # Build lists of binaries to replace based on what's set
+        declare -a BINARIES=()
+        declare -A DEB_VERSIONS=()
+
+        [[ -n "${KUBEADM_REVISION}" ]] && BINARIES+=("kubeadm") && DEB_VERSIONS["kubeadm"]="$${OS_VERSION}u$${KUBEADM_REVISION}"
+        [[ -n "${KUBECTL_REVISION}" ]] && BINARIES+=("kubectl") && DEB_VERSIONS["kubectl"]="$${OS_VERSION}u$${KUBECTL_REVISION}"
+        [[ -n "${KUBELET_REVISION}" ]] && BINARIES+=("kubelet") && DEB_VERSIONS["kubelet"]="$${OS_VERSION}u$${KUBELET_REVISION}"
+
+        # Skip if nothing to replace (check first element)
+        if [[ -z "$${BINARIES[0]:-}" ]]; then
+          echo "No *_REVISION variables set. Skipping binary replacement."
+          systemctl start kubelet
+          exit 0
+        fi
+
+        echo "Replacing binaries: $${BINARIES[*]}"
+
         for BINARY in "$${BINARIES[@]}"; do
-          BINARY_VAR="$${BINARY^^}_REVISION"
-          DEB_VERSION=$${!BINARY_VAR}
+          DEB_VERSION="$${DEB_VERSIONS[$${BINARY}]}"
           echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
           DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
           DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
           echo "Downloading from: $${DEB_URL}"
           curl -L --retry 10 --retry-delay 5 "$${DEB_URL}" --output "$${DEB_FILE}"
-          # Extract just the binary from the deb package directly to /usr/bin
           echo "Extracting $${BINARY} binary to /usr/bin"
           dpkg-deb --fsys-tarfile "$${DEB_FILE}" | tar -xf - --strip-components=3 -C /usr/bin ./usr/bin/$${BINARY}
           chmod +x "/usr/bin/$${BINARY}"
-          # Clean up the downloaded deb file
           rm -f "$${DEB_FILE}"
         done
+
         systemctl restart kubelet
-        echo "kubeadm version: $(kubeadm version -o=short)"
-        echo "kubectl version: $(kubectl version --client=true)"
-        echo "kubelet version: $(kubelet --version)"
+
+        # Print versions
+        [[ " $${BINARIES[*]} " =~ " kubeadm " ]] && echo "kubeadm version: $(kubeadm version -o=short)"
+        [[ " $${BINARIES[*]} " =~ " kubectl " ]] && echo "kubectl version: $(kubectl version --client=true)"
+        [[ " $${BINARIES[*]} " =~ " kubelet " ]] && echo "kubelet version: $(kubelet --version)"
       owner: root:root
       path: /tmp/replace-k8s-binaries.sh
       permissions: "0744"
     initConfiguration:
       nodeRegistration:
+        ignorePreflightErrors:
+        - HTTPProxyCIDR
         kubeletExtraArgs:
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -357,33 +381,55 @@ spec:
           set -o nounset
           set -o pipefail
           set -o errexit
+
+          export KUBEADM_REVISION="${KUBEADM_REVISION:-""}"
+          export KUBECTL_REVISION="${KUBECTL_REVISION:-""}"
+          export KUBELET_REVISION="${KUBELET_REVISION:-""}"
+
           systemctl stop kubelet
-          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-          # Define the base URL and version
+
           BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
           VERSION="${KUBERNETES_VERSION}"
           VERSION=$${VERSION#v}
           OS_VERSION="ubuntu24.04"
           ARCH="amd64"
+
+          # Build lists of binaries to replace based on what's set
+          declare -a BINARIES=()
+          declare -A DEB_VERSIONS=()
+
+          [[ -n "${KUBEADM_REVISION}" ]] && BINARIES+=("kubeadm") && DEB_VERSIONS["kubeadm"]="$${OS_VERSION}u$${KUBEADM_REVISION}"
+          [[ -n "${KUBECTL_REVISION}" ]] && BINARIES+=("kubectl") && DEB_VERSIONS["kubectl"]="$${OS_VERSION}u$${KUBECTL_REVISION}"
+          [[ -n "${KUBELET_REVISION}" ]] && BINARIES+=("kubelet") && DEB_VERSIONS["kubelet"]="$${OS_VERSION}u$${KUBELET_REVISION}"
+
+          # Skip if nothing to replace (check first element)
+          if [[ -z "$${BINARIES[0]:-}" ]]; then
+            echo "No *_REVISION variables set. Skipping binary replacement."
+            systemctl start kubelet
+            exit 0
+          fi
+
+          echo "Replacing binaries: $${BINARIES[*]}"
+
           for BINARY in "$${BINARIES[@]}"; do
-            BINARY_VAR="$${BINARY^^}_REVISION"
-            DEB_VERSION=$${!BINARY_VAR}
+            DEB_VERSION="$${DEB_VERSIONS[$${BINARY}]}"
             echo "* downloading and extracting binary: $${BINARY} $${VERSION} with deb version $${DEB_VERSION}"
             DEB_FILE="/tmp/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
             DEB_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}_$${VERSION}-$${DEB_VERSION}_$${ARCH}.deb"
             echo "Downloading from: $${DEB_URL}"
             curl -L --retry 10 --retry-delay 5 "$${DEB_URL}" --output "$${DEB_FILE}"
-            # Extract just the binary from the deb package directly to /usr/bin
             echo "Extracting $${BINARY} binary to /usr/bin"
             dpkg-deb --fsys-tarfile "$${DEB_FILE}" | tar -xf - --strip-components=3 -C /usr/bin ./usr/bin/$${BINARY}
             chmod +x "/usr/bin/$${BINARY}"
-            # Clean up the downloaded deb file
             rm -f "$${DEB_FILE}"
           done
+
           systemctl restart kubelet
-          echo "kubeadm version: $(kubeadm version -o=short)"
-          echo "kubectl version: $(kubectl version --client=true)"
-          echo "kubelet version: $(kubelet --version)"
+
+          # Print versions
+          [[ " $${BINARIES[*]} " =~ " kubeadm " ]] && echo "kubeadm version: $(kubeadm version -o=short)"
+          [[ " $${BINARIES[*]} " =~ " kubectl " ]] && echo "kubectl version: $(kubectl version --client=true)"
+          [[ " $${BINARIES[*]} " =~ " kubelet " ]] && echo "kubelet version: $(kubelet --version)"
         owner: root:root
         path: /tmp/replace-k8s-binaries.sh
         permissions: "0744"
@@ -663,35 +709,50 @@ spec:
           set -o pipefail
           set -o errexit
 
+          export KUBEADM_REVISION="${KUBEADM_REVISION:-""}"
+          export KUBECTL_REVISION="${KUBECTL_REVISION:-""}"
+          export KUBELET_REVISION="${KUBELET_REVISION:-""}"
+
           systemctl stop kubelet
 
-          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-
-          # Define the base URL and version
           BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
           VERSION="${KUBERNETES_VERSION}"
           VERSION=$${VERSION#v}
           OS_VERSION="azl3"
           ARCH="x86_64"
 
+          # Build lists of binaries to replace based on what's set
+          declare -a BINARIES=()
+          declare -A RPM_RELEASES=()
+
+          [[ -n "${KUBEADM_REVISION}" ]] && BINARIES+=("kubeadm") && RPM_RELEASES["kubeadm"]="$${KUBEADM_REVISION}.$${OS_VERSION}"
+          [[ -n "${KUBECTL_REVISION}" ]] && BINARIES+=("kubectl") && RPM_RELEASES["kubectl"]="$${KUBECTL_REVISION}.$${OS_VERSION}"
+          [[ -n "${KUBELET_REVISION}" ]] && BINARIES+=("kubelet") && RPM_RELEASES["kubelet"]="$${KUBELET_REVISION}.$${OS_VERSION}"
+
+          # Skip if nothing to replace (check first element)
+          if [[ -z "$${BINARIES[0]:-}" ]]; then
+            echo "No *_REVISION variables set. Skipping binary replacement."
+            systemctl start kubelet
+            exit 0
+          fi
+
+          echo "Replacing binaries: $${BINARIES[*]}"
+
           for BINARY in "$${BINARIES[@]}"; do
-            echo "* downloading and extracting binary: $${BINARY} $${VERSION}"
-            BINARY_VAR="$${BINARY^^}_REVISION"
-            REVISION=$${!BINARY_VAR}
-            RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
-            RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${REVISION}.$${OS_VERSION}.$${ARCH}.rpm"
+            RPM_RELEASE="$${RPM_RELEASES[$${BINARY}]}"
+            echo "* downloading and extracting binary: $${BINARY} $${VERSION} with rpm release $${RPM_RELEASE}"
+            RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${RPM_RELEASE}.$${ARCH}.rpm"
+            RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${RPM_RELEASE}.$${ARCH}.rpm"
 
             echo "Downloading from: $${RPM_URL}"
             curl -L --retry 10 --retry-delay 5 "$${RPM_URL}" --output "$${RPM_FILE}"
 
-            # Extract binary from RPM package in a temporary directory
             echo "Extracting $${BINARY} binary to /usr/bin"
             TEMP_DIR="/tmp/$${BINARY}-extract-$$"
             mkdir -p "$${TEMP_DIR}"
             cd "$${TEMP_DIR}"
             rpm2cpio "$${RPM_FILE}" | cpio -idmv
 
-            # Move the binary to the correct location
             if [ -f "./usr/bin/$${BINARY}" ]; then
               mv "./usr/bin/$${BINARY}" "/usr/bin/$${BINARY}"
               chmod +x "/usr/bin/$${BINARY}"
@@ -700,7 +761,6 @@ spec:
               exit 1
             fi
 
-            # Clean up
             cd /
             rm -rf "$${TEMP_DIR}"
             rm -f "$${RPM_FILE}"
@@ -708,9 +768,10 @@ spec:
 
           systemctl restart kubelet
 
-          echo "kubeadm version: $(kubeadm version -o=short)"
-          echo "kubectl version: $(kubectl version --client=true)"
-          echo "kubelet version: $(kubelet --version)"
+          # Print versions
+          [[ " $${BINARIES[*]} " =~ " kubeadm " ]] && echo "kubeadm version: $(kubeadm version -o=short)"
+          [[ " $${BINARIES[*]} " =~ " kubectl " ]] && echo "kubectl version: $(kubectl version --client=true)"
+          [[ " $${BINARIES[*]} " =~ " kubelet " ]] && echo "kubelet version: $(kubelet --version)"
         owner: root:root
         path: /opt/install-custom-k8s-binaries.sh
         permissions: "0744"
