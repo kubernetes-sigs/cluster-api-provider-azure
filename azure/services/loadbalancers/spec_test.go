@@ -169,6 +169,80 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "load balancer with custom rule and probe names",
+			spec: &LBSpec{
+				Name:                 "my-publiclb",
+				ResourceGroup:        "my-rg",
+				SubscriptionID:       "123",
+				ClusterName:          "my-cluster",
+				Location:             "my-location",
+				Role:                 infrav1.APIServerRole,
+				Type:                 infrav1.Public,
+				SKU:                  infrav1.SKUStandard,
+				SubnetName:           "my-cp-subnet",
+				BackendPoolName:      "my-publiclb-backendPool",
+				IdleTimeoutInMinutes: ptr.To[int32](4),
+				FrontendIPConfigs: []infrav1.FrontendIP{
+					{
+						Name: "my-publiclb-frontEnd",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-publicip",
+							DNSName: "my-cluster.12345.mydomain.com",
+						},
+					},
+				},
+				APIServerPort:         6443,
+				LoadBalancingRuleName: "CustomLBRule",
+				HealthProbeName:       "CustomProbe",
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				g.Expect(lb.Properties.LoadBalancingRules).To(HaveLen(1))
+				g.Expect(*lb.Properties.LoadBalancingRules[0].Name).To(Equal("CustomLBRule"))
+				g.Expect(lb.Properties.Probes).To(HaveLen(1))
+				g.Expect(*lb.Properties.Probes[0].Name).To(Equal("CustomProbe"))
+			},
+			expectedError: "",
+		},
+		{
+			name: "load balancer with default rule and probe names",
+			spec: &LBSpec{
+				Name:                 "my-publiclb",
+				ResourceGroup:        "my-rg",
+				SubscriptionID:       "123",
+				ClusterName:          "my-cluster",
+				Location:             "my-location",
+				Role:                 infrav1.APIServerRole,
+				Type:                 infrav1.Public,
+				SKU:                  infrav1.SKUStandard,
+				SubnetName:           "my-cp-subnet",
+				BackendPoolName:      "my-publiclb-backendPool",
+				IdleTimeoutInMinutes: ptr.To[int32](4),
+				FrontendIPConfigs: []infrav1.FrontendIP{
+					{
+						Name: "my-publiclb-frontEnd",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-publicip",
+							DNSName: "my-cluster.12345.mydomain.com",
+						},
+					},
+				},
+				APIServerPort: 6443,
+			},
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				g.Expect(lb.Properties.LoadBalancingRules).To(HaveLen(1))
+				g.Expect(*lb.Properties.LoadBalancingRules[0].Name).To(Equal("LBRuleHTTPS"))
+				g.Expect(lb.Properties.Probes).To(HaveLen(1))
+				g.Expect(*lb.Properties.Probes[0].Name).To(Equal("HTTPSProbe"))
+			},
+			expectedError: "",
+		},
+		{
 			name:     "load balancer exists with missing outbound rules",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingOutboundRules(),
@@ -291,7 +365,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 			},
 			LoadBalancingRules: []*armnetwork.LoadBalancingRule{
 				{
-					Name: ptr.To(lbRuleHTTPS),
+					Name: ptr.To(infrav1.DefaultLoadBalancingRuleName),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  ptr.To(true),
 						Protocol:             ptr.To(armnetwork.TransportProtocolTCP),
@@ -314,7 +388,7 @@ func newSamplePublicAPIServerLB(verifyFrontendIP bool, verifyBackendAddressPools
 			},
 			Probes: []*armnetwork.Probe{
 				{
-					Name: ptr.To(httpsProbe),
+					Name: ptr.To(infrav1.DefaultHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol:          ptr.To(armnetwork.ProbeProtocolHTTPS),
 						Port:              ptr.To[int32](6443),
@@ -377,7 +451,7 @@ func newDefaultInternalAPIServerLB() armnetwork.LoadBalancer {
 			},
 			LoadBalancingRules: []*armnetwork.LoadBalancingRule{
 				{
-					Name: ptr.To(lbRuleHTTPS),
+					Name: ptr.To(infrav1.DefaultLoadBalancingRuleName),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  ptr.To(true),
 						Protocol:             ptr.To(armnetwork.TransportProtocolTCP),
@@ -401,7 +475,7 @@ func newDefaultInternalAPIServerLB() armnetwork.LoadBalancer {
 			OutboundRules: []*armnetwork.OutboundRule{},
 			Probes: []*armnetwork.Probe{
 				{
-					Name: ptr.To(httpsProbe),
+					Name: ptr.To(infrav1.DefaultHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol:          ptr.To(armnetwork.ProbeProtocolHTTPS),
 						Port:              ptr.To[int32](6443),
