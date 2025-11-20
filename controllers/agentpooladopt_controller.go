@@ -82,7 +82,7 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	for _, owner := range agentPool.GetOwnerReferences() {
-		if matchesASOManagedAPIGroup(owner.APIVersion) &&
+		if apiVersionMatchesASOManagedAPIGroup(owner.APIVersion) &&
 			owner.Kind == infrav1.AzureASOManagedMachinePoolKind {
 			return ctrl.Result{}, nil
 		}
@@ -124,7 +124,7 @@ func (r *AgentPoolAdoptReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	var managedControlPlaneOwner *metav1.OwnerReference
 	for _, owner := range managedCluster.GetOwnerReferences() {
-		if matchesASOManagedAPIGroup(owner.APIVersion) &&
+		if apiVersionMatchesASOManagedAPIGroup(owner.APIVersion) &&
 			owner.Kind == infrav1.AzureASOManagedControlPlaneKind &&
 			owner.Name == agentPool.Owner().Name {
 			managedControlPlaneOwner = ptr.To(owner)

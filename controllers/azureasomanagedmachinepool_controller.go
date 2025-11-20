@@ -184,7 +184,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 		return ctrl.Result{}, nil
 	}
 	if !cluster.Spec.ControlPlaneRef.IsDefined() ||
-		!matchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIGroup) ||
+		!groupMatchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIGroup) ||
 		cluster.Spec.ControlPlaneRef.Kind != infrav1.AzureASOManagedControlPlaneKind {
 		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("AzureASOManagedMachinePool cannot be used without AzureASOManagedControlPlane"))
 	}
