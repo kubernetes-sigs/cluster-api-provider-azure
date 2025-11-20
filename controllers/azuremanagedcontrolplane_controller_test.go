@@ -48,16 +48,19 @@ import (
 func TestClusterToAzureManagedControlPlane(t *testing.T) {
 	tests := []struct {
 		name            string
+		namespace       string
 		controlPlaneRef clusterv1.ContractVersionedObjectReference
 		expected        []ctrl.Request
 	}{
 		{
 			name:            "nil",
+			namespace:       "",
 			controlPlaneRef: clusterv1.ContractVersionedObjectReference{},
 			expected:        nil,
 		},
 		{
-			name: "bad kind",
+			name:      "bad kind",
+			namespace: "",
 			controlPlaneRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "NotAzureManagedControlPlane",
 				Name:     "foo",
@@ -66,7 +69,8 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "ok",
+			name:      "ok",
+			namespace: "namespace",
 			controlPlaneRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     infrav1.AzureManagedControlPlaneKind,
 				Name:     "name",
@@ -87,6 +91,9 @@ func TestClusterToAzureManagedControlPlane(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
 			actual := (&AzureManagedControlPlaneReconciler{}).ClusterToAzureManagedControlPlane(t.Context(), &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: test.namespace,
+				},
 				Spec: clusterv1.ClusterSpec{
 					ControlPlaneRef: test.controlPlaneRef,
 				},

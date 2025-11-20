@@ -564,6 +564,7 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	case *AzureCluster:
 		obj.Spec.SubscriptionID = "test-subscription-id"
 	case *clusterv1.Cluster:
+		obj.Namespace = "default"
 		obj.Spec = clusterv1.ClusterSpec{
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind: AzureClusterKind,

@@ -220,7 +220,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 			Setup: func(logMock *mock_log.MockLogSink) {
 				logMock.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 				logMock.EXPECT().Enabled(4).Return(true)
-				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta1.Cluster")
+				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta2.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(BeEmpty())
@@ -264,7 +264,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
 				sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
-				sink.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta1.MachinePool"), "failed to get AzureCluster")
+				sink.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta2.MachinePool"), "failed to get AzureCluster")
 
 				return sink, mockCtrl, fakeClient
 			},

@@ -23,6 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -146,7 +147,7 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 
 		if cluster == nil ||
 			!cluster.Spec.InfrastructureRef.IsDefined() ||
-			!matchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIGroup) ||
+			!groupMatchesASOManagedAPIGroup(cluster.Spec.InfrastructureRef.APIGroup) ||
 			cluster.Spec.InfrastructureRef.Kind != infrav1.AzureASOManagedClusterKind {
 			return nil
 		}
@@ -162,7 +163,12 @@ func asoManagedControlPlaneToManagedClusterMap(c client.Client) handler.MapFunc 
 	}
 }
 
-func matchesASOManagedAPIGroup(group string) bool {
+func apiVersionMatchesASOManagedAPIGroup(apiVersion string) bool {
+	gv, _ := schema.ParseGroupVersion(apiVersion)
+	return groupMatchesASOManagedAPIGroup(gv.Group)
+}
+
+func groupMatchesASOManagedAPIGroup(group string) bool {
 	return group == infrav1.GroupVersion.Group
 }
 
@@ -229,7 +235,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, nil
 	}
 	if !cluster.Spec.ControlPlaneRef.IsDefined() ||
-		!matchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIGroup) ||
+		!groupMatchesASOManagedAPIGroup(cluster.Spec.ControlPlaneRef.APIGroup) ||
 		cluster.Spec.ControlPlaneRef.Kind != infrav1.AzureASOManagedControlPlaneKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
 	}

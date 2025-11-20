@@ -1330,7 +1330,7 @@ func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
 			Setup: func(logMock *mock_log.MockLogSink) {
 				logMock.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 				logMock.EXPECT().Enabled(4).Return(true)
-				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta1.Cluster")
+				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta2.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(BeEmpty())
