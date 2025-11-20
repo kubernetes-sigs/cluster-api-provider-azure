@@ -147,6 +147,8 @@ github.com/cenkalti/backoff/v5 v5.0.3 h1:ZN+IMa753KfX5hd8vVaMixjnqRZ3y8CuJKRKj1x
 github.com/cenkalti/backoff/v5 v5.0.3/go.mod h1:rkhZdG3JZukswDf7f0cwqPNk4K0sa+F97BxZthm/crw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
+github.com/chrischdi/cluster-api/test v1.11.4-0.20251121064524-3ffd0f933d73 h1:LxP3zOFAlRN0nzxw2xlDqYA/s0ikh43MB3CmzPTimbc=
+github.com/chrischdi/cluster-api/test v1.11.4-0.20251121064524-3ffd0f933d73/go.mod h1:COviHWIKTcip0VADeIh8Rm5bjqzyZ1LuzKBW1EqjJRc=
 github.com/cloudflare/circl v1.1.0/go.mod h1:prBCrKB9DV4poKZY1l9zBXg2QJY7mvgRvtMxxK7fi4I=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
@@ -622,8 +624,6 @@ sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.4.1 h1:F5qZPS35TGb
 sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.4.1/go.mod h1:rEQnoF3pmD1kmAFQCwA/SqHiiftLFeMwdQt0gsuKWbM=
 sigs.k8s.io/cluster-api v1.11.2 h1:uAczaBavU5Y6aDgyoXWtq28k1kalpSZnVItwXHusw1c=
 sigs.k8s.io/cluster-api v1.11.2/go.mod h1:C1gJVAjMXRG+M+djjGYNkoi5kBMhFnOUI9QqZDAtMms=
-sigs.k8s.io/cluster-api/test v1.11.2 h1:SaYS/HexHPIU2r7oDBaq/CNOD+NP84oGnRY3KD9YIN8=
-sigs.k8s.io/cluster-api/test v1.11.2/go.mod h1:COviHWIKTcip0VADeIh8Rm5bjqzyZ1LuzKBW1EqjJRc=
 sigs.k8s.io/controller-runtime v0.21.0 h1:CYfjpEuicjUecRk+KAeyYh+ouUBn4llGyDYytIGcJS8=
 sigs.k8s.io/controller-runtime v0.21.0/go.mod h1:OSg14+F65eWqIu4DceX7k/+QRAbTTvxeQSNSOQpukWM=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE=
