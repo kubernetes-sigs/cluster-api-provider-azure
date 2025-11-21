@@ -22,12 +22,10 @@ import (
 
 	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -140,9 +138,8 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			_ = AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
-			_ = expv1.AddToScheme(scheme)
 
-			machinePool := &expv1.MachinePool{
+			machinePool := &clusterv1.MachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
 					Namespace: "default",
@@ -150,7 +147,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 						clusterv1.ClusterNameLabel: "testcluster",
 					},
 				},
-				Spec: expv1.MachinePoolSpec{
+				Spec: clusterv1.MachinePoolSpec{
 					ClusterName: "testcluster",
 				},
 			}
@@ -171,9 +168,8 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: clusterv1.ClusterSpec{
-					InfrastructureRef: &corev1.ObjectReference{
-						Name:      "testcluster",
-						Namespace: "default",
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						Name: "testcluster",
 					},
 				},
 			}

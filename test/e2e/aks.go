@@ -28,8 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,7 +72,7 @@ func DiscoverAndWaitForAKSControlPlaneInitialized(ctx context.Context, input Dis
 	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneInitialized")
 
-	controlPlaneNamespace := input.Cluster.Spec.ControlPlaneRef.Namespace
+	controlPlaneNamespace := input.Cluster.Namespace
 	controlPlaneName := input.Cluster.Spec.ControlPlaneRef.Name
 
 	Logf("Waiting for the first AKS machine in the %s/%s 'system' node pool to exist", controlPlaneNamespace, controlPlaneName)
@@ -92,7 +91,7 @@ func DiscoverAndWaitForAKSControlPlaneReady(ctx context.Context, input DiscoverA
 	Expect(input.Lister).NotTo(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForAKSControlPlaneReady")
 
-	controlPlaneNamespace := input.Cluster.Spec.ControlPlaneRef.Namespace
+	controlPlaneNamespace := input.Cluster.Namespace
 	controlPlaneName := input.Cluster.Spec.ControlPlaneRef.Name
 
 	Logf("Waiting for all AKS machines in the %s/%s 'system' node pool to exist", controlPlaneNamespace, controlPlaneName)
@@ -133,7 +132,7 @@ const (
 )
 
 // value returns the integer equivalent of controlPlaneReplicas
-func (r controlPlaneReplicas) value(mp *expv1.MachinePool) int {
+func (r controlPlaneReplicas) value(mp *clusterv1.MachinePool) int {
 	switch r {
 	case atLeastOne:
 		return 1
@@ -202,7 +201,7 @@ func WaitForAKSSystemNodePoolMachinesToExist(ctx context.Context, input WaitForC
 					continue
 				}
 
-				ownerMachinePool := &expv1.MachinePool{}
+				ownerMachinePool := &clusterv1.MachinePool{}
 				if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: ref.Name},
 					ownerMachinePool); err != nil {
 					LogWarningf("Failed to get machinePool: %+v", err)

@@ -32,7 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -285,7 +286,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 			Namespace: namespace,
 		},
 		Spec: clusterv1.ClusterSpec{
-			Paused: true,
+			Paused: ptr.To(true),
 		},
 	}
 	g.Expect(c.Create(ctx, cluster)).To(Succeed())

@@ -23,8 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -79,7 +78,7 @@ func TestAzureMachinePoolServiceReconcile(t *testing.T) {
 						AzureCluster: &infrav1.AzureCluster{},
 						Cluster:      &clusterv1.Cluster{},
 					},
-					MachinePool: &expv1.MachinePool{},
+					MachinePool: &clusterv1.MachinePool{},
 					AzureMachinePool: &infrav1exp.AzureMachinePool{
 						Spec: infrav1exp.AzureMachinePoolSpec{
 							Template: infrav1exp.AzureMachinePoolMachineTemplate{
@@ -220,7 +219,7 @@ func TestAzureMachinePoolServiceDelete(t *testing.T) {
 						AzureCluster: &infrav1.AzureCluster{},
 						Cluster:      &clusterv1.Cluster{},
 					},
-					MachinePool:      &expv1.MachinePool{},
+					MachinePool:      &clusterv1.MachinePool{},
 					AzureMachinePool: &infrav1exp.AzureMachinePool{},
 				},
 				services: []azure.ServiceReconciler{
