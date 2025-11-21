@@ -4,8 +4,8 @@ go 1.24.0
 
 toolchain go1.24.10
 
-// Required to include https://github.com/kubernetes-sigs/cluster-api/pull/13023
-replace sigs.k8s.io/cluster-api/test => github.com/chrischdi/cluster-api/test v1.11.4-0.20251121064524-3ffd0f933d73
+// Required to include https://github.com/kubernetes-sigs/cluster-api/pull/13023 and FIX-for-md-count
+replace sigs.k8s.io/cluster-api/test => github.com/chrischdi/cluster-api/test v1.11.4-0.20251121162627-2e4dbd90e49b
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
