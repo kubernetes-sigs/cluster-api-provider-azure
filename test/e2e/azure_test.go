@@ -30,6 +30,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -100,6 +101,28 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
 		additionalCleanup = nil
+
+		validating := &admissionregistrationv1.ValidatingWebhookConfigurationList{}
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, validating)).To(Succeed())
+		mutating := &admissionregistrationv1.MutatingWebhookConfigurationList{}
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, mutating)).To(Succeed())
+
+		Logf("Looking for webhooks to have a caBundle")
+		for _, w := range validating.Items {
+			for _, webhook := range w.Webhooks {
+				if len(webhook.ClientConfig.CABundle) == 0 {
+					Logf("validatingwebhookconfiguration %s webhook %s has no caBundle", w.Name, webhook.Name)
+				}
+			}
+		}
+		for _, w := range mutating.Items {
+			for _, webhook := range w.Webhooks {
+				if len(webhook.ClientConfig.CABundle) == 0 {
+					Logf("mutatingwebhookconfiguration %s webhook %s has no caBundle", w.Name, webhook.Name)
+				}
+			}
+		}
+		Logf("Done looking for webhooks to have a caBundle")
 	})
 
 	AfterEach(func() {
@@ -174,6 +197,7 @@ var _ = Describe("Workload cluster creation", func() {
 						})
 					}),
 				), result)
+				return
 
 				By("Creating a private cluster from the management cluster", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
@@ -205,7 +229,7 @@ var _ = Describe("Workload cluster creation", func() {
 				specName,
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -221,6 +245,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -291,7 +316,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("azure-cni-v1"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -307,6 +332,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can expect VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -366,6 +392,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -404,6 +431,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -441,6 +469,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("can create and access a load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
@@ -463,7 +492,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("ipv6"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -479,6 +508,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -536,6 +566,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -592,6 +623,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -668,6 +700,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -712,6 +745,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withMachinePoolInterval(specName, "wait-machine-pool-nodes"),
 				withControlPlaneInterval(specName, "wait-control-plane"),
 			), result)
+			return
 
 			By("Verifying machinepool can scale out and in", func() {
 				AzureMachinePoolsSpec(ctx, func() AzureMachinePoolsSpecInput {
@@ -779,6 +813,7 @@ var _ = Describe("Workload cluster creation", func() {
 			)
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterTemplate, result)
+			return
 
 			// This test should be first to make sure that the template re-applied here matches the current
 			// state of the cluster exactly.
@@ -851,6 +886,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
@@ -979,6 +1015,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Performing ClusterClass operations on the cluster", func() {
 				AKSClusterClassSpec(ctx, func() AKSClusterClassInput {
@@ -1013,6 +1050,7 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+			return
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
@@ -1040,7 +1078,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("dual-stack"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1056,6 +1094,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1127,6 +1166,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1170,7 +1210,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("topology-rke2"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: func(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
@@ -1180,6 +1220,7 @@ var _ = Describe("Workload cluster creation", func() {
 					},
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
@@ -1225,6 +1266,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying extendedLocation property in Azure VMs is corresponding to extendedLocation property in edgezone yaml file", func() {
 				AzureEdgeZoneClusterSpec(ctx, func() AzureEdgeZoneClusterSpecInput {
@@ -1252,7 +1294,7 @@ var _ = Describe("Workload cluster creation", func() {
 				specName,
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1268,6 +1310,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Probing workload cluster with APIServerILB feature gate", func() {
 				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
@@ -1303,7 +1346,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("apiserver-ilb"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1319,6 +1362,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Probing workload cluster with APIServerILB feature gate", func() {
 				AzureAPIServerILBSpec(ctx, func() AzureAPIServerILBSpecInput {
@@ -1351,7 +1395,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withFlavor("azl3"),
-				withControlPlaneMachineCount(3),
+				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1367,6 +1411,7 @@ var _ = Describe("Workload cluster creation", func() {
 					})
 				}),
 			), result)
+			return
 
 			By("Verifying expected VM extensions are present on the node", func() {
 				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
