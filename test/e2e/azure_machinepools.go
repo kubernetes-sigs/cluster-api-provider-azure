@@ -31,8 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -81,7 +80,7 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 	ampList := &infrav1exp.AzureMachinePoolList{}
 	Expect(mgmtClient.List(ctx, ampList, client.InNamespace(input.Namespace.Name), client.MatchingLabels(clusterLabels))).To(Succeed())
 	Expect(ampList.Items).NotTo(BeEmpty())
-	machinepools := []*expv1.MachinePool{}
+	machinepools := []*clusterv1.MachinePool{}
 	for _, amp := range ampList.Items {
 		Byf("checking AzureMachinePool %s in %s orchestration mode", amp.Name, amp.Spec.OrchestrationMode)
 		Expect(amp.Status.Replicas).To(BeNumerically("==", len(amp.Spec.ProviderIDList)))
@@ -104,14 +103,14 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) + 1
 		Byf("Scaling machine pool %s out from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
 				Replicas:                  goalReplicas,
-				MachinePools:              []*expv1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 		}(mp)
@@ -122,14 +121,14 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) - 1
 		Byf("Scaling machine pool %s in from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
 				ClusterProxy:              bootstrapClusterProxy,
 				Cluster:                   input.Cluster,
 				Replicas:                  goalReplicas,
-				MachinePools:              []*expv1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 		}(mp)
