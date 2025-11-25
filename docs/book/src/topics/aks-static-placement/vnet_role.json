@@ -1,0 +1,14 @@
+{
+  "Name": "Static Placement AKS Cluster Deployer (vnet)",
+  "IsCustom": true,
+  "Description": "Can use CAPZ to deploy AKS clusters using static placement. This role contains the permissions that must be applied at the virtual network scope level.",
+  "Actions": [
+    "Microsoft.Network/virtualNetworks/read",
+    "Microsoft.Network/virtualNetworks/subnets/join/action",
+    "Microsoft.Network/virtualNetworks/subnets/read"
+  ],
+  "NotActions": [],
+  "AssignableScopes": [
+    "/subscriptions/$SUBSCRIPTION_ID"
+  ]
+}
