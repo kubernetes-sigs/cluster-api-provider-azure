@@ -1441,11 +1441,9 @@ var _ = Describe("Workload cluster creation", func() {
 			Expect(os.Setenv("AZURE_VNET_CIDR", "40.0.0.0/8")).To(Succeed())
 			Expect(os.Setenv("AZURE_CP_SUBNET_CIDR", "40.0.0.0/16")).To(Succeed())
 			Expect(os.Setenv("AZURE_NODE_SUBNET_CIDR", "40.1.0.0/16")).To(Succeed())
-			Expect(os.Setenv("AZURE_LB_ZONES", "1,2,3")).To(Succeed())
-
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("apiserver-ilb"),
+				withFlavor("apiserver-ilb-zones"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(3),
