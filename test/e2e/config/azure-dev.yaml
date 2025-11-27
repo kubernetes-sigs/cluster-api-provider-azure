@@ -37,6 +37,9 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+      # TODO: drop this in favor of bumping CAPI manifests (value above) to new nightly which includes https://github.com/kubernetes-sigs/cluster-api/pull/13060
+      - old: "maxItems: 32"
+        new: "maxItems: 128"
 
 
   - name: kubeadm
