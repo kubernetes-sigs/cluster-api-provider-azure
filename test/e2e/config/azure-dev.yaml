@@ -3,14 +3,14 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  # - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.11.2
-  - name: gcr.io/k8s-staging-cluster-api/cluster-api-controller:nightly_main_20251124
+  # - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.11.3 # Bumped to nightly release-1.11 to 
+  - name: gcr.io/k8s-staging-cluster-api/cluster-api-controller:v20251201-v1.11.3-29-g889987e8d
     loadBehavior: tryLoad
-  # - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.11.2
-  - name: gcr.io/k8s-staging-cluster-api/kubeadm-bootstrap-controller:nightly_main_20251124
+  # - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.11.3
+  - name: gcr.io/k8s-staging-cluster-api/kubeadm-bootstrap-controller:v20251201-v1.11.3-29-g889987e8d
     loadBehavior: tryLoad
-  # - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.11.2
-  - name: gcr.io/k8s-staging-cluster-api/kubeadm-control-plane-controller:nightly_main_20251124
+  # - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.11.3
+  - name: gcr.io/k8s-staging-cluster-api/kubeadm-control-plane-controller:v20251201-v1.11.3-29-g889987e8d
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.4.1
     loadBehavior: tryLoad
@@ -28,8 +28,11 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.2
-      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/nightly_main_20251124/core-components.yaml
+    - name: v1.11.3
+      # Bump to release-1.11 to include the following fixes:
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13030
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13091
+      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/release-1.11/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -37,7 +40,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-
+      - old: controller:release-1.11
+        new: controller:v20251201-v1.11.3-29-g889987e8d
 
   - name: kubeadm
     type: BootstrapProvider
@@ -51,8 +55,11 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.2
-      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/nightly_main_20251124/bootstrap-components.yaml
+    - name: v1.11.3
+      # Bump to release-1.11 to include the following fixes:
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13030
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13091
+      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/release-1.11/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -60,6 +67,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+      - old: controller:release-1.11
+        new: controller:v20251201-v1.11.3-29-g889987e8d
 
   - name: kubeadm
     type: ControlPlaneProvider
@@ -73,8 +82,11 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.2
-      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/nightly_main_20251124/control-plane-components.yaml
+    - name: v1.11.3
+      # Bump to release-1.11 to include the following fixes:
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13030
+      # https://github.com/kubernetes-sigs/cluster-api/pull/13091
+      value: https://storage.googleapis.com/k8s-staging-cluster-api/components/release-1.11/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -82,6 +94,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+      - old: controller:release-1.11
+        new: controller:v20251201-v1.11.3-29-g889987e8d
 
   - name: azure
     type: InfrastructureProvider
