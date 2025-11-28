@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -87,7 +87,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			name: "Reconcile pause",
 			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
 				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
-				cluster.Spec.Paused = true
+				cluster.Spec.Paused = ptr.To(true)
 
 				reconciler.MockPauser.EXPECT().Pause(gomock2.AContext()).Return(nil)
 
@@ -157,7 +157,6 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					for _, addTo := range []func(s *runtime.Scheme) error{
 						scheme.AddToScheme,
 						clusterv1.AddToScheme,
-						expv1.AddToScheme,
 						infrav1.AddToScheme,
 						corev1.AddToScheme,
 					} {
@@ -195,7 +194,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 	}
 }
 
-func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.AzureManagedCluster, *infrav1.AzureManagedControlPlane, *infrav1.AzureManagedMachinePool, *expv1.MachinePool) {
+func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.AzureManagedCluster, *infrav1.AzureManagedControlPlane, *infrav1.AzureManagedMachinePool, *clusterv1.MachinePool) {
 	// AzureManagedCluster
 	azManagedCluster := &infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,7 +209,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 		},
 		Spec: infrav1.AzureManagedClusterSpec{
-			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 				Host: "foo.bar",
 				Port: 123,
 			},
@@ -230,7 +229,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 		},
 		Spec: infrav1.AzureManagedControlPlaneSpec{
-			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
 				Host: "foo.bar",
 				Port: 123,
 			},
@@ -254,17 +253,15 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			Namespace: "foobar",
 		},
 		Spec: clusterv1.ClusterSpec{
-			ControlPlaneRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureManagedControlPlaneKind,
-				Name:       azManagedControlPlane.Name,
-				Namespace:  azManagedControlPlane.Namespace,
+			ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: "infrastructure.cluster.x-k8s.io",
+				Kind:     infrav1.AzureManagedControlPlaneKind,
+				Name:     azManagedControlPlane.Name,
 			},
-			InfrastructureRef: &corev1.ObjectReference{
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-				Kind:       infrav1.AzureManagedClusterKind,
-				Name:       azManagedCluster.Name,
-				Namespace:  azManagedCluster.Namespace,
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: "infrastructure.cluster.x-k8s.io",
+				Kind:     infrav1.AzureManagedClusterKind,
+				Name:     azManagedCluster.Name,
 			},
 		},
 	}
@@ -284,7 +281,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 		},
 	}
 	// MachinePool
-	mp := &expv1.MachinePool{
+	mp := &clusterv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo-mp1",
 			Namespace: "foobar",
@@ -299,15 +296,14 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 				},
 			},
 		},
-		Spec: expv1.MachinePoolSpec{
+		Spec: clusterv1.MachinePoolSpec{
 			Template: clusterv1.MachineTemplateSpec{
 				Spec: clusterv1.MachineSpec{
 					ClusterName: cluster.Name,
-					InfrastructureRef: corev1.ObjectReference{
-						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
-						Kind:       "AzureManagedMachinePool",
-						Name:       ammp.Name,
-						Namespace:  ammp.Namespace,
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: "infrastructure.cluster.x-k8s.io",
+						Kind:     "AzureManagedMachinePool",
+						Name:     ammp.Name,
 					},
 				},
 			},

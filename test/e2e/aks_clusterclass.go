@@ -28,8 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -37,7 +36,7 @@ import (
 
 type AKSClusterClassInput struct {
 	Cluster                    *clusterv1.Cluster
-	MachinePool                *expv1.MachinePool
+	MachinePool                *clusterv1.MachinePool
 	WaitIntervals              []interface{}
 	WaitUpgradeIntervals       []interface{}
 	KubernetesVersionUpgradeTo string
@@ -60,7 +59,7 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 
 	amcp := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, types.NamespacedName{
-		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: input.Cluster.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, amcp)
 	Expect(err).NotTo(HaveOccurred())
@@ -77,8 +76,8 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 	Eventually(func(g Gomega) {
 		for i := range clusterClass.Spec.Workers.MachinePools {
 			err = mgmtClient.Get(ctx, types.NamespacedName{
-				Namespace: clusterClass.Spec.Workers.MachinePools[i].Template.Infrastructure.Ref.Namespace,
-				Name:      clusterClass.Spec.Workers.MachinePools[i].Template.Infrastructure.Ref.Name,
+				Namespace: clusterClass.Namespace,
+				Name:      clusterClass.Spec.Workers.MachinePools[i].Infrastructure.TemplateRef.Name,
 			}, ammpt)
 			Expect(err).NotTo(HaveOccurred())
 			if ammpt.Spec.Template.Spec.OsDiskType != nil && *ammpt.Spec.Template.Spec.OsDiskType != "Ephemeral" {
@@ -92,7 +91,7 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.MachinePool.Spec.Template.Spec.InfrastructureRef.Namespace,
+			Namespace: input.MachinePool.Namespace,
 			Name:      input.MachinePool.Spec.Template.Spec.InfrastructureRef.Name,
 		}, ammp)
 		Expect(err).NotTo(HaveOccurred())
@@ -131,7 +130,7 @@ func AKSClusterClassSpec(ctx context.Context, inputGetter func() AKSClusterClass
 	By("Ensuring the upgrade is reflected in the amcp")
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)).To(Succeed())
 		g.Expect(amcp.Spec.Version).To(Equal(input.KubernetesVersionUpgradeTo))

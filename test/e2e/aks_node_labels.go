@@ -29,8 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -38,7 +37,7 @@ import (
 
 type AKSNodeLabelsSpecInput struct {
 	Cluster       *clusterv1.Cluster
-	MachinePools  []*expv1.MachinePool
+	MachinePools  []*clusterv1.MachinePool
 	WaitForUpdate []interface{}
 }
 
@@ -56,7 +55,7 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 
 	infraControlPlane := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, client.ObjectKey{
-		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: input.Cluster.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, infraControlPlane)
 	Expect(err).NotTo(HaveOccurred())
@@ -65,13 +64,13 @@ func AKSNodeLabelsSpec(ctx context.Context, inputGetter func() AKSNodeLabelsSpec
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 
 			ammp := &infrav1.AzureManagedMachinePool{}
 			Expect(mgmtClient.Get(ctx, types.NamespacedName{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+				Namespace: mp.Namespace,
 				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 			}, ammp)).To(Succeed())
 
