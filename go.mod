@@ -4,6 +4,12 @@ go 1.24.0
 
 toolchain go1.24.10
 
+// Required to include the following fixes:
+// - https://github.com/kubernetes-sigs/cluster-api/pull/13060
+// - https://github.com/kubernetes-sigs/cluster-api/pull/13071
+// - https://github.com/kubernetes-sigs/cluster-api/pull/13072
+replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.11.4-0.20251128150822-3446c5906b22
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
@@ -56,7 +62,7 @@ require (
 	k8s.io/kubectl v0.32.3
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
 	sigs.k8s.io/cloud-provider-azure v1.32.3
-	sigs.k8s.io/cluster-api v1.11.2
+	sigs.k8s.io/cluster-api v1.11.3
 	sigs.k8s.io/cluster-api/test v1.11.2
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/kind v0.30.0
