@@ -235,7 +235,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	if azureMachine.Spec.Identity == infrav1.VMIdentityNone {
+	if azureMachine.Spec.Identity == infrav1.VMIdentityNone && isUsingSPCredentials(ctx, r.Client, azureCluster) {
 		log.Info(fmt.Sprintf("WARNING, %s", spIdentityWarning))
 		r.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "VMIdentityNone", spIdentityWarning)
 	}

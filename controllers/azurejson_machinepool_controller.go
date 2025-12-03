@@ -177,8 +177,10 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	}
 
 	if azureMachinePool.Spec.Identity == infrav1.VMIdentityNone {
-		log.Info(fmt.Sprintf("WARNING, %s", spIdentityWarning))
-		r.Recorder.Eventf(azureMachinePool, corev1.EventTypeWarning, "VMIdentityNone", spIdentityWarning)
+		if azureCluster := getAzureClusterFromCluster(ctx, r.Client, cluster); azureCluster != nil && isUsingSPCredentials(ctx, r.Client, azureCluster) {
+			log.Info(fmt.Sprintf("WARNING, %s", spIdentityWarning))
+			r.Recorder.Eventf(azureMachinePool, corev1.EventTypeWarning, "VMIdentityNone", spIdentityWarning)
+		}
 	}
 
 	newSecret, err := GetCloudProviderSecret(

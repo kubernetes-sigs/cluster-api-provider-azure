@@ -1152,3 +1152,43 @@ func RemoveBlockMoveAnnotation(obj metav1.Object) {
 	delete(azClusterAnnotations, clusterctlv1.BlockMoveAnnotation)
 	obj.SetAnnotations(azClusterAnnotations)
 }
+
+// getAzureClusterFromCluster returns the AzureCluster for a Cluster if the infraRef is an AzureCluster.
+// Returns nil if the infraRef is not an AzureCluster or if the AzureCluster cannot be fetched.
+func getAzureClusterFromCluster(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) *infrav1.AzureCluster {
+	if cluster.Spec.InfrastructureRef == nil || cluster.Spec.InfrastructureRef.Kind != infrav1.AzureClusterKind {
+		return nil
+	}
+	azureCluster := &infrav1.AzureCluster{}
+	key := client.ObjectKey{
+		Namespace: cluster.Spec.InfrastructureRef.Namespace,
+		Name:      cluster.Spec.InfrastructureRef.Name,
+	}
+	if err := c.Get(ctx, key, azureCluster); err != nil {
+		return nil
+	}
+	return azureCluster
+}
+
+// isUsingSPCredentials checks if the cluster is using Service Principal credentials.
+func isUsingSPCredentials(ctx context.Context, c client.Client, azureCluster *infrav1.AzureCluster) bool {
+	if azureCluster.Spec.IdentityRef == nil {
+		return false
+	}
+	identity := &infrav1.AzureClusterIdentity{}
+	key := client.ObjectKey{
+		Name:      azureCluster.Spec.IdentityRef.Name,
+		Namespace: azureCluster.Spec.IdentityRef.Namespace,
+	}
+	if key.Namespace == "" {
+		key.Namespace = azureCluster.Namespace
+	}
+	if err := c.Get(ctx, key, identity); err != nil {
+		return false
+	}
+	switch identity.Spec.Type {
+	case infrav1.ServicePrincipal, infrav1.ManualServicePrincipal, infrav1.ServicePrincipalCertificate:
+		return true
+	}
+	return false
+}
