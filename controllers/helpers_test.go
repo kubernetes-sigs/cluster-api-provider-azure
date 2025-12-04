@@ -1655,3 +1655,251 @@ func TestRemoveBlockMoveAnnotation(t *testing.T) {
 		})
 	}
 }
+
+func TestIsUsingSPCredentials(t *testing.T) {
+	tests := []struct {
+		name         string
+		azureCluster *infrav1.AzureCluster
+		identity     *infrav1.AzureClusterIdentity
+		expected     bool
+	}{
+		{
+			name: "ServicePrincipal returns true",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.ServicePrincipal},
+			},
+			expected: true,
+		},
+		{
+			name: "ManualServicePrincipal returns true",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.ManualServicePrincipal},
+			},
+			expected: true,
+		},
+		{
+			name: "ServicePrincipalCertificate returns true",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.ServicePrincipalCertificate},
+			},
+			expected: true,
+		},
+		{
+			name: "WorkloadIdentity returns false",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.WorkloadIdentity},
+			},
+			expected: false,
+		},
+		{
+			name: "UserAssignedMSI returns false",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.UserAssignedMSI},
+			},
+			expected: false,
+		},
+		{
+			name: "UserAssignedIdentityCredential returns false",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "default"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.UserAssignedIdentityCredential},
+			},
+			expected: false,
+		},
+		{
+			name: "nil IdentityRef returns false",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec:       infrav1.AzureClusterSpec{},
+			},
+			identity: nil,
+			expected: false,
+		},
+		{
+			name: "empty IdentityRef namespace falls back to cluster namespace",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "my-namespace"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "identity", Namespace: ""},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "identity", Namespace: "my-namespace"},
+				Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.ServicePrincipal},
+			},
+			expected: true,
+		},
+		{
+			name: "identity not found returns false",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "missing-identity", Namespace: "default"},
+					},
+				},
+			},
+			identity: nil,
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := setupScheme(g)
+
+			var initObjects []runtime.Object
+			if tc.identity != nil {
+				initObjects = append(initObjects, tc.identity)
+			}
+
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			result := isUsingSPCredentials(t.Context(), fakeClient, tc.azureCluster)
+			g.Expect(result).To(Equal(tc.expected))
+		})
+	}
+}
+
+func TestGetAzureClusterFromCluster(t *testing.T) {
+	tests := []struct {
+		name         string
+		cluster      *clusterv1.Cluster
+		azureCluster *infrav1.AzureCluster
+		expectNil    bool
+	}{
+		{
+			name: "returns AzureCluster when infraRef is AzureCluster",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: clusterv1.ClusterSpec{
+					InfrastructureRef: &corev1.ObjectReference{
+						Kind:      infrav1.AzureClusterKind,
+						Name:      "azure-cluster",
+						Namespace: "default",
+					},
+				},
+			},
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "azure-cluster", Namespace: "default"},
+			},
+			expectNil: false,
+		},
+		{
+			name: "returns nil when infraRef is nil",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec:       clusterv1.ClusterSpec{},
+			},
+			azureCluster: nil,
+			expectNil:    true,
+		},
+		{
+			name: "returns nil when infraRef is AzureManagedCluster",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: clusterv1.ClusterSpec{
+					InfrastructureRef: &corev1.ObjectReference{
+						Kind:      infrav1.AzureManagedClusterKind,
+						Name:      "azure-managed-cluster",
+						Namespace: "default",
+					},
+				},
+			},
+			azureCluster: nil,
+			expectNil:    true,
+		},
+		{
+			name: "returns nil when AzureCluster not found",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"},
+				Spec: clusterv1.ClusterSpec{
+					InfrastructureRef: &corev1.ObjectReference{
+						Kind:      infrav1.AzureClusterKind,
+						Name:      "missing-cluster",
+						Namespace: "default",
+					},
+				},
+			},
+			azureCluster: nil,
+			expectNil:    true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := setupScheme(g)
+
+			var initObjects []runtime.Object
+			if tc.azureCluster != nil {
+				initObjects = append(initObjects, tc.azureCluster)
+			}
+
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			result := getAzureClusterFromCluster(t.Context(), fakeClient, tc.cluster)
+
+			if tc.expectNil {
+				g.Expect(result).To(BeNil())
+			} else {
+				g.Expect(result).NotTo(BeNil())
+				g.Expect(result.Name).To(Equal(tc.azureCluster.Name))
+			}
+		})
+	}
+}
