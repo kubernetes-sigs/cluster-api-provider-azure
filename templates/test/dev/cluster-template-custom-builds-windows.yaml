@@ -344,7 +344,7 @@ spec:
         owner: root:root
         path: /tmp/oot-cred-provider.sh
         permissions: "0744"
-      - content: |2
+      - content: |
 
           #!/bin/bash
 
