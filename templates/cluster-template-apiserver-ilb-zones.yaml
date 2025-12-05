@@ -23,8 +23,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  bastionSpec:
-    azureBastion: {}
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
@@ -36,18 +34,35 @@ spec:
       - "1"
       - "2"
       - "3"
-      name: ${CLUSTER_NAME}-internal-lb
-      type: Internal
+      frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
+      - name: ${CLUSTER_NAME}-internal-lb-private-ip
+        privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP:-30.0.0.100}
     controlPlaneOutboundLB:
-      frontendIPsCount: 1
+      availabilityZones:
+      - "1"
+      - "2"
+      - "3"
     nodeOutboundLB:
-      frontendIPsCount: 1
+      availabilityZones:
+      - "1"
+      - "2"
+      - "3"
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - 30.0.0.0/16
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - 30.1.0.0/16
+      name: node-subnet
       role: node
     vnet:
+      cidrBlocks:
+      - 30.0.0.0/8
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -111,13 +126,8 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - if [ -f /tmp/kubeadm-join-config.yaml ] || [ -f /run/kubeadm/kubeadm-join-config.yaml
-      ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts;
-      fi
-    preKubeadmCommands:
-    - if [ -f /tmp/kubeadm.yaml ] || [ -f /run/kubeadm/kubeadm.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io
-      apiserver' >> /etc/hosts; fi
+    postKubeadmCommands: []
+    preKubeadmCommands: []
     verbosity: 10
   machineTemplate:
     infrastructureRef:
@@ -207,7 +217,9 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
+      preKubeadmCommands:
+      - echo '${AZURE_INTERNAL_LB_PRIVATE_IP:-30.0.0.100}   ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com'
+        >> /etc/hosts
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity

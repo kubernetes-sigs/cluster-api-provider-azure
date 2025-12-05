@@ -5,13 +5,17 @@ metadata:
 spec:
   networkSpec:
     apiServerLB:
-      name: ${CLUSTER_NAME}-internal-lb
-      type: Internal
       availabilityZones:
         - "1"
         - "2"
         - "3"
     nodeOutboundLB:
-      frontendIPsCount: 1
+      availabilityZones:
+        - "1"
+        - "2"
+        - "3"
     controlPlaneOutboundLB:
-      frontendIPsCount: 1
+      availabilityZones:
+        - "1"
+        - "2"
+        - "3"
