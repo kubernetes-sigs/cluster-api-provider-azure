@@ -25,9 +25,9 @@ import (
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,7 +38,7 @@ type AKSAdoptSpecInput struct {
 	ApplyInput   clusterctl.ApplyClusterTemplateAndWaitInput
 	ApplyResult  *clusterctl.ApplyClusterTemplateAndWaitResult
 	Cluster      *clusterv1.Cluster
-	MachinePools []*expv1.MachinePool
+	MachinePools []*clusterv1.MachinePool
 }
 
 // AKSAdoptSpec tests adopting an existing AKS cluster into management by CAPZ. It first relies on a CAPZ AKS
@@ -93,14 +93,14 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 	cluster := input.Cluster
 	Eventually(func(g Gomega) {
 		g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)).To(Succeed())
-		cluster.Spec.Paused = true
+		cluster.Spec.Paused = ptr.To(true)
 		g.Expect(mgmtClient.Update(ctx, cluster)).To(Succeed())
 	}, updateResource...).Should(Succeed())
 
 	// wait for the pause to take effect before deleting anything
 	amcp := &infrav1.AzureManagedControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: cluster.Namespace,
 			Name:      cluster.Spec.ControlPlaneRef.Name,
 		},
 	}
@@ -108,7 +108,7 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 	for _, mp := range input.MachinePools {
 		ammp := &infrav1.AzureManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+				Namespace: mp.Namespace,
 				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 			},
 		}
@@ -122,7 +122,7 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 
 		ammp := &infrav1.AzureManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+				Namespace: mp.Namespace,
 				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 			},
 		}
@@ -138,7 +138,7 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 	// AzureManagedCluster never gets a finalizer
 	deleteAndWait(&infrav1.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Spec.InfrastructureRef.Namespace,
+			Namespace: cluster.Namespace,
 			Name:      cluster.Spec.InfrastructureRef.Name,
 		},
 	})

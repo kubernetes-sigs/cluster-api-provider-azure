@@ -31,10 +31,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,15 +56,7 @@ var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
-	infraGV, err := schema.ParseGroupVersion(m.Spec.InfrastructureRef.APIVersion)
-	if err != nil {
-		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", m.Spec.InfrastructureRef.APIVersion, err)
-	}
-	infraKind := m.Spec.InfrastructureRef.Kind
-	infraGK := schema.GroupKind{
-		Group: infraGV.Group,
-		Kind:  infraKind,
-	}
+	infraGK := m.Spec.InfrastructureRef.GroupKind()
 
 	switch infraGK {
 	case infrav1.GroupVersion.WithKind(infrav1.AzureMachineKind).GroupKind():
@@ -74,23 +64,15 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 	case infrav1exp.GroupVersion.WithKind(infrav1exp.AzureMachinePoolMachineKind).GroupKind():
 		// Logs collected for AzureMachinePool
 	default:
-		Logf("Unknown machine infra kind: %s", infraGV.WithKind(infraKind))
+		Logf("Unknown machine infra kind: %s", infraGK)
 	}
 
 	return nil
 }
 
 // CollectMachinePoolLog collects logs from a machine pool.
-func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
-	infraGV, err := schema.ParseGroupVersion(mp.Spec.Template.Spec.InfrastructureRef.APIVersion)
-	if err != nil {
-		return fmt.Errorf("invalid spec.infrastructureRef.apiVersion %q: %w", mp.Spec.Template.Spec.InfrastructureRef.APIVersion, err)
-	}
-	infraKind := mp.Spec.Template.Spec.InfrastructureRef.Kind
-	infraGK := schema.GroupKind{
-		Group: infraGV.Group,
-		Kind:  infraKind,
-	}
+func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1.MachinePool, outputPath string) error {
+	infraGK := mp.Spec.Template.Spec.InfrastructureRef.GroupKind()
 
 	switch infraGK {
 	case infrav1exp.GroupVersion.WithKind(infrav1.AzureMachinePoolKind).GroupKind():
@@ -102,7 +84,7 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 		// AKS node logs aren't accessible.
 		Logf("Skipping logs for %s", infrav1.AzureASOManagedMachinePoolKind)
 	default:
-		Logf("Unknown machine pool infra kind: %s", infraGV.WithKind(infraKind))
+		Logf("Unknown machine pool infra kind: %s", infraGK)
 	}
 
 	return nil
@@ -117,7 +99,7 @@ func (k AzureLogCollector) CollectInfrastructureLogs(_ context.Context, _ client
 func collectAzureMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
 	am, err := getAzureMachine(ctx, managementClusterClient, m)
 	if err != nil {
-		return fmt.Errorf("get AzureMachine %s/%s: %w", m.Spec.InfrastructureRef.Namespace, m.Spec.InfrastructureRef.Name, err)
+		return fmt.Errorf("get AzureMachine %s/%s: %w", m.Namespace, m.Spec.InfrastructureRef.Name, err)
 	}
 
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
@@ -125,9 +107,9 @@ func collectAzureMachineLog(ctx context.Context, managementClusterClient client.
 		return err
 	}
 
-	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
 	if err != nil {
-		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name, err)
+		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Namespace, cluster.Spec.InfrastructureRef.Name, err)
 	}
 	subscriptionID := azureCluster.Spec.SubscriptionID
 	resourceGroup := azureCluster.Spec.ResourceGroup
@@ -136,10 +118,10 @@ func collectAzureMachineLog(ctx context.Context, managementClusterClient client.
 	return collectVMLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
 }
 
-func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *clusterv1.MachinePool, outputPath string) error {
 	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
 	if err != nil {
-		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Spec.Template.Spec.InfrastructureRef.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
+		return fmt.Errorf("get AzureMachinePool %s/%s: %w", mp.Namespace, mp.Spec.Template.Spec.InfrastructureRef.Name, err)
 	}
 
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
@@ -147,9 +129,9 @@ func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient cli
 		return err
 	}
 
-	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name)
+	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
 	if err != nil {
-		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name, err)
+		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Namespace, cluster.Spec.InfrastructureRef.Name, err)
 	}
 	subscriptionID := azureCluster.Spec.SubscriptionID
 	resourceGroup := azureCluster.Spec.ResourceGroup
@@ -395,7 +377,7 @@ func getAzureASOManagedCluster(ctx context.Context, managementClusterClient clie
 
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
 	key := client.ObjectKey{
-		Namespace: m.Spec.InfrastructureRef.Namespace,
+		Namespace: m.Namespace,
 		Name:      m.Spec.InfrastructureRef.Name,
 	}
 
@@ -404,9 +386,9 @@ func getAzureMachine(ctx context.Context, managementClusterClient client.Client,
 	return azMachine, err
 }
 
-func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *clusterv1.MachinePool) (*infrav1exp.AzureMachinePool, error) {
 	key := client.ObjectKey{
-		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Namespace: mp.Namespace,
 		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 	}
 

@@ -32,8 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -41,7 +40,7 @@ import (
 
 type AKSPatchSpecInput struct {
 	Cluster       *clusterv1.Cluster
-	MachinePools  []*expv1.MachinePool
+	MachinePools  []*clusterv1.MachinePool
 	WaitForUpdate []interface{}
 }
 
@@ -56,7 +55,7 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 
 	infraControlPlane := &infrav1.AzureManagedControlPlane{}
 	err = mgmtClient.Get(ctx, client.ObjectKey{
-		Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: input.Cluster.Namespace,
 		Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 	}, infraControlPlane)
 	Expect(err).NotTo(HaveOccurred())
@@ -126,7 +125,7 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 		By("Enabling preview features on the control plane")
 		var infraControlPlane = &infrav1.AzureManagedControlPlane{}
 		Eventually(func(g Gomega) {
-			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 			g.Expect(err).NotTo(HaveOccurred())
 			infraControlPlane.Spec.EnablePreviewFeatures = ptr.To(true)
 			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
@@ -140,7 +139,7 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 
 		By("Patching a preview feature on the control plane")
 		Eventually(func(g Gomega) {
-			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 			g.Expect(err).NotTo(HaveOccurred())
 			infraControlPlane.Spec.ASOManagedClusterPatches = append(infraControlPlane.Spec.ASOManagedClusterPatches, `{"spec": {"enableNamespaceResources": true}}`)
 			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
@@ -148,7 +147,7 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 
 		asoManagedCluster := &asocontainerservicev1preview.ManagedCluster{}
 		Eventually(func(g Gomega) {
-			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: infraControlPlane.Name}, asoManagedCluster)
+			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: infraControlPlane.Name}, asoManagedCluster)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(asoManagedCluster.Spec.EnableNamespaceResources).To(HaveValue(BeTrue()))
 		}, input.WaitForUpdate...).Should(Succeed())
@@ -162,7 +161,7 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 
 		By("Disabling preview features on the control plane")
 		Eventually(func(g Gomega) {
-			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+			err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 			g.Expect(err).NotTo(HaveOccurred())
 			infraControlPlane.Spec.EnablePreviewFeatures = ptr.To(false)
 			g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
@@ -177,13 +176,13 @@ func AKSPatchSpec(ctx context.Context, inputGetter func() AKSPatchSpecInput) {
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 
 			ammp := &infrav1.AzureManagedMachinePool{}
 			Expect(mgmtClient.Get(ctx, types.NamespacedName{
-				Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+				Namespace: mp.Namespace,
 				Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 			}, ammp)).To(Succeed())
 

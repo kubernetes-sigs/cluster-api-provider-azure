@@ -28,8 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,7 +39,7 @@ import (
 type AKSMachinePoolSpecInput struct {
 	MgmtCluster   framework.ClusterProxy
 	Cluster       *clusterv1.Cluster
-	MachinePools  []*expv1.MachinePool
+	MachinePools  []*clusterv1.MachinePool
 	WaitIntervals []interface{}
 }
 
@@ -50,7 +49,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 
 	for _, mp := range input.MachinePools {
 		wg.Add(1)
-		go func(mp *expv1.MachinePool) {
+		go func(mp *clusterv1.MachinePool) {
 			defer GinkgoRecover()
 			defer wg.Done()
 
@@ -61,7 +60,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) + 1,
-				MachinePools:              []*expv1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 
@@ -70,7 +69,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  ptr.Deref(mp.Spec.Replicas, 0) - 1,
-				MachinePools:              []*expv1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 
@@ -80,7 +79,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			case infrav1.AzureManagedMachinePoolKind:
 				ammp := &infrav1.AzureManagedMachinePool{}
 				err := input.MgmtCluster.GetClient().Get(ctx, types.NamespacedName{
-					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+					Namespace: mp.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 				}, ammp)
 				Expect(err).NotTo(HaveOccurred())
@@ -91,7 +90,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 			case infrav1.AzureASOManagedMachinePoolKind:
 				ammp := &infrav1.AzureASOManagedMachinePool{}
 				err := input.MgmtCluster.GetClient().Get(ctx, types.NamespacedName{
-					Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+					Namespace: mp.Namespace,
 					Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
 				}, ammp)
 				Expect(err).NotTo(HaveOccurred())
@@ -119,7 +118,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 					ClusterProxy:              input.MgmtCluster,
 					Cluster:                   input.Cluster,
 					Replicas:                  0,
-					MachinePools:              []*expv1.MachinePool{mp},
+					MachinePools:              []*clusterv1.MachinePool{mp},
 					WaitForMachinePoolToScale: input.WaitIntervals,
 				})
 			}
@@ -129,7 +128,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 				ClusterProxy:              input.MgmtCluster,
 				Cluster:                   input.Cluster,
 				Replicas:                  originalReplicas,
-				MachinePools:              []*expv1.MachinePool{mp},
+				MachinePools:              []*clusterv1.MachinePool{mp},
 				WaitForMachinePoolToScale: input.WaitIntervals,
 			})
 		}(mp)

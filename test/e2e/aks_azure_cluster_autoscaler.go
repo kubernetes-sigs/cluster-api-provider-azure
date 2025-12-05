@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -54,7 +54,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	amcp := &infrav1.AzureManagedControlPlane{}
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -76,7 +76,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 
 		amcp.Spec.AutoScalerProfile = nil
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -84,7 +84,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	}, input.WaitIntervals...).Should(Succeed())
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -94,7 +94,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	// Now set to the new value
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -115,7 +115,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -124,7 +124,7 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	}, input.WaitIntervals...).Should(Succeed())
 	Eventually(func(g Gomega) {
 		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Spec.ControlPlaneRef.Namespace,
+			Namespace: input.Cluster.Namespace,
 			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
 		}, amcp)
 		g.Expect(err).NotTo(HaveOccurred())

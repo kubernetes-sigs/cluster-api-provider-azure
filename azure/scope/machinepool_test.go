@@ -36,9 +36,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -267,7 +266,7 @@ func TestMachinePoolScope_NetworkInterfaces(t *testing.T) {
 func TestMachinePoolScope_MaxSurge(t *testing.T) {
 	cases := []struct {
 		Name   string
-		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool)
+		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool)
 		Verify func(g *WithT, surge int, err error)
 	}{
 		{
@@ -279,7 +278,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		},
 		{
 			Name: "default surge should be 1 regardless of replica count with no surger",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
 				mp.Spec.Replicas = ptr.To[int32](3)
 			},
 			Verify: func(g *WithT, surge int, err error) {
@@ -289,7 +288,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		},
 		{
 			Name: "default surge should be 2 as specified by the surger",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
 				mp.Spec.Replicas = ptr.To[int32](3)
 				two := intstr.FromInt(2)
 				amp.Spec.Strategy = infrav1exp.AzureMachinePoolDeploymentStrategy{
@@ -306,7 +305,7 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 		},
 		{
 			Name: "default surge should be 2 (50%) of the desired replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
 				mp.Spec.Replicas = ptr.To[int32](4)
 				fiftyPercent := intstr.FromString("50%")
 				amp.Spec.Strategy = infrav1exp.AzureMachinePoolDeploymentStrategy{
@@ -336,12 +335,12 @@ func TestMachinePoolScope_MaxSurge(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -376,7 +375,7 @@ func TestMachinePoolScope_SaveVMImageToStatus(t *testing.T) {
 					{
 						Name:       "mp1",
 						Kind:       "MachinePool",
-						APIVersion: expv1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 					},
 				},
 			},
@@ -413,13 +412,13 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 	clusterMock.EXPECT().Token().Return(&azidentity.DefaultAzureCredential{}).AnyTimes()
 	cases := []struct {
 		Name   string
-		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool)
+		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool)
 		Verify func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error)
 	}{
 		{
 			Name: "should set and default the image if no image is specified for the AzureMachinePool",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Template.Spec.Version = ptr.To("v1.19.11")
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+				mp.Spec.Template.Spec.Version = "v1.19.11"
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, vmImage *infrav1.Image, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
@@ -436,8 +435,8 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 		},
 		{
 			Name: "should not default or set the image on the AzureMachinePool if it already exists",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
-				mp.Spec.Template.Spec.Version = ptr.To("v1.19.11")
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool) {
+				mp.Spec.Template.Spec.Version = "v1.19.11"
 				amp.Spec.Template.Image = &infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						ImagePlan: infrav1.ImagePlan{
@@ -482,12 +481,12 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -514,12 +513,12 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 	cases := []struct {
 		Name   string
-		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS)
+		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS)
 		Verify func(g *WithT, requeue bool)
 	}{
 		{
 			Name: "should requeue if the machine is not in succeeded state",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				creating := infrav1.Creating
 				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &creating
@@ -530,7 +529,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should not requeue if the machine is in succeeded state",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](0)
 				amp.Status.ProvisioningState = &succeeded
@@ -541,7 +540,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should requeue if the machine is in succeeded state but desired replica count does not match",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
@@ -552,7 +551,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should not requeue if the machine is in succeeded state but desired replica count does match",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
@@ -568,7 +567,7 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 		},
 		{
 			Name: "should requeue if an instance VM image does not match the VM image of the VMSS",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
 				succeeded := infrav1.Succeeded
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.ProvisioningState = &succeeded
@@ -602,12 +601,12 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -635,7 +634,6 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
-	_ = expv1.AddToScheme(scheme)
 
 	cases := []struct {
 		Name   string
@@ -700,15 +698,19 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: clusterv1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							Name: "azCluster1",
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							Name:     "azCluster1",
+							Kind:     "AzureCluster",
+							APIGroup: infrav1.GroupVersion.Group,
 						},
 					},
 					Status: clusterv1.ClusterStatus{
-						InfrastructureReady: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -722,7 +724,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
@@ -765,7 +767,7 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 		{
 			name: "returns role assignment spec if VM identity is system assigned",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -805,7 +807,7 @@ func TestMachinePoolScope_RoleAssignmentSpecs(t *testing.T) {
 		{
 			name: "returns role assignment spec if scope and role definition ID are set",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -865,7 +867,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -910,7 +912,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Linux and cloud is not AzurePublicCloud, it returns empty",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -942,7 +944,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						// Note: machine pool names longer than 9 characters get truncated. See MachinePoolScope::Name() for more details.
@@ -989,7 +991,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is Windows and cloud is not AzurePublicCloud, it returns empty",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -1021,7 +1023,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is not Linux or Windows and cloud is AzurePublicCloud, it returns empty",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -1053,7 +1055,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If OS type is not Windows or Linux and cloud is not AzurePublicCloud, it returns empty",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -1085,7 +1087,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		{
 			name: "If a custom VM extension is specified, it returns the custom VM extension",
 			machinePoolScope: MachinePoolScope{
-				MachinePool: &expv1.MachinePool{},
+				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machinepool-name",
@@ -1242,7 +1244,7 @@ func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1.Machine, i
 				{
 					Name:       "mp",
 					Kind:       "MachinePool",
-					APIVersion: expv1.GroupVersion.String(),
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 			Labels: map[string]string{
@@ -1251,11 +1253,11 @@ func getAzureMachinePoolMachineWithOwnerMachine(index int) (clusterv1.Machine, i
 			},
 		},
 		Spec: clusterv1.MachineSpec{
-			ProviderID: &ampm.Spec.ProviderID,
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:      "AzureMachinePoolMachine",
-				Name:      ampm.Name,
-				Namespace: ampm.Namespace,
+			ProviderID: ampm.Spec.ProviderID,
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "AzureMachinePoolMachine",
+				Name:     ampm.Name,
+				APIGroup: infrav1exp.GroupVersion.Group,
 			},
 		},
 	}
@@ -1317,12 +1319,12 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 
 	tests := []struct {
 		Name   string
-		Setup  func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder)
+		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder)
 		Verify func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client, err error)
 	}{
 		{
 			Name: "if MachinePool is externally managed and overProvisionCount > 0, do not try to reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Annotations = map[string]string{clusterv1.ReplicasManagedByAnnotation: "cluster-autoscaler"}
 				mp.Spec.Replicas = ptr.To[int32](1)
 
@@ -1351,7 +1353,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if MachinePool is not externally managed and overProvisionCount > 0, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
@@ -1380,7 +1382,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if MachinePool is not externally managed, and Machines have delete machine annotation, and overProvisionCount > 0, delete machines with deleteMachine annotation first",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](2)
 
 				mpm1, ampm1 := getAzureMachinePoolMachineWithOwnerMachine(1)
@@ -1420,7 +1422,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if existing MachinePool is not present, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1439,7 +1441,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if existing MachinePool is not present and Instances ID is in wrong format, reduce replicas",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1455,7 +1457,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 		},
 		{
 			Name: "if existing MachinePool is present but in deleting state, do not recreate AzureMachinePoolMachines",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 
 				vmssState.Instances = []azure.VMSSVM{
@@ -1486,15 +1488,19 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: clusterv1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							Name: "azCluster1",
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							Name:     "azCluster1",
+							Kind:     "AzureCluster",
+							APIGroup: infrav1.GroupVersion.Group,
 						},
 					},
 					Status: clusterv1.ClusterStatus{
-						InfrastructureReady: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -1515,7 +1521,7 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
@@ -1547,33 +1553,33 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 
 	tests := []struct {
 		Name              string
-		Setup             func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder)
+		Setup             func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder)
 		Verify            func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client)
 		ProvisioningState infrav1.ProvisioningState
 	}{
 		{
 			Name: "if provisioning state is set to Succeeded and replicas match, MachinePool is ready and conditions match",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.Replicas = 1
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetRunningCondition).Status).To(Equal(corev1.ConditionTrue))
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition).Status).To(Equal(corev1.ConditionTrue))
-				g.Expect(conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition).Status).To(Equal(corev1.ConditionTrue))
+				g.Expect(v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition).Status).To(Equal(corev1.ConditionTrue))
 			},
 			ProvisioningState: infrav1.Succeeded,
 		},
 		{
 			Name: "if provisioning state is set to Succeeded and replicas are higher on AzureMachinePool, MachinePool is ready and ScalingDown",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](1)
 				amp.Status.Replicas = 2
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleDownReason))
 			},
@@ -1581,13 +1587,13 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name: "if provisioning state is set to Succeeded and replicas are lower on AzureMachinePool, MachinePool is ready and ScalingUp",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
 				mp.Spec.Replicas = ptr.To[int32](2)
 				amp.Status.Replicas = 1
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetDesiredReplicasCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetScaleUpReason))
 			},
@@ -1595,10 +1601,10 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name:  "if provisioning state is set to Updating, MachinePool is ready and scale set model is set to OutOfDate",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeTrue())
-				condition := conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetModelUpdatedCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetModelOutOfDateReason))
 			},
@@ -1606,10 +1612,10 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name:  "if provisioning state is set to Creating, MachinePool is NotReady and scale set running condition is set to Creating",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeFalse())
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetCreatingReason))
 			},
@@ -1617,10 +1623,10 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name:  "if provisioning state is set to Deleting, MachinePool is NotReady and scale set running condition is set to Deleting",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeFalse())
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetDeletingReason))
 			},
@@ -1628,9 +1634,9 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name:  "if provisioning state is set to Failed, MachinePool ready state is not adjusted, and scale set running condition is set to Failed",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetProvisionFailedReason))
 			},
@@ -1638,9 +1644,9 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 		},
 		{
 			Name:  "if provisioning state is set to something not explicitly handled, MachinePool ready state is not adjusted, and scale set running condition is set to the ProvisioningState",
-			Setup: func(mp *expv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
-				condition := conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(string(infrav1.Migrating)))
 			},
@@ -1659,15 +1665,19 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: clusterv1.ClusterSpec{
-						InfrastructureRef: &corev1.ObjectReference{
-							Name: "azCluster1",
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							Name:     "azCluster1",
+							Kind:     "AzureCluster",
+							APIGroup: infrav1.GroupVersion.Group,
 						},
 					},
 					Status: clusterv1.ClusterStatus{
-						InfrastructureReady: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
 					},
 				}
-				mp = &expv1.MachinePool{
+				mp = &clusterv1.MachinePool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mp1",
 						Namespace: "default",
@@ -1688,7 +1698,7 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 							{
 								Name:       "mp1",
 								Kind:       "MachinePool",
-								APIVersion: expv1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 							},
 						},
 					},
@@ -1732,12 +1742,16 @@ func TestBootstrapDataChanges(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: clusterv1.ClusterSpec{
-				InfrastructureRef: &corev1.ObjectReference{
-					Name: "azCluster1",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "azCluster1",
+					Kind:     "AzureCluster",
+					APIGroup: infrav1.GroupVersion.Group,
 				},
 			},
 			Status: clusterv1.ClusterStatus{
-				InfrastructureReady: true,
+				Initialization: clusterv1.ClusterInitializationStatus{
+					InfrastructureProvisioned: ptr.To(true),
+				},
 			},
 		}
 		azureCluster = &infrav1.AzureCluster{
@@ -1751,7 +1765,7 @@ func TestBootstrapDataChanges(t *testing.T) {
 				},
 			},
 		}
-		mp = &expv1.MachinePool{
+		mp = &clusterv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mp1",
 				Namespace: "default",
@@ -1763,13 +1777,13 @@ func TestBootstrapDataChanges(t *testing.T) {
 					},
 				},
 			},
-			Spec: expv1.MachinePoolSpec{
+			Spec: clusterv1.MachinePoolSpec{
 				Template: clusterv1.MachineTemplateSpec{
 					Spec: clusterv1.MachineSpec{
 						Bootstrap: clusterv1.Bootstrap{
 							DataSecretName: ptr.To("mp-secret"),
 						},
-						Version: ptr.To("v1.31.0"),
+						Version: "v1.31.0",
 					},
 				},
 			},
@@ -1791,7 +1805,7 @@ func TestBootstrapDataChanges(t *testing.T) {
 					{
 						Name:       "mp1",
 						Kind:       "MachinePool",
-						APIVersion: expv1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 					},
 				},
 				Annotations: map[string]string{

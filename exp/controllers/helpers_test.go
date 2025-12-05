@@ -24,14 +24,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,12 +49,11 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 	It("should map bootstrap config to machine pool", func() {
 		ctx := context.Background()
 		scheme := runtime.NewScheme()
-		Expect(kubeadmv1.AddToScheme(scheme)).Should(Succeed())
-		Expect(expv1.AddToScheme(scheme)).Should(Succeed())
+		Expect(bootstrapv1.AddToScheme(scheme)).Should(Succeed())
 		Expect(clusterv1.AddToScheme(scheme)).Should(Succeed())
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 		mapFn := BootstrapConfigToInfrastructureMapFunc(fakeClient, ctrl.Log)
-		bootstrapConfig := kubeadmv1.KubeadmConfig{
+		bootstrapConfig := bootstrapv1.KubeadmConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "bootstrap-test",
 				Namespace: "default",
@@ -94,12 +91,12 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 		Expect(mapFn(ctx, &bootstrapConfig)).Should(Equal([]ctrl.Request{}))
 
 		By("doing nothing if the MachinePool has no BootstrapConfigRef")
-		machinePool := expv1.MachinePool{
+		machinePool := clusterv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "machine-pool-test",
 				Namespace: "default",
 			},
-			Spec: expv1.MachinePoolSpec{
+			Spec: clusterv1.MachinePoolSpec{
 				ClusterName: "test-cluster",
 				Template: clusterv1.MachineTemplateSpec{
 					Spec: clusterv1.MachineSpec{
@@ -113,11 +110,10 @@ var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 
 		By("doing nothing if the MachinePool has a different BootstrapConfigRef Kind")
 		machinePool.Spec.Template.Spec.Bootstrap = clusterv1.Bootstrap{
-			ConfigRef: &corev1.ObjectReference{
-				APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-				Kind:       "OtherBootstrapConfig",
-				Name:       bootstrapConfig.Name,
-				Namespace:  bootstrapConfig.Namespace,
+			ConfigRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: "bootstrap.cluster.x-k8s.io",
+				Kind:     "OtherBootstrapConfig",
+				Name:     bootstrapConfig.Name,
 			},
 		}
 		Expect(fakeClient.Update(ctx, &machinePool)).Should(Succeed())
@@ -224,7 +220,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 			Setup: func(logMock *mock_log.MockLogSink) {
 				logMock.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
 				logMock.EXPECT().Enabled(4).Return(true)
-				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta1.Cluster")
+				logMock.EXPECT().Info(4, "attempt to map incorrect type", "type", "*v1beta2.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(BeEmpty())
@@ -268,7 +264,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				sink := mock_log.NewMockLogSink(mockCtrl)
 				fakeClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
 				sink.EXPECT().Init(logr.RuntimeInfo{CallDepth: 1})
-				sink.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta1.MachinePool"), "failed to get AzureCluster")
+				sink.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1beta2.MachinePool"), "failed to get AzureCluster")
 
 				return sink, mockCtrl, fakeClient
 			},
