@@ -47,6 +47,10 @@ const (
 	DefaultOutboundRuleIdleTimeoutInMinutes = 4
 	// DefaultAzureCloud is the public cloud that will be used by most users.
 	DefaultAzureCloud = "AzurePublicCloud"
+	// DefaultLoadBalancingRuleName is the default load balancer rule name.
+	DefaultLoadBalancingRuleName = "LBRuleHTTPS"
+	// DefaultHealthProbeName is the default health probe name.
+	DefaultHealthProbeName = "HTTPSProbe"
 )
 
 func (c *AzureCluster) setDefaults() {
@@ -303,6 +307,13 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 		}
 	}
 	c.SetAPIServerLBBackendPoolNameDefault()
+
+	if lb.LoadBalancingRule.Name == "" {
+		lb.LoadBalancingRule.Name = DefaultLoadBalancingRuleName
+	}
+	if lb.HealthProbe.Name == "" {
+		lb.HealthProbe.Name = DefaultHealthProbeName
+	}
 }
 
 // SetNodeOutboundLBDefaults sets the default values for the NodeOutboundLB.
