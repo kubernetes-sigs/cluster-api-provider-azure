@@ -30,11 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,6 +48,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	clusterv1beta1util "sigs.k8s.io/cluster-api-provider-azure/util/v1beta1"
 )
 
 var errInvalidClusterKind = errors.New("AzureASOManagedControlPlane cannot be used without AzureASOManagedCluster")
@@ -73,7 +74,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 		WithOptions(options).
 		For(&infrav1.AzureASOManagedControlPlane{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
-		Watches(&clusterv1.Cluster{},
+		Watches(&clusterv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(clusterToAzureASOManagedControlPlane),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
@@ -112,7 +113,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 }
 
 func clusterToAzureASOManagedControlPlane(_ context.Context, o client.Object) []ctrl.Request {
-	controlPlaneRef := o.(*clusterv1.Cluster).Spec.ControlPlaneRef
+	controlPlaneRef := o.(*clusterv1beta1.Cluster).Spec.ControlPlaneRef
 	if controlPlaneRef != nil &&
 		matchesASOManagedAPIGroup(controlPlaneRef.APIVersion) &&
 		controlPlaneRef.Kind == infrav1.AzureASOManagedControlPlaneKind {
@@ -123,7 +124,7 @@ func clusterToAzureASOManagedControlPlane(_ context.Context, o client.Object) []
 
 func (r *AzureASOManagedControlPlaneReconciler) azureASOManagedMachinePoolToAzureASOManagedControlPlane(ctx context.Context, o client.Object) []ctrl.Request {
 	asoManagedMachinePool := o.(*infrav1.AzureASOManagedMachinePool)
-	clusterName := asoManagedMachinePool.Labels[clusterv1.ClusterNameLabel]
+	clusterName := asoManagedMachinePool.Labels[clusterv1beta1.ClusterNameLabel]
 	if clusterName == "" {
 		return nil
 	}
@@ -154,7 +155,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := patch.NewHelper(asoManagedControlPlane, r.Client)
+	patchHelper, err := v1beta1patch.NewHelper(asoManagedControlPlane, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
@@ -169,7 +170,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 	asoManagedControlPlane.Status.Ready = false
 	asoManagedControlPlane.Status.Initialized = false
 
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
+	cluster, err := clusterv1beta1util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -186,7 +187,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 	return r.reconcileNormal(ctx, asoManagedControlPlane, cluster)
 }
 
-func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1beta1.Cluster) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileNormal",
 	)
@@ -266,7 +267,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	return result, nil
 }
 
-func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1.Cluster, managedCluster *asocontainerservicev1.ManagedCluster) (*time.Duration, error) {
+func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, cluster *clusterv1beta1.Cluster, managedCluster *asocontainerservicev1.ManagedCluster) (*time.Duration, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AzureASOManagedControlPlaneReconciler.reconcileKubeconfig",
 	)
@@ -338,7 +339,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(asoManagedControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureASOManagedControlPlaneKind)),
 			},
-			Labels: map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+			Labels: map[string]string{clusterv1beta1.ClusterNameLabel: cluster.Name},
 		},
 		Data: map[string][]byte{
 			secret.KubeconfigDataName: kubeconfigData,
@@ -392,18 +393,18 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 	return ctrl.Result{}, nil
 }
 
-func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1.APIEndpoint {
+func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1beta1.APIEndpoint {
 	if managedCluster.Status.PrivateFQDN != nil {
-		return clusterv1.APIEndpoint{
+		return clusterv1beta1.APIEndpoint{
 			Host: *managedCluster.Status.PrivateFQDN,
 			Port: 443,
 		}
 	}
 	if managedCluster.Status.Fqdn != nil {
-		return clusterv1.APIEndpoint{
+		return clusterv1beta1.APIEndpoint{
 			Host: *managedCluster.Status.Fqdn,
 			Port: 443,
 		}
 	}
-	return clusterv1.APIEndpoint{}
+	return clusterv1beta1.APIEndpoint{}
 }
