@@ -23,7 +23,7 @@ settings = {
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
     "capi_version": "v1.11.3",
-    "caaph_version": "v0.4.1",
+    "caaph_version": "v0.5.2",
     "cert_manager_version": "v1.19.1",
     "kubernetes_version": "v1.32.2",
     "aks_kubernetes_version": "v1.30.2",

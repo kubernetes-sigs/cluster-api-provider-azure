@@ -125,7 +125,7 @@ KUBECTL_VER := v1.32.2
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
-HELM_VER := v3.14.4
+HELM_VER := v3.19.2
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
@@ -361,7 +361,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.3/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAAPH
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.4.1/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.2/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
 
 	# Deploy CAPZ
 	if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
