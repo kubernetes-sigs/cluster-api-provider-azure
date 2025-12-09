@@ -62,7 +62,7 @@ export AZURE_SUBSCRIPTION_ID="$(cat sp.json | jq -r .subscriptionId | tr -d '\n'
 export AZURE_CLIENT_SECRET="$(cat sp.json | jq -r .clientSecret | tr -d '\n')"
 export AZURE_CLIENT_ID="$(cat sp.json | jq -r .clientId | tr -d '\n')"
 export AZURE_TENANT_ID="$(cat sp.json | jq -r .tenantId | tr -d '\n')"
-export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
+export AZURE_NODE_MACHINE_TYPE="Standard_D2ds_v5"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
 export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 export CLUSTER_IDENTITY_NAME="cluster-identity"
@@ -172,7 +172,7 @@ metadata:
 spec:
   mode: System
   osDiskSizeGB: 30
-  sku: Standard_D2s_v3
+  sku: Standard_D2ds_v5
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -198,7 +198,7 @@ metadata:
 spec:
   mode: User
   osDiskSizeGB: 40
-  sku: Standard_D2s_v4
+  sku: Standard_D2ds_v5
 ```
 
 Please note that we don't declare a configuration for the apiserver endpoint. This configuration data will be populated automatically based on the data returned from AKS API during cluster create as `.spec.controlPlaneEndpoint.Host` and `.spec.controlPlaneEndpoint.Port` in both the `AzureManagedCluster` and `AzureManagedControlPlane` resources. Any user-provided data will be ignored and overwritten by data returned from the AKS API.

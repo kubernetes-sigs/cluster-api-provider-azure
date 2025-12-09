@@ -37,7 +37,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 			pool: &asocontainerservicev1hub.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1hub.ManagedClustersAgentPool_Spec{
 					AzureName:           "agentpool1",
-					VmSize:              ptr.To("Standard_D2s_v3"),
+					VmSize:              ptr.To("Standard_D2ds_v5"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),
 					OsDiskSizeGB:        ptr.To(100),
 					Count:               ptr.To(2),
@@ -68,7 +68,7 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 			expect: func(g *GomegaWithT, result asocontainerservicev1hub.ManagedClusterAgentPoolProfile) {
 				g.Expect(result).To(Equal(asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
 					Name:                ptr.To("agentpool1"),
-					VmSize:              ptr.To("Standard_D2s_v3"),
+					VmSize:              ptr.To("Standard_D2ds_v5"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),
 					OsDiskSizeGB:        ptr.To(100),
 					Count:               ptr.To(2),

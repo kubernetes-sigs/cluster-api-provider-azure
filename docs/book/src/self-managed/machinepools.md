@@ -67,20 +67,20 @@ Virtual Machine Scale Set model, e.g., updating the OS image run by the virtual 
 if a cluster operator wanted to change the Kubernetes version of the `MachinePool`, they would update the `Version`
 field on the `MachinePool`, then `AzureMachinePool` would respond by rolling out the new OS image for the specified
 Kubernetes version to each of the virtual machines in the scale set progressively cordon, draining, then replacing the
-machine. This enables `AzureMachinePools` to upgrade the underlying pool of virtual machines with minimal interruption 
+machine. This enables `AzureMachinePools` to upgrade the underlying pool of virtual machines with minimal interruption
 to the workloads running on them.
 
 `AzureMachinePools` also provides the ability to specify the order of virtual machine deletion.
 
 #### Describing the Deployment Strategy
-Below we see a partially described `AzureMachinePool`. The `strategy` field describes the 
-`AzureMachinePoolDeploymentStrategy`. At the time of writing this, there is only one strategy type, `RollingUpdate`, 
+Below we see a partially described `AzureMachinePool`. The `strategy` field describes the
+`AzureMachinePoolDeploymentStrategy`. At the time of writing this, there is only one strategy type, `RollingUpdate`,
 which provides the ability to specify delete policy, max surge, and max unavailable.
 
 - **deletePolicy:** provides three options for order of deletion `Oldest`, `Newest`, and `Random`
 - **maxSurge:** provides the ability to specify how many machines can be added in addition to the current replica count
   during an upgrade operation. This can be a percentage, or a fixed number.
-- **maxUnavailable:** provides the ability to specify how many machines can be unavailable at any time. This can be a 
+- **maxUnavailable:** provides the ability to specify how many machines can be unavailable at any time. This can be a
   percentage, or a fixed number.
 
 ```yaml
@@ -99,7 +99,7 @@ spec:
 
 ### AzureMachinePoolMachines
 `AzureMachinePoolMachine` represents a virtual machine in the scale set. `AzureMachinePoolMachines` are created by the
-`AzureMachinePool` controller and are used to track the life cycle of a virtual machine in the scale set. When a 
+`AzureMachinePool` controller and are used to track the life cycle of a virtual machine in the scale set. When a
 `AzureMachinePool` is created, each virtual machine instance will be represented as a `AzureMachinePoolMachine`
 resource. A cluster operator can delete the `AzureMachinePoolMachine` resource if they would like to delete a specific
 virtual machine from the scale set. This is useful if one would like to manually control upgrades and rollouts through
@@ -163,7 +163,7 @@ spec:
         storageAccountType: Premium_LRS
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
-    vmSize: Standard_D2s_v3
+    vmSize: Standard_D2ds_v5
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig

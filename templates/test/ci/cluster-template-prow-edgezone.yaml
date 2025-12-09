@@ -143,7 +143,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
       - providerID: azure:///subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmSize: ${AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE:=Standard_DS2_v2}
+      vmSize: ${AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE:=Standard_D2ds_v5}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -185,7 +185,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
       - providerID: azure:///subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
-      vmSize: ${AZURE_EDGEZONE_NODE_MACHINE_TYPE:=Standard_DS4_v2}
+      vmSize: ${AZURE_EDGEZONE_NODE_MACHINE_TYPE:=Standard_D4s_v5}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
