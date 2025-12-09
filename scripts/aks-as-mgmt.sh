@@ -28,7 +28,7 @@ export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-"${MGMT_CLUSTER_NAME}"}" # reso
 export AKS_NODE_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}-nodes"
 export AKS_MGMT_KUBERNETES_VERSION="${AKS_MGMT_KUBERNETES_VERSION:-v1.33.2}"
 export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
-export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s"}"
+export AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-"Standard_B2s_v2"}"
 export AKS_NODE_COUNT="${AKS_NODE_COUNT:-2}"
 export MGMT_CLUSTER_KUBECONFIG="${MGMT_CLUSTER_KUBECONFIG:-$REPO_ROOT/aks-mgmt.config}"
 export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azure_identity_id}"
@@ -186,18 +186,18 @@ create_aks_cluster() {
     export USER_IDENTITY
 
     echo "assigning user-assigned managed identity to the AKS cluster"
-    
+
     # Wait for any ongoing cluster operations to complete before proceeding
     echo "waiting for cluster to be in a ready state"
     az aks wait --resource-group "${AKS_RESOURCE_GROUP}" --name "${MGMT_CLUSTER_NAME}" --created --timeout 600 --only-show-errors
-    
+
     # Temporarily mitigate PDB issues by scaling up metrics-server before the update
     echo "temporarily scaling up metrics-server to avoid PDB drain issues"
     kubectl scale deployment metrics-server --replicas=3 -n kube-system || true
-    
+
     # Wait a moment for the pods to be scheduled
     sleep 15
-    
+
     # Retry the managed identity assignment with exponential backoff
     retry_count=0
     max_retries=5
@@ -215,13 +215,13 @@ create_aks_cluster() {
         kubectl scale deployment metrics-server --replicas=2 -n kube-system || true
         exit 1
       fi
-      
+
       # Exponential backoff with jitter: base_sleep * (2^retry_count) + random(0-10)
       sleep_time=$((base_sleep * (1 << retry_count) + RANDOM % 11))
       echo "Attempt $retry_count failed, retrying in $sleep_time seconds..."
       sleep $sleep_time
     done
-    
+
     # Restore original metrics-server replica count
     echo "restoring metrics-server to original replica count"
     kubectl scale deployment metrics-server --replicas=2 -n kube-system || true

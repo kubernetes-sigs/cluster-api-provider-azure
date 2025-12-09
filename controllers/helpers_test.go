@@ -1242,7 +1242,7 @@ func newAzureManagedMachinePool(clusterName, poolName, mode string) *infrav1.Azu
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
 				Mode:         mode,
-				SKU:          "Standard_B2s",
+				SKU:          "Standard_B2s_v2",
 				OSDiskSizeGB: ptr.To(512),
 				KubeletConfig: &infrav1.KubeletConfig{
 					CPUManagerPolicy:      &cpuManagerPolicyStatic,

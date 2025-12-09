@@ -49,19 +49,19 @@ spec:
       schema:
         openAPIV3Schema:
           type: string
-          default: Standard_B2s
+          default: Standard_B2s_v2
     - name: workerMachineType
       required: false
       schema:
         openAPIV3Schema:
           type: string
-          default: Standard_B2s
+          default: Standard_B2s_v2
     - name: workerMachineTypeWin
       required: false
       schema:
         openAPIV3Schema:
           type: string
-          default: Standard_B2s
+          default: Standard_B2s_v2
     - name: sshPublicKey
       required: true
       schema:
