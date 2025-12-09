@@ -4,11 +4,6 @@ go 1.24.6
 
 toolchain go1.24.11
 
-// Bump to 889987e8d46a which is on release-1.11 branch to include the following fixes:
-// - https://github.com/kubernetes-sigs/cluster-api/pull/13071
-// - https://github.com/kubernetes-sigs/cluster-api/pull/13072
-replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.11.4-0.20251201193228-889987e8d46a
-
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
