@@ -58,6 +58,11 @@ const (
 	// owner: @nawazkh
 	// alpha: v1.18
 	APIServerILB featuregate.Feature = "APIServerILB"
+
+	// ARO is the feature gate for enabling the ARO support.
+	// owner: @marek-veber
+	// alpha: v1.19
+	ARO featuregate.Feature = "ARO"
 )
 
 func init() {
@@ -73,4 +78,5 @@ var defaultCAPZFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	EdgeZone:          {Default: false, PreRelease: featuregate.Alpha},
 	ASOAPI:            {Default: true, PreRelease: featuregate.GA},
 	APIServerILB:      {Default: false, PreRelease: featuregate.Alpha},
+	ARO:               {Default: false, PreRelease: featuregate.Alpha},
 }

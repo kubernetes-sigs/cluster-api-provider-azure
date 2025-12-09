@@ -40,6 +40,26 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - authorization.azure.com
+  resources:
+  - roleassignments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - authorization.azure.com
+  resources:
+  - roleassignments/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - authorization.k8s.io
   resources:
   - subjectaccessreviews
@@ -128,6 +148,32 @@ rules:
   - list
   - watch
 - apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - ""
   resources:
   - nodes
@@ -138,6 +184,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters
+  - aromachinepools
   - azureasomanagedclusters
   - azureasomanagedcontrolplanes
   - azureasomanagedmachinepools
@@ -161,6 +209,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/finalizers
+  - aromachinepools/finalizers
   - azureasomanagedclusters/finalizers
   - azureasomanagedcontrolplanes/finalizers
   - azureasomanagedmachinepools/finalizers
@@ -169,6 +219,8 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - aroclusters/status
+  - aromachinepools/status
   - azureasomanagedclusters/status
   - azureasomanagedcontrolplanes/status
   - azureasomanagedmachinepools/status
@@ -193,6 +245,18 @@ rules:
   - list
   - watch
 - apiGroups:
+  - keyvault.azure.com
+  resources:
+  - vaults
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - kubernetesconfiguration.azure.com
   resources:
   - extensions
@@ -213,10 +277,31 @@ rules:
   - list
   - watch
 - apiGroups:
+  - managedidentity.azure.com
+  resources:
+  - userassignedidentities
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - managedidentity.azure.com
+  resources:
+  - userassignedidentities/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - network.azure.com
   resources:
   - bastionhosts
   - natgateways
+  - networksecuritygroups
   - privateendpoints
   - virtualnetworks
   - virtualnetworkssubnets
@@ -236,6 +321,30 @@ rules:
   - privateendpoints/status
   - virtualnetworks/status
   - virtualnetworkssubnets/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclusters
+  - hcpopenshiftclustersexternalauths
+  - hcpopenshiftclustersnodepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclusters/status
+  - hcpopenshiftclustersexternalauths/status
+  - hcpopenshiftclustersnodepools/status
   verbs:
   - get
   - list

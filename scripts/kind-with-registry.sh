@@ -61,7 +61,7 @@ KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
 CONFORMANCE_FLAVOR="${CONFORMANCE_FLAVOR:-}"
 export KIND_CLUSTER_NAME
 
-if [[ "$("${KIND}" get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
+if [[ "$("${KIND}" get clusters)" =~ "^${KIND_CLUSTER_NAME}\$" ]]; then
   echo "cluster already exists, moving on"
   exit 0
 fi

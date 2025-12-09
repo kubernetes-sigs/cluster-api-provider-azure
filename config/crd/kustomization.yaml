@@ -24,6 +24,9 @@ resources:
 - bases/infrastructure.cluster.x-k8s.io_azureasomanagedcontrolplanetemplates.yaml
 - bases/infrastructure.cluster.x-k8s.io_azureasomanagedmachinepools.yaml
 - bases/infrastructure.cluster.x-k8s.io_azureasomanagedmachinepooltemplates.yaml
+- bases/infrastructure.cluster.x-k8s.io_aroclusters.yaml
+- bases/infrastructure.cluster.x-k8s.io_aromachinepools.yaml
+- bases/controlplane.cluster.x-k8s.io_arocontrolplanes.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -50,6 +53,9 @@ patches:
 - path: patches/cainjection_in_azuremachinetemplates.yaml
 - path: patches/cainjection_in_azuremachinepools.yaml
 - path: patches/cainjection_in_azuremachinepoolmachines.yaml
+- path: patches/cainjection_in_aroclusters.yaml
+- path: patches/cainjection_in_arocontrolplanes.yaml
+- path: patches/cainjection_in_aromachinepools.yaml
 # - path: patches/cainjection_in_azuremanagedmachinepools.yaml
 # - path: patches/cainjection_in_azuremanagedclusters.yaml
 # - path: patches/cainjection_in_azuremanagedcontrolplanes.yaml
@@ -74,6 +80,9 @@ patches:
 - path: patches/capicontract_in_azureasomanagedcontrolplanetemplates.yaml
 - path: patches/capicontract_in_azureasomanagedmachinepools.yaml
 - path: patches/capicontract_in_azureasomanagedmachinepooltemplates.yaml
+- path: patches/capicontract_in_aroclusters.yaml
+- path: patches/capicontract_in_arocontrolplanes.yaml
+- path: patches/capicontract_in_aromachinepools.yaml
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 configurations:
