@@ -83,5 +83,5 @@ spec:
     spec:
       mode: System
       name: pool0
-      sku: Standard_D2s_v5
+      sku: Standard_D2ds_v5
 ```

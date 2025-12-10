@@ -163,7 +163,7 @@ spec:
         storageAccountType: Premium_LRS
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
-    vmSize: Standard_D2s_v5
+    vmSize: Standard_D2ds_v5
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig

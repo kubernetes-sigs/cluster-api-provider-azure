@@ -184,7 +184,7 @@
     "1",
     "3"
   ],
-  "eastus_Standard_D2s_v5": [
+  "eastus_Standard_D2ds_v5": [
     "2",
     "1",
     "3"
@@ -1198,7 +1198,7 @@
     "3",
     "1"
   ],
-  "eastus2_Standard_D2s_v5": [
+  "eastus2_Standard_D2ds_v5": [
     "2",
     "3",
     "1"
@@ -2092,7 +2092,7 @@
     "2",
     "1"
   ],
-  "centralus_Standard_D2s_v5": [
+  "centralus_Standard_D2ds_v5": [
     "2",
     "1",
     "3"
@@ -3021,7 +3021,7 @@
     "2",
     "1"
   ],
-  "northeurope_Standard_D2s_v5": [
+  "northeurope_Standard_D2ds_v5": [
     "3",
     "2",
     "1"
@@ -3898,7 +3898,7 @@
     "2",
     "1"
   ],
-  "westeurope_Standard_D2s_v5": [
+  "westeurope_Standard_D2ds_v5": [
     "3",
     "2",
     "1"
@@ -5037,7 +5037,7 @@
     "3",
     "2"
   ],
-  "southeastasia_Standard_D2s_v5": [
+  "southeastasia_Standard_D2ds_v5": [
     "1",
     "3",
     "2"
@@ -5710,7 +5710,7 @@
     "1",
     "3"
   ],
-  "japaneast_Standard_D2s_v5": [
+  "japaneast_Standard_D2ds_v5": [
     "2",
     "1",
     "3"
@@ -6645,7 +6645,7 @@
     "1",
     "2"
   ],
-  "australiaeast_Standard_D2s_v5": [
+  "australiaeast_Standard_D2ds_v5": [
     "3",
     "1",
     "2"
@@ -7693,7 +7693,7 @@
     "3",
     "1"
   ],
-  "westus2_Standard_D2s_v5": [
+  "westus2_Standard_D2ds_v5": [
     "2",
     "3",
     "1"
@@ -8584,7 +8584,7 @@
     "1",
     "3"
   ],
-  "uksouth_Standard_D2s_v5": [
+  "uksouth_Standard_D2ds_v5": [
     "2",
     "1",
     "3"
@@ -9625,7 +9625,7 @@
     "3",
     "1"
   ],
-  "FranceCentral_Standard_D2s_v5": [
+  "FranceCentral_Standard_D2ds_v5": [
     "2",
     "3",
     "1"
@@ -10242,7 +10242,7 @@
     "3",
     "2"
   ],
-  "EastUS2EUAP_Standard_D2s_v5": [
+  "EastUS2EUAP_Standard_D2ds_v5": [
     "1",
     "3",
     "2"
