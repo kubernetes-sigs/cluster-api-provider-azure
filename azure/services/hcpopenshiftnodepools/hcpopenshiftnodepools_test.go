@@ -106,7 +106,8 @@ func TestNew(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: v1beta2.AROMachinePoolSpec{
-			Version: "4.14.5",
+			NodePoolName: "test-amp",
+			Version:      "4.14.5",
 			Platform: v1beta2.AROPlatformProfileMachinePool{
 				VMSize: "Standard_D4s_v3",
 			},
@@ -211,8 +212,9 @@ func TestBuildHcpOpenShiftNodePool(t *testing.T) {
 			UID:       "amp-uid",
 		},
 		Spec: v1beta2.AROMachinePoolSpec{
-			Version:    "4.14.5",
-			AutoRepair: true,
+			NodePoolName: "test-amp",
+			Version:      "4.14.5",
+			AutoRepair:   true,
 			Labels: map[string]string{
 				"key1": "value1",
 			},
@@ -335,6 +337,7 @@ func TestGetNodePoolName(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: v1beta2.AROMachinePoolSpec{
+			NodePoolName: "my-worker-pool",
 			Platform: v1beta2.AROPlatformProfileMachinePool{
 				VMSize: "Standard_D4s_v3",
 			},

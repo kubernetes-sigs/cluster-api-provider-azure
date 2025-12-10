@@ -131,7 +131,7 @@ spec:
                   At most one provider can be configured.
                 items:
                   description: ExternalAuthProvider is an external OIDC identity provider
-                    that can issue tokens for this cluster
+                    that can issue tokens for this cluster.
                   properties:
                     claimMappings:
                       description: |-
