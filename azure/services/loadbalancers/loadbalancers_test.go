@@ -111,6 +111,30 @@ var (
 		APIServerPort: 6443,
 	}
 
+	fakeInternalAPILBSpecWithZones = LBSpec{
+		Name:                 "my-private-lb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Internal,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-private-lb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		AvailabilityZones:    []string{"1", "2", "3"},
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-private-lb-frontEnd",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					PrivateIPAddress: "10.0.0.10",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
 	fakeNodeOutboundLBSpec = LBSpec{
 		Name:                 "my-cluster",
 		ResourceGroup:        "my-rg",

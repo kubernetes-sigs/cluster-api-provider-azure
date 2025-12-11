@@ -178,6 +178,22 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name:     "internal load balancer with availability zones",
+			spec:     &fakeInternalAPILBSpecWithZones,
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				// Verify zones are set on frontend IP configuration
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				g.Expect(lb.Properties.FrontendIPConfigurations[0].Zones).To(HaveLen(3))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[0]).To(Equal("1"))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[1]).To(Equal("2"))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[2]).To(Equal("3"))
+			},
+			expectedError: "",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
