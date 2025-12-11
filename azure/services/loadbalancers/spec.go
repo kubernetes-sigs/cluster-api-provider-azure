@@ -48,6 +48,7 @@ type LBSpec struct {
 	IdleTimeoutInMinutes *int32
 	AdditionalTags       map[string]string
 	AdditionalPorts      []infrav1.LoadBalancerPort
+	AvailabilityZones    []string
 }
 
 // ResourceName returns the name of the load balancer.
@@ -167,6 +168,16 @@ func (s *LBSpec) Parameters(_ context.Context, existing any) (parameters any, er
 func getFrontendIPConfigs(lbSpec LBSpec) ([]*armnetwork.FrontendIPConfiguration, []*armnetwork.SubResource) {
 	frontendIPConfigurations := make([]*armnetwork.FrontendIPConfiguration, 0)
 	frontendIDs := make([]*armnetwork.SubResource, 0)
+
+	// Convert availability zones to []*string for Azure SDK
+	var zones []*string
+	if len(lbSpec.AvailabilityZones) > 0 {
+		zones = make([]*string, len(lbSpec.AvailabilityZones))
+		for i, zone := range lbSpec.AvailabilityZones {
+			zones[i] = ptr.To(zone)
+		}
+	}
+
 	for _, ipConfig := range lbSpec.FrontendIPConfigs {
 		var properties armnetwork.FrontendIPConfigurationPropertiesFormat
 		if lbSpec.Type == infrav1.Internal {
@@ -187,6 +198,7 @@ func getFrontendIPConfigs(lbSpec LBSpec) ([]*armnetwork.FrontendIPConfiguration,
 		frontendIPConfigurations = append(frontendIPConfigurations, &armnetwork.FrontendIPConfiguration{
 			Properties: &properties,
 			Name:       ptr.To(ipConfig.Name),
+			Zones:      zones,
 		})
 		frontendIDs = append(frontendIDs, &armnetwork.SubResource{
 			ID: ptr.To(azure.FrontendIPConfigID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, ipConfig.Name)),

@@ -269,6 +269,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
 			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -303,6 +304,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:       s.AdditionalTags(),
 			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
 		}
 
 		privateIPFound := false
@@ -350,6 +352,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
+			AvailabilityZones:    s.NodeOutboundLB().AvailabilityZones,
 		})
 	}
 
@@ -371,6 +374,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			IdleTimeoutInMinutes: s.ControlPlaneOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
+			AvailabilityZones:    s.ControlPlaneOutboundLB().AvailabilityZones,
 		})
 	}
 

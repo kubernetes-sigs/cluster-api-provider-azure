@@ -366,6 +366,14 @@ type LoadBalancerSpec struct {
 	// BackendPool describes the backend pool of the load balancer.
 	// +optional
 	BackendPool BackendPool `json:"backendPool,omitempty"`
+	// AvailabilityZones is a list of availability zones for the load balancer.
+	// When specified for an internal load balancer, the frontend IP configuration
+	// will be zone-redundant across the specified zones.
+	// For public load balancers, this should be set on the associated public IP addresses instead.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:MaxItems=3
+	AvailabilityZones []string `json:"availabilityZones,omitempty"`
 
 	LoadBalancerClassSpec `json:",inline"`
 }
