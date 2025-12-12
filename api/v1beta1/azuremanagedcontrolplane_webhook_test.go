@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
@@ -30,6 +31,11 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
+
+func init() {
+	format.MaxLength = 0
+	format.TruncatedDiff = false
+}
 
 func TestDefaultingWebhook(t *testing.T) {
 	g := NewWithT(t)
@@ -3256,7 +3262,7 @@ func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.securityProfile.workloadIdentity: Invalid value: v1beta1.ManagedClusterSecurityProfileWorkloadIdentity{Enabled:true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
+			wantErr: "spec.securityProfile.workloadIdentity: Invalid value: {\"enabled\":true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
 		},
 		{
 			name: "Cannot enable AzureKms without user assigned identity",
@@ -3272,7 +3278,7 @@ func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.securityProfile.azureKeyVaultKms.keyVaultResourceID: Invalid value: \"null\": Spec.SecurityProfile.AzureKeyVaultKms can be set only when Spec.Identity.Type is UserAssigned",
+			wantErr: "spec.securityProfile.azureKeyVaultKms.keyVaultResourceID: Invalid value: null: Spec.SecurityProfile.AzureKeyVaultKms can be set only when Spec.Identity.Type is UserAssigned",
 		},
 		{
 			name: "When AzureKms.KeyVaultNetworkAccess is private AzureKeyVaultKms.KeyVaultResourceID cannot be empty",
@@ -3294,7 +3300,7 @@ func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.securityProfile.azureKeyVaultKms.keyVaultResourceID: Invalid value: \"null\": Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID cannot be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Private",
+			wantErr: "spec.securityProfile.azureKeyVaultKms.keyVaultResourceID: Invalid value: null: Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultResourceID cannot be empty when Spec.SecurityProfile.AzureKeyVaultKms.KeyVaultNetworkAccess is Private",
 		},
 		{
 			name: "When AzureKms.KeyVaultNetworkAccess is public AzureKeyVaultKms.KeyVaultResourceID should be empty",
@@ -3433,7 +3439,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.defender: Invalid value: \"null\": cannot unset Spec.SecurityProfile.Defender, to disable defender please set Spec.SecurityProfile.Defender.SecurityMonitoring.Enabled to false",
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.defender: Invalid value: null: cannot unset Spec.SecurityProfile.Defender, to disable defender please set Spec.SecurityProfile.Defender.SecurityMonitoring.Enabled to false",
 		},
 		{
 			name: "AzureManagedControlPlane SecurityProfile.Defender is mutable and can be disabled",
@@ -3516,7 +3522,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.securityProfile.workloadIdentity: Invalid value: v1beta1.ManagedClusterSecurityProfileWorkloadIdentity{Enabled:true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
+			wantErr: "spec.securityProfile.workloadIdentity: Invalid value: {\"enabled\":true}: Spec.SecurityProfile.WorkloadIdentity cannot be enabled when Spec.OIDCIssuerProfile is disabled",
 		},
 		{
 			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity cannot unset values",
@@ -3545,7 +3551,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.workloadIdentity: Invalid value: \"null\": cannot unset Spec.SecurityProfile.WorkloadIdentity, to disable workloadIdentity please set Spec.SecurityProfile.WorkloadIdentity.Enabled to false",
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.workloadIdentity: Invalid value: null: cannot unset Spec.SecurityProfile.WorkloadIdentity, to disable workloadIdentity please set Spec.SecurityProfile.WorkloadIdentity.Enabled to false",
 		},
 		{
 			name: "AzureManagedControlPlane SecurityProfile.WorkloadIdentity can be disabled",
@@ -3723,7 +3729,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.azureKeyVaultKms: Invalid value: \"null\": cannot unset Spec.SecurityProfile.AzureKeyVaultKms profile to disable the profile please set Spec.SecurityProfile.AzureKeyVaultKms.Enabled to false",
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.azureKeyVaultKms: Invalid value: null: cannot unset Spec.SecurityProfile.AzureKeyVaultKms profile to disable the profile please set Spec.SecurityProfile.AzureKeyVaultKms.Enabled to false",
 		},
 		{
 			name: "AzureManagedControlPlane SecurityProfile.AzureKeyVaultKms cannot be enabled without UserAssigned Identity",
@@ -3798,7 +3804,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.imageCleaner: Invalid value: \"null\": cannot unset Spec.SecurityProfile.ImageCleaner, to disable imageCleaner please set Spec.SecurityProfile.ImageCleaner.Enabled to false",
+			wantErr: "AzureManagedControlPlane.infrastructure.cluster.x-k8s.io \"\" is invalid: spec.securityProfile.imageCleaner: Invalid value: null: cannot unset Spec.SecurityProfile.ImageCleaner, to disable imageCleaner please set Spec.SecurityProfile.ImageCleaner.Enabled to false",
 		},
 		{
 			name: "AzureManagedControlPlane SecurityProfile.ImageCleaner is mutable",

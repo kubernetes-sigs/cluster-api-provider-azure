@@ -74,9 +74,6 @@ spec:
                     description: port is the port on which the API server is serving.
                     format: int32
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               initialized:
                 description: |-
@@ -183,9 +180,6 @@ spec:
                     description: port is the port on which the API server is serving.
                     format: int32
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               initialized:
                 description: |-
