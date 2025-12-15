@@ -26,9 +26,9 @@ jobs:
       with:
         go-version: ${{ steps.vars.outputs.go_version }}
     - run: "PATH=/usr/local/go/bin:$PATH make test-cover"
-    - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      with:
-        files: ./coverage.out
-        fail_ci_if_error: true
+#     - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+#       env:
+#         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#       with:
+#         files: ./coverage.out
+#         fail_ci_if_error: true
