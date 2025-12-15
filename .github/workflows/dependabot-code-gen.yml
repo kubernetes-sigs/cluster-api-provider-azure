@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@df199fb7be9f65074067a9eb93f12bb4c5547cf2 # v2.13.3
+      uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
       with:
         egress-policy: audit
     - name: Get Go version
@@ -33,7 +33,7 @@ jobs:
       id: go
     - name: Check out code into the Go module directory
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-    - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # tag=v4.3.0
+    - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # tag=v5.0.1
       name: Restore go cache
       with:
         path: |
