@@ -269,6 +269,8 @@ intervals:
   default/wait-control-plane: ["20m", "10s"]
   default/wait-control-plane-long: ["40m", "10s"]
   default/wait-control-plane-ha: ["60m", "10s"]
+  default/wait-control-plane-upgrade: ["15m", "10s"]
+  default/wait-machine-deployment-upgrade: ["10m", "10s"]
   default/wait-worker-nodes: ["25m", "10s"]
   default/wait-gpu-nodes: ["30m", "10s"]
   default/wait-nodes-ready: ["10m", "10s"]
