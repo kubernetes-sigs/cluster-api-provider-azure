@@ -694,6 +694,79 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	// ci-e2e.sh and Prow CI skip this test by default, since N-series GPUs are relatively expensive
+	// and may require specific quota limits on the subscription.
+	// To include this test, set `GINKGO_SKIP=""`.
+	// You can override the default SKU `Standard_NV12s_v3` and `Premium_LRS` storage by setting
+	// the `AZURE_GPU_NODE_MACHINE_TYPE` and `AZURE_GPU_NODE_STORAGE_TYPE` environment variables.
+	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
+	Context("Creating a GPU-enabled cluster with Dynamo installed [OPTIONAL]", func() {
+		It("with a single control plane node and 1 node", func() {
+			Skip("Skipping since the e2e subscription has no quota for GPU SKUs")
+			clusterName = getClusterName(clusterNamePrefix, "dynamo")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("dynamo"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withMachineDeploymentInterval(specName, "wait-dynamo-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+					EnsureGPUOperator(ctx, func() EnsureGPUOperatorInput {
+						return EnsureGPUOperatorInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+					EnsureDynamoPlatform(ctx, func() EnsureDynamoPlatformInput {
+						return EnsureDynamoPlatformInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Running a GPU-based calculation", func() {
+				AzureGPUSpec(ctx, func() AzureGPUSpecInput {
+					return AzureGPUSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			// TODO: This test currently only verifies that Dynamo pods are running, later we can deploy a model and verify that inference works.
+
+			By("PASSED!")
+		})
+	})
+
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	Context("Creating a cluster with VMSS flex machinepools [OPTIONAL]", func() {
 		It("with 1 control plane node and 1 machinepool", func() {
