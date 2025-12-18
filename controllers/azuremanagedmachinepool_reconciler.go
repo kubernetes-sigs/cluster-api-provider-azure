@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
@@ -164,6 +165,8 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 		providerIDs[i] = providerID
 	}
 
+	// Sort providerIDs to ensure deterministic ordering to prevent continuous reconciliation.
+	slices.Sort(providerIDs)
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
 	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
 	s.scope.SetAgentPoolReady(true)

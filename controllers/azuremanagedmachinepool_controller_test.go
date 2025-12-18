@@ -61,8 +61,14 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			Setup: func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder) {
 				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
 				fakeAgentPoolSpec := fakeAgentPool()
-				providerIDs := []string{"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myresourcegroupname/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"}
+				// Provider IDs should be sorted alphabetically for deterministic ordering (100 < 12 < 156)
+				providerIDs := []string{
+					"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myresourcegroupname/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/100",
+					"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myresourcegroupname/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/12",
+					"azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myresourcegroupname/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156",
+				}
 				fakeVirtualMachineScaleSet := fakeVirtualMachineScaleSet()
+				// fakeVirtualMachineScaleSetVM returns VMs in unsorted order (156, 12, 100)
 				fakeVirtualMachineScaleSetVM := fakeVirtualMachineScaleSetVM()
 
 				reconciler.MockReconciler.EXPECT().Reconcile(gomock2.AContext()).Return(nil)
@@ -346,22 +352,26 @@ func fakeAgentPool(changes ...func(*agentpools.AgentPoolSpec)) agentpools.AgentP
 	return pool
 }
 
+// fakeVirtualMachineScaleSetVM returns VMs in non-sorted order (156, 12, 100) to verify
+// that provider IDs are sorted for deterministic ordering.
 func fakeVirtualMachineScaleSetVM() []armcompute.VirtualMachineScaleSetVM {
-	virtualMachineScaleSetVM := []armcompute.VirtualMachineScaleSetVM{
+	return []armcompute.VirtualMachineScaleSetVM{
+		{
+			InstanceID: ptr.To("2"),
+			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
+			Name:       ptr.To("vm2"),
+		},
 		{
 			InstanceID: ptr.To("0"),
-			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/156"),
+			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/12"),
 			Name:       ptr.To("vm0"),
-			Zones:      []*string{ptr.To("zone0")},
-			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-				ProvisioningState: ptr.To("Succeeded"),
-				OSProfile: &armcompute.OSProfile{
-					ComputerName: ptr.To("instance-000000"),
-				},
-			},
+		},
+		{
+			InstanceID: ptr.To("1"),
+			ID:         ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachineScaleSets/myScaleSetName/virtualMachines/100"),
+			Name:       ptr.To("vm1"),
 		},
 	}
-	return virtualMachineScaleSetVM
 }
 
 func fakeVirtualMachineScaleSet() []armcompute.VirtualMachineScaleSet {
