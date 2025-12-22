@@ -98,7 +98,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -125,7 +125,7 @@ func TestManagedMachinePoolScope_Autoscaling(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:              "pool1",
 				AzureName:         "pool1",
-				SKU:               "Standard_D2s_v3",
+				SKU:               "Standard_D2ds_v5",
 				Mode:              "User",
 				Cluster:           "cluster1",
 				Replicas:          1,
@@ -173,7 +173,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -202,7 +202,7 @@ func TestManagedMachinePoolScope_NodeLabels(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:      "pool1",
 				AzureName: "pool1",
-				SKU:       "Standard_D2s_v3",
+				SKU:       "Standard_D2ds_v5",
 				Mode:      "System",
 				Cluster:   "cluster1",
 				Replicas:  1,
@@ -250,7 +250,7 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -279,7 +279,7 @@ func TestManagedMachinePoolScope_AdditionalTags(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:      "pool1",
 				AzureName: "pool1",
-				SKU:       "Standard_D2s_v3",
+				SKU:       "Standard_D2ds_v5",
 				Mode:      "System",
 				Cluster:   "cluster1",
 				Replicas:  1,
@@ -327,7 +327,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -354,7 +354,7 @@ func TestManagedMachinePoolScope_MaxPods(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				AzureName:    "pool1",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Mode:         "System",
 				Cluster:      "cluster1",
 				Replicas:     1,
@@ -401,7 +401,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -434,7 +434,7 @@ func TestManagedMachinePoolScope_Taints(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				AzureName:    "pool1",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
@@ -480,7 +480,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -507,7 +507,7 @@ func TestManagedMachinePoolScope_OSDiskType(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				AzureName:    "pool1",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
@@ -553,7 +553,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -589,7 +589,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				AzureName:    "pool1",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
@@ -625,7 +625,7 @@ func TestManagedMachinePoolScope_SubnetName(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool1",
 				AzureName:    "pool1",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Mode:         "User",
 				Cluster:      "cluster1",
 				Replicas:     1,
@@ -671,7 +671,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:         "pool0",
 				AzureName:    "pool0",
-				SKU:          "Standard_D2s_v3",
+				SKU:          "Standard_D2ds_v5",
 				Replicas:     1,
 				Mode:         "System",
 				Cluster:      "cluster1",
@@ -698,7 +698,7 @@ func TestManagedMachinePoolScope_KubeletDiskType(t *testing.T) {
 			Expected: &agentpools.AgentPoolSpec{
 				Name:            "pool1",
 				AzureName:       "pool1",
-				SKU:             "Standard_D2s_v3",
+				SKU:             "Standard_D2ds_v5",
 				Mode:            "User",
 				Cluster:         "cluster1",
 				Replicas:        1,
@@ -898,7 +898,7 @@ func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureM
 		Spec: infrav1.AzureManagedMachinePoolSpec{
 			AzureManagedMachinePoolClassSpec: infrav1.AzureManagedMachinePoolClassSpec{
 				Mode: string(mode),
-				SKU:  "Standard_D2s_v3",
+				SKU:  "Standard_D2ds_v5",
 				Name: ptr.To(name),
 			},
 		},

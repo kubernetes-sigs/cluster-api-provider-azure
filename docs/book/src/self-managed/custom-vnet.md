@@ -395,7 +395,7 @@ spec:
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
     subnetName: subnet-mp-1
-    vmSize: Standard_B2s
+    vmSize: Standard_B2s_v2
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
@@ -418,7 +418,7 @@ spec:
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
     subnetName: subnet-mp-2
-    vmSize: Standard_B2s
+    vmSize: Standard_B2s_v2
 ```
 
 If you don't specify any `node` subnets, one subnet with role `node` will be created and added to the `networkSpec` definition.

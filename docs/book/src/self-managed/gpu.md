@@ -24,7 +24,7 @@ workload cluster.
 Remember to use the `nvidia-gpu` flavor with N-series nodes.
 
 ```bash
-AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_B2s \
+AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_B2s_v2 \
 AZURE_NODE_MACHINE_TYPE=Standard_NC6s_v3 \
 AZURE_LOCATION=southcentralus \
 clusterctl generate cluster azure-gpu \

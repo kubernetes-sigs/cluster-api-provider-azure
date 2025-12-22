@@ -183,7 +183,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					SKU:          "Standard_D2s_v3",
+					SKU:          "Standard_D2ds_v5",
 					Replicas:     1,
 					Mode:         "System",
 					Cluster:      "cluster1",
@@ -223,7 +223,7 @@ func TestManagedControlPlaneScope_PoolVersion(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					SKU:          "Standard_D2s_v3",
+					SKU:          "Standard_D2ds_v5",
 					Mode:         "System",
 					Replicas:     1,
 					Version:      ptr.To("1.21.1"),
@@ -401,7 +401,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool0",
 					AzureName:    "pool0",
-					SKU:          "Standard_D2s_v3",
+					SKU:          "Standard_D2ds_v5",
 					Mode:         "System",
 					Replicas:     1,
 					Cluster:      "cluster1",
@@ -410,7 +410,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool1",
 					AzureName:    "pool1",
-					SKU:          "Standard_D2s_v3",
+					SKU:          "Standard_D2ds_v5",
 					Mode:         "User",
 					Replicas:     1,
 					Cluster:      "cluster1",
@@ -420,7 +420,7 @@ func TestManagedControlPlaneScope_OSType(t *testing.T) {
 				&agentpools.AgentPoolSpec{
 					Name:         "pool2",
 					AzureName:    "pool2",
-					SKU:          "Standard_D2s_v3",
+					SKU:          "Standard_D2ds_v5",
 					Mode:         "User",
 					Replicas:     1,
 					Cluster:      "cluster1",

@@ -43,7 +43,7 @@ var (
 		ClusterName:           "my-cluster",
 	}
 	fakeSku = resourceskus.SKU{
-		Name: ptr.To("Standard_D2v2"),
+		Name: ptr.To("Standard_D2ds_v5"),
 		Kind: ptr.To(string(resourceskus.VirtualMachines)),
 		Locations: []*string{
 			ptr.To("fake-location"),
