@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -88,7 +90,7 @@ func (r *AzureMachineTemplateReconciler) SetupWithManager(ctx context.Context, m
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureclusters,verbs=get;list;watch
 
-// Reconcile reconciles the AzureMachineTemplate status to populate capacity for autoscaling-from-zero support.
+// Reconcile reconciles the AzureMachineTemplate status to populate capacity and nodeInfo for autoscaling-from-zero support.
 func (r *AzureMachineTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, r.Timeouts.DefaultedLoopTimeout())
 	defer cancel()
@@ -151,6 +153,12 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineTemplateReconciler.reconcileNormal")
 	defer done()
 
+	// Create patch helper
+	patchHelper, err := v1beta1patch.NewHelper(azureMachineTemplate, r.Client)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
+	}
+
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:          r.Client,
@@ -174,10 +182,22 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 		return reconcile.Result{}, err
 	}
 
+	// Get node info from VM size
+	nodeInfo, err := r.getVMSizeNodeInfo(ctx, clusterScope, vmSize, azureMachineTemplate.Spec.Template.Spec.OSDisk.OSType)
+	if err != nil {
+		log.Error(err, "failed to get VM size node info")
+		r.Recorder.Eventf(azureMachineTemplate, corev1.EventTypeWarning, "NodeInfoError",
+			"Failed to get node info for VM size %s: %v", vmSize, err)
+		return reconcile.Result{}, errors.Wrap(err, "failed to get node info")
+	}
+
 	// Update status
 	azureMachineTemplate.Status.Capacity = capacity
-	if err := r.Status().Update(ctx, azureMachineTemplate); err != nil {
-		return reconcile.Result{}, errors.Wrap(err, "failed to update AzureMachineTemplate status")
+	azureMachineTemplate.Status.NodeInfo = nodeInfo
+
+	// Patch the object
+	if err := patchHelper.Patch(ctx, azureMachineTemplate); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to patch AzureMachineTemplate")
 	}
 
 	cpuQty := capacity[corev1.ResourceCPU]
@@ -185,6 +205,8 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 	log.Info("Successfully updated AzureMachineTemplate status",
 		"cpu", cpuQty.String(),
 		"memory", memQty.String(),
+		"architecture", nodeInfo.Architecture,
+		"os", nodeInfo.OperatingSystem,
 	)
 
 	return ctrl.Result{}, nil
@@ -244,4 +266,54 @@ func extractCapacityFromSKU(sku resourceskus.SKU) (corev1.ResourceList, error) {
 	}
 
 	return capacity, nil
+}
+
+// getVMSizeNodeInfo retrieves node architecture and OS information for a given VM size.
+func (r *AzureMachineTemplateReconciler) getVMSizeNodeInfo(ctx context.Context, clusterScope *scope.ClusterScope, vmSize string, osType string) (*infrav1.NodeInfo, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineTemplateReconciler.getVMSizeNodeInfo")
+	defer done()
+
+	location := clusterScope.Location()
+
+	// Get SKU cache
+	skuCache, err := resourceskus.GetCache(clusterScope, location)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get SKU cache")
+	}
+
+	// Query SKU for the VM size
+	sku, err := skuCache.Get(ctx, vmSize, resourceskus.VirtualMachines)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get SKU for VM size %s", vmSize)
+	}
+
+	// Extract architecture from SKU
+	azureArch, ok := sku.GetCapability(resourceskus.CPUArchitectureType)
+	if !ok {
+		return nil, errors.New("SKU does not have CPUArchitectureType capability")
+	}
+	var architecture infrav1.Architecture
+	switch azureArch {
+	case string(armcompute.ArchitectureX64):
+		architecture = infrav1.ArchitectureAmd64
+	case string(armcompute.ArchitectureArm64):
+		architecture = infrav1.ArchitectureArm64
+	default:
+		return nil, errors.Errorf("unsupported architecture: %v", azureArch)
+	}
+
+	var operatingSystem infrav1.OperatingSystem
+	switch osType {
+	case azure.LinuxOS:
+		operatingSystem = infrav1.OperatingSystemLinux
+	case azure.WindowsOS:
+		operatingSystem = infrav1.OperatingSystemWindows
+	default:
+		operatingSystem = infrav1.OperatingSystemLinux
+	}
+
+	return &infrav1.NodeInfo{
+		Architecture:    architecture,
+		OperatingSystem: operatingSystem,
+	}, nil
 }
