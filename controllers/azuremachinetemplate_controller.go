@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -71,15 +72,15 @@ func (r *AzureMachineTemplateReconciler) SetupWithManager(ctx context.Context, m
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachineTemplate{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
-		// Watch Clusters to requeue when the infraRef is set.
-		// This is needed because infraRef is not initially set in Clusters created from a ClusterClass.
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
+		// Add a watch on Clusters to requeue when the infraRef is set. This is needed because the infraRef is not initially
+		// set in Clusters created from a ClusterClass.
 		Watches(
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(azureMachineTemplateMapper),
 			builder.WithPredicates(
 				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log),
-				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
+				predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
 			),
 		).
 		Complete(r)
@@ -118,11 +119,17 @@ func (r *AzureMachineTemplateReconciler) Reconcile(ctx context.Context, req ctrl
 		return reconcile.Result{}, err
 	}
 	if cluster == nil {
-		log.V(2).Info("Cluster Controller has not yet set OwnerRef")
+		log.Info("Cluster Controller has not yet set OwnerRef")
 		return reconcile.Result{}, nil
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azureMachineTemplate) {
+		log.Info("AzureMachineTemplate or linked Cluster is marked as paused. Won't reconcile")
+		return ctrl.Result{}, nil
+	}
 
 	// Only look at Azure clusters
 	if !cluster.Spec.InfrastructureRef.IsDefined() {
@@ -202,7 +209,7 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 
 	cpuQty := capacity[corev1.ResourceCPU]
 	memQty := capacity[corev1.ResourceMemory]
-	log.Info("Successfully updated AzureMachineTemplate status",
+	log.V(2).Info("Successfully updated AzureMachineTemplate status",
 		"cpu", cpuQty.String(),
 		"memory", memQty.String(),
 		"architecture", nodeInfo.Architecture,
