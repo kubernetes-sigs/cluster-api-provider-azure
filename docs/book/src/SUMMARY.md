@@ -5,6 +5,7 @@
 [Roadmap](./roadmap.md)
 - [General Topics](./topics/topics.md)
     - [Azure Service Operator](./topics/aso.md)
+    - [Autoscaling from Zero](./topics/autoscaling-from-zero.md)
     - [ClusterClass](./topics/clusterclass.md)
     - [Identities](./topics/identities.md)
         - [AAD Integration](./topics/aad-integration.md)

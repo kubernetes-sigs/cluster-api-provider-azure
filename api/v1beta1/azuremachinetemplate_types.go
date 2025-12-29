@@ -26,8 +26,11 @@ import (
 // Its underlying type is a string and its value can be any of amd64, arm64.
 type Architecture string
 
+// Architecture constants.
 const (
+	// ArchitectureAmd64 represents the amd64 CPU architecture.
 	ArchitectureAmd64 Architecture = "amd64"
+	// ArchitectureArm64 represents the arm64 CPU architecture.
 	ArchitectureArm64 Architecture = "arm64"
 )
 

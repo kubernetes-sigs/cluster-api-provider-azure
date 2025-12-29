@@ -180,8 +180,14 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 
 	vmSize := azureMachineTemplate.Spec.Template.Spec.VMSize
 
+	// Get SKU cache
+	skuCache, err := resourceskus.GetCache(clusterScope, clusterScope.Location())
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to get SKU cache")
+	}
+
 	// Get capacity from VM size
-	capacity, err := r.getVMSizeCapacity(ctx, clusterScope, vmSize)
+	capacity, err := r.getVMSizeCapacity(ctx, skuCache, vmSize)
 	if err != nil {
 		log.Error(err, "failed to get VM size capacity")
 		r.Recorder.Eventf(azureMachineTemplate, corev1.EventTypeWarning, "SKUNotFound",
@@ -190,7 +196,7 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 	}
 
 	// Get node info from VM size
-	nodeInfo, err := r.getVMSizeNodeInfo(ctx, clusterScope, vmSize, azureMachineTemplate.Spec.Template.Spec.OSDisk.OSType)
+	nodeInfo, err := r.getVMSizeNodeInfo(ctx, skuCache, vmSize, azureMachineTemplate.Spec.Template.Spec.OSDisk.OSType)
 	if err != nil {
 		log.Error(err, "failed to get VM size node info")
 		r.Recorder.Eventf(azureMachineTemplate, corev1.EventTypeWarning, "NodeInfoError",
@@ -220,22 +226,14 @@ func (r *AzureMachineTemplateReconciler) reconcileNormal(ctx context.Context, cl
 }
 
 // getVMSizeCapacity retrieves the resource capacity for a given Azure VM size.
-func (r *AzureMachineTemplateReconciler) getVMSizeCapacity(ctx context.Context, clusterScope *scope.ClusterScope, vmSize string) (corev1.ResourceList, error) {
+func (r *AzureMachineTemplateReconciler) getVMSizeCapacity(ctx context.Context, skuCache *resourceskus.Cache, vmSize string) (corev1.ResourceList, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineTemplateReconciler.getVMSizeCapacity")
 	defer done()
-
-	location := clusterScope.Location()
-
-	// Get SKU cache
-	skuCache, err := resourceskus.GetCache(clusterScope, location)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get SKU cache")
-	}
 
 	// Query SKU for the VM size
 	sku, err := skuCache.Get(ctx, vmSize, resourceskus.VirtualMachines)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get SKU for VM size %s in location %s", vmSize, location)
+		return nil, errors.Wrapf(err, "failed to get SKU for VM size %s", vmSize)
 	}
 
 	// Extract capacity from SKU
@@ -276,17 +274,9 @@ func extractCapacityFromSKU(sku resourceskus.SKU) (corev1.ResourceList, error) {
 }
 
 // getVMSizeNodeInfo retrieves node architecture and OS information for a given VM size.
-func (r *AzureMachineTemplateReconciler) getVMSizeNodeInfo(ctx context.Context, clusterScope *scope.ClusterScope, vmSize string, osType string) (*infrav1.NodeInfo, error) {
+func (r *AzureMachineTemplateReconciler) getVMSizeNodeInfo(ctx context.Context, skuCache *resourceskus.Cache, vmSize string, osType string) (*infrav1.NodeInfo, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineTemplateReconciler.getVMSizeNodeInfo")
 	defer done()
-
-	location := clusterScope.Location()
-
-	// Get SKU cache
-	skuCache, err := resourceskus.GetCache(clusterScope, location)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get SKU cache")
-	}
 
 	// Query SKU for the VM size
 	sku, err := skuCache.Get(ctx, vmSize, resourceskus.VirtualMachines)
