@@ -169,6 +169,43 @@ func (*AzureClusterWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj run
 		allErrs = append(allErrs, err)
 	}
 
+	// Validate availability zones are immutable for load balancers
+	if c.Spec.NetworkSpec.APIServerLB != nil && old.Spec.NetworkSpec.APIServerLB != nil {
+		if !webhookutils.EnsureStringSlicesAreEquivalent(
+			c.Spec.NetworkSpec.APIServerLB.AvailabilityZones,
+			old.Spec.NetworkSpec.APIServerLB.AvailabilityZones) {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("spec", "networkSpec", "apiServerLB", "availabilityZones"),
+					c.Spec.NetworkSpec.APIServerLB.AvailabilityZones,
+					"field is immutable"))
+		}
+	}
+
+	if c.Spec.NetworkSpec.NodeOutboundLB != nil && old.Spec.NetworkSpec.NodeOutboundLB != nil {
+		if !webhookutils.EnsureStringSlicesAreEquivalent(
+			c.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones,
+			old.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones) {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("spec", "networkSpec", "nodeOutboundLB", "availabilityZones"),
+					c.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones,
+					"field is immutable"))
+		}
+	}
+
+	if c.Spec.NetworkSpec.ControlPlaneOutboundLB != nil && old.Spec.NetworkSpec.ControlPlaneOutboundLB != nil {
+		if !webhookutils.EnsureStringSlicesAreEquivalent(
+			c.Spec.NetworkSpec.ControlPlaneOutboundLB.AvailabilityZones,
+			old.Spec.NetworkSpec.ControlPlaneOutboundLB.AvailabilityZones) {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("spec", "networkSpec", "controlPlaneOutboundLB", "availabilityZones"),
+					c.Spec.NetworkSpec.ControlPlaneOutboundLB.AvailabilityZones,
+					"field is immutable"))
+		}
+	}
+
 	allErrs = append(allErrs, c.validateSubnetUpdate(old)...)
 
 	if len(allErrs) == 0 {
