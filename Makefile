@@ -797,7 +797,7 @@ verify-container-images: ## Verify container images
 ##@ Tilt / Kind:
 
 .PHONY: kind-create
-kind-create: $(KUBECTL) ## Create capz kind cluster if needed.
+kind-create: $(KUBECTL) $(AZWI) ## Create capz kind cluster if needed.
 	./scripts/kind-with-registry.sh
 
 .PHONY: aks-create
