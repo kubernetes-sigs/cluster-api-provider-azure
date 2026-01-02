@@ -51,7 +51,7 @@
   --enable-oidc-issuer \
   --enable-workload-identity \
   --node-count 2 \
-  --node-vm-size Standard_B2s \
+  --node-vm-size Standard_B2s_v2 \
   --generate-ssh-keys \
   --location <region>
   ```
