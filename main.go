@@ -434,6 +434,17 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		os.Exit(1)
 	}
 
+	if err := (&controllers.AzureMachineTemplateReconciler{
+		Client:           mgr.GetClient(),
+		Recorder:         mgr.GetEventRecorderFor("azuremachinetemplate-controller"),
+		Timeouts:         timeouts,
+		WatchFilterValue: watchFilterValue,
+		CredentialCache:  credCache,
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency, SkipNameValidation: ptr.To(true)}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AzureMachineTemplate")
+		os.Exit(1)
+	}
+
 	if !components.IsComponentDisabled(disableControllersOrWebhooks, infrav1.DisableAzureJSONMachineController) {
 		if err := (&controllers.AzureJSONMachineReconciler{
 			Client:           mgr.GetClient(),

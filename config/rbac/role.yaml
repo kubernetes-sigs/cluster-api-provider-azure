@@ -195,10 +195,19 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - azuremachinetemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
   - azuremachinetemplates/status
   verbs:
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - kubernetesconfiguration.azure.com
