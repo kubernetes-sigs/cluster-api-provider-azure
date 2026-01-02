@@ -124,7 +124,7 @@ Makefile targets and scripts are offered to work with go modules:
 
 ### Setting up the environment
 
-You must have the Azure credentials as outlined in the [getting started prerequisites](../getting-started.md#Prerequisites) section.
+You must have the Azure credentials as outlined in the [getting started prerequisites](../getting-started-with-aks.md#Prerequisites) section.
 
 ### Tilt Requirements
 
@@ -172,7 +172,7 @@ kustomize_substitutions:
   AZURE_CLIENT_ID: <client-id>
 ```
 
-You should have these values saved from the [getting started prerequisites](../getting-started.md#Prerequisites) section.
+You should have these values saved from the [getting started prerequisites](../getting-started-with-aks.md#Prerequisites) section.
 
 To build a kind cluster and start Tilt, just run:
 
@@ -230,7 +230,7 @@ kustomize_substitutions:
 EOF
 ```
 
-Make sure to replace the credentials with the values from the [getting started prerequisites](../getting-started.md#Prerequisites) section.
+Make sure to replace the credentials with the values from the [getting started prerequisites](../getting-started-with-aks.md#Prerequisites) section.
 
 > `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
 
