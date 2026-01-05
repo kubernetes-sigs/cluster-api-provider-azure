@@ -27,6 +27,11 @@ version::get_version_vars() {
         GIT_TREE_STATE="dirty"
     fi
 
+    # Initialize version variables with defaults
+    GIT_VERSION=""
+    GIT_MAJOR=""
+    GIT_MINOR=""
+
     # borrowed from k8s.io/hack/lib/version.sh
     # Use git describe to find the version based on tags.
     if GIT_VERSION=$(git describe --tags --abbrev=14 2>/dev/null); then
@@ -88,9 +93,9 @@ version::ldflags() {
     add_ldflag "buildDate" "$(date ${SOURCE_DATE_EPOCH:+"--date=@${SOURCE_DATE_EPOCH}"} -u +'%Y-%m-%dT%H:%M:%SZ')"
     add_ldflag "gitCommit" "${GIT_COMMIT}"
     add_ldflag "gitTreeState" "${GIT_TREE_STATE}"
-    add_ldflag "gitMajor" "${GIT_MAJOR}"
-    add_ldflag "gitMinor" "${GIT_MINOR}"
-    add_ldflag "gitVersion" "${GIT_VERSION}"
+    add_ldflag "gitMajor" "${GIT_MAJOR:-0}"
+    add_ldflag "gitMinor" "${GIT_MINOR:-0}"
+    add_ldflag "gitVersion" "${GIT_VERSION:-$(git rev-parse --short HEAD)}"
 
   # The -ldflags parameter takes a single string, so join the output.
   echo "${ldflags[*]-}"
