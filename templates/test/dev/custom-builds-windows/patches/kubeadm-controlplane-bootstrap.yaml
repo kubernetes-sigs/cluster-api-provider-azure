@@ -2,60 +2,66 @@
   path: /spec/kubeadmConfigSpec/files/-
   value:
     content: |
-      #!/bin/bash
+        #!/bin/bash
 
-      set -o nounset
-      set -o pipefail
-      set -o errexit
-      [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        set -o nounset
+        set -o pipefail
+        set -o errexit
 
-      # This test installs release packages or binaries that are a result of the CI and release builds.
-      # It runs '... --version' commands to verify that the binaries are correctly installed
-      # and finally uninstalls the packages.
-      # For the release packages it tests all versions in the support skew.
-      LINE_SEPARATOR="*************************************************"
-      echo "$${LINE_SEPARATOR}"
-      CI_VERSION=${CI_VERSION}
+        systemctl stop kubelet
+        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        az login --identity
+        for BINARY in "$${BINARIES[@]}"; do
+          echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" -f "/usr/bin/$${BINARY}" --auth-mode login
+        done
+        systemctl restart kubelet
 
-      CI_DIR=/tmp/k8s-ci
-      mkdir -p "$${CI_DIR}"
+        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
+        # registry.k8s.io so kubeadm can fetch correct images no matter what
+        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        IMAGE_REGISTRY_PREFIX=registry.k8s.io
+        for IMAGE in "$${IMAGES[@]}"; do
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" $$IMAGE_REGISTRY_PREFIX/$$IMAGE:"${CI_VERSION//+/_}"
+          $${SUDO} ctr -n k8s.io images tag $$IMAGE_REGISTRY_PREFIX/$$IMAGE-amd64:"${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$IMAGE:"${CI_VERSION//+/_}"
+        done
 
-      systemctl stop kubelet
-      declare -a PACKAGES_TO_TEST=("kubectl" "kubelet" "kubeadm")
-      # Let's just also download the control plane images for worker nodes. It's easier then optimizing it.
-      declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
-      CONTAINER_EXT="tar"
-      echo "* testing version $${CI_VERSION}"
-      az login --identity
-      for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
-          echo "* downloading binary: https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}"
-          az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -f "$${CI_DIR}/$${CI_PACKAGE}" --auth-mode login
-          chmod +x "$${CI_DIR}/$${CI_PACKAGE}"
-          mv "$${CI_DIR}/$${CI_PACKAGE}" "/usr/bin/$${CI_PACKAGE}"
-      done
-
-      systemctl restart kubelet
-      IMAGE_REGISTRY_PREFIX=registry.k8s.io
-      # Kubernetes builds from 1.20 through 1.24 are tagged with k8s.gcr.io
-      if [[ "$${CI_VERSION}" =~ ^v1\.(1[0-9]|2[0-4])[\.[0-9]+ ]]; then
-          IMAGE_REGISTRY_PREFIX=k8s.gcr.io
-      fi
-      for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
-          echo "* downloading container image: ${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"
-          $${SUDO} ctr -n k8s.io images pull "${REGISTRY}/$${CI_CONTAINER}:${KUBE_IMAGE_TAG}"
-          $${SUDO} ctr -n k8s.io images tag "${REGISTRY}/$${CI_CONTAINER}:${KUBE_IMAGE_TAG}" "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}:$${CI_VERSION//+/_}"
-          $${SUDO} ctr -n k8s.io images tag "${REGISTRY}/$${CI_CONTAINER}:${KUBE_IMAGE_TAG}" "gcr.io/k8s-staging-ci-images/$${CI_CONTAINER}:$${CI_VERSION//+/_}"
-      done
-      echo "* checking binary versions"
-      echo "ctr version: " "$(ctr version)"
-      echo "kubeadm version: " "$(kubeadm version -o=short)"
-      echo "kubectl version: " "$(kubectl version --client=true)"
-      echo "kubelet version: " "$(kubelet --version)"
-      echo "$${LINE_SEPARATOR}"
+        echo "kubeadm version: $(kubeadm version -o=short)"
+        echo "kubectl version: $(kubectl version --client=true)"
+        echo "kubelet version: $(kubelet --version)"
     path: /tmp/replace-k8s-binaries.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/kubeadmConfigSpec/files/-
+  value:
+    content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
+        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
+        rm /tmp/yq_linux_amd64.tar.gz
+
+        export KUBECONFIG=/etc/kubernetes/admin.conf
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${KUBE_IMAGE_TAG}"
+        systemctl stop kubelet
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${KUBE_IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
+        systemctl restart kubelet
+    path: /tmp/replace-k8s-components.sh
     owner: "root:root"
     permissions: "0744"
 - op: add
   path: /spec/kubeadmConfigSpec/preKubeadmCommands/-
   value:
     bash -c /tmp/replace-k8s-binaries.sh
+- op: add
+  path: /spec/kubeadmConfigSpec/postKubeadmCommands/-
+  value:
+    bash -c /tmp/replace-k8s-components.sh

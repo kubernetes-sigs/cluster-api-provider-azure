@@ -75,7 +75,6 @@ spec:
           type: string
           default: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
     - name: resourceGroup
-      required: false
       schema:
         openAPIV3Schema:
           description: "The Azure Resource Group where the Cluster will be created."
