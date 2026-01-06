@@ -50,6 +50,8 @@ setup() {
     # extract KUBE_GIT_VERSION from k/k
     # ref: https://github.com/kubernetes/test-infra/blob/de07aa4b89f1161778856dc0fed310bd816aad72/experiment/kind-conformance-image-e2e.sh#L112-L115
     source "${KUBE_ROOT}/hack/lib/version.sh"
+    # HACK: use a last-known-good version of Kubernetes to avoid kubernetes-sigs/cluster-api#13178
+    pushd "${KUBE_ROOT}" && git checkout 45ad3e260e55f3fd9bb3e8d2432c280a409d978c && popd
     pushd "${KUBE_ROOT}" && kube::version::get_version_vars && popd
     : "${KUBE_GIT_VERSION:?Environment variable empty or not defined.}"
     export KUBE_GIT_VERSION
