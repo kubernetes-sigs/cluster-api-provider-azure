@@ -90,7 +90,7 @@ func TestGetOrStoreRace(t *testing.T) {
 
 	wg := new(sync.WaitGroup)
 	n := 1000
-	for i := 0; i < n; i++ {
+	for i := range n {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

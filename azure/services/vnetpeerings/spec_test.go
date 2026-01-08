@@ -48,15 +48,15 @@ func TestVnetPeeringSpec_Parameters(t *testing.T) {
 	testCases := []struct {
 		name          string
 		spec          *VnetPeeringSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "error when existing is not of VnetPeering type",
 			spec:     &VnetPeeringSpec{},
 			existing: struct{}{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "struct {} is not an armnetwork.VnetPeering",
@@ -65,7 +65,7 @@ func TestVnetPeeringSpec_Parameters(t *testing.T) {
 			name:     "get result as nil when existing VnetPeering is present",
 			spec:     &fakeVnetPeeringSpec,
 			existing: fakeVnetPeering,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -74,7 +74,7 @@ func TestVnetPeeringSpec_Parameters(t *testing.T) {
 			name:     "get result as nil when existing VnetPeering is present with empty data",
 			spec:     &fakeVnetPeeringSpec,
 			existing: armnetwork.VirtualNetworkPeering{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -83,7 +83,7 @@ func TestVnetPeeringSpec_Parameters(t *testing.T) {
 			name:     "get VirtualNetworkPeering when all values are present",
 			spec:     &fakeVnetPeeringSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.VirtualNetworkPeering{}))
 				g.Expect(result.(armnetwork.VirtualNetworkPeering).Name).To(Equal(ptr.To[string](fakeVnetPeeringSpec.ResourceName())))
 				g.Expect(result.(armnetwork.VirtualNetworkPeering).Properties.RemoteVirtualNetwork.ID).To(Equal(ptr.To[string](azure.VNetID(fakeVnetPeeringSpec.SubscriptionID,

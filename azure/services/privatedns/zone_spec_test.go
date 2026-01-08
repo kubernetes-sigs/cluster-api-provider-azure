@@ -54,15 +54,15 @@ func TestZoneSpec_Parameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          ZoneSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:          "new private dns zone",
 			expectedError: "",
 			spec:          zoneSpec,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(Equal(armprivatedns.PrivateZone{
 					Location: ptr.To(azure.Global),
 					Tags: map[string]*string{
@@ -78,7 +78,7 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			existing: armprivatedns.PrivateZone{Tags: map[string]*string{
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			}},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 		},
@@ -87,7 +87,7 @@ func TestZoneSpec_Parameters(t *testing.T) {
 			expectedError: "",
 			spec:          zoneSpec,
 			existing:      armprivatedns.PrivateZone{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 		},

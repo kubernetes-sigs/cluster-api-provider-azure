@@ -132,7 +132,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 // Code later in the reconciler uses scope's VMSS state for determining scale status and whether to create/delete
 // AzureMachinePoolMachines.
 // N.B.: before calling this function, make sure scaleSetSpec.VMSSInstances is updated to the latest state.
-func (s *Service) updateScopeState(ctx context.Context, result interface{}, scaleSetSpec *ScaleSetSpec) error {
+func (s *Service) updateScopeState(ctx context.Context, result any, scaleSetSpec *ScaleSetSpec) error {
 	vmss, ok := result.(armcompute.VirtualMachineScaleSet)
 	if !ok {
 		return errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", result)

@@ -49,7 +49,7 @@ func TestCache_Add(t *testing.T) {
 
 	key, value := "foo", "bar"
 	mockCache.EXPECT().Add(gomock.Eq(key), gomockinternal.CustomMatcher(
-		func(val interface{}, state map[string]interface{}) bool {
+		func(val any, state map[string]any) bool {
 			ttl, ok := val.(*timeToLiveItem)
 			if !ok {
 				state["error"] = "value was not a time to live item"
@@ -63,7 +63,7 @@ func TestCache_Add(t *testing.T) {
 
 			return true
 		},
-		func(state map[string]interface{}) string {
+		func(state map[string]any) string {
 			return state["error"].(string)
 		},
 	))

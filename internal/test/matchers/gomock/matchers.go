@@ -27,7 +27,7 @@ import (
 
 type (
 	cmpMatcher struct {
-		x    interface{}
+		x    any
 		diff string
 	}
 
@@ -37,7 +37,7 @@ type (
 	}
 
 	contextMatcher struct {
-		actual interface{}
+		actual any
 	}
 
 	// LogMatcher is a Gomega matcher for logs.
@@ -48,20 +48,20 @@ type (
 	}
 
 	customMatcher struct {
-		state    map[string]interface{}
-		matcher  func(x interface{}, state map[string]interface{}) bool
-		stringer func(state map[string]interface{}) string
+		state    map[string]any
+		matcher  func(x any, state map[string]any) bool
+		stringer func(state map[string]any) string
 	}
 )
 
 // DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp.
-func DiffEq(x interface{}) gomock.Matcher {
+func DiffEq(x any) gomock.Matcher {
 	return &cmpMatcher{
 		x: x,
 	}
 }
 
-func (c *cmpMatcher) Matches(x interface{}) bool {
+func (c *cmpMatcher) Matches(x any) bool {
 	c.diff = cmp.Diff(x, c.x)
 	return c.diff == ""
 }
@@ -81,7 +81,7 @@ func ErrStrEq(expected string) gomock.Matcher {
 	}
 }
 
-func (e *errStrEq) Matches(y interface{}) bool {
+func (e *errStrEq) Matches(y any) bool {
 	err, ok := y.(error)
 	if !ok {
 		return false
@@ -99,7 +99,7 @@ func AContext() gomock.Matcher {
 	return &contextMatcher{}
 }
 
-func (e *contextMatcher) Matches(y interface{}) bool {
+func (e *contextMatcher) Matches(y any) bool {
 	_, ok := y.(context.Context)
 	e.actual = y
 	return ok
@@ -110,15 +110,15 @@ func (e *contextMatcher) String() string {
 }
 
 // CustomMatcher creates a matcher from two funcs rather than having to make a new struct and implement Matcher.
-func CustomMatcher(matcher func(x interface{}, state map[string]interface{}) bool, stringer func(state map[string]interface{}) string) gomock.Matcher {
+func CustomMatcher(matcher func(x any, state map[string]any) bool, stringer func(state map[string]any) string) gomock.Matcher {
 	return &customMatcher{
-		state:    make(map[string]interface{}),
+		state:    make(map[string]any),
 		matcher:  matcher,
 		stringer: stringer,
 	}
 }
 
-func (c customMatcher) Matches(x interface{}) bool {
+func (c customMatcher) Matches(x any) bool {
 	return c.matcher(x, c.state)
 }
 

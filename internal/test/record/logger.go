@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -39,7 +40,7 @@ type LogEntry struct {
 	Level int
 
 	// Values of the log line, composed of the concatenation of log.WithValues and KeyValue pairs passed to log.Info.
-	Values []interface{}
+	Values []any
 }
 
 // Option is a configuration option supplied to NewLogger.
@@ -79,7 +80,7 @@ type (
 		threshold  *int
 		level      int
 		prefix     string
-		values     []interface{}
+		values     []any
 		listenerMu sync.Mutex
 		listeners  map[string]*Listener
 		writer     io.Writer
@@ -158,7 +159,7 @@ func (l *Logger) Enabled(_ int) bool {
 }
 
 // Info logs a non-error message with the given key/value pairs as context.
-func (l *Logger) Info(_ int, msg string, kvs ...interface{}) {
+func (l *Logger) Info(_ int, msg string, kvs ...any) {
 	values := copySlice(l.values)
 	values = append(values, kvs...)
 	values = append(values, "msg", msg)
@@ -166,7 +167,7 @@ func (l *Logger) Info(_ int, msg string, kvs ...interface{}) {
 }
 
 // Error logs an error message with the given key/value pairs as context.
-func (l *Logger) Error(err error, msg string, kvs ...interface{}) {
+func (l *Logger) Error(err error, msg string, kvs ...any) {
 	values := copySlice(l.values)
 	values = append(values, kvs...)
 	values = append(values, "msg", msg, "error", err)
@@ -191,13 +192,13 @@ func (l *Logger) WithName(name string) logr.LogSink {
 }
 
 // WithValues adds some key-value pairs of context to a logger.
-func (l *Logger) WithValues(kvList ...interface{}) logr.LogSink {
+func (l *Logger) WithValues(kvList ...any) logr.LogSink {
 	nl := l.clone()
 	nl.values = append(nl.values, kvList...)
 	return nl
 }
 
-func (l *Logger) write(logFunc string, values []interface{}) {
+func (l *Logger) write(logFunc string, values []any) {
 	entry := LogEntry{
 		Prefix:  l.prefix,
 		LogFunc: logFunc,
@@ -261,8 +262,8 @@ func copyLogEntries(in []LogEntry) []LogEntry {
 	return out
 }
 
-func copySlice(in []interface{}) []interface{} {
-	out := make([]interface{}, len(in))
+func copySlice(in []any) []any {
+	out := make([]any, len(in))
 	copy(out, in)
 	return out
 }
@@ -282,13 +283,13 @@ func flatten(entry LogEntry) (string, error) {
 	}
 
 	keys := make([]string, 0, len(entry.Values)/2)
-	values := make(map[string]interface{}, len(entry.Values)/2)
+	values := make(map[string]any, len(entry.Values)/2)
 	for i := 0; i < len(entry.Values); i += 2 {
 		k, ok := entry.Values[i].(string)
 		if !ok {
 			panic(fmt.Sprintf("key is not a string: %s", entry.Values[i]))
 		}
-		var v interface{}
+		var v any
 		if i+1 < len(entry.Values) {
 			v = entry.Values[i+1]
 		}
@@ -310,28 +311,28 @@ func flatten(entry LogEntry) (string, error) {
 			values[k] = v
 		}
 	}
-	str := ""
+	var str strings.Builder
 	if entry.Prefix != "" {
-		str += fmt.Sprintf("[%s] ", entry.Prefix)
+		str.WriteString(fmt.Sprintf("[%s] ", entry.Prefix))
 	}
-	str += msgValue
+	str.WriteString(msgValue)
 	if errorValue != nil {
 		if msgValue != "" {
-			str += ": "
+			str.WriteString(": ")
 		}
-		str += errorValue.Error()
+		str.WriteString(errorValue.Error())
 	}
 	for _, k := range keys {
 		prettyValue, err := pretty(values[k])
 		if err != nil {
 			return "", err
 		}
-		str += fmt.Sprintf(" %s=%s", k, prettyValue)
+		str.WriteString(fmt.Sprintf(" %s=%s", k, prettyValue))
 	}
-	return str, nil
+	return str.String(), nil
 }
 
-func pretty(value interface{}) (string, error) {
+func pretty(value any) (string, error) {
 	jb, err := json.Marshal(value)
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to marshal %s", value)

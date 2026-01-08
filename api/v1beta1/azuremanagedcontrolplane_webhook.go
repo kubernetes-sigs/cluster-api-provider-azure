@@ -116,8 +116,8 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, old
 
 	immutableFields := []struct {
 		path *field.Path
-		old  interface{}
-		new  interface{}
+		old  any
+		new  any
 	}{
 		{field.NewPath("spec", "subscriptionID"), old.Spec.SubscriptionID, m.Spec.SubscriptionID},
 		{field.NewPath("spec", "resourceGroupName"), old.Spec.ResourceGroupName, m.Spec.ResourceGroupName},

@@ -49,15 +49,15 @@ func TestRouteTableSpec_Parameters(t *testing.T) {
 	testCases := []struct {
 		name          string
 		spec          *RouteTableSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "error when existing is not of RouteTable type",
 			spec:     &RouteTableSpec{},
 			existing: struct{}{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "struct {} is not an armnetwork.RouteTable",
@@ -66,7 +66,7 @@ func TestRouteTableSpec_Parameters(t *testing.T) {
 			name:     "get result as nil when existing RouteTable is present",
 			spec:     &fakeRouteTableSpec,
 			existing: fakeRouteTable,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -75,7 +75,7 @@ func TestRouteTableSpec_Parameters(t *testing.T) {
 			name:     "get result as nil when existing RouteTable is present with empty data",
 			spec:     &fakeRouteTableSpec,
 			existing: armnetwork.RouteTable{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -84,7 +84,7 @@ func TestRouteTableSpec_Parameters(t *testing.T) {
 			name:     "get RouteTable when all values are present",
 			spec:     &fakeRouteTableSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.RouteTable{}))
 				g.Expect(result.(armnetwork.RouteTable).Location).To(Equal(ptr.To[string](fakeRouteTableSpec.Location)))
 				g.Expect(result.(armnetwork.RouteTable).Tags).To(Equal(fakeRouteTableTags))

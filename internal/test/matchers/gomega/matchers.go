@@ -31,7 +31,7 @@ type (
 	logEntryMatcher struct {
 		level   *int
 		logFunc *string
-		values  []interface{}
+		values  []any
 	}
 
 	// LogMatcher is a Gomega matcher for logs.
@@ -42,36 +42,36 @@ type (
 	}
 
 	cmpMatcher struct {
-		x    interface{}
+		x    any
 		diff string
 	}
 )
 
 // DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp.
-func DiffEq(x interface{}) types.GomegaMatcher {
+func DiffEq(x any) types.GomegaMatcher {
 	return &cmpMatcher{
 		x: x,
 	}
 }
 
 // Match returns whether the actual value matches the expected value.
-func (c *cmpMatcher) Match(actual interface{}) (bool, error) {
+func (c *cmpMatcher) Match(actual any) (bool, error) {
 	c.diff = cmp.Diff(actual, c.x)
 	return c.diff == "", nil
 }
 
 // FailWithMessage returns the matcher's diff as the failure message.
-func (c *cmpMatcher) FailureMessage(_ interface{}) string {
+func (c *cmpMatcher) FailureMessage(_ any) string {
 	return c.diff
 }
 
 // NegatedFailureMessage return the matcher's diff as the negated failure message.
-func (c *cmpMatcher) NegatedFailureMessage(_ interface{}) string {
+func (c *cmpMatcher) NegatedFailureMessage(_ any) string {
 	return c.diff
 }
 
 // LogContains verifies that LogEntry matches the specified values.
-func LogContains(values ...interface{}) LogMatcher {
+func LogContains(values ...any) LogMatcher {
 	return &logEntryMatcher{
 		values: values,
 	}
@@ -90,7 +90,7 @@ func (l *logEntryMatcher) WithLogFunc(logFunc string) LogMatcher {
 }
 
 // Match returns whether the actual value matches the expected value.
-func (l *logEntryMatcher) Match(actual interface{}) (bool, error) {
+func (l *logEntryMatcher) Match(actual any) (bool, error) {
 	logEntry, ok := actual.(record.LogEntry)
 	if !ok {
 		return false, fmt.Errorf("LogContains matcher expects an record.LogEntry")
@@ -99,16 +99,16 @@ func (l *logEntryMatcher) Match(actual interface{}) (bool, error) {
 }
 
 // FailureMessage returns the specified value as a failure message.
-func (l *logEntryMatcher) FailureMessage(actual interface{}) string {
+func (l *logEntryMatcher) FailureMessage(actual any) string {
 	return failMessage(l.validate(actual))
 }
 
 // NegatedFailureMessage returns the specified value as a negated failure message.
-func (l *logEntryMatcher) NegatedFailureMessage(actual interface{}) string {
+func (l *logEntryMatcher) NegatedFailureMessage(actual any) string {
 	return failMessage(l.validate(actual))
 }
 
-func (l *logEntryMatcher) validate(actual interface{}) []error {
+func (l *logEntryMatcher) validate(actual any) []error {
 	logEntry, ok := actual.(record.LogEntry)
 	if !ok {
 		return []error{fmt.Errorf("expected record.LogEntry, but got %T", actual)}

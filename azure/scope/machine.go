@@ -624,8 +624,8 @@ func (m *MachineScope) SetAnnotation(key, value string) {
 }
 
 // AnnotationJSON returns a map[string]interface from a JSON annotation.
-func (m *MachineScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
-	out := map[string]interface{}{}
+func (m *MachineScope) AnnotationJSON(annotation string) (map[string]any, error) {
+	out := map[string]any{}
 	jsonAnnotation := m.AzureMachine.GetAnnotations()[annotation]
 	if jsonAnnotation == "" {
 		return out, nil
@@ -641,7 +641,7 @@ func (m *MachineScope) AnnotationJSON(annotation string) (map[string]interface{}
 // `content`. `content` in this case should be a `map[string]interface{}`
 // suitable for turning into JSON. This `content` map will be marshalled into a
 // JSON string before being set as the given `annotation`.
-func (m *MachineScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+func (m *MachineScope) UpdateAnnotationJSON(annotation string, content map[string]any) error {
 	b, err := json.Marshal(content)
 	if err != nil {
 		return err

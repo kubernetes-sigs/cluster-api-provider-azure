@@ -155,7 +155,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	}
 
 	var providerIDs = make([]string, len(instances))
-	for i := 0; i < len(instances); i++ {
+	for i := range instances {
 		// Transform the VMSS instance resource representation to conform to the cloud-provider-azure representation
 		providerID, err := azprovider.ConvertResourceGroupNameToLower(azureutil.ProviderIDPrefix + *instances[i].ID)
 		if err != nil {

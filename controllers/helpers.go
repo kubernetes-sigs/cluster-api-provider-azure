@@ -627,7 +627,7 @@ func deprecatedClusterIdentityFinalizer(prefix, clusterNamespace, clusterName st
 // The finalizer key is a combination of the prefix and a hash of the cluster name and namespace.
 // We use a hash to ensure that the finalizer key name is not longer than 63 characters.
 func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) string {
-	hash := sha256.Sum224([]byte(fmt.Sprintf("%s-%s", clusterNamespace, clusterName)))
+	hash := sha256.Sum224(fmt.Appendf(nil, "%s-%s", clusterNamespace, clusterName))
 	return fmt.Sprintf("%s/%s", prefix, hex.EncodeToString(hash[:]))
 }
 

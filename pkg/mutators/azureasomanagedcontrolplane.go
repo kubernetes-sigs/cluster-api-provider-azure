@@ -399,8 +399,8 @@ func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluste
 		return nil
 	}
 
-	secrets := map[string]interface{}{
-		"adminCredentials": map[string]interface{}{
+	secrets := map[string]any{
+		"adminCredentials": map[string]any{
 			"name": cluster.Name + "-" + string(secret.Kubeconfig),
 			"key":  secret.KubeconfigDataName,
 		},

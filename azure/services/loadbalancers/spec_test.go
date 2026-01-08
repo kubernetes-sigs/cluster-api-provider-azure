@@ -65,15 +65,15 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *LBSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "public API load balancer exists with all expected values",
 			spec:     &fakePublicAPILBSpec,
 			existing: newSamplePublicAPIServerLB(false, false, false, false, false),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -82,7 +82,7 @@ func TestParameters(t *testing.T) {
 			name:     "internal API load balancer with all expected values",
 			spec:     &fakeInternalAPILBSpec,
 			existing: newDefaultInternalAPIServerLB(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -91,7 +91,7 @@ func TestParameters(t *testing.T) {
 			name:     "node outbound load balancer exists with all expected values",
 			spec:     &fakeNodeOutboundLBSpec,
 			existing: newDefaultNodeOutboundLB(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -100,7 +100,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing additional API server ports",
 			spec:     &fakePublicAPILBSpecWithAdditionalPorts,
 			existing: getExistingLBWithMissingFrontendIPConfigs(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, true, true, true, func(lb *armnetwork.LoadBalancer) {
 					lb.Properties.LoadBalancingRules = append(lb.Properties.LoadBalancingRules, &armnetwork.LoadBalancingRule{
@@ -132,7 +132,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing frontend IP configs",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingFrontendIPConfigs(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, true, true, true)))
 			},
@@ -142,7 +142,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing backend pool",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingBackendPool(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, false, true, true, true)))
 			},
@@ -152,7 +152,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing load balancing rules",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingLBRules(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, false, true, true)))
 			},
@@ -162,7 +162,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing probes",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingProbes(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, true, false, true)))
 			},
@@ -172,7 +172,7 @@ func TestParameters(t *testing.T) {
 			name:     "load balancer exists with missing outbound rules",
 			spec:     &fakePublicAPILBSpec,
 			existing: getExistingLBWithMissingOutboundRules(),
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
 				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, true, true, false)))
 			},

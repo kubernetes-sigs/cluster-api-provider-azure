@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -673,12 +674,7 @@ func (s *ClusterScope) IsVnetManaged() bool {
 
 // IsIPv6Enabled returns true if IPv6 is enabled.
 func (s *ClusterScope) IsIPv6Enabled() bool {
-	for _, cidr := range s.AzureCluster.Spec.NetworkSpec.Vnet.CIDRBlocks {
-		if net.IsIPv6CIDRString(cidr) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(s.AzureCluster.Spec.NetworkSpec.Vnet.CIDRBlocks, net.IsIPv6CIDRString)
 }
 
 // Subnets returns the cluster subnets.
@@ -1161,8 +1157,8 @@ func (s *ClusterScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType,
 }
 
 // AnnotationJSON returns a map[string]interface from a JSON annotation.
-func (s *ClusterScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
-	out := map[string]interface{}{}
+func (s *ClusterScope) AnnotationJSON(annotation string) (map[string]any, error) {
+	out := map[string]any{}
 	jsonAnnotation := s.AzureCluster.GetAnnotations()[annotation]
 	if jsonAnnotation == "" {
 		return out, nil
@@ -1178,7 +1174,7 @@ func (s *ClusterScope) AnnotationJSON(annotation string) (map[string]interface{}
 // `content`. `content` in this case should be a `map[string]interface{}`
 // suitable for turning into JSON. This `content` map will be marshalled into a
 // JSON string before being set as the given `annotation`.
-func (s *ClusterScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+func (s *ClusterScope) UpdateAnnotationJSON(annotation string, content map[string]any) error {
 	b, err := json.Marshal(content)
 	if err != nil {
 		return err
@@ -1239,17 +1235,17 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*aso
 	return privateEndpointSpecs
 }
 
-func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]interface{} {
+func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]any {
 	// Retrieve the last applied security rules for all NSGs.
 	lastAppliedSecurityRulesAll, err := s.AnnotationJSON(azure.SecurityRuleLastAppliedAnnotation)
 	if err != nil {
-		return map[string]interface{}{}
+		return map[string]any{}
 	}
 
 	// Retrieve the last applied security rules for this NSG.
-	lastAppliedSecurityRules, ok := lastAppliedSecurityRulesAll[nsgName].(map[string]interface{})
+	lastAppliedSecurityRules, ok := lastAppliedSecurityRulesAll[nsgName].(map[string]any)
 	if !ok {
-		lastAppliedSecurityRules = map[string]interface{}{}
+		lastAppliedSecurityRules = map[string]any{}
 	}
 	return lastAppliedSecurityRules
 }

@@ -59,15 +59,15 @@ func TestRecordSpec_Parameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          RecordSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:          "new private dns record for ipv4",
 			expectedError: "",
 			spec:          recordSpec,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(Equal(armprivatedns.RecordSet{
 					Properties: &armprivatedns.RecordSetProperties{
 						TTL: ptr.To[int64](300),
@@ -84,7 +84,7 @@ func TestRecordSpec_Parameters(t *testing.T) {
 			name:          "new private dns record for ipv6",
 			expectedError: "",
 			spec:          recordSpecIpv6,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(Equal(armprivatedns.RecordSet{
 					Properties: &armprivatedns.RecordSetProperties{
 						TTL: ptr.To[int64](300),

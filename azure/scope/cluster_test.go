@@ -1447,7 +1447,7 @@ func TestNSGSpecs(t *testing.T) {
 					Location:                 "centralIndia",
 					ClusterName:              "my-cluster",
 					AdditionalTags:           make(infrav1.Tags),
-					LastAppliedSecurityRules: map[string]interface{}{},
+					LastAppliedSecurityRules: map[string]any{},
 				},
 			},
 		},

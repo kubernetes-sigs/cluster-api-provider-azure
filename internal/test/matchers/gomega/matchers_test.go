@@ -26,7 +26,7 @@ import (
 
 var (
 	defaultLogEntry = record.LogEntry{
-		Values: []interface{}{
+		Values: []any{
 			"foo",
 			"bin",
 			"bax",
@@ -93,7 +93,7 @@ func TestLogContainsEntries(t *testing.T) {
 	entries := []record.LogEntry{
 		defaultLogEntry,
 		{
-			Values: []interface{}{
+			Values: []any{
 				"controller",
 				"AzureCluster",
 				"predicate",
