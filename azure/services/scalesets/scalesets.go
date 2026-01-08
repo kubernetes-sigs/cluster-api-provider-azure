@@ -19,6 +19,7 @@ package scalesets
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
@@ -30,7 +31,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -332,7 +332,7 @@ func validateDiagnosticsProfile(spec *ScaleSetSpec) error {
 		string(infrav1.ManagedDiagnosticsStorage),
 		string(infrav1.UserManagedDiagnosticsStorage),
 	}
-	if !slice.Contains(validStorageTypes, string(boot.StorageAccountType)) {
+	if !slices.Contains(validStorageTypes, string(boot.StorageAccountType)) {
 		return azure.WithTerminalError(fmt.Errorf("invalid storageAccountType: %s. Allowed values are %v", boot.StorageAccountType, validStorageTypes))
 	}
 
@@ -351,7 +351,7 @@ func (s *Service) validateAvailabilityZones(ctx context.Context, spec *ScaleSetS
 	}
 
 	for _, az := range spec.FailureDomains {
-		if !slice.Contains(azsInLocation, az) {
+		if !slices.Contains(azsInLocation, az) {
 			return azure.WithTerminalError(errors.Errorf("availability zone %s is not available for VM type %s in location %s", az, spec.Size, spec.Location))
 		}
 	}

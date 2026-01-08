@@ -16,14 +16,7 @@ limitations under the License.
 
 package slice
 
-import "slices"
-
 import "k8s.io/utils/ptr"
-
-// Contains tells whether a Contains x.
-func Contains(a []string, x string) bool {
-	return slices.Contains(a, x)
-}
 
 // ToPtrs takes a slice of values and returns a slice of pointers to the same values.
 func ToPtrs[T any](in []T) []*T {
