@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +33,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -74,10 +77,34 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
 
 	By("Setting up the bootstrap cluster")
+	// TODO: Remove this code when CAPZ has updated to use CAPI v1.12.2.
+	// Replace the kubeadm-control-plane-controller with one from staging
+	stagingImage := "gcr.io/k8s-staging-cluster-api/kubeadm-control-plane-controller:v20260109-v1.12.0-rc.0-186-ga64cfe0cc"
+	for i, img := range e2eConfig.Images {
+		if strings.Contains(img.Name, "kubeadm-control-plane-controller") {
+			e2eConfig.Images[i].Name = stagingImage
+			break
+		}
+	}
 	bootstrapClusterProvider, bootstrapClusterProxy = setupBootstrapCluster(e2eConfig, useExistingCluster)
 
 	By("Initializing the bootstrap cluster")
 	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
+
+	// TODO: Remove this code when CAPZ has updated to use CAPI v1.12.2.
+	// Patch the `capi-kubeadm-control-plane-controller-manager` deployment in the
+	// `capi-kubeadm-control-plane-system` namespace to use the staging image.
+	By("Patching the kubeadm control plane controller to use the staging image")
+	// Update the manager container's image
+	patch := fmt.Sprintf(`{"spec":{"template":{"spec":{"containers":[{"name":"manager","image":"%s"}]}}}}`, stagingImage)
+	_, err := bootstrapClusterProxy.GetClientSet().AppsV1().Deployments("capi-kubeadm-control-plane-system").Patch(
+		context.TODO(),
+		"capi-kubeadm-control-plane-controller-manager",
+		types.StrategicMergePatchType,
+		[]byte(patch),
+		metav1.PatchOptions{},
+	)
+	Expect(err).NotTo(HaveOccurred(), "Failed to patch the kubeadm control plane controller deployment")
 
 	// encode the e2e config into the byte array.
 	var configBuf bytes.Buffer
