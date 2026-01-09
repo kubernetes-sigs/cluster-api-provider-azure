@@ -25,7 +25,8 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -135,7 +136,8 @@ func (s *Service[T, S]) Reconcile(ctx context.Context) error {
 	if s.PostReconcileHook != nil {
 		resultErr = s.PostReconcileHook(ctx, s.Scope, resultErr)
 	}
-	s.Scope.UpdatePutStatus(s.ConditionType, s.Name(), resultErr)
+	// Convert v1beta2.ConditionType to v1beta1.ConditionType for the interface
+	s.Scope.UpdatePutStatus(clusterv1beta1.ConditionType(string(s.ConditionType)), s.Name(), resultErr)
 	if resultErr != nil {
 		log.Error(resultErr, "update condition", "condition", s.ConditionType, "service", s.Name())
 	} else {
@@ -174,7 +176,8 @@ func (s *Service[T, S]) Delete(ctx context.Context) error {
 	if s.PostDeleteHook != nil {
 		resultErr = s.PostDeleteHook(ctx, s.Scope, resultErr)
 	}
-	s.Scope.UpdateDeleteStatus(s.ConditionType, s.Name(), resultErr)
+	// Convert v1beta2.ConditionType to v1beta1.ConditionType for the interface
+	s.Scope.UpdateDeleteStatus(clusterv1beta1.ConditionType(string(s.ConditionType)), s.Name(), resultErr)
 	return resultErr
 }
 

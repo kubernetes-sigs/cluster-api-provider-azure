@@ -630,3 +630,184 @@ func TestAROControlPlane_ValidatePlatformFields(t *testing.T) {
 		})
 	}
 }
+
+func TestAROControlPlane_ValidateExternalAuthProviders(t *testing.T) {
+	testCases := []struct {
+		name           string
+		controlPlane   *AROControlPlane
+		expectError    bool
+		expectedErrors []string
+	}{
+		{
+			name: "valid provider name with 15 characters",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "rcapxyz-stage-a",
+							Issuer: TokenIssuer{URL: "https://example.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "valid provider name with less than 15 characters",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "short-name",
+							Issuer: TokenIssuer{URL: "https://example.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "no external auth providers (should be valid)",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "nil external auth providers (should be valid)",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: nil,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "multiple valid providers",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "provider-one",
+							Issuer: TokenIssuer{URL: "https://example1.com", Audiences: []TokenAudience{"test"}},
+						},
+						{
+							Name:   "provider-two",
+							Issuer: TokenIssuer{URL: "https://example2.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid provider name exceeding 15 characters",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "rcapxyz-stage-ea",
+							Issuer: TokenIssuer{URL: "https://example.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"name length exceeds maximum allowed length of 15 characters (got 16)"},
+		},
+		{
+			name: "invalid provider name far exceeding 15 characters",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "this-is-a-very-long-provider-name-that-exceeds-the-limit",
+							Issuer: TokenIssuer{URL: "https://example.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"name length exceeds maximum allowed length of 15 characters"},
+		},
+		{
+			name: "invalid empty provider name",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "",
+							Issuer: TokenIssuer{URL: "https://example.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"provider name cannot be empty"},
+		},
+		{
+			name: "multiple providers with one invalid",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "valid-provider",
+							Issuer: TokenIssuer{URL: "https://example1.com", Audiences: []TokenAudience{"test"}},
+						},
+						{
+							Name:   "invalid-provider-name-too-long",
+							Issuer: TokenIssuer{URL: "https://example2.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"name length exceeds maximum allowed length of 15 characters"},
+		},
+		{
+			name: "multiple providers with multiple invalid",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					ExternalAuthProviders: []ExternalAuthProvider{
+						{
+							Name:   "",
+							Issuer: TokenIssuer{URL: "https://example1.com", Audiences: []TokenAudience{"test"}},
+						},
+						{
+							Name:   "this-name-is-way-too-long-for-azure",
+							Issuer: TokenIssuer{URL: "https://example2.com", Audiences: []TokenAudience{"test"}},
+						},
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"provider name cannot be empty", "name length exceeds maximum allowed length of 15 characters"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			errs := tc.controlPlane.validateExternalAuthProviders(nil)
+
+			if tc.expectError {
+				g.Expect(errs).NotTo(BeEmpty())
+				for _, expectedError := range tc.expectedErrors {
+					found := false
+					for _, err := range errs {
+						if strings.Contains(err.Detail, expectedError) || strings.Contains(err.Error(), expectedError) {
+							found = true
+							break
+						}
+					}
+					g.Expect(found).To(BeTrue(), "Expected error message '%s' not found. Got errors: %v", expectedError, errs)
+				}
+			} else {
+				g.Expect(errs).To(BeEmpty())
+			}
+		})
+	}
+}

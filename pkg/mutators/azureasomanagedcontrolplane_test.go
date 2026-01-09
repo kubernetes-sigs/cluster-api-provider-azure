@@ -32,8 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -83,11 +82,11 @@ func TestSetManagedClusterDefaults(t *testing.T) {
 					Name: "cluster",
 				},
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"pod-0", "pod-1"},
 						},
-						Services: &clusterv1.NetworkRanges{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"svc-0", "svc-1"},
 						},
 					},
@@ -278,8 +277,8 @@ func TestSetManagedClusterServiceCIDR(t *testing.T) {
 			name: "set from CAPI opinion",
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -298,8 +297,8 @@ func TestSetManagedClusterServiceCIDR(t *testing.T) {
 			name: "user value matching CAPI ok",
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -328,8 +327,8 @@ func TestSetManagedClusterServiceCIDR(t *testing.T) {
 					Namespace: "ns",
 				},
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -408,8 +407,8 @@ func TestSetManagedClusterPodCIDR(t *testing.T) {
 			name: "set from CAPI opinion",
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -428,8 +427,8 @@ func TestSetManagedClusterPodCIDR(t *testing.T) {
 			name: "user value matching CAPI ok",
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -458,8 +457,8 @@ func TestSetManagedClusterPodCIDR(t *testing.T) {
 					Namespace: "ns",
 				},
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Pods: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"capi cidr"},
 						},
 					},
@@ -512,7 +511,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 	s := runtime.NewScheme()
 	g.Expect(asocontainerservicev1.AddToScheme(s)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(s)).To(Succeed())
-	g.Expect(expv1.AddToScheme(s)).To(Succeed())
+	g.Expect(clusterv1.AddToScheme(s)).To(Succeed())
 	fakeClientBuilder := func() *fakeclient.ClientBuilder {
 		return fakeclient.NewClientBuilder().WithScheme(s)
 	}
@@ -579,7 +578,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: expv1.GroupVersion.Identifier(),
+								APIVersion: clusterv1.GroupVersion.Identifier(),
 								Kind:       "MachinePool",
 								Name:       "wrong-label",
 							},
@@ -608,7 +607,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: expv1.GroupVersion.Identifier(),
+								APIVersion: clusterv1.GroupVersion.Identifier(),
 								Kind:       "MachinePool",
 								Name:       "wrong-namespace",
 							},
@@ -637,7 +636,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: expv1.GroupVersion.Identifier(),
+								APIVersion: clusterv1.GroupVersion.Identifier(),
 								Kind:       "MachinePool",
 								Name:       "pool0",
 							},
@@ -666,7 +665,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: expv1.GroupVersion.Identifier(),
+								APIVersion: clusterv1.GroupVersion.Identifier(),
 								Kind:       "MachinePool",
 								Name:       "pool1",
 							},
@@ -688,8 +687,8 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 				},
 			},
 		}
-		machinePools := &expv1.MachinePoolList{
-			Items: []expv1.MachinePool{
+		machinePools := &clusterv1.MachinePoolList{
+			Items: []clusterv1.MachinePool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: namespace,
@@ -707,7 +706,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Namespace: namespace,
 						Name:      "pool0",
 					},
-					Spec: expv1.MachinePoolSpec{
+					Spec: clusterv1.MachinePoolSpec{
 						Replicas: ptr.To[int32](1),
 					},
 				},
@@ -716,7 +715,7 @@ func TestSetManagedClusterAgentPoolProfiles(t *testing.T) {
 						Namespace: namespace,
 						Name:      "pool1",
 					},
-					Spec: expv1.MachinePoolSpec{
+					Spec: clusterv1.MachinePoolSpec{
 						Replicas: ptr.To[int32](2),
 					},
 				},

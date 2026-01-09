@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -132,7 +132,7 @@ func TestNSGSpec_Parameters(t *testing.T) {
 			g.Expect(result.Spec.Owner.Name).To(Equal(tc.spec.ResourceGroup))
 
 			// Verify labels include cluster name
-			g.Expect(result.ObjectMeta.Labels).To(HaveKeyWithValue(clusterv1.ClusterNameLabel, tc.spec.ClusterName))
+			g.Expect(result.ObjectMeta.Labels).To(HaveKeyWithValue(clusterv1beta1.ClusterNameLabel, tc.spec.ClusterName))
 
 			// Verify additional tags are included in labels
 			for k, v := range tc.spec.AdditionalTags {

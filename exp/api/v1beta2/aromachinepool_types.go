@@ -19,7 +19,7 @@ package v1beta2
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -134,7 +134,7 @@ type AROMachinePoolStatus struct {
 	Replicas int32 `json:"replicas"`
 	// Conditions defines current service state of the managed machine pool
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// FailureMessage will be set in the event that there is a terminal problem
 	// reconciling the state and will be set to a descriptive error message.
 	//
@@ -230,12 +230,12 @@ type AROMachinePoolList struct {
 }
 
 // GetConditions returns the observations of the operational state of the AROMachinePool resource.
-func (c *AROMachinePool) GetConditions() clusterv1.Conditions {
+func (c *AROMachinePool) GetConditions() []metav1.Condition {
 	return c.Status.Conditions
 }
 
 // SetConditions sets the underlying service state of the AROMachinePool to the predescribed clusterv1.Conditions.
-func (c *AROMachinePool) SetConditions(conditions clusterv1.Conditions) {
+func (c *AROMachinePool) SetConditions(conditions []metav1.Condition) {
 	c.Status.Conditions = conditions
 }
 

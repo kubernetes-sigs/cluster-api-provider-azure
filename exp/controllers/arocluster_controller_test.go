@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -146,11 +146,10 @@ func TestAROClusterReconciler_Reconcile(t *testing.T) {
 			if tc.clusterExists {
 				cluster = createCluster(testClusterName, testNamespace, tc.pausedCluster)
 				// Ensure cluster has proper ControlPlaneRef
-				cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
-					APIVersion: cplane.GroupVersion.String(),
-					Kind:       "AROControlPlane",
-					Name:       testControlPlaneName,
-					Namespace:  testNamespace,
+				cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+					APIGroup: cplane.GroupVersion.Group,
+					Kind:     "AROControlPlane",
+					Name:     testControlPlaneName,
 				}
 				objects = append(objects, cluster)
 			}
@@ -272,11 +271,10 @@ func TestAROClusterReconciler_reconcileNormal(t *testing.T) {
 					Namespace: testNamespace,
 				},
 				Spec: clusterv1.ClusterSpec{
-					ControlPlaneRef: &corev1.ObjectReference{
-						APIVersion: "invalid.api.group/v1",
-						Kind:       "SomeOtherControlPlane",
-						Name:       testControlPlaneName,
-						Namespace:  testNamespace,
+					ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: "invalid.api.group",
+						Kind:     "SomeOtherControlPlane",
+						Name:     testControlPlaneName,
 					},
 				},
 			},
@@ -296,11 +294,10 @@ func TestAROClusterReconciler_reconcileNormal(t *testing.T) {
 					Namespace: testNamespace,
 				},
 				Spec: clusterv1.ClusterSpec{
-					ControlPlaneRef: &corev1.ObjectReference{
-						APIVersion: cplane.GroupVersion.String(),
-						Kind:       "AROControlPlane",
-						Name:       testControlPlaneName,
-						Namespace:  testNamespace,
+					ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: cplane.GroupVersion.Group,
+						Kind:     "AROControlPlane",
+						Name:     testControlPlaneName,
 					},
 				},
 			},
@@ -330,11 +327,10 @@ func TestAROClusterReconciler_reconcileNormal(t *testing.T) {
 					Namespace: testNamespace,
 				},
 				Spec: clusterv1.ClusterSpec{
-					ControlPlaneRef: &corev1.ObjectReference{
-						APIVersion: cplane.GroupVersion.String(),
-						Kind:       "AROControlPlane",
-						Name:       testControlPlaneName,
-						Namespace:  testNamespace,
+					ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: cplane.GroupVersion.Group,
+						Kind:     "AROControlPlane",
+						Name:     testControlPlaneName,
 					},
 				},
 			},
@@ -536,36 +532,36 @@ func TestAROClusterReconciler_reconcileDelete(t *testing.T) {
 
 func TestMatchesAROControlPlaneAPIGroup(t *testing.T) {
 	testcases := []struct {
-		name       string
-		apiVersion string
-		expected   bool
+		name     string
+		apiGroup string
+		expected bool
 	}{
 		{
-			name:       "valid AROControlPlane API version",
-			apiVersion: cplane.GroupVersion.String(),
-			expected:   true,
+			name:     "valid AROControlPlane API group",
+			apiGroup: cplane.GroupVersion.Group,
+			expected: true,
 		},
 		{
-			name:       "different API group",
-			apiVersion: "cluster.x-k8s.io/v1beta1",
-			expected:   false,
+			name:     "different API group",
+			apiGroup: "cluster.x-k8s.io",
+			expected: false,
 		},
 		{
-			name:       "empty API version",
-			apiVersion: "",
-			expected:   false,
+			name:     "empty API group",
+			apiGroup: "",
+			expected: false,
 		},
 		{
-			name:       "invalid API version format",
-			apiVersion: "invalid",
-			expected:   false,
+			name:     "invalid API group",
+			apiGroup: "invalid",
+			expected: false,
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			result := matchesAROControlPlaneAPIGroup(tc.apiVersion)
+			result := matchesAROControlPlaneAPIGroup(tc.apiGroup)
 			g.Expect(result).To(Equal(tc.expected))
 		})
 	}

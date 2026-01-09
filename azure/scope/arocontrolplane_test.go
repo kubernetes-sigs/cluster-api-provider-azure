@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -296,27 +296,27 @@ func TestAROControlPlaneScope_SetProvisioningState(t *testing.T) {
 		name                    string
 		state                   string
 		expectedReady           bool
-		expectedConditionStatus corev1.ConditionStatus
+		expectedConditionStatus metav1.ConditionStatus
 		expectedConditionReason string
 	}{
 		{
 			name:                    "empty state",
 			state:                   "",
 			expectedReady:           false,
-			expectedConditionStatus: corev1.ConditionUnknown,
+			expectedConditionStatus: metav1.ConditionUnknown,
 			expectedConditionReason: infrav1.CreatingReason,
 		},
 		{
 			name:                    "succeeded state",
 			state:                   ProvisioningStateSucceeded,
 			expectedReady:           true,
-			expectedConditionStatus: corev1.ConditionTrue,
+			expectedConditionStatus: metav1.ConditionTrue,
 		},
 		{
 			name:                    "accepted state",
 			state:                   "Accepted",
 			expectedReady:           false,
-			expectedConditionStatus: corev1.ConditionFalse,
+			expectedConditionStatus: metav1.ConditionFalse,
 			expectedConditionReason: infrav1.CreatingReason,
 		},
 	}
@@ -341,14 +341,13 @@ func TestAROControlPlaneScope_SetProvisioningState(t *testing.T) {
 	}
 }
 
-func Get(conditionType clusterv1.ConditionType, conditions clusterv1.Conditions) *clusterv1.Condition {
-	var condition *clusterv1.Condition
-	for _, x := range conditions {
-		if x.Type == conditionType {
-			condition = &x
+func Get(conditionType clusterv1.ConditionType, conditions []metav1.Condition) *metav1.Condition {
+	for i := range conditions {
+		if conditions[i].Type == string(conditionType) {
+			return &conditions[i]
 		}
 	}
-	return condition
+	return nil
 }
 
 func TestAROControlPlaneScope_NetworkSpecInitialization(t *testing.T) {

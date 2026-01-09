@@ -21,7 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -282,7 +282,7 @@ type AROControlPlaneStatus struct {
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 	// Conditions specifies the conditions for the managed control plane
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// ID is the cluster ID given by ARO.
 	ID string `json:"id,omitempty"`
@@ -378,12 +378,12 @@ type AROControlPlaneList struct {
 }
 
 // GetConditions returns the control planes conditions.
-func (c *AROControlPlane) GetConditions() clusterv1.Conditions {
+func (c *AROControlPlane) GetConditions() []metav1.Condition {
 	return c.Status.Conditions
 }
 
 // SetConditions sets the status conditions for the AROControlPlane.
-func (c *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
+func (c *AROControlPlane) SetConditions(conditions []metav1.Condition) {
 	c.Status.Conditions = conditions
 }
 

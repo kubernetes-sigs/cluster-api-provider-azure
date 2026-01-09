@@ -37,7 +37,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -229,14 +230,28 @@ func (s *AROControlPlaneScope) SetStatusVersion(versionID string) {
 // SetProvisioningState sets the provisioning state in the control plane status.
 func (s *AROControlPlaneScope) SetProvisioningState(state string) {
 	if state == "" {
-		conditions.MarkUnknown(s.ControlPlane, cplane.AROControlPlaneReadyCondition, infrav1.CreatingReason, "nil ProvisioningState was returned")
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(cplane.AROControlPlaneReadyCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  infrav1.CreatingReason,
+			Message: "nil ProvisioningState was returned",
+		})
 		return
 	}
 	if state == ProvisioningStateSucceeded {
-		conditions.MarkTrue(s.ControlPlane, cplane.AROControlPlaneReadyCondition)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:   string(cplane.AROControlPlaneReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 		return
 	}
-	conditions.MarkFalse(s.ControlPlane, cplane.AROControlPlaneReadyCondition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "ProvisioningState=%s", state)
+	conditions.Set(s.ControlPlane, metav1.Condition{
+		Type:    string(cplane.AROControlPlaneReadyCondition),
+		Status:  metav1.ConditionFalse,
+		Reason:  infrav1.CreatingReason,
+		Message: fmt.Sprintf("ProvisioningState=%s", state),
+	})
 }
 
 // SetLongRunningOperationState will set the future on the AROControlPlane status to allow the resource to continue
@@ -255,39 +270,85 @@ func (s *AROControlPlaneScope) DeleteLongRunningOperationState(name, service, fu
 	futures.Delete(s.ControlPlane, name, service, futureType)
 }
 
-// UpdateDeleteStatus updates a condition on the AROControlPlane status after a DELETE operation.
-func (s *AROControlPlaneScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+// UpdateDeleteStatus updates a condition on the AROControlPlaneStatus after a DELETE operation.
+// This method accepts v1beta1.ConditionType for compatibility with non-ARO services.
+func (s *AROControlPlaneScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletedReason,
+			Message: fmt.Sprintf("%s successfully deleted", service),
+		})
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletingReason,
+			Message: fmt.Sprintf("%s deleting", service),
+		})
 	default:
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletionFailedReason,
+			Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error()),
+		})
 	}
 }
 
 // UpdatePutStatus updates a condition on the AROControlPlane status after a PUT operation.
-func (s *AROControlPlaneScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+// This method accepts v1beta1.ConditionType for compatibility with non-ARO services.
+func (s *AROControlPlaneScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.ControlPlane, condition)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:   string(condition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.CreatingReason,
+			Message: fmt.Sprintf("%s creating or updating", service),
+		})
 	default:
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.FailedReason,
+			Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error()),
+		})
 	}
 }
 
 // UpdatePatchStatus updates a condition on the AROControlPlane status after a PATCH operation.
-func (s *AROControlPlaneScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+// This method accepts v1beta1.ConditionType for compatibility with non-ARO services.
+func (s *AROControlPlaneScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.ControlPlane, condition)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:   string(condition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.UpdatingReason,
+			Message: fmt.Sprintf("%s updating", service),
+		})
 	default:
-		conditions.MarkFalse(s.ControlPlane, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.FailedReason,
+			Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error()),
+		})
 	}
 }
 
@@ -398,17 +459,8 @@ func (s *AROControlPlaneScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.PatchObject")
 	defer done()
 
-	conditions.SetSummary(s.ControlPlane)
-
-	return s.patchHelper.Patch(
-		ctx,
-		s.ControlPlane,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
-			cplane.AROControlPlaneReadyCondition,
-			cplane.AROControlPlaneValidCondition,
-			cplane.AROControlPlaneUpgradingCondition,
-		}})
+	// Patch all status fields including Ready, Initialization, and all conditions
+	return s.patchHelper.Patch(ctx, s.ControlPlane)
 }
 
 // Close closes the current scope persisting the control plane configuration and status.

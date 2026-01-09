@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -88,7 +88,7 @@ func (s *NSGSpec) Parameters(_ context.Context, existing *v1api20201101.NetworkS
 			params.ObjectMeta.Labels[k] = *v
 		}
 	}
-	params.ObjectMeta.Labels[clusterv1.ClusterNameLabel] = s.ClusterName
+	params.ObjectMeta.Labels[clusterv1beta1.ClusterNameLabel] = s.ClusterName
 
 	return params, nil
 }

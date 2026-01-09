@@ -30,7 +30,8 @@ import (
 	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -286,7 +287,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 							Name: "my-cluster",
 						},
 						Status: infrav1.AzureClusterStatus{
-							FailureDomains: map[string]clusterv1.FailureDomainSpec{
+							FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
 								"failure-domain-id-1": {},
 								"failure-domain-id-2": {},
 								"failure-domain-id-3": {},
@@ -1070,7 +1071,7 @@ func TestMachineScope_AvailabilityZone(t *testing.T) {
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{
 					Spec: clusterv1.MachineSpec{
-						FailureDomain: ptr.To("dummy-failure-domain-from-machine-spec"),
+						FailureDomain: "dummy-failure-domain-from-machine-spec",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1260,8 +1261,8 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 					},
 					AzureCluster: &infrav1.AzureCluster{
 						Status: infrav1.AzureClusterStatus{
-							FailureDomains: clusterv1.FailureDomains{
-								"foo-failure-domain": clusterv1.FailureDomainSpec{},
+							FailureDomains: clusterv1beta1.FailureDomains{
+								"foo-failure-domain": clusterv1beta1.FailureDomainSpec{},
 							},
 						},
 					},
@@ -1450,7 +1451,7 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 						},
 					},
 					Spec: clusterv1.MachineSpec{
-						FailureDomain: ptr.To("1"),
+						FailureDomain: "1",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1592,7 +1593,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.20.1"),
+						Version: "1.20.1",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1621,7 +1622,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.22.1"),
+						Version: "1.22.1",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1653,7 +1654,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.23.3"),
+						Version: "1.23.3",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1685,7 +1686,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.23.3"),
+						Version: "1.23.3",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{
@@ -1717,7 +1718,7 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 						Name: "machine-name",
 					},
 					Spec: clusterv1.MachineSpec{
-						Version: ptr.To("1.20.1"),
+						Version: "1.20.1",
 					},
 				},
 				AzureMachine: &infrav1.AzureMachine{

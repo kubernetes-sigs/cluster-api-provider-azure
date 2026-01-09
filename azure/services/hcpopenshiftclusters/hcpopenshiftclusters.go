@@ -28,7 +28,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -403,22 +402,20 @@ func (s *Service) setHcpClusterReadyCondition(readyCondition *conditions.Conditi
 	if readyCondition == nil {
 		if provisioningState == "" {
 			// Cluster just created, provisioning not started
-			capiconditions.MarkFalse(
-				aroControlPlane,
-				cplane.HcpClusterReadyCondition,
-				"Provisioning",
-				clusterv1.ConditionSeverityInfo,
-				"HcpOpenShiftCluster provisioning starting",
-			)
+			capiconditions.Set(aroControlPlane, metav1.Condition{
+				Type:    string(cplane.HcpClusterReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "Provisioning",
+				Message: "HcpOpenShiftCluster provisioning starting",
+			})
 		} else {
 			// Have provisioning state but no Ready condition yet
-			capiconditions.MarkFalse(
-				aroControlPlane,
-				cplane.HcpClusterReadyCondition,
-				string(provisioningState),
-				clusterv1.ConditionSeverityInfo,
-				"HcpOpenShiftCluster provisioning state: %s", provisioningState,
-			)
+			capiconditions.Set(aroControlPlane, metav1.Condition{
+				Type:    string(cplane.HcpClusterReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(provisioningState),
+				Message: "HcpOpenShiftCluster provisioning state: " + string(provisioningState),
+			})
 		}
 		return
 	}
@@ -427,36 +424,29 @@ func (s *Service) setHcpClusterReadyCondition(readyCondition *conditions.Conditi
 	switch readyCondition.Status {
 	case metav1.ConditionTrue:
 		// ASO reports cluster is ready
-		capiconditions.MarkTrue(aroControlPlane, cplane.HcpClusterReadyCondition)
+		capiconditions.Set(aroControlPlane, metav1.Condition{
+			Type:   string(cplane.HcpClusterReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 
 	case metav1.ConditionFalse:
-		// ASO reports not ready - check severity
-		severity := clusterv1.ConditionSeverityInfo
-		switch readyCondition.Severity {
-		case conditions.ConditionSeverityError:
-			severity = clusterv1.ConditionSeverityError
-		case conditions.ConditionSeverityWarning:
-			severity = clusterv1.ConditionSeverityWarning
-		}
-
-		capiconditions.MarkFalse(
-			aroControlPlane,
-			cplane.HcpClusterReadyCondition,
-			readyCondition.Reason,
-			severity,
-			"%s",
-			readyCondition.Message,
-		)
+		// ASO reports not ready
+		capiconditions.Set(aroControlPlane, metav1.Condition{
+			Type:    string(cplane.HcpClusterReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  readyCondition.Reason,
+			Message: readyCondition.Message,
+		})
 
 	case metav1.ConditionUnknown:
 		// ASO reports unknown state
-		capiconditions.MarkUnknown(
-			aroControlPlane,
-			cplane.HcpClusterReadyCondition,
-			readyCondition.Reason,
-			"%s",
-			readyCondition.Message,
-		)
+		capiconditions.Set(aroControlPlane, metav1.Condition{
+			Type:    string(cplane.HcpClusterReadyCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  readyCondition.Reason,
+			Message: readyCondition.Message,
+		})
 	}
 }
 

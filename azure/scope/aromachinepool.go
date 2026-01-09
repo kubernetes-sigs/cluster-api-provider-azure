@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"fmt"
 
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
@@ -25,8 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +44,7 @@ type AROMachinePoolScopeParams struct {
 	AzureClients
 	Client               client.Client
 	Cluster              *clusterv1.Cluster
-	MachinePool          *expv1.MachinePool
+	MachinePool          *clusterv1.MachinePool
 	ControlPlane         *cplane.AROControlPlane
 	AROMachinePool       *v1beta2.AROMachinePool
 	Cache                *AROMachinePoolCache
@@ -109,7 +109,7 @@ type AROMachinePoolScope struct {
 	AzureClients
 	Cluster          *clusterv1.Cluster
 	ControlPlane     *cplane.AROControlPlane
-	MachinePool      *expv1.MachinePool
+	MachinePool      *clusterv1.MachinePool
 	InfraMachinePool *v1beta2.AROMachinePool
 
 	azure.AsyncReconciler
@@ -135,11 +135,26 @@ func (s *AROMachinePoolScope) DeleteLongRunningOperationState(name, service, fut
 func (s *AROMachinePoolScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletedReason,
+			Message: fmt.Sprintf("%s successfully deleted", service),
+		})
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletingReason,
+			Message: fmt.Sprintf("%s deleting", service),
+		})
 	default:
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.DeletionFailedReason,
+			Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error()),
+		})
 	}
 }
 
@@ -147,15 +162,29 @@ func (s *AROMachinePoolScope) UpdateDeleteStatus(condition clusterv1.ConditionTy
 func (s *AROMachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.InfraMachinePool, condition)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:   string(condition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 	case azure.IsOperationNotDoneError(err):
 		reason := infrav1.CreatingReason
 		if s.InfraMachinePool.Status.ProvisioningState == ProvisioningStateUpdating {
 			reason = infrav1.UpdatingReason
 		}
-		conditions.MarkFalse(s.InfraMachinePool, condition, reason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: fmt.Sprintf("%s creating or updating", service),
+		})
 	default:
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.FailedReason,
+			Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error()),
+		})
 	}
 }
 
@@ -163,11 +192,25 @@ func (s *AROMachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType,
 func (s *AROMachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		conditions.MarkTrue(s.InfraMachinePool, condition)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:   string(condition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.UpdatingReason,
+			Message: fmt.Sprintf("%s updating", service),
+		})
 	default:
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:    string(condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.FailedReason,
+			Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error()),
+		})
 	}
 }
 
@@ -195,16 +238,14 @@ func (s *AROMachinePoolScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedMachinePoolScope.PatchObject")
 	defer done()
 
-	conditions.SetSummary(s.InfraMachinePool)
-
 	return s.patchHelper.Patch(
 		ctx,
 		s.InfraMachinePool,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
-			v1beta2.AROMachinePoolReadyCondition,
-			// v1beta2.AROMachinePoolValidCondition,
-			// v1beta2.AROMachinePoolUpgradingCondition,
+		patch.WithOwnedConditions{Conditions: []string{
+			string(clusterv1.ReadyCondition),
+			string(v1beta2.AROMachinePoolReadyCondition),
+			// string(v1beta2.AROMachinePoolValidCondition),
+			// string(v1beta2.AROMachinePoolUpgradingCondition),
 		}})
 }
 

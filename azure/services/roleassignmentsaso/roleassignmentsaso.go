@@ -20,6 +20,7 @@ import (
 	"context"
 
 	asoauthorizationv1api20220401 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -41,7 +42,8 @@ func New(scope KubernetesRoleAssignmentScope) *conditionalaso.Service[*asoauthor
 	svc := conditionalaso.NewService[*asoauthorizationv1api20220401.RoleAssignment, KubernetesRoleAssignmentScope](serviceName, scope)
 	svc.ListFunc = list
 	svc.Specs = scope.KubernetesRoleAssignmentSpecs()
-	svc.ConditionType = infrav1.RoleAssignmentReadyCondition
+	// Convert v1beta1.ConditionType to v1beta2.ConditionType
+	svc.ConditionType = clusterv1.ConditionType(string(infrav1.RoleAssignmentReadyCondition))
 	return svc
 }
 

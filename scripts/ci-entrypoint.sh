@@ -251,7 +251,7 @@ if [[ ! "${CLUSTER_TEMPLATE}" =~ "aks" ]]; then
   install_addons
 fi
 
-"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait -A --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployments,machinepools
+"${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" wait -A --for=condition=Ready --timeout=10m -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinepools.v1beta1.cluster.x-k8s.io,machinedeployments.v1beta1.cluster.x-k8s.io
 
 echo "Cluster ${CLUSTER_NAME} created and fully operational"
 

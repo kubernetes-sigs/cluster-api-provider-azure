@@ -26,9 +26,8 @@ import (
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -80,7 +79,7 @@ func (r *AROClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 			),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
-				controllers.ClusterUpdatePauseChange(log),
+				predicates.ClusterPausedTransitions(mgr.GetScheme(), log),
 			),
 		).
 		Watches(
@@ -141,8 +140,8 @@ func aroControlPlaneToAroClusterMap(c client.Client, log logr.Logger) handler.Ma
 		}
 
 		aroClusterRef := cluster.Spec.InfrastructureRef
-		if aroClusterRef == nil ||
-			!matchesAROAPIGroup(aroClusterRef.APIVersion) ||
+		if !aroClusterRef.IsDefined() ||
+			aroClusterRef.APIGroup != infra.GroupVersion.Group ||
 			aroClusterRef.Kind != infra.AROClusterKind {
 			return nil
 		}
@@ -150,17 +149,12 @@ func aroControlPlaneToAroClusterMap(c client.Client, log logr.Logger) handler.Ma
 		return []reconcile.Request{
 			{
 				NamespacedName: client.ObjectKey{
-					Namespace: aroClusterRef.Namespace,
+					Namespace: cluster.Namespace,
 					Name:      aroClusterRef.Name,
 				},
 			},
 		}
 	}
-}
-
-func matchesAROAPIGroup(apiVersion string) bool {
-	gv, _ := schema.ParseGroupVersion(apiVersion)
-	return gv.Group == infra.GroupVersion.Group
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aroclusters,verbs=get;list;watch;create;update;patch;delete
@@ -206,7 +200,7 @@ func (r *AROClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	if cluster != nil && cluster.Spec.Paused ||
+	if cluster != nil && cluster.Spec.Paused != nil && *cluster.Spec.Paused ||
 		annotations.HasPaused(aroCluster) {
 		return r.reconcilePaused(ctx, aroCluster)
 	}
@@ -218,9 +212,8 @@ func (r *AROClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return r.reconcileNormal(ctx, aroCluster, cluster)
 }
 
-func matchesAROControlPlaneAPIGroup(apiVersion string) bool {
-	gv, _ := schema.ParseGroupVersion(apiVersion)
-	return gv.Group == cplane.GroupVersion.Group
+func matchesAROControlPlaneAPIGroup(apiGroup string) bool {
+	return apiGroup == cplane.GroupVersion.Group
 }
 
 func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *infra.AROCluster, cluster *clusterv1.Cluster) (ctrl.Result, error) {
@@ -234,9 +227,10 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 		log.V(4).Info("Cluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
-	if cluster.Spec.ControlPlaneRef == nil ||
-		!matchesAROControlPlaneAPIGroup(cluster.Spec.ControlPlaneRef.APIVersion) ||
-		cluster.Spec.ControlPlaneRef.Kind != cplane.AROControlPlaneKind {
+	controlPlaneRef := cluster.Spec.ControlPlaneRef
+	if !controlPlaneRef.IsDefined() ||
+		!matchesAROControlPlaneAPIGroup(controlPlaneRef.APIGroup) ||
+		controlPlaneRef.Kind != cplane.AROControlPlaneKind {
 		return ctrl.Result{}, reconcile.TerminalError(errInvalidControlPlaneKind)
 	}
 
@@ -248,8 +242,8 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 
 	aroControlPlane := &cplane.AROControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Spec.ControlPlaneRef.Namespace,
-			Name:      cluster.Spec.ControlPlaneRef.Name,
+			Namespace: cluster.Namespace,
+			Name:      controlPlaneRef.Name,
 		},
 	}
 	err := r.Get(ctx, client.ObjectKeyFromObject(aroControlPlane), aroControlPlane)
@@ -267,18 +261,31 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 	aroCluster.Status.Ready = aroControlPlane.Status.Ready && !aroCluster.Spec.ControlPlaneEndpoint.IsZero()
 	if aroCluster.Status.Ready {
 		aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: true}
-		conditions.MarkTrue(aroCluster, infrav1.NetworkInfrastructureReadyCondition)
+		conditions.Set(aroCluster, metav1.Condition{
+			Type:   string(infrav1.NetworkInfrastructureReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 	} else {
 		if aroCluster.Status.Initialization == nil {
 			aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: false}
 		}
 		if !aroCluster.Spec.ControlPlaneEndpoint.IsZero() {
-			conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+			conditions.Set(aroCluster, metav1.Condition{
+				Type:    string(infrav1.NetworkInfrastructureReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "ExternallyManagedControlPlane",
+				Message: "Waiting for the Control Plane port",
+			})
 		} else {
-			conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane to get ready")
+			conditions.Set(aroCluster, metav1.Condition{
+				Type:    string(infrav1.NetworkInfrastructureReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "ExternallyManagedControlPlane",
+				Message: "Waiting for the Control Plane to get ready",
+			})
 		}
 	}
-	conditions.SetSummary(aroCluster)
 
 	log.Info("Successfully reconciled AROCluster", "Ready", aroCluster.Status.Ready)
 

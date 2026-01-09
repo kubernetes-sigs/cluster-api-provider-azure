@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiconditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -325,22 +324,20 @@ func (s *Service) setNodePoolReadyCondition(readyCondition *conditions.Condition
 	if readyCondition == nil {
 		if provisioningState == "" {
 			// Node pool just created, provisioning not started
-			capiconditions.MarkFalse(
-				aroMachinePool,
-				v1beta2.AROMachinePoolReadyCondition,
-				"Provisioning",
-				clusterv1.ConditionSeverityInfo,
-				"HcpOpenShiftClustersNodePool provisioning starting",
-			)
+			capiconditions.Set(aroMachinePool, metav1.Condition{
+				Type:    string(v1beta2.AROMachinePoolReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "Provisioning",
+				Message: "HcpOpenShiftClustersNodePool provisioning starting",
+			})
 		} else {
 			// Have provisioning state but no Ready condition yet
-			capiconditions.MarkFalse(
-				aroMachinePool,
-				v1beta2.AROMachinePoolReadyCondition,
-				string(provisioningState),
-				clusterv1.ConditionSeverityInfo,
-				"HcpOpenShiftClustersNodePool provisioning state: %s", provisioningState,
-			)
+			capiconditions.Set(aroMachinePool, metav1.Condition{
+				Type:    string(v1beta2.AROMachinePoolReadyCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(provisioningState),
+				Message: "HcpOpenShiftClustersNodePool provisioning state: " + string(provisioningState),
+			})
 		}
 		return
 	}
@@ -349,35 +346,28 @@ func (s *Service) setNodePoolReadyCondition(readyCondition *conditions.Condition
 	switch readyCondition.Status {
 	case metav1.ConditionTrue:
 		// ASO reports node pool is ready
-		capiconditions.MarkTrue(aroMachinePool, v1beta2.AROMachinePoolReadyCondition)
+		capiconditions.Set(aroMachinePool, metav1.Condition{
+			Type:   string(v1beta2.AROMachinePoolReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: "Succeeded",
+		})
 
 	case metav1.ConditionFalse:
-		// ASO reports not ready - check severity
-		severity := clusterv1.ConditionSeverityInfo
-		switch readyCondition.Severity {
-		case conditions.ConditionSeverityError:
-			severity = clusterv1.ConditionSeverityError
-		case conditions.ConditionSeverityWarning:
-			severity = clusterv1.ConditionSeverityWarning
-		}
-
-		capiconditions.MarkFalse(
-			aroMachinePool,
-			v1beta2.AROMachinePoolReadyCondition,
-			readyCondition.Reason,
-			severity,
-			"%s",
-			readyCondition.Message,
-		)
+		// ASO reports not ready
+		capiconditions.Set(aroMachinePool, metav1.Condition{
+			Type:    string(v1beta2.AROMachinePoolReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  readyCondition.Reason,
+			Message: readyCondition.Message,
+		})
 
 	case metav1.ConditionUnknown:
 		// ASO reports unknown state
-		capiconditions.MarkUnknown(
-			aroMachinePool,
-			v1beta2.AROMachinePoolReadyCondition,
-			readyCondition.Reason,
-			"%s",
-			readyCondition.Message,
-		)
+		capiconditions.Set(aroMachinePool, metav1.Condition{
+			Type:    string(v1beta2.AROMachinePoolReadyCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  readyCondition.Reason,
+			Message: readyCondition.Message,
+		})
 	}
 }

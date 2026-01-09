@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"reflect"
 	"regexp"
@@ -165,6 +166,7 @@ func (m *AROControlPlane) Validate(cli client.Client) error {
 		m.validateDNSPrefix,
 		m.validateManagedIdentities,
 		m.validatePlatformFields,
+		m.validateExternalAuthProviders,
 	}
 	for _, validator := range validators {
 		if err := validator(cli); err != nil {
@@ -314,6 +316,35 @@ func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 	}
 
 	return nil
+}
+
+// validateExternalAuthProviders validates external authentication providers.
+func (m *AROControlPlane) validateExternalAuthProviders(_ client.Client) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if len(m.Spec.ExternalAuthProviders) == 0 {
+		return nil
+	}
+
+	basePath := field.NewPath("spec", "externalAuthProviders")
+	const maxNameLength = 15
+
+	for i, provider := range m.Spec.ExternalAuthProviders {
+		providerPath := basePath.Index(i)
+
+		// Validate name is not empty
+		if provider.Name == "" {
+			allErrs = append(allErrs, field.Required(providerPath.Child("name"), "provider name cannot be empty"))
+		} else if len(provider.Name) > maxNameLength {
+			// Validate name length does not exceed Azure's limit
+			allErrs = append(allErrs, field.Invalid(
+				providerPath.Child("name"),
+				provider.Name,
+				fmt.Sprintf("name length exceeds maximum allowed length of %d characters (got %d)", maxNameLength, len(provider.Name))))
+		}
+	}
+
+	return allErrs
 }
 
 // validatePlatformFields validates platform-specific fields like KeyVault, Subnet, NetworkSecurityGroupID, and SubscriptionID.
