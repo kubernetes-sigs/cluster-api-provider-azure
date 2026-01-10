@@ -181,6 +181,30 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	// })
 
 	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
+		// CAPI refreshes the bootstrap token for MachinePools' KubeadmConfigs
+		// every ~10m by default. Each update causes CAPZ to update its
+		// AzureMachinePool with the new bootstrap data. This fails when the
+		// test checks that the resourceVersion of AzureMachinePools remains
+		// constant. Here we set a longer TTL to prevent the token from being
+		// rotated during the test.
+		setBootstrapTTLForUpgrade := func() (preUpgrade func(), postUpgrade func()) {
+			bootstrapTTLVarKey := "KUBEADM_BOOTSTRAP_TOKEN_TTL"
+			var oldValue *string
+			return func() {
+					ttl, found := os.LookupEnv(bootstrapTTLVarKey)
+					if found {
+						oldValue = ptr.To(ttl)
+					}
+					Expect(os.Setenv(bootstrapTTLVarKey, "1h")).To(Succeed()) // sets --bootstrap-token-ttl for capi-kubeadm-bootstrap-controller-manager
+				}, func() {
+					if oldValue != nil {
+						Expect(os.Setenv(bootstrapTTLVarKey, *oldValue)).To(Succeed())
+					} else {
+						Expect(os.Unsetenv(bootstrapTTLVarKey)).To(Succeed())
+					}
+				}
+		}
+
 		Context("API Version Upgrade", func() {
 			var aksKubernetesVersion string
 
@@ -209,6 +233,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					setBootstrapTTL, resetBootstrapTTL := setBootstrapTTLForUpgrade()
 					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
@@ -228,12 +253,19 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.MustGetVariable(OldCAPIUpgradeVersion)},
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(OldProviderUpgradeVersion)},
 						InitWithAddonProviders:          []string{"helm:" + e2eConfig.MustGetVariable(OldAddonProviderUpgradeVersion)},
+						PreUpgrade: func(_ framework.ClusterProxy) {
+							setBootstrapTTL()
+						},
+						PostUpgrade: func(_ framework.ClusterProxy, _, _ string) {
+							resetBootstrapTTL()
+						},
 					}
 				})
 			})
 
 			Context("upgrade from the latest version of v1beta1 to current, and scale workload clusters created in the old version", func() {
 				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					setBootstrapTTL, resetBootstrapTTL := setBootstrapTTLForUpgrade()
 					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:                 e2eConfig,
 						ClusterctlConfigPath:      clusterctlConfigPath,
@@ -253,6 +285,12 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithControlPlaneProviders:   []string{"kubeadm:" + e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion)},
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(LatestProviderUpgradeVersion)},
 						InitWithAddonProviders:          []string{"helm:" + e2eConfig.MustGetVariable(LatestAddonProviderUpgradeVersion)},
+						PreUpgrade: func(_ framework.ClusterProxy) {
+							setBootstrapTTL()
+						},
+						PostUpgrade: func(_ framework.ClusterProxy, _, _ string) {
+							resetBootstrapTTL()
+						},
 					}
 				})
 			})
