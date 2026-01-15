@@ -98,8 +98,8 @@ to give the identity Contributor access to the Azure subscription where the work
   # This is the client ID of the AAD app or user-assigned identity that you used to created the federated identity.
   export AZURE_CLIENT_ID=<your-azure-client-id>
   export AZURE_TENANT_ID=<your-azure-tenant-id>
-  export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_B2s"
-  export AZURE_NODE_MACHINE_TYPE="Standard_B2s"
+  export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_B2s_v2"
+  export AZURE_NODE_MACHINE_TYPE="Standard_B2s_v2"
   export AZURE_LOCATION="eastus"
 
   # Identity secret. Though these are not used in workload identity, we still

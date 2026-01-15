@@ -30,9 +30,9 @@ settings = {
     "flatcar_version": "3374.2.1",
     "azure_location": "eastus",
     "control_plane_machine_count": "1",
-    "az_control_plane_machine_type": "Standard_B2s",
+    "az_control_plane_machine_type": "Standard_B2s_v2",
     "worker_machine_count": "2",
-    "az_node_machine_type": "Standard_B2s",
+    "az_node_machine_type": "Standard_B2s_v2",
     "cluster_class_name": "default",
 }
 

@@ -35,7 +35,7 @@ ManagedImageSharedImageGalleryId: /subscriptions/01234567-89ab-cdef-0123-4567890
 
 ## Example
 
-The below example shows how to deploy a cluster with control-plane nodes that have SecureBoot and vTPM enabled. Make sure to choose a supported generation 2 VM size (e.g. `Standard_B2s`) and OS (e.g. Ubuntu Server 22.04 LTS).
+The below example shows how to deploy a cluster with control-plane nodes that have SecureBoot and vTPM enabled. Make sure to choose a supported generation 2 VM size (e.g. `Standard_B2s_v2`) and OS (e.g. Ubuntu Server 22.04 LTS).
 NOTE: the same can be applied to worker nodes
 
 ```yaml
@@ -61,5 +61,5 @@ spec:
       osDisk:
         diskSizeGB: 128
         osType: "Linux"
-      vmSize: "Standard_B2s"
+      vmSize: "Standard_B2s_v2"
 ```

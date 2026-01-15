@@ -32,7 +32,7 @@ spec:
         storageAccountType: Premium_LRS
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
-    vmSize: Standard_B2s
+    vmSize: Standard_B2s_v2
     spotVMOptions: {}
 ```
 
@@ -76,6 +76,6 @@ spec:
         storageAccountType: Premium_LRS
       osType: Linux
     sshPublicKey: ${YOUR_SSH_PUB_KEY}
-    vmSize: Standard_B2s
+    vmSize: Standard_B2s_v2
     spotVMOptions: {}
 ```
