@@ -49,6 +49,7 @@ var (
 	ephemeralReadSpec, ephemeralReadVMSS                                                                                                                                                  = getEphemeralReadOnlyVMSS()
 	defaultExistingSpec, defaultExistingVMSS, defaultExistingVMSSClone                                                                                                                    = getExistingDefaultVMSS()
 	defaultExistingSpecOnlyCapacityChange, defaultExistingVMSSOnlyCapacityChange, defaultExistingVMSSResultOnlyCapacityChange                                                             = getExistingDefaultVMSSOnlyCapacityChange()
+	defaultExistingSpecOnlyCustomDataChange, defaultExistingVMSSOnlyCustomDataChange                                                                                                      = getExistingDefaultVMSSOnlyCustomDataChange()
 	defaultExistingSpecOnlyCapacityChangeWithCustomDataChange, defaultExistingVMSSOnlyCapacityChangeWithCustomDataChange, defaultExistingVMSSResultOnlyCapacityChangeWithCustomDataChange = getExistingDefaultVMSSOnlyCapacityChangeWithCustomDataChange()
 	userManagedStorageAccountDiagnosticsSpec, userManagedStorageAccountDiagnosticsVMSS                                                                                                    = getUserManagedAndStorageAcccountDiagnosticsVMSS()
 	managedDiagnosticsSpec, managedDiagnoisticsVMSS                                                                                                                                       = getManagedDiagnosticsVMSS()
@@ -455,6 +456,15 @@ func getExistingDefaultVMSSOnlyCapacityChange() (s ScaleSetSpec, existing armcom
 	return spec, existingVMSS, result
 }
 
+func getExistingDefaultVMSSOnlyCustomDataChange() (s ScaleSetSpec, existing armcompute.VirtualMachineScaleSet) {
+	spec := newDefaultVMSSSpec()
+	spec.BootstrapData += "-changed"
+
+	existingVMSS := newDefaultExistingVMSS()
+
+	return spec, existingVMSS
+}
+
 func getExistingDefaultVMSSOnlyCapacityChangeWithCustomDataChange() (s ScaleSetSpec, existing armcompute.VirtualMachineScaleSet, result armcompute.VirtualMachineScaleSet) {
 	spec := newDefaultVMSSSpec()
 	spec.Capacity = 3
@@ -466,7 +476,7 @@ func getExistingDefaultVMSSOnlyCapacityChangeWithCustomDataChange() (s ScaleSetS
 			StorageAccountType: "UltraSSD_LRS",
 		},
 	})
-	spec.ShouldPatchCustomData = true
+	spec.BootstrapData += "-changed"
 
 	existingVMSS := newDefaultExistingVMSS()
 	existingVMSS.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
@@ -475,6 +485,8 @@ func getExistingDefaultVMSSOnlyCapacityChangeWithCustomDataChange() (s ScaleSetS
 	result.SKU.Capacity = ptr.To[int64](3)
 	result.Properties.AdditionalCapabilities = &armcompute.AdditionalCapabilities{UltraSSDEnabled: ptr.To(true)}
 	result.Properties.VirtualMachineProfile.NetworkProfile = nil
+	result.Properties.VirtualMachineProfile.OSProfile.CustomData = ptr.To(spec.BootstrapData)
+	result.Tags[customDataHashTagName] = ptr.To(mustCalculateBootstrapDataHash(spec.BootstrapData))
 
 	return spec, existingVMSS, result
 }
@@ -756,6 +768,13 @@ func TestScaleSetParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name:          "update for existing vmss with only custom data change",
+			spec:          defaultExistingSpecOnlyCustomDataChange,
+			existing:      defaultExistingVMSSOnlyCustomDataChange,
+			expected:      nil,
+			expectedError: "",
+		},
+		{
 			name:          "update for existing vmss with only capacity change but should patch custom data",
 			spec:          defaultExistingSpecOnlyCapacityChangeWithCustomDataChange,
 			existing:      defaultExistingVMSSOnlyCapacityChangeWithCustomDataChange,
@@ -792,4 +811,12 @@ func TestScaleSetParameters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mustCalculateBootstrapDataHash(bootstrapData string) string {
+	hash, err := calculateBootstrapDataHash(bootstrapData)
+	if err != nil {
+		panic(err)
+	}
+	return hash
 }
