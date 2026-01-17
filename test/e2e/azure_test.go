@@ -342,44 +342,6 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a Flatcar cluster [OPTIONAL]", func() {
-		It("With Flatcar control-plane and worker nodes", func() {
-			clusterName = getClusterName(clusterNamePrefix, "flatcar")
-			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
-				specName,
-				withFlavor("flatcar"),
-				withNamespace(namespace.Name),
-				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.MustGetVariable(FlatcarKubernetesVersion)),
-				withControlPlaneMachineCount(1),
-				withWorkerMachineCount(1),
-				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
-				}),
-			), result)
-
-			By("can create and access a load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-		})
-	})
-
 	Context("Creating a Flatcar sysext cluster [OPTIONAL]", func() {
 		It("With Flatcar control-plane and worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "flatcar-sysext")
