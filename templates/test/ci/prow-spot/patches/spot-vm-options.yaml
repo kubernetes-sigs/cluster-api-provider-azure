@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      vmSize: "Standard_B2s_v2_v2"
+      vmSize: "Standard_B2s_v2"
       spotVMOptions:
         maxPrice: 1000
         evictionPolicy: "Delete"
