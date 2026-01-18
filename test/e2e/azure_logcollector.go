@@ -425,7 +425,7 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 		),
 		execToPathFn(
 			"cloud-init.log",
-			"sudo", "sh", "-c", "if [ -f /var/log/cloud-init.log ]; then sudo cat /var/log/cloud-init.log; else echo 'cloud-init.log not found'; fi",
+			"sudo", "sh", "-c", `"if [ -f /var/log/cloud-init.log ]; then sudo cat /var/log/cloud-init.log; else echo 'cloud-init.log not found'; fi"`,
 		),
 		execToPathFn(
 			"cloud-init-output.log",
