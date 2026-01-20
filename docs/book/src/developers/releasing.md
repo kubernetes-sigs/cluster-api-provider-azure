@@ -50,7 +50,7 @@ This must be done prior to generating release artifacts, so the release contains
 ### 2. Change milestone (skip for patch releases) (maintainer)
 
 - Create a [new GitHub milestone](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestones/new) for the next release.
-- Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release. 
+- Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release.
 
 #### Versioning
 
@@ -201,7 +201,7 @@ Additionally, we need to update the `type: InfrastructureProvider` spec in [azur
 
 #### Update clusterctl API version upgrade tests
 
-Update the [API version upgrade tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v1.12.1/test/e2e/capi_test.go#L214) to use the oldest supported release versions of CAPI and CAPZ after the release is cut as "Init" provider versions. See [this PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4433) for more details.
+Update the [API version upgrade tests](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v1.12.2/test/e2e/capi_test.go#L214) to use the oldest supported release versions of CAPI and CAPZ after the release is cut as "Init" provider versions. See [this PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4433) for more details.
 
 ### Update Upstream Tests (skip for patch releases)
 
