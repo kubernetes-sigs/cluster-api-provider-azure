@@ -158,6 +158,11 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	if s.IsAPIServerPrivate() {
 		// Public IP specs for control plane outbound lb
 		if s.ControlPlaneOutboundLB() != nil {
+			// Use LB availability zones for public IPs if specified, otherwise fall back to cluster failure domains.
+			// For public load balancers, zone-redundancy is achieved by setting zones on the public IP address,
+			// not on the load balancer's frontend IP configuration.
+			// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+			failureDomains := s.getPublicIPFailureDomains(s.ControlPlaneOutboundLB().AvailabilityZones)
 			for _, ip := range s.ControlPlaneOutboundLB().FrontendIPs {
 				controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
 					Name:             ip.PublicIP.Name,
@@ -167,13 +172,18 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					IsIPv6:           false, // Set to default value
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
-					FailureDomains:   s.FailureDomains(),
+					FailureDomains:   failureDomains,
 					AdditionalTags:   s.AdditionalTags(),
 				})
 			}
 		}
 	} else {
 		if s.ControlPlaneEnabled() {
+			// Use LB availability zones for public IPs if specified, otherwise fall back to cluster failure domains.
+			// For public load balancers, zone-redundancy is achieved by setting zones on the public IP address,
+			// not on the load balancer's frontend IP configuration.
+			// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+			failureDomains := s.getPublicIPFailureDomains(s.APIServerLB().AvailabilityZones)
 			controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
 				&publicips.PublicIPSpec{
 					Name:             s.APIServerPublicIP().Name,
@@ -183,7 +193,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					ClusterName:      s.ClusterName(),
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
-					FailureDomains:   s.FailureDomains(),
+					FailureDomains:   failureDomains,
 					AdditionalTags:   s.AdditionalTags(),
 					IPTags:           s.APIServerPublicIP().IPTags,
 				},
@@ -194,6 +204,11 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 	// Public IP specs for node outbound lb
 	if s.NodeOutboundLB() != nil {
+		// Use LB availability zones for public IPs if specified, otherwise fall back to cluster failure domains.
+		// For public load balancers, zone-redundancy is achieved by setting zones on the public IP address,
+		// not on the load balancer's frontend IP configuration.
+		// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+		failureDomains := s.getPublicIPFailureDomains(s.NodeOutboundLB().AvailabilityZones)
 		for _, ip := range s.NodeOutboundLB().FrontendIPs {
 			publicIPSpecs = append(publicIPSpecs, &publicips.PublicIPSpec{
 				Name:             ip.PublicIP.Name,
@@ -203,7 +218,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				IsIPv6:           false, // Set to default value
 				Location:         s.Location(),
 				ExtendedLocation: s.ExtendedLocation(),
-				FailureDomains:   s.FailureDomains(),
+				FailureDomains:   failureDomains,
 				AdditionalTags:   s.AdditionalTags(),
 			})
 		}
@@ -1023,6 +1038,25 @@ func (s *ClusterScope) FailureDomains() []*string {
 	})
 
 	return fds
+}
+
+// getPublicIPFailureDomains returns the failure domains to use for public IP addresses.
+// If availability zones are explicitly specified on the load balancer, those zones are used.
+// Otherwise, falls back to the cluster's failure domains.
+//
+// This is important because for public load balancers, zone-redundancy is achieved by setting
+// zones on the public IP address resource, NOT on the load balancer's frontend IP configuration.
+// Azure returns error "LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress"
+// if zones are specified on a frontend that references a public IP.
+//
+// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+// Section: "Zone-redundant load balancer" - "For public load balancers, if the public IP in the
+// Load balancer's frontend is zone redundant then the load balancer is also zone-redundant."
+func (s *ClusterScope) getPublicIPFailureDomains(lbAvailabilityZones []string) []*string {
+	if len(lbAvailabilityZones) > 0 {
+		return azure.PtrSlice(&lbAvailabilityZones)
+	}
+	return s.FailureDomains()
 }
 
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
