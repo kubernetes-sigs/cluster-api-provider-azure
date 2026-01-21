@@ -1047,9 +1047,7 @@ func (s *ClusterScope) FailureDomains() []*string {
 // Azure returns error "LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress"
 // if zones are specified on a frontend that references a public IP.
 //
-// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
-// Section: "Zone-redundant load balancer" - "For public load balancers, if the public IP in the
-// Load balancer's frontend is zone redundant then the load balancer is also zone-redundant."
+// See https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer for details.
 func (s *ClusterScope) getPublicIPFailureDomains(lbAvailabilityZones []string) []*string {
 	if len(lbAvailabilityZones) > 0 {
 		return azure.PtrSlice(&lbAvailabilityZones)

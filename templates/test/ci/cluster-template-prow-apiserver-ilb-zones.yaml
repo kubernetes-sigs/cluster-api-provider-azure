@@ -36,11 +36,7 @@ spec:
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
-    # Internal API Server Load Balancer with zone-redundant frontend.
-    # For internal LBs, zones are set on the frontend IP configuration.
-    # See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
     apiServerLB:
-      type: Internal
       availabilityZones:
       - "1"
       - "2"
@@ -48,9 +44,7 @@ spec:
       frontendIPs:
       - name: ${CLUSTER_NAME}-internal-lb-private-ip
         privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
-    # Control plane outbound LB for egress traffic (required for private clusters).
-    # For public LBs, zones are set on the public IP addresses, NOT on the frontend.
-    # See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+      type: Internal
     controlPlaneOutboundLB:
       availabilityZones:
       - "1"
@@ -60,7 +54,6 @@ spec:
       - name: ${CLUSTER_NAME}-cp-outbound-lb
         publicIP:
           name: ${CLUSTER_NAME}-cp-outbound-pip
-    # Node outbound LB with zone-redundant public IPs.
     nodeOutboundLB:
       availabilityZones:
       - "1"
