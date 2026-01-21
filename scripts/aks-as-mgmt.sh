@@ -23,6 +23,11 @@ source "${REPO_ROOT}/hack/ensure-azcli.sh" # install az cli and login using WI
 # shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh" # set the right timestamp and job name
 
+# Helper function to check if workload identity is enabled
+is_workload_identity_enabled() {
+  [[ -n "${AZURE_FEDERATED_TOKEN_FILE:-}" ]]
+}
+
 export MGMT_CLUSTER_NAME="${MGMT_CLUSTER_NAME:-aks-mgmt-$(date +%s)}" # management cluster name
 export AKS_RESOURCE_GROUP="${AKS_RESOURCE_GROUP:-"${MGMT_CLUSTER_NAME}"}" # resource group name
 export AKS_NODE_RESOURCE_GROUP="${AKS_RESOURCE_GROUP}-nodes"
@@ -125,23 +130,39 @@ create_aks_cluster() {
   aks_exists=$(az aks show --name "${MGMT_CLUSTER_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" 2>&1 || true) # true because we want to continue if the command fails
   if echo "$aks_exists" | grep -E -q "Resource(NotFound|GroupNotFound)"; then
     echo "creating aks cluster ${MGMT_CLUSTER_NAME} in the resource group ${AKS_RESOURCE_GROUP}"
-    az aks create --name "${MGMT_CLUSTER_NAME}" \
-    --resource-group "${AKS_RESOURCE_GROUP}" \
-    --location "${AZURE_LOCATION}" \
-    --kubernetes-version "${AKS_MGMT_KUBERNETES_VERSION}" \
-    --node-count "${AKS_NODE_COUNT}" \
-    --node-vm-size "${AKS_NODE_VM_SIZE}" \
-    --node-resource-group "${AKS_NODE_RESOURCE_GROUP}" \
-    --vm-set-type VirtualMachineScaleSets \
-    --enable-managed-identity \
-    --generate-ssh-keys \
-    --network-plugin azure \
-    --vnet-subnet-id "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AKS_RESOURCE_GROUP}/providers/Microsoft.Network/virtualNetworks/${AKS_MGMT_VNET_NAME}/subnets/${AKS_MGMT_SUBNET_NAME}" \
-    --service-cidr "${AKS_MGMT_SERVICE_CIDR}" \
-    --dns-service-ip "${AKS_MGMT_DNS_SERVICE_IP}" \
-    --max-pods 60 \
-    --tags creationTimestamp="${TIMESTAMP}" jobName="${JOB_NAME}" buildProvenance="${BUILD_PROVENANCE}" \
-    --output none --only-show-errors;
+
+    # Build AKS create command - add OIDC issuer if workload identity is enabled
+    AKS_CREATE_FLAGS=(
+      --name "${MGMT_CLUSTER_NAME}"
+      --resource-group "${AKS_RESOURCE_GROUP}"
+      --location "${AZURE_LOCATION}"
+      --kubernetes-version "${AKS_MGMT_KUBERNETES_VERSION}"
+      --node-count "${AKS_NODE_COUNT}"
+      --node-vm-size "${AKS_NODE_VM_SIZE}"
+      --node-resource-group "${AKS_NODE_RESOURCE_GROUP}"
+      --vm-set-type VirtualMachineScaleSets
+      --enable-managed-identity
+    )
+
+    # Enable OIDC issuer for workload identity support
+    if is_workload_identity_enabled; then
+      echo "Workload identity detected, enabling OIDC issuer on AKS cluster"
+      AKS_CREATE_FLAGS+=(--enable-oidc-issuer --enable-workload-identity)
+    fi
+
+    AKS_CREATE_FLAGS+=(
+      --generate-ssh-keys
+      --network-plugin azure
+      --vnet-subnet-id "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AKS_RESOURCE_GROUP}/providers/Microsoft.Network/virtualNetworks/${AKS_MGMT_VNET_NAME}/subnets/${AKS_MGMT_SUBNET_NAME}"
+      --service-cidr "${AKS_MGMT_SERVICE_CIDR}"
+      --dns-service-ip "${AKS_MGMT_DNS_SERVICE_IP}"
+      --max-pods 60
+      --tags "creationTimestamp=${TIMESTAMP}" "jobName=${JOB_NAME}" "buildProvenance=${BUILD_PROVENANCE}"
+      --output none
+      --only-show-errors
+    )
+
+    az aks create "${AKS_CREATE_FLAGS[@]}"
   elif echo "$aks_exists" | grep -q "${MGMT_CLUSTER_NAME}"; then
     echo "cluster ${MGMT_CLUSTER_NAME} already exists in RG ${AKS_RESOURCE_GROUP}, moving on"
   else
@@ -259,6 +280,29 @@ create_aks_cluster() {
   export MANAGED_IDENTITY_RG
   echo "mgmt resource identity resource group: ${MANAGED_IDENTITY_RG}"
 
+  # Configure workload identity if AZURE_FEDERATED_TOKEN_FILE is set
+  if is_workload_identity_enabled; then
+    echo "Configuring workload identity (AZURE_FEDERATED_TOKEN_FILE is set)..."
+
+    # For AKS, we use the AKS cluster's built-in OIDC issuer
+    echo "Retrieving AKS OIDC issuer URL..."
+    AKS_OIDC_ISSUER=$(az aks show \
+      -n "${MGMT_CLUSTER_NAME}" \
+      -g "${AKS_RESOURCE_GROUP}" \
+      --query "oidcIssuerProfile.issuerUrl" \
+      -o tsv --only-show-errors)
+
+    if [[ -z "${AKS_OIDC_ISSUER}" ]]; then
+      echo "ERROR: Failed to retrieve AKS OIDC issuer URL. Make sure the AKS cluster was created with --enable-oidc-issuer"
+      exit 1
+    fi
+
+    export AKS_OIDC_ISSUER
+    echo "Using AKS OIDC Issuer: ${AKS_OIDC_ISSUER}"
+  else
+    echo "Workload identity not enabled (AZURE_FEDERATED_TOKEN_FILE not set), skipping workload identity configuration"
+  fi
+
   # Only assign contributor role if using AKS-created managed identity (not user-provided)
   # Check if all user-provided identity variables are set - if so, skip role assignment
   if [[ -n "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY:-}" ]] && \
@@ -279,16 +323,57 @@ create_aks_cluster() {
     done
   fi
 
-  # Set the ASO_CREDENTIAL_SECRET_MODE to podidentity to
-  # use the client ID of the managed identity created by AKS for authentication
-  # refer: https://github.com/Azure/azure-service-operator/blob/190edf60f1d84da7ae4ee5c4df9806068c0cd982/v2/internal/identity/credential_provider.go#L279-L301
-  echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
-  ASO_CREDENTIAL_SECRET_MODE="podidentity"
+  # Create federated credentials and configure workload identity if enabled
+  if is_workload_identity_enabled; then
+    echo "Creating federated credentials for workload identity..."
+
+    # For CAPZ controller
+    echo "Creating federated credential for capz-manager..."
+    az identity federated-credential create \
+      -n "capz-federated-identity" \
+      --identity-name "${MANAGED_IDENTITY_NAME}" \
+      -g "${MANAGED_IDENTITY_RG}" \
+      --issuer "${AKS_OIDC_ISSUER}" \
+      --audiences "api://AzureADTokenExchange" \
+      --subject "system:serviceaccount:capz-system:capz-manager" \
+      --output none --only-show-errors || true
+
+    # For ASO controller
+    echo "Creating federated credential for azureserviceoperator..."
+    az identity federated-credential create \
+      -n "aso-federated-identity" \
+      --identity-name "${MANAGED_IDENTITY_NAME}" \
+      -g "${MANAGED_IDENTITY_RG}" \
+      --issuer "${AKS_OIDC_ISSUER}" \
+      --audiences "api://AzureADTokenExchange" \
+      --subject "system:serviceaccount:capz-system:azureserviceoperator-default" \
+      --output none --only-show-errors || true
+
+    echo "Federated credentials created successfully"
+
+    echo "using ASO_CREDENTIAL_SECRET_MODE as workloadidentity"
+    ASO_CREDENTIAL_SECRET_MODE="workloadidentity"
+  else
+    # Set the ASO_CREDENTIAL_SECRET_MODE to podidentity to
+    # use the client ID of the managed identity created by AKS for authentication
+    echo "using ASO_CREDENTIAL_SECRET_MODE as podidentity"
+    ASO_CREDENTIAL_SECRET_MODE="podidentity"
+  fi
 }
 
 set_env_variables(){
   # Ensure temporary files are removed on exit.
   trap 'rm -f tilt-settings-temp.yaml tilt-settings-new.yaml combined_contexts.yaml' EXIT
+
+  # Preserve the original AZURE_CLIENT_ID when using workload identity
+  if is_workload_identity_enabled; then
+    # For workload identity: preserve the original AZURE_CLIENT_ID from Prow preset
+    TILT_AZURE_CLIENT_ID="${AZURE_CLIENT_ID}"
+    echo "Preserving original AZURE_CLIENT_ID for test runner: ${TILT_AZURE_CLIENT_ID}"
+  else
+    # For pod identity: use the AKS managed identity
+    TILT_AZURE_CLIENT_ID="${AKS_MI_CLIENT_ID}"
+  fi
 
   # Create a temporary settings file based on current environment values.
   cat <<EOF > tilt-settings-temp.yaml
@@ -298,7 +383,7 @@ aks_as_mgmt_settings:
   AKS_RESOURCE_GROUP: "${AKS_RESOURCE_GROUP}"
   APISERVER_LB_DNS_SUFFIX: "${APISERVER_LB_DNS_SUFFIX}"
   ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE}"
-  AZURE_CLIENT_ID: "${AKS_MI_CLIENT_ID}"
+  AZURE_CLIENT_ID: "${TILT_AZURE_CLIENT_ID}"
   AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY: "${AKS_MI_CLIENT_ID}"
   AZURE_LOCATION: "${AZURE_LOCATION}"
   CI_RG: "${MANAGED_IDENTITY_RG}"
