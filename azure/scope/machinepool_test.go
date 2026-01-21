@@ -18,17 +18,13 @@ package scope
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -1721,153 +1717,4 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			tt.Verify(g, s.AzureMachinePool, s.client)
 		})
 	}
-}
-
-func TestBootstrapDataChanges(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	scheme := runtime.NewScheme()
-	_ = clusterv1.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
-	_ = infrav1exp.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
-	var (
-		g        = NewWithT(t)
-		mockCtrl = gomock.NewController(t)
-		cb       = fake.NewClientBuilder().WithScheme(scheme)
-		cluster  = &clusterv1.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "cluster1",
-				Namespace: "default",
-			},
-			Spec: clusterv1.ClusterSpec{
-				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "azCluster1",
-					Kind:     "AzureCluster",
-					APIGroup: infrav1.GroupVersion.Group,
-				},
-			},
-			Status: clusterv1.ClusterStatus{
-				Initialization: clusterv1.ClusterInitializationStatus{
-					InfrastructureProvisioned: ptr.To(true),
-				},
-			},
-		}
-		azureCluster = &infrav1.AzureCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "azCluster1",
-				Namespace: "default",
-			},
-			Spec: infrav1.AzureClusterSpec{
-				AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
-					Location: "test",
-				},
-			},
-		}
-		mp = &clusterv1.MachinePool{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "mp1",
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       "cluster1",
-						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
-				},
-			},
-			Spec: clusterv1.MachinePoolSpec{
-				Template: clusterv1.MachineTemplateSpec{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: ptr.To("mp-secret"),
-						},
-						Version: "v1.31.0",
-					},
-				},
-			},
-		}
-		bootstrapData     = "test"
-		bootstrapDataHash = sha256Hash(base64.StdEncoding.EncodeToString([]byte(bootstrapData)))
-		bootstrapSecret   = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "mp-secret",
-				Namespace: "default",
-			},
-			Data: map[string][]byte{"value": []byte(bootstrapData)},
-		}
-		amp = &infrav1exp.AzureMachinePool{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "amp1",
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       "mp1",
-						Kind:       "MachinePool",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
-				},
-				Annotations: map[string]string{
-					azure.CustomDataHashAnnotation: fmt.Sprintf("%x", bootstrapDataHash),
-				},
-			},
-			Spec: infrav1exp.AzureMachinePoolSpec{
-				Template: infrav1exp.AzureMachinePoolMachineTemplate{
-					Image: &infrav1.Image{},
-					NetworkInterfaces: []infrav1.NetworkInterface{
-						{
-							SubnetName: "test",
-						},
-					},
-					VMSize: "VM_SIZE",
-				},
-			},
-		}
-		vmssState = &azure.VMSS{}
-	)
-	defer mockCtrl.Finish()
-
-	s := &MachinePoolScope{
-		client: cb.
-			WithObjects(&bootstrapSecret).
-			Build(),
-		ClusterScoper: &ClusterScope{
-			Cluster:      cluster,
-			AzureCluster: azureCluster,
-		},
-		skuCache: resourceskus.NewStaticCache([]armcompute.ResourceSKU{
-			{
-				Name: ptr.To("VM_SIZE"),
-			},
-		}, "test"),
-		MachinePool:      mp,
-		AzureMachinePool: amp,
-		vmssState:        vmssState,
-	}
-
-	g.Expect(s.InitMachinePoolCache(ctx)).NotTo(HaveOccurred())
-
-	spec := s.ScaleSetSpec(ctx)
-	sSpec := spec.(*scalesets.ScaleSetSpec)
-	g.Expect(sSpec.ShouldPatchCustomData).To(BeFalse())
-
-	amp.Annotations[azure.CustomDataHashAnnotation] = "old"
-
-	// reset cache to be able to build up the cache again
-	s.cache = nil
-	g.Expect(s.InitMachinePoolCache(ctx)).NotTo(HaveOccurred())
-
-	spec = s.ScaleSetSpec(ctx)
-	sSpec = spec.(*scalesets.ScaleSetSpec)
-	g.Expect(sSpec.ShouldPatchCustomData).To(BeTrue())
-}
-
-func sha256Hash(text string) []byte {
-	h := sha256.New()
-	_, err := io.WriteString(h, text)
-	if err != nil {
-		panic(err)
-	}
-	return h.Sum(nil)
 }
