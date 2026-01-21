@@ -1501,6 +1501,10 @@ spec:
 			), result)
 
 			By("Verifying load balancer zones are configured correctly in Azure", func() {
+				// Zone-redundant load balancer verification.
+				// For internal LBs: zones are on the frontend IP configuration.
+				// For public LBs: zones are on the public IP addresses (NOT frontend IP config).
+				// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
 				expectedZones := []string{"1", "2", "3"}
 
 				subscriptionID := getSubscriptionID(Default)
@@ -1523,21 +1527,21 @@ spec:
 				lbClient, err := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				// Verify API Server Load Balancer zones
-				if azureCluster.Spec.NetworkSpec.APIServerLB != nil {
-					Expect(azureCluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones).To(Equal(expectedZones),
-						"APIServerLB should have zones configured in AzureCluster spec")
+				pipClient, err := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
+				Expect(err).NotTo(HaveOccurred())
 
-					lbName := azureCluster.Spec.NetworkSpec.APIServerLB.Name
-					Eventually(func(g Gomega) {
-						lb, err := lbClient.Get(ctx, resourceGroupName, lbName, nil)
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(lb.Properties).NotTo(BeNil())
-						g.Expect(lb.Properties.FrontendIPConfigurations).NotTo(BeEmpty())
+				// Helper function to verify zones on frontend IP configurations (for internal LBs)
+				verifyFrontendZones := func(g Gomega, lbName string, isInternal bool) {
+					lb, err := lbClient.Get(ctx, resourceGroupName, lbName, nil)
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(lb.Properties).NotTo(BeNil())
+					g.Expect(lb.Properties.FrontendIPConfigurations).NotTo(BeEmpty())
 
-						for _, frontendIP := range lb.Properties.FrontendIPConfigurations {
-							g.Expect(frontendIP.Zones).NotTo(BeNil(), "Frontend IP should have zones configured")
-							g.Expect(frontendIP.Zones).To(HaveLen(3), "Frontend IP should have 3 zones")
+					for _, frontendIP := range lb.Properties.FrontendIPConfigurations {
+						if isInternal {
+							// Internal LBs should have zones on frontend IP config
+							g.Expect(frontendIP.Zones).NotTo(BeNil(), "Internal LB frontend IP should have zones configured")
+							g.Expect(frontendIP.Zones).To(HaveLen(3), "Internal LB frontend IP should have 3 zones")
 
 							zonesMap := make(map[string]bool)
 							for _, zone := range frontendIP.Zones {
@@ -1548,66 +1552,83 @@ spec:
 							for _, expectedZone := range expectedZones {
 								g.Expect(zonesMap[expectedZone]).To(BeTrue(), "Zone %s should be configured", expectedZone)
 							}
+						} else {
+							// Public LBs should NOT have zones on frontend IP config
+							// Azure does not allow zones on frontend IP configurations that reference public IPs
+							g.Expect(frontendIP.Zones).To(BeNil(),
+								"Public LB frontend IP should NOT have zones - zones should be on the public IP instead")
 						}
+					}
+				}
+
+				// Helper function to verify zones on public IP addresses (for public LBs)
+				verifyPublicIPZones := func(g Gomega, pipName string) {
+					pip, err := pipClient.Get(ctx, resourceGroupName, pipName, nil)
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(pip.Zones).NotTo(BeNil(), "Public IP should have zones configured for zone-redundancy")
+					g.Expect(pip.Zones).To(HaveLen(3), "Public IP should have 3 zones")
+
+					zonesMap := make(map[string]bool)
+					for _, zone := range pip.Zones {
+						if zone != nil {
+							zonesMap[*zone] = true
+						}
+					}
+					for _, expectedZone := range expectedZones {
+						g.Expect(zonesMap[expectedZone]).To(BeTrue(), "Zone %s should be configured on public IP", expectedZone)
+					}
+				}
+
+				// Verify API Server Load Balancer zones (Internal LB - zones on frontend)
+				if azureCluster.Spec.NetworkSpec.APIServerLB != nil {
+					Expect(azureCluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones).To(Equal(expectedZones),
+						"APIServerLB should have zones configured in AzureCluster spec")
+
+					lbName := azureCluster.Spec.NetworkSpec.APIServerLB.Name
+					isInternal := azureCluster.Spec.NetworkSpec.APIServerLB.Type == infrav1.Internal
+					Eventually(func(g Gomega) {
+						verifyFrontendZones(g, lbName, isInternal)
 					}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 				}
 
-				// Verify Node Outbound Load Balancer zones
+				// Verify Node Outbound Load Balancer zones (Public LB - zones on public IPs)
 				if azureCluster.Spec.NetworkSpec.NodeOutboundLB != nil {
 					Expect(azureCluster.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones).To(Equal(expectedZones),
 						"NodeOutboundLB should have zones configured in AzureCluster spec")
 
 					lbName := azureCluster.Spec.NetworkSpec.NodeOutboundLB.Name
 					Eventually(func(g Gomega) {
-						lb, err := lbClient.Get(ctx, resourceGroupName, lbName, nil)
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(lb.Properties).NotTo(BeNil())
-						g.Expect(lb.Properties.FrontendIPConfigurations).NotTo(BeEmpty())
-
-						for _, frontendIP := range lb.Properties.FrontendIPConfigurations {
-							g.Expect(frontendIP.Zones).NotTo(BeNil(), "Frontend IP should have zones configured")
-							g.Expect(frontendIP.Zones).To(HaveLen(3), "Frontend IP should have 3 zones")
-
-							zonesMap := make(map[string]bool)
-							for _, zone := range frontendIP.Zones {
-								if zone != nil {
-									zonesMap[*zone] = true
-								}
-							}
-							for _, expectedZone := range expectedZones {
-								g.Expect(zonesMap[expectedZone]).To(BeTrue(), "Zone %s should be configured", expectedZone)
-							}
-						}
+						verifyFrontendZones(g, lbName, false) // Public LB - no zones on frontend
 					}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+
+					// Verify zones on the public IPs
+					for _, frontendIP := range azureCluster.Spec.NetworkSpec.NodeOutboundLB.FrontendIPs {
+						if frontendIP.PublicIP != nil {
+							Eventually(func(g Gomega) {
+								verifyPublicIPZones(g, frontendIP.PublicIP.Name)
+							}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+						}
+					}
 				}
 
-				// Verify Control Plane Outbound Load Balancer zones
+				// Verify Control Plane Outbound Load Balancer zones (Public LB - zones on public IPs)
 				if azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB != nil {
 					Expect(azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.AvailabilityZones).To(Equal(expectedZones),
 						"ControlPlaneOutboundLB should have zones configured in AzureCluster spec")
 
 					lbName := azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.Name
 					Eventually(func(g Gomega) {
-						lb, err := lbClient.Get(ctx, resourceGroupName, lbName, nil)
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(lb.Properties).NotTo(BeNil())
-						g.Expect(lb.Properties.FrontendIPConfigurations).NotTo(BeEmpty())
-
-						for _, frontendIP := range lb.Properties.FrontendIPConfigurations {
-							g.Expect(frontendIP.Zones).NotTo(BeNil(), "Frontend IP should have zones configured")
-							g.Expect(frontendIP.Zones).To(HaveLen(3), "Frontend IP should have 3 zones")
-
-							zonesMap := make(map[string]bool)
-							for _, zone := range frontendIP.Zones {
-								if zone != nil {
-									zonesMap[*zone] = true
-								}
-							}
-							for _, expectedZone := range expectedZones {
-								g.Expect(zonesMap[expectedZone]).To(BeTrue(), "Zone %s should be configured", expectedZone)
-							}
-						}
+						verifyFrontendZones(g, lbName, false) // Public LB - no zones on frontend
 					}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+
+					// Verify zones on the public IPs
+					for _, frontendIP := range azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.FrontendIPs {
+						if frontendIP.PublicIP != nil {
+							Eventually(func(g Gomega) {
+								verifyPublicIPZones(g, frontendIP.PublicIP.Name)
+							}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+						}
+					}
 				}
 			})
 

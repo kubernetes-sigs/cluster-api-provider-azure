@@ -12,6 +12,45 @@ Azure Load Balancers can be configured as zone-redundant to ensure high availabi
 
 Full details can be found in the [Azure Load Balancer reliability documentation](https://learn.microsoft.com/azure/reliability/reliability-load-balancer).
 
+## How Azure Implements Zone-Redundant Load Balancers
+
+It's important to understand how Azure handles zone configuration differently for internal and public load balancers. This is a critical Azure platform behavior that affects how CAPZ configures your infrastructure.
+
+### Internal Load Balancers
+
+For internal (private) load balancers, zone-redundancy is configured by setting the `zones` property directly on the **frontend IP configuration**. The frontend IP references a subnet (not a public IP), and Azure allows zones to be specified on subnet-based frontends.
+
+From the [Azure documentation](https://learn.microsoft.com/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer):
+
+> "For internal load balancers, set the sku.name property to Standard and set the properties.frontendIPConfigurations[\*].zones property to at least two availability zones."
+
+### Public Load Balancers
+
+For public load balancers, **you cannot set zones on the frontend IP configuration**. Instead, zone-redundancy is achieved by setting zones on the **public IP address resource** that the frontend references.
+
+From the [Azure documentation](https://learn.microsoft.com/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer):
+
+> "For public load balancers, if the public IP in the Load balancer's frontend is zone redundant then the load balancer is also zone-redundant."
+
+If you attempt to set zones on a public load balancer's frontend IP configuration, Azure returns the error:
+
+```
+LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress:
+Load balancer frontendIPConfiguration has zones specified and is referencing a publicIPAddress.
+Networking supports zones only for frontendIpconfigurations which reference a subnet.
+```
+
+### How CAPZ Handles This
+
+When you specify `availabilityZones` on a load balancer in CAPZ:
+
+| Load Balancer Type | Where Zones Are Applied |
+|-------------------|------------------------|
+| **Internal** (type: Internal) | Frontend IP configuration |
+| **Public** (type: Public) | Associated public IP address resource |
+
+This means that for public load balancers, CAPZ automatically applies the zones you specify to the public IP addresses, ensuring zone-redundancy without Azure API errors.
+
 ## Configuring Zone-Redundant Load Balancers
 
 CAPZ exposes the `availabilityZones` field on load balancer specifications to enable zone redundancy.
@@ -41,7 +80,7 @@ This configuration creates a zone-redundant internal load balancer with frontend
 
 ### Public Load Balancers
 
-For public load balancers, zone redundancy is primarily controlled by the public IP addresses. However, you can still set `availabilityZones` on the load balancer for consistency:
+For public load balancers, zone redundancy is controlled by the public IP addresses. When you specify `availabilityZones` on a public load balancer, CAPZ automatically applies those zones to the associated public IP addresses:
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -58,9 +97,18 @@ spec:
         - "1"
         - "2"
         - "3"
+      frontendIPs:
+        - name: api-server-ip
+          publicIP:
+            name: api-server-publicip
+            dnsName: my-cluster.eastus.cloudapp.azure.com
 ```
 
-> **Note**: For public load balancers, ensure that the associated public IP addresses are also zone-redundant for complete zone redundancy.
+When this configuration is applied, CAPZ will:
+1. Create the public IP `api-server-publicip` with zones `["1", "2", "3"]`
+2. Create the load balancer frontend referencing that public IP (without zones on the frontend itself)
+
+This results in a zone-redundant public load balancer that complies with Azure's requirements.
 
 ### Node Outbound Load Balancer
 
