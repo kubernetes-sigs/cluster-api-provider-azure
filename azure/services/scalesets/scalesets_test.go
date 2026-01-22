@@ -813,12 +813,14 @@ func newDefaultWindowsVMSS() armcompute.VirtualMachineScaleSet {
 
 func newDefaultVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
 	dataDisk := fetchDataDiskBasedOnSize(vmSize)
+	bootstrapData := "fake-bootstrap-data"
 	return armcompute.VirtualMachineScaleSet{
 		Location: ptr.To("test-location"),
 		Tags: map[string]*string{
 			"Name": ptr.To(defaultVMSSName),
 			"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": ptr.To("owned"),
 			"sigs.k8s.io_cluster-api-provider-azure_role":               ptr.To("node"),
+			customDataHashTagName:                                       ptr.To(mustCalculateBootstrapDataHash(bootstrapData)),
 		},
 		SKU: &armcompute.SKU{
 			Name:     ptr.To(vmSize),
@@ -837,7 +839,7 @@ func newDefaultVMSS(vmSize string) armcompute.VirtualMachineScaleSet {
 				OSProfile: &armcompute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: ptr.To(defaultVMSSName),
 					AdminUsername:      ptr.To(azure.DefaultUserName),
-					CustomData:         ptr.To("fake-bootstrap-data"),
+					CustomData:         ptr.To(bootstrapData),
 					LinuxConfiguration: &armcompute.LinuxConfiguration{
 						SSH: &armcompute.SSHConfiguration{
 							PublicKeys: []*armcompute.SSHPublicKey{
