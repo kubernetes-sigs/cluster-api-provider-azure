@@ -45,7 +45,7 @@ func TestApplyMutators(t *testing.T) {
 				{Raw: []byte(`{"apiVersion": "v1", "kind": "SomeObject"}`)},
 			},
 			expected: []*unstructured.Unstructured{
-				{Object: map[string]interface{}{"apiVersion": "v1", "kind": "SomeObject"}},
+				{Object: map[string]any{"apiVersion": "v1", "kind": "SomeObject"}},
 			},
 		},
 		{
@@ -72,7 +72,7 @@ func TestApplyMutators(t *testing.T) {
 			},
 			expected: []*unstructured.Unstructured{
 				{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "v1",
 						"kind":       "SomeObject",
 						"f1":         "1",

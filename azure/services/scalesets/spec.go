@@ -95,7 +95,7 @@ func (s *ScaleSetSpec) OwnerResourceName() string {
 	return ""
 }
 
-func (s *ScaleSetSpec) existingParameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
+func (s *ScaleSetSpec) existingParameters(ctx context.Context, existing any) (parameters any, err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.ScaleSetSpec.existingParameters")
 	defer done()
 
@@ -154,7 +154,7 @@ func (s *ScaleSetSpec) existingParameters(ctx context.Context, existing interfac
 }
 
 // Parameters returns the parameters for the Scale Set.
-func (s *ScaleSetSpec) Parameters(ctx context.Context, existing interface{}) (parameters interface{}, err error) {
+func (s *ScaleSetSpec) Parameters(ctx context.Context, existing any) (parameters any, err error) {
 	if existing != nil {
 		return s.existingParameters(ctx, existing)
 	}

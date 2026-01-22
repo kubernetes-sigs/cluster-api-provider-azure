@@ -56,15 +56,15 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *VMExtensionSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "get parameters for vmextension",
 			spec:     &fakeVMExtensionSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(Equal(fakeVMExtensionParams))
 			},
 			expectedError: "",
@@ -73,7 +73,7 @@ func TestParameters(t *testing.T) {
 			name:     "vmextension that already exists",
 			spec:     &fakeVMExtensionSpec,
 			existing: fakeVMExtensionParams,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",

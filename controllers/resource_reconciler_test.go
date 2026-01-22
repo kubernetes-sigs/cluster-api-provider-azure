@@ -558,23 +558,23 @@ func TestReadyStatus(t *testing.T) {
 		}{
 			{
 				name:          "empty object",
-				object:        &unstructured.Unstructured{Object: make(map[string]interface{})},
+				object:        &unstructured.Unstructured{Object: make(map[string]any)},
 				expectedReady: false,
 			},
 			{
 				name: "empty status.conditions",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{},
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{},
 					},
 				}},
 				expectedReady: false,
 			},
 			{
 				name: "status.conditions wrong type",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
 							int64(0),
 						},
 					},
@@ -583,10 +583,10 @@ func TestReadyStatus(t *testing.T) {
 			},
 			{
 				name: "non-Ready type status.conditions",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
-							map[string]interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
 								"type": "not" + conditions.ConditionTypeReady,
 							},
 						},
@@ -596,13 +596,13 @@ func TestReadyStatus(t *testing.T) {
 			},
 			{
 				name: "observedGeneration not up to date",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{
 						"generation": int64(1),
 					},
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
-							map[string]interface{}{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
 								"type":               conditions.ConditionTypeReady,
 								"observedGeneration": int64(0),
 							},
@@ -613,10 +613,10 @@ func TestReadyStatus(t *testing.T) {
 			},
 			{
 				name: "status is not defined",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
-							map[string]interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
 								"type":    conditions.ConditionTypeReady,
 								"message": "a message",
 							},
@@ -627,10 +627,10 @@ func TestReadyStatus(t *testing.T) {
 			},
 			{
 				name: "status is not True",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
-							map[string]interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
 								"type":    conditions.ConditionTypeReady,
 								"status":  "not-" + string(metav1.ConditionTrue),
 								"message": "a message",
@@ -642,18 +642,18 @@ func TestReadyStatus(t *testing.T) {
 			},
 			{
 				name: "status is True",
-				object: &unstructured.Unstructured{Object: map[string]interface{}{
-					"status": map[string]interface{}{
-						"conditions": []interface{}{
-							map[string]interface{}{
+				object: &unstructured.Unstructured{Object: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
 								"type":   "not-" + conditions.ConditionTypeReady,
 								"status": "not-" + string(metav1.ConditionTrue),
 							},
-							map[string]interface{}{
+							map[string]any{
 								"type":   conditions.ConditionTypeReady,
 								"status": string(metav1.ConditionTrue),
 							},
-							map[string]interface{}{
+							map[string]any{
 								"type":   "not-" + conditions.ConditionTypeReady,
 								"status": "not-" + string(metav1.ConditionTrue),
 							},

@@ -216,15 +216,15 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *VMSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "fails if existing is not a VirtualMachine",
 			spec:     &VMSpec{},
 			existing: armnetwork.VirtualNetwork{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "armnetwork.VirtualNetwork is not an armcompute.VirtualMachine",
@@ -233,7 +233,7 @@ func TestParameters(t *testing.T) {
 			name:     "returns nil if vm already exists",
 			spec:     &VMSpec{},
 			existing: armcompute.VirtualMachine{},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -244,7 +244,7 @@ func TestParameters(t *testing.T) {
 				ProviderID: "fake/vm/id",
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: azure.VMDeletedError{ProviderID: "fake/vm/id"}.Error(),
@@ -263,7 +263,7 @@ func TestParameters(t *testing.T) {
 				SKU:        validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Identity.Type).To(Equal(ptr.To(armcompute.ResourceIdentityTypeSystemAssigned)))
 				g.Expect(result.(armcompute.VirtualMachine).Identity.UserAssignedIdentities).To(BeEmpty())
@@ -285,7 +285,7 @@ func TestParameters(t *testing.T) {
 				SKU:                    validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Identity.Type).To(Equal(ptr.To(armcompute.ResourceIdentityTypeUserAssigned)))
 				g.Expect(result.(armcompute.VirtualMachine).Identity.UserAssignedIdentities).To(Equal(map[string]*armcompute.UserAssignedIdentitiesValue{"my-user-id": {}}))
@@ -306,7 +306,7 @@ func TestParameters(t *testing.T) {
 				SKU:           validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.Priority).To(Equal(ptr.To(armcompute.VirtualMachinePriorityTypesSpot)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.BillingProfile).To(BeNil())
@@ -328,7 +328,7 @@ func TestParameters(t *testing.T) {
 				SKU:           validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.Priority).To(Equal(ptr.To(armcompute.VirtualMachinePriorityTypesSpot)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.EvictionPolicy).To(Equal(ptr.To(armcompute.VirtualMachineEvictionPolicyTypesDelete)))
@@ -356,7 +356,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.OSType).To(Equal(ptr.To(armcompute.OperatingSystemTypesWindows)))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.OSProfile.AdminPassword).Should(HaveLen(123))
@@ -386,7 +386,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(ptr.To("my-diskencryptionset-id")))
 			},
@@ -406,7 +406,7 @@ func TestParameters(t *testing.T) {
 				SKU:             validSKUWithEncryptionAtHost,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.EncryptionAtHost).To(BeTrue())
 			},
@@ -426,7 +426,7 @@ func TestParameters(t *testing.T) {
 				SKU:               validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Zones).To(BeNil())
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AvailabilitySet.ID).To(Equal(ptr.To("fake-availability-set-id")))
@@ -455,7 +455,7 @@ func TestParameters(t *testing.T) {
 				SKU:   validSKUWithEphemeralOS,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.DiffDiskSettings.Option).To(Equal(ptr.To(armcompute.DiffDiskOptionsLocal)))
 			},
@@ -484,7 +484,7 @@ func TestParameters(t *testing.T) {
 				SKU:   validSKUWithEphemeralOS,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.DiffDiskSettings.Placement).To(Equal(ptr.To(armcompute.DiffDiskPlacementResourceDisk)))
 			},
@@ -511,7 +511,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.SecureBootEnabled).To(BeTrue())
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
@@ -549,7 +549,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.OSDisk.ManagedDisk.SecurityProfile.SecurityEncryptionType).To(Equal(ptr.To(armcompute.SecurityEncryptionTypesVMGuestStateOnly)))
 				g.Expect(*result.(armcompute.VirtualMachine).Properties.SecurityProfile.UefiSettings.VTpmEnabled).To(BeTrue())
@@ -587,7 +587,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: securityType should be set to ConfidentialVM when securityEncryptionType is set. Object will not be requeued",
@@ -607,7 +607,7 @@ func TestParameters(t *testing.T) {
 				SKU:               validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported for VM type Standard_D2v3. Object will not be requeued",
@@ -640,7 +640,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: securityType should be set to TrustedLaunch when vTpmEnabled is true. Object will not be requeued",
@@ -665,7 +665,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithTrustedLaunchDisabled,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: secure boot is not supported for VM type Standard_D2v3. Object will not be requeued",
@@ -690,7 +690,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithTrustedLaunchDisabled,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: vTPM is not supported for VM type Standard_D2v3. Object will not be requeued",
@@ -726,7 +726,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported when securityEncryptionType is set to DiskWithVMGuestState. Object will not be requeued",
@@ -762,7 +762,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: secureBootEnabled should be true when securityEncryptionType is set to DiskWithVMGuestState. Object will not be requeued",
@@ -797,7 +797,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithConfidentialComputingType,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: vTpmEnabled should be true when securityEncryptionType is set. Object will not be requeued",
@@ -832,7 +832,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support confidential computing. Select a different VM size or remove the security profile of the OS disk. Object will not be requeued",
@@ -859,7 +859,7 @@ func TestParameters(t *testing.T) {
 				SKU:   validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support ephemeral os. Select a different VM size or disable ephemeral os. Object will not be requeued",
@@ -876,7 +876,7 @@ func TestParameters(t *testing.T) {
 				SKU:        invalidCPUSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: VM size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
@@ -893,7 +893,7 @@ func TestParameters(t *testing.T) {
 				SKU:        invalidMemSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: VM memory should be bigger or equal to at least 2Gi. Object will not be requeued",
@@ -920,7 +920,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.Offer).To(Equal(ptr.To("my-offer")))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.Publisher).To(Equal(ptr.To("fake-publisher")))
@@ -955,7 +955,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.StorageProfile.ImageReference.ID).To(Equal(ptr.To("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0")))
 				g.Expect(result.(armcompute.VirtualMachine).Plan.Name).To(Equal(ptr.To("sku-id")))
@@ -1012,7 +1012,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
 				expectedDataDisks := []*armcompute.DataDisk{
@@ -1081,7 +1081,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "reconcile error that cannot be recovered occurred: VM size Standard_D2v3 does not support ultra disks in location test-location. Select a different VM size or disable ultra disks. Object will not be requeued",
@@ -1113,7 +1113,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
 				expectedDataDisks := []*armcompute.DataDisk{
@@ -1155,7 +1155,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
 				expectedDataDisks := []*armcompute.DataDisk{
@@ -1200,7 +1200,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
 				expectedDataDisks := []*armcompute.DataDisk{
@@ -1235,7 +1235,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(true)))
 			},
@@ -1258,7 +1258,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.AdditionalCapabilities.UltraSSDEnabled).To(Equal(ptr.To(false)))
 			},
@@ -1283,7 +1283,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(false)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
@@ -1309,7 +1309,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(BeNil())
@@ -1338,7 +1338,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
@@ -1367,7 +1367,7 @@ func TestParameters(t *testing.T) {
 				SKU: validSKUWithUltraSSD,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.Enabled).To(Equal(ptr.To(true)))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.DiagnosticsProfile.BootDiagnostics.StorageURI).To(Equal(ptr.To("aaa")))
@@ -1389,7 +1389,7 @@ func TestParameters(t *testing.T) {
 				SKU:                        validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.CapacityReservation.CapacityReservationGroup.ID).To(Equal(ptr.To("my-crg-id")))
 			},
@@ -1410,7 +1410,7 @@ func TestParameters(t *testing.T) {
 				SKU:                        validSKU,
 			},
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
 				g.Expect(result.(armcompute.VirtualMachine).Properties.CapacityReservation).To(BeNil())
 			},

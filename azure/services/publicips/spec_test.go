@@ -110,9 +110,9 @@ var (
 func TestParameters(t *testing.T) {
 	testCases := []struct {
 		name          string
-		existing      interface{}
+		existing      any
 		spec          PublicIPSpec
-		expected      interface{}
+		expected      any
 		expectedError string
 	}{
 		{

@@ -30,8 +30,8 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name     string
 		spec     InboundNatSpec
-		existing interface{}
-		expected interface{}
+		existing any
+		expected any
 		errorMsg string
 	}{
 		{

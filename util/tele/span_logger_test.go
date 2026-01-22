@@ -28,7 +28,7 @@ func TestSpanLogSinkWithValues(t *testing.T) {
 
 	var log0 logr.LogSink = &spanLogSink{
 		// simulating a slice with cap() > len() where an append() will not create a new array
-		vals: make([]interface{}, 0, 4),
+		vals: make([]any, 0, 4),
 	}
 
 	log0 = log0.WithValues("k0", "v0")

@@ -46,7 +46,7 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 		name           string
 		serviceName    string
 		expectedError  string
-		expectedResult interface{}
+		expectedResult any
 		expect         func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
@@ -203,7 +203,7 @@ func TestServiceDeleteResource(t *testing.T) {
 		name           string
 		serviceName    string
 		expectedError  string
-		expectedResult interface{}
+		expectedResult any
 		expect         func(g *GomegaWithT, s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
@@ -328,7 +328,7 @@ var (
 	}
 	fakeResource            = armresources.GenericResource{}
 	fakeParameters          = armresources.GenericResource{}
-	azureResourceGetterType = reflect.TypeOf((*azure.ResourceSpecGetter)(nil)).Elem()
+	azureResourceGetterType = reflect.TypeFor[azure.ResourceSpecGetter]()
 )
 
 func fakePoller[T any](g *GomegaWithT, statusCode int) *runtime.Poller[T] {

@@ -27,7 +27,7 @@ import (
 // RuntimeRawExtension takes anything and turns it into a *runtime.RawExtension.
 // This is helpful for creating clusterv1.Cluster/Machine objects that need
 // a specific AzureClusterProviderSpec or Status.
-func RuntimeRawExtension(t *testing.T, p interface{}) *runtime.RawExtension {
+func RuntimeRawExtension(t *testing.T, p any) *runtime.RawExtension {
 	t.Helper()
 	out, err := json.Marshal(p)
 	if err != nil {
@@ -46,19 +46,19 @@ type Log struct{}
 func (l *Log) Init(info logr.RuntimeInfo) {}
 
 // Error logs an error, with the given message and key/value pairs as context.
-func (l *Log) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (l *Log) Error(err error, msg string, keysAndValues ...any) {}
 
 // V returns a new Logger instance for a specific verbosity level, relative to this Logger.
 func (l *Log) V(level int) logr.LogSink { return l }
 
 // WithValues returns a new Logger instance with additional key/value pairs.
-func (l *Log) WithValues(keysAndValues ...interface{}) logr.LogSink { return l }
+func (l *Log) WithValues(keysAndValues ...any) logr.LogSink { return l }
 
 // WithName returns a new Logger instance with the specified name element added to the Logger's name.
 func (l *Log) WithName(name string) logr.LogSink { return l }
 
 // Info logs a non-error message with the given key/value pairs as context.
-func (l *Log) Info(level int, msg string, keysAndValues ...interface{}) {}
+func (l *Log) Info(level int, msg string, keysAndValues ...any) {}
 
 // Enabled tests whether this Logger is enabled.
 func (l *Log) Enabled(level int) bool { return false }

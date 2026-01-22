@@ -602,8 +602,8 @@ func TestScaleSetParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          ScaleSetSpec
-		existing      interface{}
-		expected      interface{}
+		existing      any
+		expected      any
 		expectedError string
 	}{
 		{

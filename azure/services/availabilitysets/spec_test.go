@@ -41,15 +41,15 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *AvailabilitySetSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "error when no SKU is present",
 			spec:     &fakeSetSpecMissing,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "unable to get required availability set SKU from machine cache",
@@ -58,7 +58,7 @@ func TestParameters(t *testing.T) {
 			name:     "error when SKU capability is missing",
 			spec:     &fakeSetSpecMissingCap,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "unable to get required availability set SKU capability MaximumPlatformFaultDomainCount",
@@ -67,7 +67,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters when all values are present",
 			spec:     &fakeSetSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armcompute.AvailabilitySet{}))
 				g.Expect(result.(armcompute.AvailabilitySet).Properties.PlatformFaultDomainCount).To(Equal(ptr.To[int32](int32(fakeFaultDomainCount))))
 			},

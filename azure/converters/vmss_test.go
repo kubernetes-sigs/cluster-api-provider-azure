@@ -99,7 +99,7 @@ func Test_SDKToVMSS(t *testing.T) {
 					Instances: make([]azure.VMSSVM, 2),
 				}
 
-				for i := 0; i < 2; i++ {
+				for i := range 2 {
 					expected.Instances[i] = azure.VMSSVM{
 						ID:               fmt.Sprintf("vm/%d", i),
 						InstanceID:       fmt.Sprintf("%d", i),

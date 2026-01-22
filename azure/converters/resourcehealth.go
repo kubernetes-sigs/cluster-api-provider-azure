@@ -43,8 +43,8 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 	if availStatus.Properties.ReasonType != nil {
 		// CAPI specifies Reason should be CamelCase, though the Azure API
 		// response may include spaces (e.g. "Customer Initiated")
-		words := strings.Split(*availStatus.Properties.ReasonType, " ")
-		for _, word := range words {
+		words := strings.SplitSeq(*availStatus.Properties.ReasonType, " ")
+		for word := range words {
 			if word != "" {
 				reason.WriteString(strings.ToTitle(word[:1]))
 			}

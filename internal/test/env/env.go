@@ -140,7 +140,7 @@ func getFilePathToCAPICRDs(root string) string {
 	}
 
 	var clusterAPIVersion string
-	for _, line := range strings.Split(string(modBits), "\n") {
+	for line := range strings.SplitSeq(string(modBits), "\n") {
 		matches := clusterAPIVersionRegex.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			clusterAPIVersion = matches[2]

@@ -255,15 +255,15 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          *NICSpec
-		existing      interface{}
-		expect        func(g *WithT, result interface{})
+		existing      any
+		expect        func(g *WithT, result any)
 		expectedError string
 	}{
 		{
 			name:     "error when accelerted networking is nil and no SKU is present",
 			spec:     &fakeMissingSKUNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "unable to get required network interface SKU from machine cache",
@@ -272,7 +272,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with static private IP",
 			spec:     &fakeStaticPrivateIPNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -306,7 +306,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with dynamic private IP",
 			spec:     &fakeDynamicPrivateIPNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -339,7 +339,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for control plane network interface",
 			spec:     &fakeControlPlaneNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -375,7 +375,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with accelerated networking",
 			spec:     &fakeAcceleratedNetworkingNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -408,7 +408,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface without accelerated networking",
 			spec:     &fakeNonAcceleratedNetworkingNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -441,7 +441,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface ipv6",
 			spec:     &fakeIpv6NICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -482,7 +482,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface default ipconfig",
 			spec:     &fakeDefaultIPconfigNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -515,7 +515,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with one ipconfig",
 			spec:     &fakeOneIPconfigNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -548,7 +548,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with two ipconfigs",
 			spec:     &fakeTwoIPconfigNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -590,7 +590,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for network interface with two ipconfigs and a public ip",
 			spec:     &fakeTwoIPconfigWithPublicNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -635,7 +635,7 @@ func TestParameters(t *testing.T) {
 			name:     "get parameters for control plane network interface with DNS servers",
 			spec:     &fakeControlPlaneCustomDNSSettingsNICSpec,
 			existing: nil,
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -683,7 +683,7 @@ func TestParameters(t *testing.T) {
 					ProvisioningState: ptr.To(armnetwork.ProvisioningStateFailed),
 				},
 			},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{
@@ -728,7 +728,7 @@ func TestParameters(t *testing.T) {
 					ProvisioningState: ptr.To(armnetwork.ProvisioningStateDeleting),
 				},
 			},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -748,7 +748,7 @@ func TestParameters(t *testing.T) {
 					ProvisioningState: ptr.To(armnetwork.ProvisioningStateSucceeded),
 				},
 			},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -768,7 +768,7 @@ func TestParameters(t *testing.T) {
 					ProvisioningState: ptr.To(armnetwork.ProvisioningStateUpdating),
 				},
 			},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeNil())
 			},
 			expectedError: "",
@@ -785,7 +785,7 @@ func TestParameters(t *testing.T) {
 				Location: ptr.To("fake-location"),
 				Type:     ptr.To("Microsoft.Network/networkInterfaces"),
 			},
-			expect: func(g *WithT, result interface{}) {
+			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
 				g.Expect(result.(armnetwork.Interface)).To(Equal(armnetwork.Interface{
 					Tags: map[string]*string{

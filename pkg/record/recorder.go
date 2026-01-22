@@ -51,7 +51,7 @@ func Event(object runtime.Object, reason, message string) {
 }
 
 // Eventf is just like Event, but with Sprintf for the message field.
-func Eventf(object runtime.Object, reason, message string, args ...interface{}) {
+func Eventf(object runtime.Object, reason, message string, args ...any) {
 	defaultRecorder.Eventf(object, corev1.EventTypeNormal, eng.String(reason), message, args...)
 }
 
@@ -61,6 +61,6 @@ func Warn(object runtime.Object, reason, message string) {
 }
 
 // Warnf is just like Warn, but with Sprintf for the message field.
-func Warnf(object runtime.Object, reason, message string, args ...interface{}) {
+func Warnf(object runtime.Object, reason, message string, args ...any) {
 	defaultRecorder.Eventf(object, corev1.EventTypeWarning, eng.String(reason), message, args...)
 }
