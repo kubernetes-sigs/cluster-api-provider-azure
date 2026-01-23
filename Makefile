@@ -358,10 +358,10 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.2/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.2/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Deploy CAAPH
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.2/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.2/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Deploy CAPZ
 	if [ "$(MGMT_CLUSTER_TYPE)" != "aks" ]; then \
