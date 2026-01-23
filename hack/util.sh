@@ -66,7 +66,6 @@ capz::util::get_random_region() {
     # Regions appear more than once to represent the approximate relative amount
     # of Standard BS v2 quota in each region.
     local REGIONS=(
-      "australiaeast"
       "canadacentral" "canadacentral" "canadacentral"
       "francecentral"
       "germanywestcentral"
