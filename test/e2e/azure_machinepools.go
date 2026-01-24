@@ -21,7 +21,7 @@ package e2e
 
 import (
 	"context"
-	"sync"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -98,42 +99,50 @@ func AzureMachinePoolsSpec(ctx context.Context, inputGetter func() AzureMachineP
 		machinepools = append(machinepools, mp)
 	}
 
-	var wg sync.WaitGroup
-	for _, mp := range machinepools {
-		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) + 1
-		Byf("Scaling machine pool %s out from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
-		wg.Add(1)
-		go func(mp *clusterv1.MachinePool) {
-			defer GinkgoRecover()
-			defer wg.Done()
-			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-				ClusterProxy:              bootstrapClusterProxy,
-				Cluster:                   input.Cluster,
-				Replicas:                  goalReplicas,
-				MachinePools:              []*clusterv1.MachinePool{mp},
-				WaitForMachinePoolToScale: input.WaitIntervals,
-			})
-		}(mp)
-	}
-	wg.Wait()
+	patchMachinePoolReplicas := func(mp *clusterv1.MachinePool, replicas int32) {
+		GinkgoHelper()
 
-	for _, mp := range machinepools {
-		goalReplicas := ptr.Deref[int32](mp.Spec.Replicas, 0) - 1
-		Byf("Scaling machine pool %s in from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
-		wg.Add(1)
-		go func(mp *clusterv1.MachinePool) {
-			defer GinkgoRecover()
-			defer wg.Done()
-			framework.ScaleMachinePoolAndWait(ctx, framework.ScaleMachinePoolAndWaitInput{
-				ClusterProxy:              bootstrapClusterProxy,
-				Cluster:                   input.Cluster,
-				Replicas:                  goalReplicas,
-				MachinePools:              []*clusterv1.MachinePool{mp},
-				WaitForMachinePoolToScale: input.WaitIntervals,
-			})
-		}(mp)
+		patchHelper, err := patch.NewHelper(mp, bootstrapClusterProxy.GetClient())
+		Expect(err).NotTo(HaveOccurred())
+
+		mp.Spec.Replicas = &replicas
+		Eventually(func(ctx context.Context) error {
+			return patchHelper.Patch(ctx, mp)
+		}, 3*time.Minute, 10*time.Second).WithContext(ctx).Should(Succeed())
 	}
-	wg.Wait()
+
+	// [framework.ScaleMachinePoolAndWait] wraps a similar "change replica count
+	// + wait" sequence. The difference is that here we bump the replica count
+	// by a relative amount vs. setting an absolute replica count. This way we
+	// make sure we're actually changing the replica count in the direction we
+	// want without having to care about the initial state of each individual
+	// MachinePool.
+
+	// Scale out
+	for _, mp := range machinepools {
+		goalReplicas := ptr.Deref(mp.Spec.Replicas, 0) + 1
+		Byf("Scaling machine pool %s out from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
+		patchMachinePoolReplicas(mp, goalReplicas)
+	}
+	for _, mp := range machinepools {
+		framework.WaitForMachinePoolNodesToExist(ctx, framework.WaitForMachinePoolNodesToExistInput{
+			Getter:      mgmtClient,
+			MachinePool: mp,
+		}, input.WaitIntervals...)
+	}
+
+	// Scale in
+	for _, mp := range machinepools {
+		goalReplicas := ptr.Deref(mp.Spec.Replicas, 0) - 1
+		Byf("Scaling machine pool %s in from %d to %d", mp.Name, *mp.Spec.Replicas, goalReplicas)
+		patchMachinePoolReplicas(mp, goalReplicas)
+	}
+	for _, mp := range machinepools {
+		framework.WaitForMachinePoolNodesToExist(ctx, framework.WaitForMachinePoolNodesToExistInput{
+			Getter:      mgmtClient,
+			MachinePool: mp,
+		}, input.WaitIntervals...)
+	}
 
 	By("verifying that workload nodes are schedulable")
 	clientset := workloadClusterProxy.GetClientSet()
