@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -158,7 +157,6 @@ type cleanupInput struct {
 func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	defer func() {
 		input.CancelWatches()
-		redactLogs()
 	}()
 
 	Logf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
@@ -228,16 +226,6 @@ func ExpectResourceGroupToBe404(ctx context.Context) {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = groupsClient.Get(ctx, resourceGroup, nil)
 	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
-}
-
-func redactLogs() {
-	By("Redacting sensitive information from logs")
-	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
-	//nolint:gosec // Ignore warning about running a command constructed from user input
-	cmd := exec.Command(e2eConfig.MustGetVariable(RedactLogScriptPath))
-	if err := cmd.Run(); err != nil {
-		LogWarningf("Redact logs command failed: %v", err)
-	}
 }
 
 func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string) *rest.Config {
