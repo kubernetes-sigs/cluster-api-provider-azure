@@ -36,6 +36,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -1195,6 +1196,47 @@ var _ = Describe("Workload cluster creation", func() {
 				LogFolder: filepath.Join(artifactFolder, "clusters", clusterName),
 			}
 			clusterctl.Init(ctx, initInput)
+
+			// [clusterctl.Init] doesn't wait until the webhooks are ready to
+			// receive requests, so a "connection refused" error causing retries
+			// where some objects are already created can trigger unwanted
+			// changes to those existing objects.
+			//
+			// That retries don't work is an issue with
+			// [clusterctl.ApplyClusterTemplateAndWait]
+			// https://github.com/kubernetes-sigs/cluster-api/issues/13264
+			//
+			// If that issue is resolved then we can remove this workaround.
+			objects, err := yaml.ToUnstructured([]byte(`
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: dry-run
+  namespace: default
+spec:
+  template:
+    spec:
+      rolloutStrategy: {}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: dry-run
+  namespace: default
+spec:
+  template:
+    spec: {}`))
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				for _, obj := range objects {
+					if err := bootstrapClusterProxy.GetClient().Create(ctx, &obj, client.DryRunAll); err != nil {
+						Logf("Webhooks not ready for %s %s: %v", obj.GetAPIVersion(), obj.GetKind(), err)
+						return err
+					}
+					Logf("Webhooks ready for %s %s", obj.GetAPIVersion(), obj.GetKind())
+				}
+				return nil
+			}, 1*time.Minute, 1*time.Second).Should(Succeed())
 
 			// Create a cluster using the cluster class created above
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
