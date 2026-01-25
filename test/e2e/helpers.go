@@ -692,7 +692,6 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	linuxVersions := getVersionsInCommunityGallery(context.TODO(), os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
-	flatcarK8sVersions := getFlatcarK8sVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery)
 
 	var versions semver.Versions
 
@@ -724,11 +723,6 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	if config.HasVariable(capi_e2e.KubernetesVersionUpgradeTo) {
 		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersionUpgradeTo)
 	}
-	if config.HasVariable(FlatcarKubernetesVersion) && config.HasVariable(FlatcarVersion) {
-		resolveFlatcarKubernetesVersion(config, flatcarK8sVersions, FlatcarKubernetesVersion)
-		flatcarVersions := getFlatcarVersions(context.TODO(), os.Getenv(AzureLocation), flatcarCAPICommunityGallery, config.MustGetVariable(FlatcarKubernetesVersion))
-		resolveFlatcarVersion(config, flatcarVersions, FlatcarVersion)
-	}
 }
 
 func resolveKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
@@ -742,33 +736,6 @@ func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
 	}
 	config.Variables[varName] = v
 	Logf("Resolved %s (set to %s) to %s", varName, oldVersion, v)
-}
-
-func resolveFlatcarKubernetesVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	resolveVariable(config, varName, getLatestVersionForMinor(config.MustGetVariable(varName), versions, "Flatcar Community Gallery"))
-}
-
-func resolveFlatcarVersion(config *clusterctl.E2EConfig, versions semver.Versions, varName string) {
-	version := config.MustGetVariable(varName)
-	if version != "latest" {
-		Expect(versions).To(ContainElement(semver.MustParse(version)), fmt.Sprintf("Provided Flatcar version %q does not have a corresponding VM image in the Flatcar Community Gallery", version))
-	}
-
-	if version == "latest" {
-		semver.Sort(versions)
-		version = versions[len(versions)-1].String()
-	}
-
-	resolveVariable(config, varName, version)
-}
-
-func newCommunityGalleryImagesClient() *armcompute.CommunityGalleryImagesClient {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImagesClient, err := armcompute.NewCommunityGalleryImagesClient(getSubscriptionID(Default), cred, nil)
-	Expect(err).NotTo(HaveOccurred())
-
-	return communityGalleryImagesClient
 }
 
 func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageVersionsClient {
@@ -821,62 +788,6 @@ func getLatestVersionForMinor(version string, versions semver.Versions, imagesSo
 	}
 	// otherwise, we just return the version as-is. This allows for versions in other formats, such as "latest" or "latest-1.21".
 	return version
-}
-
-func getFlatcarVersions(ctx context.Context, location, galleryName, k8sVersion string) semver.Versions {
-	image := fmt.Sprintf("flatcar-stable-amd64-capi-%s", k8sVersion)
-
-	Logf("Finding Flatcar versions in community gallery %q in location %q for image %q", galleryName, location, image)
-	var versions semver.Versions
-	communityGalleryImageVersionsClient := newCommunityGalleryImageVersionsClient()
-	var imageVersions []*armcompute.CommunityGalleryImageVersion
-	pager := communityGalleryImageVersionsClient.NewListPager(location, galleryName, image, nil)
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		imageVersions = append(imageVersions, nextResult.Value...)
-	}
-
-	for _, imageVersion := range imageVersions {
-		versions = append(versions, semver.MustParse(*imageVersion.Name))
-	}
-
-	return versions
-}
-
-func getFlatcarK8sVersions(ctx context.Context, location, communityGalleryName string) semver.Versions {
-	Logf("Finding Flatcar images and versions in community gallery %q in location %q", communityGalleryName, location)
-	var versions semver.Versions
-	k8sVersion := regexp.MustCompile(`flatcar-stable-amd64-capi-v(\d+)\.(\d+).(\d+)`)
-	communityGalleryImagesClient := newCommunityGalleryImagesClient()
-	communityGalleryImageVersionsClient := newCommunityGalleryImageVersionsClient()
-	var images []*armcompute.CommunityGalleryImage
-	pager := communityGalleryImagesClient.NewListPager(location, communityGalleryName, nil)
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		images = append(images, nextResult.Value...)
-	}
-
-	for _, image := range images {
-		var imageVersions []*armcompute.CommunityGalleryImageVersion
-		pager := communityGalleryImageVersionsClient.NewListPager(location, communityGalleryName, *image.Name, nil)
-		for pager.More() {
-			nextResult, err := pager.NextPage(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			imageVersions = append(imageVersions, nextResult.Value...)
-		}
-
-		if len(imageVersions) == 0 {
-			continue
-		}
-
-		match := k8sVersion.FindStringSubmatch(*image.Name)
-		stringVer := fmt.Sprintf("%s.%s.%s", match[1], match[2], match[3])
-		versions = append(versions, semver.MustParse(stringVer))
-	}
-
-	return versions
 }
 
 // getPodLogs returns the logs of a pod, or an error in string format.

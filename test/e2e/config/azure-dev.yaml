@@ -172,8 +172,6 @@ providers:
         targetName: "cluster-template-topology.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-topology-rke2.yaml"
         targetName: "cluster-template-topology-rke2.yaml"
-      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar.yaml"
-        targetName: "cluster-template-flatcar.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-flatcar-sysext.yaml"
         targetName: "cluster-template-flatcar-sysext.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-edgezone.yaml"
@@ -215,7 +213,6 @@ variables:
   AKS_KUBERNETES_VERSION: "latest"
   AKS_KUBERNETES_VERSION_UPGRADE_FROM: "latest-1"
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-stable-1.32}"
-  FLATCAR_KUBERNETES_VERSION: "${FLATCAR_KUBERNETES_VERSION:-stable-1.26}"
   KUBERNETES_VERSION_API_UPGRADE_FROM: "v1.31.9"
   FLATCAR_VERSION: "${FLATCAR_VERSION:-latest}"
   ETCD_VERSION_UPGRADE_TO: "" # Use default
