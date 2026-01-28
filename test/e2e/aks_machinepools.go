@@ -53,7 +53,7 @@ func AKSMachinePoolSpec(ctx context.Context, inputGetter func() AKSMachinePoolSp
 	patchMachinePoolReplicas := func(mp *clusterv1.MachinePool, replicas int32) {
 		GinkgoHelper()
 
-		patchHelper, err := patch.NewHelper(mp, bootstrapClusterProxy.GetClient())
+		patchHelper, err := patch.NewHelper(mp, input.MgmtCluster.GetClient())
 		Expect(err).NotTo(HaveOccurred())
 
 		mp.Spec.Replicas = &replicas
