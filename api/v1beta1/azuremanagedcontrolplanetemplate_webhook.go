@@ -193,6 +193,10 @@ func (mcp *AzureManagedControlPlaneTemplate) validateManagedControlPlaneTemplate
 		mcp.Spec.Template.Spec.Version,
 		field.NewPath("spec").Child("template").Child("spec").Child("version"))...)
 
+	allErrs = append(allErrs, validateLoadBalancerSKU(
+		mcp.Spec.Template.Spec.LoadBalancerSKU,
+		field.NewPath("spec").Child("template").Child("spec").Child("loadBalancerSKU"))...)
+
 	allErrs = append(allErrs, validateLoadBalancerProfile(
 		mcp.Spec.Template.Spec.LoadBalancerProfile,
 		field.NewPath("spec").Child("template").Child("spec").Child("loadBalancerProfile"))...)
