@@ -77,7 +77,39 @@ function main() {
     # Delete each AKS cluster and its resource group
     for cluster in "${found_aks_clusters[@]}"; do
         echo "Deleting AKS cluster and resource group: $cluster"
-        
+
+        # Delete federated credentials if workload identity was used
+        # Check ASO_CREDENTIAL_SECRET_MODE to determine if workload identity was enabled
+        ASO_MODE=$(yq eval ".aks_as_mgmt_settings.ASO_CREDENTIAL_SECRET_MODE" "$TILT_SETTINGS_FILE")
+
+        if [ "$ASO_MODE" = "workloadidentity" ]; then
+            echo "Workload identity detected, cleaning up federated credentials for $cluster..."
+
+            # Extract identity info from tilt-settings.yaml
+            IDENTITY_NAME=$(yq eval ".aks_as_mgmt_settings.USER_IDENTITY" "$TILT_SETTINGS_FILE")
+            IDENTITY_RG=$(yq eval ".aks_as_mgmt_settings.CI_RG" "$TILT_SETTINGS_FILE")
+
+            if [ -n "$IDENTITY_NAME" ] && [ "$IDENTITY_NAME" != "null" ]; then
+                echo "Deleting federated credentials for identity: $IDENTITY_NAME"
+
+                az identity federated-credential delete \
+                  -n "capz-federated-identity" \
+                  --identity-name "$IDENTITY_NAME" \
+                  -g "$IDENTITY_RG" --yes 2>/dev/null || true
+
+                az identity federated-credential delete \
+                  -n "aso-federated-identity" \
+                  --identity-name "$IDENTITY_NAME" \
+                  -g "$IDENTITY_RG" --yes 2>/dev/null || true
+
+                echo "Federated credentials cleanup completed"
+            else
+                echo "No identity information found, skipping federated credential cleanup"
+            fi
+        else
+            echo "Workload identity not enabled (ASO_CREDENTIAL_SECRET_MODE=$ASO_MODE), skipping federated credential cleanup"
+        fi
+
         # Delete the resource group (which includes the AKS cluster)
         if az group exists --name "$cluster" | grep -q "true"; then
             az group delete --name "$cluster" --yes --no-wait
