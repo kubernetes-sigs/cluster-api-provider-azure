@@ -7,6 +7,7 @@ linters:
   default: none
   enable:
     - asasalint # warns about passing []any to func(...any) without expanding it
+    - kubeapilinter # validates Kubernetes API types against API conventions
     - asciicheck # non ascii symbols
     - bidichk # dangerous unicode sequences
     - bodyclose # unclosed http bodies
@@ -140,6 +141,27 @@ linters:
     nolintlint:
       require-specific: true
       allow-unused: false
+    custom:
+      kubeapilinter:
+        type: module
+        path: sigs.k8s.io/kube-api-linter
+        description: Kube API Linter validates Kubernetes API types against API conventions
+        settings:
+          linters:
+            # Disable all linters by default and enable only specific ones.
+            # This allows gradual adoption of API conventions.
+            disable:
+              - "*"
+            enable:
+              # Enable linters with low/zero issue counts that enforce critical conventions
+              - duplicatemarkers  # Removes duplicate markers (1 issue, has auto-fix)
+              - jsontags          # Ensures proper JSON tag formatting
+              - nofloats          # Prevents float type usage
+              - nomaps            # Restricts map usage
+              - nonullable        # Prevents usage of the nullable marker 
+              - nophase           # Prevents Phase field usage
+              - notimestamp       # Prevents TimeStamp field usage
+          lintersConfig: {}
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
@@ -177,6 +199,10 @@ linters:
   exclusions:
     generated: lax
     rules:
+      # Only run kubeapilinter on API type files (not tests, webhooks, validation, conversion, defaults)
+      - linters:
+          - kubeapilinter
+        path-except: "^api/.*_types\\.go$|^exp/api/.*_types\\.go$|^api/.*/types\\.go$|^api/.*/types_.*\\.go$|^api/.*/consts\\.go$"
       - path: (\w*)conversion.go
         text: use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name
       - path: mock(\w+)/doc.go$
