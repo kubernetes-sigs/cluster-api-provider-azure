@@ -33,5 +33,5 @@ jobs:
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # tag=v9.2.0
         with:
           # update the version when updating golangci-lint
-          version: v2.1.2
+          version: v2.5.0
           working-directory: ${{matrix.working-directory}}
