@@ -1933,7 +1933,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 				},
 				cache: &MachineCache{
 					VMSKU: resourceskus.SKU{
-						Name: ptr.To("Standard_D2v2"),
+						Name: ptr.To("Standard_D2ds_v5"),
 					},
 				},
 			},
@@ -1959,7 +1959,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 					IPv6Enabled:               false,
 					EnableIPForwarding:        false,
 					SKU: &resourceskus.SKU{
-						Name: ptr.To("Standard_D2v2"),
+						Name: ptr.To("Standard_D2ds_v5"),
 					},
 					ClusterName: "cluster",
 					AdditionalTags: infrav1.Tags{

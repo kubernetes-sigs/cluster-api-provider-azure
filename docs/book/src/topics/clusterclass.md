@@ -15,7 +15,7 @@ Each resource is a template for the corresponding CAPZ resource. For example, th
 
 ## Deploying a Self-Managed Cluster with ClusterClass
 
-Users must first create a ClusterClass resource to deploy a self-managed cluster with ClusterClass. The ClusterClass resource defines the cluster topology, including the control plane and machine deployment templates. The ClusterClass resource also defines the parameters that can be used to customize the cluster topology. 
+Users must first create a ClusterClass resource to deploy a self-managed cluster with ClusterClass. The ClusterClass resource defines the cluster topology, including the control plane and machine deployment templates. The ClusterClass resource also defines the parameters that can be used to customize the cluster topology.
 
 Please refer to the Cluster API book for more information on how to write a ClusterClass topology: https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/write-clusterclass.html
 
@@ -83,5 +83,5 @@ spec:
     spec:
       mode: System
       name: pool0
-      sku: Standard_D2s_v3
+      sku: Standard_D2ds_v5
 ```
