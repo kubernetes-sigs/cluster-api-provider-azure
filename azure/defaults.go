@@ -67,7 +67,7 @@ const (
 	// BootstrappingExtensionLinux is the name of the Linux CAPZ bootstrapping VM extension.
 	BootstrappingExtensionLinux = "RunCommandLinux"
 	// BootstrappingExtensionWindows is the name of the Windows CAPZ bootstrapping VM extension.
-	BootstrappingExtensionWindows = "CAPZ.Windows.Bootstrapping"
+	BootstrappingExtensionWindows = "RunCommandWindows"
 )
 
 const (
@@ -333,10 +333,10 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpu
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionWindows,
 			VMName:    vmName,
-			Publisher: "Microsoft.Azure.ContainerUpstream",
-			Version:   "1.0",
+			Publisher: "Microsoft.CPlat.Core",
+			Version:   "1.1",
 			ProtectedSettings: map[string]string{
-				"commandToExecute": WindowsBootstrapExtensionCommand,
+				"script": WindowsBootstrapExtensionCommand,
 			},
 		}
 	}

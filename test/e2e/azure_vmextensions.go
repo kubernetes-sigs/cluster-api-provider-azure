@@ -115,7 +115,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 				vmExtensionNames = append(vmExtensionNames, *vmExtension.Name)
 			}
 			osName := string(*machine.Properties.StorageProfile.OSDisk.OSType)
-			Expect(vmExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
+			Expect(vmExtensionNames).To(ContainElements("RunCommand" + osName))
 			Expect(vmExtensionNames).To(ContainElements(expectedVMExtensionMap[*machine.ID]))
 		}
 	}
@@ -174,7 +174,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 				vmssExtensionNames = append(vmssExtensionNames, *vmssExtension.Name)
 			}
 			osName := string(*machinePool.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType)
-			Expect(vmssExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
+			Expect(vmssExtensionNames).To(ContainElements("RunCommand" + osName))
 			Expect(vmssExtensionNames).To(ContainElements(expectedVMSSExtensionMap[*machinePool.ID]))
 		}
 	}
