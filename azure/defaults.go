@@ -25,7 +25,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel"
 	"go.opentelemetry.io/otel"
 
@@ -66,9 +65,9 @@ const (
 
 const (
 	// BootstrappingExtensionLinux is the name of the Linux CAPZ bootstrapping VM extension.
-	BootstrappingExtensionLinux = "CAPZ.Linux.Bootstrapping"
+	BootstrappingExtensionLinux = "RunCommandLinux"
 	// BootstrappingExtensionWindows is the name of the Windows CAPZ bootstrapping VM extension.
-	BootstrappingExtensionWindows = "CAPZ.Windows.Bootstrapping"
+	BootstrappingExtensionWindows = "RunCommandWindows"
 )
 
 const (
@@ -319,21 +318,13 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpu
 	// currently, the bootstrap extension is only available in AzurePublicCloud.
 	if osType == LinuxOS && cloud == PublicCloudName {
 		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
-		// We set the version to 1.1 (will target 1.1.1) for arm64 machines and 1.0 for x64. This is due to a known issue with newer versions of
-		// Go on Ubuntu 20.04. The issue is being tracked here: https://github.com/golang/go/issues/58550
-		// TODO: Remove this once the issue is fixed, or when Ubuntu 20.04 is no longer supported.
-		// We are using 1.1 instead of 1.1.1 for Arm64 as AzureAPI do not allow us to specify the full version.
-		extensionVersion := "1.0"
-		if cpuArchitectureType == string(armcompute.ArchitectureTypesArm64) {
-			extensionVersion = "1.1"
-		}
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionLinux,
 			VMName:    vmName,
-			Publisher: "Microsoft.Azure.ContainerUpstream",
-			Version:   extensionVersion,
+			Publisher: "Microsoft.CPlat.Core",
+			Version:   "1.0",
 			ProtectedSettings: map[string]string{
-				"commandToExecute": LinuxBootstrapExtensionCommand,
+				"script": LinuxBootstrapExtensionCommand,
 			},
 		}
 	} else if osType == WindowsOS && cloud == PublicCloudName {
@@ -342,10 +333,10 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpu
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionWindows,
 			VMName:    vmName,
-			Publisher: "Microsoft.Azure.ContainerUpstream",
-			Version:   "1.0",
+			Publisher: "Microsoft.CPlat.Core",
+			Version:   "1.1",
 			ProtectedSettings: map[string]string{
-				"commandToExecute": WindowsBootstrapExtensionCommand,
+				"script": WindowsBootstrapExtensionCommand,
 			},
 		}
 	}

@@ -234,7 +234,7 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
 			cpuArchitecture: "Arm64",
-			expectedVersion: "1.1",
+			expectedVersion: "1.0",
 		},
 		{
 			name:            "Windows OS, Public Cloud",
@@ -242,7 +242,7 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
 			cpuArchitecture: "x64",
-			expectedVersion: "1.0",
+			expectedVersion: "1.1",
 		},
 		{
 			name:            "Invalid OS Type",

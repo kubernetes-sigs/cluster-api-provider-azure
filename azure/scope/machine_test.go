@@ -569,12 +569,12 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{
 				&vmextensions.VMExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name:      "CAPZ.Linux.Bootstrapping",
+						Name:      "RunCommandLinux",
 						VMName:    "machine-name",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Publisher: "Microsoft.CPlat.Core",
 						Version:   "1.0",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+							"script": azure.LinuxBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",
@@ -683,12 +683,12 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{
 				&vmextensions.VMExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name:      "CAPZ.Windows.Bootstrapping",
+						Name:      "RunCommandWindows",
 						VMName:    "machine-name",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
-						Version:   "1.0",
+						Publisher: "Microsoft.CPlat.Core",
+						Version:   "1.1",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.WindowsBootstrapExtensionCommand,
+							"script": azure.WindowsBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",
@@ -858,12 +858,12 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 				},
 				&vmextensions.VMExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name:      "CAPZ.Linux.Bootstrapping",
+						Name:      "RunCommandLinux",
 						VMName:    "machine-name",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Publisher: "Microsoft.CPlat.Core",
 						Version:   "1.0",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+							"script": azure.LinuxBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",
