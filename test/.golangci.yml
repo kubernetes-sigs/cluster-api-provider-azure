@@ -1,0 +1,277 @@
+# This is a separate golangci-lint config for the test directory.
+# It uses standard linters only (no custom modules like kubeapilinter)
+# to ensure compatibility with the standard golangci-lint binary used
+# by golangci-lint-action in CI.
+version: "2"
+run:
+  build-tags:
+    - e2e
+  allow-parallel-runners: true
+linters:
+  default: none
+  enable:
+    - asasalint # warns about passing []any to func(...any) without expanding it
+    - asciicheck # non ascii symbols
+    - bidichk # dangerous unicode sequences
+    - bodyclose # unclosed http bodies
+    - containedctx # context.Context nested in a struct
+    - copyloopvar # copying loop variables
+    - dogsled # too many blank identifiers in assignments
+    - dupword # duplicate words
+    - durationcheck # multiplying two durations
+    - errcheck # unchecked errors
+    - errchkjson # invalid types passed to json encoder
+    - ginkgolinter # ginkgo and gomega
+    - gocritic # bugs, performance, style (we could add custom ones to this one)
+    - godot # checks that comments end in a period
+    - goprintffuncname # printft-like functions should be named with f at the end
+    - gosec # potential security problems
+    - govet # basically 'go vet'
+    - importas # consistent import aliases
+    - ineffassign # ineffectual assignments
+    - intrange # suggest using integer range in for loops
+    - loggercheck # check for even key/value pairs in logger calls
+    - misspell # spelling
+    - nakedret # naked returns (named return parameters and an empty return)
+    - nilerr # returning nil after checking err is not nil
+    - noctx # http requests without context.Context
+    - nolintlint # badly formatted nolint directives
+    - nosprintfhostport # using sprintf to construct host:port in a URL
+    - predeclared # shadowing predeclared identifiers
+    - revive # better version of golint
+    - staticcheck # some of staticcheck's rules
+    - thelper # test helpers not starting with t.Helper()
+    - unconvert # unnecessary type conversions
+    - unparam # unused function parameters
+    - unused # unused constants, variables,functions, types
+    - usestdlibvars # using variables/constants from the standard library
+    - usetesting # reports uses of functions with replacement inside the testing package
+    - whitespace # unnecessary newlines
+  settings:
+    ginkgolinter:
+      forbid-focus-container: true
+    gocritic:
+      disabled-checks:
+        - appendAssign
+        - dupImport # https://github.com/go-critic/go-critic/issues/845
+        - evalOrder
+        - ifElseChain
+        - octalLiteral
+        - regexpSimplify
+        - sloppyReassign
+        - truncateCmp
+        - typeDefFirst
+        - unnamedResult
+        - unnecessaryDefer
+        - whyNoLint
+        - wrapperFunc
+      enabled-tags:
+        - experimental
+    godot:
+      scope: toplevel
+      exclude:
+        - ^ \+.*
+        - ^ ANCHOR.*
+    gosec:
+      excludes:
+        - G307 # Deferring unsafe method "Close" on type "\*os.File"
+        - G108 # Profiling endpoint is automatically exposed on /debug/pprof
+        - G115 # integer overflow conversion int -> int32
+    importas:
+      alias:
+        # Kubernetes
+        - pkg: k8s.io/api/core/v1
+          alias: corev1
+        - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+          alias: apiextensionsv1
+        - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+          alias: metav1
+        - pkg: k8s.io/apimachinery/pkg/api/errors
+          alias: apierrors
+        - pkg: k8s.io/apimachinery/pkg/util/errors
+          alias: kerrors
+        # Controller Runtime
+        - pkg: sigs.k8s.io/controller-runtime
+          alias: ctrl
+        # CAPI
+        - pkg: sigs.k8s.io/cluster-api/api/core/v1beta2
+          alias: clusterv1
+        - pkg: sigs.k8s.io/cluster-api/api/core/v1beta1
+          alias: clusterv1beta1
+        - pkg: sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions
+          alias: v1beta1conditions
+        - pkg: sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2
+          alias: v1beta2conditions
+        - pkg: sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch
+          alias: v1beta1patch
+        # CAPBK
+        - pkg: sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2
+          alias: bootstrapv1
+        - pkg: sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta1
+          alias: bootstrapv1beta1
+        # CAPZ
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
+          alias: infrav1
+        # CAPZ exp
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
+          alias: infrav1exp
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/util/webhook
+          alias: webhookutils
+        # Azure
+        - pkg: github.com/Azure/go-autorest/autorest/azure
+          alias: azureautorest
+        # ASO
+        - pkg: github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601
+          alias: asoresourcesv1
+        # Azureutil
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/util/azure
+          alias: azureutil
+        # Deprecated
+        - pkg: github.com/Azure/go-autorest/autorest/to
+          alias: deprecated-use-k8s.io-utils-pointer
+      no-unaliased: true
+    nolintlint:
+      require-specific: true
+      allow-unused: false
+    revive:
+      rules:
+        # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+        #
+        # Rules in addition to the recommended configuration above.
+        #
+        - name: bool-literal-in-expr
+        - name: constant-logical-expr
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - dogsled
+          - godot
+        path: (^test/|_test.go$)
+      - path: (^test/|_test.go$)
+        text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
+      - text: should not use dot imports
+        source: \"github.com/onsi/(ginkgo/v2|gomega)\"
+      - linters:
+          - revive
+        text: exported (method|function|type|const) (.+) should have comment or be unexported
+        source: (func|type).*Fake.*
+      - linters:
+          - revive
+        path: fake_\.go
+        text: exported (method|function|type|const) (.+) should have comment or be unexported
+      # Dot imports for gomega and ginkgo are allowed
+      # within test files and test utils.
+      - linters:
+          - revive
+          - staticcheck
+        path: _test\.go
+        text: should not use dot imports
+      # for i = x; i < y; i++ {} is already optimal; Ignore this linter message
+      - linters:
+          - intrange
+        text: for loop can be changed to use an integer range
+      # Ignore the return value of below functions in test files
+      - linters:
+          - errcheck
+        path: (^test\/e2e\/.*\.go$|.*_test\.go$)
+        text: Error return value of (`os.Setenv`|`fmt.Fprintf`|`resp.Body.Close`|`os.Unsetenv`|`fmt.Fprintln`|`[\w\.]+\.Close`|`[\w\.]+\.Flush`|`[\w\.]+\.RemoveAll`) is not checked
+      # Do not validate file paths in tests
+      - linters:
+          - gosec
+        path: ^test\/e2e\/.*\.go$
+        text: 'G304: Potential file inclusion via variable'
+      # Ignore the elevated access that "others" have for dirs/files created in tests with 0755 permissions
+      - linters:
+          - gosec
+        path: ^test\/e2e\/.*\.go$
+        text: 'G301: Expect directory permissions to be 0750 or less'
+      # Ignore the elevated access that "group" and "others" have for dirs/files opened in tests with 0644 permissions
+      - linters:
+          - gosec
+        path: ^test\/e2e\/.*\.go$
+        text: 'G302: Expect file permissions to be 0600 or less'
+      # Ignore unused parameters in test files
+      - linters:
+          - revive
+        path: .*(_test|test)\.go$
+        text: '^unused-parameter: parameter ''.*'' seems to be unused, consider removing or renaming it as _$'
+      # Ignore adding package comments for all files.
+      - linters:
+          - revive
+        path: .*\.go$
+        text: '^package-comments: package comment should be of the form ".*"$'
+      - linters:
+          - revive
+        path: .*\.go$
+        text: 'package-comments: should have a package comment'
+      - linters:
+          - staticcheck
+        path: .*\.go$
+        text: 'ST1000: at least one file in a package should have a package comment'
+      - linters:
+          - staticcheck
+        path: .*\.go$
+        text: 'ST1000: package comment should be of the form ".*"$'
+      # Ignore Cluster API v1beta1 deprecations.
+      - linters:
+        - staticcheck
+        path: .*\.go$
+        text: 'SA1019: "sigs.k8s.io\/cluster-api/api/core/v1beta1" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      - linters:
+        - staticcheck
+        path: .*\.go$
+        text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+    paths:
+      - zz_generated\.(\w*)\.go$
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci # ensures imports are organized
+    - gofmt # warns about incorrect use of fmt functions
+    - goimports # import formatting
+  settings:
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - prefix(sigs.k8s.io/cluster-api-provider-azure) # Custom section: groups all imports with the specified Prefix.
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - zz_generated\.(\w*)\.go$
+      - third_party$
+      - builtin$
+      - examples$
