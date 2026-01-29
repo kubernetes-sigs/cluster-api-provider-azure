@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: {{.Namespace}}
+  labels:
+    app: cluster-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      serviceAccountName: cluster-autoscaler
+      containers:
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.33.3
+          command:
+            - /cluster-autoscaler
+            - --cloud-provider=clusterapi
+            - --node-group-auto-discovery=clusterapi:namespace={{.Namespace}},clusterName={{.ClusterName}}
+            - --kubeconfig=/etc/kubernetes/value
+            - --clusterapi-cloud-config-authoritative
+            - --scale-down-delay-after-add=1m
+            - --scale-down-unneeded-time=2m
+            - --scale-down-delay-after-delete=30s
+            - --max-node-provision-time=10m
+            - --balance-similar-node-groups
+            - --skip-nodes-with-system-pods=false
+            - --skip-nodes-with-local-storage=false
+            - --expander=random
+            - --v=4
+          env:
+            - name: CAPI_GROUP
+              value: "cluster.x-k8s.io"
+          volumeMounts:
+            - name: workload-kubeconfig
+              mountPath: /etc/kubernetes
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health-check
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: workload-kubeconfig
+          secret:
+            secretName: {{.ClusterName}}-kubeconfig
