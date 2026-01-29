@@ -173,8 +173,8 @@ linters:
       - linters:
           - dogsled
           - godot
-        path: (^test/|_test.go$)
-      - path: (^test/|_test.go$)
+        path: (^e2e/|^kubernetes/|_test\.go$)
+      - path: (^e2e/|^kubernetes/|_test\.go$)
         text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
       - text: should not use dot imports
         source: \"github.com/onsi/(ginkgo/v2|gomega)\"
@@ -200,22 +200,22 @@ linters:
       # Ignore the return value of below functions in test files
       - linters:
           - errcheck
-        path: (^test\/e2e\/.*\.go$|.*_test\.go$)
+        path: (^e2e\/.*\.go$|.*_test\.go$)
         text: Error return value of (`os.Setenv`|`fmt.Fprintf`|`resp.Body.Close`|`os.Unsetenv`|`fmt.Fprintln`|`[\w\.]+\.Close`|`[\w\.]+\.Flush`|`[\w\.]+\.RemoveAll`) is not checked
       # Do not validate file paths in tests
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G304: Potential file inclusion via variable'
       # Ignore the elevated access that "others" have for dirs/files created in tests with 0755 permissions
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G301: Expect directory permissions to be 0750 or less'
       # Ignore the elevated access that "group" and "others" have for dirs/files opened in tests with 0644 permissions
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G302: Expect file permissions to be 0600 or less'
       # Ignore unused parameters in test files
       - linters:
@@ -248,6 +248,9 @@ linters:
         - staticcheck
         path: .*\.go$
         text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      - linters:
+          - staticcheck
+        text: 'QF1008: could remove embedded field'
     paths:
       - zz_generated\.(\w*)\.go$
       - third_party$
