@@ -216,40 +216,28 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 		osType          string
 		cloud           string
 		vmName          string
-		cpuArchitecture string
 		expectedVersion string
 		expectNil       bool
 	}{
 		{
-			name:            "Linux OS, Public Cloud, x64 CPU Architecture",
+			name:            "Linux OS, Public Cloud",
 			osType:          LinuxOS,
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
-			cpuArchitecture: "x64",
 			expectedVersion: "1.0",
-		},
-		{
-			name:            "Linux OS, Public Cloud, ARM64 CPU Architecture",
-			osType:          LinuxOS,
-			cloud:           PublicCloudName,
-			vmName:          "test-vm",
-			cpuArchitecture: "Arm64",
-			expectedVersion: "1.1",
 		},
 		{
 			name:            "Windows OS, Public Cloud",
 			osType:          WindowsOS,
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
-			cpuArchitecture: "x64",
-			expectedVersion: "1.0",
+			expectedVersion: "1.1",
 		},
 		{
 			name:            "Invalid OS Type",
 			osType:          "invalid",
 			cloud:           PublicCloudName,
 			vmName:          "test-vm",
-			cpuArchitecture: "x64",
 			expectedVersion: "1.0",
 			expectNil:       true,
 		},
@@ -258,7 +246,6 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 			osType:          LinuxOS,
 			cloud:           "invalid",
 			vmName:          "test-vm",
-			cpuArchitecture: "x64",
 			expectedVersion: "1.0",
 			expectNil:       true,
 		},
@@ -267,7 +254,7 @@ func TestGetBootstrappingVMExtension(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			actualExtension := GetBootstrappingVMExtension(tc.osType, tc.cloud, tc.vmName, tc.cpuArchitecture)
+			actualExtension := GetBootstrappingVMExtension(tc.osType, tc.cloud, tc.vmName)
 			if tc.expectNil {
 				g.Expect(actualExtension).To(BeNil())
 			} else {

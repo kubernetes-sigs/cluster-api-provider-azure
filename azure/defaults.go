@@ -64,10 +64,10 @@ const (
 )
 
 const (
-	// BootstrappingExtensionLinux is the name of the Linux CAPZ bootstrapping VM extension.
+	// BootstrappingExtensionLinux is the name of the Linux bootstrapping VM extension.
 	BootstrappingExtensionLinux = "RunCommandLinux"
-	// BootstrappingExtensionWindows is the name of the Windows CAPZ bootstrapping VM extension.
-	BootstrappingExtensionWindows = "CAPZ.Windows.Bootstrapping"
+	// BootstrappingExtensionWindows is the name of the Windows bootstrapping VM extension.
+	BootstrappingExtensionWindows = "RunCommandWindows"
 )
 
 const (
@@ -309,12 +309,10 @@ func FleetID(subscriptionID, resourceGroup, fleetName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ContainerService/fleets/%s", subscriptionID, resourceGroup, fleetName)
 }
 
-// GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
-// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
-// https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows for Windows.
-// This extension allows running arbitrary scripts on the VM.
-// Its role is to detect and report Kubernetes bootstrap failure or success.
-func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpuArchitectureType string) *ExtensionSpec {
+// GetBootstrappingVMExtension returns the bootstrapping VM extension.
+// It uses the RunCommand extension (Microsoft.CPlat.Core) to run a script that
+// detects and reports Kubernetes bootstrap failure or success.
+func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {
 	// currently, the bootstrap extension is only available in AzurePublicCloud.
 	if osType == LinuxOS && cloud == PublicCloudName {
 		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
@@ -333,10 +331,10 @@ func GetBootstrappingVMExtension(osType string, cloud string, vmName string, cpu
 		return &ExtensionSpec{
 			Name:      BootstrappingExtensionWindows,
 			VMName:    vmName,
-			Publisher: "Microsoft.Azure.ContainerUpstream",
-			Version:   "1.0",
+			Publisher: "Microsoft.CPlat.Core",
+			Version:   "1.1",
 			ProtectedSettings: map[string]string{
-				"commandToExecute": WindowsBootstrapExtensionCommand,
+				"script": WindowsBootstrapExtensionCommand,
 			},
 		}
 	}

@@ -897,12 +897,12 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{
 				&scalesets.VMSSExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name:      "CAPZ.Linux.Bootstrapping",
+						Name:      "RunCommandLinux",
 						VMName:    "machinepool-name",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Publisher: "Microsoft.CPlat.Core",
 						Version:   "1.0",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+							"script": azure.LinuxBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",
@@ -975,13 +975,13 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{
 				&scalesets.VMSSExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name: "CAPZ.Windows.Bootstrapping",
+						Name: "RunCommandWindows",
 						// Note: machine pool names longer than 9 characters get truncated. See MachinePoolScope::Name() for more details.
 						VMName:    "winpool",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
-						Version:   "1.0",
+						Publisher: "Microsoft.CPlat.Core",
+						Version:   "1.1",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.WindowsBootstrapExtensionCommand,
+							"script": azure.WindowsBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",
@@ -1148,12 +1148,12 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 				},
 				&scalesets.VMSSExtensionSpec{
 					ExtensionSpec: azure.ExtensionSpec{
-						Name:      "CAPZ.Linux.Bootstrapping",
+						Name:      "RunCommandLinux",
 						VMName:    "machinepool-name",
-						Publisher: "Microsoft.Azure.ContainerUpstream",
+						Publisher: "Microsoft.CPlat.Core",
 						Version:   "1.0",
 						ProtectedSettings: map[string]string{
-							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+							"script": azure.LinuxBootstrapExtensionCommand,
 						},
 					},
 					ResourceGroup: "my-rg",

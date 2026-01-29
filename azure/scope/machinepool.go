@@ -867,8 +867,7 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	cpuArchitectureType, _ := m.cache.VMSKU.GetCapability(resourceskus.CPUArchitectureType)
-	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name(), cpuArchitectureType)
+	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
 
 	if bootstrapExtensionSpec != nil {
 		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
