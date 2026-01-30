@@ -647,7 +647,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(3))
-				g.Expect(amp.Spec.ProviderIDList).To(Equal([]string{"azure://foo/ampm0", "azure://foo/ampm1", "azure://foo/ampm2"}))
+				g.Expect(amp.Spec.ProviderIDList).To(HaveExactElements("azure://foo/ampm0", "azure://foo/ampm1", "azure://foo/ampm2"))
 			},
 		},
 		{
