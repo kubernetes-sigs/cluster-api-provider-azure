@@ -1195,7 +1195,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 func getReadyAzureMachinePoolMachines() []infrav1exp.AzureMachinePoolMachine {
 	machines := make([]infrav1exp.AzureMachinePoolMachine, 3)
 	succeeded := infrav1.Succeeded
-	for i := range 3 {
+	for i := range machines {
 		machines[i] = infrav1exp.AzureMachinePoolMachine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("ampm%d", i),
