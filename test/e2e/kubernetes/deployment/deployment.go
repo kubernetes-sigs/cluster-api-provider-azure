@@ -243,3 +243,14 @@ func (d *Builder) AddPodAntiAffinity(affinity corev1.PodAntiAffinity) *Builder {
 	d.deployment.Spec.Template.Spec.Affinity.PodAntiAffinity = &affinity
 	return d
 }
+
+// SetResourceRequests sets CPU and memory resource requests for the first container.
+func (d *Builder) SetResourceRequests(cpu, memory string) *Builder {
+	if len(d.deployment.Spec.Template.Spec.Containers) > 0 {
+		d.deployment.Spec.Template.Spec.Containers[0].Resources.Requests = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(cpu),
+			corev1.ResourceMemory: resource.MustParse(memory),
+		}
+	}
+	return d
+}

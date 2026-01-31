@@ -31,6 +31,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -1464,4 +1465,66 @@ spec:
 	})
 
 	// TODO: add a same test as above for a windows cluster
+
+	Context("Testing autoscaling from zero with Cluster Autoscaler [REQUIRED]", func() {
+		It("Scales MachineDeployment from 0 to 1+ when workload is scheduled", func() {
+			clusterName = getClusterName(clusterNamePrefix, "autoscale")
+
+			// Setup cleanup for Cluster Autoscaler ClusterRole/ClusterRoleBinding
+			additionalCleanup = func() {
+				By("Cleaning up Cluster Autoscaler ClusterRole and ClusterRoleBinding")
+				mgmtClient := bootstrapClusterProxy.GetClient()
+
+				// Delete ClusterRoles
+				clusterRoles := []string{
+					fmt.Sprintf("cluster-autoscaler-%s", clusterName),
+					fmt.Sprintf("cluster-autoscaler-management-%s", clusterName),
+				}
+
+				for _, name := range clusterRoles {
+					cr := &rbacv1.ClusterRole{}
+					cr.Name = name
+					_ = mgmtClient.Delete(ctx, cr)
+
+					crb := &rbacv1.ClusterRoleBinding{}
+					crb.Name = name
+					_ = mgmtClient.Delete(ctx, crb)
+				}
+			}
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(0), // No initial workers
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Testing autoscaling from zero functionality", func() {
+				AutoscalingFromZeroSpec(ctx, func() AutoscalingFromZeroSpecInput {
+					return AutoscalingFromZeroSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						Cluster:               result.Cluster,
+						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-autoscale"),
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })
