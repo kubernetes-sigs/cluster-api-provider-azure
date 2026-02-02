@@ -639,7 +639,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 		{
 			Name: "if there are three ready machines with matching labels, then should count them",
 			Setup: func(cb *fake.ClientBuilder) {
-				for _, machine := range getReadyAzureMachinePoolMachines(3) {
+				for _, machine := range getReadyAzureMachinePoolMachines() {
 					obj := machine
 					cb.WithObjects(&obj)
 				}
@@ -647,13 +647,13 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(3))
-				g.Expect(amp.Spec.ProviderIDList).To(ConsistOf("azure://foo/ampm0", "azure://foo/ampm1", "azure://foo/ampm2"))
+				g.Expect(amp.Spec.ProviderIDList).To(HaveExactElements("azure://foo/ampm0", "azure://foo/ampm1", "azure://foo/ampm2"))
 			},
 		},
 		{
 			Name: "should only count machines with matching machine pool label",
 			Setup: func(cb *fake.ClientBuilder) {
-				machines := getReadyAzureMachinePoolMachines(3)
+				machines := getReadyAzureMachinePoolMachines()
 				machines[0].Labels[infrav1exp.MachinePoolNameLabel] = "not_correct"
 				for _, machine := range machines {
 					obj := machine
@@ -668,7 +668,7 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 		{
 			Name: "should only count machines with matching cluster name label",
 			Setup: func(cb *fake.ClientBuilder) {
-				machines := getReadyAzureMachinePoolMachines(3)
+				machines := getReadyAzureMachinePoolMachines()
 				machines[0].Labels[clusterv1.ClusterNameLabel] = "not_correct"
 				for _, machine := range machines {
 					obj := machine
@@ -678,6 +678,32 @@ func TestMachinePoolScope_updateReplicasAndProviderIDs(t *testing.T) {
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(2))
+			},
+		},
+		{
+			Name: "providerIDList should be sorted for deterministic ordering",
+			Setup: func(cb *fake.ClientBuilder) {
+				// Create machines with provider IDs that would be unsorted if not explicitly sorted
+				machines := getReadyAzureMachinePoolMachines()
+				// Swap provider IDs to create non-alphabetical order: ampm2, ampm0, ampm1
+				machines[0].Spec.ProviderID = "azure://foo/ampm2"
+				machines[1].Spec.ProviderID = "azure://foo/ampm0"
+				machines[2].Spec.ProviderID = "azure://foo/ampm1"
+				for _, machine := range machines {
+					obj := machine
+					cb.WithObjects(&obj)
+				}
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(amp.Status.Replicas).To(BeEquivalentTo(3))
+				// Verify provider IDs are sorted alphabetically to ensure deterministic ordering
+				// and prevent continuous reconciliation due to order changes
+				g.Expect(amp.Spec.ProviderIDList).To(Equal([]string{
+					"azure://foo/ampm0",
+					"azure://foo/ampm1",
+					"azure://foo/ampm2",
+				}))
 			},
 		},
 	}
@@ -1166,10 +1192,10 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 	}
 }
 
-func getReadyAzureMachinePoolMachines(count int32) []infrav1exp.AzureMachinePoolMachine {
-	machines := make([]infrav1exp.AzureMachinePoolMachine, count)
+func getReadyAzureMachinePoolMachines() []infrav1exp.AzureMachinePoolMachine {
+	machines := make([]infrav1exp.AzureMachinePoolMachine, 3)
 	succeeded := infrav1.Succeeded
-	for i := 0; i < int(count); i++ {
+	for i := range machines {
 		machines[i] = infrav1exp.AzureMachinePoolMachine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("ampm%d", i),
