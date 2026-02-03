@@ -4,6 +4,7 @@ on:
   schedule:
     # Cron for every Monday at 12:00 UTC.
     - cron: "0 12 * * 1"
+  workflow_dispatch:
 
 # Remove all permissions from GITHUB_TOKEN except metadata.
 permissions: {}
@@ -13,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ main, release-1.21, release-1.20 ]
+        branch: [ main, release-1.22, release-1.21 ]
     name: Trivy
     runs-on: ubuntu-latest
     steps:
