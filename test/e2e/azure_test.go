@@ -34,6 +34,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	clusterctlconfig "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -1147,14 +1148,15 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterName = getClusterName(clusterNamePrefix, "cc")
 
 			// Init rke2 CP and bootstrap providers
+			rke2Version := "v0.21.1"
 			initInput := clusterctl.InitInput{
 				// pass reference to the management cluster hosting this test
 				KubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
 				// pass the clusterctl config file that points to the local provider repository created for this test
 				ClusterctlConfigPath: clusterctlConfigPath,
 				// setup the desired list of providers for a single-tenant management cluster
-				BootstrapProviders:    []string{"rke2"},
-				ControlPlaneProviders: []string{"rke2"},
+				BootstrapProviders:    []string{clusterctlconfig.RKE2BootstrapProviderName + ":" + rke2Version},
+				ControlPlaneProviders: []string{clusterctlconfig.RKE2ControlPlaneProviderName + ":" + rke2Version},
 				// setup clusterctl logs folder
 				LogFolder: filepath.Join(artifactFolder, "clusters", clusterName),
 			}
