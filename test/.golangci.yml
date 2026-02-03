@@ -1,3 +1,7 @@
+# This is a separate golangci-lint config for the test directory.
+# It uses standard linters only (no custom modules like kubeapilinter)
+# to ensure compatibility with the standard golangci-lint binary used
+# by golangci-lint-action in CI.
 version: "2"
 run:
   build-tags:
@@ -7,7 +11,6 @@ linters:
   default: none
   enable:
     - asasalint # warns about passing []any to func(...any) without expanding it
-    - kubeapilinter # validates Kubernetes API types against API conventions
     - asciicheck # non ascii symbols
     - bidichk # dangerous unicode sequences
     - bodyclose # unclosed http bodies
@@ -18,9 +21,7 @@ linters:
     - durationcheck # multiplying two durations
     - errcheck # unchecked errors
     - errchkjson # invalid types passed to json encoder
-    - exhaustruct # checks if all structure fields are initialized
     - ginkgolinter # ginkgo and gomega
-    - goconst # strings that can be replaced by constants
     - gocritic # bugs, performance, style (we could add custom ones to this one)
     - godot # checks that comments end in a period
     - goprintffuncname # printft-like functions should be named with f at the end
@@ -36,8 +37,6 @@ linters:
     - noctx # http requests without context.Context
     - nolintlint # badly formatted nolint directives
     - nosprintfhostport # using sprintf to construct host:port in a URL
-    # We don't want to use this one: https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/4703
-    # - prealloc # suggest preallocating slices
     - predeclared # shadowing predeclared identifiers
     - revive # better version of golint
     - staticcheck # some of staticcheck's rules
@@ -49,10 +48,6 @@ linters:
     - usetesting # reports uses of functions with replacement inside the testing package
     - whitespace # unnecessary newlines
   settings:
-    exhaustruct:
-      include:
-        # Hub ASO agent pools should be fully defined to prevent unnecessary updates
-        - .*storage\..*AgentPoolProfile$
     ginkgolinter:
       forbid-focus-container: true
     gocritic:
@@ -73,9 +68,6 @@ linters:
       enabled-tags:
         - experimental
     godot:
-      #   declarations - for top level declaration comments (default);
-      #   toplevel     - for top level comments;
-      #   all          - for all comments.
       scope: toplevel
       exclude:
         - ^ \+.*
@@ -141,27 +133,6 @@ linters:
     nolintlint:
       require-specific: true
       allow-unused: false
-    custom:
-      kubeapilinter:
-        type: module
-        path: sigs.k8s.io/kube-api-linter
-        description: Kube API Linter validates Kubernetes API types against API conventions
-        settings:
-          linters:
-            # Disable all linters by default and enable only specific ones.
-            # This allows gradual adoption of API conventions.
-            disable:
-              - "*"
-            enable:
-              # Enable linters with low/zero issue counts that enforce critical conventions
-              - duplicatemarkers  # Removes duplicate markers (1 issue, has auto-fix)
-              - jsontags          # Ensures proper JSON tag formatting
-              - nofloats          # Prevents float type usage
-              - nomaps            # Restricts map usage
-              - nonullable        # Prevents usage of the nullable marker 
-              - nophase           # Prevents Phase field usage
-              - notimestamp       # Prevents TimeStamp field usage
-          lintersConfig: {}
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
@@ -199,21 +170,11 @@ linters:
   exclusions:
     generated: lax
     rules:
-      # Only run kubeapilinter on API type files (not tests, webhooks, validation, conversion, defaults)
-      - linters:
-          - kubeapilinter
-        path-except: "^api/.*_types\\.go$|^exp/api/.*_types\\.go$|^api/.*/types\\.go$|^api/.*/types_.*\\.go$|^api/.*/consts\\.go$"
-      - path: (\w*)conversion.go
-        text: use underscores in Go names|receiver name (.+) should be consistent|methods on the same type should have the same receiver name
-      - path: mock(\w+)/doc.go$
-        text: use underscores in package names|don't use an underscore in package name
       - linters:
           - dogsled
-          - exhaustruct
-          - goconst
           - godot
-        path: (^test/|_test.go$)
-      - path: (^test/|_test.go$)
+        path: (^e2e/|^kubernetes/|_test\.go$)
+      - path: (^e2e/|^kubernetes/|_test\.go$)
         text: exported (.+) should have comment( \(or a comment on this block\))? or be unexported
       - text: should not use dot imports
         source: \"github.com/onsi/(ginkgo/v2|gomega)\"
@@ -232,42 +193,6 @@ linters:
           - staticcheck
         path: _test\.go
         text: should not use dot imports
-      # Exclude some packages or code to require comments, for example test code, or fake clients.
-      - linters:
-          - revive
-        # Ignoring stylistic checks for generated code
-        path: .*(api|types|test)\/.*\/conversion.*\.go$
-        # Checking if an error is nil to just after return the error or nil is redundant
-        text: 'if-return: redundant if ...; err != nil check, just return error instead'
-      - linters:
-          - revive
-        # Ignoring stylistic checks for generated code
-        path: .*(api|types|test)\/.*\/conversion.*\.go$
-        # Exported function and methods should have comments. This warns on undocumented exported functions and methods.
-        text: exported (method|function|type|const) (.+) should have comment or be unexported
-      - linters:
-          - revive
-        # Ignoring stylistic checks for generated code
-        path: .*(api|types)\/.*\/conversion.*\.go$
-        # By convention, receiver names in a method should reflect their identity.
-        text: 'receiver-naming: receiver name'
-      - linters:
-          - staticcheck
-        # Ignoring stylistic checks for generated code
-        path: .*(api|types)\/.*\/conversion.*\.go$
-        text: 'ST1016: methods on the same type should have the same receiver name'
-      - linters:
-          - staticcheck
-        text: 'QF1008: could remove embedded field'
-      # We don't care about defer in for loops in test files.
-      - linters:
-          - gocritic
-        path: _test\.go
-        text: 'deferInLoop: Possible resource leak, ''defer'' is called in the ''for'' loop'
-      # Ignore non-constant format string in call to condition utils
-      - linters:
-          - govet
-        text: non-constant format string in call to sigs\.k8s\.io\/cluster-api\/util\/conditions\.
       # for i = x; i < y; i++ {} is already optimal; Ignore this linter message
       - linters:
           - intrange
@@ -275,61 +200,45 @@ linters:
       # Ignore the return value of below functions in test files
       - linters:
           - errcheck
-        path: (^test\/e2e\/.*\.go$|.*_test\.go$)
+        path: (^e2e\/.*\.go$|.*_test\.go$)
         text: Error return value of (`os.Setenv`|`fmt.Fprintf`|`resp.Body.Close`|`os.Unsetenv`|`fmt.Fprintln`|`[\w\.]+\.Close`|`[\w\.]+\.Flush`|`[\w\.]+\.RemoveAll`) is not checked
       # Do not validate file paths in tests
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G304: Potential file inclusion via variable'
       # Ignore the elevated access that "others" have for dirs/files created in tests with 0755 permissions
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G301: Expect directory permissions to be 0750 or less'
       # Ignore the elevated access that "group" and "others" have for dirs/files opened in tests with 0644 permissions
       - linters:
           - gosec
-        path: ^test\/e2e\/.*\.go$
+        path: ^e2e\/.*\.go$
         text: 'G302: Expect file permissions to be 0600 or less'
-      # # Ignore unhandled errors in test files when using os.Setenv
-      # - linters:
-      #     - gosec
-      #   path: ^test\/e2e\/.*\.go$
-      #   text: 'G104: Errors unhandled.'
-      # # Ignore the unhandled errors on using os.Setenv in test files
-      # - linters:
-      #     - gosec
-      #   path: .*_test\.go$
-      #   text: 'G104: Errors unhandled.'
       # Ignore unused parameters in test files
       - linters:
           - revive
         path: .*(_test|test)\.go$
         text: '^unused-parameter: parameter ''.*'' seems to be unused, consider removing or renaming it as _$'
-      # Ignore adding package comments for all files. TODO: Ideally, we should add package comments to all the packages files.
+      # Ignore adding package comments for all files.
       - linters:
           - revive
         path: .*\.go$
         text: '^package-comments: package comment should be of the form ".*"$'
-      # Ignore adding package comments for all files. TODO: Ideally, we should add package comments to all the packages files.
       - linters:
           - revive
         path: .*\.go$
         text: 'package-comments: should have a package comment'
-      # Ignore adding package comments for all files. TODO: Ideally, we should add package comments to all the packages files.
       - linters:
           - staticcheck
         path: .*\.go$
         text: 'ST1000: at least one file in a package should have a package comment'
-      # Ignore adding package comments for all files. TODO: Ideally, we should add package comments to all the packages files.
       - linters:
           - staticcheck
         path: .*\.go$
         text: 'ST1000: package comment should be of the form ".*"$'
-      - linters:
-          - goconst
-        path: (.+)_test\.go
       # Ignore Cluster API v1beta1 deprecations.
       - linters:
         - staticcheck
@@ -339,13 +248,14 @@ linters:
         - staticcheck
         path: .*\.go$
         text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      - linters:
+          - staticcheck
+        text: 'QF1008: could remove embedded field'
     paths:
       - zz_generated\.(\w*)\.go$
       - third_party$
       - builtin$
       - examples$
-  # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most relevant
-  # changes in PRs and avoid nitpicking.
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

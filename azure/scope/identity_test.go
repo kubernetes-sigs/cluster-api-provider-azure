@@ -439,7 +439,7 @@ func TestGetTokenCredential(t *testing.T) {
 				},
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
-				ctx := context.Background()                      //nolint:usetesting
+				ctx := context.Background()
 				credsPath := "../../test/setup/credentials.json" //nolint:gosec
 				clientOptions := azcore.ClientOptions{
 					Cloud: cloud.Configuration{
