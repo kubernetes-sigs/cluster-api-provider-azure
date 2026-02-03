@@ -221,11 +221,15 @@ func (mw *azureMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj 
 		allErrs = append(allErrs, err)
 	}
 
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "disableVMBootstrapExtension"),
-		old.Spec.DisableVMBootstrapExtension,
-		m.Spec.DisableVMBootstrapExtension); err != nil {
-		allErrs = append(allErrs, err)
+	// Only validate immutability if the old value was explicitly set.
+	// This allows the transition from nil (old default) to true (new default) during upgrades.
+	if old.Spec.DisableVMBootstrapExtension != nil {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("spec", "disableVMBootstrapExtension"),
+			old.Spec.DisableVMBootstrapExtension,
+			m.Spec.DisableVMBootstrapExtension); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if len(allErrs) == 0 {

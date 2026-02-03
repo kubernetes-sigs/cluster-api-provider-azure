@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,12 +74,14 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 	subscriptionID := getSubscriptionID(Default)
 
 	if len(machineList.Items) > 0 {
-		By("Creating a mapping of machine IDs to array of expected VM extensions")
+		By("Creating a mapping of machine IDs to array of expected VM extensions and checking bootstrap extension setting")
 		expectedVMExtensionMap := make(map[string][]string)
+		bootstrapExtensionEnabled := make(map[string]bool)
 		for _, machine := range machineList.Items {
 			for _, extension := range machine.Spec.VMExtensions {
 				expectedVMExtensionMap[*machine.Spec.ProviderID] = append(expectedVMExtensionMap[*machine.Spec.ProviderID], extension.Name)
 			}
+			bootstrapExtensionEnabled[*machine.Spec.ProviderID] = !ptr.Deref(machine.Spec.DisableVMBootstrapExtension, true)
 		}
 
 		By("Creating a VM and VM extension client")
@@ -115,7 +118,12 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 				vmExtensionNames = append(vmExtensionNames, *vmExtension.Name)
 			}
 			osName := string(*machine.Properties.StorageProfile.OSDisk.OSType)
-			Expect(vmExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
+			bootstrapExtName := "CAPZ." + osName + ".Bootstrapping"
+			if bootstrapExtensionEnabled[*machine.ID] {
+				Expect(vmExtensionNames).To(ContainElements(bootstrapExtName))
+			} else {
+				Expect(vmExtensionNames).NotTo(ContainElements(bootstrapExtName))
+			}
 			Expect(vmExtensionNames).To(ContainElements(expectedVMExtensionMap[*machine.ID]))
 		}
 	}
@@ -173,8 +181,6 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 			for _, vmssExtension := range vmssExts {
 				vmssExtensionNames = append(vmssExtensionNames, *vmssExtension.Name)
 			}
-			osName := string(*machinePool.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType)
-			Expect(vmssExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
 			Expect(vmssExtensionNames).To(ContainElements(expectedVMSSExtensionMap[*machinePool.ID]))
 		}
 	}

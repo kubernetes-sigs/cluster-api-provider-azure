@@ -181,7 +181,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		SecurityProfile:             m.AzureMachine.Spec.SecurityProfile,
 		DiagnosticsProfile:          m.AzureMachine.Spec.Diagnostics,
 		DisableExtensionOperations:  ptr.Deref(m.AzureMachine.Spec.DisableExtensionOperations, false),
-		DisableVMBootstrapExtension: ptr.Deref(m.AzureMachine.Spec.DisableVMBootstrapExtension, false),
+		DisableVMBootstrapExtension: ptr.Deref(m.AzureMachine.Spec.DisableVMBootstrapExtension, true),
 		AdditionalTags:              m.AdditionalTags(),
 		AdditionalCapabilities:      m.AzureMachine.Spec.AdditionalCapabilities,
 		CapacityReservationGroupID:  m.GetCapacityReservationGroupID(),
