@@ -339,6 +339,90 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			}(),
 			wantErr: false,
 		},
+		{
+			name: "loadBalancingRule name is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							LoadBalancingRule: LoadBalancingRule{
+								Name: "old-rule-name",
+							},
+						},
+					},
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							LoadBalancingRule: LoadBalancingRule{
+								Name: "new-rule-name",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "healthProbe name is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							HealthProbe: HealthProbe{
+								Name: "old-probe-name",
+							},
+						},
+					},
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: &LoadBalancerSpec{
+							HealthProbe: HealthProbe{
+								Name: "new-probe-name",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "upgrade scenario - block setting custom names when old has empty fields",
+			oldCluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.LoadBalancingRule.Name = ""
+				cluster.Spec.NetworkSpec.APIServerLB.HealthProbe.Name = ""
+				return cluster
+			}(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.LoadBalancingRule.Name = "CustomLBRule"
+				cluster.Spec.NetworkSpec.APIServerLB.HealthProbe.Name = "CustomProbe"
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "upgrade scenario - allow setting default values when old has empty fields",
+			oldCluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.LoadBalancingRule.Name = ""
+				cluster.Spec.NetworkSpec.APIServerLB.HealthProbe.Name = ""
+				return cluster
+			}(),
+			cluster: func() *AzureCluster {
+				cluster := createValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.LoadBalancingRule.Name = DefaultLoadBalancingRuleName
+				cluster.Spec.NetworkSpec.APIServerLB.HealthProbe.Name = DefaultHealthProbeName
+				return cluster
+			}(),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
