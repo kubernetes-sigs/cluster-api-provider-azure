@@ -50,7 +50,7 @@ This must be done prior to generating release artifacts, so the release contains
 ### 2. Change milestone (skip for patch releases) (maintainer)
 
 - Create a [new GitHub milestone](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestones/new) for the next release.
-- Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release. 
+- Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release.
 
 #### Versioning
 
@@ -148,7 +148,16 @@ Go to [the Netlify branches and deploy contexts in site settings](https://app.ne
 
 Note: this step requires access to the Netlify site. If you don't have access, please ask a maintainer to update the branch.
 
-### 8. Announce the new release
+### 8. Update security scanner branches (skip for patch releases)
+
+Open a pull request to update the branches in the [weekly security scan workflow](../../.github/workflows/weekly-security-scan.yaml) to include the new release branch. For example, if the new release branch is `release-1.23`, update the `branch` matrix to:
+
+```yaml
+      matrix:
+        branch: [ main, release-1.23, release-1.22 ]
+```
+
+### 9. Announce the new release
 
 #### Patch Releases
 
