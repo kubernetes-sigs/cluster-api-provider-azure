@@ -387,6 +387,94 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
+		{
+			name: "azuremachinepool disableVMBootstrapExtension transition from nil to true is allowed",
+			oldAMP: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: nil,
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			amp: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(true),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azuremachinepool disableVMBootstrapExtension transition from nil to false is allowed",
+			oldAMP: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: nil,
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			amp: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(false),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azuremachinepool disableVMBootstrapExtension is immutable when previously set",
+			oldAMP: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(true),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			amp: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(false),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azuremachinepool disableVMBootstrapExtension unchanged when previously set",
+			oldAMP: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(true),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			amp: &AzureMachinePool{
+				Spec: AzureMachinePoolSpec{
+					Template: AzureMachinePoolMachineTemplate{
+						SSHPublicKey:                validSSHPublicKey,
+						DisableVMBootstrapExtension: ptr.To(true),
+						OSDisk:                      infrav1.OSDisk{CachingType: "None", OSType: "Linux"},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
