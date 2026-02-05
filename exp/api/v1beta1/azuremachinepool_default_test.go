@@ -401,6 +401,36 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 	}
 }
 
+func TestAzureMachinePool_SetDisableVMBootstrapExtensionDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test that nil defaults to true
+	machinePoolWithNil := &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Template: AzureMachinePoolMachineTemplate{},
+	}}
+	machinePoolWithNil.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(machinePoolWithNil.Spec.Template.DisableVMBootstrapExtension).ToNot(BeNil())
+	g.Expect(*machinePoolWithNil.Spec.Template.DisableVMBootstrapExtension).To(BeTrue())
+
+	// Test that explicit true is preserved
+	machinePoolWithTrue := &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Template: AzureMachinePoolMachineTemplate{
+			DisableVMBootstrapExtension: ptr.To(true),
+		},
+	}}
+	machinePoolWithTrue.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(*machinePoolWithTrue.Spec.Template.DisableVMBootstrapExtension).To(BeTrue())
+
+	// Test that explicit false is preserved
+	machinePoolWithFalse := &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Template: AzureMachinePoolMachineTemplate{
+			DisableVMBootstrapExtension: ptr.To(false),
+		},
+	}}
+	machinePoolWithFalse.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(*machinePoolWithFalse.Spec.Template.DisableVMBootstrapExtension).To(BeFalse())
+}
+
 func createMachinePoolWithSSHPublicKey(sshPublicKey string) *AzureMachinePool {
 	return hardcodedAzureMachinePoolWithSSHKey(sshPublicKey)
 }

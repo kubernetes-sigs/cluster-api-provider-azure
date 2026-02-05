@@ -136,12 +136,14 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 	Expect(err).NotTo(HaveOccurred())
 
 	if len(machinePoolList.Items) > 0 {
-		By("Creating a mapping of machine pool IDs to array of expected VMSS extensions")
+		By("Creating a mapping of machine pool IDs to array of expected VMSS extensions and checking bootstrap extension setting")
 		expectedVMSSExtensionMap := make(map[string][]string)
+		vmssBootstrapExtensionEnabled := make(map[string]bool)
 		for _, machinePool := range machinePoolList.Items {
 			for _, extension := range machinePool.Spec.Template.VMExtensions {
 				expectedVMSSExtensionMap[machinePool.Spec.ProviderID] = append(expectedVMSSExtensionMap[machinePool.Spec.ProviderID], extension.Name)
 			}
+			vmssBootstrapExtensionEnabled[machinePool.Spec.ProviderID] = !ptr.Deref(machinePool.Spec.Template.DisableVMBootstrapExtension, true)
 		}
 
 		By("Creating a VMSS and VMSS extension client")
@@ -180,6 +182,13 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 			var vmssExtensionNames []string
 			for _, vmssExtension := range vmssExts {
 				vmssExtensionNames = append(vmssExtensionNames, *vmssExtension.Name)
+			}
+			osName := string(*machinePool.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType)
+			bootstrapExtName := "CAPZ." + osName + ".Bootstrapping"
+			if vmssBootstrapExtensionEnabled[*machinePool.ID] {
+				Expect(vmssExtensionNames).To(ContainElements(bootstrapExtName))
+			} else {
+				Expect(vmssExtensionNames).NotTo(ContainElements(bootstrapExtName))
 			}
 			Expect(vmssExtensionNames).To(ContainElements(expectedVMSSExtensionMap[*machinePool.ID]))
 		}

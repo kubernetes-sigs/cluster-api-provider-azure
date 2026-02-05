@@ -887,7 +887,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		want             []azure.ResourceSpecGetter
 	}{
 		{
-			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Linux and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -896,6 +896,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							DisableVMBootstrapExtension: ptr.To(false),
 							OSDisk: infrav1.OSDisk{
 								OSType: "Linux",
 							},
@@ -964,7 +965,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Windows and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -974,6 +975,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							DisableVMBootstrapExtension: ptr.To(false),
 							OSDisk: infrav1.OSDisk{
 								OSType: "Windows",
 							},
@@ -1107,7 +1109,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If a custom VM extension is specified, it returns the custom VM extension",
+			name: "If a custom VM extension is specified and bootstrap extension is enabled, it returns both extensions",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -1116,6 +1118,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
 						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							DisableVMBootstrapExtension: ptr.To(false),
 							OSDisk: infrav1.OSDisk{
 								OSType: "Linux",
 							},
@@ -1176,6 +1179,70 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 						Version:   "1.0",
 						ProtectedSettings: map[string]string{
 							"commandToExecute": azure.LinuxBootstrapExtensionCommand,
+						},
+					},
+					ResourceGroup: "my-rg",
+				},
+			},
+		},
+		{
+			name: "If a custom VM extension is specified and bootstrap extension is disabled (default), it returns only the custom VM extension",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: &clusterv1.MachinePool{},
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machinepool-name",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							OSDisk: infrav1.OSDisk{
+								OSType: "Linux",
+							},
+							VMExtensions: []infrav1.VMExtension{
+								{
+									Name:      "custom-vm-extension",
+									Publisher: "Microsoft.Azure.Extensions",
+									Version:   "2.0",
+									Settings: map[string]string{
+										"timestamp": "1234567890",
+									},
+									ProtectedSettings: map[string]string{
+										"commandToExecute": "echo hello world",
+									},
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						cloudEnvironment: azure.PublicCloudName,
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "custom-vm-extension",
+						VMName:    "machinepool-name",
+						Publisher: "Microsoft.Azure.Extensions",
+						Version:   "2.0",
+						Settings: map[string]string{
+							"timestamp": "1234567890",
+						},
+						ProtectedSettings: map[string]string{
+							"commandToExecute": "echo hello world",
 						},
 					},
 					ResourceGroup: "my-rg",
