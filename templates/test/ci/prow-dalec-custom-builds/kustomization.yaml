@@ -25,6 +25,11 @@ patches:
     name: .*-control-plane
     namespace: default
     version: v1beta1
+- path: patches/node-subnet-natgateway-zones.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureCluster
+    version: v1beta1
 
 sortOptions:
   order: fifo

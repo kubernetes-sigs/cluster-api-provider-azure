@@ -28,6 +28,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
@@ -43,6 +45,7 @@ import (
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -242,6 +245,173 @@ func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string
 	return config
 }
 
+// setupAKSNetworking sets up VNet peering and private DNS for AKS management cluster scenarios.
+// This is required when using an AKS cluster as the management cluster because NRMS security rules
+// block direct Internet access to workload clusters.
+func setupAKSNetworking(ctx context.Context, clusterName string) {
+	aksResourceGroup := os.Getenv("AKS_RESOURCE_GROUP")
+	if aksResourceGroup == "" {
+		Logf("AKS_RESOURCE_GROUP not set, skipping VNet peering setup")
+		return
+	}
+
+	aksMgmtVnetName := os.Getenv("AKS_MGMT_VNET_NAME")
+	if aksMgmtVnetName == "" {
+		Logf("AKS_MGMT_VNET_NAME not set, skipping VNet peering setup")
+		return
+	}
+
+	azureLocation := os.Getenv("AZURE_LOCATION")
+	internalLBIP := os.Getenv("AZURE_INTERNAL_LB_PRIVATE_IP")
+	apiServerDNSSuffix := os.Getenv("APISERVER_LB_DNS_SUFFIX")
+	if apiServerDNSSuffix == "" {
+		apiServerDNSSuffix = util.RandomString(10)
+		Logf("Generated APISERVER_LB_DNS_SUFFIX: %s", apiServerDNSSuffix)
+	}
+
+	By(fmt.Sprintf("Setting up VNet peering and private DNS for cluster %s", clusterName))
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	subscriptionID := getSubscriptionID(Default)
+
+	// Create VNet peering
+	createVnetPeering(ctx, cred, subscriptionID, aksResourceGroup, aksMgmtVnetName, clusterName)
+
+	// Create private DNS zone
+	dnsZoneName := fmt.Sprintf("%s-%s.%s.cloudapp.azure.com", clusterName, apiServerDNSSuffix, azureLocation)
+	createPrivateDNSZone(ctx, cred, subscriptionID, aksResourceGroup, aksMgmtVnetName, clusterName, dnsZoneName, internalLBIP)
+
+	Logf("VNet peering and private DNS setup completed successfully")
+}
+
+// createVnetPeering creates bidirectional VNet peering between the AKS management cluster and workload cluster.
+func createVnetPeering(ctx context.Context, cred *azidentity.DefaultAzureCredential, subscriptionID, aksResourceGroup, aksMgmtVnetName, clusterName string) {
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	peeringClient, err := armnetwork.NewVirtualNetworkPeeringsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	workloadVnetName := fmt.Sprintf("%s-vnet", clusterName)
+
+	// Wait for workload VNet to exist
+	By("Waiting for workload cluster VNet to be created")
+	var workloadVnet armnetwork.VirtualNetwork
+	Eventually(func(g Gomega) {
+		resp, err := vnetClient.Get(ctx, clusterName, workloadVnetName, nil)
+		g.Expect(err).NotTo(HaveOccurred())
+		workloadVnet = resp.VirtualNetwork
+	}, "10m", "10s").Should(Succeed(), "Timed out waiting for workload VNet %s", workloadVnetName)
+
+	// Get management VNet
+	mgmtVnetResp, err := vnetClient.Get(ctx, aksResourceGroup, aksMgmtVnetName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Create peering from management to workload
+	By("Creating VNet peering from management to workload cluster")
+	mgmtToWorkloadPeering := armnetwork.VirtualNetworkPeering{
+		Properties: &armnetwork.VirtualNetworkPeeringPropertiesFormat{
+			RemoteVirtualNetwork: &armnetwork.SubResource{
+				ID: workloadVnet.ID,
+			},
+			AllowVirtualNetworkAccess: ptr.To(true),
+			AllowForwardedTraffic:     ptr.To(true),
+		},
+	}
+	mgmtPeeringPoller, err := peeringClient.BeginCreateOrUpdate(ctx, aksResourceGroup, aksMgmtVnetName, fmt.Sprintf("mgmt-to-%s", clusterName), mgmtToWorkloadPeering, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = mgmtPeeringPoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Create peering from workload to management
+	By("Creating VNet peering from workload to management cluster")
+	workloadToMgmtPeering := armnetwork.VirtualNetworkPeering{
+		Properties: &armnetwork.VirtualNetworkPeeringPropertiesFormat{
+			RemoteVirtualNetwork: &armnetwork.SubResource{
+				ID: mgmtVnetResp.ID,
+			},
+			AllowVirtualNetworkAccess: ptr.To(true),
+			AllowForwardedTraffic:     ptr.To(true),
+		},
+	}
+	workloadPeeringPoller, err := peeringClient.BeginCreateOrUpdate(ctx, clusterName, workloadVnetName, fmt.Sprintf("%s-to-mgmt", clusterName), workloadToMgmtPeering, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = workloadPeeringPoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	Logf("VNet peering completed successfully")
+}
+
+// createPrivateDNSZone creates a private DNS zone and links it to both VNets.
+func createPrivateDNSZone(ctx context.Context, cred *azidentity.DefaultAzureCredential, subscriptionID, aksResourceGroup, aksMgmtVnetName, clusterName, dnsZoneName, internalLBIP string) {
+	dnsClient, err := armprivatedns.NewPrivateZonesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	linkClient, err := armprivatedns.NewVirtualNetworkLinksClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	recordClient, err := armprivatedns.NewRecordSetsClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	workloadVnetID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s-vnet", subscriptionID, clusterName, clusterName)
+	mgmtVnetID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", subscriptionID, aksResourceGroup, aksMgmtVnetName)
+
+	// Create private DNS zone
+	By(fmt.Sprintf("Creating private DNS zone %s", dnsZoneName))
+	zonePoller, err := dnsClient.BeginCreateOrUpdate(ctx, clusterName, dnsZoneName, armprivatedns.PrivateZone{
+		Location: ptr.To("global"),
+	}, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = zonePoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Link to workload VNet
+	By("Linking private DNS zone to workload VNet")
+	workloadLinkPoller, err := linkClient.BeginCreateOrUpdate(ctx, clusterName, dnsZoneName, fmt.Sprintf("%s-link", clusterName), armprivatedns.VirtualNetworkLink{
+		Location: ptr.To("global"),
+		Properties: &armprivatedns.VirtualNetworkLinkProperties{
+			VirtualNetwork: &armprivatedns.SubResource{
+				ID: ptr.To(workloadVnetID),
+			},
+			RegistrationEnabled: ptr.To(false),
+		},
+	}, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = workloadLinkPoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Link to management VNet
+	By("Linking private DNS zone to management VNet")
+	mgmtLinkPoller, err := linkClient.BeginCreateOrUpdate(ctx, clusterName, dnsZoneName, "mgmt-link", armprivatedns.VirtualNetworkLink{
+		Location: ptr.To("global"),
+		Properties: &armprivatedns.VirtualNetworkLinkProperties{
+			VirtualNetwork: &armprivatedns.SubResource{
+				ID: ptr.To(mgmtVnetID),
+			},
+			RegistrationEnabled: ptr.To(false),
+		},
+	}, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = mgmtLinkPoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Create A record pointing to internal LB IP
+	By(fmt.Sprintf("Creating DNS A record pointing to %s", internalLBIP))
+	_, err = recordClient.CreateOrUpdate(ctx, clusterName, dnsZoneName, armprivatedns.RecordTypeA, "@", armprivatedns.RecordSet{
+		Properties: &armprivatedns.RecordSetProperties{
+			TTL: ptr.To[int64](3600),
+			ARecords: []*armprivatedns.ARecord{
+				{IPv4Address: ptr.To(internalLBIP)},
+			},
+		},
+	}, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	Logf("Private DNS zone setup completed successfully")
+}
+
 // EnsureControlPlaneInitialized waits for the cluster KubeadmControlPlane object to be initialized
 // and then waits for cloud-provider-azure components installed via CAAPH.
 // Fulfills the clusterctl.Waiter type so that it can be used as ApplyClusterTemplateAndWaitInput data
@@ -264,6 +434,10 @@ func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCu
 		g.Expect(getter.Get(ctx, key, kubeadmControlPlane)).To(Succeed(), "Failed to get KubeadmControlPlane object %s/%s", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
 		g.Expect(ptr.Deref(kubeadmControlPlane.Status.Initialization.ControlPlaneInitialized, false)).To(BeTrue(), "KubeadmControlPlane is not yet initialized")
 	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "KubeadmControlPlane object %s/%s was not initialized in time", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
+
+	// Setup VNet peering for AKS management cluster scenarios.
+	// This must happen after the workload cluster's VNet exists but before we try to access the API server.
+	setupAKSNetworking(ctx, input.ClusterName)
 
 	By("Ensuring API Server is reachable before applying Helm charts")
 	Eventually(func(g Gomega) {

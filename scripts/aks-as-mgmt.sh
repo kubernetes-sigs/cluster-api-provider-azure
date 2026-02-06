@@ -40,8 +40,9 @@ export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azur
 export REGISTRY="${REGISTRY:-}"
 export AKS_MGMT_VNET_NAME="${AKS_MGMT_VNET_NAME:-"${MGMT_CLUSTER_NAME}-vnet"}"
 export AKS_MGMT_VNET_CIDR="${AKS_MGMT_VNET_CIDR:-"20.255.0.0/16"}"
-export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR:-"20.255.254.0/24"}"
-export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP:-"20.255.254.100"}"
+# Service CIDR must NOT overlap with VNet CIDR to avoid Azure CNI routing conflicts
+export AKS_MGMT_SERVICE_CIDR="${AKS_MGMT_SERVICE_CIDR:-"10.0.0.0/16"}"
+export AKS_MGMT_DNS_SERVICE_IP="${AKS_MGMT_DNS_SERVICE_IP:-"10.0.0.10"}"
 export AKS_MGMT_SUBNET_NAME="${AKS_MGMT_SUBNET_NAME:-"${MGMT_CLUSTER_NAME}-subnet"}"
 export AKS_MGMT_SUBNET_CIDR="${AKS_MGMT_SUBNET_CIDR:-"20.255.0.0/24"}"
 
@@ -141,6 +142,7 @@ create_aks_cluster() {
       --node-vm-size "${AKS_NODE_VM_SIZE}"
       --node-resource-group "${AKS_NODE_RESOURCE_GROUP}"
       --vm-set-type VirtualMachineScaleSets
+      --zones 1 2 3
       --enable-managed-identity
     )
 

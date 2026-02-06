@@ -1,0 +1,13 @@
+# Patch to add NAT gateway with explicit availability zones to the node subnet.
+# This prevents InvalidAvailabilityZone errors when Azure auto-selects zone 4,
+# which doesn't exist in regions like eastus2 that only have zones 1, 2, 3.
+# The NAT gateway name follows CAPZ's default naming: ${CLUSTER_NAME}-node-natgw-1
+# (where -1 is the index for the first node subnet).
+- op: add
+  path: /spec/networkSpec/subnets/1/natGateway
+  value:
+    name: ${CLUSTER_NAME}-node-natgw-1
+    zones:
+    - "1"
+    - "2"
+    - "3"
