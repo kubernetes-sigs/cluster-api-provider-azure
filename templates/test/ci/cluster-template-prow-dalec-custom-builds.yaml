@@ -52,6 +52,12 @@ spec:
     - cidrBlocks:
       - ${AZURE_NODE_SUBNET_CIDR}
       name: node-subnet
+      natGateway:
+        name: ${CLUSTER_NAME}-node-natgw-1
+        zones:
+        - "1"
+        - "2"
+        - "3"
       role: node
     vnet:
       cidrBlocks:
