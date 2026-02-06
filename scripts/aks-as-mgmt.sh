@@ -142,6 +142,7 @@ create_aks_cluster() {
       --node-vm-size "${AKS_NODE_VM_SIZE}"
       --node-resource-group "${AKS_NODE_RESOURCE_GROUP}"
       --vm-set-type VirtualMachineScaleSets
+      --zones 1 2 3
       --enable-managed-identity
     )
 
