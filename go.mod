@@ -1,8 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.24.6
-
-toolchain go1.24.12
+go 1.25.0
 
 // Workaround for prometheus/common v0.66.0+ breaking change that causes panic
 // in cluster-api test framework's TextParser usage. Pin prometheus dependencies
