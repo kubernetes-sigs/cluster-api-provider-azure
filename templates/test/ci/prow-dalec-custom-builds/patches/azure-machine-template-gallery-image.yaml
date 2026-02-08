@@ -1,0 +1,10 @@
+# Patch to specify the CAPZ community gallery image version explicitly.
+# This allows KUBERNETES_VERSION to be set to the actual version being tested (DALEC_KUBERNETES_VERSION)
+# while using a different (newer) base node image from the community gallery.
+- op: add
+  path: /spec/template/spec/image
+  value:
+    computeGallery:
+      gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+      name: capi-ubun2-2404
+      version: ${CAPZ_GALLERY_VERSION}

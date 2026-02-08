@@ -713,8 +713,15 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 		Logf("No Windows machines required, using Linux versions only")
 	}
 
+	// Skip KUBERNETES_VERSION validation against gallery images when CAPZ_GALLERY_VERSION is set.
+	// This allows testing custom-built Kubernetes components (e.g., DALEC builds) with a version
+	// that doesn't exist in the community gallery, while using a different base node image.
 	if config.HasVariable(capi_e2e.KubernetesVersion) {
-		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersion)
+		if _, hasGalleryVersion := os.LookupEnv("CAPZ_GALLERY_VERSION"); !hasGalleryVersion {
+			resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersion)
+		} else {
+			Logf("Skipping KUBERNETES_VERSION validation: CAPZ_GALLERY_VERSION is set, using explicit gallery image version")
+		}
 	}
 	if config.HasVariable(capi_e2e.KubernetesVersionUpgradeFrom) {
 		resolveKubernetesVersion(config, versions, capi_e2e.KubernetesVersionUpgradeFrom)
