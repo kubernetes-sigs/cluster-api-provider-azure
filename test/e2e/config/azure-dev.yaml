@@ -219,6 +219,10 @@ variables:
   AKS_KUBERNETES_VERSION_UPGRADE_FROM: "latest-1"
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-stable-1.33}"
   KUBERNETES_VERSION_API_UPGRADE_FROM: "v1.32.10"
+  # CAPZ_GALLERY_VERSION specifies the community gallery image version for the base node image.
+  # This is separate from KUBERNETES_VERSION to allow testing custom Kubernetes builds with a
+  # newer base image. Falls back to KUBERNETES_VERSION if not set.
+  CAPZ_GALLERY_VERSION: "${CAPZ_GALLERY_VERSION:-${KUBERNETES_VERSION:-stable-1.33}}"
   FLATCAR_VERSION: "${FLATCAR_VERSION:-latest}"
   ETCD_VERSION_UPGRADE_TO: "" # Use default
   COREDNS_VERSION_UPGRADE_TO: "" # Use default

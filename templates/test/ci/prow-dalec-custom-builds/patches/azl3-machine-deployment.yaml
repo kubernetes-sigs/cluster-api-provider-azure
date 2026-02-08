@@ -96,33 +96,70 @@ spec:
           export KUBECTL_REVISION="${KUBECTL_REVISION:-""}"
           export KUBELET_REVISION="${KUBELET_REVISION:-""}"
 
-          systemctl stop kubelet
-
           BASE_URL="https://kubernetesreleases.blob.core.windows.net/dalec-packages"
           VERSION="${DALEC_KUBERNETES_VERSION}"
           VERSION=$${VERSION#v}
           OS_VERSION="azl3"
           ARCH="x86_64"
 
-          # Build lists of binaries to replace based on what's set
-          declare -a BINARIES=()
-          declare -A RPM_RELEASES=()
+          # Check if ANY revision is set - if so, we need to replace ALL binaries
+          # to ensure version consistency (kubeadm requires all components to be same version)
+          ANY_REVISION_SET="false"
+          [[ -n "${KUBEADM_REVISION}" ]] && ANY_REVISION_SET="true"
+          [[ -n "${KUBECTL_REVISION}" ]] && ANY_REVISION_SET="true"
+          [[ -n "${KUBELET_REVISION}" ]] && ANY_REVISION_SET="true"
 
-          [[ -n "${KUBEADM_REVISION}" ]] && BINARIES+=("kubeadm") && RPM_RELEASES["kubeadm"]="$${KUBEADM_REVISION}.$${OS_VERSION}"
-          [[ -n "${KUBECTL_REVISION}" ]] && BINARIES+=("kubectl") && RPM_RELEASES["kubectl"]="$${KUBECTL_REVISION}.$${OS_VERSION}"
-          [[ -n "${KUBELET_REVISION}" ]] && BINARIES+=("kubelet") && RPM_RELEASES["kubelet"]="$${KUBELET_REVISION}.$${OS_VERSION}"
-
-          # Skip if nothing to replace (check first element)
-          if [[ -z "$${BINARIES[0]:-}" ]]; then
+          if [[ "$${ANY_REVISION_SET}" != "true" ]]; then
             echo "No *_REVISION variables set. Skipping binary replacement."
-            systemctl start kubelet
             exit 0
           fi
 
-          echo "Replacing binaries: $${BINARIES[*]}"
+          echo "At least one revision is set. Replacing ALL binaries to ensure version consistency."
+          systemctl stop kubelet
 
-          for BINARY in "$${BINARIES[@]}"; do
-            RPM_RELEASE="$${RPM_RELEASES[$${BINARY}]}"
+          # All binaries that must be replaced for version consistency
+          ALL_BINARIES=("kubeadm" "kubectl" "kubelet")
+
+          # Function to find an available revision for a binary (RPM format)
+          find_available_revision() {
+            local binary="$$1"
+            local base_url="$$2"
+            local version="$$3"
+            local os_version="$$4"
+            local arch="$$5"
+
+            # Try revisions from 10 down to 1
+            for rev in $(seq 10 -1 1); do
+              local rpm_release="$${rev}.$${os_version}"
+              local rpm_url="$${base_url}/$${binary}/$${version}/$${os_version}/$${arch}/$${binary}-$${version}-$${rpm_release}.$${arch}.rpm"
+              if curl --head --silent --fail "$${rpm_url}" > /dev/null 2>&1; then
+                echo "$${rev}"
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          for BINARY in "$${ALL_BINARIES[@]}"; do
+            # Get the revision for this binary (from env var or find available)
+            REVISION=""
+            case "$${BINARY}" in
+              kubeadm) REVISION="${KUBEADM_REVISION}" ;;
+              kubectl) REVISION="${KUBECTL_REVISION}" ;;
+              kubelet) REVISION="${KUBELET_REVISION}" ;;
+            esac
+
+            if [[ -z "$${REVISION}" ]]; then
+              echo "* $${BINARY}: no revision specified, finding available revision..."
+              REVISION=$(find_available_revision "$${BINARY}" "$${BASE_URL}" "$${VERSION}" "$${OS_VERSION}" "$${ARCH}" || true)
+              if [[ -z "$${REVISION}" ]]; then
+                echo "ERROR: Could not find any available revision for $${BINARY} version $${VERSION}"
+                exit 1
+              fi
+              echo "* $${BINARY}: found available revision $${REVISION}"
+            fi
+
+            RPM_RELEASE="$${REVISION}.$${OS_VERSION}"
             echo "* downloading and extracting binary: $${BINARY} $${VERSION} with rpm release $${RPM_RELEASE}"
             RPM_FILE="/tmp/$${BINARY}-$${VERSION}-$${RPM_RELEASE}.$${ARCH}.rpm"
             RPM_URL="$${BASE_URL}/$${BINARY}/$${VERSION}/$${OS_VERSION}/$${ARCH}/$${BINARY}-$${VERSION}-$${RPM_RELEASE}.$${ARCH}.rpm"
@@ -152,9 +189,9 @@ spec:
           systemctl restart kubelet
 
           # Print versions
-          [[ " $${BINARIES[*]} " =~ " kubeadm " ]] && echo "kubeadm version: $(kubeadm version -o=short)"
-          [[ " $${BINARIES[*]} " =~ " kubectl " ]] && echo "kubectl version: $(kubectl version --client=true)"
-          [[ " $${BINARIES[*]} " =~ " kubelet " ]] && echo "kubelet version: $(kubelet --version)"
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true)"
+          echo "kubelet version: $(kubelet --version)"
         path: /opt/install-custom-k8s-binaries.sh
         owner: "root:root"
         permissions: "0744"
