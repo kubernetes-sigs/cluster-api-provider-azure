@@ -343,7 +343,7 @@ spec:
         - name: name
           value: deprecated-image-check
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-deprecated-image-check:0.5@sha256:462baed733dfc38aca5395499e92f19b6f13a74c2e88fe5d86c3cffa2f899b57
+          value: quay.io/konflux-ci/tekton-catalog/task-deprecated-image-check:0.5@sha256:e3a55ccdf1091b4a35507f9ee2d1918d8e89a5f96babcb5486b491226da03d6f
         - name: kind
           value: task
         resolver: bundles
@@ -628,7 +628,7 @@ spec:
         - name: name
           value: rpms-signature-scan
         - name: bundle
-          value: quay.io/konflux-ci/konflux-vanguard/task-rpms-signature-scan:0.2@sha256:7a7a2f0b6d0ffc590530289d3b8bad3b45c59ef338cb3c8d350038e7537f405f
+          value: quay.io/konflux-ci/konflux-vanguard/task-rpms-signature-scan:0.2@sha256:2f3015ac7a642ea7f104d2194a8cb45921570f9539c6604ddcb5f62796f22a53
         - name: kind
           value: task
         resolver: bundles
