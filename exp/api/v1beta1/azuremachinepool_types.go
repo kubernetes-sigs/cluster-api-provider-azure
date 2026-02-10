@@ -101,6 +101,11 @@ type (
 		// +optional
 		VMExtensions []infrav1.VMExtension `json:"vmExtensions,omitempty"`
 
+		// DisableVMBootstrapExtension specifies whether the VM bootstrap extension should be disabled on the virtual machine scale set.
+		// Use this setting if you want to disable only the bootstrapping extension and not all extensions.
+		// +optional
+		DisableVMBootstrapExtension *bool `json:"disableVMBootstrapExtension,omitempty"`
+
 		// NetworkInterfaces specifies a list of network interface configurations.
 		// If left unspecified, the VM will get a single network interface with a
 		// single IPConfig in the subnet specified in the cluster's node subnet field.

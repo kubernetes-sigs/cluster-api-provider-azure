@@ -27,6 +27,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -120,6 +121,13 @@ func (s *AzureMachineSpec) SetSpotEvictionPolicyDefaults() {
 			defaultPolicy = SpotEvictionPolicyDelete
 		}
 		s.SpotVMOptions.EvictionPolicy = &defaultPolicy
+	}
+}
+
+// SetDisableVMBootstrapExtensionDefaults sets the default for DisableVMBootstrapExtension.
+func (s *AzureMachineSpec) SetDisableVMBootstrapExtensionDefaults() {
+	if s.DisableVMBootstrapExtension == nil {
+		s.DisableVMBootstrapExtension = ptr.To(true)
 	}
 }
 
@@ -243,6 +251,7 @@ func (m *AzureMachine) SetDefaults(client client.Client) error {
 	m.Spec.SetSpotEvictionPolicyDefaults()
 	m.Spec.SetDiagnosticsDefaults()
 	m.Spec.SetNetworkInterfacesDefaults()
+	m.Spec.SetDisableVMBootstrapExtensionDefaults()
 
 	return kerrors.NewAggregate(errs)
 }
