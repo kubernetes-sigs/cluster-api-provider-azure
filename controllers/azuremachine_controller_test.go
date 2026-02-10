@@ -617,7 +617,7 @@ func getFakeAzureMachine(changes ...func(*infrav1.AzureMachine)) *infrav1.AzureM
 			},
 		},
 		Spec: infrav1.AzureMachineSpec{
-			VMSize: "Standard_D2s_v3",
+			VMSize: "Standard_D2ds_v5",
 		},
 	}
 	for _, change := range changes {
