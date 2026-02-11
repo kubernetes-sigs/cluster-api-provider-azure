@@ -25,6 +25,21 @@ patches:
     name: .*-control-plane
     namespace: default
     version: v1beta1
+# Patch to use CAPZ_GALLERY_VERSION for the base node image while allowing
+# KUBERNETES_VERSION to be set to the actual version being tested
+- path: patches/azure-machine-template-gallery-image.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    name: .*-control-plane
+    version: v1beta1
+- path: patches/azure-machine-template-gallery-image.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    kind: AzureMachineTemplate
+    # Match -md-0 but not -azl3-md-0
+    name: ^[^-]*-md-0$
+    version: v1beta1
 
 sortOptions:
   order: fifo

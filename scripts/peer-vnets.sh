@@ -401,22 +401,37 @@ main() {
         print_info "Skipping peer_vnets as requested via SKIP_PEER_VNETS."
     fi
 
-    # wait for controlplane of the workload cluster to be ready and then create the private DNS zone
+    # Create private DNS zone so management cluster can reach workload cluster via internal LB
+    # This is required because the kubeconfig uses the public FQDN which resolves to
+    # the public IP (blocked by NRMS rules). The private DNS zone resolves the same
+    # FQDN to the internal LB IP, allowing the management cluster to reach the workload
+    # cluster's API server via the peered VNet.
     # SKIP_CREATE_PRIVATE_DNS_ZONE can be set to true to skip the private DNS zone creation
     if [ "${SKIP_CREATE_PRIVATE_DNS_ZONE:-false}" != "true" ]; then
-        wait_for_controlplane_ready
         create_private_dns_zone
     else
         print_header "Skipping Private DNS Zone Creation"
         print_info "Skipping create_private_dns_zone as requested via SKIP_CREATE_PRIVATE_DNS_ZONE."
     fi
 
+    # Fix NSG rules BEFORE waiting for control plane to be ready.
+    # The node won't become Ready until Calico is installed, and Calico installation
+    # by CAAPH (Helm addon controller) may require the NSG rules to be fixed first.
     # SKIP_NSG_RULES can be set to true to skip the NSG rule checking and updates
     if [ "${SKIP_NSG_RULES:-false}" != "true" ]; then
         wait_and_fix_nsg_rules
     else
         print_header "Skipping NSG Rule Updates"
         print_info "Skipping wait_and_fix_nsg_rules as requested via SKIP_NSG_RULES."
+    fi
+
+    # Wait for control plane to be ready AFTER NSG rules are fixed
+    # SKIP_WAIT_FOR_CONTROLPLANE can be set to true to skip waiting
+    if [ "${SKIP_WAIT_FOR_CONTROLPLANE:-false}" != "true" ]; then
+        wait_for_controlplane_ready
+    else
+        print_header "Skipping Control Plane Wait"
+        print_info "Skipping wait_for_controlplane_ready as requested via SKIP_WAIT_FOR_CONTROLPLANE."
     fi
 }
 
