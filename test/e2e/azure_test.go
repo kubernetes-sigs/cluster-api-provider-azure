@@ -281,36 +281,6 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			By("Verifying AzureMachineTemplate capacity is populated for autoscaling from zero", func() {
-				azureMachineTemplateList := &infrav1.AzureMachineTemplateList{}
-				err := bootstrapClusterProxy.GetClient().List(ctx, azureMachineTemplateList, client.InNamespace(namespace.Name))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(azureMachineTemplateList.Items).NotTo(BeEmpty(), "Expected at least one AzureMachineTemplate")
-
-				// Verify all templates have capacity populated with CPU and Memory
-				Expect(azureMachineTemplateList.Items).To(HaveEach(
-					HaveField("Status.Capacity", And(
-						HaveKey(corev1.ResourceCPU),
-						HaveKey(corev1.ResourceMemory),
-					)),
-				), "Expected all AzureMachineTemplate to have capacity populated")
-
-				// Verify all templates have nodeInfo populated with valid architecture and OS
-				Expect(azureMachineTemplateList.Items).To(HaveEach(
-					And(
-						HaveField("Status.NodeInfo", Not(BeNil())),
-						HaveField("Status.NodeInfo.Architecture", Or(
-							Equal(infrav1.ArchitectureAmd64),
-							Equal(infrav1.ArchitectureArm64),
-						)),
-						HaveField("Status.NodeInfo.OperatingSystem", Or(
-							Equal(infrav1.OperatingSystemLinux),
-							Equal(infrav1.OperatingSystemWindows),
-						)),
-					),
-				), "Expected all AzureMachineTemplate to have nodeInfo populated")
-			})
-
 			By("PASSED!")
 		})
 	})
@@ -1522,6 +1492,36 @@ spec:
 						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-autoscale"),
 					}
 				})
+			})
+
+			By("Verifying AzureMachineTemplate capacity is populated for autoscaling from zero", func() {
+				azureMachineTemplateList := &infrav1.AzureMachineTemplateList{}
+				err := bootstrapClusterProxy.GetClient().List(ctx, azureMachineTemplateList, client.InNamespace(namespace.Name))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(azureMachineTemplateList.Items).NotTo(BeEmpty(), "Expected at least one AzureMachineTemplate")
+
+				// Verify all templates have capacity populated with CPU and Memory
+				Expect(azureMachineTemplateList.Items).To(HaveEach(
+					HaveField("Status.Capacity", And(
+						HaveKey(corev1.ResourceCPU),
+						HaveKey(corev1.ResourceMemory),
+					)),
+				), "Expected all AzureMachineTemplate to have capacity populated")
+
+				// Verify all templates have nodeInfo populated with valid architecture and OS
+				Expect(azureMachineTemplateList.Items).To(HaveEach(
+					And(
+						HaveField("Status.NodeInfo", Not(BeNil())),
+						HaveField("Status.NodeInfo.Architecture", Or(
+							Equal(infrav1.ArchitectureAmd64),
+							Equal(infrav1.ArchitectureArm64),
+						)),
+						HaveField("Status.NodeInfo.OperatingSystem", Or(
+							Equal(infrav1.OperatingSystemLinux),
+							Equal(infrav1.OperatingSystemWindows),
+						)),
+					),
+				), "Expected all AzureMachineTemplate to have nodeInfo populated")
 			})
 
 			By("PASSED!")
