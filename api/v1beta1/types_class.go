@@ -252,6 +252,16 @@ type AzureManagedControlPlaneClassSpec struct {
 	// +kubebuilder:default:=false
 	// +optional
 	EnablePreviewFeatures *bool `json:"enablePreviewFeatures,omitempty"`
+
+	// DiskEncryptionSetID is the ID of the disk encryption set to use for enabling encryption at rest
+	// for the cluster OS disks.
+	// Format: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/diskEncryptionSets/{encryptionSetName}"
+	// See also [AKS doc].
+	//
+	// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys
+	// Immutable.
+	// +optional
+	DiskEncryptionSetID *string `json:"diskEncryptionSetID,omitempty"`
 }
 
 // ManagedClusterAutoUpgradeProfile defines the auto upgrade profile for a managed cluster.

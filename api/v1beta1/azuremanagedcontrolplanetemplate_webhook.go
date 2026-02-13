@@ -128,6 +128,13 @@ func (mcpw *azureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Co
 		allErrs = append(allErrs, err)
 	}
 
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "diskEncryptionSetID"),
+		old.Spec.Template.Spec.DiskEncryptionSetID,
+		mcp.Spec.Template.Spec.DiskEncryptionSetID); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
 	if old.Spec.Template.Spec.AADProfile != nil {
 		if mcp.Spec.Template.Spec.AADProfile == nil {
 			allErrs = append(allErrs,

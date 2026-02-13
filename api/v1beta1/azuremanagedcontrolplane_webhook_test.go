@@ -2633,6 +2633,30 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "AzureManagedControlPlane DiskEncryptionSetID is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DiskEncryptionSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1"),
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
+				Spec: AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
+						DiskEncryptionSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des2"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "NetworkPluginMode cannot change to \"overlay\" when NetworkPolicy is set",
 			oldAMCP: &AzureManagedControlPlane{
 				ObjectMeta: metav1.ObjectMeta{

@@ -307,6 +307,16 @@ spec:
                           credentials for this cluster when set. Expected to only
                           be used for AAD clusters.
                         type: boolean
+                      diskEncryptionSetID:
+                        description: |-
+                          DiskEncryptionSetID is the ID of the disk encryption set to use for enabling encryption at rest
+                          for the cluster OS disks.
+                          Format: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/diskEncryptionSets/{encryptionSetName}"
+                          See also [AKS doc].
+
+                          [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys
+                          Immutable.
+                        type: string
                       dnsServiceIP:
                         description: |-
                           DNSServiceIP is an IP address assigned to the Kubernetes DNS service.

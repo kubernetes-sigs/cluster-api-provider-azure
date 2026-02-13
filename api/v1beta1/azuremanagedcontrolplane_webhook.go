@@ -131,6 +131,7 @@ func (mw *azureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, old
 		{field.NewPath("spec", "loadBalancerSKU"), old.Spec.LoadBalancerSKU, m.Spec.LoadBalancerSKU},
 		{field.NewPath("spec", "httpProxyConfig"), old.Spec.HTTPProxyConfig, m.Spec.HTTPProxyConfig},
 		{field.NewPath("spec", "azureEnvironment"), old.Spec.AzureEnvironment, m.Spec.AzureEnvironment},
+		{field.NewPath("spec", "diskEncryptionSetID"), old.Spec.DiskEncryptionSetID, m.Spec.DiskEncryptionSetID},
 	}
 
 	for _, f := range immutableFields {
