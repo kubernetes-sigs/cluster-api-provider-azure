@@ -139,6 +139,16 @@ func TestControlPlaneTemplateUpdateWebhook(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "azuremanagedcontrolplanetemplate DiskEncryptionSetID is immutable",
+			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.DiskEncryptionSetID = ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1")
+			}),
+			controlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
+				cpt.Spec.Template.Spec.DiskEncryptionSetID = ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des2")
+			}),
+			wantErr: true,
+		},
+		{
 			name: "cannot disable AADProfile",
 			oldControlPlaneTemplate: getAzureManagedControlPlaneTemplate(func(cpt *AzureManagedControlPlaneTemplate) {
 				cpt.Spec.Template.Spec.AADProfile = &AADProfile{

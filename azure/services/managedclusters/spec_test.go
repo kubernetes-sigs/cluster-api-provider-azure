@@ -110,6 +110,7 @@ func TestParameters(t *testing.T) {
 			},
 			DNSPrefix:            ptr.To("dns prefix"),
 			DisableLocalAccounts: ptr.To(true),
+			DiskEncryptionSetID:  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Compute/diskEncryptionSets/des",
 			SecurityProfile: &ManagedClusterSecurityProfile{
 				AzureKeyVaultKms: &AzureKeyVaultKms{
 					Enabled:               ptr.To(true),
@@ -172,7 +173,10 @@ func TestParameters(t *testing.T) {
 				AutoUpgradeProfile: &asocontainerservicev1.ManagedClusterAutoUpgradeProfile{
 					UpgradeChannel: ptr.To(asocontainerservicev1.ManagedClusterAutoUpgradeProfile_UpgradeChannel_Rapid),
 				},
-				AzureName:            "name",
+				AzureName: "name",
+				DiskEncryptionSetReference: &genruntime.ResourceReference{
+					ARMID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Compute/diskEncryptionSets/des",
+				},
 				DisableLocalAccounts: ptr.To(true),
 				DnsPrefix:            ptr.To("dns prefix"),
 				EnableRBAC:           ptr.To(true),
