@@ -1260,6 +1260,87 @@ func TestManagedControlPlaneScope_AutoUpgradeProfile(t *testing.T) {
 	}
 }
 
+func TestManagedControlPlaneScope_DiskEncryptionSetID(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    ManagedControlPlaneScopeParams
+		expected string
+	}{
+		{
+			name: "Without DiskEncryptionSetID",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+					},
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "With DiskEncryptionSetID",
+			input: ManagedControlPlaneScopeParams{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+				},
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID:      "00000000-0000-0000-0000-000000000000",
+							DiskEncryptionSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1"),
+						},
+					},
+				},
+				ManagedMachinePools: []ManagedMachinePool{
+					{
+						MachinePool:      getMachinePool("pool0"),
+						InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+					},
+				},
+			},
+			expected: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			g := NewWithT(t)
+			s := &ManagedControlPlaneScope{
+				ControlPlane: c.input.ControlPlane,
+				Cluster:      c.input.Cluster,
+			}
+			managedClusterGetter := s.ManagedClusterSpec()
+			managedCluster, ok := managedClusterGetter.(*managedclusters.ManagedClusterSpec)
+			g.Expect(ok).To(BeTrue())
+			g.Expect(managedCluster.DiskEncryptionSetID).To(Equal(c.expected))
+		})
+	}
+}
+
 func TestManagedControlPlaneScope_GroupSpecs(t *testing.T) {
 	cases := []struct {
 		name     string
