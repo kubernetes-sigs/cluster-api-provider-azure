@@ -316,6 +316,7 @@ spec:
 
                           [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys
                           Immutable.
+                        pattern: (?i)^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft\.Compute/diskEncryptionSets/[^/]+$
                         type: string
                       dnsServiceIP:
                         description: |-

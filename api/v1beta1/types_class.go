@@ -260,6 +260,7 @@ type AzureManagedControlPlaneClassSpec struct {
 	//
 	// [AKS doc]: https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys
 	// Immutable.
+	// +kubebuilder:validation:Pattern=`(?i)^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft\.Compute/diskEncryptionSets/[^/]+$`
 	// +optional
 	DiskEncryptionSetID *string `json:"diskEncryptionSetID,omitempty"`
 }
