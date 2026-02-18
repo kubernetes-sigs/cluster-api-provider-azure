@@ -49,10 +49,6 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     apiServerLB:
-      availabilityZones:
-      - "1"
-      - "2"
-      - "3"
       frontendIPs:
       - name: ${CLUSTER_NAME}-internal-lb-frontend
         privateIP: ${AZURE_INTERNAL_LB_IP}

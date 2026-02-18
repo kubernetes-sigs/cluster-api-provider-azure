@@ -42,18 +42,12 @@ spec:
       - "2"
       - "3"
       frontendIPs:
+      - name: ${CLUSTER_NAME}-api-lb
+        publicIP:
+          dnsName: ${CLUSTER_NAME}-${APISERVER_LB_DNS_SUFFIX}.${AZURE_LOCATION}.cloudapp.azure.com
+          name: ${CLUSTER_NAME}-api-lb
       - name: ${CLUSTER_NAME}-internal-lb-private-ip
         privateIP: ${AZURE_INTERNAL_LB_PRIVATE_IP}
-      type: Internal
-    controlPlaneOutboundLB:
-      availabilityZones:
-      - "1"
-      - "2"
-      - "3"
-      frontendIPs:
-      - name: ${CLUSTER_NAME}-cp-outbound-lb
-        publicIP:
-          name: ${CLUSTER_NAME}-cp-outbound-pip
     nodeOutboundLB:
       availabilityZones:
       - "1"
