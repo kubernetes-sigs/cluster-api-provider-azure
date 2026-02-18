@@ -32,10 +32,6 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     apiServerLB:
-      availabilityZones:
-      - "1"
-      - "2"
-      - "3"
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
     controlPlaneOutboundLB:

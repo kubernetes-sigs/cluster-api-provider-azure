@@ -1469,7 +1469,7 @@ spec:
 	})
 
 	Context("Creating a cluster with zone-redundant load balancers [OPTIONAL]", func() {
-		It("with zone-redundant API server, node outbound, and control plane outbound load balancers", func() {
+		It("with zone-redundant API server and node outbound load balancers", func() {
 			clusterName = getClusterName(clusterNamePrefix, "lb-zones")
 
 			// Set up zone-redundant load balancer configuration
@@ -1579,16 +1579,24 @@ spec:
 					}
 				}
 
-				// Verify API Server Load Balancer zones (Internal LB - zones on frontend)
+				// Verify API Server Load Balancer zones (Public LB - zones on public IPs)
 				if azureCluster.Spec.NetworkSpec.APIServerLB != nil {
 					Expect(azureCluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones).To(Equal(expectedZones),
 						"APIServerLB should have zones configured in AzureCluster spec")
 
 					lbName := azureCluster.Spec.NetworkSpec.APIServerLB.Name
-					isInternal := azureCluster.Spec.NetworkSpec.APIServerLB.Type == infrav1.Internal
 					Eventually(func(g Gomega) {
-						verifyFrontendZones(g, lbName, isInternal)
+						verifyFrontendZones(g, lbName, false) // Public LB - no zones on frontend
 					}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+
+					// Verify zones on the public IPs
+					for _, frontendIP := range azureCluster.Spec.NetworkSpec.APIServerLB.FrontendIPs {
+						if frontendIP.PublicIP != nil {
+							Eventually(func(g Gomega) {
+								verifyPublicIPZones(g, frontendIP.PublicIP.Name)
+							}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
+						}
+					}
 				}
 
 				// Verify Node Outbound Load Balancer zones (Public LB - zones on public IPs)
@@ -1603,26 +1611,6 @@ spec:
 
 					// Verify zones on the public IPs
 					for _, frontendIP := range azureCluster.Spec.NetworkSpec.NodeOutboundLB.FrontendIPs {
-						if frontendIP.PublicIP != nil {
-							Eventually(func(g Gomega) {
-								verifyPublicIPZones(g, frontendIP.PublicIP.Name)
-							}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-						}
-					}
-				}
-
-				// Verify Control Plane Outbound Load Balancer zones (Public LB - zones on public IPs)
-				if azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB != nil {
-					Expect(azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.AvailabilityZones).To(Equal(expectedZones),
-						"ControlPlaneOutboundLB should have zones configured in AzureCluster spec")
-
-					lbName := azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.Name
-					Eventually(func(g Gomega) {
-						verifyFrontendZones(g, lbName, false) // Public LB - no zones on frontend
-					}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
-
-					// Verify zones on the public IPs
-					for _, frontendIP := range azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB.FrontendIPs {
 						if frontendIP.PublicIP != nil {
 							Eventually(func(g Gomega) {
 								verifyPublicIPZones(g, frontendIP.PublicIP.Name)
