@@ -248,6 +248,13 @@ linters:
         - staticcheck
         path: .*\.go$
         text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      # Ignore CAPZ v1beta1 deprecations (SharedGallery, VMState) still used for backward compatibility.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*SharedGallery is deprecated'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*VMState is deprecated'
       - linters:
           - staticcheck
         text: 'QF1008: could remove embedded field'
