@@ -29,7 +29,18 @@ jobs:
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
 
-      - name: golangci-lint
+      - name: Build custom golangci-lint with kube-api-linter
+        if: matrix.working-directory == ''
+        run: |
+          make golangci-lint
+          hack/tools/bin/golangci-lint-v2.5.0 custom
+
+      - name: golangci-lint (root with kube-api-linter)
+        if: matrix.working-directory == ''
+        run: hack/tools/bin/golangci-lint-kube-api-linter run -v
+
+      - name: golangci-lint (test directory)
+        if: matrix.working-directory == 'test'
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # tag=v9.2.0
         with:
           # update the version when updating golangci-lint

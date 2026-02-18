@@ -184,7 +184,6 @@ type (
 		// Type of deployment. Currently the only supported strategy is RollingUpdate
 		// +optional
 		// +kubebuilder:validation:Enum=RollingUpdate
-		// +optional
 		// +kubebuilder:default=RollingUpdate
 		Type AzureMachinePoolDeploymentStrategyType `json:"type,omitempty"`
 
