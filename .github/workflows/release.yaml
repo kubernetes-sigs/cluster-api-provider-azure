@@ -20,7 +20,7 @@ jobs:
       release_tag: ${{ steps.release-version.outputs.release_version }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-markdown-files
-        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # tag=v47.0.1
+        uses: tj-actions/changed-files@8cba46e29c11878d930bca7870bb54394d3e8b21 # tag=v47.0.2
         with:
           files: CHANGELOG/**.md
       - name: Get release version
@@ -92,7 +92,7 @@ jobs:
     needs: push_release_tag
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
       - name: Set env
