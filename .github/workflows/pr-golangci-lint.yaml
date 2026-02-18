@@ -33,7 +33,7 @@ jobs:
         if: matrix.working-directory == ''
         run: |
           make golangci-lint
-          hack/tools/bin/golangci-lint-v2.5.0 custom
+          hack/tools/bin/golangci-lint-v2.7.0 custom
 
       - name: golangci-lint (root with kube-api-linter)
         if: matrix.working-directory == ''
@@ -44,5 +44,5 @@ jobs:
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # tag=v9.2.0
         with:
           # update the version when updating golangci-lint
-          version: v2.5.0
+          version: v2.7.0
           working-directory: ${{matrix.working-directory}}

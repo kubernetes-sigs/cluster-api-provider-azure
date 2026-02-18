@@ -419,7 +419,7 @@ func withControlPlaneInterval(specName string, intervalName string) func(*cluste
 	}
 }
 
-func withMachineDeploymentInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) {
+func withMachineDeploymentInterval(specName string, intervalName string) func(*clusterctl.ApplyClusterTemplateAndWaitInput) { //nolint:unparam // intervalName varies when GPU tests are enabled
 	return func(input *clusterctl.ApplyClusterTemplateAndWaitInput) {
 		if intervalName != "" {
 			input.WaitForMachineDeployments = e2eConfig.GetIntervals(specName, intervalName)

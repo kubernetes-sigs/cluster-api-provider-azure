@@ -416,6 +416,7 @@ type IPTag struct {
 }
 
 // VMState describes the state of an Azure virtual machine.
+//
 // Deprecated: use ProvisioningState.
 type VMState string
 
@@ -451,6 +452,7 @@ type Image struct {
 	ID *string `json:"id,omitempty"`
 
 	// SharedGallery specifies an image to use from an Azure Shared Image Gallery
+	//
 	// Deprecated: use ComputeGallery instead.
 	// +optional
 	SharedGallery *AzureSharedGalleryImage `json:"sharedGallery,omitempty"`

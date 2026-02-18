@@ -1,3 +1,5 @@
+# NOTE: When updating shared linter settings, keep test/.golangci.yml in sync.
+# The test config excludes kubeapilinter (which requires a custom-built binary).
 version: "2"
 run:
   build-tags:
@@ -339,6 +341,13 @@ linters:
         - staticcheck
         path: .*\.go$
         text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      # Ignore CAPZ v1beta1 deprecations (SharedGallery, VMState) still used for backward compatibility.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*SharedGallery is deprecated'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*VMState is deprecated'
     paths:
       - zz_generated\.(\w*)\.go$
       - third_party$

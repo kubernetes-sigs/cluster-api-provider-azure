@@ -28,7 +28,6 @@ type AllowedNamespaces struct {
 	// An empty list indicates that AzureCluster cannot use the identity from any namespace.
 	//
 	// +optional
-
 	NamespaceList []string `json:"list"`
 	// Selector is a selector of namespaces that AzureCluster can
 	// use this Identity from. This is a standard Kubernetes LabelSelector,

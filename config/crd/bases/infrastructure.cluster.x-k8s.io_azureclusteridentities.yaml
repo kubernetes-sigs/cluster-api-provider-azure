@@ -58,6 +58,8 @@ spec:
                   NamespaceList takes precedence over the Selector.
                 properties:
                   list:
+                    description: An empty list indicates that AzureCluster cannot
+                      use the identity from any namespace.
                     items:
                       type: string
                     type: array
