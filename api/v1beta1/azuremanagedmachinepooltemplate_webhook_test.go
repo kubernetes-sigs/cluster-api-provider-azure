@@ -99,10 +99,10 @@ func TestManagedMachinePoolTemplateUpdateWebhook(t *testing.T) {
 		{
 			name: "azuremanagedmachinepooltemplate SKU is immutable",
 			oldMachinePoolTemplate: getAzureManagedMachinePoolTemplate(func(ammpt *AzureManagedMachinePoolTemplate) {
-				ammpt.Spec.Template.Spec.SKU = "Standard_D2s_v3"
+				ammpt.Spec.Template.Spec.SKU = "Standard_D2ds_v5"
 			}),
 			machinePoolTemplate: getAzureManagedMachinePoolTemplate(func(ammpt *AzureManagedMachinePoolTemplate) {
-				ammpt.Spec.Template.Spec.SKU = "Standard_D4s_v3"
+				ammpt.Spec.Template.Spec.SKU = "Standard_D4s_v5"
 			}),
 			wantErr: true,
 		},
