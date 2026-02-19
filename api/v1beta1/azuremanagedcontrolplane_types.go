@@ -125,8 +125,6 @@ const (
 const (
 	// LoadBalancerSKUStandard is the Standard load balancer SKU.
 	LoadBalancerSKUStandard = "Standard"
-	// LoadBalancerSKUBasic is the Basic load balancer SKU.
-	LoadBalancerSKUBasic = "Basic"
 )
 
 // KeyVaultNetworkAccessTypes defines the types of network access of key vault.
