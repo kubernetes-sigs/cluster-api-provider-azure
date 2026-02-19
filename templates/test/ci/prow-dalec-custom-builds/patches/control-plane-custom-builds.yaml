@@ -111,4 +111,8 @@
   path: /spec/kubeadmConfigSpec/initConfiguration/nodeRegistration/ignorePreflightErrors
   value:
     - HTTPProxyCIDR
-  
+# Also add ignorePreflightErrors for join operations (second/third control plane nodes)
+- op: add
+  path: /spec/kubeadmConfigSpec/joinConfiguration/nodeRegistration/ignorePreflightErrors
+  value:
+    - HTTPProxyCIDR
