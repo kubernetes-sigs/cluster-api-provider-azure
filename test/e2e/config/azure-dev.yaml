@@ -185,6 +185,8 @@ providers:
         targetName: "cluster-template-apiserver-ilb.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb-custom-images.yaml"
         targetName: "cluster-template-apiserver-ilb-custom-images.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-apiserver-ilb-zones.yaml"
+        targetName: "cluster-template-apiserver-ilb-zones.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dalec-custom-builds.yaml"
         targetName: "cluster-template-dalec-custom-builds.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-azl3.yaml"
