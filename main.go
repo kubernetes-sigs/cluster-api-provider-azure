@@ -403,6 +403,40 @@ func main() {
 	}
 }
 
+func newWorkloadClusterCache(ctx context.Context, mgr manager.Manager) clustercache.ClusterCache {
+	// The AzureASOManagedMachinePool controller reads the nodes in clusters to set provider IDs.
+	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
+		HTTPClient: mgr.GetHTTPClient(),
+		Cache: &client.CacheOptions{
+			Reader: mgr.GetCache(),
+		},
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create secret caching client")
+		os.Exit(1)
+	}
+	workloadClusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+		SecretClient: secretCachingClient,
+		Cache:        clustercache.CacheOptions{},
+		Client: clustercache.ClientOptions{
+			UserAgent: remote.DefaultClusterAPIUserAgent("azure-controller"),
+			Cache: clustercache.ClientCacheOptions{
+				DisableFor: []client.Object{
+					// Don't cache ConfigMaps or Secrets.
+					&corev1.ConfigMap{},
+					&corev1.Secret{},
+				},
+			},
+		},
+		WatchFilterValue: watchFilterValue,
+	}, controller.Options{})
+	if err != nil {
+		setupLog.Error(err, "unable to create cluster cache")
+		os.Exit(1)
+	}
+	return workloadClusterCache
+}
+
 func registerControllers(ctx context.Context, mgr manager.Manager) {
 	credCache := azure.NewCredentialCache()
 
@@ -577,6 +611,9 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 	}
 
+	// Setup shared cluster cache for controllers that read nodes in workload clusters
+	// (AzureASOManagedMachinePool and AROMachinePool)
+	var workloadClusterCache clustercache.ClusterCache
 	if feature.Gates.Enabled(feature.ASOAPI) {
 		if err := (&controllers.AzureASOManagedClusterReconciler{
 			Client:           mgr.GetClient(),
@@ -596,40 +633,14 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 
 		// The AzureASOManagedMachinePool controller reads the nodes in clusters to set provider IDs.
-		secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
-			HTTPClient: mgr.GetHTTPClient(),
-			Cache: &client.CacheOptions{
-				Reader: mgr.GetCache(),
-			},
-		})
-		if err != nil {
-			setupLog.Error(err, "unable to create secret caching client")
-			os.Exit(1)
-		}
-		clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
-			SecretClient: secretCachingClient,
-			Cache:        clustercache.CacheOptions{},
-			Client: clustercache.ClientOptions{
-				UserAgent: remote.DefaultClusterAPIUserAgent("azure-controller"),
-				Cache: clustercache.ClientCacheOptions{
-					DisableFor: []client.Object{
-						// Don't cache ConfigMaps or Secrets.
-						&corev1.ConfigMap{},
-						&corev1.Secret{},
-					},
-				},
-			},
-			WatchFilterValue: watchFilterValue,
-		}, controller.Options{})
-		if err != nil {
-			setupLog.Error(err, "unable to create cluster cache")
-			os.Exit(1)
+		if workloadClusterCache == nil {
+			workloadClusterCache = newWorkloadClusterCache(ctx, mgr)
 		}
 
 		if err := (&controllers.AzureASOManagedMachinePoolReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-			Tracker:          clusterCache,
+			Tracker:          workloadClusterCache,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)
@@ -684,12 +695,15 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 
 		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if workloadClusterCache == nil {
+				workloadClusterCache = newWorkloadClusterCache(ctx, mgr)
+			}
 			if err := infrav1controllersexp.NewAROMachinePoolReconciler(
 				mgr.GetClient(),
 				mgr.GetEventRecorderFor("aromachinepoolmachine-reconciler"),
 				timeouts,
 				watchFilterValue,
-				credCache,
+				workloadClusterCache,
 			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: clusterCache}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
 				os.Exit(1)

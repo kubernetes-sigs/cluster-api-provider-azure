@@ -85,10 +85,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// Get all KeyVault specs
 	keyVaultSpecs := s.Scope.KeyVaultSpecs()
 
-	// In resources mode (e.g., ARO HCP), KeyVault vault resources are managed by ASO,
+	// For ARO HCP (resources mode), KeyVault vault resources are managed by ASO,
 	// so KeyVaultSpecs may be empty. However, we still need to ensure encryption keys exist.
+	// For legacy non-ARO clusters, KeyVaultSpecs contains vault definitions to reconcile.
 	if len(keyVaultSpecs) > 0 {
-		// Process each KeyVault spec (field-based mode)
+		// Process each KeyVault spec (legacy path - not used by ARO HCP)
 		for _, keyVaultSpec := range keyVaultSpecs {
 			log.V(2).Info("reconciling KeyVault", "keyvault", keyVaultSpec.ResourceName())
 
@@ -100,8 +101,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	// Ensure the ETCD encryption key exists (works in both field-based and resources modes)
-	// In resources mode, the vault is managed by ASO but keys must be managed via Azure SDK
+	// Ensure the ETCD encryption key exists
+	// For ARO HCP (resources mode): vault is managed by ASO, keys managed via Azure SDK
+	// For legacy clusters: both vault and keys managed via Azure SDK
 	if err := s.EnsureETCDEncryptionKey(ctx, s.Scope); err != nil {
 		return errors.Wrap(err, "failed to ensure ETCD encryption key exists")
 	}
