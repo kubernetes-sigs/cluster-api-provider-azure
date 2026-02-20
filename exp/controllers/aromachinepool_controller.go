@@ -52,20 +52,20 @@ type AROMachinePoolReconciler struct {
 	client.Client
 	Timeouts                    reconciler.Timeouts
 	WatchFilterValue            string
-	CredentialCache             azure.CredentialCache
+	Tracker                     controllers.ClusterTracker
 	createAROMachinePoolService aroMachinePoolServiceCreator
 }
 
-type aroMachinePoolServiceCreator func(aroMachinePoolScope *scope.AROMachinePoolScope, apiCallTimeout time.Duration) (*aroMachinePoolService, error)
+type aroMachinePoolServiceCreator func(aroMachinePoolScope *scope.AROMachinePoolScope, cluster *clusterv1.Cluster, tracker controllers.ClusterTracker, apiCallTimeout time.Duration) (*aroMachinePoolService, error)
 
 // NewAROMachinePoolReconciler returns a new AROMachinePoolReconciler instance.
-func NewAROMachinePoolReconciler(client client.Client, _ record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AROMachinePoolReconciler {
+func NewAROMachinePoolReconciler(client client.Client, _ record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, tracker controllers.ClusterTracker) *AROMachinePoolReconciler {
 	ampr := &AROMachinePoolReconciler{
 		Client: client,
 		//Recorder:         recorder,
 		Timeouts:         timeouts,
 		WatchFilterValue: watchFilterValue,
-		CredentialCache:  credCache,
+		Tracker:          tracker,
 	}
 
 	ampr.createAROMachinePoolService = newAROMachinePoolService
@@ -198,29 +198,15 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return reconcile.Result{}, nil
 	}
 
-	// create the aro control plane scope
-	aroControlPlaneScope, err := scope.NewAROControlPlaneScope(ctx, scope.AROControlPlaneScopeParams{
-		Client:          ampr.Client,
-		ControlPlane:    controlPlane,
-		Cluster:         ownerCluster,
-		Timeouts:        ampr.Timeouts,
-		CredentialCache: ampr.CredentialCache,
-	})
-	if err != nil {
-		return reconcile.Result{}, errors.Wrap(err, "failed to create AROControlPlane scope")
-	}
-
 	// Create the scope.
 	acpScope, err := scope.NewAROMachinePoolScope(ctx, scope.AROMachinePoolScopeParams{
-		Client:               ampr.Client,
-		Cluster:              ownerCluster,
-		MachinePool:          ownerPool,
-		ControlPlane:         controlPlane,
-		AROMachinePool:       infraPool,
-		Cache:                nil,
-		AROControlPlaneScope: aroControlPlaneScope,
-		Timeouts:             ampr.Timeouts,
-		CredentialCache:      ampr.CredentialCache,
+		Client:         ampr.Client,
+		Cluster:        ownerCluster,
+		MachinePool:    ownerPool,
+		ControlPlane:   controlPlane,
+		AROMachinePool: infraPool,
+		Cache:          nil,
+		Timeouts:       ampr.Timeouts,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create AROMachinePool scope")
@@ -269,7 +255,7 @@ func (ampr *AROMachinePoolReconciler) reconcileNormal(ctx context.Context, scope
 		}
 	}
 
-	svc, err := ampr.createAROMachinePoolService(scope, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
+	svc, err := ampr.createAROMachinePoolService(scope, scope.Cluster, ampr.Tracker, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create an AROMachinePoolService")
 	}
@@ -323,7 +309,7 @@ func (ampr *AROMachinePoolReconciler) reconcilePause(ctx context.Context, scope 
 
 	log.Info("Reconciling AROMachinePool pause")
 
-	svc, err := ampr.createAROMachinePoolService(scope, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
+	svc, err := ampr.createAROMachinePoolService(scope, scope.Cluster, ampr.Tracker, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create an AROMachinePoolService")
 	}
@@ -344,7 +330,7 @@ func (ampr *AROMachinePoolReconciler) reconcileDelete(ctx context.Context, scope
 
 	// If the entire cluster is being deleted, the ARO cluster deletion will handle the node pool.
 	if scope.Cluster != nil && scope.Cluster.DeletionTimestamp.IsZero() {
-		svc, err := ampr.createAROMachinePoolService(scope, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
+		svc, err := ampr.createAROMachinePoolService(scope, scope.Cluster, ampr.Tracker, ampr.Timeouts.DefaultedAzureServiceReconcileTimeout())
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, "failed to create an AROMachinePoolService")
 		}

@@ -81,10 +81,18 @@ func NewAROControlPlaneScope(ctx context.Context, params AROControlPlaneScopePar
 		return nil, errors.New("failed to generate new scope from nil AROControlPlane")
 	}
 
-	// Initialize Azure SDK credentials in the following cases:
-	// 1. Field-based mode (len(Resources) == 0): Always initialize credentials
-	// 2. Resources mode with IdentityRef set: Initialize CAPZ credentials for hybrid scenarios
-	// 3. Resources mode without IdentityRef: Skip credential initialization, ASO handles authentication
+	// Initialize Azure SDK credentials only when IdentityRef is set.
+	// With identityRef: Initialize CAPZ credentials for Key Vault operations
+	// Without identityRef: Skip credential initialization, ASO handles authentication
+	//
+	// When identityRef is not set, CAPZ cannot perform Key Vault operations:
+	// - Cannot check for encryption key existence
+	// - Cannot create encryption keys
+	// - Cannot auto-propagate key versions to HcpOpenShiftCluster
+	// Customers must manually create the vault and key via ASO and specify the key version in HcpOpenShiftCluster.
+	//
+	// Note: The check for empty Resources is defensive - the webhook now requires Resources mode,
+	// so Resources cannot be empty in practice.
 	shouldInitCredentials := len(params.ControlPlane.Spec.Resources) == 0 || params.ControlPlane.Spec.IdentityRef != nil
 
 	if shouldInitCredentials {
