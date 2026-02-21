@@ -824,6 +824,62 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension transition from nil to true is allowed",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: nil,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension transition from nil to false is allowed",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: nil,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(false),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.disableVMBootstrapExtension is immutable when previously set",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension is immutable when previously set to same value",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
 			oldMachine: &AzureMachine{
 				Spec: AzureMachineSpec{
