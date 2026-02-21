@@ -26,6 +26,7 @@ Sections in this document:
   - [AKS Fleet Integration](#aks-fleet-integration)
   - [AKS Extensions](#aks-extensions)
   - [Security Profile for AKS clusters](#security-profile-for-aks-clusters)
+  - [Disk Encryption for AKS clusters](#disk-encryption-for-aks-clusters)
   - [Enabling Preview API Features for ManagedClusters](#enabling-preview-api-features-for-managedclusters)
   - [OIDC Issuer on AKS](#oidc-issuer-on-aks)
   - [Enable AKS features with custom headers](#enable-aks-features-with-custom-headers---aks-custom-headers)
@@ -377,6 +378,44 @@ spec:
       securityMonitoring:
         enabled: true
 ```
+
+### Disk Encryption for AKS clusters
+
+CAPZ supports encrypting OS disks for AKS cluster nodes using customer-managed keys (CMK) via a [Disk Encryption Set](https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys). This allows you to bring your own encryption keys stored in Azure Key Vault to encrypt the OS disks of all nodes in your AKS cluster.
+
+#### Prerequisites
+
+Before enabling disk encryption, you must:
+
+1. Create an Azure Key Vault with soft delete and purge protection enabled.
+2. Create a key in the Key Vault.
+3. Create a Disk Encryption Set that references the key.
+4. Ensure the Disk Encryption Set is in the same region as the AKS cluster.
+5. Grant the AKS cluster identity **read** access to the Disk Encryption Set.
+
+For detailed instructions, refer to the [AKS documentation on customer-managed keys](https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys).
+
+#### Example
+
+To enable disk encryption, set the `diskEncryptionSetID` field in the `AzureManagedControlPlane` resource spec:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  location: southcentralus
+  resourceGroupName: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: 00000000-0000-0000-0000-000000000000
+  version: v1.33.6
+  diskEncryptionSetID: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/diskEncryptionSets/my-disk-encryption-set
+```
+
+> **Note**: The `diskEncryptionSetID` field is **immutable** and can only be set at cluster creation time. This is an Azure limitation -- encryption of OS disks with customer-managed keys can only be enabled when creating an AKS cluster.
+
+When new node pools are added to the cluster, the customer-managed key provided during the create process is automatically used to encrypt the OS disk.
 
 ### Enabling Preview API Features for ManagedClusters
 

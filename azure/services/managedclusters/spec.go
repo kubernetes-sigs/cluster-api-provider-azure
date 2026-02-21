@@ -144,6 +144,9 @@ type ManagedClusterSpec struct {
 	// SecurityProfile defines the security profile for the cluster.
 	SecurityProfile *ManagedClusterSecurityProfile
 
+	// DiskEncryptionSetID is the ID of the disk encryption set to use for enabling encryption at rest.
+	DiskEncryptionSetID string
+
 	// Patches are extra patches to be applied to the ASO resource.
 	Patches []string
 
@@ -443,6 +446,7 @@ func (s *ManagedClusterSpec) Parameters(ctx context.Context, existingObj genrunt
 	s.configureOIDCIssuerProfile(managedCluster)
 	s.configureAutoUpgradeProfile(managedCluster)
 	s.configureSecurityProfile(managedCluster)
+	s.configureDiskEncryptionSet(managedCluster)
 
 	if err := s.configureAgentPoolProfiles(ctx, managedCluster); err != nil {
 		return nil, err
@@ -836,6 +840,17 @@ func (s *ManagedClusterSpec) configureWorkloadIdentity(securityProfile *asoconta
 
 	securityProfile.WorkloadIdentity = &asocontainerservicev1hub.ManagedClusterSecurityProfileWorkloadIdentity{
 		Enabled: s.SecurityProfile.WorkloadIdentity.Enabled,
+	}
+}
+
+// configureDiskEncryptionSet configures the disk encryption set for the managed cluster.
+func (s *ManagedClusterSpec) configureDiskEncryptionSet(managedCluster *asocontainerservicev1hub.ManagedCluster) {
+	if s.DiskEncryptionSetID == "" {
+		return
+	}
+
+	managedCluster.Spec.DiskEncryptionSetReference = &genruntime.ResourceReference{
+		ARMID: s.DiskEncryptionSetID,
 	}
 }
 
