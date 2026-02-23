@@ -888,6 +888,14 @@ spec:
               exit 1
             fi
 
+            # Also install config files from the kubelet RPM to replace any
+            # stale flags from the gallery image (e.g. --pod-infra-container-image
+            # which was removed in v1.35).
+            if [[ "$${BINARY}" == "kubelet" ]] && [ -f "./etc/sysconfig/kubelet" ]; then
+              echo "Installing /etc/sysconfig/kubelet from RPM"
+              cp "./etc/sysconfig/kubelet" "/etc/sysconfig/kubelet"
+            fi
+
             cd /
             rm -rf "$${TEMP_DIR}"
             rm -f "$${RPM_FILE}"
