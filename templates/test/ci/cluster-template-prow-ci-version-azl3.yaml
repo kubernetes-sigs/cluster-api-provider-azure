@@ -228,6 +228,21 @@ spec:
       owner: root:root
       path: /tmp/kubeadm-bootstrap.sh
       permissions: "0744"
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        # Fix stale kubelet sysconfig flags from gallery images
+        # (e.g. --pod-infra-container-image was removed in v1.35).
+        if [ -f "/etc/sysconfig/kubelet" ]; then
+          sed -i 's/--pod-infra-container-image[^ ]*//' /etc/sysconfig/kubelet
+        fi
+      owner: root:root
+      path: /tmp/fix-sysconfig.sh
+      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -248,6 +263,7 @@ spec:
     postKubeadmCommands: []
     preKubeadmCommands:
     - bash -c /tmp/azl3-setup.sh
+    - bash -c /tmp/fix-sysconfig.sh
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -512,6 +528,21 @@ spec:
         owner: root:root
         path: /tmp/kubeadm-bootstrap.sh
         permissions: "0744"
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          # Fix stale kubelet sysconfig flags from gallery images
+          # (e.g. --pod-infra-container-image was removed in v1.35).
+          if [ -f "/etc/sysconfig/kubelet" ]; then
+            sed -i 's/--pod-infra-container-image[^ ]*//' /etc/sysconfig/kubelet
+          fi
+        owner: root:root
+        path: /tmp/fix-sysconfig.sh
+        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
@@ -521,6 +552,7 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash -c /tmp/azl3-setup.sh
+      - bash -c /tmp/fix-sysconfig.sh
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5

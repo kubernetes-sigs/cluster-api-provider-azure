@@ -1,0 +1,22 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
+      #!/bin/bash
+
+      set -o nounset
+      set -o pipefail
+      set -o errexit
+
+      # Fix stale kubelet sysconfig flags from gallery images
+      # (e.g. --pod-infra-container-image was removed in v1.35).
+      if [ -f "/etc/sysconfig/kubelet" ]; then
+        sed -i 's/--pod-infra-container-image[^ ]*//' /etc/sysconfig/kubelet
+      fi
+    path: /tmp/fix-sysconfig.sh
+    owner: "root:root"
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/1
+  value:
+    bash -c /tmp/fix-sysconfig.sh

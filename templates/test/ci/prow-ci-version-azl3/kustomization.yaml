@@ -21,6 +21,19 @@ patches:
 - path: ../prow-azl3/patches/remove-marketplace-image.yaml
 - path: ../prow-azl3/patches/cloud-provider-azure-cacertdir.yaml
 - path: ../prow-azl3/patches/cloud-provider-azure-ci-cacertdir.yaml
+- path: patches/fix-sysconfig-control-plane.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: patches/fix-sysconfig.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+    version: v1beta1
 
 sortOptions:
   order: fifo
