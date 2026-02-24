@@ -1,0 +1,64 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/stolostron/cluster-api-provider-azure?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+      == "backplane-2.17"
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: release-mce-217
+    appstudio.openshift.io/component: cluster-api-provider-azure-mce-217
+    pipelines.appstudio.openshift.io/type: build
+  name: cluster-api-provider-azure-mce-217-on-push
+  namespace: crt-redhat-acm-tenant
+spec:
+  params:
+  - name: git-url
+    value: '{{source_url}}'
+  - name: revision
+    value: '{{revision}}'
+  - name: output-image
+    value: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/cluster-api-provider-azure-mce-217:{{revision}}
+  - name: build-platforms
+    value:
+    - linux/x86_64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x
+  - name: dockerfile
+    value: stolostron/Dockerfile.stolostron
+  - name: path-context
+    value: .
+  - name: build-source-image
+    value: "true"
+  - name: hermetic
+    value: "true"
+  - name: prefetch-input
+    value: '[{"type": "gomod", "path": "."}]'
+  - name: send-slack-notification
+    value: true
+  - name: konflux-application-name
+    value: release-mce-217
+  - name: slack-member-id
+    value: C07JR0ARW1E # capi-squad channel-id.
+  pipelineRef:
+    resolver: git
+    params:
+      - name: url
+        value: "https://github.com/stolostron/konflux-build-catalog.git"
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/common_mce_2.11.yaml
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-cluster-api-provider-azure-mce-217
+  workspaces:
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+status: {}
