@@ -58,7 +58,7 @@ func TestGetOrStore(t *testing.T) {
 	g.Expect(cred).To(Equal(fakeTokenCredential{tenantID: "1"}))
 	g.Expect(newCredCount).To(Equal(1))
 
-	// subsequent calls for the same key should not create a new credential
+	// subsequent calls for the same key should not create a new credential.
 	cred, err = credCache.getOrStore(credentialCacheKey{tenantID: "1"}, newCredFunc(fakeTokenCredential{tenantID: "1"}, nil))
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cred).To(Equal(fakeTokenCredential{tenantID: "1"}))
