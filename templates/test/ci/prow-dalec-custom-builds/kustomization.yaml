@@ -40,6 +40,13 @@ patches:
     # Match -md-0 but not -azl3-md-0
     name: ^[^-]*-md-0$
     version: v1beta1
+- path: ../prow-apiserver-ilb-custom-images/patches/kubeadm-bootstrap-custom-images.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-azl3-md-0
+    namespace: default
+    version: v1beta1
 
 sortOptions:
   order: fifo
