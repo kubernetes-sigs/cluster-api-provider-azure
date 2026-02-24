@@ -42,7 +42,7 @@ import (
 
 var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
 
-// SetupAzureManagedMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
+// SetupAzureManagedMachinePoolWebhookWithManager sets up and registers the webhook with the manager
 func SetupAzureManagedMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 	mw := &azureManagedMachinePoolWebhook{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr).
