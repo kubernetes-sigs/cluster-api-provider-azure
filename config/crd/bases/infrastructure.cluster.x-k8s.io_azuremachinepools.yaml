@@ -483,6 +483,7 @@ spec:
                       sharedGallery:
                         description: |-
                           SharedGallery specifies an image to use from an Azure Shared Image Gallery
+
                           Deprecated: use ComputeGallery instead.
                         properties:
                           gallery:
@@ -1012,6 +1013,7 @@ spec:
                   sharedGallery:
                     description: |-
                       SharedGallery specifies an image to use from an Azure Shared Image Gallery
+
                       Deprecated: use ComputeGallery instead.
                     properties:
                       gallery:
