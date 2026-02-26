@@ -1285,6 +1285,146 @@ func TestValidateAPIServerLB(t *testing.T) {
 				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
 			},
 		},
+		{
+			name: "no old spec (creation)",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old:     nil,
+			wantErr: false,
+		},
+		{
+			name: "both loadBalancingRule and healthProbe name unchanged",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "loadBalancingRule changed from custom to custom",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "NewCustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "OldCustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.loadBalancingRule.name",
+				Detail: "Load balancer rule name should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "loadBalancingRule upgrade scenario: old empty, new default",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: DefaultLoadBalancingRuleName},
+				HealthProbe:           HealthProbe{Name: DefaultHealthProbeName},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: ""},
+				HealthProbe:           HealthProbe{Name: ""},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "loadBalancingRule upgrade scenario: old empty, new custom",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: DefaultHealthProbeName},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: ""},
+				HealthProbe:           HealthProbe{Name: ""},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.loadBalancingRule.name",
+				Detail: "Load balancer rule name should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "healthProbe changed from custom to custom",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "NewCustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: "CustomLBRule"},
+				HealthProbe:           HealthProbe{Name: "OldCustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.healthProbe.name",
+				Detail: "Health probe name should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "healthProbe upgrade scenario: old empty, new custom",
+			lb: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: DefaultLoadBalancingRuleName},
+				HealthProbe:           HealthProbe{Name: "CustomProbe"},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			old: &LoadBalancerSpec{
+				Name:                  "test-lb",
+				LoadBalancingRule:     LoadBalancingRule{Name: ""},
+				HealthProbe:           HealthProbe{Name: ""},
+				LoadBalancerClassSpec: LoadBalancerClassSpec{SKU: SKUStandard, Type: Public},
+				FrontendIPs:           []FrontendIP{{Name: "ip-config", PublicIP: &PublicIPSpec{Name: "test-ip"}}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.healthProbe.name",
+				Detail: "Health probe name should not be modified after AzureCluster creation.",
+			},
+		},
 	}
 
 	for _, test := range testcases {
@@ -1904,6 +2044,12 @@ func createValidAPIServerLB() *LoadBalancerSpec {
 					DNSName: "myfqdn.azure.com",
 				},
 			},
+		},
+		LoadBalancingRule: LoadBalancingRule{
+			Name: DefaultLoadBalancingRuleName,
+		},
+		HealthProbe: HealthProbe{
+			Name: DefaultHealthProbeName,
 		},
 		LoadBalancerClassSpec: LoadBalancerClassSpec{
 			SKU:  SKUStandard,
