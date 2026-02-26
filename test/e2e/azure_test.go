@@ -1529,4 +1529,82 @@ spec:
 			By("PASSED!")
 		})
 	})
+
+	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
+	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
+	Context("Creating a cluster and deploying KubeRay [OPTIONAL]", func() {
+		It("Creates a RayCluster and verifies it becomes ready", func() {
+			clusterName = getClusterName(clusterNamePrefix, "kuberay")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay RayCluster spec", func() {
+				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
+					return KubeRayClusterSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+
+		It("Creates a RayJob and verifies it completes successfully", func() {
+			clusterName = getClusterName(clusterNamePrefix, "rayjob")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay RayJob spec", func() {
+				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
+					return KubeRayJobSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })
