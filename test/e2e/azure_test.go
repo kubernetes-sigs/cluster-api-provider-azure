@@ -717,7 +717,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	// You can override the default SKU `Standard_D2s_v3` by setting the
+	// You can override the default SKU `Standard_D2ds_v5` by setting the
 	// `AZURE_AKS_NODE_MACHINE_TYPE` environment variable.
 	Context("Creating an AKS cluster for control plane tests [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
@@ -1207,7 +1207,7 @@ spec:
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-	// You can also override the default SKU `Standard_DS2_v2` and `Standard_DS4_v2` storage by setting
+	// You can also override the default SKU `Standard_D2ds_v5` and `Standard_D4s_v5` SKUs by setting
 	// the `AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE` and `AZURE_EDGEZONE_NODE_MACHINE_TYPE` environment variables.
 	Context("Creating clusters on public MEC [OPTIONAL]", func() {
 		It("with 1 control plane nodes and 1 worker node", func() {

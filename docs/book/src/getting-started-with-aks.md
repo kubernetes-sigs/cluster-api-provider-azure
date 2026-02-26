@@ -55,7 +55,7 @@
   --generate-ssh-keys \
   --location <region>
   ```
-  
+
   2. Retrieve Credentials for the AKS Cluster to interact with it using kubectl:
   ```bash
   az aks get-credentials --resource-group <resource-group-name> --name <aks-cluster-name>
@@ -105,9 +105,9 @@ az identity federated-credential create \
 Run the following command to initialize the management cluster with Cluster API Provider Azure (CAPZ):
 
  `clusterctl init --infrastructure azure`
- 
+
  This command sets up the necessary components, including Cluster API Core, CAPZ, and Azure Service Operator (ASO).
- View the [Cluster API Quick Start: Initialize the management cluster](https://cluster-api.sigs.k8s.io/user/quick-start.html) documentation for more detailed instructions. Ensure you select the "Azure" tabs for Azure-specific guidance. 
+ View the [Cluster API Quick Start: Initialize the management cluster](https://cluster-api.sigs.k8s.io/user/quick-start.html) documentation for more detailed instructions. Ensure you select the "Azure" tabs for Azure-specific guidance.
 
   7. Annotate the capz-manager service account in the capz-system namespace with the UAMI's clientId:
   ```bash

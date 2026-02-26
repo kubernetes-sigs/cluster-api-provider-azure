@@ -166,12 +166,12 @@ managedMachinePoolSpecs:
   pool0:
     count: 1
     mode: System
-    vmSize: Standard_DS2_v2
+    vmSize: Standard_D2ds_v5
     type: VirtualMachineScaleSets
   pool1:
     count: 1
     mode: User
-    vmSize: Standard_DS2_v2
+    vmSize: Standard_D2ds_v5
     type: VirtualMachineScaleSets
 ```
 
