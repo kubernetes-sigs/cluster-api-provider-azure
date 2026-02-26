@@ -373,6 +373,16 @@ func validateVersion(version string, fldPath *field.Path) field.ErrorList {
 	return allErrs
 }
 
+// validateLoadBalancerSKU validates the LoadBalancerSKU.
+func validateLoadBalancerSKU(loadBalancerSKU *string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if loadBalancerSKU != nil && *loadBalancerSKU != LoadBalancerSKUStandard {
+		allErrs = append(allErrs, field.Invalid(fldPath, loadBalancerSKU, "LoadBalancerSKU must be 'Standard' if specified"))
+	}
+
+	return allErrs
+}
+
 // validateSSHKey validates an SSHKey.
 func (m *AzureManagedControlPlane) validateSSHKey(_ client.Client) field.ErrorList {
 	if sshKey := m.Spec.SSHPublicKey; sshKey != nil && *sshKey != "" {

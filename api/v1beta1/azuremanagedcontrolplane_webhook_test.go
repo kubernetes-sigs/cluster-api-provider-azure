@@ -210,6 +210,37 @@ func TestValidateVersion(t *testing.T) {
 	}
 }
 
+func TestValidateLoadBalancerSKU(t *testing.T) {
+	tests := []struct {
+		name            string
+		loadBalancerSKU *string
+		expectErr       bool
+	}{
+		{
+			name:            "Valid Version",
+			loadBalancerSKU: ptr.To(LoadBalancerSKUStandard),
+			expectErr:       false,
+		},
+		{
+			name:            "Invalid Version",
+			loadBalancerSKU: ptr.To("Basic"),
+			expectErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			allErrs := validateLoadBalancerSKU(tt.loadBalancerSKU, field.NewPath("spec").Child("loadBalancerSKU"))
+			if tt.expectErr {
+				g.Expect(allErrs).NotTo(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
+}
+
 func TestValidateLoadBalancerProfile(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -2236,7 +2267,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						DNSServiceIP:    ptr.To("192.168.0.10"),
-						LoadBalancerSKU: ptr.To("Standard"),
+						LoadBalancerSKU: ptr.To(LoadBalancerSKUStandard),
 						Version:         "v1.18.0",
 					},
 				},
@@ -2245,7 +2276,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				Spec: AzureManagedControlPlaneSpec{
 					AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
 						DNSServiceIP:    ptr.To("192.168.0.10"),
-						LoadBalancerSKU: ptr.To(LoadBalancerSKUBasic),
+						LoadBalancerSKU: ptr.To("foo"),
 						Version:         "v1.18.0",
 					},
 				},
