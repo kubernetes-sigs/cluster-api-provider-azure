@@ -3469,6 +3469,11 @@ func (in *LoadBalancerSpec) DeepCopyInto(out *LoadBalancerSpec) {
 		**out = **in
 	}
 	out.BackendPool = in.BackendPool
+	if in.AvailabilityZones != nil {
+		in, out := &in.AvailabilityZones, &out.AvailabilityZones
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	in.LoadBalancerClassSpec.DeepCopyInto(&out.LoadBalancerClassSpec)
 }
 
