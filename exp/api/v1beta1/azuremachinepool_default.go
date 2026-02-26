@@ -24,6 +24,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -44,6 +45,7 @@ func (amp *AzureMachinePool) SetDefaults(client client.Client) error {
 	amp.SetDiagnosticsDefaults()
 	amp.SetNetworkInterfacesDefaults()
 	amp.SetOSDiskDefaults()
+	amp.SetDisableVMBootstrapExtensionDefaults()
 
 	return kerrors.NewAggregate(errs)
 }
@@ -169,5 +171,12 @@ func (amp *AzureMachinePool) SetOSDiskDefaults() {
 	}
 	if amp.Spec.Template.OSDisk.CachingType == "" {
 		amp.Spec.Template.OSDisk.CachingType = "None"
+	}
+}
+
+// SetDisableVMBootstrapExtensionDefaults sets the default for DisableVMBootstrapExtension.
+func (amp *AzureMachinePool) SetDisableVMBootstrapExtensionDefaults() {
+	if amp.Spec.Template.DisableVMBootstrapExtension == nil {
+		amp.Spec.Template.DisableVMBootstrapExtension = ptr.To(true)
 	}
 }

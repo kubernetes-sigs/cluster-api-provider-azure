@@ -369,6 +369,11 @@ spec:
                         - storageAccountType
                         type: object
                     type: object
+                  disableVMBootstrapExtension:
+                    description: |-
+                      DisableVMBootstrapExtension specifies whether the VM bootstrap extension should be disabled on the virtual machine scale set.
+                      Use this setting if you want to disable only the bootstrapping extension and not all extensions.
+                    type: boolean
                   image:
                     description: |-
                       Image is used to provide details of an image to use during VM creation.

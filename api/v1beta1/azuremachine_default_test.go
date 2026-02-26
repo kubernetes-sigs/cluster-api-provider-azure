@@ -346,6 +346,30 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 	}
 }
 
+func TestAzureMachineSpec_SetDisableVMBootstrapExtensionDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test that nil defaults to true
+	machineWithNil := &AzureMachine{Spec: AzureMachineSpec{}}
+	machineWithNil.Spec.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(machineWithNil.Spec.DisableVMBootstrapExtension).ToNot(BeNil())
+	g.Expect(*machineWithNil.Spec.DisableVMBootstrapExtension).To(BeTrue())
+
+	// Test that explicit true is preserved
+	machineWithTrue := &AzureMachine{Spec: AzureMachineSpec{
+		DisableVMBootstrapExtension: ptr.To(true),
+	}}
+	machineWithTrue.Spec.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(*machineWithTrue.Spec.DisableVMBootstrapExtension).To(BeTrue())
+
+	// Test that explicit false is preserved
+	machineWithFalse := &AzureMachine{Spec: AzureMachineSpec{
+		DisableVMBootstrapExtension: ptr.To(false),
+	}}
+	machineWithFalse.Spec.SetDisableVMBootstrapExtensionDefaults()
+	g.Expect(*machineWithFalse.Spec.DisableVMBootstrapExtension).To(BeFalse())
+}
+
 func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 	tests := []struct {
 		name    string
