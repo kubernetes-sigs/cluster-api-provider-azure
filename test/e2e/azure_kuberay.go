@@ -235,14 +235,14 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 	By(fmt.Sprintf("Installing Helm chart %s/%s as release %s using kubeconfig %s", repoName, chartName, releaseName, kubeconfigPath))
 
 	// Add the Helm repo
-	repoAddCmd := exec.CommandContext(ctx, "helm", "repo", "add", repoName, repoURL) //nolint:gosec
+	repoAddCmd := exec.CommandContext(ctx, "helm", "repo", "add", repoName, repoURL)
 	repoAddCmd.Env = append(repoAddCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err := repoAddCmd.CombinedOutput()
 	Logf("helm repo add output: %s", string(output))
 	Expect(err).NotTo(HaveOccurred(), "failed to add Helm repo: %s", string(output))
 
 	// Update the Helm repos
-	repoUpdateCmd := exec.CommandContext(ctx, "helm", "repo", "update") //nolint:gosec
+	repoUpdateCmd := exec.CommandContext(ctx, "helm", "repo", "update")
 	repoUpdateCmd.Env = append(repoUpdateCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err = repoUpdateCmd.CombinedOutput()
 	Logf("helm repo update output: %s", string(output))
