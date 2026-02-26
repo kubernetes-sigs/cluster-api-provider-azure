@@ -525,28 +525,7 @@ func (s *ScaleSetSpec) generateImagePlan(ctx context.Context) *armcompute.Plan {
 		log.V(2).Info("no vm image found, disabling plan")
 		return nil
 	}
-
-	if s.VMImage.SharedGallery != nil && s.VMImage.SharedGallery.Publisher != nil && s.VMImage.SharedGallery.SKU != nil && s.VMImage.SharedGallery.Offer != nil {
-		return &armcompute.Plan{
-			Publisher: s.VMImage.SharedGallery.Publisher,
-			Name:      s.VMImage.SharedGallery.SKU,
-			Product:   s.VMImage.SharedGallery.Offer,
-		}
-	}
-
-	if s.VMImage.Marketplace == nil || !s.VMImage.Marketplace.ThirdPartyImage {
-		return nil
-	}
-
-	if s.VMImage.Marketplace.Publisher == "" || s.VMImage.Marketplace.SKU == "" || s.VMImage.Marketplace.Offer == "" {
-		return nil
-	}
-
-	return &armcompute.Plan{
-		Publisher: ptr.To(s.VMImage.Marketplace.Publisher),
-		Name:      ptr.To(s.VMImage.Marketplace.SKU),
-		Product:   ptr.To(s.VMImage.Marketplace.Offer),
-	}
+	return converters.ImageToPlan(s.VMImage)
 }
 
 func (s *ScaleSetSpec) getSecurityProfile() (*armcompute.SecurityProfile, error) {
