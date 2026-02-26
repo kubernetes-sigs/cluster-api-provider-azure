@@ -122,6 +122,7 @@ providers:
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template.yaml"
         targetName: "cluster-template-management.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-remediation.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-taints.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-remediation.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-scale-in.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-node-drain.yaml"
@@ -237,6 +238,7 @@ variables:
   EXP_EDGEZONE: "true"
   CLUSTER_TOPOLOGY: "true"
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
+  EXP_MACHINE_TAINT_PROPAGATION: "true"
   AZURE_EXTENDEDLOCATION_TYPE: "${AZURE_EXTENDEDLOCATION_TYPE:-EdgeZone}"
   AZURE_EXTENDEDLOCATION_NAME: "${AZURE_EXTENDEDLOCATION_NAME:-microsoftvancouver1}"
   CONFORMANCE_WORKER_MACHINE_COUNT: "2"
@@ -287,6 +289,8 @@ intervals:
   default/wait-machine-pool-nodes: ["30m", "10s"]
   default/wait-nsg-update: ["20m", "10s"]
   default/wait-autoscale: ["10m", "10s"]
+  default/wait-resource-versions-become-stable: ["5m", "15s"]
+  default/wait-resource-versions-remain-stable: ["5m", "5s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]
