@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -619,6 +620,221 @@ func TestAROControlPlaneScope_ShouldReconcileKubeconfig(t *testing.T) {
 
 			result := scope.ShouldReconcileKubeconfig(t.Context())
 			g.Expect(result).To(Equal(tc.expectedResult), tc.description)
+		})
+	}
+}
+
+func TestAROControlPlaneScope_KeyVaultMethods(t *testing.T) {
+	g := NewWithT(t)
+
+	testCases := []struct {
+		name            string
+		resources       []runtime.RawExtension
+		expectedVaultID string
+		setVaultName    *string
+		setKeyName      *string
+		setKeyVersion   *string
+		description     string
+	}{
+		{
+			name: "get vault ID from HcpOpenShiftCluster with encryption",
+			resources: []runtime.RawExtension{
+				{
+					Raw: []byte(`{
+						"apiVersion": "redhatopenshift.azure.com/v1api20240812preview",
+						"kind": "HcpOpenShiftCluster",
+						"metadata": {"name": "test-cluster"},
+						"spec": {
+							"location": "eastus",
+							"properties": {
+								"etcd": {
+									"dataEncryption": {
+										"customerManaged": {
+											"kms": {
+												"activeKey": {
+													"vaultName": "my-vault",
+													"keyName": "etcd-key"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}`),
+				},
+			},
+			expectedVaultID: "my-vault",
+			description:     "should extract vault name from HcpOpenShiftCluster KMS config",
+		},
+		{
+			name: "no encryption configured",
+			resources: []runtime.RawExtension{
+				{
+					Raw: []byte(`{
+						"apiVersion": "redhatopenshift.azure.com/v1api20240812preview",
+						"kind": "HcpOpenShiftCluster",
+						"metadata": {"name": "test-cluster"},
+						"spec": {
+							"location": "eastus",
+							"properties": {}
+						}
+					}`),
+				},
+			},
+			expectedVaultID: "",
+			description:     "should return empty when no encryption configured",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			controlPlane := &cplane.AROControlPlane{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-cp",
+					Namespace: "default",
+				},
+				Spec: cplane.AROControlPlaneSpec{
+					Resources: tc.resources,
+				},
+			}
+
+			scope := &AROControlPlaneScope{
+				ControlPlane: controlPlane,
+			}
+
+			// Test GetKeyVaultResourceID
+			vaultID := scope.GetKeyVaultResourceID()
+			g.Expect(vaultID).To(Equal(tc.expectedVaultID), tc.description)
+		})
+	}
+}
+
+func TestAROControlPlaneScope_SetAndGetVaultInfo(t *testing.T) {
+	g := NewWithT(t)
+
+	controlPlane := &cplane.AROControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cp",
+			Namespace: "default",
+		},
+	}
+
+	scope := &AROControlPlaneScope{
+		ControlPlane: controlPlane,
+	}
+
+	// Initially, all should be nil
+	vaultName, keyName, keyVersion := scope.GetVaultInfo()
+	g.Expect(vaultName).To(BeNil())
+	g.Expect(keyName).To(BeNil())
+	g.Expect(keyVersion).To(BeNil())
+
+	// Set vault info
+	scope.SetVaultInfo(ptr.To("my-vault"), ptr.To("my-key"), ptr.To("v1.0"))
+
+	// Get vault info back
+	vaultName, keyName, keyVersion = scope.GetVaultInfo()
+	g.Expect(vaultName).NotTo(BeNil())
+	g.Expect(*vaultName).To(Equal("my-vault"))
+	g.Expect(keyName).NotTo(BeNil())
+	g.Expect(*keyName).To(Equal("my-key"))
+	g.Expect(keyVersion).NotTo(BeNil())
+	g.Expect(*keyVersion).To(Equal("v1.0"))
+
+	// Verify it's stored in scope fields
+	g.Expect(scope.VaultName).NotTo(BeNil())
+	g.Expect(*scope.VaultName).To(Equal("my-vault"))
+	g.Expect(scope.VaultKeyName).NotTo(BeNil())
+	g.Expect(*scope.VaultKeyName).To(Equal("my-key"))
+	g.Expect(scope.VaultKeyVersion).NotTo(BeNil())
+	g.Expect(*scope.VaultKeyVersion).To(Equal("v1.0"))
+}
+
+func TestAROControlPlaneScope_MakeClusterCA(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cluster",
+			Namespace: "default",
+		},
+	}
+
+	controlPlane := &cplane.AROControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cp",
+			Namespace: "default",
+			UID:       "test-uid",
+		},
+	}
+
+	scope := &AROControlPlaneScope{
+		Cluster:      cluster,
+		ControlPlane: controlPlane,
+	}
+
+	ca := scope.MakeClusterCA()
+
+	g.Expect(ca.Name).To(Equal(secret.Name(cluster.Name, secret.ClusterCA)))
+	g.Expect(ca.Namespace).To(Equal(cluster.Namespace))
+	g.Expect(ca.OwnerReferences).To(HaveLen(1))
+	g.Expect(ca.OwnerReferences[0].Name).To(Equal(controlPlane.Name))
+	g.Expect(ca.OwnerReferences[0].UID).To(Equal(controlPlane.UID))
+}
+
+func TestAROControlPlaneScope_ASOOwner(t *testing.T) {
+	g := NewWithT(t)
+
+	controlPlane := &cplane.AROControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cp",
+			Namespace: "default",
+		},
+	}
+
+	scope := &AROControlPlaneScope{
+		ControlPlane: controlPlane,
+	}
+
+	owner := scope.ASOOwner()
+	g.Expect(owner).To(Equal(controlPlane))
+}
+
+func TestAROControlPlaneScope_SubscriptionID(t *testing.T) {
+	g := NewWithT(t)
+
+	testCases := []struct {
+		name           string
+		subscriptionID string
+		expected       string
+	}{
+		{
+			name:           "returns subscription ID from spec",
+			subscriptionID: "12345678-1234-1234-1234-123456789012",
+			expected:       "12345678-1234-1234-1234-123456789012",
+		},
+		{
+			name:           "returns empty when not set",
+			subscriptionID: "",
+			expected:       "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			controlPlane := &cplane.AROControlPlane{
+				Spec: cplane.AROControlPlaneSpec{
+					SubscriptionID: tc.subscriptionID,
+				},
+			}
+
+			scope := &AROControlPlaneScope{
+				ControlPlane: controlPlane,
+			}
+
+			result := scope.SubscriptionID()
+			g.Expect(result).To(Equal(tc.expected))
 		})
 	}
 }
