@@ -31,9 +31,7 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -173,18 +171,6 @@ func (mr *MockKeyVaultScopeMockRecorder) DefaultedReconcilerRequeue() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultedReconcilerRequeue", reflect.TypeOf((*MockKeyVaultScope)(nil).DefaultedReconcilerRequeue))
 }
 
-// DeleteLongRunningOperationState mocks base method.
-func (m *MockKeyVaultScope) DeleteLongRunningOperationState(arg0, arg1, arg2 string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1, arg2)
-}
-
-// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
-func (mr *MockKeyVaultScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockKeyVaultScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
-}
-
 // GetClient mocks base method.
 func (m *MockKeyVaultScope) GetClient() client.Client {
 	m.ctrl.T.Helper()
@@ -211,20 +197,6 @@ func (m *MockKeyVaultScope) GetKeyVaultResourceID() string {
 func (mr *MockKeyVaultScopeMockRecorder) GetKeyVaultResourceID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeyVaultResourceID", reflect.TypeOf((*MockKeyVaultScope)(nil).GetKeyVaultResourceID))
-}
-
-// GetLongRunningOperationState mocks base method.
-func (m *MockKeyVaultScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
-	return ret0
-}
-
-// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
-func (mr *MockKeyVaultScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockKeyVaultScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
 // HashKey mocks base method.
@@ -267,32 +239,6 @@ func (m *MockKeyVaultScope) Namespace() string {
 func (mr *MockKeyVaultScopeMockRecorder) Namespace() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Namespace", reflect.TypeOf((*MockKeyVaultScope)(nil).Namespace))
-}
-
-// ResourceGroup mocks base method.
-func (m *MockKeyVaultScope) ResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockKeyVaultScopeMockRecorder) ResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockKeyVaultScope)(nil).ResourceGroup))
-}
-
-// SetLongRunningOperationState mocks base method.
-func (m *MockKeyVaultScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
-}
-
-// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
-func (mr *MockKeyVaultScopeMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockKeyVaultScope)(nil).SetLongRunningOperationState), arg0)
 }
 
 // SetVaultInfo mocks base method.
@@ -347,40 +293,4 @@ func (m *MockKeyVaultScope) Token() azcore.TokenCredential {
 func (mr *MockKeyVaultScopeMockRecorder) Token() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockKeyVaultScope)(nil).Token))
-}
-
-// UpdateDeleteStatus mocks base method.
-func (m *MockKeyVaultScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
-}
-
-// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
-func (mr *MockKeyVaultScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockKeyVaultScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
-}
-
-// UpdatePatchStatus mocks base method.
-func (m *MockKeyVaultScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
-}
-
-// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
-func (mr *MockKeyVaultScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockKeyVaultScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
-}
-
-// UpdatePutStatus mocks base method.
-func (m *MockKeyVaultScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
-}
-
-// UpdatePutStatus indicates an expected call of UpdatePutStatus.
-func (mr *MockKeyVaultScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockKeyVaultScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
