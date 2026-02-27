@@ -3,11 +3,11 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.11.5
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.3
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.11.5
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.3
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.11.5
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.3
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.5.2
     loadBehavior: tryLoad
@@ -16,8 +16,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v1.10.9 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.9/core-components.yaml"
+    - name: v1.11.6 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.6/core-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -25,8 +25,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.5/core-components.yaml
+    - name: v1.12.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.3/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -38,8 +38,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v1.10.9 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.9/bootstrap-components.yaml"
+    - name: v1.11.6 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.6/bootstrap-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -47,8 +47,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.5/bootstrap-components.yaml
+    - name: v1.12.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.3/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -60,8 +60,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v1.10.9 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.9/control-plane-components.yaml"
+    - name: v1.11.6 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.6/control-plane-components.yaml"
       type: "url"
       contract: v1beta1
       replacements:
@@ -69,8 +69,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.11.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.5/control-plane-components.yaml
+    - name: v1.12.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.3/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -122,6 +122,7 @@ providers:
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template.yaml"
         targetName: "cluster-template-management.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-remediation.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-taints.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-remediation.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-scale-in.yaml"
       - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-node-drain.yaml"
@@ -237,6 +238,7 @@ variables:
   EXP_EDGEZONE: "true"
   CLUSTER_TOPOLOGY: "true"
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
+  EXP_MACHINE_TAINT_PROPAGATION: "true"
   AZURE_EXTENDEDLOCATION_TYPE: "${AZURE_EXTENDEDLOCATION_TYPE:-EdgeZone}"
   AZURE_EXTENDEDLOCATION_NAME: "${AZURE_EXTENDEDLOCATION_NAME:-microsoftvancouver1}"
   CONFORMANCE_WORKER_MACHINE_COUNT: "2"
@@ -252,8 +254,8 @@ variables:
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
-  OLD_CAPI_UPGRADE_VERSION: "v1.10.9"
-  LATEST_CAPI_UPGRADE_VERSION: "v1.11.5"
+  OLD_CAPI_UPGRADE_VERSION: "v1.11.6"
+  LATEST_CAPI_UPGRADE_VERSION: "v1.12.3"
   OLD_PROVIDER_UPGRADE_VERSION: "v1.21.2"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.22.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.1.0-alpha.10"
@@ -269,6 +271,8 @@ intervals:
   default/wait-control-plane: ["20m", "10s"]
   default/wait-control-plane-long: ["40m", "10s"]
   default/wait-control-plane-ha: ["60m", "10s"]
+  default/wait-control-plane-upgrade: ["15m", "10s"]
+  default/wait-machine-deployment-upgrade: ["10m", "10s"]
   default/wait-worker-nodes: ["25m", "10s"]
   default/wait-gpu-nodes: ["30m", "10s"]
   default/wait-nodes-ready: ["10m", "10s"]
@@ -285,6 +289,8 @@ intervals:
   default/wait-machine-pool-nodes: ["30m", "10s"]
   default/wait-nsg-update: ["20m", "10s"]
   default/wait-autoscale: ["10m", "10s"]
+  default/wait-resource-versions-become-stable: ["5m", "15s"]
+  default/wait-resource-versions-remain-stable: ["5m", "5s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]

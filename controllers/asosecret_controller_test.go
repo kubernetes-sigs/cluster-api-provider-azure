@@ -277,7 +277,7 @@ func TestASOSecretReconcile(t *testing.T) {
 			objects: []runtime.Object{
 				defaultAzureCluster,
 			},
-			err: "failed to get Cluster/my-cluster: clusters.cluster.x-k8s.io \"my-cluster\" not found",
+			err: "failed to get Cluster default/my-cluster: clusters.cluster.x-k8s.io \"my-cluster\" not found",
 		},
 		"should return if cluster is paused": {
 			clusterName: defaultAzureCluster.Name,
