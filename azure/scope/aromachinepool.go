@@ -41,36 +41,28 @@ import (
 
 // AROMachinePoolScopeParams defines the input parameters used to create a new Scope.
 type AROMachinePoolScopeParams struct {
-	AzureClients
-	Client               client.Client
-	Cluster              *clusterv1.Cluster
-	MachinePool          *clusterv1.MachinePool
-	ControlPlane         *cplane.AROControlPlane
-	AROMachinePool       *v1beta2.AROMachinePool
-	Cache                *AROMachinePoolCache
-	Timeouts             azure.AsyncReconciler
-	CredentialCache      azure.CredentialCache
-	AROControlPlaneScope *AROControlPlaneScope
+	Client         client.Client
+	Cluster        *clusterv1.Cluster
+	MachinePool    *clusterv1.MachinePool
+	ControlPlane   *cplane.AROControlPlane
+	AROMachinePool *v1beta2.AROMachinePool
+	Cache          *AROMachinePoolCache
+	Timeouts       azure.AsyncReconciler
 }
 
 // NewAROMachinePoolScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
 func NewAROMachinePoolScope(ctx context.Context, params AROMachinePoolScopeParams) (*AROMachinePoolScope, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.aroMachinePoolScope.NewAROMachinePoolScope")
+	_, _, done := tele.StartSpanWithLogger(ctx, "azure.aroMachinePoolScope.NewAROMachinePoolScope")
 	defer done()
 
 	if params.AROMachinePool == nil {
 		return nil, errors.New("failed to generate new scope from nil AROMachinePool")
 	}
 
-	credentialsProvider, err := NewAzureCredentialsProvider(ctx, params.CredentialCache, params.Client, params.ControlPlane.Spec.IdentityRef, params.AROMachinePool.Namespace)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to init credentials provider")
-	}
-	err = params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
-	}
+	// AROMachinePool no longer requires Azure credentials
+	// ProviderIDList is populated from workload cluster nodes instead of Azure VM API
+	// ASO handles all Azure operations via its own authentication (serviceoperator.azure.com/credential-from annotations)
 
 	if params.Cache == nil {
 		params.Cache = &AROMachinePoolCache{}
@@ -89,7 +81,6 @@ func NewAROMachinePoolScope(ctx context.Context, params AROMachinePoolScopeParam
 		Client:                     params.Client,
 		patchHelper:                helper,
 		cache:                      params.Cache,
-		AzureClients:               params.AzureClients,
 		Cluster:                    params.Cluster,
 		MachinePool:                params.MachinePool,
 		ControlPlane:               params.ControlPlane,
@@ -106,7 +97,6 @@ type AROMachinePoolScope struct {
 	capiMachinePoolPatchHelper *patch.Helper
 	cache                      *AROMachinePoolCache
 
-	AzureClients
 	Cluster          *clusterv1.Cluster
 	ControlPlane     *cplane.AROControlPlane
 	MachinePool      *clusterv1.MachinePool
@@ -216,11 +206,6 @@ func (s *AROMachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionTyp
 
 // AROMachinePoolCache stores AROMachinePoolCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
 type AROMachinePoolCache struct {
-}
-
-// BaseURI returns the Azure ResourceManagerEndpoint.
-func (s *AROMachinePoolScope) BaseURI() string {
-	return s.ResourceManagerEndpoint
 }
 
 // GetClient returns the controller-runtime client.

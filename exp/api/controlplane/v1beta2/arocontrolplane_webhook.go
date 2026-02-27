@@ -128,9 +128,15 @@ func validateName(name string, fldPath *field.Path) field.ErrorList {
 }
 
 // validateIdentity validates an Identity.
+// identityRef is optional - when not set, ASO credential-based authentication is used.
+// When identityRef is not set:
+// - Key Vault operations (key creation, version propagation) are skipped
+// - Customers must manually create the vault and encryption key via ASO or other means
+// - The key version must be manually specified in HcpOpenShiftCluster spec.
 func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 	var allErrs field.ErrorList
 
+	// identityRef is optional - only validate if provided
 	if m.Spec.IdentityRef != nil {
 		if m.Spec.IdentityRef.Name == "" {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "identityRef", "name"), m.Spec.IdentityRef.Name, "cannot be empty"))
@@ -197,6 +203,71 @@ func (m *AROControlPlane) validateResources(_ client.Client) field.ErrorList {
 		if !ok || name == "" {
 			allErrs = append(allErrs, field.Required(resourcePath.Child("metadata", "name"), "resource must have metadata.name"))
 		}
+
+		// Validate encryption key version when identityRef is not set
+		// For HcpOpenShiftCluster with ETCD encryption configured, the key version must be manually specified
+		if m.Spec.IdentityRef == nil && strings.Contains(apiVersion, "redhatopenshift.azure.com") && kind == "HcpOpenShiftCluster" {
+			// Check if ETCD encryption with KMS is configured
+			spec, hasSpec := obj["spec"].(map[string]interface{})
+			if hasSpec {
+				if err := m.validateEncryptionKeyVersion(spec, resourcePath); err != nil {
+					allErrs = append(allErrs, err...)
+				}
+			}
+		}
+	}
+
+	return allErrs
+}
+
+// validateEncryptionKeyVersion validates that encryption key version is specified when required.
+// When identityRef is not set, CAPZ cannot auto-create or propagate the key version,
+// so customers must manually specify it in the HcpOpenShiftCluster spec.
+func (m *AROControlPlane) validateEncryptionKeyVersion(spec map[string]interface{}, basePath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// Navigate to spec.properties.etcd.dataEncryption.customerManaged.kms
+	properties, hasProperties := spec["properties"].(map[string]interface{})
+	if !hasProperties {
+		return allErrs // No properties, no encryption configured
+	}
+
+	etcd, hasEtcd := properties["etcd"].(map[string]interface{})
+	if !hasEtcd {
+		return allErrs // No etcd config, no encryption configured
+	}
+
+	dataEncryption, hasDataEncryption := etcd["dataEncryption"].(map[string]interface{})
+	if !hasDataEncryption {
+		return allErrs // No dataEncryption, no encryption configured
+	}
+
+	customerManaged, hasCustomerManaged := dataEncryption["customerManaged"].(map[string]interface{})
+	if !hasCustomerManaged {
+		return allErrs // No customerManaged, no encryption configured
+	}
+
+	kms, hasKms := customerManaged["kms"].(map[string]interface{})
+	if !hasKms {
+		return allErrs // No KMS, no encryption configured
+	}
+
+	// KMS encryption is configured, validate that activeKey.version is specified
+	activeKey, hasActiveKey := kms["activeKey"].(map[string]interface{})
+	if !hasActiveKey {
+		allErrs = append(allErrs, field.Required(
+			basePath.Child("spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "activeKey"),
+			"activeKey is required when KMS encryption is configured",
+		))
+		return allErrs
+	}
+
+	version, hasVersion := activeKey["version"].(string)
+	if !hasVersion || version == "" {
+		allErrs = append(allErrs, field.Required(
+			basePath.Child("spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "activeKey", "version"),
+			"activeKey.version is required when identityRef is not set - CAPZ cannot auto-create or propagate the encryption key without Azure credentials",
+		))
 	}
 
 	return allErrs

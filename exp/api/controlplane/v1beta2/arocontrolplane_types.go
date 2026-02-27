@@ -38,7 +38,12 @@ type AROControlPlaneSpec struct { //nolint: maligned
 	Resources []runtime.RawExtension `json:"resources,omitempty"`
 
 	// IdentityRef is a reference to an identity to be used when reconciling the aro control plane.
-	// If no identity is specified, the default identity for this controller will be used.
+	// This field is optional. When set, CAPZ will initialize Azure SDK credentials and perform
+	// Key Vault operations (check existence, create encryption keys, propagate key versions).
+	//
+	// When NOT set (ASO credential-based mode), ASO handles authentication via
+	// serviceoperator.azure.com/credential-from annotations, and customers must manually
+	// create the vault and encryption key via ASO and specify the keyVersion in HcpOpenShiftCluster spec.
 	//
 	// +optional
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`

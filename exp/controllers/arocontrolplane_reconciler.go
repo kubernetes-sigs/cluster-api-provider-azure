@@ -288,7 +288,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 	log.Info("AROCluster infrastructure is ready, proceeding with HcpOpenShiftCluster creation")
 
 	// Check if HcpOpenShiftCluster has ETCD encryption configured
-	encryptionConfigured := false
+	var hcpClusterWithEncryption *unstructured.Unstructured
 	for _, resource := range s.scope.ControlPlane.Spec.Resources {
 		// Convert RawExtension to Unstructured
 		u := &unstructured.Unstructured{}
@@ -302,59 +302,115 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 			// Check if etcd.dataEncryption.customerManaged.kms is configured
 			etcdPath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms"}
 			if _, hasKMS, _ := unstructured.NestedFieldNoCopy(u.UnstructuredContent(), etcdPath...); hasKMS {
-				encryptionConfigured = true
+				hcpClusterWithEncryption = u
 				log.V(4).Info("HcpOpenShiftCluster has ETCD encryption with KMS configured")
 				break
 			}
 		}
 	}
 
-	// Ensure KeyVault encryption key exists before reconciling resources
-	// This is required for HcpOpenShiftCluster ETCD encryption
-	keyVaultSvc, err := s.getService("keyvault")
-	if err != nil {
-		return errors.Wrap(err, "failed to get keyvault service")
-	}
+	// Handle encryption key management based on authentication mode
+	// Two modes:
+	// 1. identityRef is nil: ASO credential-based mode (customer manages vault/key manually)
+	// 2. identityRef is set: CAPZ manages KeyVault operations (auto-create/propagate key)
+	if s.scope.ControlPlane.Spec.IdentityRef == nil {
+		// ASO credential-based mode: identityRef is not set
+		// CAPZ cannot auto-create or propagate encryption keys without Azure credentials
+		// Customer must manually create the vault and key via ASO and specify activeKey.version
+		if hcpClusterWithEncryption != nil {
+			log.V(2).Info("identityRef not set, validating that encryption key version is manually specified")
 
-	// Set condition before reconciling KeyVault (if encryption is configured)
-	if encryptionConfigured {
-		vaultName, keyName, keyVersion := s.scope.GetVaultInfo()
+			kmsPath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms"}
+			kms, found, err := unstructured.NestedMap(hcpClusterWithEncryption.UnstructuredContent(), kmsPath...)
+			if err != nil {
+				return errors.Wrap(err, "failed to get KMS configuration from HcpOpenShiftCluster")
+			}
+			if !found {
+				return errors.New("KMS configuration not found in HcpOpenShiftCluster")
+			}
 
-		if vaultName == nil || keyName == nil {
-			// Vault/key not configured yet
+			// Validate activeKey.version is specified (required for ASO credential-based mode)
+			activeKey, hasActiveKey := kms["activeKey"].(map[string]interface{})
+			if !hasActiveKey {
+				log.Error(nil, "ETCD encryption is configured but activeKey is missing - cannot proceed without identityRef",
+					"hcpCluster", hcpClusterWithEncryption.GetName())
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:    string(cplane.EncryptionKeyReadyCondition),
+					Status:  metav1.ConditionFalse,
+					Reason:  "ActiveKeyMissing",
+					Message: "identityRef is not set and activeKey is not specified in HcpOpenShiftCluster - CAPZ cannot auto-create or propagate the encryption key without Azure credentials. Please manually create the vault and key via ASO and specify activeKey with version in spec.properties.etcd.dataEncryption.customerManaged.kms.activeKey",
+				})
+				return errors.New("activeKey is required when identityRef is not set - CAPZ cannot auto-create or propagate the encryption key without Azure credentials")
+			}
+
+			version, hasVersion := activeKey["version"].(string)
+			if !hasVersion || version == "" {
+				log.Error(nil, "ETCD encryption is configured but activeKey.version is missing - cannot proceed without identityRef",
+					"hcpCluster", hcpClusterWithEncryption.GetName())
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:    string(cplane.EncryptionKeyReadyCondition),
+					Status:  metav1.ConditionFalse,
+					Reason:  "KeyVersionMissing",
+					Message: "identityRef is not set and version is not specified in HcpOpenShiftCluster activeKey - CAPZ cannot auto-create or propagate the encryption key without Azure credentials. Please manually create the vault and key via ASO and specify the version in spec.properties.etcd.dataEncryption.customerManaged.kms.activeKey.version",
+				})
+				return errors.New("encryption key version is required when identityRef is not set - CAPZ cannot auto-create or propagate the encryption key without Azure credentials")
+			}
+
+			// Validation passed - activeKey.version is specified
+			log.V(2).Info("Encryption key version is specified in HcpOpenShiftCluster", "keyVersion", version)
 			conditions.Set(s.scope.ControlPlane, metav1.Condition{
 				Type:    string(cplane.EncryptionKeyReadyCondition),
-				Status:  metav1.ConditionFalse,
-				Reason:  "WaitingForVault",
-				Message: "Waiting for KeyVault to be created",
-			})
-		} else if keyVersion == nil {
-			// Vault exists but key not created yet
-			conditions.Set(s.scope.ControlPlane, metav1.Condition{
-				Type:    string(cplane.EncryptionKeyReadyCondition),
-				Status:  metav1.ConditionFalse,
-				Reason:  "CreatingKey",
-				Message: fmt.Sprintf("Creating encryption key '%s' in vault '%s'", ptr.Deref(keyName, ""), ptr.Deref(vaultName, "")),
+				Status:  metav1.ConditionUnknown,
+				Reason:  "ManualKeyManagement",
+				Message: "identityRef not set - encryption key must be manually created and specified in HcpOpenShiftCluster",
 			})
 		}
-	}
+	} else {
+		// identityRef mode: CAPZ manages KeyVault operations
+		// CAPZ will auto-create encryption key and propagate version to HcpOpenShiftCluster
+		if hcpClusterWithEncryption != nil {
+			keyVaultSvc, err := s.getService("keyvault")
+			if err != nil {
+				return errors.Wrap(err, "failed to get keyvault service")
+			}
 
-	if err := keyVaultSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to ensure KeyVault encryption key")
-	}
+			// Set condition before reconciling KeyVault
+			vaultName, keyName, keyVersion := s.scope.GetVaultInfo()
+			if vaultName == nil || keyName == nil {
+				// Vault/key not configured yet
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:    string(cplane.EncryptionKeyReadyCondition),
+					Status:  metav1.ConditionFalse,
+					Reason:  "WaitingForVault",
+					Message: "Waiting for KeyVault to be created",
+				})
+			} else if keyVersion == nil {
+				// Vault exists but key not created yet
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:    string(cplane.EncryptionKeyReadyCondition),
+					Status:  metav1.ConditionFalse,
+					Reason:  "CreatingKey",
+					Message: fmt.Sprintf("Creating encryption key '%s' in vault '%s'", ptr.Deref(keyName, ""), ptr.Deref(vaultName, "")),
+				})
+			}
 
-	// Update condition after KeyVault reconciliation (if encryption is configured)
-	if encryptionConfigured {
-		vaultName, keyName, keyVersion := s.scope.GetVaultInfo()
-		if keyVersion != nil {
-			// Key is ready
-			conditions.Set(s.scope.ControlPlane, metav1.Condition{
-				Type:   string(cplane.EncryptionKeyReadyCondition),
-				Status: metav1.ConditionTrue,
-				Reason: "KeyReady",
-				Message: fmt.Sprintf("Encryption key '%s' version '%s' ready in vault '%s'",
-					ptr.Deref(keyName, ""), ptr.Deref(keyVersion, ""), ptr.Deref(vaultName, "")),
-			})
+			// Reconcile KeyVault to ensure encryption key exists
+			if err := keyVaultSvc.Reconcile(ctx); err != nil {
+				return errors.Wrap(err, "failed to ensure KeyVault encryption key")
+			}
+
+			// Update condition after KeyVault reconciliation
+			vaultName, keyName, keyVersion = s.scope.GetVaultInfo()
+			if keyVersion != nil {
+				// Key is ready
+				conditions.Set(s.scope.ControlPlane, metav1.Condition{
+					Type:   string(cplane.EncryptionKeyReadyCondition),
+					Status: metav1.ConditionTrue,
+					Reason: "KeyReady",
+					Message: fmt.Sprintf("Encryption key '%s' version '%s' ready in vault '%s'",
+						ptr.Deref(keyName, ""), ptr.Deref(keyVersion, ""), ptr.Deref(vaultName, "")),
+				})
+			}
 		}
 	}
 

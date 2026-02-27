@@ -17,11 +17,11 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,16 +34,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
+// ClusterTracker is an alias for the controllers.ClusterTracker interface.
+type ClusterTracker = controllers.ClusterTracker
+
 const (
 	testMachinePoolName = "test-mp"
 )
+
+// FakeClusterTracker is a fake implementation of ClusterTracker for testing.
+type FakeClusterTracker struct {
+	getClientFunc func(context.Context, types.NamespacedName) (client.Client, error)
+}
+
+func (c *FakeClusterTracker) GetClient(ctx context.Context, name types.NamespacedName) (client.Client, error) {
+	if c.getClientFunc == nil {
+		return nil, nil
+	}
+	return c.getClientFunc(ctx, name)
+}
 
 func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 	testcases := []struct {
@@ -228,9 +243,6 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 				Build()
 
 			// Create mock credential cache
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			credentialCache := mock_azure.NewMockCredentialCache(ctrl)
 
 			// Create reconciler with mock service
 			reconciler := NewAROMachinePoolReconciler(
@@ -238,15 +250,17 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 				nil,
 				reconciler.Timeouts{},
 				"",
-				credentialCache,
+				&FakeClusterTracker{},
 			)
 
 			// Mock the service creation if machine pool exists
 			if tc.machinePoolExists && tc.clusterExists {
-				reconciler.createAROMachinePoolService = func(aroMachinePoolScope *scope.AROMachinePoolScope, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
+				reconciler.createAROMachinePoolService = func(aroMachinePoolScope *scope.AROMachinePoolScope, cluster *clusterv1.Cluster, tracker ClusterTracker, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
 					mockService := &aroMachinePoolService{
 						scope:      aroMachinePoolScope,
 						kubeclient: fakeClient,
+						cluster:    cluster,
+						tracker:    tracker,
 						newResourceReconciler: func(aroMachinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
 							return &mockAROResourceReconciler{
 								reconcileErr: tc.reconcileErr,
@@ -397,22 +411,20 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 				WithStatusSubresource(&infrav2exp.AROMachinePool{}).
 				Build()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			credentialCache := mock_azure.NewMockCredentialCache(ctrl)
-
 			reconciler := NewAROMachinePoolReconciler(
 				fakeClient,
 				nil,
 				reconciler.Timeouts{},
 				"",
-				credentialCache,
+				&FakeClusterTracker{},
 			)
 
-			reconciler.createAROMachinePoolService = func(aroMachinePoolScope *scope.AROMachinePoolScope, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
+			reconciler.createAROMachinePoolService = func(aroMachinePoolScope *scope.AROMachinePoolScope, cluster *clusterv1.Cluster, tracker ClusterTracker, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
 				mockService := &aroMachinePoolService{
 					scope:      aroMachinePoolScope,
 					kubeclient: fakeClient,
+					cluster:    cluster,
+					tracker:    tracker,
 					newResourceReconciler: func(aroMachinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
 						return &mockAROResourceReconciler{
 							deleteErr: tc.deleteErr,
