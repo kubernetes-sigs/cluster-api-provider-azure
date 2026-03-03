@@ -24,6 +24,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -37,10 +39,8 @@ const serviceName = "keyvault"
 // KeyVaultScope defines the scope interface for a key vault service.
 type KeyVaultScope interface {
 	azure.Authorizer
-	azure.AsyncStatusUpdater
+	azure.AsyncReconciler
 	KeyVaultSpecs() []azure.ResourceSpecGetter
-	ResourceGroup() string
-	SubscriptionID() string
 	GetKeyVaultResourceID() string
 	SetVaultInfo(vaultName, vaultKeyName, vaultKeyVersion *string)
 	GetClient() client.Client
@@ -129,53 +129,50 @@ func (s *Service) EnsureETCDEncryptionKey(ctx context.Context, scope KeyVaultSco
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.EnsureETCDEncryptionKey")
 	defer done()
 
-	// Get the Key Vault resource ID from the platform spec
-	keyVaultResourceID := scope.GetKeyVaultResourceID()
-	if keyVaultResourceID == "" {
+	// Get the Azure vault name from HcpOpenShiftCluster KMS configuration
+	azureVaultName := scope.GetKeyVaultResourceID()
+	if azureVaultName == "" {
 		// No Key Vault specified, skip key creation
 		log.V(2).Info("No Key Vault specified, skipping etcd encryption key creation")
 		return nil
 	}
 
-	// Extract vault name from the Key Vault resource ID
-	vaultName, err := extractVaultNameFromResourceID(keyVaultResourceID)
+	// Get vault K8s metadata (name, namespace, API version) from AROCluster.spec.resources
+	vaultK8sName, vaultNamespace, vaultAPIVersion, err := s.getVaultK8sInfo(ctx, scope, azureVaultName)
 	if err != nil {
-		return errors.Wrap(err, "failed to extract vault name from resource ID")
+		return errors.Wrap(err, "failed to get vault k8s info")
 	}
 
 	// Check if the vault is ready (if managed by AROCluster)
-	// This prevents race conditions where we try to create a key before the vault is provisioned
-	vaultReady, err := s.isVaultReadyInAROCluster(ctx, scope, vaultName)
+	vaultReady, err := s.isVaultReadyInAROCluster(ctx, scope, vaultK8sName)
 	if err != nil {
 		return errors.Wrap(err, "failed to check vault readiness")
 	}
 	if !vaultReady {
-		log.V(2).Info("Key Vault not ready yet, waiting for AROCluster to provision it", "vaultName", vaultName)
-		// Return nil to requeue without error - vault is still being provisioned by AROCluster
-		// This avoids logging errors during normal provisioning flow
+		log.V(2).Info("Key Vault not ready yet, waiting for AROCluster to provision it", "k8sName", vaultK8sName, "azureName", azureVaultName)
 		return nil
 	}
 
 	// Construct the Key Vault URL
-	keyVaultURL := fmt.Sprintf("https://%s.vault.azure.net/", vaultName)
+	keyVaultURL := fmt.Sprintf("https://%s.vault.azure.net/", azureVaultName)
 
 	log.V(2).Info("ensuring etcd encryption key exists in Key Vault", "keyVaultURL", keyVaultURL, "keyName", ETCDEncryptionKeyName)
 
 	// Ensure the etcd encryption key exists
-	keyVersion, err := s.EnsureKeyExists(ctx, keyVaultURL, ETCDEncryptionKeyName)
+	keyVersion, err := s.EnsureKeyExists(ctx, keyVaultURL, ETCDEncryptionKeyName, vaultK8sName, vaultNamespace, vaultAPIVersion)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure etcd encryption key exists")
 	}
 
 	// Update the scope with vault information
-	scope.SetVaultInfo(ptr.To(vaultName), ptr.To(ETCDEncryptionKeyName), ptr.To(keyVersion))
-	log.V(2).Info("updated scope with vault information", "vaultName", vaultName, "keyName", ETCDEncryptionKeyName, "keyVersion", keyVersion)
+	scope.SetVaultInfo(ptr.To(azureVaultName), ptr.To(ETCDEncryptionKeyName), ptr.To(keyVersion))
+	log.V(2).Info("updated scope with vault information", "azureName", azureVaultName, "keyName", ETCDEncryptionKeyName, "keyVersion", keyVersion)
 
 	return nil
 }
 
 // EnsureKeyExists checks if the specified key exists in the Key Vault and creates it if it doesn't exist.
-func (s *Service) EnsureKeyExists(ctx context.Context, keyVaultURL, keyName string) (string, error) {
+func (s *Service) EnsureKeyExists(ctx context.Context, keyVaultURL, keyName, vaultK8sName, vaultNamespace, vaultAPIVersion string) (string, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.EnsureKeyExists")
 	defer done()
 
@@ -188,12 +185,12 @@ func (s *Service) EnsureKeyExists(ctx context.Context, keyVaultURL, keyName stri
 	}
 
 	// Check if key exists and get its versions
-	keyVersion, err := s.getLatestKeyVersion(ctx, vaultName, keyName)
+	keyVersion, err := s.getLatestKeyVersion(ctx, vaultName, keyName, vaultK8sName, vaultNamespace, vaultAPIVersion)
 	if err != nil {
 		// If key doesn't exist, create it
 		if isKeyNotFoundError(err) {
 			log.V(2).Info("key not found, creating new key", "keyName", keyName)
-			return s.createKey(ctx, vaultName, keyName)
+			return s.createKey(ctx, vaultName, keyName, vaultK8sName, vaultNamespace, vaultAPIVersion)
 		}
 		return "", errors.Wrapf(err, "failed to check key existence")
 	}
@@ -203,22 +200,27 @@ func (s *Service) EnsureKeyExists(ctx context.Context, keyVaultURL, keyName stri
 }
 
 // getLatestKeyVersion retrieves the latest version of a key from the Key Vault using ARM KeysClient.
-func (s *Service) getLatestKeyVersion(ctx context.Context, vaultName, keyName string) (string, error) {
+func (s *Service) getLatestKeyVersion(ctx context.Context, azureVaultName, keyName, vaultK8sName, vaultNamespace, vaultAPIVersion string) (string, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.getLatestKeyVersion")
 	defer done()
 
-	log.V(2).Info("getting latest key version", "vaultName", vaultName, "keyName", keyName)
+	log.V(2).Info("getting latest key version", "azureVaultName", azureVaultName, "keyName", keyName, "k8sName", vaultK8sName)
 
-	resourceGroup := s.Scope.ResourceGroup()
+	// Get resource group from deployed Vault's status.id
+	// At this point the vault is ready (verified by isVaultReadyInAROCluster)
+	resourceGroup, err := s.getVaultResourceGroupFromStatus(ctx, vaultK8sName, vaultNamespace, vaultAPIVersion)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get resource group for vault %s", vaultK8sName)
+	}
 
 	// Get the key using KeysClient.Get - this returns the latest version
-	resp, err := s.client.GetKey(ctx, resourceGroup, vaultName, keyName)
+	resp, err := s.client.GetKey(ctx, resourceGroup, azureVaultName, keyName)
 	if err != nil {
 		// Check if it's a "not found" error
 		if azure.ResourceNotFound(err) {
 			return "", fmt.Errorf("key not found: %s", keyName)
 		}
-		return "", errors.Wrapf(err, "failed to get key %s from vault %s", keyName, vaultName)
+		return "", errors.Wrapf(err, "failed to get key %s from vault %s", keyName, azureVaultName)
 	}
 
 	key, ok := resp.(armkeyvault.Key)
@@ -233,7 +235,7 @@ func (s *Service) getLatestKeyVersion(ctx context.Context, vaultName, keyName st
 			return "", fmt.Errorf("could not extract version from key URI: %s", *key.Properties.KeyURIWithVersion)
 		}
 
-		log.V(2).Info("found key version", "vaultName", vaultName, "keyName", keyName, "version", keyVersion)
+		log.V(2).Info("found key version", "azureVaultName", azureVaultName, "keyName", keyName, "version", keyVersion)
 		return keyVersion, nil
 	}
 
@@ -241,13 +243,18 @@ func (s *Service) getLatestKeyVersion(ctx context.Context, vaultName, keyName st
 }
 
 // createKey creates a new key in the Key Vault using ARM KeysClient.
-func (s *Service) createKey(ctx context.Context, vaultName, keyName string) (string, error) {
+func (s *Service) createKey(ctx context.Context, azureVaultName, keyName, vaultK8sName, vaultNamespace, vaultAPIVersion string) (string, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.createKey")
 	defer done()
 
-	log.V(2).Info("creating new key", "vaultName", vaultName, "keyName", keyName)
+	log.V(2).Info("creating new key", "azureVaultName", azureVaultName, "keyName", keyName, "k8sName", vaultK8sName)
 
-	resourceGroup := s.Scope.ResourceGroup()
+	// Get resource group from deployed Vault's status.id
+	// At this point the vault is ready (verified by isVaultReadyInAROCluster)
+	resourceGroup, err := s.getVaultResourceGroupFromStatus(ctx, vaultK8sName, vaultNamespace, vaultAPIVersion)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get resource group for vault %s", vaultK8sName)
+	}
 
 	// Create key parameters for RSA key (suitable for encryption)
 	keyType := armkeyvault.JSONWebKeyTypeRSA
@@ -261,9 +268,9 @@ func (s *Service) createKey(ctx context.Context, vaultName, keyName string) (str
 	}
 
 	// Create the key using KeysClient.CreateIfNotExist
-	resp, err := s.client.CreateKey(ctx, resourceGroup, vaultName, keyName, keyParams)
+	resp, err := s.client.CreateKey(ctx, resourceGroup, azureVaultName, keyName, keyParams)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create key %s in vault %s", keyName, vaultName)
+		return "", errors.Wrapf(err, "failed to create key %s in vault %s", keyName, azureVaultName)
 	}
 
 	key, ok := resp.(armkeyvault.Key)
@@ -278,7 +285,7 @@ func (s *Service) createKey(ctx context.Context, vaultName, keyName string) (str
 			return "", fmt.Errorf("could not extract version from created key URI: %s", *key.Properties.KeyURIWithVersion)
 		}
 
-		log.V(2).Info("successfully created key", "vaultName", vaultName, "keyName", keyName, "version", keyVersion)
+		log.V(2).Info("successfully created key", "azureVaultName", azureVaultName, "keyName", keyName, "version", keyVersion)
 		return keyVersion, nil
 	}
 
@@ -309,14 +316,9 @@ func extractVaultNameFromURL(keyVaultURL string) (string, error) {
 }
 
 // extractVaultNameFromResourceID extracts the vault name from a Key Vault resource ID.
+// This is an alias for extractVaultNameFromURL which handles both resource IDs and URLs.
 func extractVaultNameFromResourceID(resourceID string) (string, error) {
-	parts := strings.Split(resourceID, "/")
-	for i, part := range parts {
-		if part == VaultsResourceType && i+1 < len(parts) {
-			return parts[i+1], nil
-		}
-	}
-	return "", fmt.Errorf("could not extract vault name from resource ID: %s", resourceID)
+	return extractVaultNameFromURL(resourceID)
 }
 
 // extractVersionFromKeyID extracts the version from a Key Vault key ID.
@@ -327,6 +329,122 @@ func extractVersionFromKeyID(keyID string) string {
 		return parts[len(parts)-1]
 	}
 	return ""
+}
+
+// getVaultResourceGroupFromStatus queries the deployed Vault and extracts the resource group
+// from its status.id (Azure ARM resource ID). This is called after isVaultReadyInAROCluster
+// confirms the vault is ready, so status.id is guaranteed to be populated.
+func (s *Service) getVaultResourceGroupFromStatus(ctx context.Context, vaultK8sName, vaultNamespace, vaultAPIVersion string) (string, error) {
+	kubeclient := s.Scope.GetClient()
+	if kubeclient == nil {
+		return "", errors.New("kubernetes client not available")
+	}
+
+	// Query the specific Vault using its K8s name, namespace, and API version
+	vault := &unstructured.Unstructured{}
+	vault.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "keyvault.azure.com",
+		Version: vaultAPIVersion,
+		Kind:    "Vault",
+	})
+
+	err := kubeclient.Get(ctx, client.ObjectKey{
+		Namespace: vaultNamespace,
+		Name:      vaultK8sName,
+	}, vault)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get vault %s/%s", vaultNamespace, vaultK8sName)
+	}
+
+	// Extract status.id which contains the full Azure ARM resource ID
+	statusID, found, err := unstructured.NestedString(
+		vault.UnstructuredContent(),
+		"status", "id",
+	)
+	if err != nil || !found || statusID == "" {
+		return "", errors.Errorf("vault %s is ready but status.id is not populated", vaultK8sName)
+	}
+
+	// Parse resource group from ARM ID using robust attribute/value parser
+	// ARM ID format: /attribute1/value1/attribute2/value2/...
+	// Example: /subscriptions/{sub}/resourceGroups/{rg}/providers/{provider}/...
+	resourceGroup, err := parseARMResourceAttribute(statusID, "resourceGroups")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse resource group from vault status.id: %s", statusID)
+	}
+
+	return resourceGroup, nil
+}
+
+// parseARMResourceAttribute parses an Azure ARM resource ID to extract a specific attribute's value.
+// ARM IDs follow the pattern: /attribute1/value1/attribute2/value2/...
+// For example: /subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.KeyVault/vaults/my-vault.
+func parseARMResourceAttribute(armID, attribute string) (string, error) {
+	if armID == "" {
+		return "", errors.New("ARM resource ID is empty")
+	}
+
+	parts := strings.Split(armID, "/")
+	// ARM IDs start with /, so parts[0] is empty
+	// parts are: ["", "subscriptions", "xxx", "resourceGroups", "yyy", ...]
+
+	for i := 0; i < len(parts)-1; i++ {
+		if strings.EqualFold(parts[i], attribute) && i+1 < len(parts) {
+			return parts[i+1], nil
+		}
+	}
+
+	return "", errors.Errorf("attribute %q not found in ARM resource ID: %s", attribute, armID)
+}
+
+// getVaultK8sInfo extracts vault Kubernetes metadata from AROCluster.spec.resources.
+// Returns: k8sName, namespace, apiVersion, error.
+func (s *Service) getVaultK8sInfo(ctx context.Context, scope KeyVaultScope, azureVaultName string) (string, string, string, error) {
+	kubeclient := scope.GetClient()
+	if kubeclient == nil {
+		return "", "", "", errors.New("kubernetes client not available")
+	}
+
+	// Get AROCluster to access spec.resources
+	aroCluster := &infrav1exp.AROCluster{}
+	aroClusterKey := client.ObjectKey{
+		Namespace: scope.Namespace(),
+		Name:      scope.ClusterName(),
+	}
+
+	if err := kubeclient.Get(ctx, aroClusterKey, aroCluster); err != nil {
+		return "", "", "", errors.Wrapf(err, "failed to get AROCluster %s/%s", aroClusterKey.Namespace, aroClusterKey.Name)
+	}
+
+	// Find Vault in spec.resources
+	for _, rawResource := range aroCluster.Spec.Resources {
+		var resource unstructured.Unstructured
+		if err := resource.UnmarshalJSON(rawResource.Raw); err != nil {
+			continue
+		}
+
+		if resource.GroupVersionKind().Group == "keyvault.azure.com" &&
+			resource.GroupVersionKind().Kind == "Vault" {
+			// Get spec.azureName, fallback to K8s object name if not set
+			vaultAzureName, found, _ := unstructured.NestedString(
+				resource.UnstructuredContent(),
+				"spec", "azureName",
+			)
+			if !found || vaultAzureName == "" {
+				vaultAzureName = resource.GetName()
+			}
+
+			if vaultAzureName == azureVaultName {
+				// Found the vault! Return K8s metadata
+				return resource.GetName(), resource.GetNamespace(), resource.GroupVersionKind().Version, nil
+			}
+		}
+	}
+
+	return "", "", "", errors.Errorf("vault with azureName %q not found in AROCluster spec.resources - "+
+		"when using encryption with identityRef, the Vault resource must be declared in AROCluster.spec.resources[] "+
+		"(CAPZ will create the encryption key inside the vault, but ASO must create the vault itself). "+
+		"Add a Vault resource with spec.azureName: %q to AROCluster.spec.resources[]", azureVaultName, azureVaultName)
 }
 
 // isKeyNotFoundError checks if the error indicates that a key was not found.
@@ -346,7 +464,7 @@ func isKeyNotFoundError(err error) bool {
 // - The vault is found in AROCluster.Status.Resources and is ready.
 // - AROCluster doesn't exist (vault managed elsewhere).
 // - Vault not found in AROCluster resources (vault managed elsewhere).
-func (s *Service) isVaultReadyInAROCluster(ctx context.Context, scope KeyVaultScope, vaultName string) (bool, error) {
+func (s *Service) isVaultReadyInAROCluster(ctx context.Context, scope KeyVaultScope, vaultK8sName string) (bool, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.isVaultReadyInAROCluster")
 	defer done()
 
@@ -359,7 +477,6 @@ func (s *Service) isVaultReadyInAROCluster(ctx context.Context, scope KeyVaultSc
 
 	// Try to get AROCluster from the cluster namespace
 	aroCluster := &infrav1exp.AROCluster{}
-	// The AROCluster name matches the cluster name
 	aroClusterKey := client.ObjectKey{
 		Namespace: scope.Namespace(),
 		Name:      scope.ClusterName(),
@@ -375,23 +492,23 @@ func (s *Service) isVaultReadyInAROCluster(ctx context.Context, scope KeyVaultSc
 		return true, nil
 	}
 
-	// Check if the vault is in the AROCluster's status resources
+	// Check if the vault is in the AROCluster's status resources using K8s object name
 	for _, resource := range aroCluster.Status.Resources {
 		if resource.Resource.Group == "keyvault.azure.com" &&
 			resource.Resource.Kind == "Vault" &&
-			resource.Resource.Name == vaultName {
+			resource.Resource.Name == vaultK8sName {
 			// Found the vault in status, check if it's ready
 			if resource.Ready {
-				log.V(2).Info("Vault is ready in AROCluster status", "vaultName", vaultName)
+				log.V(2).Info("Vault is ready in AROCluster status", "vaultK8sName", vaultK8sName)
 				return true, nil
 			}
 			// Vault exists but not ready yet
-			log.V(2).Info("Vault not ready yet in AROCluster status", "vaultName", vaultName)
+			log.V(2).Info("Vault not ready yet in AROCluster status", "vaultK8sName", vaultK8sName)
 			return false, nil
 		}
 	}
 
-	// Vault not found in AROCluster resources - it's managed elsewhere, assume ready
-	log.V(2).Info("Vault not found in AROCluster resources, assuming it's managed elsewhere and is ready", "vaultName", vaultName)
-	return true, nil
+	// Vault not found in status.resources - either not managed by AROCluster or still being created
+	log.V(2).Info("Vault not found in AROCluster status, assuming it's managed elsewhere or still being created", "vaultK8sName", vaultK8sName)
+	return false, nil
 }

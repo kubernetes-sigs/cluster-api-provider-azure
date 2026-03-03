@@ -39,11 +39,16 @@ type AROControlPlaneSpec struct { //nolint: maligned
 
 	// IdentityRef is a reference to an identity to be used when reconciling the aro control plane.
 	// This field is optional. When set, CAPZ will initialize Azure SDK credentials and perform
-	// Key Vault operations (check existence, create encryption keys, propagate key versions).
+	// Key Vault operations (create encryption keys, propagate key versions).
+	//
+	// IMPORTANT: Even when identityRef is set, the Vault resource must be declared in
+	// AROCluster.spec.resources[] so ASO can create the vault. CAPZ will only create the
+	// encryption KEY inside the existing vault - it does not create the vault itself.
 	//
 	// When NOT set (ASO credential-based mode), ASO handles authentication via
 	// serviceoperator.azure.com/credential-from annotations, and customers must manually
-	// create the vault and encryption key via ASO and specify the keyVersion in HcpOpenShiftCluster spec.
+	// create both the vault AND encryption key via ASO and specify the keyVersion in
+	// HcpOpenShiftCluster spec.
 	//
 	// +optional
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`

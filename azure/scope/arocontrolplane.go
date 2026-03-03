@@ -485,32 +485,6 @@ func (s *AROControlPlaneScope) UpdateSubnetID(name string, id string) {
 	s.SetSubnet(subnetSpecInfra)
 }
 
-// ResourceGroup returns the resource group for the ARO control plane.
-// In resources mode, it extracts from HcpOpenShiftCluster resource's owner reference.
-func (s *AROControlPlaneScope) ResourceGroup() string {
-	// Extract resource group from HcpOpenShiftCluster owner reference
-	for _, rawResource := range s.ControlPlane.Spec.Resources {
-		var unstructuredResource unstructured.Unstructured
-		if err := json.Unmarshal(rawResource.Raw, &unstructuredResource); err != nil {
-			continue
-		}
-
-		if unstructuredResource.GroupVersionKind().Group == aroHCPGroupName &&
-			unstructuredResource.GroupVersionKind().Kind == hcpOpenShiftClusterKindName {
-			// Extract from spec.owner.name
-			ownerName, found, err := unstructured.NestedString(
-				unstructuredResource.UnstructuredContent(),
-				"spec", "owner", "name",
-			)
-			if err == nil && found && ownerName != "" {
-				return ownerName
-			}
-		}
-	}
-	// Return empty if not found
-	return ""
-}
-
 // ClusterName returns the cluster name.
 func (s *AROControlPlaneScope) ClusterName() string {
 	return s.Cluster.Name
@@ -572,10 +546,13 @@ func (s *AROControlPlaneScope) KeyVaultSpecs() []azure.ResourceSpecGetter {
 	return []azure.ResourceSpecGetter{}
 }
 
-// GetKeyVaultResourceID returns the Key Vault resource ID.
-// In resources mode, it extracts from HcpOpenShiftCluster KMS configuration.
+// GetKeyVaultResourceID returns the vault name from HcpOpenShiftCluster KMS configuration.
+// The actual vault resource ID (with correct resource group) is obtained from Vault.status.id
+// after the vault is deployed and ready. This method just returns the vault name to check
+// if encryption is configured.
+// Returns empty string if no vault is configured.
 func (s *AROControlPlaneScope) GetKeyVaultResourceID() string {
-	// Extract from the HcpOpenShiftCluster's etcd.dataEncryption.customerManaged.kms
+	// Extract vault name from the HcpOpenShiftCluster's etcd.dataEncryption.customerManaged.kms
 	for _, rawResource := range s.ControlPlane.Spec.Resources {
 		var unstructuredResource unstructured.Unstructured
 		if err := json.Unmarshal(rawResource.Raw, &unstructuredResource); err != nil {
@@ -585,15 +562,12 @@ func (s *AROControlPlaneScope) GetKeyVaultResourceID() string {
 		if unstructuredResource.GroupVersionKind().Group == aroHCPGroupName &&
 			unstructuredResource.GroupVersionKind().Kind == hcpOpenShiftClusterKindName {
 			// Extract vaultName from spec.properties.etcd.dataEncryption.customerManaged.kms.activeKey.vaultName
-			vaultName, found, err := unstructured.NestedString(
+			name, found, err := unstructured.NestedString(
 				unstructuredResource.UnstructuredContent(),
 				"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "activeKey", "vaultName",
 			)
-			if err == nil && found && vaultName != "" {
-				// Construct resource ID from vault name
-				// Format: /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}
-				return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.KeyVault/vaults/%s",
-					s.SubscriptionID(), s.ResourceGroup(), vaultName)
+			if err == nil && found && name != "" {
+				return name
 			}
 		}
 	}
