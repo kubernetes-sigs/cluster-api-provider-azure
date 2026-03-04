@@ -203,8 +203,14 @@ linters:
       # within test files and test utils.
       - linters:
           - revive
-          - staticcheck
         path: _test\.go
+        text: should not use dot imports
+      # Dot imports are used intentionally in internal/api and internal/webhooks
+      # to avoid verbose type prefixes when working with the v1beta1 API types.
+      - linters:
+          - revive
+          - staticcheck
+        path: internal/(api|webhooks|test)/
         text: should not use dot imports
       # Exclude some packages or code to require comments, for example test code, or fake clients.
       - linters:

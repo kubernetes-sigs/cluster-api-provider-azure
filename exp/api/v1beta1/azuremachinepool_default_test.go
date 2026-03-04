@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
 func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
@@ -89,7 +90,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			}},
 			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
-				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID),
+				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID),
 				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
 			},
 		},
@@ -124,7 +125,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			}},
 			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
-				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID),
+				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID),
 				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
 			},
 		},
