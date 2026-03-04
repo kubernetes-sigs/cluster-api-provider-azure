@@ -18,9 +18,6 @@ package v1beta1
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"encoding/base64"
 	"fmt"
 	"testing"
 
@@ -28,7 +25,6 @@ import (
 	guuid "github.com/google/uuid"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -40,10 +36,12 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
+	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
 var (
-	validSSHPublicKey = generateSSHPublicKey(true)
+	validSSHPublicKey = apifixtures.GenerateSSHPublicKey(true)
 	zero              = intstr.FromInt(0)
 	one               = intstr.FromInt(1)
 )
@@ -485,7 +483,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	g.Expect(err).To(Not(HaveOccurred()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
-	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, infrav1.ContributorRoleID)))
+	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID)))
 }
 
 func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
@@ -644,15 +642,6 @@ func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachi
 			},
 		},
 	}
-}
-
-func generateSSHPublicKey(b64Enconded bool) string {
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	publicRsaKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
-	if b64Enconded {
-		return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
-	}
-	return string(ssh.MarshalAuthorizedKey(publicRsaKey))
 }
 
 func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) *AzureMachinePool {

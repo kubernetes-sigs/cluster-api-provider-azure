@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 )
 
 var (
@@ -99,10 +100,10 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	g.Expect((&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)).To(Succeed())
+	g.Expect((&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)).To(Succeed())
 
 	azureClusterCustomVnet := newAzureClusterWithCustomVnet("bar")
-	g.Expect((&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureClusterCustomVnet)).NotTo(HaveOccurred())
+	g.Expect((&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureClusterCustomVnet)).NotTo(HaveOccurred())
 
 	cases := map[string]struct {
 		cluster                    *clusterv1.Cluster
@@ -300,7 +301,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("bar")
 
-	err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
+	err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 	g.Expect(err).NotTo(HaveOccurred())
 	cluster.Name = "testCluster"
 
