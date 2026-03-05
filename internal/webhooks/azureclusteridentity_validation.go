@@ -23,20 +23,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
-func validateAzureClusterIdentity(c *AzureClusterIdentity) (admission.Warnings, error) {
+func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if c.Spec.Type != UserAssignedMSI && c.Spec.ResourceID != "" { //nolint:staticcheck
+	if c.Spec.Type != infrav1.UserAssignedMSI && c.Spec.ResourceID != "" { //nolint:staticcheck
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "resourceID"), c.Spec.ResourceID)) //nolint:staticcheck
 	}
-	if c.Spec.Type != UserAssignedIdentityCredential && (c.Spec.UserAssignedIdentityCredentialsPath != "" || c.Spec.UserAssignedIdentityCredentialsCloudType != "") {
+	if c.Spec.Type != infrav1.UserAssignedIdentityCredential && (c.Spec.UserAssignedIdentityCredentialsPath != "" || c.Spec.UserAssignedIdentityCredentialsCloudType != "") {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential", c.Spec.UserAssignedIdentityCredentialsPath)))
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential ", c.Spec.UserAssignedIdentityCredentialsCloudType)))
 	}
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
 }

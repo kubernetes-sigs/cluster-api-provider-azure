@@ -21,14 +21,14 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		m *AzureManagedControlPlane
+		m *infrav1.AzureManagedControlPlane
 	}
 
 	existingPublicKey := "testpublickey"
@@ -44,13 +44,13 @@ func TestAzureManagedControlPlane_SetDefaultSSHPublicKey(t *testing.T) {
 	g.Expect(*publicKeyNotExistTest.m.Spec.SSHPublicKey).NotTo(BeEmpty())
 }
 
-func createAzureManagedControlPlaneWithSSHPublicKey(sshPublicKey string) *AzureManagedControlPlane {
+func createAzureManagedControlPlaneWithSSHPublicKey(sshPublicKey string) *infrav1.AzureManagedControlPlane {
 	return hardcodedAzureManagedControlPlaneWithSSHKey(sshPublicKey)
 }
 
-func hardcodedAzureManagedControlPlaneWithSSHKey(sshPublicKey string) *AzureManagedControlPlane {
-	return &AzureManagedControlPlane{
-		Spec: AzureManagedControlPlaneSpec{
+func hardcodedAzureManagedControlPlaneWithSSHKey(sshPublicKey string) *infrav1.AzureManagedControlPlane {
+	return &infrav1.AzureManagedControlPlane{
+		Spec: infrav1.AzureManagedControlPlaneSpec{
 			SSHPublicKey: &sshPublicKey,
 		},
 	}

@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
@@ -41,7 +41,7 @@ const (
 	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion.
 	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
 	// DefaultAzureBastionSubnetRole is the default Subnet role for AzureBastion.
-	DefaultAzureBastionSubnetRole = SubnetBastion
+	DefaultAzureBastionSubnetRole = infrav1.SubnetBastion
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address.
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultOutboundRuleIdleTimeoutInMinutes is the default for IdleTimeoutInMinutes for the load balancer.
@@ -51,14 +51,14 @@ const (
 )
 
 // SetDefaultsAzureCluster sets default values for an AzureCluster.
-func SetDefaultsAzureCluster(c *AzureCluster) {
+func SetDefaultsAzureCluster(c *infrav1.AzureCluster) {
 	AzureClusterClassSpecSetDefaults(&c.Spec.AzureClusterClassSpec)
 	setDefaultAzureClusterResourceGroup(c)
 	setDefaultAzureClusterNetworkSpec(c)
 }
 
 // setDefaultAzureClusterNetworkSpec sets default values for an AzureCluster's NetworkSpec.
-func setDefaultAzureClusterNetworkSpec(c *AzureCluster) {
+func setDefaultAzureClusterNetworkSpec(c *infrav1.AzureCluster) {
 	setDefaultAzureClusterVnet(c)
 	setDefaultAzureClusterBastion(c)
 	setDefaultAzureClusterSubnets(c)
@@ -76,21 +76,21 @@ func setDefaultAzureClusterNetworkSpec(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterResourceGroup sets the default resource group for an AzureCluster.
-func setDefaultAzureClusterResourceGroup(c *AzureCluster) {
+func setDefaultAzureClusterResourceGroup(c *infrav1.AzureCluster) {
 	if c.Spec.ResourceGroup == "" {
 		c.Spec.ResourceGroup = c.Name
 	}
 }
 
 // SetDefaultAzureClusterAzureEnvironment sets the default Azure environment for an AzureCluster.
-func SetDefaultAzureClusterAzureEnvironment(c *AzureCluster) {
+func SetDefaultAzureClusterAzureEnvironment(c *infrav1.AzureCluster) {
 	if c.Spec.AzureEnvironment == "" {
 		c.Spec.AzureEnvironment = DefaultAzureCloud
 	}
 }
 
 // setDefaultAzureClusterVnet sets default values for an AzureCluster's VNet.
-func setDefaultAzureClusterVnet(c *AzureCluster) {
+func setDefaultAzureClusterVnet(c *infrav1.AzureCluster) {
 	if c.Spec.NetworkSpec.Vnet.ResourceGroup == "" {
 		c.Spec.NetworkSpec.Vnet.ResourceGroup = c.Spec.ResourceGroup
 	}
@@ -102,27 +102,27 @@ func setDefaultAzureClusterVnet(c *AzureCluster) {
 
 // setDefaultAzureClusterSubnets ensures a fully populated, default subnet configuration
 // and in certain scenarios creates new, default subnet configurations.
-func setDefaultAzureClusterSubnets(c *AzureCluster) {
-	clusterSubnet, err := c.Spec.NetworkSpec.GetSubnet(SubnetCluster)
+func setDefaultAzureClusterSubnets(c *infrav1.AzureCluster) {
+	clusterSubnet, err := c.Spec.NetworkSpec.GetSubnet(infrav1.SubnetCluster)
 	clusterSubnetExists := err == nil
 	// If we already have a cluster subnet defined, ensure it has sensible defaults
 	// for all properties.
 	if clusterSubnetExists {
 		setDefaultSubnetSpecClusterSubnet(&clusterSubnet, c.ObjectMeta.Name)
-		c.Spec.NetworkSpec.UpdateSubnet(clusterSubnet, SubnetCluster)
+		c.Spec.NetworkSpec.UpdateSubnet(clusterSubnet, infrav1.SubnetCluster)
 	}
 
 	if c.Spec.ControlPlaneEnabled {
-		cpSubnet, errcp := c.Spec.NetworkSpec.GetSubnet(SubnetControlPlane)
+		cpSubnet, errcp := c.Spec.NetworkSpec.GetSubnet(infrav1.SubnetControlPlane)
 		// If we already have a control plane subnet defined, ensure it has sensible defaults
 		// for all properties.
 		if errcp == nil {
 			setDefaultSubnetSpecControlPlaneSubnet(&cpSubnet, c.ObjectMeta.Name)
-			c.Spec.NetworkSpec.UpdateSubnet(cpSubnet, SubnetControlPlane)
+			c.Spec.NetworkSpec.UpdateSubnet(cpSubnet, infrav1.SubnetControlPlane)
 			// If we don't have either a control plane subnet or a cluster subnet,
 			// create a new control plane subnet from scratch and populate with sensible defaults.
 		} else if !clusterSubnetExists {
-			cpSubnet = SubnetSpec{SubnetClassSpec: SubnetClassSpec{Role: SubnetControlPlane}}
+			cpSubnet = infrav1.SubnetSpec{SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetControlPlane}}
 			setDefaultSubnetSpecControlPlaneSubnet(&cpSubnet, c.ObjectMeta.Name)
 			c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
 		}
@@ -134,7 +134,7 @@ func setDefaultAzureClusterSubnets(c *AzureCluster) {
 	var nodeSubnetCounter int
 	for i, subnet := range c.Spec.NetworkSpec.Subnets {
 		// Skip all non-node subnets
-		if subnet.Role != SubnetNode {
+		if subnet.Role != infrav1.SubnetNode {
 			continue
 		}
 		nodeSubnetCounter++
@@ -150,20 +150,20 @@ func setDefaultAzureClusterSubnets(c *AzureCluster) {
 	// If no node subnets are defined, and there is no cluster subnet defined,
 	// create a default 10.1.0.0/16 node subnet.
 	if !anyNodeSubnetFound && !clusterSubnetExists {
-		nodeSubnet := SubnetSpec{
-			SubnetClassSpec: SubnetClassSpec{
-				Role:       SubnetNode,
+		nodeSubnet := infrav1.SubnetSpec{
+			SubnetClassSpec: infrav1.SubnetClassSpec{
+				Role:       infrav1.SubnetNode,
 				CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 				Name:       generateNodeSubnetName(c.ObjectMeta.Name),
 			},
-			SecurityGroup: SecurityGroup{
+			SecurityGroup: infrav1.SecurityGroup{
 				Name: generateNodeSecurityGroupName(c.ObjectMeta.Name),
 			},
-			RouteTable: RouteTable{
+			RouteTable: infrav1.RouteTable{
 				Name: generateNodeRouteTableName(c.ObjectMeta.Name),
 			},
-			NatGateway: NatGateway{
-				NatGatewayClassSpec: NatGatewayClassSpec{
+			NatGateway: infrav1.NatGateway{
+				NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 					Name: generateNatGatewayName(c.ObjectMeta.Name),
 				},
 			},
@@ -173,7 +173,7 @@ func setDefaultAzureClusterSubnets(c *AzureCluster) {
 }
 
 // setDefaultSubnetSpecNodeSubnet sets default values for a node SubnetSpec.
-func setDefaultSubnetSpecNodeSubnet(s *SubnetSpec, clusterName string, index int) {
+func setDefaultSubnetSpecNodeSubnet(s *infrav1.SubnetSpec, clusterName string, index int) {
 	if s.Name == "" {
 		s.Name = withIndex(generateNodeSubnetName(clusterName), index)
 	}
@@ -202,7 +202,7 @@ func setDefaultSubnetSpecNodeSubnet(s *SubnetSpec, clusterName string, index int
 }
 
 // setDefaultSubnetSpecControlPlaneSubnet sets default values for a control plane SubnetSpec.
-func setDefaultSubnetSpecControlPlaneSubnet(s *SubnetSpec, clusterName string) {
+func setDefaultSubnetSpecControlPlaneSubnet(s *infrav1.SubnetSpec, clusterName string) {
 	if s.Name == "" {
 		s.Name = generateControlPlaneSubnetName(clusterName)
 	}
@@ -216,7 +216,7 @@ func setDefaultSubnetSpecControlPlaneSubnet(s *SubnetSpec, clusterName string) {
 }
 
 // setDefaultSubnetSpecClusterSubnet sets default values for a cluster SubnetSpec.
-func setDefaultSubnetSpecClusterSubnet(s *SubnetSpec, clusterName string) {
+func setDefaultSubnetSpecClusterSubnet(s *infrav1.SubnetSpec, clusterName string) {
 	if s.Name == "" {
 		s.Name = generateClusterSubnetSubnetName(clusterName)
 	}
@@ -239,7 +239,7 @@ func setDefaultSubnetSpecClusterSubnet(s *SubnetSpec, clusterName string) {
 }
 
 // setDefaultAzureClusterVnetPeering sets default values for an AzureCluster's VNet peerings.
-func setDefaultAzureClusterVnetPeering(c *AzureCluster) {
+func setDefaultAzureClusterVnetPeering(c *infrav1.AzureCluster) {
 	for i, peering := range c.Spec.NetworkSpec.Vnet.Peerings {
 		if peering.ResourceGroup == "" {
 			c.Spec.NetworkSpec.Vnet.Peerings[i].ResourceGroup = c.Spec.ResourceGroup
@@ -248,10 +248,10 @@ func setDefaultAzureClusterVnetPeering(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterAPIServerLB sets default values for an AzureCluster's API server load balancer.
-func setDefaultAzureClusterAPIServerLB(c *AzureCluster) {
+func setDefaultAzureClusterAPIServerLB(c *infrav1.AzureCluster) {
 	if c.Spec.NetworkSpec.APIServerLB == nil {
-		lbSpec := LoadBalancerSpec{
-			LoadBalancerClassSpec: LoadBalancerClassSpec{
+		lbSpec := infrav1.LoadBalancerSpec{
+			LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 				Type: "Public",
 			},
 		}
@@ -261,15 +261,15 @@ func setDefaultAzureClusterAPIServerLB(c *AzureCluster) {
 
 	setDefaultLoadBalancerClassSpecAPIServerLB(&lb.LoadBalancerClassSpec)
 
-	if lb.Type == Public {
+	if lb.Type == infrav1.Public {
 		if lb.Name == "" {
 			lb.Name = generatePublicLBName(c.ObjectMeta.Name)
 		}
 		if len(lb.FrontendIPs) == 0 {
-			lb.FrontendIPs = []FrontendIP{
+			lb.FrontendIPs = []infrav1.FrontendIP{
 				{
 					Name: generateFrontendIPConfigName(lb.Name),
-					PublicIP: &PublicIPSpec{
+					PublicIP: &infrav1.PublicIPSpec{
 						Name: generatePublicIPName(c.ObjectMeta.Name),
 					},
 				},
@@ -289,24 +289,24 @@ func setDefaultAzureClusterAPIServerLB(c *AzureCluster) {
 			}
 			// if no private IP is found, we should create a default internal LB IP
 			if !privateIPFound {
-				privateIP := FrontendIP{
+				privateIP := infrav1.FrontendIP{
 					Name: generatePrivateIPConfigName(lb.Name),
-					FrontendIPClass: FrontendIPClass{
+					FrontendIPClass: infrav1.FrontendIPClass{
 						PrivateIPAddress: DefaultInternalLBIPAddress,
 					},
 				}
 				lb.FrontendIPs = append(lb.FrontendIPs, privateIP)
 			}
 		}
-	} else if lb.Type == Internal {
+	} else if lb.Type == infrav1.Internal {
 		if lb.Name == "" {
 			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
 		}
 		if len(lb.FrontendIPs) == 0 {
-			lb.FrontendIPs = []FrontendIP{
+			lb.FrontendIPs = []infrav1.FrontendIP{
 				{
 					Name: generateFrontendIPConfigName(lb.Name),
-					FrontendIPClass: FrontendIPClass{
+					FrontendIPClass: infrav1.FrontendIPClass{
 						PrivateIPAddress: DefaultInternalLBIPAddress,
 					},
 				},
@@ -317,15 +317,15 @@ func setDefaultAzureClusterAPIServerLB(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterNodeOutboundLB sets the default values for the NodeOutboundLB.
-func setDefaultAzureClusterNodeOutboundLB(c *AzureCluster) {
+func setDefaultAzureClusterNodeOutboundLB(c *infrav1.AzureCluster) {
 	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
-		if !c.Spec.ControlPlaneEnabled || c.Spec.NetworkSpec.APIServerLB.Type == Internal {
+		if !c.Spec.ControlPlaneEnabled || c.Spec.NetworkSpec.APIServerLB.Type == infrav1.Internal {
 			return
 		}
 
 		var needsOutboundLB bool
 		for _, subnet := range c.Spec.NetworkSpec.Subnets {
-			if (subnet.Role == SubnetNode || subnet.Role == SubnetCluster) && subnet.IsIPv6Enabled() {
+			if (subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster) && subnet.IsIPv6Enabled() {
 				needsOutboundLB = true
 				break
 			}
@@ -338,7 +338,7 @@ func setDefaultAzureClusterNodeOutboundLB(c *AzureCluster) {
 			return
 		}
 
-		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
+		c.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerSpec{}
 	}
 
 	lb := c.Spec.NetworkSpec.NodeOutboundLB
@@ -357,7 +357,7 @@ func setDefaultAzureClusterNodeOutboundLB(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterControlPlaneOutboundLB sets the default values for the control plane's outbound LB.
-func setDefaultAzureClusterControlPlaneOutboundLB(c *AzureCluster) {
+func setDefaultAzureClusterControlPlaneOutboundLB(c *infrav1.AzureCluster) {
 	lb := c.Spec.NetworkSpec.ControlPlaneOutboundLB
 
 	if lb == nil {
@@ -376,14 +376,14 @@ func setDefaultAzureClusterControlPlaneOutboundLB(c *AzureCluster) {
 }
 
 // SetDefaultAzureClusterBackendPoolName defaults the backend pool name of the LBs.
-func SetDefaultAzureClusterBackendPoolName(c *AzureCluster) {
+func SetDefaultAzureClusterBackendPoolName(c *infrav1.AzureCluster) {
 	setDefaultAzureClusterAPIServerLBBackendPoolName(c)
 	setDefaultAzureClusterNodeOutboundLBBackendPoolName(c)
 	setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName(c)
 }
 
 // setDefaultAzureClusterAPIServerLBBackendPoolName defaults the name of the backend pool for apiserver LB.
-func setDefaultAzureClusterAPIServerLBBackendPoolName(c *AzureCluster) {
+func setDefaultAzureClusterAPIServerLBBackendPoolName(c *infrav1.AzureCluster) {
 	apiServerLB := c.Spec.NetworkSpec.APIServerLB
 	if apiServerLB.BackendPool.Name == "" {
 		apiServerLB.BackendPool.Name = generateBackendAddressPoolName(apiServerLB.Name)
@@ -391,7 +391,7 @@ func setDefaultAzureClusterAPIServerLBBackendPoolName(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterNodeOutboundLBBackendPoolName defaults the name of the backend pool for node outbound LB.
-func setDefaultAzureClusterNodeOutboundLBBackendPoolName(c *AzureCluster) {
+func setDefaultAzureClusterNodeOutboundLBBackendPoolName(c *infrav1.AzureCluster) {
 	nodeOutboundLB := c.Spec.NetworkSpec.NodeOutboundLB
 	if nodeOutboundLB != nil && nodeOutboundLB.BackendPool.Name == "" {
 		nodeOutboundLB.BackendPool.Name = generateOutboundBackendAddressPoolName(nodeOutboundLB.Name)
@@ -399,7 +399,7 @@ func setDefaultAzureClusterNodeOutboundLBBackendPoolName(c *AzureCluster) {
 }
 
 // setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName defaults the name of the backend pool for control plane outbound LB.
-func setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName(c *AzureCluster) {
+func setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName(c *infrav1.AzureCluster) {
 	controlPlaneOutboundLB := c.Spec.NetworkSpec.ControlPlaneOutboundLB
 	if controlPlaneOutboundLB != nil && controlPlaneOutboundLB.BackendPool.Name == "" {
 		controlPlaneOutboundLB.BackendPool.Name = generateOutboundBackendAddressPoolName(generateControlPlaneOutboundLBName(c.ObjectMeta.Name))
@@ -408,25 +408,25 @@ func setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName(c *AzureCluster
 
 // setDefaultAzureClusterOutboundLBFrontendIPs sets the frontend IPs for the given load balancer.
 // The name of the frontend IP is generated using generatePublicIPName function.
-func setDefaultAzureClusterOutboundLBFrontendIPs(c *AzureCluster, lb *LoadBalancerSpec, generatePublicIPName func(string) string) {
+func setDefaultAzureClusterOutboundLBFrontendIPs(c *infrav1.AzureCluster, lb *infrav1.LoadBalancerSpec, generatePublicIPName func(string) string) {
 	switch *lb.FrontendIPsCount {
 	case 0:
-		lb.FrontendIPs = []FrontendIP{}
+		lb.FrontendIPs = []infrav1.FrontendIP{}
 	case 1:
-		lb.FrontendIPs = []FrontendIP{
+		lb.FrontendIPs = []infrav1.FrontendIP{
 			{
 				Name: generateFrontendIPConfigName(lb.Name),
-				PublicIP: &PublicIPSpec{
+				PublicIP: &infrav1.PublicIPSpec{
 					Name: generatePublicIPName(c.ObjectMeta.Name),
 				},
 			},
 		}
 	default:
-		lb.FrontendIPs = make([]FrontendIP, *lb.FrontendIPsCount)
+		lb.FrontendIPs = make([]infrav1.FrontendIP, *lb.FrontendIPsCount)
 		for i := 0; i < int(*lb.FrontendIPsCount); i++ {
-			lb.FrontendIPs[i] = FrontendIP{
+			lb.FrontendIPs[i] = infrav1.FrontendIP{
 				Name: withIndex(generateFrontendIPConfigName(lb.Name), i+1),
-				PublicIP: &PublicIPSpec{
+				PublicIP: &infrav1.PublicIPSpec{
 					Name: withIndex(generatePublicIPName(c.ObjectMeta.Name), i+1),
 				},
 			}
@@ -435,7 +435,7 @@ func setDefaultAzureClusterOutboundLBFrontendIPs(c *AzureCluster, lb *LoadBalanc
 }
 
 // setDefaultAzureClusterBastion sets default values for an AzureCluster's bastion configuration.
-func setDefaultAzureClusterBastion(c *AzureCluster) {
+func setDefaultAzureClusterBastion(c *infrav1.AzureCluster) {
 	if c.Spec.BastionSpec.AzureBastion != nil {
 		if c.Spec.BastionSpec.AzureBastion.Name == "" {
 			c.Spec.BastionSpec.AzureBastion.Name = generateAzureBastionName(c.ObjectMeta.Name)
@@ -458,12 +458,12 @@ func setDefaultAzureClusterBastion(c *AzureCluster) {
 }
 
 // setDefaultLoadBalancerClassSpecAPIServerLB sets default values for an API server LoadBalancerClassSpec.
-func setDefaultLoadBalancerClassSpecAPIServerLB(lb *LoadBalancerClassSpec) {
+func setDefaultLoadBalancerClassSpecAPIServerLB(lb *infrav1.LoadBalancerClassSpec) {
 	if lb.Type == "" {
-		lb.Type = Public
+		lb.Type = infrav1.Public
 	}
 	if lb.SKU == "" {
-		lb.SKU = SKUStandard
+		lb.SKU = infrav1.SKUStandard
 	}
 	if lb.IdleTimeoutInMinutes == nil {
 		lb.IdleTimeoutInMinutes = ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes)
@@ -471,19 +471,19 @@ func setDefaultLoadBalancerClassSpecAPIServerLB(lb *LoadBalancerClassSpec) {
 }
 
 // setDefaultLoadBalancerClassSpecNodeOutboundLB sets default values for a node outbound LoadBalancerClassSpec.
-func setDefaultLoadBalancerClassSpecNodeOutboundLB(lb *LoadBalancerClassSpec) {
+func setDefaultLoadBalancerClassSpecNodeOutboundLB(lb *infrav1.LoadBalancerClassSpec) {
 	setDefaultLoadBalancerClassSpecOutboundLB(lb)
 }
 
 // setDefaultLoadBalancerClassSpecControlPlaneOutboundLB sets default values for a control plane outbound LoadBalancerClassSpec.
-func setDefaultLoadBalancerClassSpecControlPlaneOutboundLB(lb *LoadBalancerClassSpec) {
+func setDefaultLoadBalancerClassSpecControlPlaneOutboundLB(lb *infrav1.LoadBalancerClassSpec) {
 	setDefaultLoadBalancerClassSpecOutboundLB(lb)
 }
 
 // setDefaultLoadBalancerClassSpecOutboundLB sets default values for an outbound LoadBalancerClassSpec.
-func setDefaultLoadBalancerClassSpecOutboundLB(lb *LoadBalancerClassSpec) {
-	lb.Type = Public
-	lb.SKU = SKUStandard
+func setDefaultLoadBalancerClassSpecOutboundLB(lb *infrav1.LoadBalancerClassSpec) {
+	lb.Type = infrav1.Public
+	lb.SKU = infrav1.SKUStandard
 	if lb.IdleTimeoutInMinutes == nil {
 		lb.IdleTimeoutInMinutes = ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes)
 	}

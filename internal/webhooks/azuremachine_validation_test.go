@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
@@ -82,7 +82,7 @@ func generateSSHPublicKey(b64Enconded bool) string {
 type osDiskTestInput struct {
 	name    string
 	wantErr bool
-	osDisk  OSDisk
+	osDisk  infrav1.OSDisk
 }
 
 func TestAzureMachine_ValidateOSDisk(t *testing.T) {
@@ -100,14 +100,14 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 		{
 			name:    "valid ephemeral os disk spec",
 			wantErr: false,
-			osDisk: OSDisk{
+			osDisk: infrav1.OSDisk{
 				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
-				DiffDiskSettings: &DiffDiskSettings{
+				DiffDiskSettings: &infrav1.DiffDiskSettings{
 					Option: string(armcompute.DiffDiskOptionsLocal),
 				},
-				ManagedDisk: &ManagedDiskParameters{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
@@ -115,15 +115,15 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 		{
 			name:    "valid resourceDisk placement spec with option local",
 			wantErr: false,
-			osDisk: OSDisk{
+			osDisk: infrav1.OSDisk{
 				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
-				DiffDiskSettings: &DiffDiskSettings{
+				DiffDiskSettings: &infrav1.DiffDiskSettings{
 					Option:    string(armcompute.DiffDiskOptionsLocal),
-					Placement: ptr.To(DiffDiskPlacementResourceDisk),
+					Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
 				},
-				ManagedDisk: &ManagedDiskParameters{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
@@ -131,14 +131,14 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 		{
 			name:    "valid resourceDisk placement spec requires option local",
 			wantErr: true,
-			osDisk: OSDisk{
+			osDisk: infrav1.OSDisk{
 				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
-				DiffDiskSettings: &DiffDiskSettings{
-					Placement: ptr.To(DiffDiskPlacementResourceDisk),
+				DiffDiskSettings: &infrav1.DiffDiskSettings{
+					Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
 				},
-				ManagedDisk: &ManagedDiskParameters{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
@@ -146,16 +146,16 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 		{
 			name:    "byoc encryption with ephemeral os disk spec",
 			wantErr: true,
-			osDisk: OSDisk{
+			osDisk: infrav1.OSDisk{
 				DiskSizeGB:  ptr.To[int32](30),
 				CachingType: "None",
 				OSType:      "blah",
-				DiffDiskSettings: &DiffDiskSettings{
+				DiffDiskSettings: &infrav1.DiffDiskSettings{
 					Option: string(armcompute.DiffDiskOptionsLocal),
 				},
-				ManagedDisk: &ManagedDiskParameters{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
-					DiskEncryptionSet: &DiskEncryptionSetParameters{
+					DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 						ID: "disk-encryption-set",
 					},
 				},
@@ -181,7 +181,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 	inputs := []osDiskTestInput{}
 	testCaseName := "invalid os disk spec"
 
-	invalidDiskSpecs := []OSDisk{
+	invalidDiskSpecs := []infrav1.OSDisk{
 		{},
 		{
 			DiskSizeGB: ptr.To[int32](0),
@@ -202,29 +202,29 @@ func generateNegativeTestCases() []osDiskTestInput {
 		{
 			DiskSizeGB:  ptr.To[int32](30),
 			OSType:      "blah",
-			ManagedDisk: &ManagedDiskParameters{},
+			ManagedDisk: &infrav1.ManagedDiskParameters{},
 		},
 		{
 			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
-			ManagedDisk: &ManagedDiskParameters{
+			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "",
 			},
 		},
 		{
 			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
-			ManagedDisk: &ManagedDiskParameters{
+			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "invalid_type",
 			},
 		},
 		{
 			DiskSizeGB: ptr.To[int32](30),
 			OSType:     "blah",
-			ManagedDisk: &ManagedDiskParameters{
+			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
 			},
-			DiffDiskSettings: &DiffDiskSettings{
+			DiffDiskSettings: &infrav1.DiffDiskSettings{
 				Option: string(armcompute.DiffDiskOptionsLocal),
 			},
 		},
@@ -244,7 +244,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 	testcases := []struct {
 		name    string
-		disks   []DataDisk
+		disks   []infrav1.DataDisk
 		wantErr bool
 	}{
 		{
@@ -254,12 +254,12 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name:    "valid empty data disks",
-			disks:   []DataDisk{},
+			disks:   []infrav1.DataDisk{},
 			wantErr: false,
 		},
 		{
 			name: "valid disks",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
@@ -277,7 +277,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "duplicate names",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "disk",
 					DiskSizeGB:  64,
@@ -295,7 +295,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "duplicate LUNs",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
@@ -313,7 +313,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "invalid disk size",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  0,
@@ -325,7 +325,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "empty name",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "",
 					DiskSizeGB:  0,
@@ -337,7 +337,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "invalid disk cachingType",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
@@ -349,7 +349,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "valid disk cachingType",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk",
 					DiskSizeGB:  64,
@@ -361,11 +361,11 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "valid managed disk storage account type",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
@@ -374,7 +374,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](1),
@@ -385,11 +385,11 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "invalid managed disk storage account type",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "invalid storage account",
 					},
 					Lun:         ptr.To[int32](0),
@@ -400,11 +400,11 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "valid combination of managed disk storage account type UltraSSD_LRS and cachingType None",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
@@ -415,11 +415,11 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "invalid combination of managed disk storage account type UltraSSD_LRS and cachingType ReadWrite",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
@@ -430,11 +430,11 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 		},
 		{
 			name: "invalid combination of managed disk storage account type UltraSSD_LRS and cachingType ReadOnly",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: string(armcompute.StorageAccountTypesUltraSSDLRS),
 					},
 					Lun:         ptr.To[int32](0),
@@ -463,38 +463,38 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 		name               string
 		roleAssignmentName string
 		old                string
-		Identity           VMIdentity
+		Identity           infrav1.VMIdentity
 		wantErr            bool
 	}{
 		{
 			name:               "valid UUID",
 			roleAssignmentName: uuid.New().String(),
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			wantErr:            false,
 		},
 		{
 			name:               "wrong Identity type",
 			roleAssignmentName: uuid.New().String(),
-			Identity:           VMIdentityNone,
+			Identity:           infrav1.VMIdentityNone,
 			wantErr:            true,
 		},
 		{
 			name:               "not a valid UUID",
 			roleAssignmentName: "notaguid",
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			wantErr:            true,
 		},
 		{
 			name:               "empty",
 			roleAssignmentName: "",
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			wantErr:            true,
 		},
 		{
 			name:               "changed",
 			roleAssignmentName: uuid.New().String(),
 			old:                uuid.New().String(),
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			wantErr:            true,
 		},
 	}
@@ -515,15 +515,15 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 	tests := []struct {
 		name               string
-		Identity           VMIdentity
+		Identity           infrav1.VMIdentity
 		roleAssignmentName string
-		role               *SystemAssignedIdentityRole
+		role               *infrav1.SystemAssignedIdentityRole
 		wantErr            bool
 	}{
 		{
 			name:     "valid role",
-			Identity: VMIdentitySystemAssigned,
-			role: &SystemAssignedIdentityRole{
+			Identity: infrav1.VMIdentitySystemAssigned,
+			role: &infrav1.SystemAssignedIdentityRole{
 				Name:         uuid.New().String(),
 				Scope:        "fake-scope",
 				DefinitionID: "fake-definition-id",
@@ -531,18 +531,18 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 		},
 		{
 			name:               "valid role using deprecated role assignment name",
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			roleAssignmentName: uuid.New().String(),
-			role: &SystemAssignedIdentityRole{
+			role: &infrav1.SystemAssignedIdentityRole{
 				Scope:        "fake-scope",
 				DefinitionID: "fake-definition-id",
 			},
 		},
 		{
 			name:               "set both system assigned identity role and role assignment name",
-			Identity:           VMIdentitySystemAssigned,
+			Identity:           infrav1.VMIdentitySystemAssigned,
 			roleAssignmentName: uuid.New().String(),
-			role: &SystemAssignedIdentityRole{
+			role: &infrav1.SystemAssignedIdentityRole{
 				Name:         uuid.New().String(),
 				Scope:        "fake-scope",
 				DefinitionID: "fake-definition-id",
@@ -551,8 +551,8 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 		},
 		{
 			name:     "wrong Identity type",
-			Identity: VMIdentityUserAssigned,
-			role: &SystemAssignedIdentityRole{
+			Identity: infrav1.VMIdentityUserAssigned,
+			role: &infrav1.SystemAssignedIdentityRole{
 				Name:         uuid.New().String(),
 				Scope:        "fake-scope",
 				DefinitionID: "fake-definition-id",
@@ -561,8 +561,8 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 		},
 		{
 			name:     "missing scope",
-			Identity: VMIdentitySystemAssigned,
-			role: &SystemAssignedIdentityRole{
+			Identity: infrav1.VMIdentitySystemAssigned,
+			role: &infrav1.SystemAssignedIdentityRole{
 				Name:         uuid.New().String(),
 				DefinitionID: "fake-definition-id",
 			},
@@ -570,8 +570,8 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 		},
 		{
 			name:     "missing definition id",
-			Identity: VMIdentitySystemAssigned,
-			role: &SystemAssignedIdentityRole{
+			Identity: infrav1.VMIdentitySystemAssigned,
+			role: &infrav1.SystemAssignedIdentityRole{
 				Name:  uuid.New().String(),
 				Scope: "fake-scope",
 			},
@@ -595,20 +595,20 @@ func TestAzureMachine_ValidateSystemAssignedIdentityRole(t *testing.T) {
 func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 	tests := []struct {
 		name       string
-		idType     VMIdentity
-		identities []UserAssignedIdentity
+		idType     infrav1.VMIdentity
+		identities []infrav1.UserAssignedIdentity
 		wantErr    bool
 	}{
 		{
 			name:       "empty identity list",
-			idType:     VMIdentityUserAssigned,
-			identities: []UserAssignedIdentity{},
+			idType:     infrav1.VMIdentityUserAssigned,
+			identities: []infrav1.UserAssignedIdentity{},
 			wantErr:    true,
 		},
 		{
 			name:   "invalid: providerID must start with slash",
-			idType: VMIdentityUserAssigned,
-			identities: []UserAssignedIdentity{
+			idType: infrav1.VMIdentityUserAssigned,
+			identities: []infrav1.UserAssignedIdentity{
 				{
 					ProviderID: "subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
 				},
@@ -617,8 +617,8 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 		},
 		{
 			name:   "invalid: providerID must start with subscriptions or providers",
-			idType: VMIdentityUserAssigned,
-			identities: []UserAssignedIdentity{
+			idType: infrav1.VMIdentityUserAssigned,
+			identities: []infrav1.UserAssignedIdentity{
 				{
 					ProviderID: "azure:///prescriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
 				},
@@ -627,8 +627,8 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 		},
 		{
 			name:   "valid",
-			idType: VMIdentityUserAssigned,
-			identities: []UserAssignedIdentity{
+			idType: infrav1.VMIdentityUserAssigned,
+			identities: []infrav1.UserAssignedIdentity{
 				{
 					ProviderID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
 				},
@@ -637,8 +637,8 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 		},
 		{
 			name:   "valid with provider prefix",
-			idType: VMIdentityUserAssigned,
-			identities: []UserAssignedIdentity{
+			idType: infrav1.VMIdentityUserAssigned,
+			identities: []infrav1.UserAssignedIdentity{
 				{
 					ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-20202-control-plane-7w265",
 				},
@@ -663,8 +663,8 @@ func TestAzureMachine_ValidateUserAssignedIdentity(t *testing.T) {
 func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 	tests := []struct {
 		name     string
-		disks    []DataDisk
-		oldDisks []DataDisk
+		disks    []infrav1.DataDisk
+		oldDisks []infrav1.DataDisk
 		wantErr  bool
 	}{
 		{
@@ -675,18 +675,18 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		},
 		{
 			name:     "valid empty data disks",
-			disks:    []DataDisk{},
-			oldDisks: []DataDisk{},
+			disks:    []infrav1.DataDisk{},
+			oldDisks: []infrav1.DataDisk{},
 			wantErr:  false,
 		},
 		{
 			name: "valid data disk updates",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
 					Lun:        ptr.To[int32](0),
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
@@ -695,18 +695,18 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
 					Lun:        ptr.To[int32](1),
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
-			oldDisks: []DataDisk{
+			oldDisks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
 					Lun:        ptr.To[int32](0),
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
@@ -715,7 +715,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
 					Lun:        ptr.To[int32](1),
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
@@ -725,22 +725,22 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		},
 		{
 			name: "cannot update data disk fields after machine creation",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
-			oldDisks: []DataDisk{
+			oldDisks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 128,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
@@ -751,17 +751,17 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		},
 		{
 			name: "validate updates to optional fields",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 128,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun: ptr.To[int32](0),
 				},
 			},
-			oldDisks: []DataDisk{
+			oldDisks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "my_disk_1",
 					DiskSizeGB:  128,
@@ -772,22 +772,22 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		},
 		{
 			name: "data disks cannot be added after machine creation",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
-			oldDisks: []DataDisk{
+			oldDisks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](0),
@@ -796,7 +796,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](2),
@@ -807,11 +807,11 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 		},
 		{
 			name: "data disks cannot be removed after machine creation",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
@@ -820,18 +820,18 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         ptr.To[int32](2),
 					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 				},
 			},
-			oldDisks: []DataDisk{
+			oldDisks: []infrav1.DataDisk{
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         ptr.To[int32](0),
@@ -860,7 +860,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 		name                  string
 		subnetName            string
 		acceleratedNetworking *bool
-		networkInterfaces     []NetworkInterface
+		networkInterfaces     []infrav1.NetworkInterface
 		wantErr               bool
 	}{
 		{
@@ -874,7 +874,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			name:                  "valid config with networkInterfaces fields",
 			subnetName:            "",
 			acceleratedNetworking: nil,
-			networkInterfaces: []NetworkInterface{{
+			networkInterfaces: []infrav1.NetworkInterface{{
 				SubnetName:            "subnet1",
 				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      1,
@@ -885,7 +885,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			name:                  "valid config with multiple networkInterfaces",
 			subnetName:            "",
 			acceleratedNetworking: nil,
-			networkInterfaces: []NetworkInterface{
+			networkInterfaces: []infrav1.NetworkInterface{
 				{
 					SubnetName:            "subnet1",
 					AcceleratedNetworking: ptr.To(true),
@@ -903,7 +903,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			name:                  "invalid config using both deprecated subnetName and networkInterfaces",
 			subnetName:            "subnet1",
 			acceleratedNetworking: nil,
-			networkInterfaces: []NetworkInterface{{
+			networkInterfaces: []infrav1.NetworkInterface{{
 				SubnetName:            "subnet1",
 				AcceleratedNetworking: nil,
 				PrivateIPConfigs:      1,
@@ -914,7 +914,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			name:                  "invalid config using both deprecated acceleratedNetworking and networkInterfaces",
 			subnetName:            "",
 			acceleratedNetworking: ptr.To(true),
-			networkInterfaces: []NetworkInterface{{
+			networkInterfaces: []infrav1.NetworkInterface{{
 				SubnetName:            "subnet1",
 				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      1,
@@ -925,7 +925,7 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 			name:                  "invalid config setting privateIPConfigs to less than 1",
 			subnetName:            "",
 			acceleratedNetworking: nil,
-			networkInterfaces: []NetworkInterface{{
+			networkInterfaces: []infrav1.NetworkInterface{{
 				SubnetName:            "subnet1",
 				AcceleratedNetworking: ptr.To(true),
 				PrivateIPConfigs:      0,
@@ -950,14 +950,14 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 	tests := []struct {
 		name            string
-		managedDisk     *ManagedDiskParameters
-		securityProfile *SecurityProfile
+		managedDisk     *infrav1.ManagedDiskParameters
+		securityProfile *infrav1.SecurityProfile
 		wantErr         bool
 	}{
 		{
 			name: "valid configuration without confidential compute",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
 					SecurityEncryptionType: "",
 				},
 			},
@@ -966,26 +966,26 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "valid configuration without confidential compute and host encryption enabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
 					SecurityEncryptionType: "",
 				},
 			},
-			securityProfile: &SecurityProfile{
+			securityProfile: &infrav1.SecurityProfile{
 				EncryptionAtHost: ptr.To(true),
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid configuration with VMGuestStateOnly encryption and secure boot disabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				SecurityType: SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				SecurityType: infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(true),
 					SecureBootEnabled: ptr.To(false),
 				},
@@ -994,14 +994,14 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "valid configuration with VMGuestStateOnly encryption and secure boot enabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				SecurityType: SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				SecurityType: infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(true),
 					SecureBootEnabled: ptr.To(true),
 				},
@@ -1010,15 +1010,15 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "valid configuration with VMGuestStateOnly encryption and EncryptionAtHost enabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 				},
 			},
-			securityProfile: &SecurityProfile{
+			securityProfile: &infrav1.SecurityProfile{
 				EncryptionAtHost: ptr.To(true),
-				SecurityType:     SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+				SecurityType:     infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled: ptr.To(true),
 				},
 			},
@@ -1026,14 +1026,14 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "valid configuration with DiskWithVMGuestState encryption",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				SecurityType: SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				SecurityType: infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					SecureBootEnabled: ptr.To(true),
 					VTpmEnabled:       ptr.To(true),
 				},
@@ -1042,26 +1042,26 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "invalid configuration with DiskWithVMGuestState encryption and EncryptionAtHost enabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 				},
 			},
-			securityProfile: &SecurityProfile{
+			securityProfile: &infrav1.SecurityProfile{
 				EncryptionAtHost: ptr.To(true),
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid configuration with DiskWithVMGuestState encryption and vTPM disabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				SecurityType: SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				SecurityType: infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(false),
 					SecureBootEnabled: ptr.To(false),
 				},
@@ -1070,14 +1070,14 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "invalid configuration with DiskWithVMGuestState encryption and secure boot disabled",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				SecurityType: SecurityTypesConfidentialVM,
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				SecurityType: infrav1.SecurityTypesConfidentialVM,
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(true),
 					SecureBootEnabled: ptr.To(false),
 				},
@@ -1086,13 +1086,13 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "invalid configuration with DiskWithVMGuestState encryption and SecurityType not set to ConfidentialVM",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeDiskWithVMGuestState,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeDiskWithVMGuestState,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(true),
 					SecureBootEnabled: ptr.To(true),
 				},
@@ -1101,13 +1101,13 @@ func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 		},
 		{
 			name: "invalid configuration with VMGuestStateOnly encryption and SecurityType not set to ConfidentialVM",
-			managedDisk: &ManagedDiskParameters{
-				SecurityProfile: &VMDiskSecurityProfile{
-					SecurityEncryptionType: SecurityEncryptionTypeVMGuestStateOnly,
+			managedDisk: &infrav1.ManagedDiskParameters{
+				SecurityProfile: &infrav1.VMDiskSecurityProfile{
+					SecurityEncryptionType: infrav1.SecurityEncryptionTypeVMGuestStateOnly,
 				},
 			},
-			securityProfile: &SecurityProfile{
-				UefiSettings: &UefiSettings{
+			securityProfile: &infrav1.SecurityProfile{
+				UefiSettings: &infrav1.UefiSettings{
 					VTpmEnabled:       ptr.To(true),
 					SecureBootEnabled: ptr.To(true),
 				},

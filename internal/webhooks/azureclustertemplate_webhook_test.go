@@ -21,17 +21,17 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestValidateUpdate(t *testing.T) {
-	oldClusterTemplate := &AzureClusterTemplate{
-		Spec: AzureClusterTemplateSpec{
-			Template: AzureClusterTemplateResource{
-				Spec: AzureClusterTemplateResourceSpec{
-					NetworkSpec: NetworkTemplateSpec{
-						Vnet: VnetTemplateSpec{
-							VnetClassSpec: VnetClassSpec{
+	oldClusterTemplate := &infrav1.AzureClusterTemplate{
+		Spec: infrav1.AzureClusterTemplateSpec{
+			Template: infrav1.AzureClusterTemplateResource{
+				Spec: infrav1.AzureClusterTemplateResourceSpec{
+					NetworkSpec: infrav1.NetworkTemplateSpec{
+						Vnet: infrav1.VnetTemplateSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"10.0.0.0/16"},
 							},
 						},
@@ -41,13 +41,13 @@ func TestValidateUpdate(t *testing.T) {
 		},
 	}
 
-	newClusterTemplate := &AzureClusterTemplate{
-		Spec: AzureClusterTemplateSpec{
-			Template: AzureClusterTemplateResource{
-				Spec: AzureClusterTemplateResourceSpec{
-					NetworkSpec: NetworkTemplateSpec{
-						Vnet: VnetTemplateSpec{
-							VnetClassSpec: VnetClassSpec{
+	newClusterTemplate := &infrav1.AzureClusterTemplate{
+		Spec: infrav1.AzureClusterTemplateSpec{
+			Template: infrav1.AzureClusterTemplateResource{
+				Spec: infrav1.AzureClusterTemplateResourceSpec{
+					NetworkSpec: infrav1.NetworkTemplateSpec{
+						Vnet: infrav1.VnetTemplateSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"11.0.0.0/16"},
 							},
 						},

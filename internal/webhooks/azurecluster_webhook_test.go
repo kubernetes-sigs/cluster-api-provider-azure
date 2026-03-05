@@ -22,14 +22,14 @@ import (
 	. "github.com/onsi/gomega"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
 func TestAzureCluster_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name    string
-		cluster *AzureCluster
+		cluster *infrav1.AzureCluster
 		wantErr bool
 	}{
 		{
@@ -39,7 +39,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
@@ -51,7 +51,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster without pre-existing vnet - valid spec",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 				return cluster
@@ -60,7 +60,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack control plane subnet",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
 				return cluster
@@ -69,7 +69,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - lack node subnet",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
 				return cluster
@@ -78,7 +78,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid resourcegroup name",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = "invalid-rg-name###"
 				return cluster
@@ -87,19 +87,19 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid subnet name",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{SubnetClassSpec: SubnetClassSpec{Name: "invalid-subnet-name###", Role: "random-role"}})
+					infrav1.SubnetSpec{SubnetClassSpec: infrav1.SubnetClassSpec{Name: "invalid-subnet-name###", Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,
 		},
 		{
 			name: "azurecluster with ExtendedLocation and false EdgeZone feature flag",
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
-				cluster.Spec.ExtendedLocation = &ExtendedLocationSpec{
+				cluster.Spec.ExtendedLocation = &infrav1.ExtendedLocationSpec{
 					Name: "rr4",
 					Type: "EdgeZone",
 				}
@@ -124,13 +124,13 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	tests := []struct {
 		name       string
-		oldCluster *AzureCluster
-		cluster    *AzureCluster
+		oldCluster *infrav1.AzureCluster
+		cluster    *infrav1.AzureCluster
 		wantErr    bool
 	}{
 		{
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
-			oldCluster: func() *AzureCluster {
+			oldCluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
@@ -138,7 +138,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 				}
 				return cluster
 			}(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.io",
@@ -151,7 +151,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster with no control plane endpoint - valid spec",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
 					Host: "apiserver.example.com",
@@ -169,12 +169,12 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster without pre-existing vnet - valid spec",
-			oldCluster: func() *AzureCluster {
+			oldCluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 				return cluster
 			}(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 				return cluster
@@ -184,7 +184,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster with pre-existing vnet - lack control plane subnet",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
 				return cluster
@@ -194,7 +194,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster with pre-existing vnet - lack node subnet",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
 				return cluster
@@ -204,7 +204,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster with pre-existing vnet - invalid resourcegroup name",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Vnet.ResourceGroup = "invalid-name###"
 				return cluster
@@ -214,23 +214,23 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster with pre-existing vnet - invalid subnet name",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{SubnetClassSpec: SubnetClassSpec{Name: "invalid-name###", Role: "random-role"}})
+					infrav1.SubnetSpec{SubnetClassSpec: infrav1.SubnetClassSpec{Name: "invalid-name###", Role: "random-role"}})
 				return cluster
 			}(),
 			wantErr: true,
 		},
 		{
 			name: "azurecluster resource group is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "demoResourceGroup",
 				},
 			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "demoResourceGroup-2",
 				},
 			},
@@ -238,16 +238,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster subscription ID is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "212ec1q8",
 					},
 				},
 			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						SubscriptionID: "212ec1q9",
 					},
 				},
@@ -256,16 +256,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster location is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "North Europe",
 					},
 				},
 			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						Location: "West Europe",
 					},
 				},
@@ -274,16 +274,16 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azurecluster azureEnvironment is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: "AzureGermanCloud",
 					},
 				},
 			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: "AzureChinaCloud",
 					},
 				},
@@ -293,7 +293,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "azurecluster azureEnvironment default mismatch",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.AzureEnvironment = "AzurePublicCloud"
 				return cluster
@@ -302,17 +302,17 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "control plane outbound lb is immutable",
-			oldCluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						ControlPlaneOutboundLB: &LoadBalancerSpec{Name: "cp-lb"},
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{Name: "cp-lb"},
 					},
 				},
 			},
-			cluster: &AzureCluster{
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						ControlPlaneOutboundLB: &LoadBalancerSpec{Name: "cp-lb-new"},
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{Name: "cp-lb-new"},
 					},
 				},
 			},
@@ -320,12 +320,12 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "natGateway name is immutable",
-			oldCluster: func() *AzureCluster {
+			oldCluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw-0"
 				return cluster
 			}(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw-1"
 				return cluster
@@ -335,7 +335,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		{
 			name:       "natGateway name can be empty before AzureCluster is updated",
 			oldCluster: apifixtures.CreateValidCluster(),
-			cluster: func() *AzureCluster {
+			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
 				cluster.Spec.NetworkSpec.Subnets[0].NatGateway.Name = "cluster-test-node-natgw"
 				return cluster

@@ -26,14 +26,14 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
 func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name            string
-		machineTemplate *AzureMachineTemplate
+		machineTemplate *infrav1.AzureMachineTemplate
 		wantErr         bool
 	}{
 		{
@@ -102,7 +102,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		{
 			name: "azuremachinetemplate with list of user-assigned identities",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				apifixtures.CreateMachineWithUserAssignedIdentities([]UserAssignedIdentity{
+				apifixtures.CreateMachineWithUserAssignedIdentities([]infrav1.UserAssignedIdentity{
 					{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-09091-control-plane-f1b2c"},
 					{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-09091-control-plane-9a8b7"},
 				}),
@@ -112,7 +112,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 		{
 			name: "azuremachinetemplate with empty list of user-assigned identities",
 			machineTemplate: createAzureMachineTemplateFromMachine(
-				apifixtures.CreateMachineWithUserAssignedIdentities([]UserAssignedIdentity{}),
+				apifixtures.CreateMachineWithUserAssignedIdentities([]infrav1.UserAssignedIdentity{}),
 			),
 			wantErr: true,
 		},
@@ -166,7 +166,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"test-subnet",
 					nil,
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 1},
 						{SubnetName: "subnet2", PrivateIPConfigs: 1},
 					},
@@ -180,7 +180,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"",
 					nil,
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 1},
 						{SubnetName: "subnet2", PrivateIPConfigs: 1},
 					},
@@ -194,7 +194,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"",
 					ptr.To(true),
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 1},
 						{SubnetName: "subnet2", PrivateIPConfigs: 1},
 					},
@@ -208,7 +208,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"",
 					nil,
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 1},
 						{SubnetName: "subnet2", PrivateIPConfigs: 1},
 					},
@@ -222,7 +222,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"",
 					nil,
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 0},
 						{SubnetName: "subnet2", PrivateIPConfigs: -1},
 					},
@@ -236,7 +236,7 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 				createMachineWithNetworkConfig(
 					"",
 					nil,
-					[]NetworkInterface{
+					[]infrav1.NetworkInterface{
 						{SubnetName: "subnet1", PrivateIPConfigs: 1},
 						{SubnetName: "subnet2", PrivateIPConfigs: 2},
 					},
@@ -266,39 +266,39 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		oldTemplate *AzureMachineTemplate
-		template    *AzureMachineTemplate
+		oldTemplate *infrav1.AzureMachineTemplate
+		template    *infrav1.AzureMachineTemplate
 		wantErr     bool
 	}{
 		{
 			name: "AzureMachineTemplate with immutable spec",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:     "type",
 								DiskSizeGB: ptr.To[int32](11),
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "",
 						},
 					},
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size1",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:     "type",
 								DiskSizeGB: ptr.To[int32](11),
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "fake ssh key",
 						},
 					},
@@ -308,17 +308,17 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "AzureMachineTemplate with mutable metadata",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:     "type",
 								DiskSizeGB: ptr.To[int32](11),
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "fake ssh key",
 						},
 					},
@@ -327,17 +327,17 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 					Name: "OldTemplate",
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:     "type",
 								DiskSizeGB: ptr.To[int32](11),
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "fake ssh key",
 						},
 					},
@@ -350,18 +350,18 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "AzureMachineTemplate ssh key removed",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "some key",
 						},
 					},
@@ -370,18 +370,18 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 					Name: "OldTemplate",
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "",
 						},
 					},
@@ -394,18 +394,18 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "AzureMachineTemplate with legacy subnetName updated to new networkInterfaces",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:             []DataDisk{},
+							DataDisks:             []infrav1.DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "subnet1",
 							AcceleratedNetworking: ptr.To(true),
@@ -413,22 +413,22 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:             []DataDisk{},
+							DataDisks:             []infrav1.DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "",
 							AcceleratedNetworking: nil,
-							NetworkInterfaces: []NetworkInterface{
+							NetworkInterfaces: []infrav1.NetworkInterface{
 								{
 									SubnetName:            "subnet1",
 									AcceleratedNetworking: ptr.To(true),
@@ -443,42 +443,42 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "AzureMachineTemplate with legacy AcceleratedNetworking updated to new networkInterfaces",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:             []DataDisk{},
+							DataDisks:             []infrav1.DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "",
 							AcceleratedNetworking: ptr.To(true),
-							NetworkInterfaces:     []NetworkInterface{},
+							NetworkInterfaces:     []infrav1.NetworkInterface{},
 						},
 					},
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:             []DataDisk{},
+							DataDisks:             []infrav1.DataDisk{},
 							SSHPublicKey:          "fake ssh key",
 							SubnetName:            "",
 							AcceleratedNetworking: nil,
-							NetworkInterfaces: []NetworkInterface{
+							NetworkInterfaces: []infrav1.NetworkInterface{
 								{
 									SubnetName:            "",
 									AcceleratedNetworking: ptr.To(true),
@@ -493,20 +493,20 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "AzureMachineTemplate with modified networkInterfaces is immutable",
-			oldTemplate: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			oldTemplate: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "fake ssh key",
-							NetworkInterfaces: []NetworkInterface{
+							NetworkInterfaces: []infrav1.NetworkInterface{
 								{
 									SubnetName:            "subnet1",
 									AcceleratedNetworking: ptr.To(true),
@@ -517,20 +517,20 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			template: &AzureMachineTemplate{
-				Spec: AzureMachineTemplateSpec{
-					Template: AzureMachineTemplateResource{
-						Spec: AzureMachineSpec{
+			template: &infrav1.AzureMachineTemplate{
+				Spec: infrav1.AzureMachineTemplateSpec{
+					Template: infrav1.AzureMachineTemplateResource{
+						Spec: infrav1.AzureMachineSpec{
 							VMSize:        "size",
 							FailureDomain: &failureDomain,
-							OSDisk: OSDisk{
+							OSDisk: infrav1.OSDisk{
 								OSType:      "type",
 								DiskSizeGB:  ptr.To[int32](11),
 								CachingType: "None",
 							},
-							DataDisks:    []DataDisk{},
+							DataDisks:    []infrav1.DataDisk{},
 							SSHPublicKey: "fake ssh key",
-							NetworkInterfaces: []NetworkInterface{
+							NetworkInterfaces: []infrav1.NetworkInterface{
 								{
 									SubnetName:            "subnet2",
 									AcceleratedNetworking: ptr.To(true),
@@ -574,10 +574,10 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	}
 }
 
-func createAzureMachineTemplateFromMachine(machine *AzureMachine) *AzureMachineTemplate {
-	return &AzureMachineTemplate{
-		Spec: AzureMachineTemplateSpec{
-			Template: AzureMachineTemplateResource{
+func createAzureMachineTemplateFromMachine(machine *infrav1.AzureMachine) *infrav1.AzureMachineTemplate {
+	return &infrav1.AzureMachineTemplate{
+		Spec: infrav1.AzureMachineTemplateSpec{
+			Template: infrav1.AzureMachineTemplateResource{
 				Spec: machine.Spec,
 			},
 		},

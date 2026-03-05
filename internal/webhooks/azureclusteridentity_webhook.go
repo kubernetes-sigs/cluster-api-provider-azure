@@ -27,14 +27,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (w *AzureClusterIdentityWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureClusterIdentity{}).
+		For(&infrav1.AzureClusterIdentity{}).
 		WithValidator(w).
 		Complete()
 }
@@ -48,7 +48,7 @@ var _ webhook.CustomValidator = &AzureClusterIdentityWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (*AzureClusterIdentityWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	c, ok := obj.(*AzureClusterIdentity)
+	c, ok := obj.(*infrav1.AzureClusterIdentity)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterIdentity object but got %T", c)
 	}
@@ -58,13 +58,13 @@ func (*AzureClusterIdentityWebhook) ValidateCreate(_ context.Context, obj runtim
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (*AzureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
-	c, ok := newObj.(*AzureClusterIdentity)
+	c, ok := newObj.(*infrav1.AzureClusterIdentity)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterIdentity object but got %T", c)
 	}
 
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureClusterIdentity)
+	old := oldRaw.(*infrav1.AzureClusterIdentity)
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("Spec", "Type"),
 		old.Spec.Type,
@@ -74,7 +74,7 @@ func (*AzureClusterIdentityWebhook) ValidateUpdate(_ context.Context, oldRaw, ne
 	if len(allErrs) == 0 {
 		return validateAzureClusterIdentity(c)
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.

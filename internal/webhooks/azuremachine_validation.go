@@ -26,12 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
 // validateAzureMachineSpec checks an AzureMachineSpec and returns any validation errors.
-func validateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
+func validateAzureMachineSpec(spec infrav1.AzureMachineSpec) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if errs := ValidateImage(spec.Image, field.NewPath("image")); len(errs) > 0 {
@@ -82,7 +82,7 @@ func validateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
 }
 
 // ValidateNetwork validates the network configuration.
-func ValidateNetwork(subnetName string, acceleratedNetworking *bool, networkInterfaces []NetworkInterface, fldPath *field.Path) field.ErrorList {
+func ValidateNetwork(subnetName string, acceleratedNetworking *bool, networkInterfaces []infrav1.NetworkInterface, fldPath *field.Path) field.ErrorList {
 	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && subnetName != "" {
 		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both networkInterfaces and machine subnetName")}
 	}
@@ -119,10 +119,10 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 }
 
 // ValidateSystemAssignedIdentity validates the system-assigned identities list.
-func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIdentity string, fldPath *field.Path) field.ErrorList {
+func ValidateSystemAssignedIdentity(identityType infrav1.VMIdentity, oldIdentity, newIdentity string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if identityType == VMIdentitySystemAssigned {
+	if identityType == infrav1.VMIdentitySystemAssigned {
 		if _, err := uuid.Parse(newIdentity); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath, newIdentity, "Role assignment name must be a valid GUID. It is optional and will be auto-generated when not specified."))
 		}
@@ -137,14 +137,14 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, oldIdentity, newIde
 }
 
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
-func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentities []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
+func ValidateUserAssignedIdentity(identityType infrav1.VMIdentity, userAssignedIdentities []infrav1.UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(userAssignedIdentities) > 0 && identityType != VMIdentityUserAssigned {
+	if len(userAssignedIdentities) > 0 && identityType != infrav1.VMIdentityUserAssigned {
 		allErrs = append(allErrs, field.Invalid(fldPath, identityType, "must be set to 'UserAssigned' when assigning any user identity to the machine"))
 	}
 
-	if identityType == VMIdentityUserAssigned {
+	if identityType == infrav1.VMIdentityUserAssigned {
 		if len(userAssignedIdentities) == 0 {
 			allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
 		}
@@ -161,12 +161,12 @@ func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentitie
 }
 
 // ValidateSystemAssignedIdentityRole validates the system-assigned identity role.
-func ValidateSystemAssignedIdentityRole(identityType VMIdentity, roleAssignmentName string, role *SystemAssignedIdentityRole, fldPath *field.Path) field.ErrorList {
+func ValidateSystemAssignedIdentityRole(identityType infrav1.VMIdentity, roleAssignmentName string, role *infrav1.SystemAssignedIdentityRole, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if roleAssignmentName != "" && role != nil && role.Name != "" {
 		allErrs = append(allErrs, field.Invalid(fldPath, role.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
 	}
-	if identityType == VMIdentitySystemAssigned && role != nil {
+	if identityType == infrav1.VMIdentitySystemAssigned && role != nil {
 		if role.DefinitionID == "" {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "systemAssignedIdentityRole", "definitionID"), role.DefinitionID, "the definitionID field cannot be empty"))
 		}
@@ -174,14 +174,14 @@ func ValidateSystemAssignedIdentityRole(identityType VMIdentity, roleAssignmentN
 			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "systemAssignedIdentityRole", "scope"), role.Scope, "the scope field cannot be empty"))
 		}
 	}
-	if identityType != VMIdentitySystemAssigned && role != nil {
+	if identityType != infrav1.VMIdentitySystemAssigned && role != nil {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "role"), "systemAssignedIdentityRole can only be set when identity is set to SystemAssigned"))
 	}
 	return allErrs
 }
 
 // ValidateDataDisks validates a list of data disks.
-func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorList {
+func ValidateDataDisks(dataDisks []infrav1.DataDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	lunSet := make(map[int32]struct{})
 	nameSet := make(map[string]struct{})
@@ -226,7 +226,7 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 }
 
 // ValidateOSDisk validates the OSDisk spec.
-func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
+func ValidateOSDisk(osDisk infrav1.OSDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if osDisk.DiskSizeGB != nil {
@@ -268,7 +268,7 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 }
 
 // validateManagedDisk validates updates to the ManagedDiskParameters field.
-func validateManagedDisk(m *ManagedDiskParameters, fieldPath *field.Path, isOSDisk bool) field.ErrorList {
+func validateManagedDisk(m *infrav1.ManagedDiskParameters, fieldPath *field.Path, isOSDisk bool) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if m != nil {
@@ -277,7 +277,7 @@ func validateManagedDisk(m *ManagedDiskParameters, fieldPath *field.Path, isOSDi
 		// DiskEncryptionSet can only be set when SecurityEncryptionType is set to DiskWithVMGuestState
 		// https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#securityencryptiontypes
 		if isOSDisk && m.SecurityProfile != nil && m.SecurityProfile.DiskEncryptionSet != nil {
-			if m.SecurityProfile.SecurityEncryptionType != SecurityEncryptionTypeDiskWithVMGuestState {
+			if m.SecurityProfile.SecurityEncryptionType != infrav1.SecurityEncryptionTypeDiskWithVMGuestState {
 				allErrs = append(allErrs, field.Invalid(
 					fieldPath.Child("securityProfile").Child("diskEncryptionSet"),
 					m.SecurityProfile.DiskEncryptionSet.ID,
@@ -291,7 +291,7 @@ func validateManagedDisk(m *ManagedDiskParameters, fieldPath *field.Path, isOSDi
 }
 
 // ValidateDataDisksUpdate validates updates to Data disks.
-func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *field.Path) field.ErrorList {
+func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []infrav1.DataDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	diskErrMsg := "adding/removing data disks after machine creation is not allowed"
@@ -302,7 +302,7 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 		return allErrs
 	}
 
-	oldDisks := make(map[string]DataDisk)
+	oldDisks := make(map[string]infrav1.DataDisk)
 
 	for _, disk := range oldDataDisks {
 		oldDisks[disk.NameSuffix] = disk
@@ -333,7 +333,7 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 	return allErrs
 }
 
-func validateManagedDisksUpdate(oldDiskParams, newDiskParams *ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
+func validateManagedDisksUpdate(oldDiskParams, newDiskParams *infrav1.ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	fieldErrMsg := "changing managed disk options after machine creation is not allowed"
 
@@ -376,7 +376,7 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 	return allErrs
 }
 
-func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk *ManagedDiskParameters) field.ErrorList {
+func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk *infrav1.ManagedDiskParameters) field.ErrorList {
 	allErrs := field.ErrorList{}
 	cachingTypeChildPath := fieldPath.Child("CachingType")
 
@@ -397,32 +397,32 @@ func validateCachingType(cachingType string, fieldPath *field.Path, managedDisk 
 }
 
 // ValidateDiagnostics validates the Diagnostic spec.
-func ValidateDiagnostics(diagnostics *Diagnostics, fieldPath *field.Path) field.ErrorList {
+func ValidateDiagnostics(diagnostics *infrav1.Diagnostics, fieldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if diagnostics != nil && diagnostics.Boot != nil {
 		switch diagnostics.Boot.StorageAccountType {
-		case UserManagedDiagnosticsStorage:
+		case infrav1.UserManagedDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged == nil {
 				allErrs = append(allErrs, field.Required(fieldPath.Child("UserManaged"),
-					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", UserManagedDiagnosticsStorage)))
+					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
 			} else if diagnostics.Boot.UserManaged.StorageAccountURI == "" {
 				allErrs = append(allErrs, field.Required(fieldPath.Child("StorageAccountURI"),
-					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", UserManagedDiagnosticsStorage)))
+					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
 			}
-		case ManagedDiagnosticsStorage:
+		case infrav1.ManagedDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged != nil &&
 				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
 					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
-						ManagedDiagnosticsStorage)))
+						infrav1.ManagedDiagnosticsStorage)))
 			}
-		case DisabledDiagnosticsStorage:
+		case infrav1.DisabledDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged != nil &&
 				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
 					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
-						ManagedDiagnosticsStorage)))
+						infrav1.ManagedDiagnosticsStorage)))
 			}
 		}
 	}
@@ -434,10 +434,10 @@ func ValidateDiagnostics(diagnostics *Diagnostics, fieldPath *field.Path) field.
 // https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#vmdisksecurityprofile
 // https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#securityencryptiontypes
 // https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#uefisettings
-func ValidateConfidentialCompute(managedDisk *ManagedDiskParameters, profile *SecurityProfile, fieldPath *field.Path) field.ErrorList {
+func ValidateConfidentialCompute(managedDisk *infrav1.ManagedDiskParameters, profile *infrav1.SecurityProfile, fieldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	var securityEncryptionType SecurityEncryptionType
+	var securityEncryptionType infrav1.SecurityEncryptionType
 
 	if managedDisk != nil && managedDisk.SecurityProfile != nil {
 		securityEncryptionType = managedDisk.SecurityProfile.SecurityEncryptionType
@@ -445,9 +445,9 @@ func ValidateConfidentialCompute(managedDisk *ManagedDiskParameters, profile *Se
 
 	if profile != nil && securityEncryptionType != "" {
 		// SecurityEncryptionType can only be set for Confindential VMs
-		if profile.SecurityType != SecurityTypesConfidentialVM {
+		if profile.SecurityType != infrav1.SecurityTypesConfidentialVM {
 			allErrs = append(allErrs, field.Invalid(fieldPath.Child("SecurityType"), profile.SecurityType,
-				fmt.Sprintf("SecurityType should be set to '%s' when securityEncryptionType is defined", SecurityTypesConfidentialVM)))
+				fmt.Sprintf("SecurityType should be set to '%s' when securityEncryptionType is defined", infrav1.SecurityTypesConfidentialVM)))
 		}
 
 		// Confidential VMs require vTPM to be enabled, irrespective of the SecurityEncryptionType used
@@ -461,17 +461,17 @@ func ValidateConfidentialCompute(managedDisk *ManagedDiskParameters, profile *Se
 				"VTpmEnabled should be set to true when securityEncryptionType is defined"))
 		}
 
-		if securityEncryptionType == SecurityEncryptionTypeDiskWithVMGuestState {
+		if securityEncryptionType == infrav1.SecurityEncryptionTypeDiskWithVMGuestState {
 			// DiskWithVMGuestState encryption type is not compatible with EncryptionAtHost
 			if profile.EncryptionAtHost != nil && *profile.EncryptionAtHost {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("EncryptionAtHost"), profile.EncryptionAtHost,
-					fmt.Sprintf("EncryptionAtHost cannot be set to 'true' when securityEncryptionType is set to '%s'", SecurityEncryptionTypeDiskWithVMGuestState)))
+					fmt.Sprintf("EncryptionAtHost cannot be set to 'true' when securityEncryptionType is set to '%s'", infrav1.SecurityEncryptionTypeDiskWithVMGuestState)))
 			}
 
 			// DiskWithVMGuestState encryption type requires SecureBoot to be enabled
 			if profile.UefiSettings != nil && (profile.UefiSettings.SecureBootEnabled == nil || !*profile.UefiSettings.SecureBootEnabled) {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("SecureBootEnabled"), profile.UefiSettings.SecureBootEnabled,
-					fmt.Sprintf("SecureBootEnabled should be set to true when securityEncryptionType is set to '%s'", SecurityEncryptionTypeDiskWithVMGuestState)))
+					fmt.Sprintf("SecureBootEnabled should be set to true when securityEncryptionType is set to '%s'", infrav1.SecurityEncryptionTypeDiskWithVMGuestState)))
 			}
 		}
 	}
@@ -493,7 +493,7 @@ func ValidateCapacityReservationGroupID(capacityReservationGroupID *string, fldP
 }
 
 // ValidateVMExtensions validates the VMExtensions spec.
-func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []VMExtension, _ *field.Path) field.ErrorList {
+func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []infrav1.VMExtension, _ *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {

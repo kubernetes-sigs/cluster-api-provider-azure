@@ -19,11 +19,11 @@ package webhooks
 import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // ValidateImage validates an image.
-func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
+func ValidateImage(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if image == nil {
@@ -49,7 +49,7 @@ func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
 	return allErrs
 }
 
-func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorList {
+func validateSingleDetailsOnly(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	imageDetailsFound := (image.ID != nil)
 
@@ -84,7 +84,7 @@ func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorLis
 	return allErrs
 }
 
-func validateComputeGalleryImage(image *Image, fldPath *field.Path) field.ErrorList {
+func validateComputeGalleryImage(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if image.ComputeGallery.SubscriptionID != nil && image.ComputeGallery.ResourceGroup == nil {
@@ -97,7 +97,7 @@ func validateComputeGalleryImage(image *Image, fldPath *field.Path) field.ErrorL
 	return allErrs
 }
 
-func validateSharedGalleryImage(image *Image, fldPath *field.Path) field.ErrorList {
+func validateSharedGalleryImage(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if image.SharedGallery.SubscriptionID == "" {
@@ -119,7 +119,7 @@ func validateSharedGalleryImage(image *Image, fldPath *field.Path) field.ErrorLi
 	return allErrs
 }
 
-func validateMarketplaceImage(image *Image, fldPath *field.Path) field.ErrorList {
+func validateMarketplaceImage(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if image.Marketplace.Publisher == "" {
@@ -137,7 +137,7 @@ func validateMarketplaceImage(image *Image, fldPath *field.Path) field.ErrorList
 	return allErrs
 }
 
-func validateSpecificImage(image *Image, fldPath *field.Path) field.ErrorList {
+func validateSpecificImage(image *infrav1.Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if *image.ID == "" {

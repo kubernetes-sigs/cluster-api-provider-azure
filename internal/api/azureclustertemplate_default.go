@@ -19,17 +19,17 @@ package api
 import (
 	"fmt"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SetDefaultsAzureClusterTemplate sets default values for an AzureClusterTemplate.
-func SetDefaultsAzureClusterTemplate(c *AzureClusterTemplate) {
+func SetDefaultsAzureClusterTemplate(c *infrav1.AzureClusterTemplate) {
 	AzureClusterClassSpecSetDefaults(&c.Spec.Template.Spec.AzureClusterClassSpec)
 	setDefaultAzureClusterTemplateNetworkTemplateSpec(c)
 }
 
 // setDefaultAzureClusterTemplateNetworkTemplateSpec sets default values for an AzureClusterTemplate's NetworkTemplateSpec.
-func setDefaultAzureClusterTemplateNetworkTemplateSpec(c *AzureClusterTemplate) {
+func setDefaultAzureClusterTemplateNetworkTemplateSpec(c *infrav1.AzureClusterTemplate) {
 	setDefaultAzureClusterTemplateVnetTemplate(c)
 	setDefaultAzureClusterTemplateBastionTemplate(c)
 	setDefaultAzureClusterTemplateSubnetsTemplate(c)
@@ -41,12 +41,12 @@ func setDefaultAzureClusterTemplateNetworkTemplateSpec(c *AzureClusterTemplate) 
 }
 
 // setDefaultAzureClusterTemplateVnetTemplate sets default values for an AzureClusterTemplate's VNet template.
-func setDefaultAzureClusterTemplateVnetTemplate(c *AzureClusterTemplate) {
+func setDefaultAzureClusterTemplateVnetTemplate(c *infrav1.AzureClusterTemplate) {
 	VnetClassSpecSetDefaults(&c.Spec.Template.Spec.NetworkSpec.Vnet.VnetClassSpec)
 }
 
 // setDefaultAzureClusterTemplateBastionTemplate sets default values for an AzureClusterTemplate's bastion template.
-func setDefaultAzureClusterTemplateBastionTemplate(c *AzureClusterTemplate) {
+func setDefaultAzureClusterTemplateBastionTemplate(c *infrav1.AzureClusterTemplate) {
 	if c.Spec.Template.Spec.BastionSpec.AzureBastion != nil {
 		// Ensure defaults for Subnet settings.
 		if len(c.Spec.Template.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
@@ -59,22 +59,22 @@ func setDefaultAzureClusterTemplateBastionTemplate(c *AzureClusterTemplate) {
 }
 
 // setDefaultAzureClusterTemplateSubnetsTemplate sets default values for an AzureClusterTemplate's subnet templates.
-func setDefaultAzureClusterTemplateSubnetsTemplate(c *AzureClusterTemplate) {
-	clusterSubnet, err := c.Spec.Template.Spec.NetworkSpec.GetSubnetTemplate(SubnetCluster)
+func setDefaultAzureClusterTemplateSubnetsTemplate(c *infrav1.AzureClusterTemplate) {
+	clusterSubnet, err := c.Spec.Template.Spec.NetworkSpec.GetSubnetTemplate(infrav1.SubnetCluster)
 	clusterSubnetExists := err == nil
 	if clusterSubnetExists {
 		SubnetClassSpecSetDefaults(&clusterSubnet.SubnetClassSpec, DefaultClusterSubnetCIDR)
 		SecurityGroupClassSetDefaults(&clusterSubnet.SecurityGroup)
-		c.Spec.Template.Spec.NetworkSpec.UpdateSubnetTemplate(clusterSubnet, SubnetCluster)
+		c.Spec.Template.Spec.NetworkSpec.UpdateSubnetTemplate(clusterSubnet, infrav1.SubnetCluster)
 	}
 
-	cpSubnet, errcp := c.Spec.Template.Spec.NetworkSpec.GetSubnetTemplate(SubnetControlPlane)
+	cpSubnet, errcp := c.Spec.Template.Spec.NetworkSpec.GetSubnetTemplate(infrav1.SubnetControlPlane)
 	if errcp == nil {
 		SubnetClassSpecSetDefaults(&cpSubnet.SubnetClassSpec, DefaultControlPlaneSubnetCIDR)
 		SecurityGroupClassSetDefaults(&cpSubnet.SecurityGroup)
-		c.Spec.Template.Spec.NetworkSpec.UpdateSubnetTemplate(cpSubnet, SubnetControlPlane)
+		c.Spec.Template.Spec.NetworkSpec.UpdateSubnetTemplate(cpSubnet, infrav1.SubnetControlPlane)
 	} else if errcp != nil && !clusterSubnetExists {
-		cpSubnet = SubnetTemplateSpec{SubnetClassSpec: SubnetClassSpec{Role: SubnetControlPlane}}
+		cpSubnet = infrav1.SubnetTemplateSpec{SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetControlPlane}}
 		SubnetClassSpecSetDefaults(&cpSubnet.SubnetClassSpec, DefaultControlPlaneSubnetCIDR)
 		SecurityGroupClassSetDefaults(&cpSubnet.SecurityGroup)
 		c.Spec.Template.Spec.NetworkSpec.Subnets = append(c.Spec.Template.Spec.NetworkSpec.Subnets, cpSubnet)
@@ -83,7 +83,7 @@ func setDefaultAzureClusterTemplateSubnetsTemplate(c *AzureClusterTemplate) {
 	var nodeSubnetFound bool
 	var nodeSubnetCounter int
 	for i, subnet := range c.Spec.Template.Spec.NetworkSpec.Subnets {
-		if subnet.Role != SubnetNode {
+		if subnet.Role != infrav1.SubnetNode {
 			continue
 		}
 		nodeSubnetCounter++
@@ -94,9 +94,9 @@ func setDefaultAzureClusterTemplateSubnetsTemplate(c *AzureClusterTemplate) {
 	}
 
 	if !nodeSubnetFound && !clusterSubnetExists {
-		nodeSubnet := SubnetTemplateSpec{
-			SubnetClassSpec: SubnetClassSpec{
-				Role:       SubnetNode,
+		nodeSubnet := infrav1.SubnetTemplateSpec{
+			SubnetClassSpec: infrav1.SubnetClassSpec{
+				Role:       infrav1.SubnetNode,
 				CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 			},
 		}
@@ -105,15 +105,15 @@ func setDefaultAzureClusterTemplateSubnetsTemplate(c *AzureClusterTemplate) {
 }
 
 // setDefaultAzureClusterTemplateNodeOutboundLB sets default values for an AzureClusterTemplate's node outbound LB.
-func setDefaultAzureClusterTemplateNodeOutboundLB(c *AzureClusterTemplate) {
+func setDefaultAzureClusterTemplateNodeOutboundLB(c *infrav1.AzureClusterTemplate) {
 	if c.Spec.Template.Spec.NetworkSpec.NodeOutboundLB == nil {
-		if c.Spec.Template.Spec.NetworkSpec.APIServerLB.Type == Internal {
+		if c.Spec.Template.Spec.NetworkSpec.APIServerLB.Type == infrav1.Internal {
 			return
 		}
 
 		var needsOutboundLB bool
 		for _, subnet := range c.Spec.Template.Spec.NetworkSpec.Subnets {
-			if (subnet.Role == SubnetNode || subnet.Role == SubnetCluster) && subnet.IsIPv6Enabled() {
+			if (subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster) && subnet.IsIPv6Enabled() {
 				needsOutboundLB = true
 				break
 			}
@@ -126,14 +126,14 @@ func setDefaultAzureClusterTemplateNodeOutboundLB(c *AzureClusterTemplate) {
 			return
 		}
 
-		c.Spec.Template.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerClassSpec{}
+		c.Spec.Template.Spec.NetworkSpec.NodeOutboundLB = &infrav1.LoadBalancerClassSpec{}
 	}
 
 	setDefaultLoadBalancerClassSpecNodeOutboundLB(c.Spec.Template.Spec.NetworkSpec.NodeOutboundLB)
 }
 
 // setDefaultAzureClusterTemplateControlPlaneOutboundLB sets default values for an AzureClusterTemplate's control plane outbound LB.
-func setDefaultAzureClusterTemplateControlPlaneOutboundLB(c *AzureClusterTemplate) {
+func setDefaultAzureClusterTemplateControlPlaneOutboundLB(c *infrav1.AzureClusterTemplate) {
 	lb := c.Spec.Template.Spec.NetworkSpec.ControlPlaneOutboundLB
 	if lb == nil {
 		return

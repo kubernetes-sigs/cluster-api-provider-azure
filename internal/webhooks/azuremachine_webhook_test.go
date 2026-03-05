@@ -29,7 +29,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
@@ -41,7 +41,7 @@ var (
 func TestAzureMachine_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name    string
-		machine *AzureMachine
+		machine *infrav1.AzureMachine
 		wantErr bool
 	}{
 		{
@@ -91,7 +91,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azuremachine with list of user-assigned identities",
-			machine: apifixtures.CreateMachineWithUserAssignedIdentities([]UserAssignedIdentity{
+			machine: apifixtures.CreateMachineWithUserAssignedIdentities([]infrav1.UserAssignedIdentity{
 				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-9d5x5"},
 				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-a1b2c"},
 			}),
@@ -99,7 +99,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azuremachine with list of user-assigned identities with wrong identity type",
-			machine: apifixtures.CreateMachineWithUserAssignedIdentitiesWithBadIdentity([]UserAssignedIdentity{
+			machine: apifixtures.CreateMachineWithUserAssignedIdentitiesWithBadIdentity([]infrav1.UserAssignedIdentity{
 				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-9d5x5"},
 				{ProviderID: "azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/default-12345-control-plane-a1b2c"},
 			}),
@@ -107,7 +107,7 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with empty list of user-assigned identities",
-			machine: apifixtures.CreateMachineWithUserAssignedIdentities([]UserAssignedIdentity{}),
+			machine: apifixtures.CreateMachineWithUserAssignedIdentities([]infrav1.UserAssignedIdentity{}),
 			wantErr: true,
 		},
 		{
@@ -122,17 +122,17 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with managed diagnostics profile",
-			machine: createMachineWithDiagnostics(ManagedDiagnosticsStorage, nil),
+			machine: createMachineWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with disabled diagnostics profile",
-			machine: createMachineWithDiagnostics(ManagedDiagnosticsStorage, nil),
+			machine: createMachineWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with user managed diagnostics profile and defined user managed storage account",
-			machine: createMachineWithDiagnostics(UserManagedDiagnosticsStorage, &UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
+			machine: createMachineWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, &infrav1.UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
 			wantErr: false,
 		},
 		{
@@ -142,22 +142,22 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with user managed diagnostics profile, but empty user managed storage account",
-			machine: createMachineWithDiagnostics(UserManagedDiagnosticsStorage, nil),
+			machine: createMachineWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, nil),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with invalid network configuration",
-			machine: createMachineWithNetworkConfig("subnet", nil, []NetworkInterface{{SubnetName: "subnet1"}}),
+			machine: createMachineWithNetworkConfig("subnet", nil, []infrav1.NetworkInterface{{SubnetName: "subnet1"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with valid legacy network configuration",
-			machine: createMachineWithNetworkConfig("subnet", nil, []NetworkInterface{}),
+			machine: createMachineWithNetworkConfig("subnet", nil, []infrav1.NetworkInterface{}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with valid network configuration",
-			machine: createMachineWithNetworkConfig("", nil, []NetworkInterface{{SubnetName: "subnet", PrivateIPConfigs: 1}}),
+			machine: createMachineWithNetworkConfig("", nil, []infrav1.NetworkInterface{{SubnetName: "subnet", PrivateIPConfigs: 1}}),
 			wantErr: false,
 		},
 		{
@@ -167,62 +167,62 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption and encryption at host enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, true, false, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, infrav1.SecurityTypesConfidentialVM, true, false, false),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption and encryption at host enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, true, true, true),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, infrav1.SecurityTypesConfidentialVM, true, true, true),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption, vTPM and SecureBoot enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, true, true),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, infrav1.SecurityTypesConfidentialVM, false, true, true),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM enabled and SecureBoot disabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, true, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, infrav1.SecurityTypesConfidentialVM, false, true, false),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM disabled and SecureBoot enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, false, true),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, infrav1.SecurityTypesConfidentialVM, false, false, true),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM enabled, SecureBoot disabled and SecurityType empty",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, "", false, true, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, "", false, true, false),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute VMGuestStateOnly encryption enabled, vTPM and SecureBoot empty",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeVMGuestStateOnly, SecurityTypesConfidentialVM, false, false, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeVMGuestStateOnly, infrav1.SecurityTypesConfidentialVM, false, false, false),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption, vTPM and SecureBoot enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, true, true),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, infrav1.SecurityTypesConfidentialVM, false, true, true),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM enabled and SecureBoot disabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, true, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, infrav1.SecurityTypesConfidentialVM, false, true, false),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM disabled and SecureBoot enabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, false, true),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, infrav1.SecurityTypesConfidentialVM, false, false, true),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM disabled and SecureBoot disabled",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, SecurityTypesConfidentialVM, false, false, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, infrav1.SecurityTypesConfidentialVM, false, false, false),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachine with confidential compute DiskWithVMGuestState encryption enabled, vTPM enabled, SecureBoot disabled and SecurityType empty",
-			machine: createMachineWithConfidentialCompute(SecurityEncryptionTypeDiskWithVMGuestState, "", false, true, false),
+			machine: createMachineWithConfidentialCompute(infrav1.SecurityEncryptionTypeDiskWithVMGuestState, "", false, true, false),
 			wantErr: true,
 		},
 		{
@@ -268,22 +268,22 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	tests := []struct {
 		name       string
-		oldMachine *AzureMachine
-		newMachine *AzureMachine
+		oldMachine *infrav1.AzureMachine
+		newMachine *infrav1.AzureMachine
 		wantErr    bool
 	}{
 		{
 			name: "invalidTest: azuremachine.spec.image is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Image: &Image{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Image: &infrav1.Image{
 						ID: ptr.To("imageID-1"),
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Image: &Image{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Image: &infrav1.Image{
 						ID: ptr.To("imageID-2"),
 					},
 				},
@@ -292,16 +292,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.image is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Image: &Image{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Image: &infrav1.Image{
 						ID: ptr.To("imageID-1"),
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Image: &Image{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Image: &infrav1.Image{
 						ID: ptr.To("imageID-1"),
 					},
 				},
@@ -310,44 +310,44 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.Identity is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Identity: VMIdentityUserAssigned,
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Identity: infrav1.VMIdentityUserAssigned,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Identity: VMIdentityNone,
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Identity: infrav1.VMIdentityNone,
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "validTest: azuremachine.spec.Identity is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Identity: VMIdentityNone,
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Identity: infrav1.VMIdentityNone,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Identity: VMIdentityNone,
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Identity: infrav1.VMIdentityNone,
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.UserAssignedIdentities is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					UserAssignedIdentities: []UserAssignedIdentity{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					UserAssignedIdentities: []infrav1.UserAssignedIdentity{
 						{ProviderID: "providerID-1"},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					UserAssignedIdentities: []UserAssignedIdentity{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					UserAssignedIdentities: []infrav1.UserAssignedIdentity{
 						{ProviderID: "providerID-2"},
 					},
 				},
@@ -356,16 +356,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.UserAssignedIdentities is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					UserAssignedIdentities: []UserAssignedIdentity{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					UserAssignedIdentities: []infrav1.UserAssignedIdentity{
 						{ProviderID: "providerID-1"},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					UserAssignedIdentities: []UserAssignedIdentity{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					UserAssignedIdentities: []infrav1.UserAssignedIdentity{
 						{ProviderID: "providerID-1"},
 					},
 				},
@@ -374,13 +374,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.RoleAssignmentName is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					RoleAssignmentName: "role",
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					RoleAssignmentName: "not-role",
 				},
 			},
@@ -388,13 +388,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.RoleAssignmentName is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					RoleAssignmentName: "role",
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					RoleAssignmentName: "role",
 				},
 			},
@@ -402,18 +402,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.RoleAssignmentName is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 						Name:         "role",
 						Scope:        "scope",
 						DefinitionID: "definitionID",
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 						Name:         "not-role",
 						Scope:        "scope",
 						DefinitionID: "definitionID",
@@ -424,18 +424,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.SystemAssignedIdentityRole is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 						Name:         "role",
 						Scope:        "scope",
 						DefinitionID: "definitionID",
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 						Name:         "role",
 						Scope:        "scope",
 						DefinitionID: "definitionID",
@@ -446,16 +446,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.OSDisk is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					OSDisk: OSDisk{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
 						OSType: "osType-0",
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					OSDisk: OSDisk{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
 						OSType: "osType-1",
 					},
 				},
@@ -464,16 +464,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.OSDisk is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					OSDisk: OSDisk{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
 						OSType: "osType-1",
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					OSDisk: OSDisk{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
 						OSType: "osType-1",
 					},
 				},
@@ -482,18 +482,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.DataDisks is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					DataDisks: []DataDisk{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DataDisks: []infrav1.DataDisk{
 						{
 							DiskSizeGB: 128,
 						},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					DataDisks: []DataDisk{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DataDisks: []infrav1.DataDisk{
 						{
 							DiskSizeGB: 64,
 						},
@@ -504,18 +504,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.DataDisks is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					DataDisks: []DataDisk{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DataDisks: []infrav1.DataDisk{
 						{
 							DiskSizeGB: 128,
 						},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					DataDisks: []DataDisk{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DataDisks: []infrav1.DataDisk{
 						{
 							DiskSizeGB: 128,
 						},
@@ -526,13 +526,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.SSHPublicKey is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SSHPublicKey: "validKey",
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SSHPublicKey: "invalidKey",
 				},
 			},
@@ -540,13 +540,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.SSHPublicKey is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SSHPublicKey: "validKey",
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SSHPublicKey: "validKey",
 				},
 			},
@@ -554,13 +554,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.AllocatePublicIP is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AllocatePublicIP: true,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AllocatePublicIP: false,
 				},
 			},
@@ -568,13 +568,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.AllocatePublicIP is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AllocatePublicIP: true,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AllocatePublicIP: true,
 				},
 			},
@@ -582,13 +582,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.EnableIPForwarding is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					EnableIPForwarding: true,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					EnableIPForwarding: false,
 				},
 			},
@@ -596,13 +596,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.EnableIPForwarding is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					EnableIPForwarding: true,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					EnableIPForwarding: true,
 				},
 			},
@@ -610,13 +610,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.AcceleratedNetworking is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(true),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(false),
 				},
 			},
@@ -624,13 +624,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.AcceleratedNetworking is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(true),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(true),
 				},
 			},
@@ -638,13 +638,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from true) to nil is acceptable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(true),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: nil,
 				},
 			},
@@ -652,13 +652,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.AcceleratedNetworking transition(from false) to nil is acceptable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: ptr.To(false),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					AcceleratedNetworking: nil,
 				},
 			},
@@ -666,16 +666,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.SpotVMOptions is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SpotVMOptions: &SpotVMOptions{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SpotVMOptions: &infrav1.SpotVMOptions{
 						MaxPrice: &resource.Quantity{Format: "vmoptions-0"},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SpotVMOptions: &SpotVMOptions{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SpotVMOptions: &infrav1.SpotVMOptions{
 						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
 					},
 				},
@@ -684,16 +684,16 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.SpotVMOptions is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SpotVMOptions: &SpotVMOptions{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SpotVMOptions: &infrav1.SpotVMOptions{
 						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SpotVMOptions: &SpotVMOptions{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SpotVMOptions: &infrav1.SpotVMOptions{
 						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
 					},
 				},
@@ -702,111 +702,111 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: azuremachine.spec.SecurityProfile is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(false)},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(false)},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "validTest: azuremachine.spec.SecurityProfile is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					SecurityProfile: &SecurityProfile{EncryptionAtHost: ptr.To(true)},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: ptr.To(true)},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.DisabledDiagnosticsStorage}},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.ManagedDiagnosticsStorage}},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "validTest: azuremachine.spec.Diagnostics is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.DisabledDiagnosticsStorage}},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: DisabledDiagnosticsStorage}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.DisabledDiagnosticsStorage}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "validTest: azuremachine.spec.Diagnostics should not error on updating nil diagnostics",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.ManagedDiagnosticsStorage}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.ManagedDiagnosticsStorage}},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.Diagnostics is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{
-						Boot: &BootDiagnostics{},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{
+						Boot: &infrav1.BootDiagnostics{},
 					},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					Diagnostics: &Diagnostics{Boot: &BootDiagnostics{StorageAccountType: ManagedDiagnosticsStorage}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					Diagnostics: &infrav1.Diagnostics{Boot: &infrav1.BootDiagnostics{StorageAccountType: infrav1.ManagedDiagnosticsStorage}},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.disableExtensionOperations is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					DisableExtensionOperations: ptr.To(true),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					DisableExtensionOperations: ptr.To(false),
 				},
 			},
@@ -814,13 +814,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.disableExtensionOperations is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					DisableExtensionOperations: ptr.To(true),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					DisableExtensionOperations: ptr.To(true),
 				},
 			},
@@ -828,55 +828,55 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet"}},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: "subnet"}},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet"}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: "subnet"}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalidtest: azuremachine.spec.networkInterfaces is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet1"}},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: "subnet1"}},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet2"}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: "subnet2"}},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalidtest: updating subnet name from empty to non empty",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: ""}},
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: ""}},
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
-					NetworkInterfaces: []NetworkInterface{{SubnetName: "subnet1"}},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					NetworkInterfaces: []infrav1.NetworkInterface{{SubnetName: "subnet1"}},
 				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalidTest: azuremachine.spec.capacityReservationGroupID is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-2"),
 				},
 			},
@@ -884,13 +884,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: updating azuremachine.spec.capacityReservationGroupID from empty to non-empty",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: nil,
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
 				},
 			},
@@ -898,13 +898,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "invalidTest: updating azuremachine.spec.capacityReservationGroupID from non-empty to empty",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: nil,
 				},
 			},
@@ -912,13 +912,13 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "validTest: azuremachine.spec.capacityReservationGroupID is immutable",
-			oldMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
 				},
 			},
-			newMachine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					CapacityReservationGroupID: ptr.To("capacityReservationGroupID-1"),
 				},
 			},
@@ -947,11 +947,11 @@ type mockDefaultClient struct {
 
 func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	switch obj := obj.(type) {
-	case *AzureCluster:
+	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
 	case *clusterv1.Cluster:
 		obj.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
-			Kind: AzureClusterKind,
+			Kind: infrav1.AzureClusterKind,
 			Name: "test-cluster",
 		}
 	default:
@@ -964,7 +964,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		machine *AzureMachine
+		machine *infrav1.AzureMachine
 	}
 
 	testSubscriptionID := "test-subscription-id"
@@ -991,16 +991,16 @@ func TestAzureMachine_Default(t *testing.T) {
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 
 	for _, possibleCachingType := range armcompute.PossibleCachingTypesValues() {
-		cacheTypeSpecifiedTest := test{machine: &AzureMachine{ObjectMeta: testObjectMeta, Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
+		cacheTypeSpecifiedTest := test{machine: &infrav1.AzureMachine{ObjectMeta: testObjectMeta, Spec: infrav1.AzureMachineSpec{OSDisk: infrav1.OSDisk{CachingType: string(possibleCachingType)}}}}
 		err = mw.Default(t.Context(), cacheTypeSpecifiedTest.machine)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
 	}
 }
 
-func createMachineWithNetworkConfig(subnetName string, acceleratedNetworking *bool, interfaces []NetworkInterface) *AzureMachine {
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithNetworkConfig(subnetName string, acceleratedNetworking *bool, interfaces []infrav1.NetworkInterface) *infrav1.AzureMachine {
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SubnetName:            subnetName,
 			NetworkInterfaces:     interfaces,
 			AcceleratedNetworking: acceleratedNetworking,
@@ -1010,9 +1010,9 @@ func createMachineWithNetworkConfig(subnetName string, acceleratedNetworking *bo
 	}
 }
 
-func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *AzureMachine {
-	image := &Image{
-		SharedGallery: &AzureSharedGalleryImage{
+func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *infrav1.AzureMachine {
+	image := &infrav1.Image{
+		SharedGallery: &infrav1.AzureSharedGalleryImage{
 			SubscriptionID: subscriptionID,
 			ResourceGroup:  resourceGroup,
 			Name:           name,
@@ -1021,8 +1021,8 @@ func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, 
 		},
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
@@ -1030,10 +1030,10 @@ func createMachineWithSharedImage(subscriptionID, resourceGroup, name, gallery, 
 	}
 }
 
-func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *AzureMachine {
-	image := &Image{
-		Marketplace: &AzureMarketplaceImage{
-			ImagePlan: ImagePlan{
+func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *infrav1.AzureMachine {
+	image := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
 				Publisher: publisher,
 				Offer:     offer,
 				SKU:       sku,
@@ -1042,8 +1042,8 @@ func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *A
 		},
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
@@ -1051,13 +1051,13 @@ func createMachineWithMarketPlaceImage(publisher, offer, sku, version string) *A
 	}
 }
 
-func createMachineWithImageByID(imageID string) *AzureMachine {
-	image := &Image{
+func createMachineWithImageByID(imageID string) *infrav1.AzureMachine {
+	image := &infrav1.Image{
 		ID: &imageID,
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
@@ -1065,9 +1065,9 @@ func createMachineWithImageByID(imageID string) *AzureMachine {
 	}
 }
 
-func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithOsDiskCacheType(cacheType string) *infrav1.AzureMachine {
+	machine := &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
 		},
@@ -1076,13 +1076,13 @@ func createMachineWithOsDiskCacheType(cacheType string) *AzureMachine {
 	return machine
 }
 
-func createMachineWithSystemAssignedIdentityRoleName() *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithSystemAssignedIdentityRoleName() *infrav1.AzureMachine {
+	machine := &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
-			Identity:     VMIdentitySystemAssigned,
-			SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			Identity:     infrav1.VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Name:         "c6e3443d-bc11-4335-8819-ab6637b10586",
 				Scope:        "test-scope",
 				DefinitionID: "test-definition-id",
@@ -1092,13 +1092,13 @@ func createMachineWithSystemAssignedIdentityRoleName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithoutSystemAssignedIdentityRoleName() *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithoutSystemAssignedIdentityRoleName() *infrav1.AzureMachine {
+	machine := &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
-			Identity:     VMIdentitySystemAssigned,
-			SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+			Identity:     infrav1.VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Scope:        "test-scope",
 				DefinitionID: "test-definition-id",
 			},
@@ -1107,9 +1107,9 @@ func createMachineWithoutSystemAssignedIdentityRoleName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithoutRoleAssignmentName() *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithoutRoleAssignmentName() *infrav1.AzureMachine {
+	machine := &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
 		},
@@ -1117,9 +1117,9 @@ func createMachineWithoutRoleAssignmentName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithRoleAssignmentName() *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithRoleAssignmentName() *infrav1.AzureMachine {
+	machine := &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey:       validSSHPublicKey,
 			OSDisk:             validOSDisk,
 			RoleAssignmentName: "test-role-assignment",
@@ -1128,12 +1128,12 @@ func createMachineWithRoleAssignmentName() *AzureMachine {
 	return machine
 }
 
-func createMachineWithDiagnostics(diagnosticsType BootDiagnosticsStorageAccountType, userManaged *UserManagedBootDiagnostics) *AzureMachine {
-	var diagnostics *Diagnostics
+func createMachineWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsStorageAccountType, userManaged *infrav1.UserManagedBootDiagnostics) *infrav1.AzureMachine {
+	var diagnostics *infrav1.Diagnostics
 
 	if diagnosticsType != "" {
-		diagnostics = &Diagnostics{
-			Boot: &BootDiagnostics{
+		diagnostics = &infrav1.Diagnostics{
+			Boot: &infrav1.BootDiagnostics{
 				StorageAccountType: diagnosticsType,
 			},
 		}
@@ -1143,8 +1143,8 @@ func createMachineWithDiagnostics(diagnosticsType BootDiagnosticsStorageAccountT
 		diagnostics.Boot.UserManaged = userManaged
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: validSSHPublicKey,
 			OSDisk:       validOSDisk,
 			Diagnostics:  diagnostics,
@@ -1152,30 +1152,30 @@ func createMachineWithDiagnostics(diagnosticsType BootDiagnosticsStorageAccountT
 	}
 }
 
-func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncryptionType, securityType SecurityTypes, encryptionAtHost, vTpmEnabled, secureBootEnabled bool) *AzureMachine {
-	securityProfile := &SecurityProfile{
+func createMachineWithConfidentialCompute(securityEncryptionType infrav1.SecurityEncryptionType, securityType infrav1.SecurityTypes, encryptionAtHost, vTpmEnabled, secureBootEnabled bool) *infrav1.AzureMachine {
+	securityProfile := &infrav1.SecurityProfile{
 		EncryptionAtHost: &encryptionAtHost,
 		SecurityType:     securityType,
-		UefiSettings: &UefiSettings{
+		UefiSettings: &infrav1.UefiSettings{
 			VTpmEnabled:       &vTpmEnabled,
 			SecureBootEnabled: &secureBootEnabled,
 		},
 	}
 
-	osDisk := OSDisk{
+	osDisk := infrav1.OSDisk{
 		DiskSizeGB: ptr.To[int32](30),
-		OSType:     LinuxOS,
-		ManagedDisk: &ManagedDiskParameters{
+		OSType:     infrav1.LinuxOS,
+		ManagedDisk: &infrav1.ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
-			SecurityProfile: &VMDiskSecurityProfile{
+			SecurityProfile: &infrav1.VMDiskSecurityProfile{
 				SecurityEncryptionType: securityEncryptionType,
 			},
 		},
 		CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey:    validSSHPublicKey,
 			OSDisk:          osDisk,
 			SecurityProfile: securityProfile,
@@ -1183,14 +1183,14 @@ func createMachineWithConfidentialCompute(securityEncryptionType SecurityEncrypt
 	}
 }
 
-func createMachineWithCapacityReservaionGroupID(capacityReservationGroupID string) *AzureMachine {
+func createMachineWithCapacityReservaionGroupID(capacityReservationGroupID string) *infrav1.AzureMachine {
 	var strPtr *string
 	if capacityReservationGroupID != "" {
 		strPtr = ptr.To(capacityReservationGroupID)
 	}
 
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey:               validSSHPublicKey,
 			OSDisk:                     validOSDisk,
 			CapacityReservationGroupID: strPtr,
@@ -1198,13 +1198,13 @@ func createMachineWithCapacityReservaionGroupID(capacityReservationGroupID strin
 	}
 }
 
-func createMachineWithDisableExtenionOperationsAndHasExtension() *AzureMachine {
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithDisableExtenionOperationsAndHasExtension() *infrav1.AzureMachine {
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey:               validSSHPublicKey,
 			OSDisk:                     validOSDisk,
 			DisableExtensionOperations: ptr.To(true),
-			VMExtensions: []VMExtension{{
+			VMExtensions: []infrav1.VMExtension{{
 				Name:      "test-extension",
 				Publisher: "test-publiher",
 				Version:   "v0.0.1-test",
@@ -1213,9 +1213,9 @@ func createMachineWithDisableExtenionOperationsAndHasExtension() *AzureMachine {
 	}
 }
 
-func createMachineWithDisableExtenionOperations() *AzureMachine {
-	return &AzureMachine{
-		Spec: AzureMachineSpec{
+func createMachineWithDisableExtenionOperations() *infrav1.AzureMachine {
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey:               validSSHPublicKey,
 			OSDisk:                     validOSDisk,
 			DisableExtensionOperations: ptr.To(true),

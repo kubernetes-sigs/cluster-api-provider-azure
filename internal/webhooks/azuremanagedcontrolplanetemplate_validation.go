@@ -22,12 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/versions"
 )
 
 // Validate the Azure Managed Control Plane Template and return an aggregate error.
-func validateAzureManagedControlPlaneTemplate(mcp *AzureManagedControlPlaneTemplate, cli client.Client) error {
+func validateAzureManagedControlPlaneTemplate(mcp *infrav1.AzureManagedControlPlaneTemplate, cli client.Client) error {
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, validateVersion(
@@ -66,7 +66,7 @@ func validateAzureManagedControlPlaneTemplate(mcp *AzureManagedControlPlaneTempl
 }
 
 // validateK8sVersionUpdate validates K8s version.
-func validateAzureManagedControlPlaneTemplateK8sVersionUpdate(mcp *AzureManagedControlPlaneTemplate, old *AzureManagedControlPlaneTemplate) field.ErrorList {
+func validateAzureManagedControlPlaneTemplateK8sVersionUpdate(mcp *infrav1.AzureManagedControlPlaneTemplate, old *infrav1.AzureManagedControlPlaneTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 	if hv := versions.GetHigherK8sVersion(mcp.Spec.Template.Spec.Version, old.Spec.Template.Spec.Version); hv != mcp.Spec.Template.Spec.Version {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "template", "spec", "version"),
@@ -77,7 +77,7 @@ func validateAzureManagedControlPlaneTemplateK8sVersionUpdate(mcp *AzureManagedC
 }
 
 // validateVirtualNetworkTemplateUpdate validates update to VirtualNetworkTemplate.
-func validateAzureManagedControlPlaneTemplateVirtualNetworkTemplateUpdate(mcp *AzureManagedControlPlaneTemplate, old *AzureManagedControlPlaneTemplate) field.ErrorList {
+func validateAzureManagedControlPlaneTemplateVirtualNetworkTemplateUpdate(mcp *infrav1.AzureManagedControlPlaneTemplate, old *infrav1.AzureManagedControlPlaneTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if old.Spec.Template.Spec.VirtualNetwork.CIDRBlock != mcp.Spec.Template.Spec.VirtualNetwork.CIDRBlock {
@@ -116,14 +116,14 @@ func validateAzureManagedControlPlaneTemplateVirtualNetworkTemplateUpdate(mcp *A
 }
 
 // validateAPIServerAccessProfileTemplateUpdate validates update to APIServerAccessProfileTemplate.
-func validateAzureManagedControlPlaneTemplateAPIServerAccessProfileTemplateUpdate(mcp *AzureManagedControlPlaneTemplate, old *AzureManagedControlPlaneTemplate) field.ErrorList {
+func validateAzureManagedControlPlaneTemplateAPIServerAccessProfileTemplateUpdate(mcp *infrav1.AzureManagedControlPlaneTemplate, old *infrav1.AzureManagedControlPlaneTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
-	newAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
-	oldAPIServerAccessProfileNormalized := &APIServerAccessProfile{}
+	newAPIServerAccessProfileNormalized := &infrav1.APIServerAccessProfile{}
+	oldAPIServerAccessProfileNormalized := &infrav1.APIServerAccessProfile{}
 	if mcp.Spec.Template.Spec.APIServerAccessProfile != nil {
-		newAPIServerAccessProfileNormalized = &APIServerAccessProfile{
-			APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+		newAPIServerAccessProfileNormalized = &infrav1.APIServerAccessProfile{
+			APIServerAccessProfileClassSpec: infrav1.APIServerAccessProfileClassSpec{
 				EnablePrivateCluster:           mcp.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateCluster,
 				PrivateDNSZone:                 mcp.Spec.Template.Spec.APIServerAccessProfile.PrivateDNSZone,
 				EnablePrivateClusterPublicFQDN: mcp.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,
@@ -131,8 +131,8 @@ func validateAzureManagedControlPlaneTemplateAPIServerAccessProfileTemplateUpdat
 		}
 	}
 	if old.Spec.Template.Spec.APIServerAccessProfile != nil {
-		oldAPIServerAccessProfileNormalized = &APIServerAccessProfile{
-			APIServerAccessProfileClassSpec: APIServerAccessProfileClassSpec{
+		oldAPIServerAccessProfileNormalized = &infrav1.APIServerAccessProfile{
+			APIServerAccessProfileClassSpec: infrav1.APIServerAccessProfileClassSpec{
 				EnablePrivateCluster:           old.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateCluster,
 				PrivateDNSZone:                 old.Spec.Template.Spec.APIServerAccessProfile.PrivateDNSZone,
 				EnablePrivateClusterPublicFQDN: old.Spec.Template.Spec.APIServerAccessProfile.EnablePrivateClusterPublicFQDN,

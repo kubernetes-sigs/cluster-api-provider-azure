@@ -22,44 +22,44 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // CreateMachineWithSSHPublicKey returns an AzureMachine with the given SSH public key.
-func CreateMachineWithSSHPublicKey(sshPublicKey string) *AzureMachine {
+func CreateMachineWithSSHPublicKey(sshPublicKey string) *infrav1.AzureMachine {
 	machine := HardcodedAzureMachineWithSSHKey(sshPublicKey)
 	return machine
 }
 
 // CreateMachineWithUserAssignedIdentities returns an AzureMachine with user-assigned identities.
-func CreateMachineWithUserAssignedIdentities(identitiesList []UserAssignedIdentity) *AzureMachine {
+func CreateMachineWithUserAssignedIdentities(identitiesList []infrav1.UserAssignedIdentity) *infrav1.AzureMachine {
 	machine := HardcodedAzureMachineWithSSHKey(GenerateSSHPublicKey(true))
-	machine.Spec.Identity = VMIdentityUserAssigned
+	machine.Spec.Identity = infrav1.VMIdentityUserAssigned
 	machine.Spec.UserAssignedIdentities = identitiesList
 	return machine
 }
 
 // CreateMachineWithUserAssignedIdentitiesWithBadIdentity returns an AzureMachine with invalid identity configuration.
-func CreateMachineWithUserAssignedIdentitiesWithBadIdentity(identitiesList []UserAssignedIdentity) *AzureMachine {
+func CreateMachineWithUserAssignedIdentitiesWithBadIdentity(identitiesList []infrav1.UserAssignedIdentity) *infrav1.AzureMachine {
 	machine := HardcodedAzureMachineWithSSHKey(GenerateSSHPublicKey(true))
-	machine.Spec.Identity = VMIdentitySystemAssigned
+	machine.Spec.Identity = infrav1.VMIdentitySystemAssigned
 	machine.Spec.UserAssignedIdentities = identitiesList
 	return machine
 }
 
 // HardcodedAzureMachineWithSSHKey returns an AzureMachine with hardcoded fields and the given SSH public key.
-func HardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
-	return &AzureMachine{
+func HardcodedAzureMachineWithSSHKey(sshPublicKey string) *infrav1.AzureMachine {
+	return &infrav1.AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel: "test-cluster",
 			},
 		},
-		Spec: AzureMachineSpec{
+		Spec: infrav1.AzureMachineSpec{
 			SSHPublicKey: sshPublicKey,
 			OSDisk:       GenerateValidOSDisk(),
-			Image: &Image{
-				SharedGallery: &AzureSharedGalleryImage{
+			Image: &infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
 					SubscriptionID: "SUB123",
 					ResourceGroup:  "RG123",
 					Name:           "NAME123",
@@ -72,11 +72,11 @@ func HardcodedAzureMachineWithSSHKey(sshPublicKey string) *AzureMachine {
 }
 
 // GenerateValidOSDisk returns a valid OSDisk configuration.
-func GenerateValidOSDisk() OSDisk {
-	return OSDisk{
+func GenerateValidOSDisk() infrav1.OSDisk {
+	return infrav1.OSDisk{
 		DiskSizeGB: ptr.To[int32](30),
-		OSType:     LinuxOS,
-		ManagedDisk: &ManagedDiskParameters{
+		OSType:     infrav1.LinuxOS,
+		ManagedDisk: &infrav1.ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
 		},
 		CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
@@ -84,7 +84,7 @@ func GenerateValidOSDisk() OSDisk {
 }
 
 // CreateOSDiskWithCacheType returns a valid OSDisk with the given cache type.
-func CreateOSDiskWithCacheType(cacheType string) OSDisk {
+func CreateOSDiskWithCacheType(cacheType string) infrav1.OSDisk {
 	osDisk := GenerateValidOSDisk()
 	osDisk.CachingType = cacheType
 	return osDisk

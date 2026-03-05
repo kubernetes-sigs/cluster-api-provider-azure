@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
@@ -34,7 +34,7 @@ import (
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureManagedControlPlaneTemplate{}).
+		For(&infrav1.AzureManagedControlPlaneTemplate{}).
 		WithDefaulter(mcpw).
 		WithValidator(mcpw).
 		Complete()
@@ -50,7 +50,7 @@ type AzureManagedControlPlaneTemplateWebhook struct {
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	mcp, ok := obj.(*AzureManagedControlPlaneTemplate)
+	mcp, ok := obj.(*infrav1.AzureManagedControlPlaneTemplate)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
@@ -60,7 +60,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) Default(_ context.Context, 
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mcp, ok := obj.(*AzureManagedControlPlaneTemplate)
+	mcp, ok := obj.(*infrav1.AzureManagedControlPlaneTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
@@ -71,11 +71,11 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Co
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*AzureManagedControlPlaneTemplate)
+	old, ok := oldObj.(*infrav1.AzureManagedControlPlaneTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
-	mcp, ok := newObj.(*AzureManagedControlPlaneTemplate)
+	mcp, ok := newObj.(*infrav1.AzureManagedControlPlaneTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
@@ -182,7 +182,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Co
 		return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.Client)
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedControlPlaneTemplateKind).GroupKind(), mcp.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneTemplateKind).GroupKind(), mcp.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

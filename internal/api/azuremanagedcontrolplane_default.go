@@ -25,7 +25,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
@@ -41,7 +41,7 @@ const (
 )
 
 // DefaultFleetsMember sets the default FleetsMember for an AzureManagedControlPlane.
-func DefaultFleetsMember(fleetsMember *FleetsMember, labels map[string]string) *FleetsMember {
+func DefaultFleetsMember(fleetsMember *infrav1.FleetsMember, labels map[string]string) *infrav1.FleetsMember {
 	result := fleetsMember.DeepCopy()
 	if fleetsMember != nil {
 		if clusterName, ok := labels[clusterv1.ClusterNameLabel]; ok && fleetsMember.Name == "" {
@@ -52,20 +52,20 @@ func DefaultFleetsMember(fleetsMember *FleetsMember, labels map[string]string) *
 }
 
 // DefaultSku returns the default SKU for an AzureManagedControlPlane.
-func DefaultSku(sku *AKSSku) *AKSSku {
+func DefaultSku(sku *infrav1.AKSSku) *infrav1.AKSSku {
 	result := sku.DeepCopy()
 	if sku == nil {
-		result = new(AKSSku)
-		result.Tier = FreeManagedControlPlaneTier
-	} else if sku.Tier == PaidManagedControlPlaneTier {
-		result.Tier = StandardManagedControlPlaneTier
+		result = new(infrav1.AKSSku)
+		result.Tier = infrav1.FreeManagedControlPlaneTier
+	} else if sku.Tier == infrav1.PaidManagedControlPlaneTier {
+		result.Tier = infrav1.StandardManagedControlPlaneTier
 		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Info("Paid SKU tier is deprecated and has been replaced by Standard")
 	}
 	return result
 }
 
 // SetDefaultAzureManagedControlPlaneResourceGroupName sets the default ResourceGroupName for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneResourceGroupName(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneResourceGroupName(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.ResourceGroupName == "" {
 		if clusterName, ok := m.Labels[clusterv1.ClusterNameLabel]; ok {
 			m.Spec.ResourceGroupName = clusterName
@@ -74,7 +74,7 @@ func SetDefaultAzureManagedControlPlaneResourceGroupName(m *AzureManagedControlP
 }
 
 // SetDefaultAzureManagedControlPlaneSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneSSHPublicKey(m *AzureManagedControlPlane) error {
+func SetDefaultAzureManagedControlPlaneSSHPublicKey(m *infrav1.AzureManagedControlPlane) error {
 	if sshKey := m.Spec.SSHPublicKey; sshKey != nil && *sshKey == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
@@ -88,20 +88,20 @@ func SetDefaultAzureManagedControlPlaneSSHPublicKey(m *AzureManagedControlPlane)
 }
 
 // SetDefaultAzureManagedControlPlaneNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneNodeResourceGroupName(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneNodeResourceGroupName(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.NodeResourceGroupName == "" {
 		m.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", m.Spec.ResourceGroupName, m.Name, m.Spec.Location)
 	}
 }
 
 // SetDefaultAzureManagedControlPlaneVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneVirtualNetwork(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneVirtualNetwork(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.VirtualNetwork.Name == "" {
 		m.Spec.VirtualNetwork.Name = m.Name
 	}
 	if m.Spec.VirtualNetwork.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.CIDRBlock = DefaultAKSVnetCIDR
-		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+		if ptr.Deref(m.Spec.NetworkPluginMode, "") == infrav1.NetworkPluginModeOverlay {
 			m.Spec.VirtualNetwork.CIDRBlock = DefaultAKSVnetCIDRForOverlay
 		}
 	}
@@ -111,34 +111,34 @@ func SetDefaultAzureManagedControlPlaneVirtualNetwork(m *AzureManagedControlPlan
 }
 
 // SetDefaultAzureManagedControlPlaneSubnet sets the default Subnet for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneSubnet(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneSubnet(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.VirtualNetwork.Subnet.Name == "" {
 		m.Spec.VirtualNetwork.Subnet.Name = m.Name
 	}
 	if m.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
 		m.Spec.VirtualNetwork.Subnet.CIDRBlock = DefaultAKSNodeSubnetCIDR
-		if ptr.Deref(m.Spec.NetworkPluginMode, "") == NetworkPluginModeOverlay {
+		if ptr.Deref(m.Spec.NetworkPluginMode, "") == infrav1.NetworkPluginModeOverlay {
 			m.Spec.VirtualNetwork.Subnet.CIDRBlock = DefaultAKSNodeSubnetCIDRForOverlay
 		}
 	}
 }
 
 // SetDefaultAzureManagedControlPlaneOIDCIssuerProfile sets the default OIDCIssuerProfile for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneOIDCIssuerProfile(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneOIDCIssuerProfile(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.OIDCIssuerProfile == nil {
-		m.Spec.OIDCIssuerProfile = &OIDCIssuerProfile{}
+		m.Spec.OIDCIssuerProfile = &infrav1.OIDCIssuerProfile{}
 	}
 }
 
 // SetDefaultAzureManagedControlPlaneDNSPrefix sets the default DNSPrefix for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneDNSPrefix(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneDNSPrefix(m *infrav1.AzureManagedControlPlane) {
 	if m.Spec.DNSPrefix == nil {
 		m.Spec.DNSPrefix = ptr.To(m.Name)
 	}
 }
 
 // SetDefaultAzureManagedControlPlaneAKSExtensions sets the default AKS extensions for an AzureManagedControlPlane.
-func SetDefaultAzureManagedControlPlaneAKSExtensions(m *AzureManagedControlPlane) {
+func SetDefaultAzureManagedControlPlaneAKSExtensions(m *infrav1.AzureManagedControlPlane) {
 	for _, extension := range m.Spec.Extensions {
 		if extension.Plan != nil && extension.Plan.Name == "" {
 			extension.Plan.Name = fmt.Sprintf("%s-%s", m.Name, extension.Plan.Product)

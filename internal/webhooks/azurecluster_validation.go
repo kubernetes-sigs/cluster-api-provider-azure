@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
@@ -72,7 +72,7 @@ var (
 )
 
 // validateAzureCluster validates a cluster.
-func validateAzureCluster(c *AzureCluster, old *AzureCluster) (admission.Warnings, error) {
+func validateAzureCluster(c *infrav1.AzureCluster, old *infrav1.AzureCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, validateAzureClusterName(c)...)
 	allErrs = append(allErrs, validateAzureClusterSpec(c, old)...)
@@ -81,21 +81,21 @@ func validateAzureCluster(c *AzureCluster, old *AzureCluster) (admission.Warning
 	}
 
 	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: AzureClusterKind},
+		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: infrav1.AzureClusterKind},
 		c.Name, allErrs)
 }
 
 // validateAzureClusterSpec validates a ClusterSpec.
-func validateAzureClusterSpec(c *AzureCluster, old *AzureCluster) field.ErrorList {
+func validateAzureClusterSpec(c *infrav1.AzureCluster, old *infrav1.AzureCluster) field.ErrorList {
 	var allErrs field.ErrorList
-	var oldNetworkSpec NetworkSpec
+	var oldNetworkSpec infrav1.NetworkSpec
 	if old != nil {
 		oldNetworkSpec = old.Spec.NetworkSpec
 	}
 
 	allErrs = append(allErrs, validateNetworkSpec(c.Spec.ControlPlaneEnabled, c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
 
-	var oldCloudProviderConfigOverrides *CloudProviderConfigOverrides
+	var oldCloudProviderConfigOverrides *infrav1.CloudProviderConfigOverrides
 	if old != nil {
 		oldCloudProviderConfigOverrides = old.Spec.CloudProviderConfigOverrides
 	}
@@ -119,7 +119,7 @@ func validateAzureClusterSpec(c *AzureCluster, old *AzureCluster) field.ErrorLis
 }
 
 // validateAzureClusterName validates ClusterName.
-func validateAzureClusterName(c *AzureCluster) field.ErrorList {
+func validateAzureClusterName(c *infrav1.AzureCluster) field.ErrorList {
 	var allErrs field.ErrorList
 	if len(c.Name) > clusterNameMaxLength {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("Name"), c.Name,
@@ -137,8 +137,8 @@ func validateAzureClusterName(c *AzureCluster) field.ErrorList {
 }
 
 // validateBastionSpec validates a BastionSpec.
-func validateBastionSpec(bastionSpec BastionSpec, fldPath *field.Path) *field.Error {
-	if bastionSpec.AzureBastion != nil && bastionSpec.AzureBastion.Sku != StandardBastionHostSku && bastionSpec.AzureBastion.EnableTunneling {
+func validateBastionSpec(bastionSpec infrav1.BastionSpec, fldPath *field.Path) *field.Error {
+	if bastionSpec.AzureBastion != nil && bastionSpec.AzureBastion.Sku != infrav1.StandardBastionHostSku && bastionSpec.AzureBastion.EnableTunneling {
 		return field.Invalid(fldPath.Child("sku"), bastionSpec.AzureBastion.Sku,
 			"sku must be Standard if tunneling is enabled")
 	}
@@ -150,14 +150,14 @@ func validateIdentityRef(identityRef *corev1.ObjectReference, fldPath *field.Pat
 	if identityRef == nil {
 		return field.Required(fldPath, "identityRef is required")
 	}
-	if identityRef.Kind != AzureClusterIdentityKind {
+	if identityRef.Kind != infrav1.AzureClusterIdentityKind {
 		return field.NotSupported(fldPath.Child("name"), identityRef.Name, []string{"AzureClusterIdentity"})
 	}
 	return nil
 }
 
 // validateNetworkSpec validates a NetworkSpec.
-func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
+func validateNetworkSpec(controlPlaneEnabled bool, networkSpec infrav1.NetworkSpec, old infrav1.NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	// If the user specifies a resourceGroup for vnet, it means
 	// that they intend to use a pre-existing vnet. In this case,
@@ -188,7 +188,7 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old 
 
 	var needOutboundLB bool
 	for _, subnet := range networkSpec.Subnets {
-		if (subnet.Role == SubnetNode || subnet.Role == SubnetCluster) && subnet.IsIPv6Enabled() {
+		if (subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster) && subnet.IsIPv6Enabled() {
 			needOutboundLB = true
 			break
 		}
@@ -199,7 +199,7 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec NetworkSpec, old 
 	if controlPlaneEnabled {
 		allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
 	}
-	var lbType = Internal
+	var lbType = infrav1.Internal
 	if networkSpec.APIServerLB != nil {
 		lbType = networkSpec.APIServerLB.Type
 	}
@@ -223,7 +223,7 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 
 // validateSubnets validates a list of Subnets.
 // When configuring a cluster, it is essential to include either a control-plane subnet and a node subnet, or a user can configure a cluster subnet which will be used as a control-plane subnet and a node subnet.
-func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.ErrorList {
+func validateSubnets(controlPlaneEnabled bool, subnets infrav1.Subnets, vnet infrav1.VnetSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
@@ -241,7 +241,7 @@ func validateSubnets(controlPlaneEnabled bool, subnets Subnets, vnet VnetSpec, f
 			allErrs = append(allErrs, field.Duplicate(fldPath, subnet.Name))
 		}
 		subnetNames[subnet.Name] = true
-		if subnet.Role == SubnetCluster {
+		if subnet.Role == infrav1.SubnetCluster {
 			clusterSubnet = true
 		} else {
 			for role := range requiredSubnetRoles {
@@ -339,7 +339,7 @@ func validateVnetCIDR(vnetCIDRBlocks []string, fldPath *field.Path) field.ErrorL
 }
 
 // validateVnetPeerings validates a list of virtual network peerings.
-func validateVnetPeerings(peerings VnetPeerings, fldPath *field.Path) field.ErrorList {
+func validateVnetPeerings(peerings infrav1.VnetPeerings, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	vnetIdentifiers := make(map[string]bool, len(peerings))
 
@@ -380,7 +380,7 @@ func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.
 }
 
 // validateSecurityRule validates a SecurityRule.
-func validateSecurityRule(rule SecurityRule, fldPath *field.Path) (allErrs field.ErrorList) {
+func validateSecurityRule(rule infrav1.SecurityRule, fldPath *field.Path) (allErrs field.ErrorList) {
 	if rule.Priority < minRulePriority || rule.Priority > maxRulePriority {
 		allErrs = append(allErrs, field.Invalid(fldPath, rule.Priority, fmt.Sprintf("security rule priorities should be between %d and %d", minRulePriority, maxRulePriority)))
 	}
@@ -392,11 +392,11 @@ func validateSecurityRule(rule SecurityRule, fldPath *field.Path) (allErrs field
 	return allErrs
 }
 
-func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
+func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	lbClassSpec := lb.LoadBalancerClassSpec
-	var olLBClassSpec LoadBalancerClassSpec
+	var olLBClassSpec infrav1.LoadBalancerClassSpec
 	if old != nil {
 		olLBClassSpec = old.LoadBalancerClassSpec
 	}
@@ -423,7 +423,7 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 			privateIP = lb.FrontendIPs[i].PrivateIPAddress
 		}
 	}
-	if lb.Type == Public {
+	if lb.Type == infrav1.Public {
 		// there should be one public IP for public LB.
 		if publicIPCount != 1 || ptr.Deref[int32](lb.FrontendIPsCount, 1) != 1 {
 			// Note: FrontendIPsCount creates public IPs when set. Therefore, we check for both publicIPCount and FrontendIPsCount to be 1.
@@ -444,7 +444,7 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 	}
 
 	// internal LB should not have a public IP.
-	if lb.Type == Internal {
+	if lb.Type == infrav1.Internal {
 		if publicIPCount != 0 {
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
 				"Internal Load Balancers cannot have a Public IP"))
@@ -466,10 +466,10 @@ func validateAPIServerLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, cidrs []st
 	return allErrs
 }
 
-func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB *LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateNodeOutboundLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, apiserverLB *infrav1.LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	var lbClassSpec, oldClassSpec *LoadBalancerClassSpec
+	var lbClassSpec, oldClassSpec *infrav1.LoadBalancerClassSpec
 	if lb != nil {
 		lbClassSpec = &lb.LoadBalancerClassSpec
 	}
@@ -516,10 +516,10 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	return allErrs
 }
 
-func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB *LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateControlPlaneOutboundLB(lb *infrav1.LoadBalancerSpec, apiserverLB *infrav1.LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	var lbClassSpec *LoadBalancerClassSpec
+	var lbClassSpec *infrav1.LoadBalancerClassSpec
 	if lb != nil {
 		lbClassSpec = &lb.LoadBalancerClassSpec
 	}
@@ -527,7 +527,7 @@ func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB *LoadBalan
 
 	allErrs = append(allErrs, validateClassSpecForControlPlaneOutboundLB(lbClassSpec, apiServerLBClassSpec, fldPath)...)
 
-	if apiServerLBClassSpec.Type == Internal && lb != nil {
+	if apiServerLBClassSpec.Type == infrav1.Internal && lb != nil {
 		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
 				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
@@ -538,11 +538,11 @@ func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB *LoadBalan
 }
 
 // validatePrivateDNSZoneName validates the PrivateDNSZoneName.
-func validatePrivateDNSZoneName(privateDNSZoneName string, controlPlaneEnabled bool, apiserverLBType LBType, fldPath *field.Path) field.ErrorList {
+func validatePrivateDNSZoneName(privateDNSZoneName string, controlPlaneEnabled bool, apiserverLBType infrav1.LBType, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if privateDNSZoneName != "" {
-		if controlPlaneEnabled && apiserverLBType != Internal {
+		if controlPlaneEnabled && apiserverLBType != infrav1.Internal {
 			allErrs = append(allErrs, field.Invalid(fldPath, apiserverLBType,
 				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))
 		}
@@ -575,7 +575,7 @@ func validatePrivateDNSZoneResourceGroup(privateDNSZoneName string, privateDNSZo
 }
 
 // validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides.
-func validateCloudProviderConfigOverrides(oldConfig, newConfig *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
+func validateCloudProviderConfigOverrides(oldConfig, newConfig *infrav1.CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if !reflect.DeepEqual(oldConfig, newConfig) {
 		allErrs = append(allErrs, field.Invalid(fldPath, newConfig, "cannot change cloudProviderConfigOverrides cluster creation"))
@@ -583,18 +583,18 @@ func validateCloudProviderConfigOverrides(oldConfig, newConfig *CloudProviderCon
 	return allErrs
 }
 
-func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancerClassSpec, apiServerLBPath *field.Path) field.ErrorList {
+func validateClassSpecForAPIServerLB(lb infrav1.LoadBalancerClassSpec, old *infrav1.LoadBalancerClassSpec, apiServerLBPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	// SKU should be Standard
-	if lb.SKU != SKUStandard {
-		allErrs = append(allErrs, field.NotSupported(apiServerLBPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
+	if lb.SKU != infrav1.SKUStandard {
+		allErrs = append(allErrs, field.NotSupported(apiServerLBPath.Child("sku"), lb.SKU, []string{string(infrav1.SKUStandard)}))
 	}
 
 	// Type should be Public or Internal.
-	if lb.Type != Internal && lb.Type != Public {
+	if lb.Type != infrav1.Internal && lb.Type != infrav1.Public {
 		allErrs = append(allErrs, field.NotSupported(apiServerLBPath.Child("type"), lb.Type,
-			[]string{string(Public), string(Internal)}))
+			[]string{string(infrav1.Public), string(infrav1.Internal)}))
 	}
 
 	// SKU should be immutable.
@@ -620,11 +620,11 @@ func validateClassSpecForAPIServerLB(lb LoadBalancerClassSpec, old *LoadBalancer
 	return allErrs
 }
 
-func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBalancerClassSpec, apiserverLB LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
+func validateClassSpecForNodeOutboundLB(lb *infrav1.LoadBalancerClassSpec, old *infrav1.LoadBalancerClassSpec, apiserverLB infrav1.LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	// LB can be nil when disabled for private clusters.
-	if lb == nil && apiserverLB.Type == Internal {
+	if lb == nil && apiserverLB.Type == infrav1.Internal {
 		return allErrs
 	}
 
@@ -653,15 +653,15 @@ func validateClassSpecForNodeOutboundLB(lb *LoadBalancerClassSpec, old *LoadBala
 	return allErrs
 }
 
-func validateClassSpecForControlPlaneOutboundLB(lb *LoadBalancerClassSpec, apiserverLB LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
+func validateClassSpecForControlPlaneOutboundLB(lb *infrav1.LoadBalancerClassSpec, apiserverLB infrav1.LoadBalancerClassSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	switch apiserverLB.Type {
-	case Public:
+	case infrav1.Public:
 		if lb != nil {
 			allErrs = append(allErrs, field.Forbidden(fldPath, "Control plane outbound load balancer cannot be set for public clusters."))
 		}
-	case Internal:
+	case infrav1.Internal:
 		// Control plane outbound lb can be nil when it's disabled for private clusters.
 		if lb == nil {
 			return nil
@@ -676,7 +676,7 @@ func validateClassSpecForControlPlaneOutboundLB(lb *LoadBalancerClassSpec, apise
 	return allErrs
 }
 
-func validateServiceEndpoints(serviceEndpoints []ServiceEndpointSpec, fldPath *field.Path) field.ErrorList {
+func validateServiceEndpoints(serviceEndpoints []infrav1.ServiceEndpointSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	serviceEndpointsServices := make(map[string]bool, len(serviceEndpoints))
@@ -726,7 +726,7 @@ func validateServiceEndpointLocationName(location string, fldPath *field.Path) *
 	return nil
 }
 
-func validatePrivateEndpoints(privateEndpointSpecs []PrivateEndpointSpec, subnetCIDRs []string, fldPath *field.Path) field.ErrorList {
+func validatePrivateEndpoints(privateEndpointSpecs []infrav1.PrivateEndpointSpec, subnetCIDRs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	for i, pe := range privateEndpointSpecs {
@@ -772,7 +772,7 @@ func validatePrivateEndpointName(name string, fldPath *field.Path) *field.Error 
 }
 
 // validatePrivateEndpointServiceID validates the service ID of a Private Endpoint.
-func validatePrivateEndpointPrivateLinkServiceConnection(privateLinkServiceConnection PrivateLinkServiceConnection, fldPath *field.Path) *field.Error {
+func validatePrivateEndpointPrivateLinkServiceConnection(privateLinkServiceConnection infrav1.PrivateLinkServiceConnection, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.MatchString(resourceIDPattern, privateLinkServiceConnection.PrivateLinkServiceID); !success {
 		return field.Invalid(fldPath, privateLinkServiceConnection.PrivateLinkServiceID,
 			fmt.Sprintf("private endpoint privateLinkServiceConnection service ID doesn't match regex %s", resourceIDPattern))
@@ -806,10 +806,10 @@ func validatePrivateEndpointIPAddress(address string, cidrs []string, fldPath *f
 }
 
 // validateAzureClusterSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.
-func validateAzureClusterSubnetUpdate(c *AzureCluster, old *AzureCluster) field.ErrorList {
+func validateAzureClusterSubnetUpdate(c *infrav1.AzureCluster, old *infrav1.AzureCluster) field.ErrorList {
 	var allErrs field.ErrorList
 
-	oldSubnetMap := make(map[string]SubnetSpec, len(old.Spec.NetworkSpec.Subnets))
+	oldSubnetMap := make(map[string]infrav1.SubnetSpec, len(old.Spec.NetworkSpec.Subnets))
 	oldSubnetIndex := make(map[string]int, len(old.Spec.NetworkSpec.Subnets))
 	for i, subnet := range old.Spec.NetworkSpec.Subnets {
 		oldSubnetMap[subnet.Name] = subnet

@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
@@ -35,7 +35,7 @@ import (
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureMachine{}).
+		For(&infrav1.AzureMachine{}).
 		WithDefaulter(mw).
 		WithValidator(mw).
 		Complete()
@@ -51,7 +51,7 @@ type AzureMachineWebhook struct {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *AzureMachineWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	m, ok := obj.(*AzureMachine)
+	m, ok := obj.(*infrav1.AzureMachine)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
 	}
@@ -72,17 +72,17 @@ func (mw *AzureMachineWebhook) ValidateCreate(_ context.Context, obj runtime.Obj
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineKind).GroupKind(), m.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureMachineKind).GroupKind(), m.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*AzureMachine)
+	old, ok := oldObj.(*infrav1.AzureMachine)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
 	}
-	m, ok := newObj.(*AzureMachine)
+	m, ok := newObj.(*infrav1.AzureMachine)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
 	}
@@ -232,7 +232,7 @@ func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj 
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineKind).GroupKind(), m.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureMachineKind).GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
@@ -242,7 +242,7 @@ func (mw *AzureMachineWebhook) ValidateDelete(_ context.Context, _ runtime.Objec
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mw *AzureMachineWebhook) Default(_ context.Context, obj runtime.Object) error {
-	m, ok := obj.(*AzureMachine)
+	m, ok := obj.(*infrav1.AzureMachine)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureMachine resource")
 	}

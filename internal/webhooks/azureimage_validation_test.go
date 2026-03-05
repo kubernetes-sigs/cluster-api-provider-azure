@@ -23,14 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestImageOptional(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		Image *Image
+		Image *infrav1.Image
 	}
 
 	extension := test{}
@@ -42,16 +42,16 @@ func TestImageOptional(t *testing.T) {
 func TestImageTooManyDetails(t *testing.T) {
 	g := NewWithT(t)
 
-	image := &Image{
-		Marketplace: &AzureMarketplaceImage{
-			ImagePlan: ImagePlan{
+	image := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
 				Offer:     "OFFER",
 				Publisher: "PUBLISHER",
 				SKU:       "SKU",
 			},
 			Version: "1.0.0.",
 		},
-		SharedGallery: &AzureSharedGalleryImage{
+		SharedGallery: &infrav1.AzureSharedGalleryImage{
 			Gallery:        "GALLERY",
 			Name:           "GALLERY1",
 			ResourceGroup:  "RG1",
@@ -65,7 +65,7 @@ func TestImageTooManyDetails(t *testing.T) {
 
 func TestComputeImageGalleryValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *Image
+		image          *infrav1.Image
 		expectedErrors int
 	}{
 		"AzureComputeGalleryImage - fully specified community image": {
@@ -94,7 +94,7 @@ func TestComputeImageGalleryValid(t *testing.T) {
 
 func TestSharedImageGalleryValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *Image
+		image          *infrav1.Image
 		expectedErrors int
 	}{
 		"AzureSharedGalleryImage - fully specified": {
@@ -131,7 +131,7 @@ func TestSharedImageGalleryValid(t *testing.T) {
 
 func TestMarketPlaceImageValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *Image
+		image          *infrav1.Image
 		expectedErrors int
 	}{
 		"AzureMarketplaceImage - fully specified": {
@@ -164,7 +164,7 @@ func TestMarketPlaceImageValid(t *testing.T) {
 
 func TestImageByIDValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *Image
+		image          *infrav1.Image
 		expectedErrors int
 	}{
 		"AzureImageByID - with id": {
@@ -183,9 +183,9 @@ func TestImageByIDValid(t *testing.T) {
 	}
 }
 
-func createTestComputeImage(subscriptionID, resourceGroup *string) *Image {
-	return &Image{
-		ComputeGallery: &AzureComputeGalleryImage{
+func createTestComputeImage(subscriptionID, resourceGroup *string) *infrav1.Image {
+	return &infrav1.Image{
+		ComputeGallery: &infrav1.AzureComputeGalleryImage{
 			Name:           "IMAGENAME",
 			Gallery:        "GALLERY9876",
 			Version:        "1.0.0",
@@ -195,9 +195,9 @@ func createTestComputeImage(subscriptionID, resourceGroup *string) *Image {
 	}
 }
 
-func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *Image {
-	return &Image{
-		SharedGallery: &AzureSharedGalleryImage{
+func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *infrav1.Image {
+	return &infrav1.Image{
+		SharedGallery: &infrav1.AzureSharedGalleryImage{
 			SubscriptionID: subscriptionID,
 			ResourceGroup:  resourceGroup,
 			Name:           name,
@@ -207,10 +207,10 @@ func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version
 	}
 }
 
-func createTestMarketPlaceImage(publisher, offer, sku, version string) *Image {
-	return &Image{
-		Marketplace: &AzureMarketplaceImage{
-			ImagePlan: ImagePlan{
+func createTestMarketPlaceImage(publisher, offer, sku, version string) *infrav1.Image {
+	return &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			ImagePlan: infrav1.ImagePlan{
 				Publisher: publisher,
 				Offer:     offer,
 				SKU:       sku,
@@ -220,22 +220,22 @@ func createTestMarketPlaceImage(publisher, offer, sku, version string) *Image {
 	}
 }
 
-func createTestImageByID(imageID string) *Image {
-	return &Image{
+func createTestImageByID(imageID string) *infrav1.Image {
+	return &infrav1.Image{
 		ID: &imageID,
 	}
 }
 
 func TestValidateSingleDetailsOnly(t *testing.T) {
 	testCases := map[string]struct {
-		image          *Image
+		image          *infrav1.Image
 		expectedErrors field.ErrorList
 	}{
 		"image.Marketplace != nil, image details are found": {
-			image: &Image{
+			image: &infrav1.Image{
 				ID: ptr.To("ID1234"),
-				Marketplace: &AzureMarketplaceImage{
-					ImagePlan: ImagePlan{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					ImagePlan: infrav1.ImagePlan{
 						Offer:     "OFFER",
 						Publisher: "PUBLISHER",
 						SKU:       "SKU",
@@ -253,9 +253,9 @@ func TestValidateSingleDetailsOnly(t *testing.T) {
 			},
 		},
 		"image.Marketplace == nil, image.ComputeGallery != nil, image details are found": {
-			image: &Image{
+			image: &infrav1.Image{
 				ID: ptr.To("ID1234"),
-				ComputeGallery: &AzureComputeGalleryImage{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
 					Name:           "IMAGENAME",
 					Gallery:        "GALLERY9876",
 					Version:        "1.0.0",
@@ -273,7 +273,7 @@ func TestValidateSingleDetailsOnly(t *testing.T) {
 			},
 		},
 		"image.Marketplace == nil, image.ComputeGallery == nil, image details not found": {
-			image: &Image{},
+			image: &infrav1.Image{},
 			expectedErrors: field.ErrorList{
 				{
 					Type:     "FieldValueRequired",

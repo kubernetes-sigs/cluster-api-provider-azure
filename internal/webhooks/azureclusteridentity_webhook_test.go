@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 const fakeClientID = "fake-client-id"
@@ -31,14 +31,14 @@ const fakeResourceID = "fake-resource-id"
 func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name            string
-		clusterIdentity *AzureClusterIdentity
+		clusterIdentity *infrav1.AzureClusterIdentity
 		wantErr         bool
 	}{
 		{
 			name: "azureclusteridentity with service principal",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:     ServicePrincipal,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
 					ClientID: fakeClientID,
 					TenantID: fakeTenantID,
 				},
@@ -47,9 +47,9 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azureclusteridentity with service principal and resource id",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.ServicePrincipal,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
@@ -59,9 +59,9 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azureclusteridentity with user assigned msi and resource id",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       UserAssignedMSI,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.UserAssignedMSI,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
@@ -71,9 +71,9 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azureclusteridentity with user assigned msi and no resource id",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:     UserAssignedMSI,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.UserAssignedMSI,
 					ClientID: fakeClientID,
 					TenantID: fakeTenantID,
 				},
@@ -98,22 +98,22 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 	tests := []struct {
 		name               string
-		oldClusterIdentity *AzureClusterIdentity
-		clusterIdentity    *AzureClusterIdentity
+		oldClusterIdentity *infrav1.AzureClusterIdentity
+		clusterIdentity    *infrav1.AzureClusterIdentity
 		wantErr            bool
 	}{
 		{
 			name: "azureclusteridentity with no change",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:     ServicePrincipal,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
 					ClientID: fakeClientID,
 					TenantID: fakeTenantID,
 				},
 			},
-			oldClusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:     ServicePrincipal,
+			oldClusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
 					ClientID: fakeClientID,
 					TenantID: fakeTenantID,
 				},
@@ -122,17 +122,17 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azureclusteridentity with a change in type",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.ServicePrincipal,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
 				},
 			},
-			oldClusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       WorkloadIdentity,
+			oldClusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.WorkloadIdentity,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
@@ -142,17 +142,17 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: "azureclusteridentity with a change in client ID",
-			clusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       ServicePrincipal,
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.ServicePrincipal,
 					ClientID:   fakeClientID,
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
 				},
 			},
-			oldClusterIdentity: &AzureClusterIdentity{
-				Spec: AzureClusterIdentitySpec{
-					Type:       WorkloadIdentity,
+			oldClusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:       infrav1.WorkloadIdentity,
 					ClientID:   "diff-fake-Client-ID",
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,

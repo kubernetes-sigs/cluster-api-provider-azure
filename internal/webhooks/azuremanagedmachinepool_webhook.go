@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
 
@@ -39,7 +39,7 @@ var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureManagedMachinePoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureManagedMachinePool{}).
+		For(&infrav1.AzureManagedMachinePool{}).
 		WithDefaulter(mw).
 		WithValidator(mw).
 		Complete()
@@ -54,21 +54,21 @@ type AzureManagedMachinePoolWebhook struct {
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mw *AzureManagedMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {
-	m, ok := obj.(*AzureManagedMachinePool)
+	m, ok := obj.(*infrav1.AzureManagedMachinePool)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
-	m.Labels[LabelAgentPoolMode] = m.Spec.Mode
+	m.Labels[infrav1.LabelAgentPoolMode] = m.Spec.Mode
 
 	if m.Spec.Name == nil || *m.Spec.Name == "" {
 		m.Spec.Name = &m.Name
 	}
 
 	if m.Spec.OSType == nil {
-		m.Spec.OSType = ptr.To(DefaultOSType)
+		m.Spec.OSType = ptr.To(infrav1.DefaultOSType)
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func (mw *AzureManagedMachinePoolWebhook) Default(_ context.Context, obj runtime
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *AzureManagedMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	m, ok := obj.(*AzureManagedMachinePool)
+	m, ok := obj.(*infrav1.AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
@@ -131,11 +131,11 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateCreate(_ context.Context, obj 
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	old, ok := oldObj.(*AzureManagedMachinePool)
+	old, ok := oldObj.(*infrav1.AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
-	m, ok := newObj.(*AzureManagedMachinePool)
+	m, ok := newObj.(*infrav1.AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
@@ -206,7 +206,7 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldO
 				"field is immutable"))
 	}
 
-	if m.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
+	if m.Spec.Mode != string(infrav1.NodePoolModeSystem) && old.Spec.Mode == string(infrav1.NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := validateLastSystemNodePool(mw.Client, m.Labels, m.Namespace, m.Annotations); err != nil {
 			allErrs = append(allErrs, field.Forbidden(
@@ -277,7 +277,7 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldO
 	}
 
 	if len(allErrs) != 0 {
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedMachinePoolKind).GroupKind(), m.Name, allErrs)
+		return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureManagedMachinePoolKind).GroupKind(), m.Name, allErrs)
 	}
 
 	return nil, nil
@@ -285,11 +285,11 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldO
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (mw *AzureManagedMachinePoolWebhook) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	m, ok := obj.(*AzureManagedMachinePool)
+	m, ok := obj.(*infrav1.AzureManagedMachinePool)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePool")
 	}
-	if m.Spec.Mode != string(NodePoolModeSystem) {
+	if m.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 		return nil, nil
 	}
 

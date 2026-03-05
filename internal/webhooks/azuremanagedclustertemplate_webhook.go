@@ -24,13 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (w *AzureManagedClusterTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureManagedClusterTemplate{}).
+		For(&infrav1.AzureManagedClusterTemplate{}).
 		WithValidator(w).
 		Complete()
 }
