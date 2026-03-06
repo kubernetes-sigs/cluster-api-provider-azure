@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -125,7 +126,7 @@ func (amp *AzureMachinePool) ValidateNetwork() error {
 
 // ValidateOSDisk of an AzureMachinePool.
 func (amp *AzureMachinePool) ValidateOSDisk() error {
-	if errs := infrav1.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+	if errs := webhooks.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
 		return errs.ToAggregate()
 	}
 	return nil
@@ -135,7 +136,7 @@ func (amp *AzureMachinePool) ValidateOSDisk() error {
 func (amp *AzureMachinePool) ValidateImage() error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
-		if errs := infrav1.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
+		if errs := webhooks.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
 			return errs.ToAggregate()
 		}
 	}
@@ -163,7 +164,7 @@ func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 func (amp *AzureMachinePool) ValidateSSHKey() error {
 	if amp.Spec.Template.SSHPublicKey != "" {
 		sshKey := amp.Spec.Template.SSHPublicKey
-		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+		if errs := webhooks.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
 			return agg
 		}
@@ -175,7 +176,7 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
 func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	fldPath := field.NewPath("userAssignedIdentities")
-	if errs := infrav1.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
+	if errs := webhooks.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
 		return kerrors.NewAggregate(errs.ToAggregate().Errors())
 	}
 
@@ -220,7 +221,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 		}
 
 		fldPath := field.NewPath("roleAssignmentName")
-		if errs := infrav1.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
+		if errs := webhooks.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 

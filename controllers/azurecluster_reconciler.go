@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
+	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -116,7 +117,7 @@ func (s *azureClusterService) reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to get availability zones")
 	}
 	if s.scope.ControlPlaneEnabled() {
-		s.scope.AzureCluster.SetBackendPoolNameDefault()
+		apiinternal.SetDefaultAzureClusterBackendPoolName(s.scope.AzureCluster)
 		s.scope.SetDNSName()
 		s.scope.SetControlPlaneSecurityRules()
 	}
