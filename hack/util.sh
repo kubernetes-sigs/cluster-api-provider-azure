@@ -67,11 +67,11 @@ capz::util::get_random_region() {
     # of Standard BS v2 quota in each region.
     local REGIONS=(
       "australiaeast"
-    #   "canadacentral" "canadacentral" "canadacentral"
-    #   "francecentral"
-    #   "germanywestcentral"
-    #   "switzerlandnorth" "switzerlandnorth" "switzerlandnorth"
-    #   "uksouth"
+      "canadacentral" "canadacentral" "canadacentral"
+      "francecentral"
+      "germanywestcentral"
+      "switzerlandnorth" "switzerlandnorth" "switzerlandnorth"
+      "uksouth"
     )
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
