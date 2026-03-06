@@ -43,6 +43,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -816,4 +817,40 @@ func getSubscriptionID(g Gomega) string {
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	g.Expect(subscriptionID).NotTo(BeEmpty())
 	return subscriptionID
+}
+
+// waitForWebhookCAInjection waits for cert-manager's cainjector to populate
+// the caBundle field in all webhook configurations annotated with
+// cert-manager.io/inject-ca-from. This prevents a race condition where tests
+// start before the cainjector has finished injecting CA bundles, causing
+// webhook calls to fail with "x509: certificate signed by unknown authority".
+func waitForWebhookCAInjection(ctx context.Context, c client.Client) {
+	const caInjectionAnnotation = "cert-manager.io/inject-ca-from"
+
+	By("Waiting for webhook CA injection to complete")
+	Eventually(func(g Gomega) {
+		var validatingList admissionregistrationv1.ValidatingWebhookConfigurationList
+		g.Expect(c.List(ctx, &validatingList)).To(Succeed())
+		for _, config := range validatingList.Items {
+			if _, ok := config.Annotations[caInjectionAnnotation]; !ok {
+				continue
+			}
+			for _, wh := range config.Webhooks {
+				g.Expect(wh.ClientConfig.CABundle).ToNot(BeEmpty(),
+					"webhook %s in ValidatingWebhookConfiguration %s has no caBundle", wh.Name, config.Name)
+			}
+		}
+
+		var mutatingList admissionregistrationv1.MutatingWebhookConfigurationList
+		g.Expect(c.List(ctx, &mutatingList)).To(Succeed())
+		for _, config := range mutatingList.Items {
+			if _, ok := config.Annotations[caInjectionAnnotation]; !ok {
+				continue
+			}
+			for _, wh := range config.Webhooks {
+				g.Expect(wh.ClientConfig.CABundle).ToNot(BeEmpty(),
+					"webhook %s in MutatingWebhookConfiguration %s has no caBundle", wh.Name, config.Name)
+			}
+		}
+	}, 5*time.Minute, 5*time.Second).Should(Succeed(), "cert-manager cainjector did not inject CA bundles into webhook configurations in time")
 }
