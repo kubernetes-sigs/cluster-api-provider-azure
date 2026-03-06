@@ -154,7 +154,9 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			ClientOptions: azcore.ClientOptions{
 				TracingProvider: tracingProvider,
 			},
-			ID: azidentity.ClientID(p.Identity.Spec.ClientID),
+		}
+		if p.Identity.Spec.ClientID != "" {
+			options.ID = azidentity.ClientID(p.Identity.Spec.ClientID)
 		}
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
 
