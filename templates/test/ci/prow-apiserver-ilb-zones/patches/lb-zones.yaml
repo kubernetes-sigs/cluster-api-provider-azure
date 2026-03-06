@@ -1,0 +1,25 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    # Add zones to the base template's API server LB.
+    # Base template has a public LB with both public and private frontends.
+    # Zones are applied to the public IP via getPublicIPFailureDomains().
+    apiServerLB:
+      availabilityZones:
+        - "1"
+        - "2"
+        - "3"
+    # Explicit node outbound LB with zones.
+    # Zones are applied to the public IP address.
+    nodeOutboundLB:
+      availabilityZones:
+        - "1"
+        - "2"
+        - "3"
+      frontendIPs:
+        - name: ${CLUSTER_NAME}-node-outbound-lb
+          publicIP:
+            name: ${CLUSTER_NAME}-node-outbound-pip
