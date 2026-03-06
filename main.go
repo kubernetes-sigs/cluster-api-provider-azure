@@ -120,7 +120,7 @@ var (
 	disableControllersOrWebhooks       []string
 )
 
-// InitFlags initializes all command-line flags.
+// InitFlags initializes all CLI flags.
 func InitFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(
 		&enableLeaderElection,
