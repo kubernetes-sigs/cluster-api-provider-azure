@@ -54,19 +54,14 @@ spec:
             properties:
               allowedNamespaces:
                 description: |-
-                  AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from.
-                  Namespaces can be selected either using an array of namespaces or with label selector.
-                  An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace.
-                  If this object is nil, no namespaces will be allowed (default behaviour, if this field is not provided)
-                  A namespace should be either in the NamespaceList or match with Selector to use the identity.
-                nullable: true
+                  AllowedNamespaces defines the namespaces the clusters are allowed to use the identity from
+                  NamespaceList takes precedence over the Selector.
                 properties:
                   list:
-                    description: A nil or empty list indicates that AzureCluster cannot
+                    description: An empty list indicates that AzureCluster cannot
                       use the identity from any namespace.
                     items:
                       type: string
-                    nullable: true
                     type: array
                   selector:
                     description: |-
