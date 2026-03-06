@@ -203,7 +203,6 @@ linters:
       # within test files and test utils.
       - linters:
           - revive
-          - staticcheck
         path: _test\.go
         text: should not use dot imports
       # Exclude some packages or code to require comments, for example test code, or fake clients.

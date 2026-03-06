@@ -54,6 +54,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -324,7 +325,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 				{
 					Name: s.APIServerLB().Name + "-internal-ip",
 					FrontendIPClass: infrav1.FrontendIPClass{
-						PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+						PrivateIPAddress: apiinternal.DefaultInternalLBIPAddress,
 					},
 				},
 			}
