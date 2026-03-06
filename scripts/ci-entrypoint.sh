@@ -76,8 +76,14 @@ setup() {
     fi
 
     if [[ "${KUBERNETES_VERSION:-}" =~ "latest" ]]; then
-        CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
-        export CI_VERSION="${CI_VERSION:-$(curl --retry 3 -sSL "${CI_VERSION_URL}")}"
+        EOL_VERSION="$(capz::util::get_eol_k8s_version "${KUBERNETES_VERSION}" || true)"
+        if [[ -n "${EOL_VERSION}" ]]; then
+            echo "EOL Kubernetes version detected, using release ${EOL_VERSION}"
+            export KUBERNETES_VERSION="${EOL_VERSION}"
+        else
+            CI_VERSION_URL="https://dl.k8s.io/ci/${KUBERNETES_VERSION}.txt"
+            export CI_VERSION="${CI_VERSION:-$(curl --retry 3 -sSL "${CI_VERSION_URL}")}"
+        fi
     fi
     if [[ -n "${CI_VERSION:-}" ]]; then
         echo "Using CI_VERSION ${CI_VERSION}"
