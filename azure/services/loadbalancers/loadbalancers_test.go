@@ -57,7 +57,9 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerPort:         6443,
+		LoadBalancingRuleName: infrav1.DefaultLoadBalancingRuleName,
+		HealthProbeName:       infrav1.DefaultHealthProbeName,
 	}
 
 	fakePublicAPILBSpecWithAdditionalPorts = LBSpec{
@@ -86,6 +88,8 @@ var (
 			Name: "rke2-agent",
 			Port: 9345,
 		}},
+		LoadBalancingRuleName: infrav1.DefaultLoadBalancingRuleName,
+		HealthProbeName:       infrav1.DefaultHealthProbeName,
 	}
 
 	fakeInternalAPILBSpec = LBSpec{
@@ -108,7 +112,9 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerPort:         6443,
+		LoadBalancingRuleName: infrav1.DefaultLoadBalancingRuleName,
+		HealthProbeName:       infrav1.DefaultHealthProbeName,
 	}
 
 	fakeNodeOutboundLBSpec = LBSpec{
