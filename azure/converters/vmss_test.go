@@ -111,6 +111,53 @@ func Test_SDKToVMSS(t *testing.T) {
 				g.Expect(actual).To(gomega.Equal(expected))
 			},
 		},
+		{
+			Name: "ShouldPopulateImageWithPlan",
+			SubjectFactory: func(g *gomega.GomegaWithT) (armcompute.VirtualMachineScaleSet, []armcompute.VirtualMachineScaleSetVM) {
+				return armcompute.VirtualMachineScaleSet{
+					ID:   ptr.To("vmssIDWithPlan"),
+					Name: ptr.To("vmssNameWithPlan"),
+					Properties: &armcompute.VirtualMachineScaleSetProperties{
+						ProvisioningState: ptr.To("Succeeded"),
+						VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
+							StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
+								ImageReference: &armcompute.ImageReference{
+									ID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+								},
+							},
+						},
+					},
+					Plan: &armcompute.Plan{
+						Publisher: ptr.To("publisher"),
+						Product:   ptr.To("product"),
+						Name:      ptr.To("sku"),
+					},
+				}, nil
+			},
+			Expect: func(g *gomega.GomegaWithT, actual azure.VMSS) {
+				expected := azure.VMSS{
+					ID:    "vmssIDWithPlan",
+					Name:  "vmssNameWithPlan",
+					State: "Succeeded",
+					Image: infrav1.Image{
+						ComputeGallery: &infrav1.AzureComputeGalleryImage{
+							Gallery:        "gallery",
+							Name:           "image",
+							Version:        "version",
+							SubscriptionID: ptr.To("subscription"),
+							ResourceGroup:  ptr.To("rg"),
+							Plan: &infrav1.ImagePlan{
+								Publisher: "publisher",
+								Offer:     "product",
+								SKU:       "sku",
+							},
+						},
+					},
+				}
+
+				g.Expect(actual).To(gomega.Equal(expected))
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -202,6 +249,42 @@ func Test_SDKToVMSSVM(t *testing.T) {
 				State:            "Creating",
 			},
 		},
+		{
+			Name: "VM with shared gallery storage and plan",
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
+				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcompute.OSProfile{ComputerName: ptr.To("instance-000003")},
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
+							SharedGalleryImageID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+						},
+					},
+				},
+				Plan: &armcompute.Plan{
+					Publisher: ptr.To("publisher"),
+					Product:   ptr.To("product"),
+					Name:      ptr.To("sku"),
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:   "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name: "instance-000003",
+				Image: infrav1.Image{
+					SharedGallery: &infrav1.AzureSharedGalleryImage{
+						SubscriptionID: "subscription",
+						ResourceGroup:  "rg",
+						Gallery:        "gallery",
+						Name:           "image",
+						Version:        "version",
+						Publisher:      ptr.To("publisher"),
+						Offer:          ptr.To("product"),
+						SKU:            ptr.To("sku"),
+					},
+				},
+				State: "Creating",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -218,6 +301,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		Name         string
 		SDKImageRef  *armcompute.ImageReference
 		IsThirdParty bool
+		SDKPlan      *armcompute.Plan
 		Image        infrav1.Image
 	}{
 		{
@@ -239,6 +323,11 @@ func Test_SDKImageToImage(t *testing.T) {
 				Version:   ptr.To("version"),
 			},
 			IsThirdParty: true,
+			SDKPlan: &armcompute.Plan{
+				Publisher: ptr.To("publisher"),
+				Product:   ptr.To("offer"),
+				Name:      ptr.To("sku"),
+			},
 			Image: infrav1.Image{
 				Marketplace: &infrav1.AzureMarketplaceImage{
 					ImagePlan: infrav1.ImagePlan{
@@ -263,6 +352,29 @@ func Test_SDKImageToImage(t *testing.T) {
 					Gallery:        "gallery",
 					Name:           "image",
 					Version:        "version",
+				},
+			},
+		},
+		{
+			Name: "shared gallery image with plan",
+			SDKImageRef: &armcompute.ImageReference{
+				SharedGalleryImageID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			SDKPlan: &armcompute.Plan{
+				Publisher: ptr.To("publisher"),
+				Product:   ptr.To("product"),
+				Name:      ptr.To("sku"),
+			},
+			Image: infrav1.Image{
+				SharedGallery: &infrav1.AzureSharedGalleryImage{
+					SubscriptionID: "subscription",
+					ResourceGroup:  "rg",
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+					Publisher:      ptr.To("publisher"),
+					Offer:          ptr.To("product"),
+					SKU:            ptr.To("sku"),
 				},
 			},
 		},
@@ -295,6 +407,31 @@ func Test_SDKImageToImage(t *testing.T) {
 			},
 		},
 		{
+			Name: "compute gallery image with plan",
+			SDKImageRef: &armcompute.ImageReference{
+				ID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+			},
+			SDKPlan: &armcompute.Plan{
+				Publisher: ptr.To("publisher"),
+				Product:   ptr.To("product"),
+				Name:      ptr.To("sku"),
+			},
+			Image: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "version",
+					SubscriptionID: ptr.To("subscription"),
+					ResourceGroup:  ptr.To("rg"),
+					Plan: &infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "product",
+						SKU:       "sku",
+					},
+				},
+			},
+		},
+		{
 			Name: "compute gallery image not formatted as expected",
 			SDKImageRef: &armcompute.ImageReference{
 				ID: ptr.To("/compute/gallery/not/formatted/as/expected"),
@@ -316,7 +453,11 @@ func Test_SDKImageToImage(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			g.Expect(converters.SDKImageToImage(c.SDKImageRef, c.IsThirdParty)).To(gomega.Equal(c.Image))
+			if c.SDKPlan != nil {
+				g.Expect(converters.SDKImageToImage(c.SDKImageRef, c.SDKPlan)).To(gomega.Equal(c.Image))
+				return
+			}
+			g.Expect(converters.SDKImageToImage(c.SDKImageRef, nil)).To(gomega.Equal(c.Image))
 		})
 	}
 }
@@ -375,6 +516,44 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 					ID: ptr.To("imageID"),
 				},
 				Name:  "vmwithstorage",
+				State: "Creating",
+			},
+		},
+		{
+			Name: "VM with shared gallery storage and plan",
+			Subject: armcompute.VirtualMachine{
+				ID: ptr.To("vmID5"),
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
+						ComputerName: ptr.To("vmwithplan"),
+					},
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
+							SharedGalleryImageID: ptr.To("/subscriptions/subscription/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/version"),
+						},
+					},
+				},
+				Plan: &armcompute.Plan{
+					Publisher: ptr.To("publisher"),
+					Product:   ptr.To("product"),
+					Name:      ptr.To("sku"),
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID: "vmID5",
+				Image: infrav1.Image{
+					SharedGallery: &infrav1.AzureSharedGalleryImage{
+						SubscriptionID: "subscription",
+						ResourceGroup:  "rg",
+						Gallery:        "gallery",
+						Name:           "image",
+						Version:        "version",
+						Publisher:      ptr.To("publisher"),
+						Offer:          ptr.To("product"),
+						SKU:            ptr.To("sku"),
+					},
+				},
+				Name:  "vmwithplan",
 				State: "Creating",
 			},
 		},
