@@ -196,6 +196,15 @@ providers:
   - name: helm
     type: AddonProvider
     versions:
+    - name: v0.5.2
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.2/addon-components.yaml
+      type: url
+      contract: v1beta1
+      files:
+      - sourcePath: "../data/shared/v1beta1_addon_provider/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
     - name: v0.6.0
       value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.0/addon-components.yaml
       type: url
