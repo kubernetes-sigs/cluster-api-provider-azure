@@ -122,7 +122,7 @@ Create a `values.yaml` file for the CAPI Operator Helm chart like so:
 ```yaml
 core: "cluster-api:v1.12.2"
 infrastructure: "azure:v1.17.2"
-addon: "helm:v0.6.0"
+addon: "helm:v0.6.1"
 manager:
   featureGates:
     core:

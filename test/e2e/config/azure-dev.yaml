@@ -196,8 +196,8 @@ providers:
   - name: helm
     type: AddonProvider
     versions:
-    - name: v0.5.2
-      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.2/addon-components.yaml
+    - name: v0.5.3
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.5.3/addon-components.yaml
       type: url
       contract: v1beta1
       files:
@@ -205,8 +205,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v0.6.0
-      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.0/addon-components.yaml
+    - name: v0.6.1
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.1/addon-components.yaml
       type: url
       contract: v1beta1
       files:
@@ -258,8 +258,8 @@ variables:
   LATEST_CAPI_UPGRADE_VERSION: "v1.12.3"
   OLD_PROVIDER_UPGRADE_VERSION: "v1.21.2"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.22.0"
-  OLD_CAAPH_UPGRADE_VERSION: "v0.5.2"
-  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.0"
+  OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
+  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.1"
   CI_RG: "${CI_RG:-capz-ci}"
   USER_IDENTITY: "${USER_IDENTITY:-cloud-provider-user-identity}"
   EXP_APISERVER_ILB: "true"
