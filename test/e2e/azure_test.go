@@ -1467,24 +1467,20 @@ spec:
 	Context("Creating a cluster and deploying KubeRay [OPTIONAL]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "kuberay")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks-aso"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
+				withKubernetesVersion(kubernetesVersion),
 				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
 
@@ -1504,24 +1500,20 @@ spec:
 
 		It("Creates a RayJob and verifies it completes successfully", func() {
 			clusterName = getClusterName(clusterNamePrefix, "rayjob")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("aks-aso"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withControlPlaneMachineCount(1),
+				withKubernetesVersion(kubernetesVersion),
 				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				}),
-				withPostMachinesProvisioned(func() {
-					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-						return DaemonsetsSpecInput{
-							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:             namespace,
-							ClusterName:           clusterName,
-						}
-					})
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
 
