@@ -1461,4 +1461,74 @@ spec:
 			By("PASSED!")
 		})
 	})
+
+	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
+	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
+	Context("Creating a cluster and deploying KubeRay [OPTIONAL]", func() {
+		It("Creates a RayCluster and verifies it becomes ready", func() {
+			clusterName = getClusterName(clusterNamePrefix, "kuberay")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-kuberay"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Running the KubeRay RayCluster spec", func() {
+				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
+					return KubeRayClusterSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+
+		It("Creates a RayJob and verifies it completes successfully", func() {
+			clusterName = getClusterName(clusterNamePrefix, "rayjob")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-kuberay"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Running the KubeRay RayJob spec", func() {
+				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
+					return KubeRayJobSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })

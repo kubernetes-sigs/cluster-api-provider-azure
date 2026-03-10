@@ -160,6 +160,8 @@ providers:
         targetName: "cluster-template-aks-topology.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso.yaml"
         targetName: "cluster-template-aks-aso.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso-kuberay.yaml"
+        targetName: "cluster-template-aks-aso-kuberay.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
         targetName: "cluster-template-custom-vnet.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dual-stack.yaml"
@@ -291,6 +293,10 @@ intervals:
   default/wait-autoscale: ["10m", "10s"]
   default/wait-resource-versions-become-stable: ["10m", "15s"]
   default/wait-resource-versions-remain-stable: ["5m", "5s"]
+  kuberay-cluster/wait-deployment: ["15m", "10s"]
+  kuberay-cluster/wait-raycluster-ready: ["10m", "10s"]
+  kuberay-job/wait-deployment: ["15m", "10s"]
+  kuberay-job/wait-rayjob-complete: ["15m", "10s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]
