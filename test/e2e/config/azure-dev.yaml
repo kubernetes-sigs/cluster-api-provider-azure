@@ -160,6 +160,8 @@ providers:
         targetName: "cluster-template-aks-topology.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso.yaml"
         targetName: "cluster-template-aks-aso.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso-kuberay.yaml"
+        targetName: "cluster-template-aks-aso-kuberay.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
         targetName: "cluster-template-custom-vnet.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dual-stack.yaml"

@@ -221,7 +221,10 @@ func InstallKubeRayOperator(ctx context.Context, clusterProxy framework.ClusterP
 	Expect(clientset).NotTo(BeNil())
 
 	// Install via Helm using the clusterProxy's kubeconfig
-	InstallHelmChart(ctx, clusterProxy, kubeRayOperatorNamespace, kubeRayOperatorHelmRepoURL, "kuberay", kubeRayOperatorHelmChartName, kubeRayOperatorHelmReleaseName)
+	InstallHelmChart(ctx, clusterProxy, kubeRayOperatorNamespace, kubeRayOperatorHelmRepoURL, "kuberay", kubeRayOperatorHelmChartName, kubeRayOperatorHelmReleaseName,
+		"--version", kubeRayVersion,
+		"--set", "nodeSelector.kubernetes\\.io/os=linux",
+	)
 
 	By("waiting for the KubeRay operator deployment to become available")
 	waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, kubeRayOperatorHelmReleaseName, kubeRayOperatorNamespace, specName)
@@ -230,7 +233,7 @@ func InstallKubeRayOperator(ctx context.Context, clusterProxy framework.ClusterP
 
 // InstallHelmChart installs a Helm chart from a repo URL onto a cluster via the given ClusterProxy.
 // It uses the workload cluster kubeconfig to run helm commands directly from the test runner.
-func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, repoName, chartName, releaseName string) {
+func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, repoURL, repoName, chartName, releaseName string, extraArgs ...string) {
 	kubeconfigPath := clusterProxy.GetKubeconfigPath()
 	By(fmt.Sprintf("Installing Helm chart %s/%s as release %s using kubeconfig %s", repoName, chartName, releaseName, kubeconfigPath))
 
@@ -249,13 +252,15 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 	Expect(err).NotTo(HaveOccurred(), "failed to update Helm repos: %s", string(output))
 
 	// Install the chart
-	installCmd := exec.CommandContext(ctx, "helm", "install", releaseName, //nolint:gosec
+	helmArgs := []string{"install", releaseName,
 		fmt.Sprintf("%s/%s", repoName, chartName),
 		"--namespace", namespace,
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m0s",
-	)
+	}
+	helmArgs = append(helmArgs, extraArgs...)
+	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
 	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err = installCmd.CombinedOutput()
 	Logf("helm install output: %s", string(output))

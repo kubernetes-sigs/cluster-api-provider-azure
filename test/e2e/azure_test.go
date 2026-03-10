@@ -1472,7 +1472,7 @@ spec:
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("aks-aso"),
+				withFlavor("aks-aso-kuberay"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersion),
@@ -1505,7 +1505,7 @@ spec:
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor("aks-aso"),
+				withFlavor("aks-aso-kuberay"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withKubernetesVersion(kubernetesVersion),
