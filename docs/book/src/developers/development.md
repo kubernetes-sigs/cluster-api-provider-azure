@@ -329,6 +329,19 @@ If you then start Tilt you can connect to delve via the port defined (i.e. 30000
 }
 ```
 
+#### AI-assisted debugging
+
+This repository includes a [debugging skill](https://github.com/kubernetes-sigs/cluster-api-provider-azure/tree/main/.claude/skills/debug-capz-k8s/SKILL.md) <!-- markdown-link-check-disable-line --> for AI coding agents that can help triage CAPZ cluster failures interactively. The skill covers:
+
+- Live cluster inspection via `kubectl` and `az` CLI
+- Prow CI artifact analysis and build log triage
+- Common failure patterns for Azure infrastructure, control plane, networking, and more
+- VM-level debugging with `az vm run-command`
+
+The skill is automatically loaded by coding agents that support it, such as [GitHub Copilot coding agent](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), and [opencode](https://opencode.ai). Open a session in this repository and ask the agent to debug a failing cluster or CI run.
+
+For general troubleshooting guidance, see also the [self-managed cluster troubleshooting](../self-managed/troubleshooting.md) and [managed cluster troubleshooting](../managed/troubleshooting.md) pages.
+
 ### Manual Testing
 
 #### Creating a dev cluster

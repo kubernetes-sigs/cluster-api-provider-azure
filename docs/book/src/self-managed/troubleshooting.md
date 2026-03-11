@@ -164,3 +164,5 @@ go run -tags e2e ./test/logger.go --name <workload-cluster-name> --namespace <wo
 ```
 
 There are also some [provided scripts](https://github.com/kubernetes-sigs/cluster-api-provider-azure/tree/main/hack/debugging) that can help automate a few common tasks.
+
+See also [AI-assisted debugging](../developers/development.md#ai-assisted-debugging) in the development guide for using coding agents to triage cluster failures.
