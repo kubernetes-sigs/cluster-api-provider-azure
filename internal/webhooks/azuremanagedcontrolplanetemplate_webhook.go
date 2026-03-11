@@ -19,6 +19,7 @@ package webhooks
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -34,6 +35,7 @@ import (
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	mcpw.client = mgr.GetClient()
+	mcpw.logger = mgr.GetLogger().WithName("AzureManagedControlPlaneTemplate")
 
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlaneTemplate{}).
@@ -48,6 +50,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr
 // AzureManagedControlPlaneTemplateWebhook implements a validating and defaulting webhook for AzureManagedControlPlaneTemplate.
 type AzureManagedControlPlaneTemplateWebhook struct {
 	client client.Client
+	logger logr.Logger
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -56,7 +59,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) Default(_ context.Context, 
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
-	apiinternal.SetDefaultsAzureManagedControlPlaneTemplate(mcp)
+	apiinternal.SetDefaultsAzureManagedControlPlaneTemplate(mcpw.logger, mcp)
 	return nil
 }
 

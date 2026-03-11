@@ -19,14 +19,14 @@ package v1beta1
 import (
 	"strings"
 
+	"github.com/go-logr/logr"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SetDefaultsAzureManagedControlPlaneTemplate sets the default values for an AzureManagedControlPlaneTemplate.
-func SetDefaultsAzureManagedControlPlaneTemplate(mcp *AzureManagedControlPlaneTemplate) {
+func SetDefaultsAzureManagedControlPlaneTemplate(log logr.Logger, mcp *AzureManagedControlPlaneTemplate) {
 	SetZeroPointerDefault[*string](&mcp.Spec.Template.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
 	SetZeroPointerDefault[*string](&mcp.Spec.Template.Spec.LoadBalancerSKU, ptr.To("Standard"))
 	SetZeroPointerDefault[*bool](&mcp.Spec.Template.Spec.EnablePreviewFeatures, ptr.To(false))
@@ -35,17 +35,17 @@ func SetDefaultsAzureManagedControlPlaneTemplate(mcp *AzureManagedControlPlaneTe
 		mcp.Spec.Template.Spec.Version = NormalizeVersion(mcp.Spec.Template.Spec.Version)
 	}
 
-	setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(mcp)
+	setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(log, mcp)
 	setDefaultAzureManagedControlPlaneTemplateSubnet(mcp)
-	mcp.Spec.Template.Spec.SKU = DefaultSku(mcp.Spec.Template.Spec.SKU)
+	mcp.Spec.Template.Spec.SKU = DefaultSku(log, mcp.Spec.Template.Spec.SKU)
 }
 
 // setDefaultAzureManagedControlPlaneTemplateVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlaneTemplate.
-func setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(mcp *AzureManagedControlPlaneTemplate) {
+func setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(log logr.Logger, mcp *AzureManagedControlPlaneTemplate) {
 	if mcp.Spec.Template.Spec.VirtualNetwork.Name != "" {
 		// Being able to set the vnet name in the template type is a bug, as vnet names cannot be reused across clusters.
 		// To avoid a breaking API change, a warning is logged.
-		ctrl.Log.WithName("AzureManagedControlPlaneTemplateWebHookLogger").Info("WARNING: VirtualNetwork.Name should not be set in the template. Virtual Network names cannot be shared across clusters.")
+		log.Info("WARNING: VirtualNetwork.Name should not be set in the template. Virtual Network names cannot be shared across clusters.")
 	}
 	if mcp.Spec.Template.Spec.VirtualNetwork.CIDRBlock == "" {
 		mcp.Spec.Template.Spec.VirtualNetwork.CIDRBlock = DefaultAKSVnetCIDR

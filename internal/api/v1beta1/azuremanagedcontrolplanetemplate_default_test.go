@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -107,7 +108,7 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(tc.controlPlaneTemplate)
+			setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(logr.Discard(), tc.controlPlaneTemplate)
 			if !reflect.DeepEqual(tc.controlPlaneTemplate, tc.outputTemplate) {
 				expected, _ := json.MarshalIndent(tc.outputTemplate, "", "\t")
 				actual, _ := json.MarshalIndent(tc.controlPlaneTemplate, "", "\t")

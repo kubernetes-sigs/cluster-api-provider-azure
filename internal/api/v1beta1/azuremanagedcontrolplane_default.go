@@ -20,10 +20,10 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
@@ -52,14 +52,14 @@ func DefaultFleetsMember(fleetsMember *FleetsMember, labels map[string]string) *
 }
 
 // DefaultSku returns the default SKU for an AzureManagedControlPlane.
-func DefaultSku(sku *AKSSku) *AKSSku {
+func DefaultSku(log logr.Logger, sku *AKSSku) *AKSSku {
 	result := sku.DeepCopy()
 	if sku == nil {
 		result = new(AKSSku)
 		result.Tier = FreeManagedControlPlaneTier
 	} else if sku.Tier == PaidManagedControlPlaneTier {
 		result.Tier = StandardManagedControlPlaneTier
-		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Info("Paid SKU tier is deprecated and has been replaced by Standard")
+		log.Info("Paid SKU tier is deprecated and has been replaced by Standard")
 	}
 	return result
 }

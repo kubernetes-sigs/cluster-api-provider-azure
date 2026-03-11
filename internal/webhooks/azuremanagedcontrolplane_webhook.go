@@ -20,6 +20,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -44,6 +45,7 @@ var (
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureManagedControlPlaneWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	mw.client = mgr.GetClient()
+	mw.logger = mgr.GetLogger().WithName("AzureManagedControlPlane")
 
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlane{}).
@@ -57,6 +59,7 @@ func (mw *AzureManagedControlPlaneWebhook) SetupWebhookWithManager(mgr ctrl.Mana
 // AzureManagedControlPlaneWebhook implements a validating and defaulting webhook for AzureManagedControlPlane.
 type AzureManagedControlPlaneWebhook struct {
 	client client.Client
+	logger logr.Logger
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -67,7 +70,7 @@ func (mw *AzureManagedControlPlaneWebhook) Default(_ context.Context, obj runtim
 	}
 
 	m.Spec.Version = apiinternal.NormalizeVersion(m.Spec.Version)
-	m.Spec.SKU = apiinternal.DefaultSku(m.Spec.SKU)
+	m.Spec.SKU = apiinternal.DefaultSku(mw.logger, m.Spec.SKU)
 	m.Spec.FleetsMember = apiinternal.DefaultFleetsMember(m.Spec.FleetsMember, m.Labels)
 
 	if err := apiinternal.SetDefaultAzureManagedControlPlaneSSHPublicKey(m); err != nil {
