@@ -36,7 +36,8 @@ import (
 
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	mpw.Client = mgr.GetClient()
+	mpw.client = mgr.GetClient()
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedMachinePoolTemplate{}).
 		WithDefaulter(mpw).
@@ -48,7 +49,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) SetupWebhookWithManager(mgr c
 
 // AzureManagedMachinePoolTemplateWebhook implements a validating and defaulting webhook for AzureManagedMachinePoolTemplate.
 type AzureManagedMachinePoolTemplateWebhook struct {
-	Client client.Client
+	client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -194,7 +195,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Cont
 
 	if mp.Spec.Template.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Template.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
-		if err := validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations); err != nil {
+		if err := validateLastSystemNodePool(mpw.client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations); err != nil {
 			allErrs = append(allErrs, field.Forbidden(
 				field.NewPath("spec", "template", "spec", "mode"),
 				"Cannot change node pool mode to User, you must have at least one System node pool in your cluster"))
@@ -278,5 +279,5 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateDelete(_ context.Cont
 		return nil, nil
 	}
 
-	return nil, errors.Wrapf(validateLastSystemNodePool(mpw.Client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
+	return nil, errors.Wrapf(validateLastSystemNodePool(mpw.client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
 }

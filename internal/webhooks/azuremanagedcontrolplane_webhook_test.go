@@ -1396,7 +1396,7 @@ func TestValidatingWebhook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateCreate(t.Context(), &tt.amcp)
 			if tt.expectErr {
@@ -1646,7 +1646,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateCreate(t.Context(), tc.amcp)
 			if tc.wantErr {
@@ -1683,7 +1683,7 @@ func TestAzureManagedControlPlane_ValidateCreateFailure(t *testing.T) {
 				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateCreate(t.Context(), tc.amcp)
 			if tc.expectError {
@@ -3193,7 +3193,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateUpdate(t.Context(), tc.oldAMCP, tc.amcp)
 			if tc.wantErr {
@@ -3374,7 +3374,7 @@ func TestAzureManagedClusterSecurityProfileValidateCreate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateCreate(t.Context(), tc.amcp)
 			if tc.wantErr != "" {
@@ -3875,7 +3875,7 @@ func TestAzureClusterSecurityProfileValidateUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mcpw := &AzureManagedControlPlaneWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mcpw.ValidateUpdate(t.Context(), tc.oldAMCP, tc.amcp)
 			if tc.wantErr != "" {

@@ -979,7 +979,7 @@ func TestAzureMachine_Default(t *testing.T) {
 	}
 
 	mw := &AzureMachineWebhook{
-		Client: mockClient,
+		client: mockClient,
 	}
 
 	err := mw.Default(t.Context(), publicKeyExistTest.machine)

@@ -33,7 +33,8 @@ import (
 
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	mcpw.Client = mgr.GetClient()
+	mcpw.client = mgr.GetClient()
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlaneTemplate{}).
 		WithDefaulter(mcpw).
@@ -46,7 +47,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr
 
 // AzureManagedControlPlaneTemplateWebhook implements a validating and defaulting webhook for AzureManagedControlPlaneTemplate.
 type AzureManagedControlPlaneTemplateWebhook struct {
-	Client client.Client
+	client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -66,7 +67,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Co
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
 	}
 
-	return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.Client)
+	return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -180,7 +181,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Co
 	}
 
 	if len(allErrs) == 0 {
-		return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.Client)
+		return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.client)
 	}
 
 	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedControlPlaneTemplateKind).GroupKind(), mcp.Name, allErrs)

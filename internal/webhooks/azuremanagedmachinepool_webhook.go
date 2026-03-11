@@ -38,7 +38,8 @@ var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureManagedMachinePoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	mw.Client = mgr.GetClient()
+	mw.client = mgr.GetClient()
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedMachinePool{}).
 		WithDefaulter(mw).
@@ -50,7 +51,7 @@ func (mw *AzureManagedMachinePoolWebhook) SetupWebhookWithManager(mgr ctrl.Manag
 
 // AzureManagedMachinePoolWebhook implements a validating and defaulting webhook for AzureManagedMachinePool.
 type AzureManagedMachinePoolWebhook struct {
-	Client client.Client
+	client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -209,7 +210,7 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldO
 
 	if m.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
-		if err := validateLastSystemNodePool(mw.Client, m.Labels, m.Namespace, m.Annotations); err != nil {
+		if err := validateLastSystemNodePool(mw.client, m.Labels, m.Namespace, m.Annotations); err != nil {
 			allErrs = append(allErrs, field.Forbidden(
 				field.NewPath("spec", "mode"),
 				"Cannot change node pool mode to User, you must have at least one System node pool in your cluster"))
@@ -294,5 +295,5 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateDelete(_ context.Context, obj 
 		return nil, nil
 	}
 
-	return nil, errors.Wrapf(validateLastSystemNodePool(mw.Client, m.Labels, m.Namespace, m.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
+	return nil, errors.Wrapf(validateLastSystemNodePool(mw.client, m.Labels, m.Namespace, m.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
 }

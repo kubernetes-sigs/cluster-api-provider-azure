@@ -53,7 +53,7 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	}
 	var client client.Client
 	mw := &AzureManagedMachinePoolWebhook{
-		Client: client,
+		client: client,
 	}
 	err := mw.Default(t.Context(), ammp)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -640,7 +640,7 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			t.Parallel()
 			g := NewWithT(t)
 			mw := &AzureManagedMachinePoolWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mw.ValidateUpdate(t.Context(), tc.old, tc.new)
 			if tc.wantErr {
@@ -1291,7 +1291,7 @@ func TestAzureManagedMachinePool_ValidateCreate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			mw := &AzureManagedMachinePoolWebhook{
-				Client: client,
+				client: client,
 			}
 			_, err := mw.ValidateCreate(t.Context(), tc.ammp)
 			if tc.wantErr {

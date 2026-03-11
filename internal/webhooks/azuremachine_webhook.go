@@ -34,7 +34,8 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	mw.Client = mgr.GetClient()
+	mw.client = mgr.GetClient()
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureMachine{}).
 		WithDefaulter(mw).
@@ -47,7 +48,7 @@ func (mw *AzureMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // AzureMachineWebhook implements a validating and defaulting webhook for AzureMachines.
 type AzureMachineWebhook struct {
-	Client client.Client
+	client client.Client
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
@@ -247,5 +248,5 @@ func (mw *AzureMachineWebhook) Default(_ context.Context, obj runtime.Object) er
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureMachine resource")
 	}
-	return apiinternal.SetDefaultsAzureMachine(m, mw.Client)
+	return apiinternal.SetDefaultsAzureMachine(m, mw.client)
 }

@@ -43,7 +43,8 @@ var (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (mw *AzureManagedControlPlaneWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	mw.Client = mgr.GetClient()
+	mw.client = mgr.GetClient()
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&AzureManagedControlPlane{}).
 		WithDefaulter(mw).
@@ -55,7 +56,7 @@ func (mw *AzureManagedControlPlaneWebhook) SetupWebhookWithManager(mgr ctrl.Mana
 
 // AzureManagedControlPlaneWebhook implements a validating and defaulting webhook for AzureManagedControlPlane.
 type AzureManagedControlPlaneWebhook struct {
-	Client client.Client
+	client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
@@ -93,7 +94,7 @@ func (mw *AzureManagedControlPlaneWebhook) ValidateCreate(_ context.Context, obj
 		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
 	}
 
-	return nil, validateAzureManagedControlPlane(m, mw.Client)
+	return nil, validateAzureManagedControlPlane(m, mw.client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -207,7 +208,7 @@ func (mw *AzureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, old
 	}
 
 	if len(allErrs) == 0 {
-		return nil, validateAzureManagedControlPlane(m, mw.Client)
+		return nil, validateAzureManagedControlPlane(m, mw.client)
 	}
 
 	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedControlPlaneKind).GroupKind(), m.Name, allErrs)
