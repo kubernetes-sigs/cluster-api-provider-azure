@@ -128,5 +128,5 @@ func (c *AzureClusterIdentity) SetConditions(conditions clusterv1beta1.Condition
 }
 
 func init() {
-	SchemeBuilder.Register(&AzureClusterIdentity{}, &AzureClusterIdentityList{})
+	objectTypes = append(objectTypes, &AzureClusterIdentity{}, &AzureClusterIdentityList{})
 }
