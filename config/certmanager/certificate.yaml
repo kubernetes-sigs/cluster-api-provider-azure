@@ -20,6 +20,4 @@ spec:
   issuerRef:
     kind: Issuer
     name: selfsigned-issuer
-  privateKey:
-    rotationPolicy: Never
   secretName: SERVICE_NAME_PLACEHOLDER-cert

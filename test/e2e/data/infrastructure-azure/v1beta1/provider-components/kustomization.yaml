@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../../../../../config/default
+patches:
+# Disable cert-manager private key rotation in e2e to reduce the window for
+# cainjector race conditions where webhook caBundle updates lag behind a
+# rotated certificate, causing "x509: certificate signed by unknown authority".
+- target:
+    group: cert-manager.io
+    version: v1
+    kind: Certificate
+    name: capz-serving-cert
+  patch: |
+    - op: add
+      path: /spec/privateKey
+      value:
+        rotationPolicy: Never
