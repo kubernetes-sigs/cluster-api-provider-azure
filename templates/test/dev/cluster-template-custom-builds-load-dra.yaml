@@ -401,10 +401,20 @@ spec:
           declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
           CONTAINER_EXT="tar"
           echo "* testing version $${CI_VERSION}"
-          az login --identity
+          USE_AZ="false"
+          if az login --identity > /dev/null 2>&1; then
+            echo "Logged in Azure with managed identity"
+            USE_AZ="true"
+          else
+            echo "az CLI not available, falling back to curl for binary downloads"
+          fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
               echo "* downloading binary: https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}"
-              az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -f "$${CI_DIR}/$${CI_PACKAGE}" --auth-mode login
+              if [[ "$${USE_AZ}" == "true" ]]; then
+                az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -f "$${CI_DIR}/$${CI_PACKAGE}" --auth-mode login
+              else
+                curl -L --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -o "$${CI_DIR}/$${CI_PACKAGE}"
+              fi
               chmod +x "$${CI_DIR}/$${CI_PACKAGE}"
               mv "$${CI_DIR}/$${CI_PACKAGE}" "/usr/bin/$${CI_PACKAGE}"
           done
@@ -1001,10 +1011,20 @@ spec:
           declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
           CONTAINER_EXT="tar"
           echo "* testing version $${CI_VERSION}"
-          az login --identity
+          USE_AZ="false"
+          if az login --identity > /dev/null 2>&1; then
+            echo "Logged in Azure with managed identity"
+            USE_AZ="true"
+          else
+            echo "az CLI not available, falling back to curl for binary downloads"
+          fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
               echo "* downloading binary: https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}"
-              az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -f "$${CI_DIR}/$${CI_PACKAGE}" --auth-mode login
+              if [[ "$${USE_AZ}" == "true" ]]; then
+                az storage blob download --blob-url "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -f "$${CI_DIR}/$${CI_PACKAGE}" --auth-mode login
+              else
+                curl -L --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_BLOB_CONTAINER_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${CI_PACKAGE}" -o "$${CI_DIR}/$${CI_PACKAGE}"
+              fi
               chmod +x "$${CI_DIR}/$${CI_PACKAGE}"
               mv "$${CI_DIR}/$${CI_PACKAGE}" "/usr/bin/$${CI_PACKAGE}"
           done
