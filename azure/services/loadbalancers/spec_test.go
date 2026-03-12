@@ -178,6 +178,39 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name:     "internal load balancer with availability zones",
+			spec:     &fakeInternalAPILBSpecWithZones,
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				// Verify zones are set on frontend IP configuration for internal LBs
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				g.Expect(lb.Properties.FrontendIPConfigurations[0].Zones).To(HaveLen(3))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[0]).To(Equal("1"))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[1]).To(Equal("2"))
+				g.Expect(*lb.Properties.FrontendIPConfigurations[0].Zones[2]).To(Equal("3"))
+			},
+			expectedError: "",
+		},
+		{
+			name:     "public load balancer with availability zones - zones NOT applied to frontend",
+			spec:     &fakePublicAPILBSpecWithZones,
+			existing: nil,
+			expect: func(g *WithT, result interface{}) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				// Verify zones are NOT set on frontend IP configuration for public LBs.
+				// Azure does not allow zones on frontend IP configs that reference public IPs.
+				// Zone-redundancy for public LBs is achieved by setting zones on the public IP itself.
+				// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				g.Expect(lb.Properties.FrontendIPConfigurations[0].Zones).To(BeNil(),
+					"zones should not be set on public LB frontend - Azure error: LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress")
+			},
+			expectedError: "",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
