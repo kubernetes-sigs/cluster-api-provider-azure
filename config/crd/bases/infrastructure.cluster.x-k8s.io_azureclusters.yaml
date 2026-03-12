@@ -745,6 +745,13 @@ spec:
                           IP addresses for the load balancer.
                         format: int32
                         type: integer
+                      healthProbe:
+                        description: HealthProbe defines the health probe configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the health probe.
+                            type: string
+                        type: object
                       id:
                         description: |-
                           ID is the Azure resource ID of the load balancer.
@@ -755,6 +762,15 @@ spec:
                           the TCP idle connection.
                         format: int32
                         type: integer
+                      loadBalancingRule:
+                        description: LoadBalancingRule defines the load balancer rule
+                          configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the load balancer
+                              rule.
+                            type: string
+                        type: object
                       name:
                         type: string
                       sku:
@@ -828,6 +844,13 @@ spec:
                           IP addresses for the load balancer.
                         format: int32
                         type: integer
+                      healthProbe:
+                        description: HealthProbe defines the health probe configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the health probe.
+                            type: string
+                        type: object
                       id:
                         description: |-
                           ID is the Azure resource ID of the load balancer.
@@ -838,6 +861,15 @@ spec:
                           the TCP idle connection.
                         format: int32
                         type: integer
+                      loadBalancingRule:
+                        description: LoadBalancingRule defines the load balancer rule
+                          configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the load balancer
+                              rule.
+                            type: string
+                        type: object
                       name:
                         type: string
                       sku:
@@ -910,6 +942,13 @@ spec:
                           IP addresses for the load balancer.
                         format: int32
                         type: integer
+                      healthProbe:
+                        description: HealthProbe defines the health probe configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the health probe.
+                            type: string
+                        type: object
                       id:
                         description: |-
                           ID is the Azure resource ID of the load balancer.
@@ -920,6 +959,15 @@ spec:
                           the TCP idle connection.
                         format: int32
                         type: integer
+                      loadBalancingRule:
+                        description: LoadBalancingRule defines the load balancer rule
+                          configuration.
+                        properties:
+                          name:
+                            description: Name specifies the name of the load balancer
+                              rule.
+                            type: string
+                        type: object
                       name:
                         type: string
                       sku:
