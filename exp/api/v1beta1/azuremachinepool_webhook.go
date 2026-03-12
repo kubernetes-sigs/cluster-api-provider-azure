@@ -103,6 +103,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) 
 		amp.ValidateSystemAssignedIdentityRole,
 		amp.ValidateNetwork,
 		amp.ValidateOSDisk,
+		amp.ValidateDisableVMBootstrapExtension(old),
 	}
 
 	var errs []error
@@ -313,6 +314,35 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 			}
 			if k8sVersion.LT(semver.MustParse("1.26.0")) {
 				return fmt.Errorf("specified Kubernetes version %s must be >= 1.26.0 for Flexible orchestration mode", k8sVersion)
+			}
+		}
+
+		return nil
+	}
+}
+
+// ValidateDisableVMBootstrapExtension validates the DisableVMBootstrapExtension field.
+// It allows transition from nil to a value (for upgrades) but prevents changes once set.
+func (amp *AzureMachinePool) ValidateDisableVMBootstrapExtension(old runtime.Object) func() error {
+	return func() error {
+		if old == nil {
+			return nil
+		}
+
+		oldAMP, ok := old.(*AzureMachinePool)
+		if !ok {
+			return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
+				"AzureMachinePool", reflect.TypeOf(old))
+		}
+
+		// Only validate immutability if the old value was explicitly set.
+		// This allows the transition from nil (old default) to true (new default) during upgrades.
+		if oldAMP.Spec.Template.DisableVMBootstrapExtension != nil {
+			if amp.Spec.Template.DisableVMBootstrapExtension == nil {
+				return errors.New("spec.template.disableVMBootstrapExtension is immutable, unable to set an empty value if it was already set")
+			}
+			if *oldAMP.Spec.Template.DisableVMBootstrapExtension != *amp.Spec.Template.DisableVMBootstrapExtension {
+				return errors.New("spec.template.disableVMBootstrapExtension is immutable")
 			}
 		}
 
