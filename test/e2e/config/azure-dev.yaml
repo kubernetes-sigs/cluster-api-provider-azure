@@ -34,6 +34,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+      - old: "- --leader-elect"
+        new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
 
   - name: kubeadm
     type: BootstrapProvider
