@@ -20,6 +20,15 @@ set -o pipefail
 
 CURL_RETRIES=3
 
+# capz::util::get_eol_k8s_version returns the final patch release for an EOL Kubernetes version.
+capz::util::get_eol_k8s_version() {
+    case "$1" in
+        latest-1.30) echo "v1.30.14" ;;
+        latest-1.31) echo "v1.31.14" ;;
+        *) return 1 ;;
+    esac
+}
+
 capz::util::get_latest_ci_version() {
     release="${1}"
     ci_version_url="https://dl.k8s.io/ci/latest-${release}.txt"
