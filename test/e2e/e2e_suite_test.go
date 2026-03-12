@@ -227,6 +227,8 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 		AddonProviders:          config.AddonProviders(),
 		LogFolder:               filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	waitForWebhookCAInjection(ctx, bootstrapClusterProxy.GetClient())
 }
 
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
