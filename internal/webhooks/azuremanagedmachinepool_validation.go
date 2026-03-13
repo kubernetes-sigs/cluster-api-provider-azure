@@ -32,7 +32,7 @@ import (
 	clusterctlv1alpha3 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -69,10 +69,10 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 	opt1 := client.InNamespace(namespace)
 	opt2 := client.MatchingLabels(map[string]string{
 		clusterv1.ClusterNameLabel: clusterName,
-		LabelAgentPoolMode:         string(NodePoolModeSystem),
+		infrav1.LabelAgentPoolMode: string(infrav1.NodePoolModeSystem),
 	})
 
-	ammpList := &AzureManagedMachinePoolList{}
+	ammpList := &infrav1.AzureManagedMachinePoolList{}
 	if err := cli.List(ctx, ammpList, opt1, opt2); err != nil {
 		return err
 	}
@@ -97,8 +97,8 @@ func validateMaxPods(maxPods *int, fldPath *field.Path) error {
 }
 
 func validateOSType(mode string, osType *string, fldPath *field.Path) error {
-	if mode == string(NodePoolModeSystem) {
-		if osType != nil && *osType != LinuxOS {
+	if mode == string(infrav1.NodePoolModeSystem) {
+		if osType != nil && *osType != infrav1.LinuxOS {
 			return field.Forbidden(
 				fldPath,
 				"System node pooll must have OSType 'Linux'")
@@ -126,13 +126,13 @@ func validateMPName(mpName string, specName *string, osType *string, fldPath *fi
 }
 
 func validateNameLength(osType *string, name *string, fieldNameMessage string, fldPath *field.Path) error {
-	if osType != nil && *osType == WindowsOS &&
+	if osType != nil && *osType == infrav1.WindowsOS &&
 		name != nil && len(*name) > 6 {
 		return field.Invalid(
 			fldPath,
 			name,
 			fmt.Sprintf("For OSType Windows, %s can not be longer than 6 characters.", fieldNameMessage))
-	} else if (osType == nil || *osType == LinuxOS) &&
+	} else if (osType == nil || *osType == infrav1.LinuxOS) &&
 		(name != nil && len(*name) > 12) {
 		return field.Invalid(
 			fldPath,
@@ -213,7 +213,7 @@ func validateMPSubnetName(subnetName *string, fldPath *field.Path) error {
 
 // validateKubeletConfig enforces the AKS API configuration for KubeletConfig.
 // See:  https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration.
-func validateKubeletConfig(kubeletConfig *KubeletConfig, fldPath *field.Path) error {
+func validateKubeletConfig(kubeletConfig *infrav1.KubeletConfig, fldPath *field.Path) error {
 	var allowedUnsafeSysctlsPatterns = []string{
 		`^kernel\.shm.+$`,
 		`^kernel\.msg.+$`,
@@ -260,7 +260,7 @@ func validateKubeletConfig(kubeletConfig *KubeletConfig, fldPath *field.Path) er
 
 // validateLinuxOSConfig enforces AKS API configuration for Linux OS custom configuration
 // See: https://learn.microsoft.com/en-us/azure/aks/custom-node-configuration#linux-os-custom-configuration for detailed information.
-func validateLinuxOSConfig(linuxOSConfig *LinuxOSConfig, kubeletConfig *KubeletConfig, fldPath *field.Path) error {
+func validateLinuxOSConfig(linuxOSConfig *infrav1.LinuxOSConfig, kubeletConfig *infrav1.KubeletConfig, fldPath *field.Path) error {
 	var errs []error
 	if linuxOSConfig == nil {
 		return nil

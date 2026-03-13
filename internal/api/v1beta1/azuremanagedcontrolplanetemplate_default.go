@@ -22,12 +22,12 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // SetDefaultsAzureManagedControlPlaneTemplate sets the default values for an AzureManagedControlPlaneTemplate.
-func SetDefaultsAzureManagedControlPlaneTemplate(log logr.Logger, mcp *AzureManagedControlPlaneTemplate) {
-	SetZeroPointerDefault[*string](&mcp.Spec.Template.Spec.NetworkPlugin, ptr.To(AzureNetworkPluginName))
+func SetDefaultsAzureManagedControlPlaneTemplate(log logr.Logger, mcp *infrav1.AzureManagedControlPlaneTemplate) {
+	SetZeroPointerDefault[*string](&mcp.Spec.Template.Spec.NetworkPlugin, ptr.To(infrav1.AzureNetworkPluginName))
 	SetZeroPointerDefault[*string](&mcp.Spec.Template.Spec.LoadBalancerSKU, ptr.To("Standard"))
 	SetZeroPointerDefault[*bool](&mcp.Spec.Template.Spec.EnablePreviewFeatures, ptr.To(false))
 
@@ -41,7 +41,7 @@ func SetDefaultsAzureManagedControlPlaneTemplate(log logr.Logger, mcp *AzureMana
 }
 
 // setDefaultAzureManagedControlPlaneTemplateVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlaneTemplate.
-func setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(log logr.Logger, mcp *AzureManagedControlPlaneTemplate) {
+func setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(log logr.Logger, mcp *infrav1.AzureManagedControlPlaneTemplate) {
 	if mcp.Spec.Template.Spec.VirtualNetwork.Name != "" {
 		// Being able to set the vnet name in the template type is a bug, as vnet names cannot be reused across clusters.
 		// To avoid a breaking API change, a warning is logged.
@@ -53,7 +53,7 @@ func setDefaultAzureManagedControlPlaneTemplateVirtualNetwork(log logr.Logger, m
 }
 
 // setDefaultAzureManagedControlPlaneTemplateSubnet sets the default Subnet for an AzureManagedControlPlaneTemplate.
-func setDefaultAzureManagedControlPlaneTemplateSubnet(mcp *AzureManagedControlPlaneTemplate) {
+func setDefaultAzureManagedControlPlaneTemplateSubnet(mcp *infrav1.AzureManagedControlPlaneTemplate) {
 	if mcp.Spec.Template.Spec.VirtualNetwork.Subnet.Name == "" {
 		mcp.Spec.Template.Spec.VirtualNetwork.Subnet.Name = mcp.Name
 	}

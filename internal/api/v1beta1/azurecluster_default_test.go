@@ -27,46 +27,46 @@ import (
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
 func TestResourceGroupDefault(t *testing.T) {
 	cases := map[string]struct {
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		"default empty rg": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{},
+				Spec: infrav1.AzureClusterSpec{},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "foo",
 				},
 			},
 		},
 		"don't change if mismatched": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "bar",
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "bar",
 				},
 			},
@@ -90,69 +90,69 @@ func TestResourceGroupDefault(t *testing.T) {
 func TestVnetDefaults(t *testing.T) {
 	cases := []struct {
 		name    string
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		{
 			name:    "resource group vnet specified",
 			cluster: apifixtures.CreateValidCluster(),
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
 							ResourceGroup: "custom-vnet",
 							Name:          "my-vnet",
-							VnetClassSpec: VnetClassSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR},
 							},
 						},
-						Subnets: Subnets{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
 
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "my-lb",
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "ip-config",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name:    "public-ip",
 										DNSName: "myfqdn.azure.com",
 									},
 								},
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU: SKUStandard,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU: infrav1.SKUStandard,
 
-								Type: Public,
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](1),
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -160,39 +160,39 @@ func TestVnetDefaults(t *testing.T) {
 		},
 		{
 			name: "vnet not specified",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							VnetClassSpec: VnetClassSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR},
 							},
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -200,46 +200,46 @@ func TestVnetDefaults(t *testing.T) {
 		},
 		{
 			name: "custom CIDR",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							VnetClassSpec: VnetClassSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"10.0.0.0/16"},
 							},
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							VnetClassSpec: VnetClassSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"10.0.0.0/16"},
 							},
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -247,46 +247,46 @@ func TestVnetDefaults(t *testing.T) {
 		},
 		{
 			name: "IPv6 enabled",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							VnetClassSpec: VnetClassSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 							},
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
 					ResourceGroup:       "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							VnetClassSpec: VnetClassSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 							},
 						},
 					},
-					AzureClusterClassSpec: AzureClusterClassSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						IdentityRef: &corev1.ObjectReference{
-							Kind: AzureClusterIdentityKind,
+							Kind: infrav1.AzureClusterIdentityKind,
 						},
 					},
 				},
@@ -311,47 +311,47 @@ func TestVnetDefaults(t *testing.T) {
 func TestSubnetDefaults(t *testing.T) {
 	cases := []struct {
 		name    string
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		{
 			name: "no subnets",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec:         NetworkSpec{},
+					NetworkSpec:         infrav1.NetworkSpec{},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
 
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 									Name: "cluster-test-node-natgw",
 								}},
 							},
@@ -362,29 +362,29 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets with custom attributes",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{"10.0.0.16/24"},
 									Name:       "my-controlplane-subnet",
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"10.1.0.16/24"},
 									Name:       "my-node-subnet",
 								},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "foo-natgw",
 									},
 								},
@@ -393,36 +393,36 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{"10.0.0.16/24"},
 									Name:       "my-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"10.1.0.16/24"},
 									Name:       "my-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "foo-natgw",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-foo-natgw",
 									},
 								},
@@ -434,23 +434,23 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets specified",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "cluster-test-controlplane-subnet",
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "cluster-test-node-subnet",
 								},
 							},
@@ -458,37 +458,37 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
 
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-node-natgw-1",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
@@ -500,22 +500,22 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "cluster subnet with custom attributes",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetCluster,
 									CIDRBlocks: []string{"10.0.0.16/24"},
 									Name:       "my-subnet",
 								},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "foo-natgw",
 									},
 								},
@@ -524,27 +524,27 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetCluster,
 									CIDRBlocks: []string{"10.0.0.16/24"},
 									Name:       "my-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "foo-natgw",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-foo-natgw",
 									},
 								},
@@ -556,17 +556,17 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "cluster subnet with subnets specified",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetCluster,
 									Name: "cluster-test-subnet",
 								},
 							},
@@ -574,27 +574,27 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetCluster,
 									CIDRBlocks: []string{DefaultClusterSubnetCIDR},
 									Name:       "cluster-test-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-natgw",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-natgw",
 									},
 								},
@@ -606,26 +606,26 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets route tables specified",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "cluster-test-controlplane-subnet",
 								},
-								RouteTable: RouteTable{
+								RouteTable: infrav1.RouteTable{
 									Name: "control-plane-custom-route-table",
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "cluster-test-node-subnet",
 								},
 							},
@@ -633,36 +633,36 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{Name: "control-plane-custom-route-table"},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "control-plane-custom-route-table"},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-node-natgw-1",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
@@ -674,17 +674,17 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "only node subnet specified",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "my-node-subnet",
 								},
 							},
@@ -692,40 +692,40 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "my-node-subnet",
 								},
 
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-node-natgw-1",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-natgw-1",
 									},
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
@@ -734,28 +734,28 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets specified with IPv6 enabled",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							VnetClassSpec: VnetClassSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"2001:be00::1/56"},
 							},
 						},
-						Subnets: Subnets{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "control-plane",
 									CIDRBlocks: []string{"2001:beef::1/64"},
 									Name:       "cluster-test-controlplane-subnet",
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "node",
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "cluster-test-node-subnet",
@@ -765,36 +765,36 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							VnetClassSpec: VnetClassSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							VnetClassSpec: infrav1.VnetClassSpec{
 								CIDRBlocks: []string{"2001:be00::1/56"},
 							},
 						},
-						Subnets: Subnets{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{"2001:beef::1/64"},
 									Name:       "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 						},
 					},
@@ -803,22 +803,22 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets with custom security group",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role: "control-plane",
 									Name: "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "allow_port_50000",
 												Description:      "allow port 50000",
@@ -828,7 +828,7 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Action:           SecurityRuleActionAllow,
+												Action:           infrav1.SecurityRuleActionAllow,
 											},
 										},
 									},
@@ -836,13 +836,13 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role: "node",
 									Name: "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "allow_port_50000",
 												Description:      "allow port 50000",
@@ -852,7 +852,7 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Action:           SecurityRuleActionAllow,
+												Action:           infrav1.SecurityRuleActionAllow,
 											},
 										},
 									},
@@ -863,23 +863,23 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "control-plane",
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "allow_port_50000",
 												Description:      "allow port 50000",
@@ -889,8 +889,8 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Direction:        SecurityRuleDirectionInbound,
-												Action:           SecurityRuleActionAllow,
+												Direction:        infrav1.SecurityRuleDirectionInbound,
+												Action:           infrav1.SecurityRuleActionAllow,
 											},
 										},
 									},
@@ -898,15 +898,15 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{
+								SecurityGroup: infrav1.SecurityGroup{
 									Name: "my-custom-node-sg",
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "allow_port_50000",
 												Description:      "allow port 50000",
@@ -916,18 +916,18 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Direction:        SecurityRuleDirectionInbound,
-												Action:           SecurityRuleActionAllow,
+												Direction:        infrav1.SecurityRuleDirectionInbound,
+												Action:           infrav1.SecurityRuleActionAllow,
 											},
 										},
 									},
 								},
-								RouteTable: RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayIP: PublicIPSpec{
+								RouteTable: infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-natgw-1",
 									},
-									NatGatewayClassSpec: NatGatewayClassSpec{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-node-natgw-1",
 									},
 								},
@@ -939,22 +939,22 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "subnets with custom security group to deny port 49999",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role: "control-plane",
 									Name: "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "deny_port_49999",
 												Description:      "deny port 49999",
@@ -964,7 +964,7 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Action:           SecurityRuleActionDeny,
+												Action:           infrav1.SecurityRuleActionDeny,
 											},
 										},
 									},
@@ -975,23 +975,23 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "control-plane",
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
-								SecurityGroup: SecurityGroup{
-									SecurityGroupClass: SecurityGroupClass{
-										SecurityRules: []SecurityRule{
+								SecurityGroup: infrav1.SecurityGroup{
+									SecurityGroupClass: infrav1.SecurityGroupClass{
+										SecurityRules: []infrav1.SecurityRule{
 											{
 												Name:             "deny_port_49999",
 												Description:      "deny port 49999",
@@ -1001,8 +1001,8 @@ func TestSubnetDefaults(t *testing.T) {
 												DestinationPorts: ptr.To("*"),
 												Source:           ptr.To("*"),
 												Destination:      ptr.To("*"),
-												Direction:        SecurityRuleDirectionInbound,
-												Action:           SecurityRuleActionDeny,
+												Direction:        infrav1.SecurityRuleDirectionInbound,
+												Action:           infrav1.SecurityRuleActionDeny,
 											},
 										},
 									},
@@ -1010,18 +1010,18 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayIP: PublicIPSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "",
 									},
-									NatGatewayClassSpec: NatGatewayClassSpec{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "cluster-test-node-natgw",
 									},
 								},
@@ -1033,24 +1033,24 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "don't default NAT Gateway if subnet already exists",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "cluster-test-controlplane-subnet",
 								},
 								ID: "my-subnet-id",
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "cluster-test-node-subnet",
 								},
 								ID: "my-subnet-id-2",
@@ -1059,38 +1059,38 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
 									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
 									Name:       "cluster-test-controlplane-subnet",
 								},
 								ID:            "my-subnet-id",
-								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
 									Name:       "cluster-test-node-subnet",
 								},
 								ID:            "my-subnet-id-2",
-								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
-								NatGateway: NatGateway{
-									NatGatewayClassSpec: NatGatewayClassSpec{
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
 										Name: "",
 									},
-									NatGatewayIP: PublicIPSpec{
+									NatGatewayIP: infrav1.PublicIPSpec{
 										Name: "",
 									},
 								},
@@ -1102,17 +1102,17 @@ func TestSubnetDefaults(t *testing.T) {
 		},
 		{
 			name: "don't default NAT Gateway for cluster subnet if subnet already exists",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetCluster,
 									Name: "cluster-test-cluster-subnet",
 								},
 								ID: "my-subnet-id",
@@ -1121,23 +1121,23 @@ func TestSubnetDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetCluster,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetCluster,
 									CIDRBlocks: []string{DefaultClusterSubnetCIDR},
 									Name:       "cluster-test-cluster-subnet",
 								},
 								ID:            "my-subnet-id",
-								SecurityGroup: SecurityGroup{Name: "cluster-test-nsg"},
-								RouteTable:    RouteTable{Name: "cluster-test-routetable"},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-routetable"},
 							},
 						},
 					},
@@ -1163,41 +1163,41 @@ func TestSubnetDefaults(t *testing.T) {
 func TestVnetPeeringDefaults(t *testing.T) {
 	cases := []struct {
 		name    string
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		{
 			name: "no peering",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{},
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{},
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{},
 				},
 			},
 		},
 		{
 			name: "peering with resource group",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							Peerings: VnetPeerings{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Peerings: infrav1.VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{
+									VnetPeeringClassSpec: infrav1.VnetPeeringClassSpec{
 										RemoteVnetName: "my-vnet",
 										ResourceGroup:  "cluster-test",
 									},
@@ -1207,17 +1207,17 @@ func TestVnetPeeringDefaults(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							Peerings: VnetPeerings{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Peerings: infrav1.VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{
+									VnetPeeringClassSpec: infrav1.VnetPeeringClassSpec{
 										RemoteVnetName: "my-vnet",
 										ResourceGroup:  "cluster-test",
 									},
@@ -1230,34 +1230,34 @@ func TestVnetPeeringDefaults(t *testing.T) {
 		},
 		{
 			name: "peering without resource group",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							Peerings: VnetPeerings{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Peerings: infrav1.VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
+									VnetPeeringClassSpec: infrav1.VnetPeeringClassSpec{RemoteVnetName: "my-vnet"},
 								},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ResourceGroup: "cluster-test",
-					NetworkSpec: NetworkSpec{
-						Vnet: VnetSpec{
-							Peerings: VnetPeerings{
+					NetworkSpec: infrav1.NetworkSpec{
+						Vnet: infrav1.VnetSpec{
+							Peerings: infrav1.VnetPeerings{
 								{
-									VnetPeeringClassSpec: VnetPeeringClassSpec{
+									VnetPeeringClassSpec: infrav1.VnetPeeringClassSpec{
 										RemoteVnetName: "my-vnet",
 										ResourceGroup:  "cluster-test",
 									},
@@ -1288,44 +1288,44 @@ func TestAPIServerLBDefaults(t *testing.T) {
 	cases := []struct {
 		name        string
 		featureGate featuregate.Feature
-		cluster     *AzureCluster
-		output      *AzureCluster
+		cluster     *infrav1.AzureCluster
+		output      *infrav1.AzureCluster
 	}{
 		{
 			name: "no lb",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec:         NetworkSpec{},
+					NetworkSpec:         infrav1.NetworkSpec{},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-public-lb-frontEnd",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name:    "pip-cluster-test-apiserver",
 										DNSName: "",
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1336,45 +1336,45 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name:        "no lb with APIServerILB feature gate enabled",
 			featureGate: feature.APIServerILB,
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec:         NetworkSpec{},
+					NetworkSpec:         infrav1.NetworkSpec{},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-public-lb-frontEnd",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name:    "pip-cluster-test-apiserver",
 										DNSName: "",
 									},
 								},
 								{
 									Name: "cluster-test-public-lb-frontEnd-internal-ip",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1384,41 +1384,41 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		},
 		{
 			name: "internal lb",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							FrontendIPs: []FrontendIP{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-internal-lb-backendPool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Internal,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Internal,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
@@ -1430,41 +1430,41 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name:        "internal lb with feature gate API Server ILB enabled",
 			featureGate: feature.APIServerILB,
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							FrontendIPs: []FrontendIP{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-internal-lb-backendPool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Internal,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Internal,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
@@ -1475,44 +1475,44 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		},
 		{
 			name: "with custom backend pool name",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							FrontendIPs: []FrontendIP{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Internal,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Internal,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
@@ -1524,44 +1524,44 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name:        "with custom backend pool name with feature gate API Server ILB enabled",
 			featureGate: feature.APIServerILB,
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							FrontendIPs: []FrontendIP{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-internal-lb-frontEnd",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: DefaultInternalLBIPAddress,
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Internal,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Internal,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 							Name: "cluster-test-internal-lb",
@@ -1573,68 +1573,68 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name:        "public lb with APIServerILB feature gate enabled and custom private IP belonging to default control plane CIDR",
 			featureGate: feature.APIServerILB,
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-public-lb-frontEnd",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name:    "pip-cluster-test-apiserver",
 										DNSName: "",
 									},
 								},
 								{
 									Name: "my-internal-ip",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: "10.0.0.111",
 									},
 								},
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
-								SKU:  SKUStandard,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
+								SKU:  infrav1.SKUStandard,
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-public-lb-frontEnd",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name:    "pip-cluster-test-apiserver",
 										DNSName: "",
 									},
 								},
 								{
 									Name: "my-internal-ip",
-									FrontendIPClass: FrontendIPClass{
+									FrontendIPClass: infrav1.FrontendIPClass{
 										PrivateIPAddress: "10.0.0.111",
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-public-lb-backendPool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1662,66 +1662,66 @@ func TestAPIServerLBDefaults(t *testing.T) {
 
 func TestAzureEnviromentDefault(t *testing.T) {
 	cases := map[string]struct {
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		"default empty azure env": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{},
+				Spec: infrav1.AzureClusterSpec{},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: DefaultAzureCloud,
 					},
 				},
 			},
 		},
 		"azure env set to AzurePublicCloud": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: DefaultAzureCloud,
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: DefaultAzureCloud,
 					},
 				},
 			},
 		},
 		"azure env set to AzureGermanCloud": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: "AzureGermanCloud",
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					AzureClusterClassSpec: AzureClusterClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
 						AzureEnvironment: "AzureGermanCloud",
 					},
 				},
@@ -1746,68 +1746,68 @@ func TestAzureEnviromentDefault(t *testing.T) {
 func TestNodeOutboundLBDefaults(t *testing.T) {
 	cases := []struct {
 		name    string
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		{
 			name: "default no lb for public clusters",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
 					},
@@ -1816,82 +1816,82 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "IPv6 enabled",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "node",
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									Role:       "node",
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "cluster-test-node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test",
-							FrontendIPs: []FrontendIP{{
+							FrontendIPs: []infrav1.FrontendIP{{
 								Name: "cluster-test-frontEnd",
-								PublicIP: &PublicIPSpec{
+								PublicIP: &infrav1.PublicIPSpec{
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
 							FrontendIPsCount: ptr.To[int32](1),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -1901,98 +1901,98 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "IPv6 enabled on 1 of 2 node subnets",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "node-subnet-1",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "node-subnet-1",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test",
-							FrontendIPs: []FrontendIP{{
+							FrontendIPs: []infrav1.FrontendIP{{
 								Name: "cluster-test-frontEnd",
-								PublicIP: &PublicIPSpec{
+								PublicIP: &infrav1.PublicIPSpec{
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
 							FrontendIPsCount: ptr.To[int32](1),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -2002,93 +2002,93 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "multiple node subnets, IPv6 not enabled in any of them",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						Subnets: Subnets{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-3",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet-3",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
 					},
@@ -2097,118 +2097,118 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "multiple node subnets, IPv6 enabled on all of them",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "node-subnet-1",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2002:beee::1/64"},
 									Name:       "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2003:befa::1/64"},
 									Name:       "node-subnet-3",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
+				Spec: infrav1.AzureClusterSpec{
 					ControlPlaneEnabled: true,
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2001:beea::1/64"},
 									Name:       "node-subnet-1",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2002:beee::1/64"},
 									Name:       "node-subnet-2",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role:       SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
 									CIDRBlocks: []string{"2003:befa::1/64"},
 									Name:       "node-subnet-3",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test",
-							FrontendIPs: []FrontendIP{{
+							FrontendIPs: []infrav1.FrontendIP{{
 								Name: "cluster-test-frontEnd",
-								PublicIP: &PublicIPSpec{
+								PublicIP: &infrav1.PublicIPSpec{
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-outboundBackendPool",
 							},
 							FrontendIPsCount: ptr.To[int32](1),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
@@ -2218,25 +2218,25 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "no lb for private clusters",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Internal}},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
 					},
@@ -2245,58 +2245,58 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "NodeOutboundLB declared as input with non-default IdleTimeoutInMinutes, FrontendIPsCount, BackendPool values",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
-						NodeOutboundLB: &LoadBalancerSpec{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
-							FrontendIPs: []FrontendIP{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-frontEnd-1",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-outbound-1",
 									},
 								},
 								{
 									Name: "cluster-test-frontEnd-2",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-node-outbound-2",
 									},
 								},
 							},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-backend-pool",
 							},
 							FrontendIPsCount: ptr.To[int32](2), // we expect the original value to be respected here
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](15), // we expect the original value to be respected here
 							},
 							Name: "cluster-test",
@@ -2307,94 +2307,94 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "ensure that existing lb names are not overwritten",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						Subnets: Subnets{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						Subnets: Subnets{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetControlPlane,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
 									Name: "control-plane-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 							{
-								SubnetClassSpec: SubnetClassSpec{
-									Role: SubnetNode,
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
 									Name: "node-subnet",
 								},
-								SecurityGroup: SecurityGroup{},
-								RouteTable:    RouteTable{},
+								SecurityGroup: infrav1.SecurityGroup{},
+								RouteTable:    infrav1.RouteTable{},
 							},
 						},
-						APIServerLB: &LoadBalancerSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
-						NodeOutboundLB: &LoadBalancerSpec{
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
-							FrontendIPs: []FrontendIP{{
+							FrontendIPs: []infrav1.FrontendIP{{
 								Name: "user-defined-name-frontEnd",
-								PublicIP: &PublicIPSpec{
+								PublicIP: &infrav1.PublicIPSpec{
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "user-defined-name-outboundBackendPool",
 							},
 							FrontendIPsCount: ptr.To[int32](1),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](DefaultOutboundRuleIdleTimeoutInMinutes),
 							},
 						},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "user-defined-name",
 						},
 					},
@@ -2420,30 +2420,30 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 	cases := []struct {
 		name    string
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		{
 			name: "no cp lb for public clusters",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Public}},
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Public}},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Public,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
 							},
 						},
 					},
@@ -2452,25 +2452,25 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "no cp lb for private clusters",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Internal}},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
 					},
@@ -2479,56 +2479,56 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "frontendIPsCount > 1",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Internal}},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							FrontendIPsCount: ptr.To[int32](2),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-outbound-lb",
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "cluster-test-outbound-lb-outboundBackendPool",
 							},
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-outbound-lb-frontEnd-1",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-controlplane-outbound-1",
 									},
 								},
 								{
 									Name: "cluster-test-outbound-lb-frontEnd-2",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-controlplane-outbound-2",
 									},
 								},
 							},
 							FrontendIPsCount: ptr.To[int32](2),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
@@ -2538,52 +2538,52 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		},
 		{
 			name: "custom outbound lb backend pool",
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{LoadBalancerClassSpec: LoadBalancerClassSpec{Type: Internal}},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
-							BackendPool: BackendPool{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Internal}},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-outbound-lb",
 							},
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: &LoadBalancerSpec{
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								Type: Internal,
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
 							},
 						},
-						ControlPlaneOutboundLB: &LoadBalancerSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
 							Name: "cluster-test-outbound-lb",
-							BackendPool: BackendPool{
+							BackendPool: infrav1.BackendPool{
 								Name: "custom-outbound-lb",
 							},
-							FrontendIPs: []FrontendIP{
+							FrontendIPs: []infrav1.FrontendIP{
 								{
 									Name: "cluster-test-outbound-lb-frontEnd",
-									PublicIP: &PublicIPSpec{
+									PublicIP: &infrav1.PublicIPSpec{
 										Name: "pip-cluster-test-controlplane-outbound",
 									},
 								},
 							},
 							FrontendIPsCount: ptr.To[int32](1),
-							LoadBalancerClassSpec: LoadBalancerClassSpec{
-								SKU:                  SKUStandard,
-								Type:                 Public,
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								SKU:                  infrav1.SKUStandard,
+								Type:                 infrav1.Public,
 								IdleTimeoutInMinutes: ptr.To[int32](15),
 							},
 						},
@@ -2609,51 +2609,51 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 
 func TestBastionDefault(t *testing.T) {
 	cases := map[string]struct {
-		cluster *AzureCluster
-		output  *AzureCluster
+		cluster *infrav1.AzureCluster
+		output  *infrav1.AzureCluster
 	}{
 		"no bastion set": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{},
+				Spec: infrav1.AzureClusterSpec{},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{},
+				Spec: infrav1.AzureClusterSpec{},
 			},
 		},
 		"azure bastion enabled with no settings": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{},
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "foo-azure-bastion",
-							Subnet: SubnetSpec{
+							Subnet: infrav1.SubnetSpec{
 
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
 									Name:       "AzureBastionSubnet",
 								},
 							},
-							PublicIP: PublicIPSpec{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
 							},
 						},
@@ -2662,35 +2662,35 @@ func TestBastionDefault(t *testing.T) {
 			},
 		},
 		"azure bastion enabled with name set": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "my-fancy-name",
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "my-fancy-name",
-							Subnet: SubnetSpec{
+							Subnet: infrav1.SubnetSpec{
 
-								SubnetClassSpec: SubnetClassSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
 									Name:       "AzureBastionSubnet",
 								},
 							},
-							PublicIP: PublicIPSpec{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
 							},
 						},
@@ -2699,34 +2699,34 @@ func TestBastionDefault(t *testing.T) {
 			},
 		},
 		"azure bastion enabled with subnet partially set": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
-							Subnet: SubnetSpec{},
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
+							Subnet: infrav1.SubnetSpec{},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "foo-azure-bastion",
-							Subnet: SubnetSpec{
-								SubnetClassSpec: SubnetClassSpec{
+							Subnet: infrav1.SubnetSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
 									Name:       "AzureBastionSubnet",
 								},
 							},
-							PublicIP: PublicIPSpec{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
 							},
 						},
@@ -2735,15 +2735,15 @@ func TestBastionDefault(t *testing.T) {
 			},
 		},
 		"azure bastion enabled with subnet fully set": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
-							Subnet: SubnetSpec{
-								SubnetClassSpec: SubnetClassSpec{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
+							Subnet: infrav1.SubnetSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{"10.10.0.0/16"},
 									Name:       "my-superfancy-name",
 								},
@@ -2752,22 +2752,22 @@ func TestBastionDefault(t *testing.T) {
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "foo-azure-bastion",
-							Subnet: SubnetSpec{
-								SubnetClassSpec: SubnetClassSpec{
+							Subnet: infrav1.SubnetSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{"10.10.0.0/16"},
 									Role:       DefaultAzureBastionSubnetRole,
 									Name:       "my-superfancy-name",
 								},
 							},
-							PublicIP: PublicIPSpec{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "foo-azure-bastion-pip",
 							},
 						},
@@ -2776,36 +2776,36 @@ func TestBastionDefault(t *testing.T) {
 			},
 		},
 		"azure bastion enabled with public IP name set": {
-			cluster: &AzureCluster{
+			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
-							PublicIP: PublicIPSpec{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "my-ultrafancy-pip-name",
 							},
 						},
 					},
 				},
 			},
-			output: &AzureCluster{
+			output: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
-				Spec: AzureClusterSpec{
-					BastionSpec: BastionSpec{
-						AzureBastion: &AzureBastion{
+				Spec: infrav1.AzureClusterSpec{
+					BastionSpec: infrav1.BastionSpec{
+						AzureBastion: &infrav1.AzureBastion{
 							Name: "foo-azure-bastion",
-							Subnet: SubnetSpec{
-								SubnetClassSpec: SubnetClassSpec{
+							Subnet: infrav1.SubnetSpec{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
 									CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
 									Role:       DefaultAzureBastionSubnetRole,
 									Name:       "AzureBastionSubnet",
 								},
 							},
-							PublicIP: PublicIPSpec{
+							PublicIP: infrav1.PublicIPSpec{
 								Name: "my-ultrafancy-pip-name",
 							},
 						},

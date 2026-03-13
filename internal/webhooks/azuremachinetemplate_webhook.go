@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
@@ -44,7 +44,7 @@ const (
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (w *AzureMachineTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureMachineTemplate{}).
+		For(&infrav1.AzureMachineTemplate{}).
 		WithValidator(w).
 		WithDefaulter(w).
 		Complete()
@@ -61,7 +61,7 @@ var _ webhook.CustomValidator = &AzureMachineTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (*AzureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	r := obj.(*AzureMachineTemplate)
+	r := obj.(*infrav1.AzureMachineTemplate)
 	spec := r.Spec.Template.Spec
 
 	allErrs := validateAzureMachineSpec(spec)
@@ -100,14 +100,14 @@ func (*AzureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtim
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineTemplateKind).GroupKind(), r.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureMachineTemplateKind).GroupKind(), r.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (w *AzureMachineTemplateWebhook) ValidateUpdate(ctx context.Context, oldRaw runtime.Object, newRaw runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureMachineTemplate)
-	t := newRaw.(*AzureMachineTemplate)
+	old := oldRaw.(*infrav1.AzureMachineTemplate)
+	t := newRaw.(*infrav1.AzureMachineTemplate)
 
 	req, err := admission.RequestFromContext(ctx)
 	if err != nil {
@@ -144,7 +144,7 @@ func (w *AzureMachineTemplateWebhook) ValidateUpdate(ctx context.Context, oldRaw
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineTemplateKind).GroupKind(), t.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureMachineTemplateKind).GroupKind(), t.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
@@ -154,7 +154,7 @@ func (*AzureMachineTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.
 
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (*AzureMachineTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	t := obj.(*AzureMachineTemplate)
+	t := obj.(*infrav1.AzureMachineTemplate)
 	if err := apiinternal.SetDefaultAzureMachineSpecSSHPublicKey(&t.Spec.Template.Spec); err != nil {
 		ctrl.Log.WithName("SetDefault").Error(err, "SetDefaultSSHPublicKey failed")
 	}

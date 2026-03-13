@@ -31,7 +31,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
@@ -39,7 +39,7 @@ func TestAzureMachineSpec_SetDefaultSSHPublicKey(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		machine *AzureMachine
+		machine *infrav1.AzureMachine
 	}
 
 	existingPublicKey := "testpublickey"
@@ -59,7 +59,7 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		machine *AzureMachine
+		machine *infrav1.AzureMachine
 	}
 
 	fakeSubscriptionID := uuid.New().String()
@@ -67,35 +67,35 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 	fakeRoleDefinitionID := "testroledefinitionid"
 	fakeScope := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", fakeSubscriptionID, fakeClusterName)
 	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
-	roleAssignmentExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity: VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+	roleAssignmentExistTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity: infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 			Name: existingRoleAssignmentName,
 		},
 	}}}
-	notSystemAssignedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:                   VMIdentityUserAssigned,
-		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
+	notSystemAssignedTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity:                   infrav1.VMIdentityUserAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
 	}}}
-	systemAssignedIdentityRoleExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity: VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+	systemAssignedIdentityRoleExistTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity: infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 			Scope:        fakeScope,
 			DefinitionID: fakeRoleDefinitionID,
 		},
 	}}}
-	deprecatedRoleAssignmentNameTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:           VMIdentitySystemAssigned,
+	deprecatedRoleAssignmentNameTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
 		RoleAssignmentName: existingRoleAssignmentName,
 	}}}
-	emptyTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:                   VMIdentitySystemAssigned,
-		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{},
+	emptyTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity:                   infrav1.VMIdentitySystemAssigned,
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
 	}}}
-	bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		Identity:           VMIdentitySystemAssigned,
+	bothDeprecatedRoleAssignmentNameAndSystemAssignedIdentityRoleTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
 		RoleAssignmentName: existingRoleAssignmentName,
-		SystemAssignedIdentityRole: &SystemAssignedIdentityRole{
+		SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 			Name: existingRoleAssignmentName,
 		},
 	}}}
@@ -127,27 +127,27 @@ func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 }
 
 func TestAzureMachineSpec_SetSpotEvictionPolicyDefaults(t *testing.T) {
-	deallocatePolicy := SpotEvictionPolicyDeallocate
-	deletePolicy := SpotEvictionPolicyDelete
+	deallocatePolicy := infrav1.SpotEvictionPolicyDeallocate
+	deletePolicy := infrav1.SpotEvictionPolicyDelete
 
 	g := NewWithT(t)
 
 	type test struct {
-		machine *AzureMachine
+		machine *infrav1.AzureMachine
 	}
 
-	spotVMOptionsExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		SpotVMOptions: &SpotVMOptions{
+	spotVMOptionsExistTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		SpotVMOptions: &infrav1.SpotVMOptions{
 			MaxPrice: &resource.Quantity{Format: "vmoptions-0"},
 		},
 	}}}
 
-	localDiffDiskSettingsExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
-		SpotVMOptions: &SpotVMOptions{
+	localDiffDiskSettingsExistTest := test{machine: &infrav1.AzureMachine{Spec: infrav1.AzureMachineSpec{
+		SpotVMOptions: &infrav1.SpotVMOptions{
 			MaxPrice: &resource.Quantity{},
 		},
-		OSDisk: OSDisk{
-			DiffDiskSettings: &DiffDiskSettings{
+		OSDisk: infrav1.OSDisk{
+			DiffDiskSettings: &infrav1.DiffDiskSettings{
 				Option: "Local",
 			},
 		},
@@ -163,17 +163,17 @@ func TestAzureMachineSpec_SetSpotEvictionPolicyDefaults(t *testing.T) {
 func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 	cases := []struct {
 		name   string
-		disks  []DataDisk
-		output []DataDisk
+		disks  []infrav1.DataDisk
+		output []infrav1.DataDisk
 	}{
 		{
 			name:   "no disks",
-			disks:  []DataDisk{},
-			output: []DataDisk{},
+			disks:  []infrav1.DataDisk{},
+			output: []infrav1.DataDisk{},
 		},
 		{
 			name: "no LUNs specified",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -185,7 +185,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					CachingType: "ReadWrite",
 				},
 			},
-			output: []DataDisk{
+			output: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -202,7 +202,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 		},
 		{
 			name: "All LUNs specified",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -216,7 +216,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					CachingType: "ReadWrite",
 				},
 			},
-			output: []DataDisk{
+			output: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -233,7 +233,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 		},
 		{
 			name: "Some LUNs missing",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -257,7 +257,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					CachingType: "ReadWrite",
 				},
 			},
-			output: []DataDisk{
+			output: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -286,7 +286,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 		},
 		{
 			name: "CachingType unspecified",
-			disks: []DataDisk{
+			disks: []infrav1.DataDisk{
 				{
 					NameSuffix: "testdisk1",
 					DiskSizeGB: 30,
@@ -300,13 +300,13 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 				{
 					NameSuffix: "testdisk3",
 					DiskSizeGB: 30,
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
 					Lun: ptr.To[int32](3),
 				},
 			},
-			output: []DataDisk{
+			output: []infrav1.DataDisk{
 				{
 					NameSuffix:  "testdisk1",
 					DiskSizeGB:  30,
@@ -323,7 +323,7 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 					NameSuffix: "testdisk3",
 					DiskSizeGB: 30,
 					Lun:        ptr.To[int32](3),
-					ManagedDisk: &ManagedDiskParameters{
+					ManagedDisk: &infrav1.ManagedDiskParameters{
 						StorageAccountType: "UltraSSD_LRS",
 					},
 					CachingType: "None",
@@ -351,20 +351,20 @@ func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 	tests := []struct {
 		name    string
-		machine *AzureMachine
-		want    *AzureMachine
+		machine *infrav1.AzureMachine
+		want    *infrav1.AzureMachine
 	}{
 		{
 			name: "defaulting webhook updates machine with deprecated subnetName field",
-			machine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			machine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName: "test-subnet",
 				},
 			},
-			want: &AzureMachine{
-				Spec: AzureMachineSpec{
+			want: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName: "",
-					NetworkInterfaces: []NetworkInterface{
+					NetworkInterfaces: []infrav1.NetworkInterface{
 						{
 							SubnetName:       "test-subnet",
 							PrivateIPConfigs: 1,
@@ -375,16 +375,16 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 		},
 		{
 			name: "defaulting webhook updates machine with deprecated subnetName field and empty NetworkInterfaces slice",
-			machine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			machine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName:        "test-subnet",
-					NetworkInterfaces: []NetworkInterface{},
+					NetworkInterfaces: []infrav1.NetworkInterface{},
 				},
 			},
-			want: &AzureMachine{
-				Spec: AzureMachineSpec{
+			want: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName: "",
-					NetworkInterfaces: []NetworkInterface{
+					NetworkInterfaces: []infrav1.NetworkInterface{
 						{
 							SubnetName:       "test-subnet",
 							PrivateIPConfigs: 1,
@@ -395,17 +395,17 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 		},
 		{
 			name: "defaulting webhook updates machine with deprecated acceleratedNetworking field",
-			machine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			machine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName:            "test-subnet",
 					AcceleratedNetworking: ptr.To(true),
 				},
 			},
-			want: &AzureMachine{
-				Spec: AzureMachineSpec{
+			want: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName:            "",
 					AcceleratedNetworking: nil,
-					NetworkInterfaces: []NetworkInterface{
+					NetworkInterfaces: []infrav1.NetworkInterface{
 						{
 							SubnetName:            "test-subnet",
 							PrivateIPConfigs:      1,
@@ -417,19 +417,19 @@ func TestAzureMachineSpec_SetNetworkInterfacesDefaults(t *testing.T) {
 		},
 		{
 			name: "defaulting webhook does nothing if both new and deprecated subnetName fields are set",
-			machine: &AzureMachine{
-				Spec: AzureMachineSpec{
+			machine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName: "test-subnet",
-					NetworkInterfaces: []NetworkInterface{{
+					NetworkInterfaces: []infrav1.NetworkInterface{{
 						SubnetName: "test-subnet",
 					}},
 				},
 			},
-			want: &AzureMachine{
-				Spec: AzureMachineSpec{
+			want: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
 					SubnetName:            "test-subnet",
 					AcceleratedNetworking: nil,
-					NetworkInterfaces: []NetworkInterface{
+					NetworkInterfaces: []infrav1.NetworkInterface{
 						{
 							SubnetName: "test-subnet",
 						},
@@ -563,13 +563,13 @@ func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Ob
 	}
 	// Check if we're calling Get on an AzureCluster or a Cluster
 	switch obj := obj.(type) {
-	case *AzureCluster:
+	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = "test-subscription-id"
 	case *clusterv1.Cluster:
 		obj.Namespace = "default"
 		obj.Spec = clusterv1.ClusterSpec{
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind: AzureClusterKind,
+				Kind: infrav1.AzureClusterKind,
 				Name: "test-cluster",
 			},
 			ClusterNetwork: clusterv1.ClusterNetwork{

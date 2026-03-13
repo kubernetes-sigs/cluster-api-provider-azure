@@ -24,7 +24,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // GetOwnerAzureClusterNameAndNamespace returns the owner azure cluster's name and namespace for the given cluster name and namespace.
@@ -55,7 +55,7 @@ func GetOwnerAzureClusterNameAndNamespace(cli client.Client, clusterName string,
 func GetSubscriptionID(cli client.Client, ownerAzureClusterName string, ownerAzureClusterNamespace string, maxAttempts int) (string, error) {
 	ctx := context.Background()
 
-	ownerAzureCluster := &AzureCluster{}
+	ownerAzureCluster := &infrav1.AzureCluster{}
 	key := client.ObjectKey{
 		Namespace: ownerAzureClusterNamespace,
 		Name:      ownerAzureClusterName,

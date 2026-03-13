@@ -26,14 +26,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (ampw *AzureASOManagedClusterWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureASOManagedCluster{}).
+		For(&infrav1.AzureASOManagedCluster{}).
 		WithValidator(ampw).
 		Complete()
 }
@@ -46,7 +46,7 @@ type AzureASOManagedClusterWebhook struct {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	_, ok := obj.(*AzureASOManagedCluster)
+	_, ok := obj.(*infrav1.AzureASOManagedCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureASOManagedCluster")
 	}
