@@ -24,28 +24,28 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
 func TestValdateVnetCIDRs(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "valid vnet",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
@@ -58,16 +58,16 @@ func TestValdateVnetCIDRs(t *testing.T) {
 		},
 		{
 			name: "invalid vnet CIDR",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{"1.2.3/12"},
 									},
 								},
@@ -102,35 +102,35 @@ func TestValdateVnetCIDRs(t *testing.T) {
 func TestValidateSubnetTemplates(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "valid subnets",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 											Name:       "foo-controlPlane-subnet",
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 											Name:       "foo-workerSubnet-subnet",
 										},
@@ -145,30 +145,30 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "invalid subnets - missing/empty subnet name",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 											Name:       "",
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 											Name:       "",
 										},
@@ -183,37 +183,37 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "invalid subnets - duplicate subnet names",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 											Name:       "foo-controlPlane-subnet",
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 											Name:       "foo-workerSubnet-subnet",
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{"10.2.0.0/16"},
 											Name:       "foo-workerSubnet-subnet",
 										},
@@ -228,36 +228,36 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "invalid subnets - wrong security rule priorities - lower than minimum",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 										},
-										SecurityGroup: SecurityGroupClass{
-											SecurityRules: SecurityRules{
-												SecurityRule{
+										SecurityGroup: infrav1.SecurityGroupClass{
+											SecurityRules: infrav1.SecurityRules{
+												infrav1.SecurityRule{
 													Priority: 50,
 												},
 											},
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 										},
 									},
@@ -271,36 +271,36 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "invalid subnets - wrong security rule priorities - higher than maximum",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 										},
-										SecurityGroup: SecurityGroupClass{
-											SecurityRules: SecurityRules{
-												SecurityRule{
+										SecurityGroup: infrav1.SecurityGroupClass{
+											SecurityRules: infrav1.SecurityRules{
+												infrav1.SecurityRule{
 													Priority: 4097,
 												},
 											},
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 										},
 									},
@@ -314,29 +314,29 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "invalid subnet CIDR",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{"11.0.0.0/16"},
 										},
 									},
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 										},
 									},
@@ -350,23 +350,23 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "missing required control plane role",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{apiinternal.DefaultNodeSubnetCIDR},
 										},
 									},
@@ -380,23 +380,23 @@ func TestValidateSubnetTemplates(t *testing.T) {
 		},
 		{
 			name: "missing required node role",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Vnet: VnetTemplateSpec{
-									VnetClassSpec: VnetClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Vnet: infrav1.VnetTemplateSpec{
+									VnetClassSpec: infrav1.VnetClassSpec{
 										CIDRBlocks: []string{apiinternal.DefaultVnetCIDR},
 									},
 								},
-								Subnets: SubnetTemplatesSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetControlPlane,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetControlPlane,
 											CIDRBlocks: []string{apiinternal.DefaultControlPlaneSubnetCIDR},
 										},
 									},
@@ -433,22 +433,22 @@ func TestValidateSubnetTemplates(t *testing.T) {
 func TestValidateAPIServerLBTemplate(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "valid lb",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									SKU:                  SKUStandard,
-									Type:                 Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									SKU:                  infrav1.SKUStandard,
+									Type:                 infrav1.Public,
 									IdleTimeoutInMinutes: ptr.To[int32](apiinternal.DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
@@ -460,17 +460,17 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 		},
 		{
 			name: "invalid lb SKU",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									SKU:                  SKU("wrong"),
-									Type:                 Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									SKU:                  infrav1.SKU("wrong"),
+									Type:                 infrav1.Public,
 									IdleTimeoutInMinutes: ptr.To[int32](apiinternal.DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
@@ -482,17 +482,17 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 		},
 		{
 			name: "invalid lb Type",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									SKU:                  SKUStandard,
-									Type:                 LBType("wrong"),
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									SKU:                  infrav1.SKUStandard,
+									Type:                 infrav1.LBType("wrong"),
 									IdleTimeoutInMinutes: ptr.To[int32](apiinternal.DefaultOutboundRuleIdleTimeoutInMinutes),
 								},
 							},
@@ -525,21 +525,21 @@ func TestValidateAPIServerLBTemplate(t *testing.T) {
 func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "valid controlplaneoutbound LB",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
 							},
 						},
@@ -550,18 +550,18 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "invalid controlplaneoutbound LB - should not have a controlplane outbound lb for public clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
-								ControlPlaneOutboundLB: &LoadBalancerClassSpec{},
+								ControlPlaneOutboundLB: &infrav1.LoadBalancerClassSpec{},
 							},
 						},
 					},
@@ -571,18 +571,18 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "invalid controlplaneoutbound LB - IdleTimeoutInMinutes less than minimum for private clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Internal,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Internal,
 								},
-								ControlPlaneOutboundLB: &LoadBalancerClassSpec{
+								ControlPlaneOutboundLB: &infrav1.LoadBalancerClassSpec{
 									IdleTimeoutInMinutes: ptr.To[int32](2),
 								},
 							},
@@ -594,18 +594,18 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "invalid controlplaneoutbound LB - IdleTimeoutInMinutes more than maximum for private clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Internal,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Internal,
 								},
-								ControlPlaneOutboundLB: &LoadBalancerClassSpec{
+								ControlPlaneOutboundLB: &infrav1.LoadBalancerClassSpec{
 									IdleTimeoutInMinutes: ptr.To[int32](60),
 								},
 							},
@@ -617,16 +617,16 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "valid controlplaneoutbound LB - can be empty for private clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Internal,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Internal,
 								},
 							},
 						},
@@ -656,21 +656,21 @@ func TestControlPlaneOutboundLBTemplate(t *testing.T) {
 func TestNodeOutboundLBTemplate(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "cannot be nil for public clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
 							},
 						},
@@ -681,16 +681,16 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "can be nil for private clusters",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Internal,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Internal,
 								},
 							},
 						},
@@ -701,18 +701,18 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "timeout should not be less than minimum",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
-								NodeOutboundLB: &LoadBalancerClassSpec{
+								NodeOutboundLB: &infrav1.LoadBalancerClassSpec{
 									IdleTimeoutInMinutes: ptr.To[int32](2),
 								},
 							},
@@ -724,18 +724,18 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 		},
 		{
 			name: "timeout should not be more than maximum",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
-								NodeOutboundLB: &LoadBalancerClassSpec{
+								NodeOutboundLB: &infrav1.LoadBalancerClassSpec{
 									IdleTimeoutInMinutes: ptr.To[int32](60),
 								},
 							},
@@ -766,19 +766,19 @@ func TestNodeOutboundLBTemplate(t *testing.T) {
 func TestValidatePrivateDNSZoneName(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "not set",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{},
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{},
 						},
 					},
 				},
@@ -787,18 +787,18 @@ func TestValidatePrivateDNSZoneName(t *testing.T) {
 		},
 		{
 			name: "show not be set if APIServerLB.Type is not internal",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								APIServerLB: LoadBalancerClassSpec{
-									Type: Public,
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								APIServerLB: infrav1.LoadBalancerClassSpec{
+									Type: infrav1.Public,
 								},
-								NetworkClassSpec: NetworkClassSpec{
+								NetworkClassSpec: infrav1.NetworkClassSpec{
 									PrivateDNSZoneName: "a.b.c",
 								},
 							},
@@ -829,20 +829,20 @@ func TestValidatePrivateDNSZoneName(t *testing.T) {
 func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 		expectedErr     field.Error
 	}{
 		{
 			name: "not set",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{},
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{},
 						},
 					},
 				},
@@ -851,15 +851,15 @@ func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
 		},
 		{
 			name: "should be set if PrivateDNSZoneName is given",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								NetworkClassSpec: NetworkClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								NetworkClassSpec: infrav1.NetworkClassSpec{
 									PrivateDNSZoneName:          "e.f.g",
 									PrivateDNSZoneResourceGroup: "a.b.c",
 								},
@@ -872,15 +872,15 @@ func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
 		},
 		{
 			name: "should not be set if PrivateDNSZoneName is not given",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								NetworkClassSpec: NetworkClassSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								NetworkClassSpec: infrav1.NetworkClassSpec{
 									PrivateDNSZoneResourceGroup: "a.b.c",
 								},
 							},
@@ -918,23 +918,23 @@ func TestValidatePrivateDNSZoneResourceGroup(t *testing.T) {
 func TestValidateNetworkSpec(t *testing.T) {
 	cases := []struct {
 		name            string
-		clusterTemplate *AzureClusterTemplate
+		clusterTemplate *infrav1.AzureClusterTemplate
 		expectValid     bool
 	}{
 		{
 			name: "subnet with SubnetNode role and enabled IPv6 triggers needOutboundLB and calls validateNodeOutboundLB",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Subnets: SubnetTemplatesSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
-											Role:       SubnetNode,
+										SubnetClassSpec: infrav1.SubnetClassSpec{
+											Role:       infrav1.SubnetNode,
 											CIDRBlocks: []string{"2001:beea::1/64"},
 										},
 									},
@@ -948,17 +948,17 @@ func TestValidateNetworkSpec(t *testing.T) {
 		},
 		{
 			name: "subnet with non-SubnetNode role",
-			clusterTemplate: &AzureClusterTemplate{
+			clusterTemplate: &infrav1.AzureClusterTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureClusterTemplateSpec{
-					Template: AzureClusterTemplateResource{
-						Spec: AzureClusterTemplateResourceSpec{
-							NetworkSpec: NetworkTemplateSpec{
-								Subnets: SubnetTemplatesSpec{
+				Spec: infrav1.AzureClusterTemplateSpec{
+					Template: infrav1.AzureClusterTemplateResource{
+						Spec: infrav1.AzureClusterTemplateResourceSpec{
+							NetworkSpec: infrav1.NetworkTemplateSpec{
+								Subnets: infrav1.SubnetTemplatesSpec{
 									{
-										SubnetClassSpec: SubnetClassSpec{
+										SubnetClassSpec: infrav1.SubnetClassSpec{
 											Role:       "SomeOtherRole",
 											CIDRBlocks: []string{"10.0.0.0/24"},
 										},

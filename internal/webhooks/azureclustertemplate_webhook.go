@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
@@ -38,7 +38,7 @@ const AzureClusterTemplateImmutableMsg = "AzureClusterTemplate spec.template.spe
 // SetupWebhookWithManager will set up the webhook to be managed by the specified manager.
 func (w *AzureClusterTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureClusterTemplate{}).
+		For(&infrav1.AzureClusterTemplate{}).
 		WithValidator(w).
 		WithDefaulter(w).
 		Complete()
@@ -54,7 +54,7 @@ var _ webhook.CustomDefaulter = &AzureClusterTemplateWebhook{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (*AzureClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	c, ok := obj.(*AzureClusterTemplate)
+	c, ok := obj.(*infrav1.AzureClusterTemplate)
 	if !ok {
 		return fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
 	}
@@ -67,7 +67,7 @@ var _ webhook.CustomValidator = &AzureClusterTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (*AzureClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	c, ok := obj.(*AzureClusterTemplate)
+	c, ok := obj.(*infrav1.AzureClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
 	}
@@ -77,13 +77,13 @@ func (*AzureClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtim
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (*AzureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
-	c, ok := newObj.(*AzureClusterTemplate)
+	c, ok := newObj.(*infrav1.AzureClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AzureClusterTemplate object but got %T", c)
 	}
 
 	var allErrs field.ErrorList
-	old := oldRaw.(*AzureClusterTemplate)
+	old := oldRaw.(*infrav1.AzureClusterTemplate)
 	if !reflect.DeepEqual(c.Spec.Template.Spec, old.Spec.Template.Spec) {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("AzureClusterTemplate", "spec", "template", "spec"), c, AzureClusterTemplateImmutableMsg),
@@ -93,7 +93,7 @@ func (*AzureClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldRaw, ne
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureClusterTemplateKind).GroupKind(), c.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterTemplateKind).GroupKind(), c.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.

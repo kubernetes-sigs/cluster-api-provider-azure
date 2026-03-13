@@ -28,7 +28,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
@@ -36,7 +36,7 @@ import (
 const ContributorRoleID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 
 // SetDefaultAzureMachineSpecSSHPublicKey sets the default SSHPublicKey for an AzureMachine.
-func SetDefaultAzureMachineSpecSSHPublicKey(s *AzureMachineSpec) error {
+func SetDefaultAzureMachineSpecSSHPublicKey(s *infrav1.AzureMachineSpec) error {
 	if sshKeyData := s.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
@@ -49,7 +49,7 @@ func SetDefaultAzureMachineSpecSSHPublicKey(s *AzureMachineSpec) error {
 }
 
 // SetDefaultAzureMachineSpecDataDisks sets the data disk defaults for an AzureMachine.
-func SetDefaultAzureMachineSpecDataDisks(s *AzureMachineSpec) {
+func SetDefaultAzureMachineSpecDataDisks(s *infrav1.AzureMachineSpec) {
 	set := make(map[int32]struct{})
 	// populate all the existing values in the set
 	for _, disk := range s.DataDisks {
@@ -81,16 +81,16 @@ func SetDefaultAzureMachineSpecDataDisks(s *AzureMachineSpec) {
 }
 
 // SetDefaultAzureMachineSpecIdentity sets the defaults for VM Identity.
-func SetDefaultAzureMachineSpecIdentity(s *AzureMachineSpec, subscriptionID string) {
+func SetDefaultAzureMachineSpecIdentity(s *infrav1.AzureMachineSpec, subscriptionID string) {
 	// Ensure the deprecated fields and new fields are not populated simultaneously
 	if s.RoleAssignmentName != "" && s.SystemAssignedIdentityRole != nil && s.SystemAssignedIdentityRole.Name != "" { //nolint:staticcheck
 		// Both the deprecated and the new fields are both set, return without changes
 		// and reject the request in the validating webhook which runs later.
 		return
 	}
-	if s.Identity == VMIdentitySystemAssigned {
+	if s.Identity == infrav1.VMIdentitySystemAssigned {
 		if s.SystemAssignedIdentityRole == nil {
-			s.SystemAssignedIdentityRole = &SystemAssignedIdentityRole{}
+			s.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
 		}
 		if s.RoleAssignmentName != "" { //nolint:staticcheck
 			// Move the existing value from the deprecated RoleAssignmentName field.
@@ -112,23 +112,23 @@ func SetDefaultAzureMachineSpecIdentity(s *AzureMachineSpec, subscriptionID stri
 }
 
 // setDefaultAzureMachineSpecSpotEvictionPolicy sets the defaults for the spot VM eviction policy.
-func setDefaultAzureMachineSpecSpotEvictionPolicy(s *AzureMachineSpec) {
+func setDefaultAzureMachineSpecSpotEvictionPolicy(s *infrav1.AzureMachineSpec) {
 	if s.SpotVMOptions != nil && s.SpotVMOptions.EvictionPolicy == nil {
-		defaultPolicy := SpotEvictionPolicyDeallocate
+		defaultPolicy := infrav1.SpotEvictionPolicyDeallocate
 		if s.OSDisk.DiffDiskSettings != nil && s.OSDisk.DiffDiskSettings.Option == "Local" {
-			defaultPolicy = SpotEvictionPolicyDelete
+			defaultPolicy = infrav1.SpotEvictionPolicyDelete
 		}
 		s.SpotVMOptions.EvictionPolicy = &defaultPolicy
 	}
 }
 
 // setDefaultAzureMachineSpecDiagnostics sets the defaults for Diagnostic settings for an AzureMachine.
-func setDefaultAzureMachineSpecDiagnostics(s *AzureMachineSpec) {
-	bootDiagnosticsDefault := &BootDiagnostics{
-		StorageAccountType: ManagedDiagnosticsStorage,
+func setDefaultAzureMachineSpecDiagnostics(s *infrav1.AzureMachineSpec) {
+	bootDiagnosticsDefault := &infrav1.BootDiagnostics{
+		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
 	}
 
-	diagnosticsDefault := &Diagnostics{Boot: bootDiagnosticsDefault}
+	diagnosticsDefault := &infrav1.Diagnostics{Boot: bootDiagnosticsDefault}
 
 	if s.Diagnostics == nil {
 		s.Diagnostics = diagnosticsDefault
@@ -140,7 +140,7 @@ func setDefaultAzureMachineSpecDiagnostics(s *AzureMachineSpec) {
 }
 
 // SetDefaultAzureMachineSpecNetworkInterfaces sets the defaults for the network interfaces.
-func SetDefaultAzureMachineSpecNetworkInterfaces(s *AzureMachineSpec) {
+func SetDefaultAzureMachineSpecNetworkInterfaces(s *infrav1.AzureMachineSpec) {
 	// Ensure the deprecated fields and new fields are not populated simultaneously
 	if (s.SubnetName != "" || s.AcceleratedNetworking != nil) && len(s.NetworkInterfaces) > 0 { //nolint:staticcheck
 		// Both the deprecated and the new fields are both set, return without changes
@@ -149,7 +149,7 @@ func SetDefaultAzureMachineSpecNetworkInterfaces(s *AzureMachineSpec) {
 	}
 
 	if len(s.NetworkInterfaces) == 0 {
-		s.NetworkInterfaces = []NetworkInterface{
+		s.NetworkInterfaces = []infrav1.NetworkInterface{
 			{
 				SubnetName:            s.SubnetName,            //nolint:staticcheck
 				AcceleratedNetworking: s.AcceleratedNetworking, //nolint:staticcheck
@@ -168,7 +168,7 @@ func SetDefaultAzureMachineSpecNetworkInterfaces(s *AzureMachineSpec) {
 }
 
 // SetDefaultsAzureMachine sets the defaults for the AzureMachine.
-func SetDefaultsAzureMachine(m *AzureMachine, client client.Client) error {
+func SetDefaultsAzureMachine(m *infrav1.AzureMachine, client client.Client) error {
 	var errs []error
 	if err := SetDefaultAzureMachineSpecSSHPublicKey(&m.Spec); err != nil {
 		errs = append(errs, errors.Wrap(err, "failed to set default SSH public key"))

@@ -25,35 +25,35 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 	cases := []struct {
 		name                 string
-		controlPlaneTemplate *AzureManagedControlPlaneTemplate
-		outputTemplate       *AzureManagedControlPlaneTemplate
+		controlPlaneTemplate *infrav1.AzureManagedControlPlaneTemplate
+		outputTemplate       *infrav1.AzureManagedControlPlaneTemplate
 	}{
 		{
 			name: "virtual network not specified",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
+			controlPlaneTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{},
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{},
 				},
 			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
+			outputTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
 										CIDRBlock: DefaultAKSVnetCIDR,
 									},
 								},
@@ -65,16 +65,16 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 		},
 		{
 			name: "custom cidr block",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
+			controlPlaneTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
 										CIDRBlock: "10.0.0.16/24",
 									},
 								},
@@ -83,16 +83,16 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 					},
 				},
 			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
+			outputTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
 										CIDRBlock: "10.0.0.16/24",
 									},
 								},
@@ -121,30 +121,30 @@ func TestDefaultVirtualNetworkTemplate(t *testing.T) {
 func TestDefaultSubnetTemplate(t *testing.T) {
 	cases := []struct {
 		name                 string
-		controlPlaneTemplate *AzureManagedControlPlaneTemplate
-		outputTemplate       *AzureManagedControlPlaneTemplate
+		controlPlaneTemplate *infrav1.AzureManagedControlPlaneTemplate
+		outputTemplate       *infrav1.AzureManagedControlPlaneTemplate
 	}{
 		{
 			name: "subnet not specified",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
+			controlPlaneTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{},
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{},
 				},
 			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
+			outputTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Subnet: ManagedControlPlaneSubnet{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+										Subnet: infrav1.ManagedControlPlaneSubnet{
 											Name:      "test-cluster-template",
 											CIDRBlock: DefaultAKSNodeSubnetCIDR,
 										},
@@ -158,17 +158,17 @@ func TestDefaultSubnetTemplate(t *testing.T) {
 		},
 		{
 			name: "custom name",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
+			controlPlaneTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Subnet: ManagedControlPlaneSubnet{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+										Subnet: infrav1.ManagedControlPlaneSubnet{
 											Name: "custom-subnet-name",
 										},
 									},
@@ -178,17 +178,17 @@ func TestDefaultSubnetTemplate(t *testing.T) {
 					},
 				},
 			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
+			outputTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Subnet: ManagedControlPlaneSubnet{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+										Subnet: infrav1.ManagedControlPlaneSubnet{
 											Name:      "custom-subnet-name",
 											CIDRBlock: DefaultAKSNodeSubnetCIDR,
 										},
@@ -202,17 +202,17 @@ func TestDefaultSubnetTemplate(t *testing.T) {
 		},
 		{
 			name: "custom cidr block",
-			controlPlaneTemplate: &AzureManagedControlPlaneTemplate{
+			controlPlaneTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Subnet: ManagedControlPlaneSubnet{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+										Subnet: infrav1.ManagedControlPlaneSubnet{
 											CIDRBlock: "10.0.0.16/24",
 										},
 									},
@@ -222,17 +222,17 @@ func TestDefaultSubnetTemplate(t *testing.T) {
 					},
 				},
 			},
-			outputTemplate: &AzureManagedControlPlaneTemplate{
+			outputTemplate: &infrav1.AzureManagedControlPlaneTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-cluster-template",
 				},
-				Spec: AzureManagedControlPlaneTemplateSpec{
-					Template: AzureManagedControlPlaneTemplateResource{
-						Spec: AzureManagedControlPlaneTemplateResourceSpec{
-							AzureManagedControlPlaneClassSpec: AzureManagedControlPlaneClassSpec{
-								VirtualNetwork: ManagedControlPlaneVirtualNetwork{
-									ManagedControlPlaneVirtualNetworkClassSpec: ManagedControlPlaneVirtualNetworkClassSpec{
-										Subnet: ManagedControlPlaneSubnet{
+				Spec: infrav1.AzureManagedControlPlaneTemplateSpec{
+					Template: infrav1.AzureManagedControlPlaneTemplateResource{
+						Spec: infrav1.AzureManagedControlPlaneTemplateResourceSpec{
+							AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+								VirtualNetwork: infrav1.ManagedControlPlaneVirtualNetwork{
+									ManagedControlPlaneVirtualNetworkClassSpec: infrav1.ManagedControlPlaneVirtualNetworkClassSpec{
+										Subnet: infrav1.ManagedControlPlaneSubnet{
 											Name:      "test-cluster-template",
 											CIDRBlock: "10.0.0.16/24",
 										},
