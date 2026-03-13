@@ -910,6 +910,7 @@ func (s *ClusterScope) GenerateFQDN(ipName string) string {
 }
 
 // GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
+//
 // Deprecated: use GenerateFQDN instead.
 func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 	h := fnv.New32a()
