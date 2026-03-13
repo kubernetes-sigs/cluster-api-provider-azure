@@ -50,6 +50,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 )
 
 const fakeClientID = "fake-client-id"
@@ -102,7 +104,7 @@ func TestNewClusterScope(t *testing.T) {
 			},
 		},
 	}
-	err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
+	err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{
@@ -282,7 +284,7 @@ func TestAPIServerHost(t *testing.T) {
 		tc.azureCluster.ObjectMeta = metav1.ObjectMeta{
 			Name: cluster.Name,
 		}
-		err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), &tc.azureCluster)
+		err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), &tc.azureCluster)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		clusterScope := &ClusterScope{
@@ -441,7 +443,7 @@ func TestGettingSecurityRules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), tt.azureCluster)
+			err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), tt.azureCluster)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
@@ -2192,7 +2194,7 @@ func TestAPIServerLBPoolName(t *testing.T) {
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
 			}
-			clusterScope.AzureCluster.SetBackendPoolNameDefault()
+			apiinternal.SetDefaultAzureClusterBackendPoolName(clusterScope.AzureCluster)
 			got := clusterScope.APIServerLBPoolName()
 			g.Expect(tc.expectLBpoolName).Should(Equal(got))
 		})
@@ -2306,13 +2308,13 @@ func TestOutboundLBName(t *testing.T) {
 				azureCluster.Spec.NetworkSpec.NodeOutboundLB = tc.nodeOutboundLB
 			}
 
-			err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
+			err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
 			}
-			clusterScope.AzureCluster.SetBackendPoolNameDefault()
+			apiinternal.SetDefaultAzureClusterBackendPoolName(clusterScope.AzureCluster)
 			got := clusterScope.OutboundLBName(tc.role)
 			g.Expect(tc.expected).Should(Equal(got))
 		})
@@ -2421,7 +2423,7 @@ func TestBackendPoolName(t *testing.T) {
 				},
 			}
 
-			err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
+			err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			if tc.customAPIServerBackendPoolName != "" {
@@ -2440,7 +2442,7 @@ func TestBackendPoolName(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 			}
-			clusterScope.AzureCluster.SetBackendPoolNameDefault()
+			apiinternal.SetDefaultAzureClusterBackendPoolName(clusterScope.AzureCluster)
 			got := clusterScope.LBSpecs()
 			if tc.featureGate == feature.APIServerILB {
 				g.Expect(got).To(HaveLen(4))
@@ -2535,13 +2537,13 @@ func TestOutboundPoolName(t *testing.T) {
 				}
 			}
 
-			err := (&infrav1.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
+			err := (&webhooks.AzureClusterWebhook{}).Default(t.Context(), azureCluster)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			clusterScope := &ClusterScope{
 				AzureCluster: azureCluster,
 			}
-			clusterScope.AzureCluster.SetBackendPoolNameDefault()
+			apiinternal.SetDefaultAzureClusterBackendPoolName(clusterScope.AzureCluster)
 			got := clusterScope.OutboundPoolName(infrav1.Node)
 			g.Expect(tc.expectOutboundPoolName).Should(Equal(got))
 		})
@@ -3106,7 +3108,7 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 						{
 							Name: "api-server-lb-internal-ip",
 							FrontendIPClass: infrav1.FrontendIPClass{
-								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+								PrivateIPAddress: apiinternal.DefaultInternalLBIPAddress,
 							},
 						},
 					},
@@ -4176,7 +4178,7 @@ func TestPrivateDNSSpec(t *testing.T) {
 						{
 							Name: "api-server-lb-internal-ip",
 							FrontendIPClass: infrav1.FrontendIPClass{
-								PrivateIPAddress: infrav1.DefaultInternalLBIPAddress,
+								PrivateIPAddress: apiinternal.DefaultInternalLBIPAddress,
 							},
 						},
 					},
