@@ -17,35 +17,35 @@ limitations under the License.
 package v1beta1
 
 import (
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // AzureClusterClassSpecSetDefaults sets default values for AzureClusterClassSpec.
-func AzureClusterClassSpecSetDefaults(acc *AzureClusterClassSpec) {
+func AzureClusterClassSpecSetDefaults(acc *infrav1.AzureClusterClassSpec) {
 	if acc.AzureEnvironment == "" {
 		acc.AzureEnvironment = DefaultAzureCloud
 	}
 }
 
 // VnetClassSpecSetDefaults sets default values for VnetClassSpec.
-func VnetClassSpecSetDefaults(vc *VnetClassSpec) {
+func VnetClassSpecSetDefaults(vc *infrav1.VnetClassSpec) {
 	if len(vc.CIDRBlocks) == 0 {
 		vc.CIDRBlocks = []string{DefaultVnetCIDR}
 	}
 }
 
 // SubnetClassSpecSetDefaults sets default values for SubnetClassSpec.
-func SubnetClassSpecSetDefaults(sc *SubnetClassSpec, cidr string) {
+func SubnetClassSpecSetDefaults(sc *infrav1.SubnetClassSpec, cidr string) {
 	if len(sc.CIDRBlocks) == 0 {
 		sc.CIDRBlocks = []string{cidr}
 	}
 }
 
 // SecurityGroupClassSetDefaults sets default values for SecurityGroupClass.
-func SecurityGroupClassSetDefaults(sgc *SecurityGroupClass) {
+func SecurityGroupClassSetDefaults(sgc *infrav1.SecurityGroupClass) {
 	for i := range sgc.SecurityRules {
 		if sgc.SecurityRules[i].Direction == "" {
-			sgc.SecurityRules[i].Direction = SecurityRuleDirectionInbound
+			sgc.SecurityRules[i].Direction = infrav1.SecurityRuleDirectionInbound
 		}
 	}
 }

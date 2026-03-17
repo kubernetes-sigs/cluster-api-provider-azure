@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
@@ -39,7 +39,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) SetupWebhookWithManager(mgr c
 	mpw.client = mgr.GetClient()
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureManagedMachinePoolTemplate{}).
+		For(&infrav1.AzureManagedMachinePoolTemplate{}).
 		WithDefaulter(mpw).
 		WithValidator(mpw).
 		Complete()
@@ -54,20 +54,20 @@ type AzureManagedMachinePoolTemplateWebhook struct {
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
+	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
 	if !ok {
 		return apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
 	}
 	if mp.Labels == nil {
 		mp.Labels = make(map[string]string)
 	}
-	mp.Labels[LabelAgentPoolMode] = mp.Spec.Template.Spec.Mode
+	mp.Labels[infrav1.LabelAgentPoolMode] = mp.Spec.Template.Spec.Mode
 
 	if mp.Spec.Template.Spec.Name == nil || *mp.Spec.Template.Spec.Name == "" {
 		mp.Spec.Template.Spec.Name = &mp.Name
 	}
 
-	apiinternal.SetZeroPointerDefault[*string](&mp.Spec.Template.Spec.OSType, ptr.To(DefaultOSType))
+	apiinternal.SetZeroPointerDefault[*string](&mp.Spec.Template.Spec.OSType, ptr.To(infrav1.DefaultOSType))
 
 	return nil
 }
@@ -76,7 +76,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, ob
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
+	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
 	}
@@ -126,11 +126,11 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Cont
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*AzureManagedMachinePoolTemplate)
+	old, ok := oldObj.(*infrav1.AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
 	}
-	mp, ok := newObj.(*AzureManagedMachinePoolTemplate)
+	mp, ok := newObj.(*infrav1.AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
 	}
@@ -193,7 +193,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Cont
 				"field is immutable"))
 	}
 
-	if mp.Spec.Template.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Template.Spec.Mode == string(NodePoolModeSystem) {
+	if mp.Spec.Template.Spec.Mode != string(infrav1.NodePoolModeSystem) && old.Spec.Template.Spec.Mode == string(infrav1.NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := validateLastSystemNodePool(mpw.client, mp.Spec.Template.Spec.NodeLabels, mp.Namespace, mp.Annotations); err != nil {
 			allErrs = append(allErrs, field.Forbidden(
@@ -266,16 +266,16 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Cont
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureManagedMachinePoolTemplateKind).GroupKind(), mp.Name, allErrs)
+	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureManagedMachinePoolTemplateKind).GroupKind(), mp.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mp, ok := obj.(*AzureManagedMachinePoolTemplate)
+	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
 	}
-	if mp.Spec.Template.Spec.Mode != string(NodePoolModeSystem) {
+	if mp.Spec.Template.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 		return nil, nil
 	}
 

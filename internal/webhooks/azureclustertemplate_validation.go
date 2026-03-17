@@ -24,11 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // validateAzureClusterTemplate validates an AzureClusterTemplate.
-func validateAzureClusterTemplate(c *AzureClusterTemplate) (admission.Warnings, error) {
+func validateAzureClusterTemplate(c *infrav1.AzureClusterTemplate) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, validateAzureClusterTemplateSpec(c)...)
 
@@ -42,7 +42,7 @@ func validateAzureClusterTemplate(c *AzureClusterTemplate) (admission.Warnings, 
 }
 
 // validateAzureClusterTemplateSpec validates the spec of an AzureClusterTemplate.
-func validateAzureClusterTemplateSpec(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplateSpec(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, validateVnetCIDR(
@@ -72,13 +72,13 @@ func validateAzureClusterTemplateSpec(c *AzureClusterTemplate) field.ErrorList {
 }
 
 // validateAzureClusterTemplateNetworkSpec validates the network spec of an AzureClusterTemplate.
-func validateAzureClusterTemplateNetworkSpec(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplateNetworkSpec(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	var needOutboundLB bool
 	networkSpec := c.Spec.Template.Spec.NetworkSpec
 	for _, subnet := range networkSpec.Subnets {
-		if subnet.Role == SubnetNode && subnet.IsIPv6Enabled() {
+		if subnet.Role == infrav1.SubnetNode && subnet.IsIPv6Enabled() {
 			needOutboundLB = true
 			break
 		}
@@ -90,7 +90,7 @@ func validateAzureClusterTemplateNetworkSpec(c *AzureClusterTemplate) field.Erro
 	return allErrs
 }
 
-func validateSubnetTemplates(subnets SubnetTemplatesSpec, vnet VnetTemplateSpec, fld *field.Path) field.ErrorList {
+func validateSubnetTemplates(subnets infrav1.SubnetTemplatesSpec, vnet infrav1.VnetTemplateSpec, fld *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
@@ -131,7 +131,7 @@ func validateSubnetTemplates(subnets SubnetTemplatesSpec, vnet VnetTemplateSpec,
 }
 
 // validateAzureClusterTemplateAPIServerLB validates the API server load balancer of an AzureClusterTemplate.
-func validateAzureClusterTemplateAPIServerLB(c *AzureClusterTemplate, apiServerLBPath *field.Path) field.ErrorList {
+func validateAzureClusterTemplateAPIServerLB(c *infrav1.AzureClusterTemplate, apiServerLBPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	lb := c.Spec.Template.Spec.NetworkSpec.APIServerLB
 	allErrs = append(allErrs, validateClassSpecForAPIServerLB(lb, nil, apiServerLBPath)...)
@@ -139,7 +139,7 @@ func validateAzureClusterTemplateAPIServerLB(c *AzureClusterTemplate, apiServerL
 }
 
 // validateAzureClusterTemplateNodeOutboundLB validates the node outbound load balancer of an AzureClusterTemplate.
-func validateAzureClusterTemplateNodeOutboundLB(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplateNodeOutboundLB(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	fldPath := field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("nodeOutboundLB")
@@ -152,7 +152,7 @@ func validateAzureClusterTemplateNodeOutboundLB(c *AzureClusterTemplate) field.E
 }
 
 // validateAzureClusterTemplateControlPlaneOutboundLB validates the control plane outbound load balancer of an AzureClusterTemplate.
-func validateAzureClusterTemplateControlPlaneOutboundLB(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplateControlPlaneOutboundLB(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	fldPath := field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("controlPlaneOutboundLB")
@@ -165,7 +165,7 @@ func validateAzureClusterTemplateControlPlaneOutboundLB(c *AzureClusterTemplate)
 }
 
 // validateAzureClusterTemplatePrivateDNSZoneName validates the private DNS zone name of an AzureClusterTemplate.
-func validateAzureClusterTemplatePrivateDNSZoneName(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplatePrivateDNSZoneName(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	fldPath := field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("privateDNSZoneName")
@@ -182,7 +182,7 @@ func validateAzureClusterTemplatePrivateDNSZoneName(c *AzureClusterTemplate) fie
 }
 
 // validateAzureClusterTemplatePrivateDNSZoneResourceGroup validates the private DNS zone resource group of an AzureClusterTemplate.
-func validateAzureClusterTemplatePrivateDNSZoneResourceGroup(c *AzureClusterTemplate) field.ErrorList {
+func validateAzureClusterTemplatePrivateDNSZoneResourceGroup(c *infrav1.AzureClusterTemplate) field.ErrorList {
 	var allErrs field.ErrorList
 
 	fldPath := field.NewPath("spec").Child("template").Child("spec").Child("networkSpec").Child("privateDNSZoneResourceGroup")
