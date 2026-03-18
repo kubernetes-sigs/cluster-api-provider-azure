@@ -105,6 +105,11 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 		},
 	}
 	waitForNoBlockMove(amcp)
+
+	// Capture the identity ref before deleting the control plane, so we can
+	// clean it up before re-applying the template.
+	identityRef := amcp.Spec.IdentityRef
+
 	for _, mp := range input.MachinePools {
 		ammp := &infrav1.AzureManagedMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -145,6 +150,18 @@ func AKSAdoptSpec(ctx context.Context, inputGetter func() AKSAdoptSpecInput) {
 
 	removeFinalizers(cluster)
 	shouldNotExist(cluster)
+
+	// CAPI v1.12.4 changed ApplyClusterTemplateAndWait to use Create instead
+	// of CreateOrUpdate, so we have to clean up the AzureClusterIdentity
+	// before re-applying the template.
+	if identityRef != nil {
+		deleteAndWait(&infrav1.AzureClusterIdentity{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: cluster.Namespace,
+				Name:      identityRef.Name,
+			},
+		})
+	}
 
 	clusterctl.ApplyClusterTemplateAndWait(ctx, input.ApplyInput, input.ApplyResult)
 }
