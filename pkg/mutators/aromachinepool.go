@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
+	asoredhatopenshiftv1api2025 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +47,8 @@ func SetHcpOpenShiftNodePoolDefaults(_ client.Client, _ *infrav1exp.AROMachinePo
 		var nodePool *unstructured.Unstructured
 		var nodePoolPath string
 		for i, u := range us {
-			if u.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group &&
+			if (u.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
+				u.GroupVersionKind().Group == asoredhatopenshiftv1api2025.GroupVersion.Group) &&
 				u.GroupVersionKind().Kind == "HcpOpenShiftClustersNodePool" {
 				nodePool = u
 				nodePoolPath = fmt.Sprintf("spec.resources[%d]", i)

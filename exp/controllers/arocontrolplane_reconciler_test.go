@@ -23,6 +23,7 @@ import (
 	"time"
 
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
+	asoredhatopenshiftv1api2025 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -81,6 +82,7 @@ func createTestScopeWithOptions(t *testing.T, kubeconfigData *string, createKube
 	_ = cplane.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	_ = asoredhatopenshiftv1.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1api2025.AddToScheme(scheme)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{

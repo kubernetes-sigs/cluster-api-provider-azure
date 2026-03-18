@@ -24,6 +24,7 @@ import (
 	"time"
 
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
+	asoredhatopenshiftv1api2025 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,10 +118,15 @@ func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 			&infrav2exp.AROMachinePool{},
 			handler.EnqueueRequestsFromMapFunc(r.aroMachinePoolToAROControlPlane),
 		).
-		// Watch for changes to ASO HcpOpenShiftCluster resources
+		// Watch for changes to ASO HcpOpenShiftCluster resources (v1api20240610preview)
 		// Reconcile on all update events (spec and status changes)
 		Watches(
 			&asoredhatopenshiftv1.HcpOpenShiftCluster{},
+			handler.EnqueueRequestsFromMapFunc(r.hcpClusterToAROControlPlane),
+		).
+		// Watch for changes to ASO HcpOpenShiftCluster resources (v1api20251223preview)
+		Watches(
+			&asoredhatopenshiftv1api2025.HcpOpenShiftCluster{},
 			handler.EnqueueRequestsFromMapFunc(r.hcpClusterToAROControlPlane),
 		).
 		// Watch for changes to AROCluster infrastructure
@@ -135,10 +141,15 @@ func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 				// because we need to catch status updates (ResourcesReady condition changes)
 			),
 		).
-		// Watch for changes to ASO HcpOpenShiftClustersNodePool resources
+		// Watch for changes to ASO HcpOpenShiftClustersNodePool resources (v1api20240610preview)
 		// Reconcile when node pools become ready so we can create ExternalAuth
 		Watches(
 			&asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{},
+			handler.EnqueueRequestsFromMapFunc(r.nodePoolToAROControlPlane),
+		).
+		// Watch for changes to ASO HcpOpenShiftClustersNodePool resources (v1api20251223preview)
+		Watches(
+			&asoredhatopenshiftv1api2025.HcpOpenShiftClustersNodePool{},
 			handler.EnqueueRequestsFromMapFunc(r.nodePoolToAROControlPlane),
 		).
 		Owns(&corev1.Secret{}).
@@ -199,14 +210,27 @@ func (r *AROControlPlaneReconciler) aroClusterToAROControlPlane(ctx context.Cont
 
 // hcpClusterToAROControlPlane maps ASO HcpOpenShiftCluster changes to the owning AROControlPlane.
 func (r *AROControlPlaneReconciler) hcpClusterToAROControlPlane(_ context.Context, o client.Object) []ctrl.Request {
-	hcpCluster := o.(*asoredhatopenshiftv1.HcpOpenShiftCluster)
+	// Support both API versions
+	var ownerRefs []metav1.OwnerReference
+	var namespace string
+
+	switch cluster := o.(type) {
+	case *asoredhatopenshiftv1.HcpOpenShiftCluster:
+		ownerRefs = cluster.OwnerReferences
+		namespace = cluster.Namespace
+	case *asoredhatopenshiftv1api2025.HcpOpenShiftCluster:
+		ownerRefs = cluster.OwnerReferences
+		namespace = cluster.Namespace
+	default:
+		return nil
+	}
 
 	// Find the owning AROControlPlane from owner references
-	for _, ref := range hcpCluster.OwnerReferences {
+	for _, ref := range ownerRefs {
 		if ref.APIVersion == cplane.GroupVersion.Identifier() && ref.Kind == cplane.AROControlPlaneKind {
 			return []ctrl.Request{{
 				NamespacedName: client.ObjectKey{
-					Namespace: hcpCluster.Namespace,
+					Namespace: namespace,
 					Name:      ref.Name,
 				},
 			}}
@@ -221,12 +245,28 @@ func (r *AROControlPlaneReconciler) nodePoolToAROControlPlane(ctx context.Contex
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AROControlPlaneReconciler.nodePoolToAROControlPlane")
 	defer done()
 
-	nodePool := o.(*asoredhatopenshiftv1.HcpOpenShiftClustersNodePool)
-	log.V(4).Info("NodePool watch triggered", "nodePool", nodePool.Name, "namespace", nodePool.Namespace)
+	// Support both API versions
+	var ownerRefs []metav1.OwnerReference
+	var nodePoolName, nodePoolNamespace string
+
+	switch pool := o.(type) {
+	case *asoredhatopenshiftv1.HcpOpenShiftClustersNodePool:
+		ownerRefs = pool.OwnerReferences
+		nodePoolName = pool.Name
+		nodePoolNamespace = pool.Namespace
+	case *asoredhatopenshiftv1api2025.HcpOpenShiftClustersNodePool:
+		ownerRefs = pool.OwnerReferences
+		nodePoolName = pool.Name
+		nodePoolNamespace = pool.Namespace
+	default:
+		return nil
+	}
+
+	log.V(4).Info("NodePool watch triggered", "nodePool", nodePoolName, "namespace", nodePoolNamespace)
 
 	// Find the owning AROMachinePool from owner references
 	var aroMachinePoolName string
-	for _, ref := range nodePool.OwnerReferences {
+	for _, ref := range ownerRefs {
 		if ref.APIVersion == infrav2exp.GroupVersion.Identifier() && ref.Kind == "AROMachinePool" {
 			aroMachinePoolName = ref.Name
 			break
@@ -234,13 +274,13 @@ func (r *AROControlPlaneReconciler) nodePoolToAROControlPlane(ctx context.Contex
 	}
 
 	if aroMachinePoolName == "" {
-		log.V(4).Info("NodePool has no AROMachinePool owner, skipping", "nodePool", nodePool.Name)
+		log.V(4).Info("NodePool has no AROMachinePool owner, skipping", "nodePool", nodePoolName)
 		return nil
 	}
 
 	// Get the AROMachinePool
 	aroMachinePool := &infrav2exp.AROMachinePool{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: nodePool.Namespace, Name: aroMachinePoolName}, aroMachinePool); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: nodePoolNamespace, Name: aroMachinePoolName}, aroMachinePool); err != nil {
 		log.V(4).Info("Failed to get AROMachinePool, skipping", "aroMachinePool", aroMachinePoolName, "error", err)
 		return nil
 	}
