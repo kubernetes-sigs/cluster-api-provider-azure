@@ -23,8 +23,10 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -98,7 +100,7 @@ func (ampr *AROMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr 
 		return errors.Wrap(err, "failed to create mapper for Cluster to AROMachinePools")
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(aroMachinePool).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue)).
@@ -121,7 +123,34 @@ func (ampr *AROMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr 
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, ampr.WatchFilterValue),
 			),
 		).
-		Complete(r)
+		Build(r)
+	if err != nil {
+		return err
+	}
+
+	// Create external tracker for dynamic watches on encapsulated ASO resources
+	externalTracker := &external.ObjectTracker{
+		Cache:           mgr.GetCache(),
+		Controller:      c,
+		Scheme:          mgr.GetScheme(),
+		PredicateLogger: &log,
+	}
+
+	// Set up the service creator with access to the external tracker via closure
+	ampr.createAROMachinePoolService = func(aroMachinePoolScope *scope.AROMachinePoolScope, cluster *clusterv1.Cluster, tracker controllers.ClusterTracker, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
+		svc, err := newAROMachinePoolService(aroMachinePoolScope, cluster, tracker, apiCallTimeout)
+		if err != nil {
+			return nil, err
+		}
+		// Override the newResourceReconciler to include the watcher
+		svc.newResourceReconciler = func(machinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
+			return controllers.NewResourceReconciler(aroMachinePoolScope.Client, resources, machinePool,
+				controllers.WithWatcher(externalTracker))
+		}
+		return svc, nil
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools,verbs=get;list;watch;create;update;patch;delete
