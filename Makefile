@@ -829,8 +829,19 @@ aks-create: $(KUBECTL) ## Create aks cluster as mgmt cluster.
 aks-delete: $(KUBECTL) ## Deletes the resource group and the associated AKS clusters listed under allowed_contexts in ./tilt-settings.yaml .
 	./scripts/aks-delete.sh
 
+.PHONY: check-az-cli
+check-az-cli: ## Warn if Azure CLI (az) is not installed (Tilt uses it for VNet peering with AKS management clusters). Set VERBOSE=1 to print path when found.
+	@if ! command -v az >/dev/null 2>&1; then \
+		echo "WARNING: Azure CLI (az) is not installed or not on your PATH."; \
+		echo "  Please install it before continuing with Tilt; without it, steps that call 'az' (for example VNet peering with an AKS management cluster) will fail."; \
+		echo "  Install: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli"; \
+		echo "  After installing, ensure 'az' is on your PATH, then run make tilt-up again."; \
+	elif [ -n "$(VERBOSE)" ]; then \
+		echo "Azure CLI (az) found: $$(command -v az)"; \
+	fi
+
 .PHONY: tilt-up
-tilt-up: install-tools ## Start tilt and build kind cluster if needed.
+tilt-up: install-tools check-az-cli ## Start tilt and build kind cluster if needed.
 	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \

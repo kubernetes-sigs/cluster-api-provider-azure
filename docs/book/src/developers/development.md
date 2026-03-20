@@ -143,6 +143,8 @@ Install [Helm](https://helm.sh/docs/intro/install/):
 
 You would require installation of Helm for successfully setting up Tilt.
 
+Install the [Azure CLI][azure_cli] if you use Tilt workflows that invoke `az` against Azure (for example VNet peering when using an AKS management cluster with an internal load balancer; see [Tilt with AKS as management cluster (ILB)](tilt-with-aks-as-mgmt-ilb.md)). `make tilt-up` runs `make check-az-cli` first; if `az` is missing, it prints a warning that asks you to install the CLI and fix your `PATH` before continuing with Tilt. To print the resolved `az` path when it is installed, run `VERBOSE=1 make check-az-cli`.
+
 ### Using Tilt
 
 Both of the [Tilt](https://tilt.dev) setups below will get you started developing CAPZ in a local kind cluster.
