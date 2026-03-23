@@ -188,6 +188,34 @@ var (
 		},
 	}
 
+	fakePublicAPILBSpecIPv6 = LBSpec{
+		Name:                 "my-publiclb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-publiclb-backendPool",
+		IPv6Enabled:          true,
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-publiclb-frontEnd-ipv6",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					IPVersion: infrav1.IPv6,
+				},
+				PublicIP: &infrav1.PublicIPSpec{
+					Name:    "my-publicip-ipv6",
+					DNSName: "my-cluster.12345.mydomain.com",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
 	internalError = &azcore.ResponseError{
 		RawResponse: &http.Response{
 			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
