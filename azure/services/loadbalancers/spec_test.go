@@ -195,6 +195,22 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name:     "internal API load balancer with IPv6 frontend",
+			spec:     &fakeInternalAPILBSpecIPv6,
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				frontendIP := lb.Properties.FrontendIPConfigurations[0]
+				g.Expect(*frontendIP.Name).To(Equal("my-private-lb-frontEnd-ipv6"))
+				g.Expect(*frontendIP.Properties.PrivateIPAllocationMethod).To(Equal(armnetwork.IPAllocationMethodDynamic))
+				g.Expect(*frontendIP.Properties.PrivateIPAddressVersion).To(Equal(armnetwork.IPVersionIPv6))
+				g.Expect(frontendIP.Properties.PrivateIPAddress).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
 			name:     "public load balancer with availability zones - zones NOT applied to frontend",
 			spec:     &fakePublicAPILBSpecWithZones,
 			existing: nil,
@@ -208,6 +224,20 @@ func TestParameters(t *testing.T) {
 				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
 				g.Expect(lb.Properties.FrontendIPConfigurations[0].Zones).To(BeNil(),
 					"zones should not be set on public LB frontend - Azure error: LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress")
+			},
+			expectedError: "",
+		},
+		{
+			name:     "public API load balancer with IPv6 frontend",
+			spec:     &fakePublicAPILBSpecIPv6,
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				frontendIP := lb.Properties.FrontendIPConfigurations[0]
+				g.Expect(*frontendIP.Name).To(Equal("my-publiclb-frontEnd-ipv6"))
+				g.Expect(*frontendIP.Properties.PublicIPAddress.ID).To(Equal("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-publicip-ipv6"))
 			},
 			expectedError: "",
 		},
