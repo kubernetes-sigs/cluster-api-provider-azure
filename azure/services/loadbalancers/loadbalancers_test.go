@@ -132,6 +132,58 @@ var (
 		},
 	}
 
+	fakeInternalAPILBSpecIPv6 = LBSpec{
+		Name:                 "my-private-lb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		VNetName:             "my-vnet",
+		VNetResourceGroup:    "my-rg",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Internal,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-private-lb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-private-lb-frontEnd-ipv6",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					IPVersion: infrav1.IPv6,
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
+	fakePublicAPILBSpecIPv6 = LBSpec{
+		Name:                 "my-publiclb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-publiclb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-publiclb-frontEnd-ipv6",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					IPVersion: infrav1.IPv6,
+				},
+				PublicIP: &infrav1.PublicIPSpec{
+					Name:    "my-publicip-ipv6",
+					DNSName: "my-cluster.12345.mydomain.com",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
 	internalError = &azcore.ResponseError{
 		RawResponse: &http.Response{
 			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),

@@ -163,8 +163,8 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					Name:             ip.PublicIP.Name,
 					ResourceGroup:    s.ResourceGroup(),
 					ClusterName:      s.ClusterName(),
-					DNSName:          "",    // Set to default value
-					IsIPv6:           false, // Set to default value
+					DNSName:          "", // Set to default value
+					IsIPv6:           ip.IPVersion == infrav1.IPv6,
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
 					FailureDomains:   s.FailureDomains(),
@@ -179,7 +179,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					Name:             s.APIServerPublicIP().Name,
 					ResourceGroup:    s.ResourceGroup(),
 					DNSName:          s.APIServerPublicIP().DNSName,
-					IsIPv6:           false, // Currently azure requires an IPv4 lb rule to enable IPv6
+					IsIPv6:           s.APIServerLB().FrontendIPs[0].IPVersion == infrav1.IPv6,
 					ClusterName:      s.ClusterName(),
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
@@ -199,8 +199,8 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				Name:             ip.PublicIP.Name,
 				ResourceGroup:    s.ResourceGroup(),
 				ClusterName:      s.ClusterName(),
-				DNSName:          "",    // Set to default value
-				IsIPv6:           false, // Set to default value
+				DNSName:          "", // Set to default value
+				IsIPv6:           ip.IPVersion == infrav1.IPv6,
 				Location:         s.Location(),
 				ExtendedLocation: s.ExtendedLocation(),
 				FailureDomains:   s.FailureDomains(),
