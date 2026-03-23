@@ -201,7 +201,7 @@ make generate-go  # Regenerates mocks in azure/services/*/mock_*/
 - `main.go`: Entry point, registers controllers and webhooks
 - `Makefile`: All build/test/dev targets
 - `Tiltfile`: Local development with Tilt
-- `go.mod`: Go dependencies (uses Go 1.24+)
+- `go.mod`: Go dependencies (uses Go 1.25+)
 - `config/`: Kustomize configurations for CRDs, RBAC, webhooks, manager
 - `templates/`: Cluster template flavors for different scenarios
 - `test/e2e/`: E2E test suites and data files
