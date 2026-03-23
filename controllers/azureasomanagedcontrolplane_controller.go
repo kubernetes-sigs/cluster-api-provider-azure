@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -346,7 +347,11 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.
 		},
 	}
 
-	err = r.Patch(ctx, expectedSecret, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
+	unstructuredMap, err := apimachineryruntime.DefaultUnstructuredConverter.ToUnstructured(expectedSecret)
+	if err != nil {
+		return nil, err
+	}
+	err = r.Apply(ctx, client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unstructuredMap}), client.FieldOwner("capz-manager"), client.ForceOwnership)
 	if err != nil {
 		return nil, err
 	}

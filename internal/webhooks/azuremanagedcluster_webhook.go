@@ -19,9 +19,7 @@ package webhooks
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -29,8 +27,7 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (w *AzureManagedClusterWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureManagedCluster{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureManagedCluster{}).
 		WithValidator(w).
 		Complete()
 }
@@ -40,19 +37,19 @@ type AzureManagedClusterWebhook struct{}
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedclusters,versions=v1beta1,name=validation.azuremanagedclusters.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.CustomValidator = &AzureManagedClusterWebhook{}
+var _ admission.Validator[*infrav1.AzureManagedCluster] = &AzureManagedClusterWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterWebhook) ValidateCreate(_ context.Context, _ *infrav1.AzureManagedCluster) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterWebhook) ValidateUpdate(_ context.Context, _, _ *infrav1.AzureManagedCluster) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureManagedCluster) (admission.Warnings, error) {
 	return nil, nil
 }

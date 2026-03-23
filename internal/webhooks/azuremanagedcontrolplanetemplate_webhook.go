@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,8 +36,7 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr
 	mcpw.client = mgr.GetClient()
 	mcpw.logger = mgr.GetLogger().WithName("AzureManagedControlPlaneTemplate")
 
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureManagedControlPlaneTemplate{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureManagedControlPlaneTemplate{}).
 		WithDefaulter(mcpw).
 		WithValidator(mcpw).
 		Complete()
@@ -54,36 +52,19 @@ type AzureManagedControlPlaneTemplateWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mcpw *AzureManagedControlPlaneTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	mcp, ok := obj.(*infrav1.AzureManagedControlPlaneTemplate)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
-	}
+func (mcpw *AzureManagedControlPlaneTemplateWebhook) Default(_ context.Context, mcp *infrav1.AzureManagedControlPlaneTemplate) error {
 	apiinternal.SetDefaultsAzureManagedControlPlaneTemplate(mcpw.logger, mcp)
 	return nil
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mcp, ok := obj.(*infrav1.AzureManagedControlPlaneTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
-	}
-
+func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateCreate(_ context.Context, mcp *infrav1.AzureManagedControlPlaneTemplate) (admission.Warnings, error) {
 	return nil, validateAzureManagedControlPlaneTemplate(mcp, mcpw.client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Context, old, mcp *infrav1.AzureManagedControlPlaneTemplate) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*infrav1.AzureManagedControlPlaneTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
-	}
-	mcp, ok := newObj.(*infrav1.AzureManagedControlPlaneTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlaneTemplate")
-	}
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "template", "spec", "subscriptionID"),
 		old.Spec.Template.Spec.SubscriptionID,
@@ -191,6 +172,6 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateUpdate(_ context.Co
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (mcpw *AzureManagedControlPlaneTemplateWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureManagedControlPlaneTemplate) (admission.Warnings, error) {
 	return nil, nil
 }
