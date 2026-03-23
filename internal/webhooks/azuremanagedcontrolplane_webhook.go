@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -47,8 +46,7 @@ func (mw *AzureManagedControlPlaneWebhook) SetupWebhookWithManager(mgr ctrl.Mana
 	mw.client = mgr.GetClient()
 	mw.logger = mgr.GetLogger().WithName("AzureManagedControlPlane")
 
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureManagedControlPlane{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureManagedControlPlane{}).
 		WithDefaulter(mw).
 		WithValidator(mw).
 		Complete()
@@ -63,12 +61,7 @@ type AzureManagedControlPlaneWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mw *AzureManagedControlPlaneWebhook) Default(_ context.Context, obj runtime.Object) error {
-	m, ok := obj.(*infrav1.AzureManagedControlPlane)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedControlPlane")
-	}
-
+func (mw *AzureManagedControlPlaneWebhook) Default(_ context.Context, m *infrav1.AzureManagedControlPlane) error {
 	m.Spec.Version = apiinternal.NormalizeVersion(m.Spec.Version)
 	m.Spec.SKU = apiinternal.DefaultSku(mw.logger, m.Spec.SKU)
 	m.Spec.FleetsMember = apiinternal.DefaultFleetsMember(m.Spec.FleetsMember, m.Labels)
@@ -91,26 +84,13 @@ func (mw *AzureManagedControlPlaneWebhook) Default(_ context.Context, obj runtim
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1beta1,name=validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureManagedControlPlaneWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	m, ok := obj.(*infrav1.AzureManagedControlPlane)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
-	}
-
+func (mw *AzureManagedControlPlaneWebhook) ValidateCreate(_ context.Context, m *infrav1.AzureManagedControlPlane) (admission.Warnings, error) {
 	return nil, validateAzureManagedControlPlane(m, mw.client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mw *AzureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, old, m *infrav1.AzureManagedControlPlane) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*infrav1.AzureManagedControlPlane)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
-	}
-	m, ok := newObj.(*infrav1.AzureManagedControlPlane)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedControlPlane")
-	}
 
 	immutableFields := []struct {
 		path *field.Path
@@ -218,6 +198,6 @@ func (mw *AzureManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, old
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureManagedControlPlaneWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (mw *AzureManagedControlPlaneWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureManagedControlPlane) (admission.Warnings, error) {
 	return nil, nil
 }

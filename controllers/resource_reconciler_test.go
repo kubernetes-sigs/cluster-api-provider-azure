@@ -45,6 +45,7 @@ type FakeClient struct {
 	// server-side apply, so we make our own dollar store version:
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2341
 	patchFunc func(context.Context, client.Object, client.Patch, ...client.PatchOption) error
+	applyFunc func(context.Context, runtime.ApplyConfiguration, ...client.ApplyOption) error
 }
 
 func (c *FakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
@@ -52,6 +53,13 @@ func (c *FakeClient) Patch(ctx context.Context, obj client.Object, patch client.
 		return c.Client.Patch(ctx, obj, patch, opts...)
 	}
 	return c.patchFunc(ctx, obj, patch, opts...)
+}
+
+func (c *FakeClient) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+	if c.applyFunc == nil {
+		return c.Client.Apply(ctx, obj, opts...)
+	}
+	return c.applyFunc(ctx, obj, opts...)
 }
 
 type FakeWatcher struct {
@@ -106,7 +114,8 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+					o := obj.(client.Object)
 					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
 					delete(unpatchedRGs, o.GetName())
 					return nil
@@ -164,7 +173,8 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+					o := obj.(client.Object)
 					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
 					delete(unpatchedRGs, o.GetName())
 					return nil
@@ -277,7 +287,7 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
 					return nil
 				},
 			},
@@ -399,7 +409,8 @@ func TestResourceReconcilerPause(t *testing.T) {
 		r := &ResourceReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(ctx context.Context, o client.Object, p client.Patch, po ...client.PatchOption) error {
+				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+					o := obj.(client.Object)
 					g.Expect(o.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
 					if err := c.Get(ctx, client.ObjectKeyFromObject(o), &asoresourcesv1.ResourceGroup{}); err != nil {
 						// propagate errors like "NotFound"

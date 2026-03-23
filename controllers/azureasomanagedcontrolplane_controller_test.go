@@ -309,9 +309,12 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
-					kubeconfig := obj.(*corev1.Secret)
-					g.Expect(kubeconfig.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
+				applyFunc: func(_ context.Context, obj runtime.ApplyConfiguration, _ ...client.ApplyOption) error {
+					data, err := json.Marshal(obj)
+					g.Expect(err).NotTo(HaveOccurred())
+					kubeconfigSecret := &corev1.Secret{}
+					g.Expect(json.Unmarshal(data, kubeconfigSecret)).To(Succeed())
+					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
 					kubeConfigPatched = true
 					return nil
 				},
@@ -435,11 +438,11 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
-					kubeconfigSecret, ok := obj.(*corev1.Secret)
-					if !ok {
-						return nil
-					}
+				applyFunc: func(_ context.Context, obj runtime.ApplyConfiguration, _ ...client.ApplyOption) error {
+					data, err := json.Marshal(obj)
+					g.Expect(err).NotTo(HaveOccurred())
+					kubeconfigSecret := &corev1.Secret{}
+					g.Expect(json.Unmarshal(data, kubeconfigSecret)).To(Succeed())
 					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
 					kubeConfigPatched = true
 
@@ -574,11 +577,11 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		r := &AzureASOManagedControlPlaneReconciler{
 			Client: &FakeClient{
 				Client: c,
-				patchFunc: func(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
-					kubeconfigSecret, ok := obj.(*corev1.Secret)
-					if !ok {
-						return nil
-					}
+				applyFunc: func(_ context.Context, obj runtime.ApplyConfiguration, _ ...client.ApplyOption) error {
+					data, err := json.Marshal(obj)
+					g.Expect(err).NotTo(HaveOccurred())
+					kubeconfigSecret := &corev1.Secret{}
+					g.Expect(json.Unmarshal(data, kubeconfigSecret)).To(Succeed())
 					g.Expect(kubeconfigSecret.Data[secret.KubeconfigDataName]).NotTo(BeEmpty())
 					kubeConfigPatched = true
 
