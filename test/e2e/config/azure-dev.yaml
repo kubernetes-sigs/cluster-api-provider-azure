@@ -84,37 +84,37 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v1.21.2 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.21.2/infrastructure-components.yaml
+    - name: v1.22.2 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.22.2/infrastructure-components.yaml
       type: url
       contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.21.2/cluster-template-prow.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.22.2/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.21.2/cluster-template-prow-machine-and-machine-pool.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.22.2/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.21.2/cluster-template-aks.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.22.2/cluster-template-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.22.0 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.22.0/infrastructure-components.yaml
+    - name: v1.23.0 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.23.0/infrastructure-components.yaml
       type: url
       contract: v1beta1
       files:
       - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.22.0/cluster-template-prow.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.23.0/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.22.0/cluster-template-prow-machine-and-machine-pool.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.23.0/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.22.0/cluster-template-aks.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.23.0/cluster-template-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.23.99 # "vNext"; use manifests from local source files
+    - name: v1.24.99 # "vNext"; use manifests from local source files
       value: "${PWD}/test/e2e/data/infrastructure-azure/v1beta1/provider-components"
       contract: v1beta1
       files:
@@ -260,8 +260,8 @@ variables:
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
   OLD_CAPI_UPGRADE_VERSION: "v1.11.7"
   LATEST_CAPI_UPGRADE_VERSION: "v1.12.4"
-  OLD_PROVIDER_UPGRADE_VERSION: "v1.21.2"
-  LATEST_PROVIDER_UPGRADE_VERSION: "v1.22.0"
+  OLD_PROVIDER_UPGRADE_VERSION: "v1.22.2"
+  LATEST_PROVIDER_UPGRADE_VERSION: "v1.23.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
   LATEST_CAAPH_UPGRADE_VERSION: "v0.6.1"
   CI_RG: "${CI_RG:-capz-ci}"
