@@ -286,6 +286,8 @@ intervals:
   default/wait-service: ["15m", "10s"]
   default/wait-machine-pool-nodes: ["30m", "10s"]
   default/wait-nsg-update: ["20m", "10s"]
+  default/wait-resource-versions-become-stable: ["10m", "15s"]
+  default/wait-resource-versions-remain-stable: ["5m", "5s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]
