@@ -117,9 +117,9 @@ This will automatically create a PR in [k8s.io](https://github.com/kubernetes/k8
 
 For reviewers of the above-created PR, to confirm that the resultant image SHA-to-tag addition is valid, you can check against the [staging repository][staging-repository].
 
-Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to verify that the image identified by SHA `d0636fad7f4ced58b5385615a53b7cb2053f79c4788bd299e0ac9e46a25b5053` has the expected `v1.4.3`, tag, you would inspect the image metadata by viewing it in the Google Container Registry UI:
+Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to verify that the image identified by SHA `d0636fad7f4ced58b5385615a53b7cb2053f79c4788bd299e0ac9e46a25b5053` has the expected `v1.4.3`, tag, you would inspect the image metadata by viewing it in the Google Artifact Registry UI:
 
-- https://console.cloud.google.com/gcr/images/k8s-staging-cluster-api-azure/global/cluster-api-azure-controller@sha256:d0636fad7f4ced58b5385615a53b7cb2053f79c4788bd299e0ac9e46a25b5053
+- https://console.cloud.google.com/artifacts/docker/k8s-staging-cluster-api-azure/us/gcr.io/cluster-api-azure-controller
 
 ### 6. Release in GitHub (maintainer)
 
@@ -171,7 +171,7 @@ Open a pull request to update the branches in the [weekly security scan workflow
 [semver]: https://semver.org/#semantic-versioning-200
 [template]: /docs/release-notes-template.md
 [versioning]: #versioning
-[staging-repository]: https://console.cloud.google.com/gcr/images/k8s-staging-cluster-api-azure/GLOBAL/cluster-api-azure-controller?rImageListsize=30
+[staging-repository]: https://console.cloud.google.com/artifacts/docker/k8s-staging-cluster-api-azure/us/gcr.io/cluster-api-azure-controller
 
 ## Post release steps (maintainer)
 
