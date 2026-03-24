@@ -15,4 +15,4 @@
   value: bash -c /tmp/containerd-config.sh
 - op: add
   path: /spec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
-  value: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true"}
+  value: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}

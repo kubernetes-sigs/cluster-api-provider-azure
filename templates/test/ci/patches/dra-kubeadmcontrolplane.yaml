@@ -15,19 +15,19 @@
   value: bash -c /tmp/containerd-config.sh
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/feature-gates
-  value: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true"}
+  value: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/feature-gates
-  value: DynamicResourceAllocation=true
+  value: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/runtime-config
   value: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
 - op: add
   path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler/extraArgs/feature-gates
-  value: DynamicResourceAllocation=true
+  value: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
 - op: add
   path: /spec/kubeadmConfigSpec/initConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
-  value: DynamicResourceAllocation=true
+  value: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
 - op: add
   path: /spec/kubeadmConfigSpec/joinConfiguration/nodeRegistration/kubeletExtraArgs/feature-gates
-  value: DynamicResourceAllocation=true
+  value: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
