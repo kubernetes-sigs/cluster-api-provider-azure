@@ -996,7 +996,7 @@ $(CODESPELL): ## Build codespell from tools folder.
     )
 
 ## --------------------------------------
-## Helpers
+## Helpers.
 ## --------------------------------------
 
 ##@ helpers:
