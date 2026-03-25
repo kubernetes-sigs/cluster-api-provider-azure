@@ -538,7 +538,6 @@ def waitforsystem():
     local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-system")
 
 def peer_vnets():
-    # TODO: check for az cli to be installed in local
     peering_cmd = '''
     echo "--------Peering VNETs--------";
     az network vnet wait --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_MGMT_VNET_NAME} --created --timeout 180;
