@@ -21,7 +21,6 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
@@ -38,8 +37,7 @@ import (
 func (mpw *AzureManagedMachinePoolTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	mpw.client = mgr.GetClient()
 
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureManagedMachinePoolTemplate{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureManagedMachinePoolTemplate{}).
 		WithDefaulter(mpw).
 		WithValidator(mpw).
 		Complete()
@@ -53,11 +51,7 @@ type AzureManagedMachinePoolTemplateWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
-	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
-	}
+func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, mp *infrav1.AzureManagedMachinePoolTemplate) error {
 	if mp.Labels == nil {
 		mp.Labels = make(map[string]string)
 	}
@@ -75,12 +69,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, ob
 //+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta1,name=validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
-	}
-
+func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Context, mp *infrav1.AzureManagedMachinePoolTemplate) (admission.Warnings, error) {
 	var errs []error
 
 	errs = append(errs, validateMaxPods(
@@ -124,16 +113,8 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Cont
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Context, old, mp *infrav1.AzureManagedMachinePoolTemplate) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*infrav1.AzureManagedMachinePoolTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
-	}
-	mp, ok := newObj.(*infrav1.AzureManagedMachinePoolTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
-	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "template", "spec", "name"),
@@ -270,11 +251,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateUpdate(_ context.Cont
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	mp, ok := obj.(*infrav1.AzureManagedMachinePoolTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureManagedMachinePoolTemplate")
-	}
+func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateDelete(_ context.Context, mp *infrav1.AzureManagedMachinePoolTemplate) (admission.Warnings, error) {
 	if mp.Spec.Template.Spec.Mode != string(infrav1.NodePoolModeSystem) {
 		return nil, nil
 	}

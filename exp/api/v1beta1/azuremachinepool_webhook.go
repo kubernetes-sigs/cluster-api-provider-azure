@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -41,8 +40,7 @@ import (
 // SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
 	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&AzureMachinePool{}).
+	return ctrl.NewWebhookManagedBy(mgr, &AzureMachinePool{}).
 		WithDefaulter(ampw).
 		WithValidator(ampw).
 		Complete()
@@ -56,37 +54,24 @@ type azureMachinePoolWebhook struct {
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) error {
-	amp, ok := obj.(*AzureMachinePool)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureMachinePool")
-	}
+func (ampw *azureMachinePoolWebhook) Default(_ context.Context, amp *AzureMachinePool) error {
 	return amp.SetDefaults(ampw.Client)
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	amp, ok := obj.(*AzureMachinePool)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachinePool")
-	}
-
+func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, amp *AzureMachinePool) (admission.Warnings, error) {
 	return nil, amp.Validate(nil, ampw.Client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	amp, ok := newObj.(*AzureMachinePool)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachinePool")
-	}
+func (ampw *azureMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, amp *AzureMachinePool) (admission.Warnings, error) {
 	return nil, amp.Validate(oldObj, ampw.Client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (ampw *azureMachinePoolWebhook) ValidateDelete(_ context.Context, _ *AzureMachinePool) (admission.Warnings, error) {
 	return nil, nil
 }
 

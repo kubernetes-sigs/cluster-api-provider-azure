@@ -103,7 +103,7 @@ func (r *ResourceReconciler) Pause(ctx context.Context) error {
 		spec.SetNamespace(r.owner.GetNamespace())
 		gvk := spec.GroupVersionKind()
 		log.V(4).Info("pausing resource", "resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
-		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"))
+		err := r.Apply(ctx, client.ApplyConfigurationFromUnstructured(spec), client.FieldOwner("capz-manager"))
 		if client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
@@ -157,7 +157,7 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 
 		gvk := spec.GroupVersionKind()
 		log.V(4).Info("applying resource", "resource", klog.KObj(spec), "resourceVersion", gvk.GroupVersion(), "resourceKind", gvk.Kind)
-		err := r.Patch(ctx, spec, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
+		err := r.Apply(ctx, client.ApplyConfigurationFromUnstructured(spec), client.FieldOwner("capz-manager"), client.ForceOwnership)
 		if err != nil {
 			return fmt.Errorf("failed to apply resource: %w", err)
 		}

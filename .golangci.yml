@@ -160,7 +160,7 @@ linters:
               - jsontags          # Ensures proper JSON tag formatting
               - nofloats          # Prevents float type usage
               - nomaps            # Restricts map usage
-              - nonullable        # Prevents usage of the nullable marker 
+              - nonullable        # Prevents usage of the nullable marker
               - nophase           # Prevents Phase field usage
               - notimestamp       # Prevents TimeStamp field usage
           lintersConfig: {}
@@ -340,6 +340,10 @@ linters:
         - staticcheck
         path: .*\.go$
         text: 'SA1019: "sigs.k8s.io/cluster-api/util/deprecated/.*" is deprecated: This package is deprecated and is going to be removed when support for v1beta1 will be dropped.'
+      # Ignore GetEventRecorderFor deprecation (CAPI itself still uses it).
+      - linters:
+          - staticcheck
+        text: 'SA1019: (env|mgr|testEnv).GetEventRecorderFor is deprecated'
       # Ignore CAPZ v1beta1 deprecations (SharedGallery, VMState) still used for backward compatibility.
       - linters:
           - staticcheck

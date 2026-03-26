@@ -24,6 +24,7 @@ fi
 
 VERSION=${1}
 GO_ARCH="$(go env GOARCH)"
+DB_MIRROR="public.ecr.aws/aquasecurity/trivy-db"
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 "${REPO_ROOT}/hack/ensure-trivy.sh" "${VERSION}"
@@ -35,7 +36,7 @@ make REGISTRY=gcr.io/k8s-staging-cluster-api-azure PULL_POLICY=IfNotPresent TAG=
 make clean-release-git
 
 # Scan the images
-"${TRIVY}" image -q --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller-"${GO_ARCH}":dev && R1=$? || R1=$?
+"${TRIVY}" image --db-repository="${DB_MIRROR}" -q --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller-"${GO_ARCH}":dev && R1=$? || R1=$?
 
 echo ""
 BRed='\033[1;31m'

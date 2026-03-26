@@ -19,9 +19,7 @@ package webhooks
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -29,8 +27,7 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (w *AzureManagedClusterTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureManagedClusterTemplate{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureManagedClusterTemplate{}).
 		WithValidator(w).
 		Complete()
 }
@@ -40,19 +37,19 @@ func (w *AzureManagedClusterTemplateWebhook) SetupWebhookWithManager(mgr ctrl.Ma
 // AzureManagedClusterTemplateWebhook implements a validating webhook for AzureManagedClusterTemplate.
 type AzureManagedClusterTemplateWebhook struct{}
 
-var _ webhook.CustomValidator = &AzureManagedClusterTemplateWebhook{}
+var _ admission.Validator[*infrav1.AzureManagedClusterTemplate] = &AzureManagedClusterTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterTemplateWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterTemplateWebhook) ValidateCreate(_ context.Context, _ *infrav1.AzureManagedClusterTemplate) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterTemplateWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterTemplateWebhook) ValidateUpdate(_ context.Context, _, _ *infrav1.AzureManagedClusterTemplate) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (w *AzureManagedClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (w *AzureManagedClusterTemplateWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureManagedClusterTemplate) (admission.Warnings, error) {
 	return nil, nil
 }
