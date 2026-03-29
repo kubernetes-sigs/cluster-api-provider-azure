@@ -318,3 +318,39 @@ func validateLinuxOSConfig(linuxOSConfig *infrav1.LinuxOSConfig, kubeletConfig *
 	}
 	return kerrors.NewAggregate(errs)
 }
+
+func validateOsSKU(osSKU *infrav1.OsSKU, osType *string, fldPath *field.Path) error {
+	if osSKU == nil {
+		return nil
+	}
+
+	effectiveOSType := ptr.Deref(osType, infrav1.LinuxOS)
+	sku := *osSKU
+
+	linuxSKUs := map[infrav1.OsSKU]bool{
+		infrav1.OsSKUUbuntu:      true,
+		infrav1.OsSKUUbuntu2204:  true,
+		infrav1.OsSKUUbuntu2404:  true,
+		infrav1.OsSKUAzureLinux:  true,
+		infrav1.OsSKUAzureLinux3: true,
+		infrav1.OsSKUCBLMariner:  true,
+	}
+	windowsSKUs := map[infrav1.OsSKU]bool{
+		infrav1.OsSKUWindows2019: true,
+		infrav1.OsSKUWindows2022: true,
+	}
+
+	if effectiveOSType == infrav1.LinuxOS && windowsSKUs[sku] {
+		return field.Invalid(
+			fldPath,
+			sku,
+			fmt.Sprintf("OsSKU %q is not compatible with OSType 'Linux'. Allowed Linux SKUs: Ubuntu, Ubuntu2204, Ubuntu2404, AzureLinux, AzureLinux3, CBLMariner", sku))
+	}
+	if effectiveOSType == infrav1.WindowsOS && linuxSKUs[sku] {
+		return field.Invalid(
+			fldPath,
+			sku,
+			fmt.Sprintf("OsSKU %q is not compatible with OSType 'Windows'. Allowed Windows SKUs: Windows2019, Windows2022", sku))
+	}
+	return nil
+}

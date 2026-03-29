@@ -2448,6 +2448,11 @@ func (in *AzureManagedMachinePoolClassSpec) DeepCopyInto(out *AzureManagedMachin
 		*out = new(string)
 		**out = **in
 	}
+	if in.OsSKU != nil {
+		in, out := &in.OsSKU, &out.OsSKU
+		*out = new(OsSKU)
+		**out = **in
+	}
 	if in.EnableNodePublicIP != nil {
 		in, out := &in.EnableNodePublicIP, &out.EnableNodePublicIP
 		*out = new(bool)

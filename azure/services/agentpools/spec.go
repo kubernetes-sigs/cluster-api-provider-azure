@@ -123,6 +123,9 @@ type AgentPoolSpec struct {
 	// OSType specifies the operating system for the node pool. Allowed values are 'Linux' and 'Windows'
 	OSType *string `json:"osType,omitempty"`
 
+	// OsSKU specifies the OS SKU for the node pool.
+	OsSKU *string `json:"osSKU,omitempty"`
+
 	// EnableNodePublicIP controls whether or not nodes in the agent pool each have a public IP address.
 	EnableNodePublicIP *bool `json:"enableNodePublicIP,omitempty"`
 
@@ -232,6 +235,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 	agentPool.Spec.OsDiskSizeGB = ptr.To(int(asocontainerservicev1.ContainerServiceOSDisk(s.OSDiskSizeGB)))
 	agentPool.Spec.OsDiskType = azure.AliasOrNil[string](s.OsDiskType)
 	agentPool.Spec.OsType = azure.AliasOrNil[string](s.OSType)
+	agentPool.Spec.OsSKU = azure.AliasOrNil[string](s.OsSKU)
 	agentPool.Spec.ScaleSetPriority = azure.AliasOrNil[string](s.ScaleSetPriority)
 	agentPool.Spec.ScaleDownMode = azure.AliasOrNil[string](s.ScaleDownMode)
 	agentPool.Spec.Type = ptr.To(string(asocontainerservicev1.AgentPoolType_VirtualMachineScaleSets))

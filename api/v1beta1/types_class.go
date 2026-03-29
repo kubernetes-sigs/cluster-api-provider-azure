@@ -346,6 +346,17 @@ type AzureManagedMachinePoolClassSpec struct {
 	// +optional
 	OSType *string `json:"osType,omitempty"`
 
+	// OsSKU specifies the OS SKU of the node pool.
+	// The default is 'Ubuntu' if OSType is 'Linux'. The default is 'Windows2022' if OSType is 'Windows'.
+	// 'CBLMariner' is deprecated — use 'AzureLinux' instead.
+	// Immutable.
+	// See also [AKS doc].
+	//
+	// [AKS doc]: https://learn.microsoft.com/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#ossku
+	// +kubebuilder:validation:Enum=Ubuntu;Ubuntu2204;Ubuntu2404;AzureLinux;AzureLinux3;CBLMariner;Windows2019;Windows2022
+	// +optional
+	OsSKU *OsSKU `json:"osSKU,omitempty"`
+
 	// EnableNodePublicIP controls whether or not nodes in the pool each have a public IP address.
 	// Immutable.
 	// +optional

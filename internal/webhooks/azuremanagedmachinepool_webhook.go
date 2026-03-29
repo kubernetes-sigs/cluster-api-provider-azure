@@ -128,6 +128,11 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateCreate(_ context.Context, obj 
 		m.Spec.SubnetName,
 		field.NewPath("spec", "subnetName")))
 
+	errs = append(errs, validateOsSKU(
+		m.Spec.OsSKU,
+		m.Spec.OSType,
+		field.NewPath("spec", "osSKU")))
+
 	return nil, kerrors.NewAggregate(errs)
 }
 
@@ -162,6 +167,13 @@ func (mw *AzureManagedMachinePoolWebhook) ValidateUpdate(_ context.Context, oldO
 		field.NewPath("spec", "osType"),
 		old.Spec.OSType,
 		m.Spec.OSType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "osSKU"),
+		old.Spec.OsSKU,
+		m.Spec.OsSKU); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
