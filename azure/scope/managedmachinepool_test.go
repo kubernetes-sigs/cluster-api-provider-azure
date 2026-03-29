@@ -879,6 +879,81 @@ func Test_getManagedMachinePoolVersion(t *testing.T) {
 	}
 }
 
+func TestManagedMachinePoolScope_OsSKU(t *testing.T) {
+	azureLinux := infrav1.OsSKUAzureLinux
+
+	cases := []struct {
+		Name     string
+		Scope    *ManagedMachinePoolScope
+		Expected azure.ASOResourceSpecGetter[genruntime.MetaObject]
+	}{
+		{
+			Name: "Without OsSKU",
+			Scope: &ManagedMachinePoolScope{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
+					},
+				},
+				MachinePool:      getMachinePool("pool0"),
+				InfraMachinePool: getAzureMachinePool("pool0", infrav1.NodePoolModeSystem),
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool0",
+				AzureName:    "pool0",
+				SKU:          "Standard_D2s_v3",
+				Replicas:     1,
+				Mode:         "System",
+				Cluster:      "cluster1",
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+		{
+			Name: "With OsSKU AzureLinux",
+			Scope: &ManagedMachinePoolScope{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							SubscriptionID: "00000000-0000-0000-0000-000000000000",
+						},
+					},
+				},
+				MachinePool:      getMachinePool("pool1"),
+				InfraMachinePool: getAzureMachinePoolWithOsSKU("pool1", &azureLinux),
+			},
+			Expected: &agentpools.AgentPoolSpec{
+				Name:         "pool1",
+				AzureName:    "pool1",
+				SKU:          "Standard_D2s_v3",
+				Mode:         "User",
+				Cluster:      "cluster1",
+				Replicas:     1,
+				OsSKU:        ptr.To("AzureLinux"),
+				VnetSubnetID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups//providers/Microsoft.Network/virtualNetworks//subnets/",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			agentPool := c.Scope.AgentPoolSpec()
+			if !reflect.DeepEqual(c.Expected, agentPool) {
+				t.Errorf("Got difference between expected result and result:\n%s", cmp.Diff(c.Expected, agentPool))
+			}
+		})
+	}
+}
+
 func getAzureMachinePool(name string, mode infrav1.NodePoolMode) *infrav1.AzureManagedMachinePool {
 	return &infrav1.AzureManagedMachinePool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -969,6 +1044,12 @@ func getMachinePool(name string) *clusterv1.MachinePool {
 			ClusterName: "cluster1",
 		},
 	}
+}
+
+func getAzureMachinePoolWithOsSKU(name string, osSKU *infrav1.OsSKU) *infrav1.AzureManagedMachinePool {
+	managedPool := getAzureMachinePool(name, infrav1.NodePoolModeUser)
+	managedPool.Spec.OsSKU = osSKU
+	return managedPool
 }
 
 func getLinuxAzureMachinePool(name string) *infrav1.AzureManagedMachinePool {

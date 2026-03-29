@@ -35,6 +35,29 @@ const (
 	DefaultOSType string = LinuxOS
 )
 
+// OsSKU specifies the OS SKU used by the agent pool.
+// See https://learn.microsoft.com/rest/api/aks/agent-pools/create-or-update?tabs=HTTP#ossku
+type OsSKU string
+
+const (
+	// OsSKUUbuntu is the default Linux SKU.
+	OsSKUUbuntu OsSKU = "Ubuntu"
+	// OsSKUUbuntu2204 uses Ubuntu 22.04; not supported for all node pools.
+	OsSKUUbuntu2204 OsSKU = "Ubuntu2204"
+	// OsSKUUbuntu2404 uses Ubuntu 24.04; not supported for all node pools.
+	OsSKUUbuntu2404 OsSKU = "Ubuntu2404"
+	// OsSKUAzureLinux is the Azure Linux container-optimized distro.
+	OsSKUAzureLinux OsSKU = "AzureLinux"
+	// OsSKUAzureLinux3 is Azure Linux 3.
+	OsSKUAzureLinux3 OsSKU = "AzureLinux3"
+	// OsSKUCBLMariner is deprecated — use AzureLinux instead.
+	OsSKUCBLMariner OsSKU = "CBLMariner"
+	// OsSKUWindows2019 uses Windows Server 2019. Unsupported for system node pools.
+	OsSKUWindows2019 OsSKU = "Windows2019"
+	// OsSKUWindows2022 uses Windows Server 2022. Unsupported for system node pools.
+	OsSKUWindows2022 OsSKU = "Windows2022"
+)
+
 // NodePoolMode enumerates the values for agent pool mode.
 type NodePoolMode string
 
