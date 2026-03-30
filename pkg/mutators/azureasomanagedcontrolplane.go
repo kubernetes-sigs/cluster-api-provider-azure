@@ -31,7 +31,7 @@ import (
 	// then updated to the user-defined value. If the field is immutable, this
 	// update will fail. The linter should catch if there are missing fields,
 	// but verify that check is actually working.
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -137,7 +137,7 @@ func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluste
 
 	capiCIDR := cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
 
-	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural serviceCidrs field.
+	// Some ManagedCluster API versions do not contain the plural serviceCidrs field.
 	svcCIDRPath := []string{"spec", "networkProfile", "serviceCidr"}
 	userSvcCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), svcCIDRPath...)
 	if err != nil {
@@ -168,7 +168,7 @@ func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, m
 
 	capiCIDR := cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
 
-	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural podCidrs field.
+	// Some ManagedCluster API versions do not contain the plural podCidrs field.
 	podCIDRPath := []string{"spec", "networkProfile", "podCidr"}
 	userPodCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), podCIDRPath...)
 	if err != nil {
@@ -333,13 +333,16 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			EnableFIPS:                        hubPool.Spec.EnableFIPS,
 			EnableNodePublicIP:                hubPool.Spec.EnableNodePublicIP,
 			EnableUltraSSD:                    hubPool.Spec.EnableUltraSSD,
+			GatewayProfile:                    hubPool.Spec.GatewayProfile,
 			GpuInstanceProfile:                hubPool.Spec.GpuInstanceProfile,
+			GpuProfile:                        hubPool.Spec.GpuProfile,
 			HostGroupReference:                hubPool.Spec.HostGroupReference,
 			KubeletConfig:                     hubPool.Spec.KubeletConfig,
 			KubeletDiskType:                   hubPool.Spec.KubeletDiskType,
 			LinuxOSConfig:                     hubPool.Spec.LinuxOSConfig,
 			MaxCount:                          hubPool.Spec.MaxCount,
 			MaxPods:                           hubPool.Spec.MaxPods,
+			MessageOfTheDay:                   hubPool.Spec.MessageOfTheDay,
 			MinCount:                          hubPool.Spec.MinCount,
 			Mode:                              hubPool.Spec.Mode,
 			Name:                              azure.AliasOrNil[string](&hubPool.Spec.AzureName),
@@ -352,6 +355,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			OsDiskType:                        hubPool.Spec.OsDiskType,
 			OsSKU:                             hubPool.Spec.OsSKU,
 			OsType:                            hubPool.Spec.OsType,
+			PodIPAllocationMode:               hubPool.Spec.PodIPAllocationMode,
 			PodSubnetReference:                hubPool.Spec.PodSubnetReference,
 			PowerState:                        hubPool.Spec.PowerState,
 			PropertyBag:                       hubPool.Spec.PropertyBag,
@@ -364,6 +368,8 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			Tags:                              hubPool.Spec.Tags,
 			Type:                              hubPool.Spec.Type,
 			UpgradeSettings:                   hubPool.Spec.UpgradeSettings,
+			VirtualMachineNodesStatus:         hubPool.Spec.VirtualMachineNodesStatus,
+			VirtualMachinesProfile:            hubPool.Spec.VirtualMachinesProfile,
 			VmSize:                            hubPool.Spec.VmSize,
 			VnetSubnetReference:               hubPool.Spec.VnetSubnetReference,
 			WindowsProfile:                    hubPool.Spec.WindowsProfile,
