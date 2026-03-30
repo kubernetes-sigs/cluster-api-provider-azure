@@ -1,0 +1,12 @@
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/feature-gates
+  value: ${K8S_FEATURE_GATES:-"AllAlpha=true,AllBeta=true"}
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/apiServer/extraArgs/runtime-config
+  value: api/all=true
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/feature-gates
+  value: AllAlpha=true,AllBeta=true
+- op: add
+  path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler/extraArgs/feature-gates
+  value: AllAlpha=true,AllBeta=true
