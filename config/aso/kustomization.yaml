@@ -35,6 +35,36 @@ patches:
       kind: Deployment
       name: azureserviceoperator-controller-manager
       version: v1
+  # TODO: remove in next release after upgrades from versions with v1api20230315preview have migrated.
+  # The FleetsMember CRD moved from v1api20230315preview to v1api20250301 with no overlapping versions.
+  # Without these stubs, CRD updates fail because the old storage version in status.storedVersions
+  # is not present in spec.versions.
+  - patch: |-
+      - op: add
+        path: /spec/versions/-
+        value:
+          name: v1api20230315preview
+          served: false
+          storage: false
+          schema:
+            openAPIV3Schema:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      - op: add
+        path: /spec/versions/-
+        value:
+          name: v1api20230315previewstorage
+          served: false
+          storage: false
+          schema:
+            openAPIV3Schema:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+    target:
+      group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: fleetsmembers.containerservice.azure.com
+      version: v1
 replacements:
   - source:
       fieldPath: metadata.namespace
