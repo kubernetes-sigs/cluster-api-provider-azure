@@ -33,11 +33,13 @@ type AzureASOManagedControlPlaneSpec struct {
 type AzureASOManagedControlPlaneStatus struct {
 	// Initialized represents whether or not the API server has been provisioned. It fulfills Cluster API's
 	// control plane provider contract. For AKS, this is equivalent to `ready`.
+	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	//+optional
 	Initialized bool `json:"initialized"`
 
 	// Ready represents whether or not the API server is ready to receive requests. It fulfills Cluster API's
 	// control plane provider contract. For AKS, this is equivalent to `initialized`.
+	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	//+optional
 	Ready bool `json:"ready"`
 
@@ -52,6 +54,19 @@ type AzureASOManagedControlPlaneStatus struct {
 	// ControlPlaneEndpoint represents the endpoint for the cluster's API server.
 	//+optional
 	ControlPlaneEndpoint clusterv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
+
+	// initialization provides observations of the AzureASOManagedControlPlane initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial ControlPlane provisioning.
+	// +optional
+	Initialization *AzureASOManagedControlPlaneInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AzureASOManagedControlPlaneInitializationStatus provides observations of the AzureASOManagedControlPlane initialization process.
+type AzureASOManagedControlPlaneInitializationStatus struct {
+	// controlPlaneInitialized is true when the control plane provider reports that the control plane is initialized.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
 }
 
 // +kubebuilder:object:root=true

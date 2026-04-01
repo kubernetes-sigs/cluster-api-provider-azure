@@ -69,6 +69,9 @@ type (
 		// Any transient errors that occur during the reconciliation of MachinePools
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
+		//
+		// Deprecated: This field is deprecated and will be removed in a future version.
+		// Use conditions to surface terminal errors instead.
 		// +optional
 		FailureReason *string `json:"failureReason,omitempty"`
 
@@ -79,6 +82,9 @@ type (
 		// Any transient errors that occur during the reconciliation of MachinePools
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
+		//
+		// Deprecated: This field is deprecated and will be removed in a future version.
+		// Use conditions to surface terminal errors instead.
 		// +optional
 		FailureMessage *string `json:"failureMessage,omitempty"`
 
@@ -98,8 +104,18 @@ type (
 		LatestModelApplied bool `json:"latestModelApplied,omitempty"`
 
 		// Ready is true when the provider resource is ready.
+		// Deprecated: Use status.initialization.provisioned instead.
 		// +optional
 		Ready bool `json:"ready"`
+
+		// initialization provides observations of the AzureMachinePoolMachine initialization process.
+		// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+		// +optional
+		Initialization *AzureMachinePoolMachineInitializationStatus `json:"initialization,omitempty"`
+
+		// v1beta2 groups all the fields that will be added or modified in AzureMachinePoolMachine's status with the v1beta2 version of the Cluster API contract.
+		// +optional
+		V1Beta2 *AzureMachinePoolMachineV1Beta2Status `json:"v1beta2,omitempty"`
 	}
 
 	// +kubebuilder:object:root=true
@@ -132,6 +148,24 @@ type (
 	}
 )
 
+// AzureMachinePoolMachineInitializationStatus provides observations of the AzureMachinePoolMachine initialization process.
+type AzureMachinePoolMachineInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Machine's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
+}
+
+// AzureMachinePoolMachineV1Beta2Status groups all the fields that will be added or modified in AzureMachinePoolMachine with the v1beta2 version of the Cluster API contract.
+type AzureMachinePoolMachineV1Beta2Status struct {
+	// conditions represents the observations of an AzureMachinePoolMachine's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
 // GetConditions returns the list of conditions for an AzureMachinePool API object.
 func (ampm *AzureMachinePoolMachine) GetConditions() clusterv1beta1.Conditions {
 	return ampm.Status.Conditions
@@ -140,6 +174,24 @@ func (ampm *AzureMachinePoolMachine) GetConditions() clusterv1beta1.Conditions {
 // SetConditions will set the given conditions on an AzureMachinePool object.
 func (ampm *AzureMachinePoolMachine) SetConditions(conditions clusterv1beta1.Conditions) {
 	ampm.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the v1beta2 conditions for an AzureMachinePoolMachine API object.
+// Note: GetV1Beta2Conditions will be renamed to GetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (ampm *AzureMachinePoolMachine) GetV1Beta2Conditions() []metav1.Condition {
+	if ampm.Status.V1Beta2 == nil {
+		return nil
+	}
+	return ampm.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the v1beta2 conditions on an AzureMachinePoolMachine object.
+// Note: SetV1Beta2Conditions will be renamed to SetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (ampm *AzureMachinePoolMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if ampm.Status.V1Beta2 == nil {
+		ampm.Status.V1Beta2 = &AzureMachinePoolMachineV1Beta2Status{}
+	}
+	ampm.Status.V1Beta2.Conditions = conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureMachinePoolMachine API object.

@@ -244,6 +244,7 @@ type (
 	// AzureMachinePoolStatus defines the observed state of AzureMachinePool.
 	AzureMachinePoolStatus struct {
 		// Ready is true when the provider resource is ready.
+		// Deprecated: Use status.initialization.provisioned instead.
 		// +optional
 		Ready bool `json:"ready"`
 
@@ -284,6 +285,9 @@ type (
 		// Any transient errors that occur during the reconciliation of MachinePools
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
+		//
+		// Deprecated: This field is deprecated and will be removed in a future version.
+		// Use conditions to surface terminal errors instead.
 		// +optional
 		FailureReason *string `json:"failureReason,omitempty"`
 
@@ -303,6 +307,9 @@ type (
 		// Any transient errors that occur during the reconciliation of MachinePools
 		// can be added as events to the MachinePool object and/or logged in the
 		// controller's output.
+		//
+		// Deprecated: This field is deprecated and will be removed in a future version.
+		// Use conditions to surface terminal errors instead.
 		// +optional
 		FailureMessage *string `json:"failureMessage,omitempty"`
 
@@ -318,6 +325,15 @@ type (
 		// InfrastructureMachineKind is the kind of the infrastructure resources behind MachinePool Machines.
 		// +optional
 		InfrastructureMachineKind string `json:"infrastructureMachineKind,omitempty"`
+
+		// initialization provides observations of the AzureMachinePool initialization process.
+		// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial MachinePool provisioning.
+		// +optional
+		Initialization *AzureMachinePoolInitializationStatus `json:"initialization,omitempty"`
+
+		// v1beta2 groups all the fields that will be added or modified in AzureMachinePool's status with the v1beta2 version of the Cluster API contract.
+		// +optional
+		V1Beta2 *AzureMachinePoolV1Beta2Status `json:"v1beta2,omitempty"`
 	}
 
 	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
@@ -380,6 +396,24 @@ type (
 	}
 )
 
+// AzureMachinePoolInitializationStatus provides observations of the AzureMachinePool initialization process.
+type AzureMachinePoolInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the MachinePool's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial MachinePool provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
+}
+
+// AzureMachinePoolV1Beta2Status groups all the fields that will be added or modified in AzureMachinePool with the v1beta2 version of the Cluster API contract.
+type AzureMachinePoolV1Beta2Status struct {
+	// conditions represents the observations of an AzureMachinePool's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
 // GetConditions returns the list of conditions for an AzureMachinePool API object.
 func (amp *AzureMachinePool) GetConditions() clusterv1beta1.Conditions {
 	return amp.Status.Conditions
@@ -388,6 +422,24 @@ func (amp *AzureMachinePool) GetConditions() clusterv1beta1.Conditions {
 // SetConditions will set the given conditions on an AzureMachinePool object.
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1beta1.Conditions) {
 	amp.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the v1beta2 conditions for an AzureMachinePool API object.
+// Note: GetV1Beta2Conditions will be renamed to GetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (amp *AzureMachinePool) GetV1Beta2Conditions() []metav1.Condition {
+	if amp.Status.V1Beta2 == nil {
+		return nil
+	}
+	return amp.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the v1beta2 conditions on an AzureMachinePool object.
+// Note: SetV1Beta2Conditions will be renamed to SetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (amp *AzureMachinePool) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if amp.Status.V1Beta2 == nil {
+		amp.Status.V1Beta2 = &AzureMachinePoolV1Beta2Status{}
+	}
+	amp.Status.V1Beta2.Conditions = conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureMachinePool API object.

@@ -45,11 +45,25 @@ type AzureASOManagedClusterSpec struct {
 type AzureASOManagedClusterStatus struct {
 	// Ready represents whether or not the cluster has been provisioned and is ready. It fulfills Cluster
 	// API's cluster infrastructure provider contract.
+	// Deprecated: Use status.initialization.provisioned instead.
 	//+optional
 	Ready bool `json:"ready"`
 
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
+
+	// initialization provides observations of the AzureASOManagedCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization *AzureASOManagedClusterInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AzureASOManagedClusterInitializationStatus provides observations of the AzureASOManagedCluster initialization process.
+type AzureASOManagedClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // ResourceStatus represents the status of a resource.

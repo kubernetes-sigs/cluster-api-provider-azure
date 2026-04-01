@@ -80,8 +80,21 @@ spec:
           status:
             description: AzureManagedClusterStatus defines the observed state of AzureManagedCluster.
             properties:
+              initialization:
+                description: |-
+                  initialization provides observations of the AzureManagedCluster initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+                properties:
+                  provisioned:
+                    description: |-
+                      provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+                    type: boolean
+                type: object
               ready:
-                description: Ready is true when the provider resource is ready.
+                description: |-
+                  Ready is true when the provider resource is ready.
+                  Deprecated: Use status.initialization.provisioned instead.
                 type: boolean
             type: object
         type: object

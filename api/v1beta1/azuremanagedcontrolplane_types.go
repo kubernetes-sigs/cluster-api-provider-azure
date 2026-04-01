@@ -413,12 +413,14 @@ type AzureManagedControlPlaneStatus struct {
 	AutoUpgradeVersion string `json:"autoUpgradeVersion,omitempty"`
 
 	// Ready is true when the provider resource is ready.
+	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
 
 	// Initialized is true when the control plane is available for initial contact.
 	// This may occur before the control plane is fully ready.
 	// In the AzureManagedControlPlane implementation, these are identical.
+	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	// +optional
 	Initialized bool `json:"initialized,omitempty"`
 
@@ -438,6 +440,33 @@ type AzureManagedControlPlaneStatus struct {
 	// Version defines the Kubernetes version for the control plane instance.
 	// +optional
 	Version string `json:"version"`
+
+	// initialization provides observations of the AzureManagedControlPlane initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial ControlPlane provisioning.
+	// +optional
+	Initialization *AzureManagedControlPlaneInitializationStatus `json:"initialization,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in AzureManagedControlPlane's status with the v1beta2 version of the Cluster API contract.
+	// +optional
+	V1Beta2 *AzureManagedControlPlaneV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// AzureManagedControlPlaneInitializationStatus provides observations of the AzureManagedControlPlane initialization process.
+type AzureManagedControlPlaneInitializationStatus struct {
+	// controlPlaneInitialized is true when the control plane provider reports that the control plane is initialized.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
+}
+
+// AzureManagedControlPlaneV1Beta2Status groups all the fields that will be added or modified in AzureManagedControlPlane with the v1beta2 version of the Cluster API contract.
+type AzureManagedControlPlaneV1Beta2Status struct {
+	// conditions represents the observations of an AzureManagedControlPlane's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // OIDCIssuerProfileStatus is the OIDC issuer profile of the Managed Cluster.
@@ -696,6 +725,24 @@ func (m *AzureManagedControlPlane) GetConditions() clusterv1beta1.Conditions {
 // SetConditions will set the given conditions on an AzureManagedControlPlane object.
 func (m *AzureManagedControlPlane) SetConditions(conditions clusterv1beta1.Conditions) {
 	m.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the v1beta2 conditions for an AzureManagedControlPlane API object.
+// Note: GetV1Beta2Conditions will be renamed to GetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (m *AzureManagedControlPlane) GetV1Beta2Conditions() []metav1.Condition {
+	if m.Status.V1Beta2 == nil {
+		return nil
+	}
+	return m.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the v1beta2 conditions on an AzureManagedControlPlane object.
+// Note: SetV1Beta2Conditions will be renamed to SetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (m *AzureManagedControlPlane) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if m.Status.V1Beta2 == nil {
+		m.Status.V1Beta2 = &AzureManagedControlPlaneV1Beta2Status{}
+	}
+	m.Status.V1Beta2.Conditions = conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.
