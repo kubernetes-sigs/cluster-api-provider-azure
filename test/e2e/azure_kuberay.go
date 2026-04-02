@@ -290,7 +290,8 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 				"rayVersion": rayVersion,
 				"headGroupSpec": map[string]interface{}{
 					"rayStartParams": map[string]interface{}{
-						"dashboard-host": "0.0.0.0",
+						"dashboard-host":      "0.0.0.0",
+						"object-store-memory": "200000000",
 					},
 					"template": map[string]interface{}{
 						"spec": map[string]interface{}{
@@ -314,12 +315,12 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 									},
 									"resources": map[string]interface{}{
 										"requests": map[string]interface{}{
-											"cpu":    "300m",
-											"memory": "1Gi",
-										},
-										"limits": map[string]interface{}{
 											"cpu":    "500m",
 											"memory": "2Gi",
+										},
+										"limits": map[string]interface{}{
+											"cpu":    "1",
+											"memory": "4Gi",
 										},
 									},
 								},
@@ -334,7 +335,8 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 						"maxReplicas": int64(1),
 						"groupName":   "small-group",
 						"rayStartParams": map[string]interface{}{
-							"num-cpus": "1",
+							"num-cpus":            "1",
+							"object-store-memory": "200000000",
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -403,7 +405,8 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 					"rayVersion": rayVersion,
 					"headGroupSpec": map[string]interface{}{
 						"rayStartParams": map[string]interface{}{
-							"dashboard-host": "0.0.0.0",
+							"dashboard-host":      "0.0.0.0",
+							"object-store-memory": "200000000",
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -427,12 +430,12 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 										},
 										"resources": map[string]interface{}{
 											"requests": map[string]interface{}{
-												"cpu":    "300m",
-												"memory": "1Gi",
-											},
-											"limits": map[string]interface{}{
 												"cpu":    "500m",
 												"memory": "2Gi",
+											},
+											"limits": map[string]interface{}{
+												"cpu":    "1",
+												"memory": "4Gi",
 											},
 										},
 									},
@@ -447,7 +450,8 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 							"maxReplicas": int64(1),
 							"groupName":   "small-group",
 							"rayStartParams": map[string]interface{}{
-								"num-cpus": "1",
+								"num-cpus":            "1",
+								"object-store-memory": "200000000",
 							},
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
