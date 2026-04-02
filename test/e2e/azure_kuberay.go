@@ -41,8 +41,9 @@ const (
 	kubeRayOperatorHelmChartName   = "kuberay-operator"
 	kubeRayOperatorHelmReleaseName = "kuberay-operator"
 	kubeRayOperatorNamespace       = "default"
-	kubeRayVersion                 = "1.3.0"
-	rayImage                       = "rayproject/ray:2.41.0"
+	kubeRayVersion                 = "1.6.0"
+	rayVersion                     = "2.54.1"
+	rayImage                       = "rayproject/ray:" + rayVersion
 )
 
 var rayClusterGVR = schema.GroupVersionResource{
@@ -286,7 +287,7 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 				"namespace": namespace,
 			},
 			"spec": map[string]interface{}{
-				"rayVersion": "2.41.0",
+				"rayVersion": rayVersion,
 				"headGroupSpec": map[string]interface{}{
 					"rayStartParams": map[string]interface{}{
 						"dashboard-host": "0.0.0.0",
@@ -399,7 +400,7 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 					},
 				},
 				"rayClusterSpec": map[string]interface{}{
-					"rayVersion": "2.41.0",
+					"rayVersion": rayVersion,
 					"headGroupSpec": map[string]interface{}{
 						"rayStartParams": map[string]interface{}{
 							"dashboard-host": "0.0.0.0",
