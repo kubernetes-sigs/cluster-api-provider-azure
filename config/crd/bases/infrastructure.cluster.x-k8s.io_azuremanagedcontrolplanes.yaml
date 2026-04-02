@@ -988,7 +988,6 @@ spec:
                   Initialized is true when the control plane is available for initial contact.
                   This may occur before the control plane is fully ready.
                   In the AzureManagedControlPlane implementation, these are identical.
-                  Deprecated: Use status.initialization.controlPlaneInitialized instead.
                 type: boolean
               longRunningOperationStates:
                 description: |-
@@ -1036,9 +1035,7 @@ spec:
                     type: string
                 type: object
               ready:
-                description: |-
-                  Ready is true when the provider resource is ready.
-                  Deprecated: Use status.initialization.controlPlaneInitialized instead.
+                description: Ready is true when the provider resource is ready.
                 type: boolean
               v1beta2:
                 description: v1beta2 groups all the fields that will be added or modified

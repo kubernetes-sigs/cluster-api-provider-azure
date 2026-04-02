@@ -195,7 +195,6 @@ type SystemAssignedIdentityRole struct {
 // AzureMachineStatus defines the observed state of AzureMachine.
 type AzureMachineStatus struct {
 	// Ready is true when the provider resource is ready.
-	// Deprecated: Use status.initialization.provisioned instead.
 	// +optional
 	Ready bool `json:"ready"`
 

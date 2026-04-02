@@ -413,14 +413,12 @@ type AzureManagedControlPlaneStatus struct {
 	AutoUpgradeVersion string `json:"autoUpgradeVersion,omitempty"`
 
 	// Ready is true when the provider resource is ready.
-	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
 
 	// Initialized is true when the control plane is available for initial contact.
 	// This may occur before the control plane is fully ready.
 	// In the AzureManagedControlPlane implementation, these are identical.
-	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	// +optional
 	Initialized bool `json:"initialized,omitempty"`
 

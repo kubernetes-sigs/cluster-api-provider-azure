@@ -92,9 +92,7 @@ spec:
                     type: boolean
                 type: object
               ready:
-                description: |-
-                  Ready is true when the provider resource is ready.
-                  Deprecated: Use status.initialization.provisioned instead.
+                description: Ready is true when the provider resource is ready.
                 type: boolean
             type: object
         type: object

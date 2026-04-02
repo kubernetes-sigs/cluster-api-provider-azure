@@ -68,7 +68,6 @@ type AzureClusterStatus struct {
 	FailureDomains clusterv1beta1.FailureDomains `json:"failureDomains,omitempty"`
 
 	// Ready is true when the provider resource is ready.
-	// Deprecated: Use status.initialization.provisioned instead.
 	// +optional
 	Ready bool `json:"ready"`
 

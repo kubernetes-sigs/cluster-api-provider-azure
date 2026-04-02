@@ -42,7 +42,6 @@ type AzureASOManagedMachinePoolStatus struct {
 
 	// Ready represents whether or not the infrastructure is ready to be used. It fulfills Cluster API's
 	// machine pool infrastructure provider contract.
-	// Deprecated: Use status.initialization.provisioned instead.
 	//+optional
 	Ready bool `json:"ready"`
 

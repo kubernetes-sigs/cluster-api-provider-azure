@@ -244,7 +244,6 @@ type (
 	// AzureMachinePoolStatus defines the observed state of AzureMachinePool.
 	AzureMachinePoolStatus struct {
 		// Ready is true when the provider resource is ready.
-		// Deprecated: Use status.initialization.provisioned instead.
 		// +optional
 		Ready bool `json:"ready"`
 

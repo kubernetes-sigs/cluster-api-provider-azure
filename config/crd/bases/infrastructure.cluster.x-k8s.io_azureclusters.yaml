@@ -1501,9 +1501,7 @@ spec:
                   type: object
                 type: array
               ready:
-                description: |-
-                  Ready is true when the provider resource is ready.
-                  Deprecated: Use status.initialization.provisioned instead.
+                description: Ready is true when the provider resource is ready.
                 type: boolean
               v1beta2:
                 description: v1beta2 groups all the fields that will be added or modified

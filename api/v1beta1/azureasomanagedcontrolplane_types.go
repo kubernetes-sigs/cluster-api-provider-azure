@@ -33,13 +33,11 @@ type AzureASOManagedControlPlaneSpec struct {
 type AzureASOManagedControlPlaneStatus struct {
 	// Initialized represents whether or not the API server has been provisioned. It fulfills Cluster API's
 	// control plane provider contract. For AKS, this is equivalent to `ready`.
-	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	//+optional
 	Initialized bool `json:"initialized"`
 
 	// Ready represents whether or not the API server is ready to receive requests. It fulfills Cluster API's
 	// control plane provider contract. For AKS, this is equivalent to `initialized`.
-	// Deprecated: Use status.initialization.controlPlaneInitialized instead.
 	//+optional
 	Ready bool `json:"ready"`
 

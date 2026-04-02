@@ -34,7 +34,6 @@ type AzureManagedClusterSpec struct {
 // AzureManagedClusterStatus defines the observed state of AzureManagedCluster.
 type AzureManagedClusterStatus struct {
 	// Ready is true when the provider resource is ready.
-	// Deprecated: Use status.initialization.provisioned instead.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
 

@@ -75,8 +75,8 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				}, ampm)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(ampm.Status.FailureReason).To(BeNil())
-				g.Expect(ampm.Status.FailureMessage).To(BeNil())
+				g.Expect(ampm.Status.FailureReason).To(BeNil())  //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
+				g.Expect(ampm.Status.FailureMessage).To(BeNil()) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 			},
 		},
 		{
