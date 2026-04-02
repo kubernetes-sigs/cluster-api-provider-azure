@@ -58,13 +58,16 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
-        extraArgs: {}
+        extraArgs:
+          feature-gates: ${K8S_FEATURE_GATES:-"AllAlpha=true,AllBeta=true"}
+          runtime-config: api/all=true
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
+          feature-gates: AllAlpha=true,AllBeta=true
           v: "4"
       etcd:
         local:
@@ -72,6 +75,9 @@ spec:
           extraArgs:
             quota-backend-bytes: "8589934592"
       kubernetesVersion: ci/${CI_VERSION}
+      scheduler:
+        extraArgs:
+          feature-gates: AllAlpha=true,AllBeta=true
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0

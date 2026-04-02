@@ -4,7 +4,17 @@ namespace: default
 resources:
 - ../prow-ci-version
 - ../../../flavors/machinepool/machine-pool-deployment.yaml 
-patches: 
+patches:
+- patch: |-
+    - op: add
+      path: /spec/kubeadmConfigSpec/clusterConfiguration/scheduler
+      value:
+        extraArgs: {}
+  target:
+    kind: KubeadmControlPlane
+- path: ../patches/alpha-beta-feature-gates-kubeadmcontrolplane.yaml
+  target:
+    kind: KubeadmControlPlane
 - path: ../prow-machine-pool-ci-version/patches/kubeadm-bootstrap-k8s-ci-binaries.yaml
   target:
     group: bootstrap.cluster.x-k8s.io
