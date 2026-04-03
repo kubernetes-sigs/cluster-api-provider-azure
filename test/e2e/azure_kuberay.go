@@ -316,7 +316,7 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 									"resources": map[string]interface{}{
 										"requests": map[string]interface{}{
 											"cpu":    "500m",
-											"memory": "2Gi",
+											"memory": "1Gi",
 										},
 										"limits": map[string]interface{}{
 											"cpu":    "1",
@@ -431,7 +431,7 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 										"resources": map[string]interface{}{
 											"requests": map[string]interface{}{
 												"cpu":    "500m",
-												"memory": "2Gi",
+												"memory": "1Gi",
 											},
 											"limits": map[string]interface{}{
 												"cpu":    "1",
