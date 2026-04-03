@@ -44,6 +44,7 @@ const (
 	kubeRayVersion                 = "1.6.0"
 	rayVersion                     = "2.54.1"
 	rayImage                       = "rayproject/ray:" + rayVersion
+	objectStoreMemory              = "200000000" // ~200MB, prevents Ray from consuming all of /dev/shm
 )
 
 var rayClusterGVR = schema.GroupVersionResource{
@@ -291,7 +292,7 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 				"headGroupSpec": map[string]interface{}{
 					"rayStartParams": map[string]interface{}{
 						"dashboard-host":      "0.0.0.0",
-						"object-store-memory": "200000000",
+						"object-store-memory": objectStoreMemory,
 					},
 					"template": map[string]interface{}{
 						"spec": map[string]interface{}{
@@ -336,7 +337,7 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 						"groupName":   "small-group",
 						"rayStartParams": map[string]interface{}{
 							"num-cpus":            "1",
-							"object-store-memory": "200000000",
+							"object-store-memory": objectStoreMemory,
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -406,7 +407,7 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 					"headGroupSpec": map[string]interface{}{
 						"rayStartParams": map[string]interface{}{
 							"dashboard-host":      "0.0.0.0",
-							"object-store-memory": "200000000",
+							"object-store-memory": objectStoreMemory,
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -451,7 +452,7 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 							"groupName":   "small-group",
 							"rayStartParams": map[string]interface{}{
 								"num-cpus":            "1",
-								"object-store-memory": "200000000",
+								"object-store-memory": objectStoreMemory,
 							},
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
