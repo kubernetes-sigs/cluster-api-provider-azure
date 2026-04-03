@@ -23,6 +23,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -156,6 +157,7 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	// Infrastructure must be ready before control plane. We should also enqueue
 	// requests from control plane to infra cluster to keep control plane endpoint accurate.
 	aksCluster.Status.Ready = true
+	aksCluster.Status.Initialization = &infrav1.AzureManagedClusterInitializationStatus{Provisioned: ptr.To(true)}
 	aksCluster.Spec.ControlPlaneEndpoint = controlPlane.Spec.ControlPlaneEndpoint
 
 	if err := patchhelper.Patch(ctx, aksCluster); err != nil {

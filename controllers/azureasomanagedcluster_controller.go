@@ -205,6 +205,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	}()
 
 	asoManagedCluster.Status.Ready = false
+	asoManagedCluster.Status.Initialization = &infrav1.AzureASOManagedClusterInitializationStatus{Provisioned: ptr.To(false)}
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
 	if err != nil {
@@ -274,6 +275,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	asoManagedCluster.Spec.ControlPlaneEndpoint = asoManagedControlPlane.Status.ControlPlaneEndpoint
 
 	asoManagedCluster.Status.Ready = !asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero()
+	asoManagedCluster.Status.Initialization = &infrav1.AzureASOManagedClusterInitializationStatus{Provisioned: ptr.To(!asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero())}
 
 	return ctrl.Result{}, nil
 }

@@ -42,6 +42,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -238,6 +239,29 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 
 	v1beta1conditions.SetSummary(s.ControlPlane)
 
+	// Set v1beta2 Ready and Available conditions by mirroring the v1beta1 Ready summary.
+	// ControlPlane contract requires "Available" in addition to "Ready".
+	if readySummary := v1beta1conditions.Get(s.ControlPlane, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+		v1beta2conditions.Set(s.ControlPlane, metav1.Condition{
+			Type:               "Available",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return s.PatchHelper.Patch(
 		ctx,
 		s.ControlPlane,
@@ -249,7 +273,12 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 			infrav1.ManagedClusterRunningCondition,
 			infrav1.AgentPoolsReadyCondition,
 			infrav1.AzureResourceAvailableCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Available",
+			"Ready",
+		}},
+	)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.

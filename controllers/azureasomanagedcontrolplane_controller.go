@@ -169,6 +169,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 
 	asoManagedControlPlane.Status.Ready = false
 	asoManagedControlPlane.Status.Initialized = false
+	asoManagedControlPlane.Status.Initialization = &infrav1.AzureASOManagedControlPlaneInitializationStatus{ControlPlaneInitialized: ptr.To(false)}
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
 	if err != nil {
@@ -263,6 +264,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	// The AKS API doesn't allow us to distinguish between CAPI's definitions of "initialized" and "ready" so
 	// we treat them equivalently.
 	asoManagedControlPlane.Status.Initialized = asoManagedControlPlane.Status.Ready
+	asoManagedControlPlane.Status.Initialization = &infrav1.AzureASOManagedControlPlaneInitializationStatus{ControlPlaneInitialized: ptr.To(asoManagedControlPlane.Status.Initialized)}
 
 	return result, nil
 }

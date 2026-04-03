@@ -24,12 +24,14 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -302,13 +304,32 @@ func (s *MachinePoolMachineScope) updateDeleteMachineAnnotation() {
 func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
 	v1beta1conditions.SetSummary(s.AzureMachinePoolMachine)
 
+	// Set v1beta2 Ready condition by mirroring the v1beta1 Ready summary.
+	if readySummary := v1beta1conditions.Get(s.AzureMachinePoolMachine, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureMachinePoolMachine,
 		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			clusterv1beta1.ReadyCondition,
 			clusterv1.MachineNodeHealthyCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Ready",
+		}},
+	)
 }
 
 // Close updates the state of MachinePoolMachine.
@@ -369,6 +390,7 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 		// Node was found. Check if it is ready.
 		nodeReady := noderefutil.IsNodeReady(node)
 		s.AzureMachinePoolMachine.Status.Ready = nodeReady
+		s.AzureMachinePoolMachine.Status.Initialization = &infrav1exp.AzureMachinePoolMachineInitializationStatus{Provisioned: ptr.To(nodeReady)}
 		if nodeReady {
 			v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition)
 		} else {

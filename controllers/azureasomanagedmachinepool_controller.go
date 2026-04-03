@@ -154,6 +154,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 	}()
 
 	asoManagedMachinePool.Status.Ready = false
+	asoManagedMachinePool.Status.Initialization = &infrav1.AzureASOManagedMachinePoolInitializationStatus{Provisioned: ptr.To(false)}
 
 	machinePool, err := GetOwnerMachinePool(ctx, r.Client, asoManagedMachinePool.ObjectMeta)
 	if err != nil {
@@ -284,6 +285,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	}
 
 	asoManagedMachinePool.Status.Ready = true
+	asoManagedMachinePool.Status.Initialization = &infrav1.AzureASOManagedMachinePoolInitializationStatus{Provisioned: ptr.To(true)}
 
 	return ctrl.Result{}, nil
 }

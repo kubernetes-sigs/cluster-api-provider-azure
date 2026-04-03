@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/cluster-api/util/labels/format"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -630,11 +631,13 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 // SetReady sets the AzureMachinePool Ready Status to true.
 func (m *MachinePoolScope) SetReady() {
 	m.AzureMachinePool.Status.Ready = true
+	m.AzureMachinePool.Status.Initialization = &infrav1exp.AzureMachinePoolInitializationStatus{Provisioned: ptr.To(true)}
 }
 
 // SetNotReady sets the AzureMachinePool Ready Status to false.
 func (m *MachinePoolScope) SetNotReady() {
 	m.AzureMachinePool.Status.Ready = false
+	m.AzureMachinePool.Status.Initialization = &infrav1exp.AzureMachinePoolInitializationStatus{Provisioned: ptr.To(false)}
 }
 
 // SetFailureMessage sets the AzureMachinePool status failure message.
@@ -675,6 +678,22 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 	defer done()
 
 	v1beta1conditions.SetSummary(m.AzureMachinePool)
+
+	// Set v1beta2 Ready condition by mirroring the v1beta1 Ready summary.
+	if readySummary := v1beta1conditions.Get(m.AzureMachinePool, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(m.AzureMachinePool, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return m.patchHelper.Patch(
 		ctx,
 		m.AzureMachinePool,
@@ -684,7 +703,11 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 			infrav1.ScaleSetDesiredReplicasCondition,
 			infrav1.ScaleSetModelUpdatedCondition,
 			infrav1.ScaleSetRunningCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Ready",
+		}},
+	)
 }
 
 // Close the MachinePoolScope by updating the AzureMachinePool spec and AzureMachinePool status.

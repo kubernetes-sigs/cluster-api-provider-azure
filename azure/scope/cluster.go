@@ -36,6 +36,7 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -937,6 +938,21 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 
 	v1beta1conditions.SetSummary(s.AzureCluster)
 
+	// Set v1beta2 Ready condition by mirroring the v1beta1 Ready summary.
+	if readySummary := v1beta1conditions.Get(s.AzureCluster, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(s.AzureCluster, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
@@ -957,7 +973,11 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.PrivateDNSLinkReadyCondition,
 			infrav1.PrivateDNSRecordReadyCondition,
 			infrav1.PrivateEndpointsReadyCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Ready",
+		}},
+	)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.

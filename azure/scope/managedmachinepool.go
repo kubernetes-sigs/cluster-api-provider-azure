@@ -23,10 +23,12 @@ import (
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -110,12 +112,31 @@ func (s *ManagedMachinePoolScope) PatchObject(ctx context.Context) error {
 
 	v1beta1conditions.SetSummary(s.InfraMachinePool)
 
+	// Set v1beta2 Ready condition by mirroring the v1beta1 Ready summary.
+	if readySummary := v1beta1conditions.Get(s.InfraMachinePool, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(s.InfraMachinePool, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return s.patchHelper.Patch(
 		ctx,
 		s.InfraMachinePool,
 		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			clusterv1beta1.ReadyCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Ready",
+		}},
+	)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
@@ -263,6 +284,7 @@ func (s *ManagedMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 // SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
 func (s *ManagedMachinePoolScope) SetAgentPoolReady(ready bool) {
 	s.InfraMachinePool.Status.Ready = ready
+	s.InfraMachinePool.Status.Initialization = &infrav1.AzureManagedMachinePoolInitializationStatus{Provisioned: ptr.To(ready)}
 }
 
 // SetLongRunningOperationState will set the future on the AzureManagedMachinePool status to allow the resource to continue

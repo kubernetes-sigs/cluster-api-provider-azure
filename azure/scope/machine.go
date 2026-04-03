@@ -26,12 +26,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -593,11 +595,13 @@ func (m *MachineScope) SetVMState(v infrav1.ProvisioningState) {
 // SetReady sets the AzureMachine Ready Status to true.
 func (m *MachineScope) SetReady() {
 	m.AzureMachine.Status.Ready = true
+	m.AzureMachine.Status.Initialization = &infrav1.AzureMachineInitializationStatus{Provisioned: ptr.To(true)}
 }
 
 // SetNotReady sets the AzureMachine Ready Status to false.
 func (m *MachineScope) SetNotReady() {
 	m.AzureMachine.Status.Ready = false
+	m.AzureMachine.Status.Initialization = &infrav1.AzureMachineInitializationStatus{Provisioned: ptr.To(false)}
 }
 
 // SetFailureMessage sets the AzureMachine status failure message.
@@ -659,6 +663,21 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 func (m *MachineScope) PatchObject(ctx context.Context) error {
 	v1beta1conditions.SetSummary(m.AzureMachine)
 
+	// Set v1beta2 Ready condition by mirroring the v1beta1 Ready summary.
+	if readySummary := v1beta1conditions.Get(m.AzureMachine, clusterv1beta1.ReadyCondition); readySummary != nil {
+		reason := readySummary.Reason
+		if reason == "" {
+			reason = string(readySummary.Status)
+		}
+		v1beta2conditions.Set(m.AzureMachine, metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionStatus(readySummary.Status),
+			Reason:             reason,
+			Message:            readySummary.Message,
+			LastTransitionTime: readySummary.LastTransitionTime,
+		})
+	}
+
 	return m.patchHelper.Patch(
 		ctx,
 		m.AzureMachine,
@@ -667,7 +686,11 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 			infrav1.VMRunningCondition,
 			infrav1.AvailabilitySetReadyCondition,
 			infrav1.NetworkInterfaceReadyCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			"Ready",
+		}},
+	)
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
