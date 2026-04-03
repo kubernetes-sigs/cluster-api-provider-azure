@@ -1536,11 +1536,17 @@ spec:
 	Context("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vm-kuberay")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
+				withFlavor("ci-version"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -1573,11 +1579,17 @@ spec:
 
 		It("Creates a RayJob and verifies it completes successfully", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vm-rayjob")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
+				withFlavor("ci-version"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
