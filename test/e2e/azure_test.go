@@ -1464,7 +1464,7 @@ spec:
 
 	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
 	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
-	Context("Creating a cluster and deploying KubeRay [OPTIONAL]", func() {
+	Context("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "kuberay")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)

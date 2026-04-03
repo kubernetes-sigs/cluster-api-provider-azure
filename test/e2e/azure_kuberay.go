@@ -41,8 +41,9 @@ const (
 	kubeRayOperatorHelmChartName   = "kuberay-operator"
 	kubeRayOperatorHelmReleaseName = "kuberay-operator"
 	kubeRayOperatorNamespace       = "default"
-	kubeRayVersion                 = "1.3.0"
-	rayImage                       = "rayproject/ray:2.41.0"
+	kubeRayVersion                 = "1.6.0"
+	rayVersion                     = "2.54.1"
+	rayImage                       = "rayproject/ray:" + rayVersion
 )
 
 var rayClusterGVR = schema.GroupVersionResource{
@@ -286,10 +287,11 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 				"namespace": namespace,
 			},
 			"spec": map[string]interface{}{
-				"rayVersion": "2.41.0",
+				"rayVersion": rayVersion,
 				"headGroupSpec": map[string]interface{}{
 					"rayStartParams": map[string]interface{}{
-						"dashboard-host": "0.0.0.0",
+						"dashboard-host":      "0.0.0.0",
+						"object-store-memory": "200000000",
 					},
 					"template": map[string]interface{}{
 						"spec": map[string]interface{}{
@@ -313,12 +315,12 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 									},
 									"resources": map[string]interface{}{
 										"requests": map[string]interface{}{
-											"cpu":    "300m",
+											"cpu":    "500m",
 											"memory": "1Gi",
 										},
 										"limits": map[string]interface{}{
-											"cpu":    "500m",
-											"memory": "2Gi",
+											"cpu":    "1",
+											"memory": "4Gi",
 										},
 									},
 								},
@@ -333,7 +335,8 @@ func newRayClusterUnstructured(name, namespace string) *unstructured.Unstructure
 						"maxReplicas": int64(1),
 						"groupName":   "small-group",
 						"rayStartParams": map[string]interface{}{
-							"num-cpus": "1",
+							"num-cpus":            "1",
+							"object-store-memory": "200000000",
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -399,10 +402,11 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 					},
 				},
 				"rayClusterSpec": map[string]interface{}{
-					"rayVersion": "2.41.0",
+					"rayVersion": rayVersion,
 					"headGroupSpec": map[string]interface{}{
 						"rayStartParams": map[string]interface{}{
-							"dashboard-host": "0.0.0.0",
+							"dashboard-host":      "0.0.0.0",
+							"object-store-memory": "200000000",
 						},
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -426,12 +430,12 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 										},
 										"resources": map[string]interface{}{
 											"requests": map[string]interface{}{
-												"cpu":    "300m",
+												"cpu":    "500m",
 												"memory": "1Gi",
 											},
 											"limits": map[string]interface{}{
-												"cpu":    "500m",
-												"memory": "2Gi",
+												"cpu":    "1",
+												"memory": "4Gi",
 											},
 										},
 									},
@@ -446,7 +450,8 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 							"maxReplicas": int64(1),
 							"groupName":   "small-group",
 							"rayStartParams": map[string]interface{}{
-								"num-cpus": "1",
+								"num-cpus":            "1",
+								"object-store-memory": "200000000",
 							},
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
