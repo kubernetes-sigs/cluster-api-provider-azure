@@ -209,8 +209,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v0.6.1
-      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.1/addon-components.yaml
+    - name: v0.6.2
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.2/addon-components.yaml
       type: url
       contract: v1beta1
       files:
@@ -263,7 +263,7 @@ variables:
   OLD_PROVIDER_UPGRADE_VERSION: "v1.22.2"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.23.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
-  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.1"
+  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.2"
   CI_RG: "${CI_RG:-capz-ci}"
   USER_IDENTITY: "${USER_IDENTITY:-cloud-provider-user-identity}"
   EXP_APISERVER_ILB: "true"
