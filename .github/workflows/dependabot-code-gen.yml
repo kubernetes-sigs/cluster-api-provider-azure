@@ -20,20 +20,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+      uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
       with:
         egress-policy: audit
     - name: Get Go version
       id: vars
       run: echo "go_version=$(make go-version)" >> $GITHUB_OUTPUT
     - name: Set up Go
-      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version: ${{ steps.vars.outputs.go_version }}
       id: go
     - name: Check out code into the Go module directory
       uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # tag=v4.3.0
+    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       name: Restore go cache
       with:
         path: |
@@ -46,7 +46,7 @@ jobs:
       run: make modules
     - name: Update generated code
       run: make generate
-    - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # tag=v9.1.4
+    - uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
       name: Commit changes
       with:
         author_name: dependabot[bot]
