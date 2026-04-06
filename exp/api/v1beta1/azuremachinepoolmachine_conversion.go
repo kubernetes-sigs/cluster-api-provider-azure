@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,32 @@ limitations under the License.
 
 package v1beta1
 
-// Hub marks AzureMachinePoolMachine as a conversion hub.
-func (*AzureMachinePoolMachine) Hub() {}
+import (
+"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-// Hub marks AzureMachinePoolMachineList as a conversion hub.
-func (*AzureMachinePoolMachineList) Hub() {}
+infraexpv1beta2 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+)
+
+// ConvertTo converts this AzureMachinePoolMachine to the Hub version (v1beta2).
+func (src *AzureMachinePoolMachine) ConvertTo(dstRaw conversion.Hub) error {
+dst := dstRaw.(*infraexpv1beta2.AzureMachinePoolMachine)
+return Convert_v1beta1_AzureMachinePoolMachine_To_v1beta2_AzureMachinePoolMachine(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta2) to this version (v1beta1).
+func (dst *AzureMachinePoolMachine) ConvertFrom(srcRaw conversion.Hub) error {
+src := srcRaw.(*infraexpv1beta2.AzureMachinePoolMachine)
+return Convert_v1beta2_AzureMachinePoolMachine_To_v1beta1_AzureMachinePoolMachine(src, dst, nil)
+}
+
+// ConvertTo converts this AzureMachinePoolMachineList to the Hub version.
+func (src *AzureMachinePoolMachineList) ConvertTo(dstRaw conversion.Hub) error {
+dst := dstRaw.(*infraexpv1beta2.AzureMachinePoolMachineList)
+return Convert_v1beta1_AzureMachinePoolMachineList_To_v1beta2_AzureMachinePoolMachineList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version to this version.
+func (dst *AzureMachinePoolMachineList) ConvertFrom(srcRaw conversion.Hub) error {
+src := srcRaw.(*infraexpv1beta2.AzureMachinePoolMachineList)
+return Convert_v1beta2_AzureMachinePoolMachineList_To_v1beta1_AzureMachinePoolMachineList(src, dst, nil)
+}
