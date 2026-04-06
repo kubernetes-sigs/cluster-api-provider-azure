@@ -3,9 +3,15 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.4
+    loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.0-rc.0
     loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.4
+    loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.0-rc.0
+    loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.4
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.0-rc.0
     loadBehavior: tryLoad
@@ -25,6 +31,17 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+    - name: v1.12.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.4/core-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "- --leader-elect"
+        new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
     - name: v1.13.0-rc.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.0-rc.0/core-components.yaml
       type: url
@@ -49,6 +66,15 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+    - name: v1.12.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.4/bootstrap-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
     - name: v1.13.0-rc.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.0-rc.0/bootstrap-components.yaml
       type: url
@@ -71,6 +97,15 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+    - name: v1.12.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.4/control-plane-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
     - name: v1.13.0-rc.0
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.0-rc.0/control-plane-components.yaml
       type: url
