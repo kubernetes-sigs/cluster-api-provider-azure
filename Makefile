@@ -30,6 +30,10 @@ GOPROXY := https://proxy.golang.org
 endif
 export GOPROXY
 
+# Ensure correct toolchain is used
+GOTOOLCHAIN = go$(GO_VERSION)
+export GOTOOLCHAIN
+
 # Active module mode, as we use go modules to manage dependencies
 export GO111MODULE=on
 
@@ -110,7 +114,7 @@ RELEASE_NOTES_VER := v0.18.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-TRIVY_VER := 0.64.0
+TRIVY_VER := 0.69.2
 
 KPROMO_VER := v4.0.5
 KPROMO_BIN := kpromo
