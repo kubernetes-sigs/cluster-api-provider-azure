@@ -269,7 +269,7 @@ variables:
   EXP_APISERVER_ILB: "true"
 
 intervals:
-  default/wait-controllers: ["3m", "10s"]
+  default/wait-controllers: ["10m", "10s"]
   default/wait-cluster: ["20m", "10s"]
   default/wait-private-cluster: ["30m", "10s"]
   default/wait-control-plane: ["20m", "10s"]

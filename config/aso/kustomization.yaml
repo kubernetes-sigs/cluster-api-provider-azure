@@ -3,7 +3,7 @@ kind: Component
 namespace: capz-system
 resources:
   # The ASO version here is managed by `make generate-aso-crds`
-  - https://github.com/Azure/azure-service-operator/releases/download/v2.13.0/azureserviceoperator_v2.13.0.yaml
+  - https://github.com/Azure/azure-service-operator/releases/download/v2.17.0/azureserviceoperator_v2.17.0.yaml
   - crds.yaml
   - settings.yaml
 patches:
@@ -30,28 +30,40 @@ patches:
       - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
         path: /spec/template/spec/containers/0/args/6
         value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
-
-      # ASO will provide a startupProbe starting in v2.14.0.
-      # These patches should be removed when the upstream probe is set.
-      - op: test
-        path: /spec/template/spec/containers/0/startupProbe
-        value: null
-      - op: add
-        path: /spec/template/spec/containers/0/startupProbe
-        value:
-          httpGet:
-            path: /healthz
-            port: 8081
-          periodSeconds: 10
-          failureThreshold: 12
-      - op: remove
-        path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
-      - op: remove
-        path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
     target:
       group: apps
       kind: Deployment
       name: azureserviceoperator-controller-manager
+      version: v1
+  # TODO: remove in next release after upgrades from versions with v1api20230315preview have migrated.
+  # The FleetsMember CRD moved from v1api20230315preview to v1api20250301 with no overlapping versions.
+  # Without these stubs, CRD updates fail because the old storage version in status.storedVersions
+  # is not present in spec.versions.
+  - patch: |-
+      - op: add
+        path: /spec/versions/-
+        value:
+          name: v1api20230315preview
+          served: false
+          storage: false
+          schema:
+            openAPIV3Schema:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      - op: add
+        path: /spec/versions/-
+        value:
+          name: v1api20230315previewstorage
+          served: false
+          storage: false
+          schema:
+            openAPIV3Schema:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+    target:
+      group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: fleetsmembers.containerservice.azure.com
       version: v1
 replacements:
   - source:
