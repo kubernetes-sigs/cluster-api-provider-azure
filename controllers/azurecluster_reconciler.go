@@ -20,7 +20,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -200,8 +201,9 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 	}
 
 	for _, zone := range zones {
-		s.scope.SetFailureDomain(zone, clusterv1beta1.FailureDomainSpec{
-			ControlPlane: true,
+		s.scope.SetFailureDomain(zone, clusterv1.FailureDomain{
+			Name:         zone,
+			ControlPlane: ptr.To(true),
 		})
 	}
 

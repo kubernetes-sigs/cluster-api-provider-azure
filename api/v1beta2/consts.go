@@ -16,11 +16,13 @@ limitations under the License.
 
 package v1beta2
 
+import clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+
 
 // AzureCluster Conditions and Reasons.
 const (
 	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
-	NetworkInfrastructureReadyCondition string = "NetworkInfrastructureReady"
+	NetworkInfrastructureReadyCondition clusterv1beta1.ConditionType = "NetworkInfrastructureReady"
 	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
@@ -28,9 +30,9 @@ const (
 // AzureMachine Conditions and Reasons.
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
-	VMRunningCondition string = "VMRunning"
+	VMRunningCondition clusterv1beta1.ConditionType = "VMRunning"
 	// VMIdentitiesReadyCondition reports on the readiness of the Azure VM identities.
-	VMIdentitiesReadyCondition string = "VMIdentitiesReady"
+	VMIdentitiesReadyCondition clusterv1beta1.ConditionType = "VMIdentitiesReady"
 	// VMCreatingReason used when the vm creation is in progress.
 	VMCreatingReason = "VMCreating"
 	// VMUpdatingReason used when the vm updating is in progress.
@@ -46,7 +48,7 @@ const (
 	// WaitingForBootstrapDataReason used when machine is waiting for bootstrap data to be ready before proceeding.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 	// BootstrapSucceededCondition reports the result of the execution of the bootstrap data on the machine.
-	BootstrapSucceededCondition string = "BootstrapSucceeded"
+	BootstrapSucceededCondition clusterv1beta1.ConditionType = "BootstrapSucceeded"
 	// BootstrapInProgressReason is used to indicate the bootstrap data has not finished executing.
 	BootstrapInProgressReason = "BootstrapInProgress"
 	// BootstrapFailedReason is used to indicate the bootstrap process ran into an error.
@@ -56,7 +58,7 @@ const (
 // AzureMachinePool Conditions and Reasons.
 const (
 	// ScaleSetRunningCondition reports on current status of the Azure Scale Set.
-	ScaleSetRunningCondition string = "ScaleSetRunning"
+	ScaleSetRunningCondition clusterv1beta1.ConditionType = "ScaleSetRunning"
 	// ScaleSetCreatingReason used when the scale set creation is in progress.
 	ScaleSetCreatingReason = "ScaleSetCreating"
 	// ScaleSetUpdatingReason used when the scale set updating is in progress.
@@ -67,14 +69,14 @@ const (
 	ScaleSetProvisionFailedReason = "ScaleSetProvisionFailed"
 
 	// ScaleSetDesiredReplicasCondition reports on the scaling state of the machine pool.
-	ScaleSetDesiredReplicasCondition string = "ScaleSetDesiredReplicas"
+	ScaleSetDesiredReplicasCondition clusterv1beta1.ConditionType = "ScaleSetDesiredReplicas"
 	// ScaleSetScaleUpReason describes the machine pool scaling up.
 	ScaleSetScaleUpReason = "ScaleSetScalingUp"
 	// ScaleSetScaleDownReason describes the machine pool scaling down.
 	ScaleSetScaleDownReason = "ScaleSetScalingDown"
 
 	// ScaleSetModelUpdatedCondition reports on the model state of the pool.
-	ScaleSetModelUpdatedCondition string = "ScaleSetModelUpdated"
+	ScaleSetModelUpdatedCondition clusterv1beta1.ConditionType = "ScaleSetModelUpdated"
 	// ScaleSetModelOutOfDateReason describes the machine pool model being out of date.
 	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
 )
@@ -82,57 +84,57 @@ const (
 // AzureManagedCluster Conditions and Reasons.
 const (
 	// ManagedClusterRunningCondition means the AKS cluster exists and is in a running state.
-	ManagedClusterRunningCondition string = "ManagedClusterRunning"
+	ManagedClusterRunningCondition clusterv1beta1.ConditionType = "ManagedClusterRunning"
 	// AgentPoolsReadyCondition means the AKS agent pools exist and are ready to be used.
-	AgentPoolsReadyCondition string = "AgentPoolsReady"
+	AgentPoolsReadyCondition clusterv1beta1.ConditionType = "AgentPoolsReady"
 	// AzureResourceAvailableCondition means the AKS cluster is healthy according to Azure's Resource Health API.
-	AzureResourceAvailableCondition string = "AzureResourceAvailable"
+	AzureResourceAvailableCondition clusterv1beta1.ConditionType = "AzureResourceAvailable"
 )
 
 // Azure Services Conditions and Reasons.
 const (
 	// ResourceGroupReadyCondition means the resource group exists and is ready to be used.
-	ResourceGroupReadyCondition string = "ResourceGroupReady"
+	ResourceGroupReadyCondition clusterv1beta1.ConditionType = "ResourceGroupReady"
 	// VNetReadyCondition means the virtual network exists and is ready to be used.
-	VNetReadyCondition string = "VNetReady"
+	VNetReadyCondition clusterv1beta1.ConditionType = "VNetReady"
 	// VnetPeeringReadyCondition means the virtual network peerings exist and are ready to be used.
-	VnetPeeringReadyCondition string = "VnetPeeringReady"
+	VnetPeeringReadyCondition clusterv1beta1.ConditionType = "VnetPeeringReady"
 	// SecurityGroupsReadyCondition means the security groups exist and are ready to be used.
-	SecurityGroupsReadyCondition string = "SecurityGroupsReady"
+	SecurityGroupsReadyCondition clusterv1beta1.ConditionType = "SecurityGroupsReady"
 	// RouteTablesReadyCondition means the route tables exist and are ready to be used.
-	RouteTablesReadyCondition string = "RouteTablesReady"
+	RouteTablesReadyCondition clusterv1beta1.ConditionType = "RouteTablesReady"
 	// PublicIPsReadyCondition means the public IPs exist and are ready to be used.
-	PublicIPsReadyCondition string = "PublicIPsReady"
+	PublicIPsReadyCondition clusterv1beta1.ConditionType = "PublicIPsReady"
 	// NATGatewaysReadyCondition means the NAT gateways exist and are ready to be used.
-	NATGatewaysReadyCondition string = "NATGatewaysReady"
+	NATGatewaysReadyCondition clusterv1beta1.ConditionType = "NATGatewaysReady"
 	// SubnetsReadyCondition means the subnets exist and are ready to be used.
-	SubnetsReadyCondition string = "SubnetsReady"
+	SubnetsReadyCondition clusterv1beta1.ConditionType = "SubnetsReady"
 	// LoadBalancersReadyCondition means the load balancers exist and are ready to be used.
-	LoadBalancersReadyCondition string = "LoadBalancersReady"
+	LoadBalancersReadyCondition clusterv1beta1.ConditionType = "LoadBalancersReady"
 	// PrivateDNSZoneReadyCondition means the private DNS zone exists and is ready to be used.
-	PrivateDNSZoneReadyCondition string = "PrivateDNSZoneReady"
+	PrivateDNSZoneReadyCondition clusterv1beta1.ConditionType = "PrivateDNSZoneReady"
 	// PrivateDNSLinkReadyCondition means the private DNS links exist and are ready to be used.
-	PrivateDNSLinkReadyCondition string = "PrivateDNSLinkReady"
+	PrivateDNSLinkReadyCondition clusterv1beta1.ConditionType = "PrivateDNSLinkReady"
 	// PrivateDNSRecordReadyCondition means the private DNS records exist and are ready to be used.
-	PrivateDNSRecordReadyCondition string = "PrivateDNSRecordReady"
+	PrivateDNSRecordReadyCondition clusterv1beta1.ConditionType = "PrivateDNSRecordReady"
 	// BastionHostReadyCondition means the bastion host exists and is ready to be used.
-	BastionHostReadyCondition string = "BastionHostReady"
+	BastionHostReadyCondition clusterv1beta1.ConditionType = "BastionHostReady"
 	// InboundNATRulesReadyCondition means the inbound NAT rules exist and are ready to be used.
-	InboundNATRulesReadyCondition string = "InboundNATRulesReady"
+	InboundNATRulesReadyCondition clusterv1beta1.ConditionType = "InboundNATRulesReady"
 	// AvailabilitySetReadyCondition means the availability set exists and is ready to be used.
-	AvailabilitySetReadyCondition string = "AvailabilitySetReady"
+	AvailabilitySetReadyCondition clusterv1beta1.ConditionType = "AvailabilitySetReady"
 	// RoleAssignmentReadyCondition means the role assignment exists and is ready to be used.
-	RoleAssignmentReadyCondition string = "RoleAssignmentReady"
+	RoleAssignmentReadyCondition clusterv1beta1.ConditionType = "RoleAssignmentReady"
 	// DisksReadyCondition means the disks exist and are ready to be used.
-	DisksReadyCondition string = "DisksReady"
+	DisksReadyCondition clusterv1beta1.ConditionType = "DisksReady"
 	// NetworkInterfaceReadyCondition means the network interfaces exist and are ready to be used.
-	NetworkInterfaceReadyCondition string = "NetworkInterfacesReady"
+	NetworkInterfaceReadyCondition clusterv1beta1.ConditionType = "NetworkInterfacesReady"
 	// PrivateEndpointsReadyCondition means the private endpoints exist and are ready to be used.
-	PrivateEndpointsReadyCondition string = "PrivateEndpointsReady"
+	PrivateEndpointsReadyCondition clusterv1beta1.ConditionType = "PrivateEndpointsReady"
 	// FleetReadyCondition means the Fleet exists and is ready to be used.
-	FleetReadyCondition string = "FleetReady"
+	FleetReadyCondition clusterv1beta1.ConditionType = "FleetReady"
 	// AKSExtensionsReadyCondition means the AKS Extensions exist and are ready to be used.
-	AKSExtensionsReadyCondition string = "AKSExtensionsReady"
+	AKSExtensionsReadyCondition clusterv1beta1.ConditionType = "AKSExtensionsReady"
 
 	// CreatingReason means the resource is being created.
 	CreatingReason = "Creating"

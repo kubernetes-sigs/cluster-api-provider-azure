@@ -23,12 +23,12 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -187,7 +187,7 @@ func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, r
 	// Upon first create of an AKS service, the node pools are provided to the CreateOrUpdate call. After the initial
 	// create of the control plane and node pools, the control plane will transition to initialized. After the control
 	// plane is initialized, we can proceed to reconcile managed machine pools.
-	if !controlPlane.Status.Initialized {
+	if !(controlPlane.Status.Initialization.ControlPlaneInitialized != nil && *controlPlane.Status.Initialization.ControlPlaneInitialized) {
 		log.Info("AzureManagedControlPlane is not initialized")
 		return reconcile.Result{}, nil
 	}
@@ -269,8 +269,8 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Cont
 		scope.SetAgentPoolReady(false)
 		// Ensure the ready condition is false, but do not overwrite an existing
 		// error condition which might provide more details.
-		if v1beta1conditions.IsTrue(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition) {
-			v1beta1conditions.MarkFalse(scope.InfraMachinePool, infrav1.AgentPoolsReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s", err.Error())
+		if conditions.IsTrue(scope.InfraMachinePool, string(infrav1.AgentPoolsReadyCondition)) {
+			conditions.Set(scope.InfraMachinePool, metav1.Condition{Type: string(infrav1.AgentPoolsReadyCondition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s", err.Error())})
 		}
 
 		// Handle transient and terminal errors

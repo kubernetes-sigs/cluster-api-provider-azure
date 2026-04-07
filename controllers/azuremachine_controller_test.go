@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -251,7 +251,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.ready {
-				g.Expect(machineScope.AzureMachine.Status.Ready).To(BeTrue())
+				g.Expect(ptr.Deref(machineScope.AzureMachine.Status.Initialization.Provisioned, false)).To(BeTrue())
 			}
 			if tc.machineScopeFailureReason != "" {
 				g.Expect(machineScope.AzureMachine.Status.FailureReason).NotTo(BeNil())
@@ -588,7 +588,7 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 					},
 				},
 			},
-			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Port: 6443,
 			},
 		},

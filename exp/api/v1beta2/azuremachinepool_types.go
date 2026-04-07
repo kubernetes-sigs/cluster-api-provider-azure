@@ -471,3 +471,27 @@ func (amp *AzureMachinePool) SetFutures(futures infrav1.Futures) {
 func init() {
 	SchemeBuilder.Register(&AzureMachinePool{}, &AzureMachinePoolList{})
 }
+
+// SetNetworkInterfacesDefaults sets the defaults for the network interfaces.
+func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
+if (amp.Spec.Template.SubnetName != "" || amp.Spec.Template.AcceleratedNetworking != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 {
+return
+}
+
+if len(amp.Spec.Template.NetworkInterfaces) == 0 {
+amp.Spec.Template.NetworkInterfaces = []infrav1.NetworkInterface{
+{
+SubnetName:            amp.Spec.Template.SubnetName,
+AcceleratedNetworking: amp.Spec.Template.AcceleratedNetworking,
+},
+}
+amp.Spec.Template.SubnetName = ""
+amp.Spec.Template.AcceleratedNetworking = nil
+}
+
+for i := 0; i < len(amp.Spec.Template.NetworkInterfaces); i++ {
+if amp.Spec.Template.NetworkInterfaces[i].PrivateIPConfigs == 0 {
+amp.Spec.Template.NetworkInterfaces[i].PrivateIPConfigs = 1
+}
+}
+}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"unsafe"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/blang/semver"
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
@@ -126,7 +128,7 @@ func (amp *AzureMachinePool) ValidateNetwork() error {
 
 // ValidateOSDisk of an AzureMachinePool.
 func (amp *AzureMachinePool) ValidateOSDisk() error {
-	if errs := webhooks.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+	if errs := webhooks.ValidateOSDisk(*(*infrav1beta2.OSDisk)(unsafe.Pointer(&amp.Spec.Template.OSDisk)), field.NewPath("osDisk")); len(errs) > 0 {
 		return errs.ToAggregate()
 	}
 	return nil
@@ -136,7 +138,7 @@ func (amp *AzureMachinePool) ValidateOSDisk() error {
 func (amp *AzureMachinePool) ValidateImage() error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
-		if errs := webhooks.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
+		if errs := webhooks.ValidateImage((*infrav1beta2.Image)(unsafe.Pointer(image)), field.NewPath("image")); len(errs) > 0 {
 			return errs.ToAggregate()
 		}
 	}
@@ -176,7 +178,7 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
 func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	fldPath := field.NewPath("userAssignedIdentities")
-	if errs := webhooks.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
+	if errs := webhooks.ValidateUserAssignedIdentity(infrav1beta2.VMIdentity(amp.Spec.Identity), *(*[]infrav1beta2.UserAssignedIdentity)(unsafe.Pointer(&amp.Spec.UserAssignedIdentities)), fldPath); len(errs) > 0 {
 		return kerrors.NewAggregate(errs.ToAggregate().Errors())
 	}
 
@@ -221,7 +223,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 		}
 
 		fldPath := field.NewPath("roleAssignmentName")
-		if errs := webhooks.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
+		if errs := webhooks.ValidateSystemAssignedIdentity(infrav1beta2.VMIdentity(amp.Spec.Identity), oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 

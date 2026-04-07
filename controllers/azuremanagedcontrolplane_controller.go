@@ -35,7 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"k8s.io/utils/ptr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -269,8 +270,8 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
-	scope.ControlPlane.Status.Ready = true
-	scope.ControlPlane.Status.Initialized = true
+	scope.ControlPlane.Status.Initialization.Provisioned = ptr.To(true)
+	scope.ControlPlane.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 	scope.ControlPlane.Status.Version = scope.ControlPlane.Spec.Version
 
 	log.Info("Successfully reconciled")

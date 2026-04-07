@@ -30,12 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,7 +45,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -155,7 +154,7 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := v1beta1patch.NewHelper(asoManagedControlPlane, r.Client)
+	patchHelper, err := patch.NewHelper(asoManagedControlPlane, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
@@ -167,8 +166,8 @@ func (r *AzureASOManagedControlPlaneReconciler) Reconcile(ctx context.Context, r
 		}
 	}()
 
-	asoManagedControlPlane.Status.Ready = false
-	asoManagedControlPlane.Status.Initialized = false
+	asoManagedControlPlane.Status.Initialization.Provisioned = ptr.To(false)
+	asoManagedControlPlane.Status.Initialization.ControlPlaneInitialized = ptr.To(false)
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedControlPlane.ObjectMeta)
 	if err != nil {
@@ -259,10 +258,10 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	// ensure we refresh the token when it expires
 	result := ctrl.Result{RequeueAfter: ptr.Deref(tokenExpiresIn, 0)}
 
-	asoManagedControlPlane.Status.Ready = !asoManagedControlPlane.Status.ControlPlaneEndpoint.IsZero()
+	asoManagedControlPlane.Status.Initialization.Provisioned = ptr.To(!asoManagedControlPlane.Status.ControlPlaneEndpoint.IsZero())
 	// The AKS API doesn't allow us to distinguish between CAPI's definitions of "initialized" and "ready" so
 	// we treat them equivalently.
-	asoManagedControlPlane.Status.Initialized = asoManagedControlPlane.Status.Ready
+	asoManagedControlPlane.Status.Initialization.ControlPlaneInitialized = asoManagedControlPlane.Status.Initialization.Provisioned
 
 	return result, nil
 }
@@ -393,18 +392,18 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 	return ctrl.Result{}, nil
 }
 
-func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1beta1.APIEndpoint {
+func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1.APIEndpoint {
 	if managedCluster.Status.PrivateFQDN != nil {
-		return clusterv1beta1.APIEndpoint{
+		return clusterv1.APIEndpoint{
 			Host: *managedCluster.Status.PrivateFQDN,
 			Port: 443,
 		}
 	}
 	if managedCluster.Status.Fqdn != nil {
-		return clusterv1beta1.APIEndpoint{
+		return clusterv1.APIEndpoint{
 			Host: *managedCluster.Status.Fqdn,
 			Port: 443,
 		}
 	}
-	return clusterv1beta1.APIEndpoint{}
+	return clusterv1.APIEndpoint{}
 }

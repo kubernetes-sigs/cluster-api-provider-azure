@@ -19,7 +19,7 @@ package components
 import (
 	"slices"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 // IsValidDisableComponent validates if the provided value is a valid disable component by checking if the value exists
