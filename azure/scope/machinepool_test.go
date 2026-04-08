@@ -1542,6 +1542,153 @@ func TestMachinePoolScope_applyAzureMachinePoolMachines(t *testing.T) {
 	}
 }
 
+func TestMachinePoolScope_Close_SkipsMachineSyncDuringDeletion(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	scheme := runtime.NewScheme()
+	_ = clusterv1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name  string
+		Setup func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS)
+		// PostFetch runs after objects are fetched from the fake client (with server-generated metadata).
+		// Use this to set fields like DeletionTimestamp that the fake client won't persist from WithObjects.
+		PostFetch func(amp *infrav1exp.AzureMachinePool)
+		Verify    func(g *WithT, c client.Client, err error)
+	}{
+		{
+			Name: "Close does not recreate AzureMachinePoolMachines when AzureMachinePool has a deletion timestamp",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+				amp.Finalizers = []string{clusterv1.MachinePoolFinalizer}
+
+				// Simulate the race: VMSS is still visible in Azure with a running instance,
+				// but the AzureMachinePoolMachine for it has already been deleted by reconcileDelete.
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:    "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/1",
+						Name:  "ampm1",
+						State: infrav1.Succeeded,
+					},
+				}
+			},
+			PostFetch: func(amp *infrav1exp.AzureMachinePool) {
+				now := metav1.Now()
+				amp.DeletionTimestamp = &now
+			},
+			Verify: func(g *WithT, c client.Client, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				// The key assertion: no AzureMachinePoolMachine should have been created
+				list := infrav1exp.AzureMachinePoolMachineList{}
+				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
+				g.Expect(list.Items).Should(BeEmpty())
+			},
+		},
+		{
+			Name: "Close creates AzureMachinePoolMachines when AzureMachinePool is not being deleted",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS) {
+				mp.Spec.Replicas = ptr.To[int32](1)
+
+				vmssState.Instances = []azure.VMSSVM{
+					{
+						ID:    "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/1",
+						Name:  "ampm1",
+						State: infrav1.Succeeded,
+					},
+				}
+			},
+			Verify: func(g *WithT, c client.Client, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+				// Normal case: AzureMachinePoolMachine should have been created
+				list := infrav1exp.AzureMachinePoolMachineList{}
+				g.Expect(c.List(ctx, &list)).NotTo(HaveOccurred())
+				g.Expect(list.Items).Should(HaveLen(1))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			var (
+				g       = NewWithT(t)
+				cluster = &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster1",
+						Namespace: "default",
+					},
+					Spec: clusterv1.ClusterSpec{
+						InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+							Name:     "azCluster1",
+							Kind:     "AzureCluster",
+							APIGroup: infrav1.GroupVersion.Group,
+						},
+					},
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
+					},
+				}
+				mp = &clusterv1.MachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "mp1",
+						Namespace: "default",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Name:       "cluster1",
+								Kind:       "Cluster",
+								APIVersion: clusterv1.GroupVersion.String(),
+							},
+						},
+					},
+				}
+				amp = &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "amp1",
+						Namespace: "default",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Name:       "mp1",
+								Kind:       "MachinePool",
+								APIVersion: clusterv1.GroupVersion.String(),
+							},
+						},
+					},
+				}
+				vmssState = &azure.VMSS{}
+			)
+
+			tt.Setup(mp, amp, vmssState)
+
+			cb := fake.NewClientBuilder().WithScheme(scheme).WithObjects(amp, mp, cluster).WithStatusSubresource(amp)
+			c := cb.Build()
+
+			// Re-fetch objects so they have proper metadata (ResourceVersion) for patching.
+			g.Expect(c.Get(ctx, client.ObjectKeyFromObject(amp), amp)).To(Succeed())
+			g.Expect(c.Get(ctx, client.ObjectKeyFromObject(mp), mp)).To(Succeed())
+
+			if tt.PostFetch != nil {
+				tt.PostFetch(amp)
+			}
+
+			s, err := NewMachinePoolScope(MachinePoolScopeParams{
+				Client:           c,
+				MachinePool:      mp,
+				AzureMachinePool: amp,
+				ClusterScope: &ClusterScope{
+					Cluster: cluster,
+				},
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			s.vmssState = vmssState
+
+			err = s.Close(ctx)
+			tt.Verify(g, c, err)
+		})
+	}
+}
+
 func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)

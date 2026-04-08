@@ -688,7 +688,12 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
 	defer done()
 
-	if m.vmssState != nil {
+	// Only sync MachinePool w/ MachinePoolMachines if the MachinePool
+	// represents an actual Azure VMSS (vmssState != nil), and if the
+	// MachinePool is not in an active state of deletion
+	// (DeletionTimestamp.IsZero()) to avoid recreating
+	// AzureMachinePoolMachines that reconcileDelete just removed.
+	if m.vmssState != nil && m.AzureMachinePool.DeletionTimestamp.IsZero() {
 		if err := m.applyAzureMachinePoolMachines(ctx); err != nil {
 			log.Error(err, "failed to apply changes to the AzureMachinePoolMachines")
 			return errors.Wrap(err, "failed to apply changes to AzureMachinePoolMachines")
