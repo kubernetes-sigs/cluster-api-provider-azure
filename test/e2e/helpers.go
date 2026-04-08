@@ -58,6 +58,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -854,4 +855,26 @@ func waitForWebhookCAInjection(ctx context.Context, c client.Client) {
 			}
 		}
 	}, 5*time.Minute, 5*time.Second).Should(Succeed(), "cert-manager cainjector did not inject CA bundles into webhook configurations in time")
+
+	// Even after the CABundle is populated on the webhook configuration, the
+	// kube-apiserver may not have picked up the updated config from its
+	// informer cache yet. Perform a dry-run create of an AzureCluster to
+	// verify the CAPZ mutating webhook is reachable end-to-end with valid TLS.
+	By("Verifying CAPZ webhook is reachable via dry-run create")
+	Eventually(func() error {
+		obj := &infrav1.AzureCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "capz-webhook-probe",
+				Namespace: "default",
+			},
+			Spec: infrav1.AzureClusterSpec{
+				AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+					SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					Location:       "eastus",
+				},
+				ResourceGroup: "capz-webhook-probe",
+			},
+		}
+		return client.NewDryRunClient(c).Create(ctx, obj)
+	}, 2*time.Minute, 5*time.Second).Should(Succeed(), "dry-run AzureCluster create failed, webhook TLS may not be ready")
 }
