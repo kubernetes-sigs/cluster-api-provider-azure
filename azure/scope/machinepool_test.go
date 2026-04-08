@@ -1577,8 +1577,8 @@ func TestMachinePoolScope_Close_SkipsMachineSyncDuringDeletion(t *testing.T) {
 	_ = infrav1.AddToScheme(scheme)
 
 	tests := []struct {
-		Name   string
-		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS)
+		Name  string
+		Setup func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmssState *azure.VMSS)
 		// PostFetch runs after objects are fetched from the fake client (with server-generated metadata).
 		// Use this to set fields like DeletionTimestamp that the fake client won't persist from WithObjects.
 		PostFetch func(amp *infrav1exp.AzureMachinePool)
