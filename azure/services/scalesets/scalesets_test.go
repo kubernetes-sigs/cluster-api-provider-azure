@@ -360,11 +360,6 @@ func TestReconcileVMSS(t *testing.T) {
 
 func TestDeleteVMSS(t *testing.T) {
 	defaultSpec := newDefaultVMSSSpec()
-	defaultInstances := newDefaultInstances()
-	resultVMSS := newDefaultVMSS("VM_SIZE")
-	resultVMSS.ID = ptr.To(defaultVMSSID)
-	fetchedVMSS := converters.SDKToVMSS(getResultVMSS(), defaultInstances)
-	// Be careful about race conditions if you need modify these.
 
 	testcases := []struct {
 		name          string
@@ -379,21 +374,6 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(nil)
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
-
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(resultVMSS, nil)
-				m.ListInstances(gomockinternal.AContext(), defaultSpec.ResourceGroup, defaultSpec.Name).Return(defaultInstances, nil)
-				s.SetVMSSState(&fetchedVMSS)
-			},
-		},
-		{
-			name:          "successfully delete an existing vmss, fetch call returns error",
-			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, r *mock_async.MockReconcilerMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
-				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
-				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
-				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
 		{
@@ -404,7 +384,6 @@ func TestDeleteVMSS(t *testing.T) {
 				s.ScaleSetSpec(gomockinternal.AContext()).Return(&defaultSpec).AnyTimes()
 				r.DeleteResource(gomockinternal.AContext(), &defaultSpec, serviceName).Return(internalError())
 				s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError())
-				m.Get(gomockinternal.AContext(), &defaultSpec).Return(armcompute.VirtualMachineScaleSet{}, notFoundError)
 			},
 		},
 	}

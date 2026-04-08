@@ -156,24 +156,13 @@ func (s *Service) updateScopeState(ctx context.Context, result any, scaleSetSpec
 // Delete deletes a scale set asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
 // the VMSS will be considered deleted. The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())
 	defer cancel()
 
 	scaleSetSpec := s.Scope.ScaleSetSpec(ctx)
-
-	defer func() {
-		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx, scaleSetSpec)
-		if err != nil && !azure.ResourceNotFound(err) {
-			log.Error(err, "failed to get vmss in deferred update")
-		}
-
-		if fetchedVMSS != nil {
-			s.Scope.SetVMSSState(fetchedVMSS)
-		}
-	}()
 
 	err := s.DeleteResource(ctx, scaleSetSpec, serviceName)
 
