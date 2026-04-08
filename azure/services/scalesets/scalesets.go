@@ -348,30 +348,6 @@ func (s *Service) validateAvailabilityZones(ctx context.Context, spec *ScaleSetS
 	return nil
 }
 
-// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
-func (s *Service) getVirtualMachineScaleSet(ctx context.Context, spec azure.ResourceSpecGetter) (*azure.VMSS, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSet")
-	defer done()
-
-	vmssResult, err := s.Client.Get(ctx, spec)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get existing VMSS")
-	}
-	vmss, ok := vmssResult.(armcompute.VirtualMachineScaleSet)
-	if !ok {
-		return nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", vmssResult)
-	}
-
-	vmssInstances, err := s.Client.ListInstances(ctx, spec.ResourceGroupName(), spec.ResourceName())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list instances")
-	}
-
-	result := converters.SDKToVMSS(vmss, vmssInstances)
-
-	return &result, nil
-}
-
 // IsManaged returns always returns true as CAPZ does not support BYO scale set.
 func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
