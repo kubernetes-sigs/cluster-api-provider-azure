@@ -156,24 +156,13 @@ func (s *Service) updateScopeState(ctx context.Context, result any, scaleSetSpec
 // Delete deletes a scale set asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
 // the VMSS will be considered deleted. The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())
 	defer cancel()
 
 	scaleSetSpec := s.Scope.ScaleSetSpec(ctx)
-
-	defer func() {
-		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx, scaleSetSpec)
-		if err != nil && !azure.ResourceNotFound(err) {
-			log.Error(err, "failed to get vmss in deferred update")
-		}
-
-		if fetchedVMSS != nil {
-			s.Scope.SetVMSSState(fetchedVMSS)
-		}
-	}()
 
 	err := s.DeleteResource(ctx, scaleSetSpec, serviceName)
 
@@ -357,30 +346,6 @@ func (s *Service) validateAvailabilityZones(ctx context.Context, spec *ScaleSetS
 	}
 
 	return nil
-}
-
-// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
-func (s *Service) getVirtualMachineScaleSet(ctx context.Context, spec azure.ResourceSpecGetter) (*azure.VMSS, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSet")
-	defer done()
-
-	vmssResult, err := s.Client.Get(ctx, spec)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get existing VMSS")
-	}
-	vmss, ok := vmssResult.(armcompute.VirtualMachineScaleSet)
-	if !ok {
-		return nil, errors.Errorf("%T is not an armcompute.VirtualMachineScaleSet", vmssResult)
-	}
-
-	vmssInstances, err := s.Client.ListInstances(ctx, spec.ResourceGroupName(), spec.ResourceName())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list instances")
-	}
-
-	result := converters.SDKToVMSS(vmss, vmssInstances)
-
-	return &result, nil
 }
 
 // IsManaged returns always returns true as CAPZ does not support BYO scale set.
