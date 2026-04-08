@@ -688,11 +688,11 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "scope.MachinePoolScope.Close")
 	defer done()
 
-	// Skip machine pool machine sync during deletion to prevent recreating
-	// AzureMachinePoolMachines that reconcileDelete just removed. During the
-	// window between sending the VMSS DELETE to Azure and the VMSS actually
-	// disappearing, the deferred Close() would otherwise find instances in
-	// vmssState and recreate the machines, causing deletion to hang.
+	// Only sync MachinePool w/ MachinePoolMachines if the MachinePool
+	// represents an actual Azure VMSS (vmssState != nil), and if the
+	// MachinePool is not in an active state of deletion
+	// (DeletionTimestamp.IsZero()) to avoid recreating
+	// AzureMachinePoolMachines that reconcileDelete just removed.
 	if m.vmssState != nil && m.AzureMachinePool.DeletionTimestamp.IsZero() {
 		if err := m.applyAzureMachinePoolMachines(ctx); err != nil {
 			log.Error(err, "failed to apply changes to the AzureMachinePoolMachines")
