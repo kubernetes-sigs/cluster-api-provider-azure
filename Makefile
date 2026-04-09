@@ -30,6 +30,10 @@ GOPROXY := https://proxy.golang.org
 endif
 export GOPROXY
 
+# Ensure correct toolchain is used
+GOTOOLCHAIN = go$(GO_VERSION)
+export GOTOOLCHAIN
+
 # Active module mode, as we use go modules to manage dependencies
 export GO111MODULE=on
 
