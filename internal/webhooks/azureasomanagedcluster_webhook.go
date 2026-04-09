@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -32,8 +30,7 @@ import (
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (ampw *AzureASOManagedClusterWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureASOManagedCluster{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureASOManagedCluster{}).
 		WithValidator(ampw).
 		Complete()
 }
@@ -45,11 +42,7 @@ type AzureASOManagedClusterWebhook struct {
 // +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedcluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedclusters,versions=v1beta1,name=validation.azureasomanagedcluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	_, ok := obj.(*infrav1.AzureASOManagedCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureASOManagedCluster")
-	}
+func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, _ *infrav1.AzureASOManagedCluster) (admission.Warnings, error) {
 	if !feature.Gates.Enabled(feature.ASOAPI) {
 		return nil, field.Forbidden(
 			field.NewPath("spec"),
@@ -60,11 +53,11 @@ func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, obj
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *AzureASOManagedClusterWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+func (ampw *AzureASOManagedClusterWebhook) ValidateUpdate(_ context.Context, _, _ *infrav1.AzureASOManagedCluster) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *AzureASOManagedClusterWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (ampw *AzureASOManagedClusterWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureASOManagedCluster) (admission.Warnings, error) {
 	return nil, nil
 }

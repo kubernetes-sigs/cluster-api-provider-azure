@@ -87,8 +87,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 	})
 
 	Context("Running the MachineDeployment rollout spec", func() {
-		capi_e2e.MachineDeploymentRolloutSpec(ctx, func() capi_e2e.MachineDeploymentRolloutSpecInput {
-			return capi_e2e.MachineDeploymentRolloutSpecInput{
+		capi_e2e.KCPAndMachineDeploymentRolloutSpec(ctx, func() capi_e2e.KCPAndMachineDeploymentRolloutSpecInput {
+			return capi_e2e.KCPAndMachineDeploymentRolloutSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
 				BootstrapClusterProxy: bootstrapClusterProxy,

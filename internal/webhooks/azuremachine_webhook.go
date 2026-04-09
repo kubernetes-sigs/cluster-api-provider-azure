@@ -21,7 +21,6 @@ import (
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,8 +35,7 @@ import (
 func (mw *AzureMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	mw.client = mgr.GetClient()
 
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.AzureMachine{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.AzureMachine{}).
 		WithDefaulter(mw).
 		WithValidator(mw).
 		Complete()
@@ -52,11 +50,7 @@ type AzureMachineWebhook struct {
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureMachineWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	m, ok := obj.(*infrav1.AzureMachine)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
-	}
+func (mw *AzureMachineWebhook) ValidateCreate(_ context.Context, m *infrav1.AzureMachine) (admission.Warnings, error) {
 	spec := m.Spec
 
 	allErrs := validateAzureMachineSpec(spec)
@@ -78,16 +72,8 @@ func (mw *AzureMachineWebhook) ValidateCreate(_ context.Context, obj runtime.Obj
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, old, m *infrav1.AzureMachine) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	old, ok := oldObj.(*infrav1.AzureMachine)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
-	}
-	m, ok := newObj.(*infrav1.AzureMachine)
-	if !ok {
-		return nil, apierrors.NewBadRequest("expected an AzureMachine resource")
-	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "image"),
@@ -238,15 +224,11 @@ func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, oldObj, newObj 
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (mw *AzureMachineWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (mw *AzureMachineWebhook) ValidateDelete(_ context.Context, _ *infrav1.AzureMachine) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (mw *AzureMachineWebhook) Default(_ context.Context, obj runtime.Object) error {
-	m, ok := obj.(*infrav1.AzureMachine)
-	if !ok {
-		return apierrors.NewBadRequest("expected an AzureMachine resource")
-	}
+func (mw *AzureMachineWebhook) Default(_ context.Context, m *infrav1.AzureMachine) error {
 	return apiinternal.SetDefaultsAzureMachine(m, mw.client)
 }
