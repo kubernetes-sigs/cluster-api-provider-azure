@@ -22,7 +22,9 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -57,6 +59,18 @@ var rayJobGVR = schema.GroupVersionResource{
 	Group:    "ray.io",
 	Version:  "v1",
 	Resource: "rayjobs",
+}
+
+var workloadGVR = schema.GroupVersionResource{
+	Group:    "scheduling.k8s.io",
+	Version:  "v1alpha2",
+	Resource: "workloads",
+}
+
+var podGroupGVR = schema.GroupVersionResource{
+	Group:    "scheduling.k8s.io",
+	Version:  "v1alpha2",
+	Resource: "podgroups",
 }
 
 // KubeRayClusterSpecInput is the input for KubeRayClusterSpec.
@@ -267,6 +281,223 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 	output, err = installCmd.CombinedOutput()
 	Logf("helm install output: %s", string(output))
 	Expect(err).NotTo(HaveOccurred(), "failed to install Helm chart: %s", string(output))
+}
+
+// InstallHelmChartFromPath installs a Helm chart from a local directory path onto a cluster
+// via the given ClusterProxy. This is used when installing charts built from source rather
+// than from a remote Helm repository.
+func InstallHelmChartFromPath(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, chartPath, releaseName string, extraArgs ...string) {
+	kubeconfigPath := clusterProxy.GetKubeconfigPath()
+	By(fmt.Sprintf("Installing Helm chart from %s as release %s using kubeconfig %s", chartPath, releaseName, kubeconfigPath))
+
+	helmArgs := []string{"install", releaseName,
+		chartPath,
+		"--namespace", namespace,
+		"--create-namespace",
+		"--wait",
+		"--timeout", "5m0s",
+	}
+	helmArgs = append(helmArgs, extraArgs...)
+	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
+	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
+	output, err := installCmd.CombinedOutput()
+	Logf("helm install output: %s", string(output))
+	Expect(err).NotTo(HaveOccurred(), "failed to install Helm chart from path: %s", string(output))
+}
+
+// InstallKubeRayOperatorFromSource installs the KubeRay operator Helm chart from a local kuberay source tree,
+// using a custom-built operator image. This is used for testing unreleased kuberay features like NativeWorkloadScheduling.
+// The kuberay source directory must contain the helm-chart/kuberay-operator chart and the image must already
+// be built and pushed to the registry (see scripts/ci-build-kuberay-operator.sh).
+func InstallKubeRayOperatorFromSource(ctx context.Context, clusterProxy framework.ClusterProxy, specName string) {
+	By("Installing the KubeRay operator from source with NativeWorkloadScheduling enabled")
+	clientset := clusterProxy.GetClientSet()
+	Expect(clientset).NotTo(BeNil())
+
+	kuberaySourceDir := os.Getenv("KUBERAY_SOURCE_DIR")
+	Expect(kuberaySourceDir).NotTo(BeEmpty(), "KUBERAY_SOURCE_DIR must be set to the kuberay repo root")
+
+	chartPath := filepath.Join(kuberaySourceDir, "helm-chart", "kuberay-operator")
+	_, err := os.Stat(filepath.Join(chartPath, "Chart.yaml"))
+	Expect(err).NotTo(HaveOccurred(), "kuberay-operator Helm chart not found at %s", chartPath)
+
+	registry := os.Getenv("REGISTRY")
+	Expect(registry).NotTo(BeEmpty(), "REGISTRY must be set")
+	imageTag := os.Getenv("KUBERAY_OPERATOR_IMAGE_TAG")
+	Expect(imageTag).NotTo(BeEmpty(), "KUBERAY_OPERATOR_IMAGE_TAG must be set")
+
+	operatorImage := fmt.Sprintf("%s/kuberay-operator", registry)
+
+	InstallHelmChartFromPath(ctx, clusterProxy, kubeRayOperatorNamespace, chartPath, kubeRayOperatorHelmReleaseName,
+		"--set", fmt.Sprintf("image.repository=%s", operatorImage),
+		"--set", fmt.Sprintf("image.tag=%s", imageTag),
+		"--set", "image.pullPolicy=Always",
+		"--set", "nodeSelector.kubernetes\\.io/os=linux",
+		"--set", "featureGates[0].name=RayClusterStatusConditions",
+		"--set-string", "featureGates[0].enabled=true",
+		"--set", "featureGates[1].name=RayJobDeletionPolicy",
+		"--set-string", "featureGates[1].enabled=true",
+		"--set", "featureGates[2].name=NativeWorkloadScheduling",
+		"--set-string", "featureGates[2].enabled=true",
+	)
+
+	By("waiting for the KubeRay operator deployment to become available")
+	waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, kubeRayOperatorHelmReleaseName, kubeRayOperatorNamespace, specName)
+	WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+}
+
+// KubeRayNativeSchedulingSpecInput is the input for KubeRayNativeSchedulingSpec.
+type KubeRayNativeSchedulingSpecInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	Namespace             *corev1.Namespace
+	ClusterName           string
+	SkipCleanup           bool
+}
+
+// KubeRayNativeSchedulingSpec implements a test that verifies the NativeWorkloadScheduling feature
+// of the KubeRay operator. It creates a RayCluster with the opt-in annotation, verifies that
+// Workload and PodGroup resources are created by the operator, and confirms that all pods are
+// scheduled and running via the native gang scheduling mechanism.
+func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRayNativeSchedulingSpecInput) {
+	var (
+		specName = "kuberay-native-scheduling"
+		input    KubeRayNativeSchedulingSpecInput
+	)
+
+	input = inputGetter()
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+
+	By("creating a Kubernetes client to the workload cluster")
+	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
+	Expect(clusterProxy).NotTo(BeNil())
+	clientset := clusterProxy.GetClientSet()
+	Expect(clientset).NotTo(BeNil())
+
+	By("installing the KubeRay operator from source with NativeWorkloadScheduling enabled")
+	InstallKubeRayOperatorFromSource(ctx, clusterProxy, specName)
+
+	By("creating a RayCluster with native workload scheduling annotation")
+	dynamicClient := newDynamicClient(clusterProxy)
+	rayCluster := newRayClusterWithNativeScheduling("raycluster-scheduling-e2e", corev1.NamespaceDefault)
+	_, err := dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Create(ctx, rayCluster, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("waiting for the RayCluster to become ready")
+	Eventually(func() bool {
+		rc, err := dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e", metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		state, found, err := unstructured.NestedString(rc.Object, "status", "state")
+		if err != nil || !found {
+			return false
+		}
+		return state == "ready"
+	}, e2eConfig.GetIntervals(specName, "wait-raycluster-ready")...).Should(BeTrue(), func() string {
+		return describeKubeRayOperatorLogs(ctx, clientset)
+	})
+
+	By("verifying a Workload resource was created for the RayCluster")
+	Eventually(func() bool {
+		workloads, err := dynamicClient.Resource(workloadGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
+		if err != nil || len(workloads.Items) == 0 {
+			return false
+		}
+		for _, w := range workloads.Items {
+			ownerRefs, _, _ := unstructured.NestedSlice(w.Object, "metadata", "ownerReferences")
+			for _, ref := range ownerRefs {
+				refMap, ok := ref.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if refMap["name"] == "raycluster-scheduling-e2e" && refMap["kind"] == "RayCluster" {
+					Logf("Found Workload %s owned by RayCluster raycluster-scheduling-e2e", w.GetName())
+					return true
+				}
+			}
+		}
+		return false
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "Workload resource was not created for the RayCluster")
+
+	By("verifying PodGroup resources were created for the RayCluster")
+	Eventually(func() bool {
+		podGroups, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return false
+		}
+		// Expect at least 2 PodGroups: one for head, one for the worker group
+		expectedPrefixes := []string{"raycluster-scheduling-e2e-head", "raycluster-scheduling-e2e-worker"}
+		found := make(map[string]bool)
+		for _, pg := range podGroups.Items {
+			for _, prefix := range expectedPrefixes {
+				if strings.HasPrefix(pg.GetName(), prefix) {
+					found[prefix] = true
+					Logf("Found PodGroup %s", pg.GetName())
+				}
+			}
+		}
+		return len(found) == len(expectedPrefixes)
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "PodGroup resources were not created for the RayCluster")
+
+	By("verifying the head pod is running")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=head",
+		})
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodRunning {
+				return true
+			}
+		}
+		return false
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "head pod did not reach Running state")
+
+	By("verifying the worker pod is running")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=worker",
+		})
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodRunning {
+				return true
+			}
+		}
+		return false
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "worker pod did not reach Running state")
+
+	if !input.SkipCleanup {
+		By("deleting the RayCluster")
+		err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Delete(ctx, "raycluster-scheduling-e2e", metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
+// newRayClusterWithNativeScheduling creates a RayCluster with the native workload scheduling
+// opt-in annotation. This triggers the KubeRay operator to create Workload and PodGroup resources
+// for gang scheduling via the Kubernetes-native scheduling.k8s.io/v1alpha2 API.
+func newRayClusterWithNativeScheduling(name, namespace string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "ray.io/v1",
+			"kind":       "RayCluster",
+			"metadata": map[string]interface{}{
+				"name":      name,
+				"namespace": namespace,
+				"annotations": map[string]interface{}{
+					"ray.io/native-workload-scheduling": "true",
+				},
+			},
+			"spec": rayClusterSpec(),
+		},
+	}
 }
 
 // newDynamicClient creates a dynamic Kubernetes client from a ClusterProxy.
