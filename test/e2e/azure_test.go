@@ -1620,4 +1620,57 @@ spec:
 			By("PASSED!")
 		})
 	})
+
+	// KubeRay NativeWorkloadScheduling tests on a self-managed VM-based cluster with K8s 1.36+.
+	// This tests the unreleased NativeWorkloadScheduling feature from the kuberay workload-poc branch,
+	// which uses the Kubernetes-native scheduling.k8s.io/v1alpha2 API for gang scheduling of Ray pods.
+	// The test requires:
+	//   - KUBERAY_SOURCE_DIR: path to the kuberay repo checked out at the workload-poc branch
+	//   - KUBERAY_OPERATOR_IMAGE_TAG: tag of the kuberay operator image built from source
+	//   - REGISTRY: container registry where the kuberay operator image has been pushed
+	// See scripts/ci-build-kuberay-operator.sh for building and pushing the image.
+	Context("Creating a self-managed cluster with native scheduling and deploying KubeRay from source [KubeRay] [NativeScheduling]", func() {
+		It("Creates a RayCluster with NativeWorkloadScheduling and verifies Workload/PodGroup resources", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vm-natsched")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("ci-version-native-scheduling"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay NativeScheduling spec", func() {
+				KubeRayNativeSchedulingSpec(ctx, func() KubeRayNativeSchedulingSpecInput {
+					return KubeRayNativeSchedulingSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })
