@@ -47,6 +47,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -875,6 +876,16 @@ func waitForWebhookCAInjection(ctx context.Context, c client.Client) {
 				ResourceGroup: "capz-webhook-probe",
 			},
 		}
-		return client.NewDryRunClient(c).Create(ctx, obj)
+		err := client.NewDryRunClient(c).Create(ctx, obj)
+		if err == nil {
+			return nil
+		}
+		// A webhook validation rejection (e.g. Invalid/Forbidden) means the
+		// webhook was reachable with valid TLS, which is all we need to verify.
+		// Only keep retrying on errors that indicate TLS is not yet working.
+		if apierrors.IsInvalid(err) || apierrors.IsForbidden(err) {
+			return nil
+		}
+		return err
 	}, 2*time.Minute, 5*time.Second).Should(Succeed(), "dry-run AzureCluster create failed, webhook TLS may not be ready")
 }
