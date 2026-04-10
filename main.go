@@ -57,10 +57,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1expbeta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
@@ -79,7 +81,9 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
+	_ = infrav1beta1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
+	_ = infrav1expbeta1.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)

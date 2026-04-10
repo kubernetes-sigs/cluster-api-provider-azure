@@ -31,9 +31,9 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockScaleSetVMScope is a mock of ScaleSetVMScope interface.
@@ -61,10 +61,10 @@ func (m *MockScaleSetVMScope) EXPECT() *MockScaleSetVMScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockScaleSetVMScope) AdditionalTags() v1beta1.Tags {
+func (m *MockScaleSetVMScope) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -145,10 +145,10 @@ func (mr *MockScaleSetVMScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockScaleSetVMScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockScaleSetVMScope) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -227,10 +227,10 @@ func (mr *MockScaleSetVMScopeMockRecorder) DeleteLongRunningOperationState(arg0,
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockScaleSetVMScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockScaleSetVMScope) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -283,10 +283,10 @@ func (mr *MockScaleSetVMScopeMockRecorder) FailureDomains() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockScaleSetVMScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockScaleSetVMScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -367,7 +367,7 @@ func (mr *MockScaleSetVMScopeMockRecorder) ScaleSetVMSpec() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockScaleSetVMScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockScaleSetVMScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -391,7 +391,7 @@ func (mr *MockScaleSetVMScopeMockRecorder) SetVMSSVM(vmssvm any) *gomock.Call {
 }
 
 // SetVMSSVMState mocks base method.
-func (m *MockScaleSetVMScope) SetVMSSVMState(state v1beta1.ProvisioningState) {
+func (m *MockScaleSetVMScope) SetVMSSVMState(state v1beta2.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMSSVMState", state)
 }
@@ -445,7 +445,7 @@ func (mr *MockScaleSetVMScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockScaleSetVMScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScaleSetVMScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -457,7 +457,7 @@ func (mr *MockScaleSetVMScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 a
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockScaleSetVMScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScaleSetVMScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -469,7 +469,7 @@ func (mr *MockScaleSetVMScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 an
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockScaleSetVMScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScaleSetVMScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

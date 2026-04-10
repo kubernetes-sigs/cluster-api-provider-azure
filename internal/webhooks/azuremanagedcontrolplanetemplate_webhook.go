@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
@@ -42,8 +42,8 @@ func (mcpw *AzureManagedControlPlaneTemplateWebhook) SetupWebhookWithManager(mgr
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplanetemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanetemplates,versions=v1beta1,name=validation.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
-// +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplanetemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanetemplates,versions=v1beta1,name=default.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplanetemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanetemplates,versions=v1beta2,name=validation.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplanetemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanetemplates,versions=v1beta2,name=default.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // AzureManagedControlPlaneTemplateWebhook implements a validating and defaulting webhook for AzureManagedControlPlaneTemplate.
 type AzureManagedControlPlaneTemplateWebhook struct {

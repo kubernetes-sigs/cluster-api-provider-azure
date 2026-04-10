@@ -31,9 +31,9 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockVnetPeeringScope is a mock of VnetPeeringScope interface.
@@ -171,10 +171,10 @@ func (mr *MockVnetPeeringScopeMockRecorder) DeleteLongRunningOperationState(arg0
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockVnetPeeringScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockVnetPeeringScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -199,7 +199,7 @@ func (mr *MockVnetPeeringScopeMockRecorder) HashKey() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockVnetPeeringScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockVnetPeeringScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -253,7 +253,7 @@ func (mr *MockVnetPeeringScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockVnetPeeringScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVnetPeeringScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -265,7 +265,7 @@ func (mr *MockVnetPeeringScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockVnetPeeringScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVnetPeeringScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -277,7 +277,7 @@ func (mr *MockVnetPeeringScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 a
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockVnetPeeringScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVnetPeeringScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

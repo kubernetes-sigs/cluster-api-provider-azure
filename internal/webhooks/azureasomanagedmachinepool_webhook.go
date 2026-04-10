@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
@@ -39,7 +39,7 @@ func (ampw *AzureASOManagedMachinePoolWebhook) SetupWebhookWithManager(mgr ctrl.
 type AzureASOManagedMachinePoolWebhook struct {
 }
 
-// +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedmachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedmachinepools,versions=v1beta1,name=validation.azureasomanagedmachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-azureasomanagedmachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azureasomanagedmachinepools,versions=v1beta2,name=validation.azureasomanagedmachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *AzureASOManagedMachinePoolWebhook) ValidateCreate(_ context.Context, _ *infrav1.AzureASOManagedMachinePool) (admission.Warnings, error) {

@@ -31,9 +31,9 @@ import (
 
 	v1api20200601 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -158,10 +158,10 @@ func (mr *MockGroupScopeMockRecorder) GetClient() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockGroupScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockGroupScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -186,7 +186,7 @@ func (mr *MockGroupScopeMockRecorder) GroupSpecs() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockGroupScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockGroupScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -198,7 +198,7 @@ func (mr *MockGroupScopeMockRecorder) SetLongRunningOperationState(arg0 any) *go
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockGroupScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockGroupScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -210,7 +210,7 @@ func (mr *MockGroupScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockGroupScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockGroupScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -222,7 +222,7 @@ func (mr *MockGroupScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *g
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockGroupScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockGroupScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

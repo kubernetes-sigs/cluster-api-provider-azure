@@ -27,12 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
@@ -1572,7 +1571,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name: "set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amcp: &infrav1.AzureManagedControlPlane{
 				Spec: infrav1.AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "my-host",
 					},
 					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
@@ -1594,7 +1593,7 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amcp: &infrav1.AzureManagedControlPlane{
 				Spec: infrav1.AzureManagedControlPlaneSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Port: 444,
 					},
 					SSHPublicKey: ptr.To(generateSSHPublicKey(true)),
