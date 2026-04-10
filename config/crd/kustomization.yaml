@@ -36,9 +36,18 @@ patches:
 - path: patches/webhook_in_azuremachinetemplates.yaml
 - path: patches/webhook_in_azuremachinepools.yaml
 - path: patches/webhook_in_azuremachinepoolmachines.yaml
-# - path: patches/webhook_in_azuremanagedmachinepools.yaml
-# - path: patches/webhook_in_azuremanagedclusters.yaml
-# - path: patches/webhook_in_azuremanagedcontrolplanes.yaml
+- path: patches/webhook_in_azuremanagedmachinepools.yaml
+- path: patches/webhook_in_azuremanagedclusters.yaml
+- path: patches/webhook_in_azuremanagedclustertemplates.yaml
+- path: patches/webhook_in_azuremanagedcontrolplanes.yaml
+- path: patches/webhook_in_azuremanagedcontrolplanetemplates.yaml
+- path: patches/webhook_in_azuremanagedmachinepooltemplates.yaml
+- path: patches/webhook_in_azureasomanagedclusters.yaml
+- path: patches/webhook_in_azureasomanagedclustertemplates.yaml
+- path: patches/webhook_in_azureasomanagedcontrolplanes.yaml
+- path: patches/webhook_in_azureasomanagedcontrolplanetemplates.yaml
+- path: patches/webhook_in_azureasomanagedmachinepools.yaml
+- path: patches/webhook_in_azureasomanagedmachinepooltemplates.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable webhook, uncomment all the sections with [CERTMANAGER] prefix.
@@ -50,9 +59,18 @@ patches:
 - path: patches/cainjection_in_azuremachinetemplates.yaml
 - path: patches/cainjection_in_azuremachinepools.yaml
 - path: patches/cainjection_in_azuremachinepoolmachines.yaml
-# - path: patches/cainjection_in_azuremanagedmachinepools.yaml
-# - path: patches/cainjection_in_azuremanagedclusters.yaml
-# - path: patches/cainjection_in_azuremanagedcontrolplanes.yaml
+- path: patches/cainjection_in_azuremanagedmachinepools.yaml
+- path: patches/cainjection_in_azuremanagedclusters.yaml
+- path: patches/cainjection_in_azuremanagedclustertemplates.yaml
+- path: patches/cainjection_in_azuremanagedcontrolplanes.yaml
+- path: patches/cainjection_in_azuremanagedcontrolplanetemplates.yaml
+- path: patches/cainjection_in_azuremanagedmachinepooltemplates.yaml
+- path: patches/cainjection_in_azureasomanagedclusters.yaml
+- path: patches/cainjection_in_azureasomanagedclustertemplates.yaml
+- path: patches/cainjection_in_azureasomanagedcontrolplanes.yaml
+- path: patches/cainjection_in_azureasomanagedcontrolplanetemplates.yaml
+- path: patches/cainjection_in_azureasomanagedmachinepools.yaml
+- path: patches/cainjection_in_azureasomanagedmachinepooltemplates.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 - path: patches/capicontract_in_azuremachines.yaml
