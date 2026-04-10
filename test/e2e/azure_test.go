@@ -1635,6 +1635,7 @@ spec:
 			kubernetesVersion, err := resolveCIVersion("latest")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
