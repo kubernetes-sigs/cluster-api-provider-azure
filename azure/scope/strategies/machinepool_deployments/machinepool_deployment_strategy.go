@@ -27,8 +27,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -276,7 +276,7 @@ func getReadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoo
 	var readyMachines []infrav1exp.AzureMachinePoolMachine
 	for _, v := range machinesByProviderID {
 		// ready status, with provisioning state Succeeded, and not marked for delete
-		if v.Status.Ready &&
+		if v.Status.Initialization.Provisioned != nil && *v.Status.Initialization.Provisioned &&
 			(v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.Succeeded) &&
 			// Don't include machines that have already been marked for delete
 			v.DeletionTimestamp.IsZero() &&

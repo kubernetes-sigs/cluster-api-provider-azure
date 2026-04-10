@@ -41,13 +41,13 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aksextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/fleetsmembers"
@@ -106,7 +106,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		params.Cache = &ManagedControlPlaneCache{}
 	}
 
-	helper, err := v1beta1patch.NewHelper(params.ControlPlane, params.Client)
+	helper, err := patch.NewHelper(params.ControlPlane, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -126,7 +126,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 // ManagedControlPlaneScope defines the basic context for an actuator to operate upon.
 type ManagedControlPlaneScope struct {
 	Client              client.Client
-	PatchHelper         *v1beta1patch.Helper
+	PatchHelper         *patch.Helper
 	adminKubeConfigData []byte
 	userKubeConfigData  []byte
 	cache               *ManagedControlPlaneCache
@@ -236,19 +236,36 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedControlPlaneScope.PatchObject")
 	defer done()
 
-	v1beta1conditions.SetSummary(s.ControlPlane)
+	if err := conditions.SetSummaryCondition(s.ControlPlane, s.ControlPlane, clusterv1.AvailableCondition, conditions.ForConditionTypes{
+		string(infrav1.ManagedClusterRunningCondition),
+	}); err != nil {
+		return err
+	}
+
+	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
+	setV1Beta1ConditionsFromV1Beta2(s.ControlPlane, s.ControlPlane, s.ControlPlane.GetConditions())
+
+	// v1beta1 owned conditions for backward compat patch conflict resolution.
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
+		clusterv1.ReadyV1Beta1Condition,
+		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),
+		clusterv1.ConditionType(infrav1.VNetReadyCondition),
+		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),
+		clusterv1.ConditionType(infrav1.ManagedClusterRunningCondition),
+		clusterv1.ConditionType(infrav1.AzureResourceAvailableCondition),
+	}
 
 	return s.PatchHelper.Patch(
 		ctx,
 		s.ControlPlane,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
-			clusterv1beta1.ReadyCondition,
-			infrav1.ResourceGroupReadyCondition,
-			infrav1.VNetReadyCondition,
-			infrav1.SubnetsReadyCondition,
-			infrav1.ManagedClusterRunningCondition,
-			infrav1.AgentPoolsReadyCondition,
-			infrav1.AzureResourceAvailableCondition,
+		patch.WithOwnedV1Beta1Conditions{Conditions: ownedV1Beta1Conditions},
+		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.AvailableCondition,
+			string(infrav1.ResourceGroupReadyCondition),
+			string(infrav1.VNetReadyCondition),
+			string(infrav1.SubnetsReadyCondition),
+			string(infrav1.ManagedClusterRunningCondition),
+			string(infrav1.AzureResourceAvailableCondition),
 		}})
 }
 
@@ -875,11 +892,11 @@ func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service
 func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletedReason, Message: fmt.Sprintf("%s successfully deleted", service)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletingReason, Message: fmt.Sprintf("%s deleting", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletionFailedReason, Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error())})
 	}
 }
 
@@ -887,11 +904,11 @@ func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1beta1.C
 func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.ControlPlane, condition)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.CreatingReason, Message: fmt.Sprintf("%s creating or updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error())})
 	}
 }
 
@@ -899,11 +916,11 @@ func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1beta1.Cond
 func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.ControlPlane, condition)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.UpdatingReason, Message: fmt.Sprintf("%s updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.ControlPlane, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.ControlPlane, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error())})
 	}
 }
 
@@ -943,7 +960,7 @@ func (s *ManagedControlPlaneScope) SetAnnotation(key, value string) {
 }
 
 // AvailabilityStatusResource refers to the AzureManagedControlPlane.
-func (s *ManagedControlPlaneScope) AvailabilityStatusResource() v1beta1conditions.Setter {
+func (s *ManagedControlPlaneScope) AvailabilityStatusResource() conditions.Setter {
 	return s.ControlPlane
 }
 
@@ -954,10 +971,10 @@ func (s *ManagedControlPlaneScope) AvailabilityStatusResourceURI() string {
 
 // AvailabilityStatusFilter ignores the health metrics connection error that
 // occurs on startup for every AKS cluster.
-func (s *ManagedControlPlaneScope) AvailabilityStatusFilter(cond *clusterv1beta1.Condition) *clusterv1beta1.Condition {
+func (s *ManagedControlPlaneScope) AvailabilityStatusFilter(cond *metav1.Condition) *metav1.Condition {
 	if time.Since(s.ControlPlane.CreationTimestamp.Time) < resourceHealthWarningInitialGracePeriod &&
-		cond.Severity == clusterv1beta1.ConditionSeverityWarning {
-		return v1beta1conditions.TrueCondition(infrav1.AzureResourceAvailableCondition)
+		cond.Status == metav1.ConditionFalse {
+		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.AzureResourceAvailableCondition)}
 	}
 	return cond
 }
