@@ -38,7 +38,7 @@ func Convert_v1alpha1_AzureASOManagedClusterStatus_To_v1beta2_AzureASOManagedClu
 	if out.Deprecated.V1Beta1 == nil {
 		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedClusterV1Beta1DeprecatedStatus{}
 	}
-	out.Deprecated.V1Beta1.Ready = in.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+	out.Deprecated.V1Beta1.Ready = in.Ready
 	return nil
 }
 
@@ -49,7 +49,7 @@ func Convert_v1beta2_AzureASOManagedClusterStatus_To_v1alpha1_AzureASOManagedClu
 	if in.Initialization.Provisioned != nil {
 		out.Ready = *in.Initialization.Provisioned
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Ready = in.Deprecated.V1Beta1.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Ready = in.Deprecated.V1Beta1.Ready
 	}
 	return nil
 }
@@ -72,8 +72,8 @@ func Convert_v1alpha1_AzureASOManagedControlPlaneStatus_To_v1beta2_AzureASOManag
 	if out.Deprecated.V1Beta1 == nil {
 		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedControlPlaneV1Beta1DeprecatedStatus{}
 	}
-	out.Deprecated.V1Beta1.Ready = in.Ready             //nolint:staticcheck // intentional use of deprecated field for backward compat
-	out.Deprecated.V1Beta1.Initialized = in.Initialized //nolint:staticcheck // intentional use of deprecated field for backward compat
+	out.Deprecated.V1Beta1.Ready = in.Ready
+	out.Deprecated.V1Beta1.Initialized = in.Initialized
 	return nil
 }
 
@@ -84,12 +84,12 @@ func Convert_v1beta2_AzureASOManagedControlPlaneStatus_To_v1alpha1_AzureASOManag
 	if in.Initialization.Provisioned != nil {
 		out.Ready = *in.Initialization.Provisioned
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Ready = in.Deprecated.V1Beta1.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Ready = in.Deprecated.V1Beta1.Ready
 	}
 	if in.Initialization.ControlPlaneInitialized != nil {
 		out.Initialized = *in.Initialization.ControlPlaneInitialized
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Initialized = in.Deprecated.V1Beta1.Initialized //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Initialized = in.Deprecated.V1Beta1.Initialized
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func Convert_v1alpha1_AzureASOManagedMachinePoolStatus_To_v1beta2_AzureASOManage
 	if out.Deprecated.V1Beta1 == nil {
 		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedMachinePoolV1Beta1DeprecatedStatus{}
 	}
-	out.Deprecated.V1Beta1.Ready = in.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+	out.Deprecated.V1Beta1.Ready = in.Ready
 	return nil
 }
 
@@ -119,7 +119,7 @@ func Convert_v1beta2_AzureASOManagedMachinePoolStatus_To_v1alpha1_AzureASOManage
 	if in.Initialization.Provisioned != nil {
 		out.Ready = *in.Initialization.Provisioned
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Ready = in.Deprecated.V1Beta1.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Ready = in.Deprecated.V1Beta1.Ready
 	}
 	return nil
 }

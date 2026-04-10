@@ -123,7 +123,7 @@ type AzureClusterV1Beta1DeprecatedStatus struct {
 	// Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped.
 	//
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"` //nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -169,8 +169,6 @@ func (c *AzureCluster) SetConditions(conditions []metav1.Condition) {
 }
 
 // GetV1Beta1Conditions returns the v1beta1 conditions for an AzureCluster API object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (c *AzureCluster) GetV1Beta1Conditions() clusterv1.Conditions {
 	if c.Status.Deprecated == nil || c.Status.Deprecated.V1Beta1 == nil {
 		return nil
@@ -179,8 +177,6 @@ func (c *AzureCluster) GetV1Beta1Conditions() clusterv1.Conditions {
 }
 
 // SetV1Beta1Conditions sets the v1beta1 conditions on an AzureCluster object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (c *AzureCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	if c.Status.Deprecated == nil {
 		c.Status.Deprecated = &AzureClusterDeprecatedStatus{}

@@ -945,23 +945,23 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(s.AzureCluster, s.AzureCluster, s.AzureCluster.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
-		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),         //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.RouteTablesReadyCondition),           //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.NetworkInfrastructureReadyCondition), //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.VnetPeeringReadyCondition),           //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.DisksReadyCondition),                 //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.NATGatewaysReadyCondition),           //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.LoadBalancersReadyCondition),         //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.BastionHostReadyCondition),           //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.VNetReadyCondition),                  //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),               //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.SecurityGroupsReadyCondition),        //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.PrivateDNSZoneReadyCondition),        //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.PrivateDNSLinkReadyCondition),        //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.PrivateDNSRecordReadyCondition),      //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.PrivateEndpointsReadyCondition),      //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),
+		clusterv1.ConditionType(infrav1.RouteTablesReadyCondition),
+		clusterv1.ConditionType(infrav1.NetworkInfrastructureReadyCondition),
+		clusterv1.ConditionType(infrav1.VnetPeeringReadyCondition),
+		clusterv1.ConditionType(infrav1.DisksReadyCondition),
+		clusterv1.ConditionType(infrav1.NATGatewaysReadyCondition),
+		clusterv1.ConditionType(infrav1.LoadBalancersReadyCondition),
+		clusterv1.ConditionType(infrav1.BastionHostReadyCondition),
+		clusterv1.ConditionType(infrav1.VNetReadyCondition),
+		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),
+		clusterv1.ConditionType(infrav1.SecurityGroupsReadyCondition),
+		clusterv1.ConditionType(infrav1.PrivateDNSZoneReadyCondition),
+		clusterv1.ConditionType(infrav1.PrivateDNSLinkReadyCondition),
+		clusterv1.ConditionType(infrav1.PrivateDNSRecordReadyCondition),
+		clusterv1.ConditionType(infrav1.PrivateEndpointsReadyCondition),
 	}
 
 	return s.patchHelper.Patch(

@@ -39,7 +39,7 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error {
 		if dst.Status.Deprecated.V1Beta1 == nil {
 			dst.Status.Deprecated.V1Beta1 = &infrav1.AzureClusterIdentityV1Beta1DeprecatedStatus{}
 		}
-		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&src.Status.Conditions, &dst.Status.Deprecated.V1Beta1.Conditions) //nolint:staticcheck // intentional use of deprecated field for backward compat
+		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&src.Status.Conditions, &dst.Status.Deprecated.V1Beta1.Conditions)
 	}
 	return nil
 }

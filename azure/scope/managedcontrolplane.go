@@ -247,14 +247,14 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(s.ControlPlane, s.ControlPlane, s.ControlPlane.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
-		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),     //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.VNetReadyCondition),              //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),           //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.ManagedClusterRunningCondition),  //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.AgentPoolsReadyCondition),        //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.AzureResourceAvailableCondition), //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),
+		clusterv1.ConditionType(infrav1.VNetReadyCondition),
+		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),
+		clusterv1.ConditionType(infrav1.ManagedClusterRunningCondition),
+		clusterv1.ConditionType(infrav1.AgentPoolsReadyCondition),
+		clusterv1.ConditionType(infrav1.AzureResourceAvailableCondition),
 	}
 
 	return s.PatchHelper.Patch(

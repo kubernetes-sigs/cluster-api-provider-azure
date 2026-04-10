@@ -139,11 +139,11 @@ func spokeCondition(in *clusterv1beta1.Condition, c randfill.Continue) {
 	if in.Type == "" {
 		in.Type = clusterv1beta1.ConditionType(fmt.Sprintf("FuzzCondition_%s", c.String(10)))
 	}
-	in.Status = corev1.ConditionStatus([]corev1.ConditionStatus{
+	in.Status = []corev1.ConditionStatus{
 		corev1.ConditionTrue,
 		corev1.ConditionFalse,
 		corev1.ConditionUnknown,
-	}[c.Intn(3)])
+	}[c.Intn(3)]
 }
 
 // spokeAzureMachineSpec handles the *string→string→*string lossy conversion

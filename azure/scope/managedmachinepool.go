@@ -119,7 +119,7 @@ func (s *ManagedMachinePoolScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(s.InfraMachinePool, s.InfraMachinePool, s.InfraMachinePool.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
 	}
 

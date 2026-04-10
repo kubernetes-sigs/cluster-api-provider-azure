@@ -646,7 +646,7 @@ func (m *MachinePoolScope) SetFailureMessage(v error) {
 	if m.AzureMachinePool.Status.Deprecated.V1Beta1 == nil {
 		m.AzureMachinePool.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolV1Beta1DeprecatedStatus{}
 	}
-	m.AzureMachinePool.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // intentional use of deprecated field for backward compat
+	m.AzureMachinePool.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePool status failure reason.
@@ -657,7 +657,7 @@ func (m *MachinePoolScope) SetFailureReason(v string) {
 	if m.AzureMachinePool.Status.Deprecated.V1Beta1 == nil {
 		m.AzureMachinePool.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolV1Beta1DeprecatedStatus{}
 	}
-	m.AzureMachinePool.Status.Deprecated.V1Beta1.FailureReason = &v //nolint:staticcheck // intentional use of deprecated field for backward compat
+	m.AzureMachinePool.Status.Deprecated.V1Beta1.FailureReason = &v
 }
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,
@@ -697,12 +697,12 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(m.AzureMachinePool, m.AzureMachinePool, m.AzureMachinePool.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
-		clusterv1.ConditionType(infrav1.BootstrapSucceededCondition),      //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.ScaleSetDesiredReplicasCondition), //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.ScaleSetModelUpdatedCondition),    //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.ScaleSetRunningCondition),         //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.BootstrapSucceededCondition),
+		clusterv1.ConditionType(infrav1.ScaleSetDesiredReplicasCondition),
+		clusterv1.ConditionType(infrav1.ScaleSetModelUpdatedCondition),
+		clusterv1.ConditionType(infrav1.ScaleSetRunningCondition),
 	}
 
 	return m.patchHelper.Patch(

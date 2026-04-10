@@ -120,7 +120,7 @@ type (
 		// Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped.
 		//
 		// +optional
-		Conditions clusterv1.Conditions `json:"conditions,omitempty"` //nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
+		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 		// failureReason will be set in the event that there is a terminal problem
 		// reconciling the MachinePool machine and will contain a succinct value suitable
@@ -191,8 +191,6 @@ func (ampm *AzureMachinePoolMachine) SetConditions(conditions []metav1.Condition
 }
 
 // GetV1Beta1Conditions returns the v1beta1 conditions for an AzureMachinePoolMachine API object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (ampm *AzureMachinePoolMachine) GetV1Beta1Conditions() clusterv1.Conditions {
 	if ampm.Status.Deprecated == nil || ampm.Status.Deprecated.V1Beta1 == nil {
 		return nil
@@ -201,8 +199,6 @@ func (ampm *AzureMachinePoolMachine) GetV1Beta1Conditions() clusterv1.Conditions
 }
 
 // SetV1Beta1Conditions sets the v1beta1 conditions on an AzureMachinePoolMachine object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (ampm *AzureMachinePoolMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	if ampm.Status.Deprecated == nil {
 		ampm.Status.Deprecated = &AzureMachinePoolMachineDeprecatedStatus{}

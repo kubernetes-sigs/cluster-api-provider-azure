@@ -280,7 +280,7 @@ func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
 	if s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 == nil {
 		s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolMachineV1Beta1DeprecatedStatus{}
 	}
-	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // intentional use of deprecated field for backward compat
+	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.
@@ -291,7 +291,7 @@ func (s *MachinePoolMachineScope) SetFailureReason(v string) {
 	if s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 == nil {
 		s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolMachineV1Beta1DeprecatedStatus{}
 	}
-	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureReason = &v //nolint:staticcheck // intentional use of deprecated field for backward compat
+	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureReason = &v
 }
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
@@ -324,9 +324,9 @@ func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(s.AzureMachinePoolMachine, s.AzureMachinePoolMachine, s.AzureMachinePoolMachine.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
-		clusterv1.ConditionType(clusterv1.MachineNodeHealthyCondition), //nolint:staticcheck
+		clusterv1.ConditionType(clusterv1.MachineNodeHealthyCondition),
 	}
 
 	return s.patchHelper.Patch(

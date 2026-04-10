@@ -255,7 +255,7 @@ type AzureMachineV1Beta1DeprecatedStatus struct {
 	// Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped.
 	//
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"` //nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// failureReason will be set in the event that there is a terminal problem reconciling the Machine
 	// and will contain a succinct value suitable for machine interpretation.
@@ -326,8 +326,6 @@ func (m *AzureMachine) SetConditions(conditions []metav1.Condition) {
 }
 
 // GetV1Beta1Conditions returns the v1beta1 conditions for an AzureMachine API object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (m *AzureMachine) GetV1Beta1Conditions() clusterv1.Conditions {
 	if m.Status.Deprecated == nil || m.Status.Deprecated.V1Beta1 == nil {
 		return nil
@@ -336,8 +334,6 @@ func (m *AzureMachine) GetV1Beta1Conditions() clusterv1.Conditions {
 }
 
 // SetV1Beta1Conditions sets the v1beta1 conditions on an AzureMachine object.
-//
-//nolint:staticcheck // Intentionally using deprecated field for v1beta1 backward compat
 func (m *AzureMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	if m.Status.Deprecated == nil {
 		m.Status.Deprecated = &AzureMachineDeprecatedStatus{}

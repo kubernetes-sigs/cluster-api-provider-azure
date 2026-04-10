@@ -23,10 +23,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 )
 
 // Test is disabled when the race detector is enabled (via "//go:build !race"

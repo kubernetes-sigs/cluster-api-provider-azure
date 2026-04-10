@@ -28,8 +28,6 @@ import (
 // when the v1beta2→v1beta1 conversion webhook runs.
 // To avoid unnecessary status updates (which bump resourceVersion), we only write
 // when the number of conditions changes or when a condition type/status/reason differs.
-//
-//nolint:staticcheck // intentional use of deprecated types for v1beta1 backward compat
 func setV1Beta1ConditionsFromV1Beta2(
 	getter interface{ GetV1Beta1Conditions() clusterv1.Conditions },
 	setter interface{ SetV1Beta1Conditions(clusterv1.Conditions) },

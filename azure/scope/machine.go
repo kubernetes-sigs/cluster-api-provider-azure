@@ -611,7 +611,7 @@ func (m *MachineScope) SetFailureMessage(v error) {
 	if m.AzureMachine.Status.Deprecated.V1Beta1 == nil {
 		m.AzureMachine.Status.Deprecated.V1Beta1 = &infrav1.AzureMachineV1Beta1DeprecatedStatus{}
 	}
-	m.AzureMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // intentional use of deprecated field for backward compat
+	m.AzureMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachine status failure reason.
@@ -622,7 +622,7 @@ func (m *MachineScope) SetFailureReason(v string) {
 	if m.AzureMachine.Status.Deprecated.V1Beta1 == nil {
 		m.AzureMachine.Status.Deprecated.V1Beta1 = &infrav1.AzureMachineV1Beta1DeprecatedStatus{}
 	}
-	m.AzureMachine.Status.Deprecated.V1Beta1.FailureReason = &v //nolint:staticcheck // intentional use of deprecated field for backward compat
+	m.AzureMachine.Status.Deprecated.V1Beta1.FailureReason = &v
 }
 
 // SetConditionFalse sets the specified AzureMachine condition to false.
@@ -682,11 +682,11 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 	setV1Beta1ConditionsFromV1Beta2(m.AzureMachine, m.AzureMachine, m.AzureMachine.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
-	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
 		clusterv1.ReadyV1Beta1Condition,
-		clusterv1.ConditionType(infrav1.VMRunningCondition),             //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.AvailabilitySetReadyCondition),  //nolint:staticcheck
-		clusterv1.ConditionType(infrav1.NetworkInterfaceReadyCondition), //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.VMRunningCondition),
+		clusterv1.ConditionType(infrav1.AvailabilitySetReadyCondition),
+		clusterv1.ConditionType(infrav1.NetworkInterfaceReadyCondition),
 	}
 
 	return m.patchHelper.Patch(

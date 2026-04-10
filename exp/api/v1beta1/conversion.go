@@ -53,10 +53,10 @@ func Convert_v1beta1_AzureMachinePoolStatus_To_v1beta2_AzureMachinePoolStatus(in
 		if out.Deprecated.V1Beta1 == nil {
 			out.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolV1Beta1DeprecatedStatus{}
 		}
-		out.Deprecated.V1Beta1.Ready = in.Ready                                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&in.Conditions, &out.Deprecated.V1Beta1.Conditions) //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.Deprecated.V1Beta1.FailureReason = in.FailureReason                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.Deprecated.V1Beta1.FailureMessage = in.FailureMessage                                                                              //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Deprecated.V1Beta1.Ready = in.Ready
+		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&in.Conditions, &out.Deprecated.V1Beta1.Conditions)
+		out.Deprecated.V1Beta1.FailureReason = in.FailureReason
+		out.Deprecated.V1Beta1.FailureMessage = in.FailureMessage
 	}
 	return nil
 }
@@ -72,12 +72,12 @@ func Convert_v1beta2_AzureMachinePoolStatus_To_v1beta1_AzureMachinePoolStatus(in
 	if in.Initialization.Provisioned != nil {
 		out.Ready = *in.Initialization.Provisioned
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Ready = in.Deprecated.V1Beta1.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Ready = in.Deprecated.V1Beta1.Ready
 	}
 	if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta1.Conditions, &out.Conditions) //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.FailureReason = in.Deprecated.V1Beta1.FailureReason                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.FailureMessage = in.Deprecated.V1Beta1.FailureMessage                                                                              //nolint:staticcheck // intentional use of deprecated field for backward compat
+		clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta1.Conditions, &out.Conditions)
+		out.FailureReason = in.Deprecated.V1Beta1.FailureReason
+		out.FailureMessage = in.Deprecated.V1Beta1.FailureMessage
 	}
 	return nil
 }
@@ -99,10 +99,10 @@ func Convert_v1beta1_AzureMachinePoolMachineStatus_To_v1beta2_AzureMachinePoolMa
 		if out.Deprecated.V1Beta1 == nil {
 			out.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolMachineV1Beta1DeprecatedStatus{}
 		}
-		out.Deprecated.V1Beta1.Ready = in.Ready                                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&in.Conditions, &out.Deprecated.V1Beta1.Conditions) //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.Deprecated.V1Beta1.FailureReason = in.FailureReason                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.Deprecated.V1Beta1.FailureMessage = in.FailureMessage                                                                              //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Deprecated.V1Beta1.Ready = in.Ready
+		clusterv1beta1.Convert_v1beta1_Conditions_To_v1beta2_Deprecated_V1Beta1_Conditions(&in.Conditions, &out.Deprecated.V1Beta1.Conditions)
+		out.Deprecated.V1Beta1.FailureReason = in.FailureReason
+		out.Deprecated.V1Beta1.FailureMessage = in.FailureMessage
 	}
 	return nil
 }
@@ -118,12 +118,12 @@ func Convert_v1beta2_AzureMachinePoolMachineStatus_To_v1beta1_AzureMachinePoolMa
 	if in.Initialization.Provisioned != nil {
 		out.Ready = *in.Initialization.Provisioned
 	} else if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		out.Ready = in.Deprecated.V1Beta1.Ready //nolint:staticcheck // intentional use of deprecated field for backward compat
+		out.Ready = in.Deprecated.V1Beta1.Ready
 	}
 	if in.Deprecated != nil && in.Deprecated.V1Beta1 != nil {
-		clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta1.Conditions, &out.Conditions) //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.FailureReason = in.Deprecated.V1Beta1.FailureReason                                                                                //nolint:staticcheck // intentional use of deprecated field for backward compat
-		out.FailureMessage = in.Deprecated.V1Beta1.FailureMessage                                                                              //nolint:staticcheck // intentional use of deprecated field for backward compat
+		clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta1.Conditions, &out.Conditions)
+		out.FailureReason = in.Deprecated.V1Beta1.FailureReason
+		out.FailureMessage = in.Deprecated.V1Beta1.FailureMessage
 	}
 	return nil
 }
