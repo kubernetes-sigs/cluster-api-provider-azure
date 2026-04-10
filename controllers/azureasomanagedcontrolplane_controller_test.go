@@ -36,7 +36,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -44,7 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
@@ -193,7 +192,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				Ready: true,
+				Initialization: infrav1.AzureASOManagedControlPlaneInitializationStatus{
+					Provisioned: ptr.To(true),
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -220,7 +221,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{}))
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
-		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
+		g.Expect(ptr.Deref(asoManagedControlPlane.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles normally", func(t *testing.T) {
@@ -299,7 +300,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				Ready: false,
+				Initialization: infrav1.AzureASOManagedControlPlaneInitializationStatus{
+					Provisioned: ptr.To(false),
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -335,7 +338,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(asoManagedControlPlane.Status.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
 		g.Expect(asoManagedControlPlane.Status.Version).To(Equal("vCurrent"))
 		g.Expect(kubeConfigPatched).To(BeTrue())
-		g.Expect(asoManagedControlPlane.Status.Ready).To(BeTrue())
+		g.Expect(ptr.Deref(asoManagedControlPlane.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles a kubeconfig with a token", func(t *testing.T) {
@@ -428,7 +431,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				Ready: false,
+				Initialization: infrav1.AzureASOManagedControlPlaneInitializationStatus{
+					Provisioned: ptr.To(false),
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -474,7 +479,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
 		g.Expect(kubeConfigPatched).To(BeTrue())
-		g.Expect(asoManagedControlPlane.Status.Ready).To(BeTrue())
+		g.Expect(ptr.Deref(asoManagedControlPlane.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles a kubeconfig with a token that has expired", func(t *testing.T) {
@@ -567,7 +572,9 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				Ready: true,
+				Initialization: infrav1.AzureASOManagedControlPlaneInitializationStatus{
+					Provisioned: ptr.To(true),
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -612,7 +619,7 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
 		g.Expect(kubeConfigPatched).To(BeTrue())
-		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
+		g.Expect(ptr.Deref(asoManagedControlPlane.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {
@@ -703,12 +710,12 @@ func TestGetControlPlaneEndpoint(t *testing.T) {
 	tests := []struct {
 		name           string
 		managedCluster *asocontainerservicev1.ManagedCluster
-		expected       clusterv1beta1.APIEndpoint
+		expected       clusterv1.APIEndpoint
 	}{
 		{
 			name:           "empty",
 			managedCluster: &asocontainerservicev1.ManagedCluster{},
-			expected:       clusterv1beta1.APIEndpoint{},
+			expected:       clusterv1.APIEndpoint{},
 		},
 		{
 			name: "public fqdn",
@@ -717,7 +724,7 @@ func TestGetControlPlaneEndpoint(t *testing.T) {
 					Fqdn: ptr.To("fqdn"),
 				},
 			},
-			expected: clusterv1beta1.APIEndpoint{
+			expected: clusterv1.APIEndpoint{
 				Host: "fqdn",
 				Port: 443,
 			},
@@ -729,7 +736,7 @@ func TestGetControlPlaneEndpoint(t *testing.T) {
 					PrivateFQDN: ptr.To("fqdn"),
 				},
 			},
-			expected: clusterv1beta1.APIEndpoint{
+			expected: clusterv1.APIEndpoint{
 				Host: "fqdn",
 				Port: 443,
 			},
@@ -742,7 +749,7 @@ func TestGetControlPlaneEndpoint(t *testing.T) {
 					Fqdn:        ptr.To("public"),
 				},
 			},
-			expected: clusterv1beta1.APIEndpoint{
+			expected: clusterv1.APIEndpoint{
 				Host: "private",
 				Port: 443,
 			},

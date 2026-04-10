@@ -32,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -76,6 +76,7 @@ func TestAzureMachinePoolReconcilePaused(t *testing.T) {
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
 	c := fake.NewClientBuilder().
 		WithScheme(s).
+		WithStatusSubresource(&infrav1exp.AzureMachinePool{}).
 		Build()
 
 	recorder := record.NewFakeRecorder(1)
