@@ -23,12 +23,14 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -37,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -228,7 +230,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 			if reconcileError.IsTerminal() {
 				acr.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureCluster").Error())
 				log.Error(err, "failed to reconcile AzureCluster", "name", clusterScope.ClusterName())
-				v1beta1conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "")
+				conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason})
 				return reconcile.Result{}, nil
 			}
 			if reconcileError.IsTransient() {
@@ -243,7 +245,7 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 
 		wrappedErr := errors.Wrap(err, "failed to reconcile cluster services")
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", "%s", wrappedErr.Error())
-		v1beta1conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s", wrappedErr.Error())
+		conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: wrappedErr.Error()})
 		return reconcile.Result{}, wrappedErr
 	}
 
@@ -257,17 +259,17 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 		}
 	} else {
 		if azureCluster.Spec.ControlPlaneEndpoint.Host == "" {
-			v1beta1conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1beta1.ConditionSeverityInfo, "Waiting for the Control Plane host")
+			conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: "ExternallyManagedControlPlane", Message: "Waiting for the Control Plane host"})
 			return reconcile.Result{}, nil
 		} else if azureCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-			v1beta1conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1beta1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+			conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: "ExternallyManagedControlPlane", Message: "Waiting for the Control Plane port"})
 			return reconcile.Result{}, nil
 		}
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
-	azureCluster.Status.Ready = true
-	v1beta1conditions.MarkTrue(azureCluster, infrav1.NetworkInfrastructureReadyCondition)
+	azureCluster.Status.Initialization.Provisioned = ptr.To(true)
+	conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.NetworkInfrastructureReadyCondition)})
 
 	return reconcile.Result{}, nil
 }
@@ -320,7 +322,7 @@ func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterS
 
 		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 		acr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", "%s", wrappedErr.Error())
-		v1beta1conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1beta1.DeletionFailedReason, clusterv1beta1.ConditionSeverityWarning, "%s", err.Error())
+		conditions.Set(azureCluster, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.DeletionFailedReason, Message: err.Error()})
 		return reconcile.Result{}, wrappedErr
 	}
 

@@ -121,9 +121,13 @@ linters:
           alias: bootstrapv1beta1
         # CAPZ
         - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
+          alias: infrav1beta1
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/api/v1beta2
           alias: infrav1
         # CAPZ exp
         - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1
+          alias: infrav1expbeta1
+        - pkg: sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2
           alias: infrav1exp
         - pkg: sigs.k8s.io/cluster-api-provider-azure/util/webhook
           alias: webhookutils
@@ -351,6 +355,12 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .*VMState is deprecated'
+      # Ignore deprecated field/type access in v1beta2 types, conversion, scope, and webhook files.
+      # These intentionally use deprecated CAPI types and v1beta1 fields for backward compat.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated'
+        path: "^api/v1beta2/|^exp/api/v1beta2/|^api/v1beta1/conversion|^exp/api/v1beta1/conversion|^api/v1alpha1/conversion|^api/v1beta1/.*_conversion\\.go$|^azure/scope/|^internal/webhooks/azuremachinepool"
     paths:
       - zz_generated\.(\w*)\.go$
       - third_party$

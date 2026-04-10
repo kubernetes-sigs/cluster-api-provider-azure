@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
 )
 
@@ -41,7 +41,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
 			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}
@@ -132,7 +132,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster with pre-existing control plane endpoint - valid spec",
 			oldCluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}
@@ -140,7 +140,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			}(),
 			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 					Host: "apiserver.example.io",
 					Port: 6443,
 				}
@@ -153,7 +153,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			oldCluster: apifixtures.CreateValidCluster(),
 			cluster: func() *infrav1.AzureCluster {
 				cluster := apifixtures.CreateValidCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 					Host: "apiserver.example.com",
 					Port: 8443,
 				}

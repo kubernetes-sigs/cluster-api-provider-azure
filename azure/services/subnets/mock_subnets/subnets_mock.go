@@ -31,9 +31,9 @@ import (
 
 	v1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -158,10 +158,10 @@ func (mr *MockSubnetScopeMockRecorder) GetClient() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockSubnetScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockSubnetScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -172,7 +172,7 @@ func (mr *MockSubnetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, 
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockSubnetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockSubnetScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -198,7 +198,7 @@ func (mr *MockSubnetScopeMockRecorder) SubnetSpecs() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockSubnetScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockSubnetScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -210,7 +210,7 @@ func (mr *MockSubnetScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) 
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockSubnetScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockSubnetScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -222,7 +222,7 @@ func (mr *MockSubnetScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockSubnetScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockSubnetScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

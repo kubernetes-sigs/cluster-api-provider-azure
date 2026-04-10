@@ -31,9 +31,9 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockNICScope is a mock of NICScope interface.
@@ -61,10 +61,10 @@ func (m *MockNICScope) EXPECT() *MockNICScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockNICScope) AdditionalTags() v1beta1.Tags {
+func (m *MockNICScope) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -145,10 +145,10 @@ func (mr *MockNICScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockNICScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockNICScope) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -227,10 +227,10 @@ func (mr *MockNICScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, 
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockNICScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockNICScope) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -283,10 +283,10 @@ func (mr *MockNICScopeMockRecorder) FailureDomains() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockNICScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockNICScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -367,7 +367,7 @@ func (mr *MockNICScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockNICScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockNICScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -421,7 +421,7 @@ func (mr *MockNICScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockNICScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockNICScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -433,7 +433,7 @@ func (mr *MockNICScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *go
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockNICScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockNICScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -445,7 +445,7 @@ func (mr *MockNICScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *gom
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockNICScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockNICScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

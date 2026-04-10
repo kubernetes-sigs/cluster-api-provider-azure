@@ -32,9 +32,9 @@ import (
 
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -130,10 +130,10 @@ func (m *MockTagsGetterSetter[T]) EXPECT() *MockTagsGetterSetterMockRecorder[T] 
 }
 
 // GetAdditionalTags mocks base method.
-func (m *MockTagsGetterSetter[T]) GetAdditionalTags() v1beta1.Tags {
+func (m *MockTagsGetterSetter[T]) GetAdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -144,10 +144,10 @@ func (mr *MockTagsGetterSetterMockRecorder[T]) GetAdditionalTags() *gomock.Call 
 }
 
 // GetDesiredTags mocks base method.
-func (m *MockTagsGetterSetter[T]) GetDesiredTags(resource T) v1beta1.Tags {
+func (m *MockTagsGetterSetter[T]) GetDesiredTags(resource T) v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDesiredTags", resource)
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -158,7 +158,7 @@ func (mr *MockTagsGetterSetterMockRecorder[T]) GetDesiredTags(resource any) *gom
 }
 
 // SetTags mocks base method.
-func (m *MockTagsGetterSetter[T]) SetTags(resource T, tags v1beta1.Tags) {
+func (m *MockTagsGetterSetter[T]) SetTags(resource T, tags v1beta2.Tags) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTags", resource, tags)
 }
@@ -328,10 +328,10 @@ func (mr *MockScopeMockRecorder) GetClient() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -342,7 +342,7 @@ func (mr *MockScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, arg2 a
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -354,7 +354,7 @@ func (mr *MockScopeMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -366,7 +366,7 @@ func (mr *MockScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *gomoc
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -378,7 +378,7 @@ func (mr *MockScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *gomock
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

@@ -40,11 +40,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -267,7 +267,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	log.Info("Reconciling AzureMachinePool")
 
 	// If the AzureMachine is in an error state, return early.
-	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil {
+	if machinePoolScope.AzureMachinePool.Status.Deprecated != nil && machinePoolScope.AzureMachinePool.Status.Deprecated.V1Beta1 != nil && (machinePoolScope.AzureMachinePool.Status.Deprecated.V1Beta1.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.Deprecated.V1Beta1.FailureMessage != nil) { //nolint:staticcheck // intentional use of deprecated field for backward compat
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}
