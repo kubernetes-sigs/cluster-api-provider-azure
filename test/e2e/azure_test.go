@@ -1464,7 +1464,8 @@ spec:
 
 	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
 	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
-	Context("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
+	// TODO: Re-enable once NativeScheduling tests are validated in CI.
+	PContext("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "kuberay")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
@@ -1533,7 +1534,8 @@ spec:
 	})
 
 	// KubeRay tests on a self-managed VM-based cluster.
-	Context("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
+	// TODO: Re-enable once NativeScheduling tests are validated in CI.
+	PContext("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vm-kuberay")
 			kubernetesVersion, err := resolveCIVersion("latest")
