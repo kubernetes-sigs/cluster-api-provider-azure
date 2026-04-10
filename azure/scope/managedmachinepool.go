@@ -116,7 +116,7 @@ func (s *ManagedMachinePoolScope) PatchObject(ctx context.Context) error {
 	}
 
 	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
-	setV1Beta1ConditionsFromV1Beta2(s.InfraMachinePool, s.InfraMachinePool.GetConditions())
+	setV1Beta1ConditionsFromV1Beta2(s.InfraMachinePool, s.InfraMachinePool, s.InfraMachinePool.GetConditions())
 
 	// v1beta1 owned conditions for backward compat patch conflict resolution.
 	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat

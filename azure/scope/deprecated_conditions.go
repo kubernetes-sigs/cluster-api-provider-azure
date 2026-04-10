@@ -26,12 +26,20 @@ import (
 // to v1beta1 format (clusterv1.Conditions) and stores them via the setter.
 // This populates Deprecated.V1Beta1.Conditions so that v1beta1 clients see conditions
 // when the v1beta2→v1beta1 conversion webhook runs.
+// To avoid unnecessary status updates (which bump resourceVersion), we only write
+// when the number of conditions changes or when a condition type/status/reason differs.
 //
 //nolint:staticcheck // intentional use of deprecated types for v1beta1 backward compat
-func setV1Beta1ConditionsFromV1Beta2(setter interface{ SetV1Beta1Conditions(clusterv1.Conditions) }, v1beta2Conditions []metav1.Condition) {
+func setV1Beta1ConditionsFromV1Beta2(
+	getter interface{ GetV1Beta1Conditions() clusterv1.Conditions },
+	setter interface{ SetV1Beta1Conditions(clusterv1.Conditions) },
+	v1beta2Conditions []metav1.Condition,
+) {
 	if len(v1beta2Conditions) == 0 {
 		return
 	}
+
+	// Build the new v1beta1 conditions from v1beta2.
 	v1beta1Conds := make(clusterv1.Conditions, 0, len(v1beta2Conditions))
 	for _, c := range v1beta2Conditions {
 		v1beta1Conds = append(v1beta1Conds, clusterv1.Condition{
@@ -42,5 +50,25 @@ func setV1Beta1ConditionsFromV1Beta2(setter interface{ SetV1Beta1Conditions(clus
 			Message:            c.Message,
 		})
 	}
+
+	// Skip the write if the existing v1beta1 conditions already match.
+	// This prevents unnecessary resourceVersion bumps on stable objects.
+	existing := getter.GetV1Beta1Conditions()
+	if len(existing) == len(v1beta1Conds) {
+		changed := false
+		for i := range v1beta1Conds {
+			if existing[i].Type != v1beta1Conds[i].Type ||
+				existing[i].Status != v1beta1Conds[i].Status ||
+				existing[i].Reason != v1beta1Conds[i].Reason ||
+				existing[i].Message != v1beta1Conds[i].Message {
+				changed = true
+				break
+			}
+		}
+		if !changed {
+			return
+		}
+	}
+
 	setter.SetV1Beta1Conditions(v1beta1Conds)
 }
