@@ -15,4 +15,5 @@ limitations under the License.
 */
 
 // +groupName=infrastructure.cluster.x-k8s.io
+// +k8s:conversion-gen=sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2
 package v1beta1
