@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 type FakeClusterTracker struct {
@@ -244,7 +244,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedMachinePoolStatus{
-				Ready: true,
+				Initialization: infrav1.AzureASOManagedMachinePoolInitializationStatus{
+					Provisioned: ptr.To(true),
+				},
 			},
 		}
 		machinePool := &clusterv1.MachinePool{
@@ -280,7 +282,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{}))
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
-		g.Expect(asoManagedMachinePool.Status.Ready).To(BeFalse())
+		g.Expect(ptr.Deref(asoManagedMachinePool.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles normally", func(t *testing.T) {
@@ -350,7 +352,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedMachinePoolStatus{
-				Ready: false,
+				Initialization: infrav1.AzureASOManagedMachinePoolInitializationStatus{
+					Provisioned: ptr.To(false),
+				},
 			},
 		}
 		machinePool := &clusterv1.MachinePool{
@@ -419,7 +423,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
 		g.Expect(asoManagedMachinePool.Spec.ProviderIDList).To(ConsistOf("azure://node1", "azure://node2"))
 		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
-		g.Expect(asoManagedMachinePool.Status.Ready).To(BeTrue())
+		g.Expect(ptr.Deref(asoManagedMachinePool.Status.Initialization.Provisioned, false)).To(BeTrue())
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)).To(Succeed())
 		g.Expect(*machinePool.Spec.Replicas).To(Equal(int32(1)))
@@ -493,7 +497,9 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedMachinePoolStatus{
-				Ready: false,
+				Initialization: infrav1.AzureASOManagedMachinePoolInitializationStatus{
+					Provisioned: ptr.To(false),
+				},
 			},
 		}
 		machinePool := &clusterv1.MachinePool{
@@ -529,7 +535,7 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
 		g.Expect(asoManagedMachinePool.Status.Replicas).To(Equal(int32(3)))
-		g.Expect(asoManagedMachinePool.Status.Ready).To(BeTrue())
+		g.Expect(ptr.Deref(asoManagedMachinePool.Status.Initialization.Provisioned, false)).To(BeTrue())
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(machinePool), machinePool)).To(Succeed())
 		g.Expect(*machinePool.Spec.Replicas).To(Equal(int32(3)))
