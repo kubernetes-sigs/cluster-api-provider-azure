@@ -61,9 +61,9 @@ if [[ "$(capz::util::should_build_ccm)" == "true" ]] || [[ "${GINKGO_FOCUS:-}" =
   echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM} cloud-node-manager image for external cloud-provider-azure cluster"
 fi
 
-# Build the kuberay-operator from source when running NativeScheduling tests.
-if [[ "${GINKGO_FOCUS:-}" =~ NativeScheduling ]]; then
-  echo "NativeScheduling tests detected, building kuberay-operator from source"
+# Build the kuberay-operator from source when running KubeRay or NativeScheduling tests.
+if [[ "${GINKGO_FOCUS:-}" =~ KubeRay ]] || [[ "${GINKGO_FOCUS:-}" =~ NativeScheduling ]]; then
+  echo "KubeRay/NativeScheduling tests detected, building kuberay-operator from source"
   # shellcheck source=scripts/ci-build-kuberay-operator.sh
   source "${REPO_ROOT}/scripts/ci-build-kuberay-operator.sh"
 fi
