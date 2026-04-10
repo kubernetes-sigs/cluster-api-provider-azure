@@ -38,10 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 )
 
 // AzureLogCollector collects logs from a CAPZ workload cluster.

@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -82,7 +82,7 @@ func AzureEdgeZoneClusterSpec(ctx context.Context, inputGetter func() AzureEdgeZ
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name
-		resource, err := azureutil.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
+		resource, err := azureutil.ParseResourceID(machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
 		var vms []*armcompute.VirtualMachine

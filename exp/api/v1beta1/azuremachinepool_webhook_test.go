@@ -34,7 +34,8 @@ import (
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
@@ -151,17 +152,17 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with managed diagnostics profile",
-			amp:     createMachinePoolWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
+			amp:     createMachinePoolWithDiagnostics(infrav1beta1.ManagedDiagnosticsStorage, nil),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with disabled diagnostics profile",
-			amp:     createMachinePoolWithDiagnostics(infrav1.ManagedDiagnosticsStorage, nil),
+			amp:     createMachinePoolWithDiagnostics(infrav1beta1.ManagedDiagnosticsStorage, nil),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with user managed diagnostics profile and defined user managed storage account",
-			amp:     createMachinePoolWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, &infrav1.UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
+			amp:     createMachinePoolWithDiagnostics(infrav1beta1.UserManagedDiagnosticsStorage, &infrav1beta1.UserManagedBootDiagnostics{StorageAccountURI: "https://fakeurl"}),
 			wantErr: false,
 		},
 		{
@@ -171,7 +172,7 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with user managed diagnostics profile, but empty user managed storage account",
-			amp:     createMachinePoolWithDiagnostics(infrav1.UserManagedDiagnosticsStorage, nil),
+			amp:     createMachinePoolWithDiagnostics(infrav1beta1.UserManagedDiagnosticsStorage, nil),
 			wantErr: true,
 		},
 		{
@@ -198,17 +199,17 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with valid legacy network configuration",
-			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.NetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1beta1.NetworkInterface{}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with invalid legacy network configuration",
-			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("testSubnet", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with valid networkinterface configuration",
-			amp:     createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet"}}),
 			wantErr: false,
 		},
 		{
@@ -232,16 +233,16 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azuremachinepool with invalid DiffDiskSettings",
-			amp: createMachinePoolWithDiffDiskSettings(infrav1.DiffDiskSettings{
-				Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+			amp: createMachinePoolWithDiffDiskSettings(infrav1beta1.DiffDiskSettings{
+				Placement: ptr.To(infrav1beta1.DiffDiskPlacementResourceDisk),
 			}),
 			wantErr: true,
 		},
 		{
 			name: "azuremachinepool with valid DiffDiskSettings",
-			amp: createMachinePoolWithDiffDiskSettings(infrav1.DiffDiskSettings{
+			amp: createMachinePoolWithDiffDiskSettings(infrav1beta1.DiffDiskSettings{
 				Option:    string(armcompute.DiffDiskOptionsLocal),
-				Placement: ptr.To(infrav1.DiffDiskPlacementResourceDisk),
+				Placement: ptr.To(infrav1beta1.DiffDiskPlacementResourceDisk),
 			}),
 			wantErr: true,
 		},
@@ -275,11 +276,13 @@ type mockDefaultClient struct {
 
 func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	switch obj := obj.(type) {
+	case *infrav1beta1.AzureCluster:
+		obj.Spec.SubscriptionID = m.SubscriptionID
 	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
 	case *clusterv1.Cluster:
 		obj.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
-			Kind: infrav1.AzureClusterKind,
+			Kind: infrav1beta1.AzureClusterKind,
 			Name: "test-cluster",
 		}
 	default:
@@ -369,20 +372,20 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
-			amp:     createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1.NetworkInterface{{SubnetName: "testSubnet"}}),
-			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet"}}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with valid network interface config",
-			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{}),
-			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
+			oldAMP:  createMachinePoolWithNetworkConfig("subnet", []infrav1beta1.NetworkInterface{}),
+			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1beta1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
 	}
@@ -421,7 +424,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	roleAssignmentExistTest := test{amp: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Identity: "SystemAssigned",
-			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
 				Scope:        "scope",
 				DefinitionID: "definitionID",
@@ -435,7 +438,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	emptyTest := test{amp: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Identity:                   "SystemAssigned",
-			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
+			SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{},
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fakeMachinePoolName,
@@ -445,7 +448,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	systemAssignedIdentityRoleExistTest := test{amp: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Identity: "SystemAssigned",
-			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				DefinitionID: "testroledefinitionid",
 				Scope:        "testscope",
 			},
@@ -487,9 +490,9 @@ func TestAzureMachinePool_Default(t *testing.T) {
 }
 
 func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			ImagePlan: infrav1.ImagePlan{
+	image := infrav1beta1.Image{
+		Marketplace: &infrav1beta1.AzureMarketplaceImage{
+			ImagePlan: infrav1beta1.ImagePlan{
 				Publisher: publisher,
 				Offer:     offer,
 				SKU:       sku,
@@ -504,7 +507,7 @@ func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -514,8 +517,8 @@ func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string
 }
 
 func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := infrav1.Image{
-		SharedGallery: &infrav1.AzureSharedGalleryImage{
+	image := infrav1beta1.Image{
+		SharedGallery: &infrav1beta1.AzureSharedGalleryImage{
 			SubscriptionID: subscriptionID,
 			ResourceGroup:  resourceGroup,
 			Name:           name,
@@ -530,7 +533,7 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -539,13 +542,13 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 	}
 }
 
-func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.NetworkInterface) *AzureMachinePool {
+func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1beta1.NetworkInterface) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
 				SubnetName:        subnetName,
 				NetworkInterfaces: interfaces,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -555,7 +558,7 @@ func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.
 }
 
 func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := infrav1.Image{
+	image := infrav1beta1.Image{
 		ID: &imageID,
 	}
 
@@ -565,7 +568,7 @@ func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -577,14 +580,14 @@ func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout
 func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Identity: infrav1.VMIdentitySystemAssigned,
-			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			Identity: infrav1beta1.VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         role,
 				Scope:        "scope",
 				DefinitionID: "definitionID",
 			},
 			Template: AzureMachinePoolMachineTemplate{
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -593,12 +596,12 @@ func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool 
 	}
 }
 
-func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsStorageAccountType, userManaged *infrav1.UserManagedBootDiagnostics) *AzureMachinePool {
-	var diagnostics *infrav1.Diagnostics
+func createMachinePoolWithDiagnostics(diagnosticsType infrav1beta1.BootDiagnosticsStorageAccountType, userManaged *infrav1beta1.UserManagedBootDiagnostics) *AzureMachinePool {
+	var diagnostics *infrav1beta1.Diagnostics
 
 	if diagnosticsType != "" {
-		diagnostics = &infrav1.Diagnostics{
-			Boot: &infrav1.BootDiagnostics{
+		diagnostics = &infrav1beta1.Diagnostics{
+			Boot: &infrav1beta1.BootDiagnostics{
 				StorageAccountType: diagnosticsType,
 			},
 		}
@@ -612,7 +615,7 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
 				Diagnostics: diagnostics,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -622,20 +625,20 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 }
 
 func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachinePool {
-	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIDs))
+	userAssignedIdentities := make([]infrav1beta1.UserAssignedIdentity, len(providerIDs))
 
 	for _, providerID := range providerIDs {
-		userAssignedIdentities = append(userAssignedIdentities, infrav1.UserAssignedIdentity{
+		userAssignedIdentities = append(userAssignedIdentities, infrav1beta1.UserAssignedIdentity{
 			ProviderID: providerID,
 		})
 	}
 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Identity:               infrav1.VMIdentityUserAssigned,
+			Identity:               infrav1beta1.VMIdentityUserAssigned,
 			UserAssignedIdentities: userAssignedIdentities,
 			Template: AzureMachinePoolMachineTemplate{
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -649,7 +652,7 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 		Spec: AzureMachinePoolSpec{
 			Strategy: strategy,
 			Template: AzureMachinePoolMachineTemplate{
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -661,9 +664,9 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			OrchestrationMode: infrav1.OrchestrationModeType(mode),
+			OrchestrationMode: infrav1beta1.OrchestrationModeType(mode),
 			Template: AzureMachinePoolMachineTemplate{
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
@@ -672,11 +675,11 @@ func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *
 	}
 }
 
-func createMachinePoolWithDiffDiskSettings(settings infrav1.DiffDiskSettings) *AzureMachinePool {
+func createMachinePoolWithDiffDiskSettings(settings infrav1beta1.DiffDiskSettings) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					DiffDiskSettings: &settings,
 				},
 			},
@@ -717,9 +720,9 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 }
 
 func getKnownValidAzureMachinePool() *AzureMachinePool {
-	image := infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			ImagePlan: infrav1.ImagePlan{
+	image := infrav1beta1.Image{
+		Marketplace: &infrav1beta1.AzureMarketplaceImage{
+			ImagePlan: infrav1beta1.ImagePlan{
 				Publisher: "PUB1234",
 				Offer:     "OFFER1234",
 				SKU:       "SKU1234",
@@ -733,13 +736,13 @@ func getKnownValidAzureMachinePool() *AzureMachinePool {
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: ptr.To(10),
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
 			},
-			Identity: infrav1.VMIdentitySystemAssigned,
-			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			Identity: infrav1beta1.VMIdentitySystemAssigned,
+			SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         string(uuid.NewUUID()),
 				Scope:        "scope",
 				DefinitionID: "definitionID",

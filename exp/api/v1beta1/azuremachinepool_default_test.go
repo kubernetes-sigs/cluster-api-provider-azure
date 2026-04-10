@@ -28,7 +28,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
@@ -64,31 +65,31 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		machinePool                        *AzureMachinePool
 		wantErr                            bool
 		expectedRoleAssignmentName         string
-		expectedSystemAssignedIdentityRole *infrav1.SystemAssignedIdentityRole
+		expectedSystemAssignedIdentityRole *infrav1beta1.SystemAssignedIdentityRole
 	}{
 		{
 			name: "bothRoleAssignmentNamesPopulated",
 			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-				Identity:           infrav1.VMIdentitySystemAssigned,
+				Identity:           infrav1beta1.VMIdentitySystemAssigned,
 				RoleAssignmentName: existingRoleAssignmentName,
-				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 					Name: existingRoleAssignmentName,
 				},
 			}},
 			expectedRoleAssignmentName: existingRoleAssignmentName,
-			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			expectedSystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name: existingRoleAssignmentName,
 			},
 		},
 		{
 			name: "roleAssignmentExist",
 			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-				Identity: infrav1.VMIdentitySystemAssigned,
-				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Identity: infrav1beta1.VMIdentitySystemAssigned,
+				SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 					Name: existingRoleAssignmentName,
 				},
 			}},
-			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			expectedSystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
 				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID),
 				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
@@ -97,21 +98,21 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		{
 			name: "notSystemAssigned",
 			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-				Identity: infrav1.VMIdentityUserAssigned,
+				Identity: infrav1beta1.VMIdentityUserAssigned,
 			}},
 			expectedSystemAssignedIdentityRole: nil,
 		},
 		{
 			name: "systemAssignedIdentityRoleExist",
 			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-				Identity: infrav1.VMIdentitySystemAssigned,
-				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+				Identity: infrav1beta1.VMIdentitySystemAssigned,
+				SystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 					Name:         existingRoleAssignmentName,
 					DefinitionID: fakeRoleDefinitionID,
 					Scope:        fakeScope,
 				},
 			}},
-			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			expectedSystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
 				DefinitionID: fakeRoleDefinitionID,
 				Scope:        fakeScope,
@@ -120,10 +121,10 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		{
 			name: "deprecatedRoleAssignmentName",
 			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
-				Identity:           infrav1.VMIdentitySystemAssigned,
+				Identity:           infrav1beta1.VMIdentitySystemAssigned,
 				RoleAssignmentName: existingRoleAssignmentName,
 			}},
-			expectedSystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
+			expectedSystemAssignedIdentityRole: &infrav1beta1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
 				DefinitionID: fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID),
 				Scope:        fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID),
@@ -137,6 +138,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 
 			scheme := runtime.NewScheme()
 			_ = AddToScheme(scheme)
+			_ = infrav1beta1.AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 
@@ -195,16 +197,16 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 		machinePool *AzureMachinePool
 	}
 
-	bootDiagnosticsDefault := &infrav1.BootDiagnostics{
-		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+	bootDiagnosticsDefault := &infrav1beta1.BootDiagnostics{
+		StorageAccountType: infrav1beta1.ManagedDiagnosticsStorage,
 	}
 
 	managedStorageDiagnostics := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Diagnostics: &infrav1.Diagnostics{
-					Boot: &infrav1.BootDiagnostics{
-						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+				Diagnostics: &infrav1beta1.Diagnostics{
+					Boot: &infrav1beta1.BootDiagnostics{
+						StorageAccountType: infrav1beta1.ManagedDiagnosticsStorage,
 					},
 				},
 			},
@@ -214,9 +216,9 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 	disabledStorageDiagnostics := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Diagnostics: &infrav1.Diagnostics{
-					Boot: &infrav1.BootDiagnostics{
-						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+				Diagnostics: &infrav1beta1.Diagnostics{
+					Boot: &infrav1beta1.BootDiagnostics{
+						StorageAccountType: infrav1beta1.DisabledDiagnosticsStorage,
 					},
 				},
 			},
@@ -226,10 +228,10 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 	userManagedDiagnostics := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Diagnostics: &infrav1.Diagnostics{
-					Boot: &infrav1.BootDiagnostics{
-						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
-						UserManaged: &infrav1.UserManagedBootDiagnostics{
+				Diagnostics: &infrav1beta1.Diagnostics{
+					Boot: &infrav1beta1.BootDiagnostics{
+						StorageAccountType: infrav1beta1.UserManagedDiagnosticsStorage,
+						UserManaged: &infrav1beta1.UserManagedBootDiagnostics{
 							StorageAccountURI: "https://fakeurl",
 						},
 					},
@@ -250,7 +252,7 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 	nilBootDiagnostics := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Diagnostics: &infrav1.Diagnostics{},
+				Diagnostics: &infrav1beta1.Diagnostics{},
 			},
 		},
 	}}
@@ -259,16 +261,16 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 	g.Expect(nilBootDiagnostics.machinePool.Spec.Template.Diagnostics.Boot).To(Equal(bootDiagnosticsDefault))
 
 	managedStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
-	g.Expect(managedStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+	g.Expect(managedStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1beta1.ManagedDiagnosticsStorage))
 
 	disabledStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
-	g.Expect(disabledStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.DisabledDiagnosticsStorage))
+	g.Expect(disabledStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1beta1.DisabledDiagnosticsStorage))
 
 	userManagedDiagnostics.machinePool.SetDiagnosticsDefaults()
-	g.Expect(userManagedDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.UserManagedDiagnosticsStorage))
+	g.Expect(userManagedDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1beta1.UserManagedDiagnosticsStorage))
 
 	nilDiagnostics.machinePool.SetDiagnosticsDefaults()
-	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
+	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1beta1.ManagedDiagnosticsStorage))
 }
 
 func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
@@ -279,11 +281,11 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 	}
 
 	// test to Ensure the default policy is set to Deallocate if EvictionPolicy is nil
-	defaultEvictionPolicy := infrav1.SpotEvictionPolicyDeallocate
+	defaultEvictionPolicy := infrav1beta1.SpotEvictionPolicyDeallocate
 	nilDiffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				SpotVMOptions: &infrav1.SpotVMOptions{
+				SpotVMOptions: &infrav1beta1.SpotVMOptions{
 					EvictionPolicy: nil,
 				},
 			},
@@ -293,13 +295,13 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 	g.Expect(nilDiffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&defaultEvictionPolicy))
 
 	// test to Ensure the default policy is set to Delete if diffDiskSettings option is set to "Local"
-	expectedEvictionPolicy := infrav1.SpotEvictionPolicyDelete
+	expectedEvictionPolicy := infrav1beta1.SpotEvictionPolicyDelete
 	diffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				SpotVMOptions: &infrav1.SpotVMOptions{},
-				OSDisk: infrav1.OSDisk{
-					DiffDiskSettings: &infrav1.DiffDiskSettings{
+				SpotVMOptions: &infrav1beta1.SpotVMOptions{},
+				OSDisk: infrav1beta1.OSDisk{
+					DiffDiskSettings: &infrav1beta1.DiffDiskSettings{
 						Option: "Local",
 					},
 				},
@@ -329,7 +331,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName: "",
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1beta1.NetworkInterface{
 							{
 								SubnetName:       "test-subnet",
 								PrivateIPConfigs: 1,
@@ -354,7 +356,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "",
 						AcceleratedNetworking: nil,
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1beta1.NetworkInterface{
 							{
 								SubnetName:            "test-subnet",
 								PrivateIPConfigs:      1,
@@ -371,7 +373,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 				Spec: AzureMachinePoolSpec{
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName: "test-subnet",
-						NetworkInterfaces: []infrav1.NetworkInterface{{
+						NetworkInterfaces: []infrav1beta1.NetworkInterface{{
 							SubnetName: "test-subnet",
 						}},
 					},
@@ -382,7 +384,7 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 					Template: AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
 						AcceleratedNetworking: nil,
-						NetworkInterfaces: []infrav1.NetworkInterface{
+						NetworkInterfaces: []infrav1beta1.NetworkInterface{
 							{
 								SubnetName: "test-subnet",
 							},
@@ -411,7 +413,7 @@ func hardcodedAzureMachinePoolWithSSHKey(sshPublicKey string) *AzureMachinePool 
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
 				SSHPublicKey: sshPublicKey,
-				OSDisk: infrav1.OSDisk{
+				OSDisk: infrav1beta1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
 				},
