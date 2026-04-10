@@ -82,7 +82,6 @@ type AzureMachineTemplateSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremachinetemplates,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureMachineTemplate is the Schema for the azuremachinetemplates API.

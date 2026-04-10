@@ -56,7 +56,6 @@ type AzureASOManagedControlPlaneStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
 
 // AzureASOManagedControlPlane is the Schema for the azureasomanagedcontrolplanes API.
 type AzureASOManagedControlPlane struct {
