@@ -30,6 +30,7 @@ set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
+REPO_ROOT="$(pwd)"
 
 : "${REGISTRY:?Environment variable empty or not defined.}"
 
@@ -37,6 +38,7 @@ KUBERAY_SOURCE_REPO="${KUBERAY_SOURCE_REPO:-https://github.com/marosset/kuberay.
 KUBERAY_SOURCE_BRANCH="${KUBERAY_SOURCE_BRANCH:-workload-poc}"
 
 # Clone kuberay source if not already present.
+# Use an absolute path so it resolves correctly regardless of cwd (e.g., from Ginkgo test binaries).
 KUBERAY_SOURCE_DIR="${KUBERAY_SOURCE_DIR:-${REPO_ROOT}/_kuberay-source}"
 if [[ ! -d "${KUBERAY_SOURCE_DIR}" ]]; then
     echo "Cloning kuberay from ${KUBERAY_SOURCE_REPO} (branch: ${KUBERAY_SOURCE_BRANCH})"
