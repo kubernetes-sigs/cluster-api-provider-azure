@@ -671,12 +671,12 @@ func registerWebhooks(mgr manager.Manager) {
 	}
 
 	if feature.Gates.Enabled(capifeature.MachinePool) {
-		if err := infrav1exp.SetupAzureMachinePoolWebhookWithManager(mgr); err != nil {
+		if err := (&webhooks.AzureMachinePoolWebhook{Client: mgr.GetClient()}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
 			os.Exit(1)
 		}
 
-		if err := (&infrav1exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		if err := (&webhooks.AzureMachinePoolMachineWebhook{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
 			os.Exit(1)
 		}
