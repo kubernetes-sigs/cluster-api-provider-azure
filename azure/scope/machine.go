@@ -20,22 +20,24 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
@@ -76,7 +78,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.New("azure machine is required when creating a MachineScope")
 	}
 
-	helper, err := v1beta1patch.NewHelper(params.AzureMachine, params.Client)
+	helper, err := patch.NewHelper(params.AzureMachine, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -95,7 +97,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 // MachineScope defines a scope defined around a machine and its cluster.
 type MachineScope struct {
 	client      client.Client
-	patchHelper *v1beta1patch.Helper
+	patchHelper *patch.Helper
 
 	azure.ClusterScoper
 	Machine      *clusterv1.Machine
@@ -487,7 +489,7 @@ func (m *MachineScope) GetVMID() string {
 
 // ProviderID returns the AzureMachine providerID from the spec.
 func (m *MachineScope) ProviderID() string {
-	return ptr.Deref(m.AzureMachine.Spec.ProviderID, "")
+	return m.AzureMachine.Spec.ProviderID
 }
 
 // AvailabilitySetSpec returns the availability set spec for this machine if available.
@@ -574,7 +576,7 @@ func (m *MachineScope) SystemAssignedIdentityDefinitionID() string {
 
 // SetProviderID sets the AzureMachine providerID in spec.
 func (m *MachineScope) SetProviderID(v string) {
-	m.AzureMachine.Spec.ProviderID = ptr.To(v)
+	m.AzureMachine.Spec.ProviderID = v
 }
 
 // VMState returns the AzureMachine VM state.
@@ -592,27 +594,40 @@ func (m *MachineScope) SetVMState(v infrav1.ProvisioningState) {
 
 // SetReady sets the AzureMachine Ready Status to true.
 func (m *MachineScope) SetReady() {
-	m.AzureMachine.Status.Ready = true
+	m.AzureMachine.Status.Initialization.Provisioned = ptr.To(true)
 }
 
 // SetNotReady sets the AzureMachine Ready Status to false.
 func (m *MachineScope) SetNotReady() {
-	m.AzureMachine.Status.Ready = false
+	// Provisioned is a one-time signal per the v1beta2 contract and should not be reverted.
+	// Ongoing health is communicated via conditions.
 }
 
 // SetFailureMessage sets the AzureMachine status failure message.
 func (m *MachineScope) SetFailureMessage(v error) {
-	m.AzureMachine.Status.FailureMessage = ptr.To(v.Error())
+	if m.AzureMachine.Status.Deprecated == nil {
+		m.AzureMachine.Status.Deprecated = &infrav1.AzureMachineDeprecatedStatus{}
+	}
+	if m.AzureMachine.Status.Deprecated.V1Beta1 == nil {
+		m.AzureMachine.Status.Deprecated.V1Beta1 = &infrav1.AzureMachineV1Beta1DeprecatedStatus{}
+	}
+	m.AzureMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // intentional use of deprecated field for backward compat
 }
 
 // SetFailureReason sets the AzureMachine status failure reason.
 func (m *MachineScope) SetFailureReason(v string) {
-	m.AzureMachine.Status.FailureReason = &v
+	if m.AzureMachine.Status.Deprecated == nil {
+		m.AzureMachine.Status.Deprecated = &infrav1.AzureMachineDeprecatedStatus{}
+	}
+	if m.AzureMachine.Status.Deprecated.V1Beta1 == nil {
+		m.AzureMachine.Status.Deprecated.V1Beta1 = &infrav1.AzureMachineV1Beta1DeprecatedStatus{}
+	}
+	m.AzureMachine.Status.Deprecated.V1Beta1.FailureReason = &v //nolint:staticcheck // intentional use of deprecated field for backward compat
 }
 
 // SetConditionFalse sets the specified AzureMachine condition to false.
-func (m *MachineScope) SetConditionFalse(conditionType clusterv1beta1.ConditionType, reason string, severity clusterv1beta1.ConditionSeverity, message string) {
-	v1beta1conditions.MarkFalse(m.AzureMachine, conditionType, reason, severity, "%s", message)
+func (m *MachineScope) SetConditionFalse(conditionType clusterv1beta1.ConditionType, reason string, _ clusterv1beta1.ConditionSeverity, message string) {
+	conditions.Set(m.AzureMachine, metav1.Condition{Type: string(conditionType), Status: metav1.ConditionFalse, Reason: reason, Message: message})
 }
 
 // SetAnnotation sets a key value annotation on the AzureMachine.
@@ -657,16 +672,32 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachineScope) PatchObject(ctx context.Context) error {
-	v1beta1conditions.SetSummary(m.AzureMachine)
+	if err := conditions.SetSummaryCondition(m.AzureMachine, m.AzureMachine, clusterv1.ReadyCondition, conditions.ForConditionTypes{
+		string(infrav1.VMRunningCondition),
+	}); err != nil {
+		return err
+	}
+
+	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
+	setV1Beta1ConditionsFromV1Beta2(m.AzureMachine, m.AzureMachine.GetConditions())
+
+	// v1beta1 owned conditions for backward compat patch conflict resolution.
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+		clusterv1.ReadyV1Beta1Condition,
+		clusterv1.ConditionType(infrav1.VMRunningCondition),             //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.AvailabilitySetReadyCondition),  //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.NetworkInterfaceReadyCondition), //nolint:staticcheck
+	}
 
 	return m.patchHelper.Patch(
 		ctx,
 		m.AzureMachine,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
-			clusterv1beta1.ReadyCondition,
-			infrav1.VMRunningCondition,
-			infrav1.AvailabilitySetReadyCondition,
-			infrav1.NetworkInterfaceReadyCondition,
+		patch.WithOwnedV1Beta1Conditions{Conditions: ownedV1Beta1Conditions},
+		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.ReadyCondition,
+			string(infrav1.VMRunningCondition),
+			string(infrav1.AvailabilitySetReadyCondition),
+			string(infrav1.NetworkInterfaceReadyCondition),
 		}})
 }
 
@@ -790,11 +821,11 @@ func (m *MachineScope) DeleteLongRunningOperationState(name, service, futureType
 func (m *MachineScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletedReason, Message: fmt.Sprintf("%s successfully deleted", service)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletingReason, Message: fmt.Sprintf("%s deleting", service)})
 	default:
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletionFailedReason, Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error())})
 	}
 }
 
@@ -802,11 +833,11 @@ func (m *MachineScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType
 func (m *MachineScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(m.AzureMachine, condition)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.CreatingReason, Message: fmt.Sprintf("%s creating or updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error())})
 	}
 }
 
@@ -814,11 +845,11 @@ func (m *MachineScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, s
 func (m *MachineScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(m.AzureMachine, condition)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.UpdatingReason, Message: fmt.Sprintf("%s updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(m.AzureMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error())})
 	}
 }
 

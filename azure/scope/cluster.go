@@ -35,11 +35,11 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
@@ -96,7 +96,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 		params.Cache = &ClusterCache{}
 	}
 
-	helper, err := v1beta1patch.NewHelper(params.AzureCluster, params.Client)
+	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
 		return nil, errors.Errorf("failed to init patch helper: %v", err)
 	}
@@ -115,7 +115,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	Client      client.Client
-	patchHelper *v1beta1patch.Helper
+	patchHelper *patch.Helper
 	cache       *ClusterCache
 
 	AzureClients
@@ -935,28 +935,56 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ClusterScope.PatchObject")
 	defer done()
 
-	v1beta1conditions.SetSummary(s.AzureCluster)
+	if err := conditions.SetSummaryCondition(s.AzureCluster, s.AzureCluster, clusterv1.ReadyCondition, conditions.ForConditionTypes{
+		string(infrav1.NetworkInfrastructureReadyCondition),
+	}); err != nil {
+		return err
+	}
+
+	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
+	setV1Beta1ConditionsFromV1Beta2(s.AzureCluster, s.AzureCluster.GetConditions())
+
+	// v1beta1 owned conditions for backward compat patch conflict resolution.
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{ //nolint:staticcheck // intentional use of deprecated type for v1beta1 backward compat
+		clusterv1.ReadyV1Beta1Condition,
+		clusterv1.ConditionType(infrav1.ResourceGroupReadyCondition),         //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.RouteTablesReadyCondition),           //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.NetworkInfrastructureReadyCondition), //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.VnetPeeringReadyCondition),           //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.DisksReadyCondition),                 //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.NATGatewaysReadyCondition),           //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.LoadBalancersReadyCondition),         //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.BastionHostReadyCondition),           //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.VNetReadyCondition),                  //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),               //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.SecurityGroupsReadyCondition),        //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.PrivateDNSZoneReadyCondition),        //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.PrivateDNSLinkReadyCondition),        //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.PrivateDNSRecordReadyCondition),      //nolint:staticcheck
+		clusterv1.ConditionType(infrav1.PrivateEndpointsReadyCondition),      //nolint:staticcheck
+	}
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
-			clusterv1beta1.ReadyCondition,
-			infrav1.ResourceGroupReadyCondition,
-			infrav1.RouteTablesReadyCondition,
-			infrav1.NetworkInfrastructureReadyCondition,
-			infrav1.VnetPeeringReadyCondition,
-			infrav1.DisksReadyCondition,
-			infrav1.NATGatewaysReadyCondition,
-			infrav1.LoadBalancersReadyCondition,
-			infrav1.BastionHostReadyCondition,
-			infrav1.VNetReadyCondition,
-			infrav1.SubnetsReadyCondition,
-			infrav1.SecurityGroupsReadyCondition,
-			infrav1.PrivateDNSZoneReadyCondition,
-			infrav1.PrivateDNSLinkReadyCondition,
-			infrav1.PrivateDNSRecordReadyCondition,
-			infrav1.PrivateEndpointsReadyCondition,
+		patch.WithOwnedV1Beta1Conditions{Conditions: ownedV1Beta1Conditions},
+		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.ReadyCondition,
+			string(infrav1.ResourceGroupReadyCondition),
+			string(infrav1.RouteTablesReadyCondition),
+			string(infrav1.NetworkInfrastructureReadyCondition),
+			string(infrav1.VnetPeeringReadyCondition),
+			string(infrav1.DisksReadyCondition),
+			string(infrav1.NATGatewaysReadyCondition),
+			string(infrav1.LoadBalancersReadyCondition),
+			string(infrav1.BastionHostReadyCondition),
+			string(infrav1.VNetReadyCondition),
+			string(infrav1.SubnetsReadyCondition),
+			string(infrav1.SecurityGroupsReadyCondition),
+			string(infrav1.PrivateDNSZoneReadyCondition),
+			string(infrav1.PrivateDNSLinkReadyCondition),
+			string(infrav1.PrivateDNSRecordReadyCondition),
+			string(infrav1.PrivateEndpointsReadyCondition),
 		}})
 }
 
@@ -992,25 +1020,31 @@ func (s *ClusterScope) APIServerHost() string {
 
 // SetFailureDomain sets a failure domain in a cluster's status by its id.
 // The provided failure domain spec may be overridden to false by cluster's spec property.
-func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1beta1.FailureDomainSpec) {
-	if s.AzureCluster.Status.FailureDomains == nil {
-		s.AzureCluster.Status.FailureDomains = make(clusterv1beta1.FailureDomains)
+func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomain) {
+	controlPlane := ptr.Deref(spec.ControlPlane, false)
+	for _, fd := range s.AzureCluster.Spec.FailureDomains {
+		if fd.Name == id && !ptr.Deref(fd.ControlPlane, false) {
+			controlPlane = false
+			break
+		}
 	}
+	spec.ControlPlane = ptr.To(controlPlane)
 
-	if fd, ok := s.AzureCluster.Spec.FailureDomains[id]; ok && !fd.ControlPlane {
-		spec.ControlPlane = false
+	// Check if failure domain already exists and update it
+	for i, fd := range s.AzureCluster.Status.FailureDomains {
+		if fd.Name == id {
+			s.AzureCluster.Status.FailureDomains[i] = spec
+			return
+		}
 	}
-
-	s.AzureCluster.Status.FailureDomains[id] = spec
+	s.AzureCluster.Status.FailureDomains = append(s.AzureCluster.Status.FailureDomains, spec)
 }
 
 // FailureDomains returns the failure domains for the cluster.
 func (s *ClusterScope) FailureDomains() []*string {
 	fds := make([]*string, len(s.AzureCluster.Status.FailureDomains))
-	i := 0
-	for id := range s.AzureCluster.Status.FailureDomains {
-		fds[i] = ptr.To(id)
-		i++
+	for i := range s.AzureCluster.Status.FailureDomains {
+		fds[i] = ptr.To(s.AzureCluster.Status.FailureDomains[i].Name)
 	}
 
 	// sort in increasing order restoring the original sort.Strings(fds) behavior
@@ -1126,11 +1160,11 @@ func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType
 func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletedReason, Message: fmt.Sprintf("%s successfully deleted", service)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletingReason, Message: fmt.Sprintf("%s deleting", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletionFailedReason, Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error())})
 	}
 }
 
@@ -1138,11 +1172,11 @@ func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType
 func (s *ClusterScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.CreatingReason, Message: fmt.Sprintf("%s creating or updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error())})
 	}
 }
 
@@ -1150,11 +1184,11 @@ func (s *ClusterScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, s
 func (s *ClusterScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.AzureCluster, condition)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.UpdatingReason, Message: fmt.Sprintf("%s updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.AzureCluster, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error())})
 	}
 }
 
