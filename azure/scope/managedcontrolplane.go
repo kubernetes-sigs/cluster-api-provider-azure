@@ -238,7 +238,6 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 
 	if err := conditions.SetSummaryCondition(s.ControlPlane, s.ControlPlane, clusterv1.AvailableCondition, conditions.ForConditionTypes{
 		string(infrav1.ManagedClusterRunningCondition),
-		string(infrav1.AgentPoolsReadyCondition),
 	}); err != nil {
 		return err
 	}
@@ -253,7 +252,6 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 		clusterv1.ConditionType(infrav1.VNetReadyCondition),
 		clusterv1.ConditionType(infrav1.SubnetsReadyCondition),
 		clusterv1.ConditionType(infrav1.ManagedClusterRunningCondition),
-		clusterv1.ConditionType(infrav1.AgentPoolsReadyCondition),
 		clusterv1.ConditionType(infrav1.AzureResourceAvailableCondition),
 	}
 
@@ -267,7 +265,6 @@ func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 			string(infrav1.VNetReadyCondition),
 			string(infrav1.SubnetsReadyCondition),
 			string(infrav1.ManagedClusterRunningCondition),
-			string(infrav1.AgentPoolsReadyCondition),
 			string(infrav1.AzureResourceAvailableCondition),
 		}})
 }
