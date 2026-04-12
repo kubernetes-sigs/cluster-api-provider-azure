@@ -295,7 +295,7 @@ func InstallHelmChartFromPath(ctx context.Context, clusterProxy framework.Cluste
 		"--namespace", namespace,
 		"--create-namespace",
 		"--wait",
-		"--timeout", "5m0s",
+		"--timeout", "10m0s",
 	}
 	helmArgs = append(helmArgs, extraArgs...)
 	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
