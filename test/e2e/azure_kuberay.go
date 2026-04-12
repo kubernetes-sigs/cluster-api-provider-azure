@@ -296,13 +296,60 @@ func InstallHelmChartFromPath(ctx context.Context, clusterProxy framework.Cluste
 		"--create-namespace",
 		"--wait",
 		"--timeout", "10m0s",
+		"--debug",
 	}
 	helmArgs = append(helmArgs, extraArgs...)
 	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
 	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err := installCmd.CombinedOutput()
 	Logf("helm install output: %s", string(output))
+	if err != nil {
+		dumpHelmInstallDiagnostics(ctx, clusterProxy, namespace, releaseName)
+	}
 	Expect(err).NotTo(HaveOccurred(), "failed to install Helm chart from path: %s", string(output))
+}
+
+// dumpHelmInstallDiagnostics logs pod status and events in the target namespace to help diagnose Helm install failures.
+func dumpHelmInstallDiagnostics(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, releaseName string) {
+	clientset := clusterProxy.GetClientSet()
+	if clientset == nil {
+		Logf("WARNING: could not get clientset for diagnostics")
+		return
+	}
+
+	Logf("=== Helm install diagnostics for release %s in namespace %s ===", releaseName, namespace)
+
+	// List pods in the namespace
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		Logf("WARNING: failed to list pods in namespace %s: %v", namespace, err)
+	} else {
+		for i := range pods.Items {
+			pod := &pods.Items[i]
+			Logf("Pod %s: Phase=%s", pod.Name, pod.Status.Phase)
+			for _, cs := range pod.Status.ContainerStatuses {
+				Logf("  Container %s: Ready=%v, RestartCount=%d, State=%+v", cs.Name, cs.Ready, cs.RestartCount, cs.State)
+			}
+			for _, cond := range pod.Status.Conditions {
+				if cond.Status != corev1.ConditionTrue {
+					Logf("  Condition %s=%s: %s", cond.Type, cond.Status, cond.Message)
+				}
+			}
+			Logf("  Events:\n%s", describeEvents(ctx, clientset, namespace, pod.Name))
+			Logf("  Logs:\n%s", getPodLogs(ctx, clientset, *pod))
+		}
+	}
+
+	// Check for CRD readiness
+	Logf("=== CRD status ===")
+	kubeconfigPath := clusterProxy.GetKubeconfigPath()
+	crdCmd := exec.CommandContext(ctx, "kubectl", "--kubeconfig", kubeconfigPath, "get", "crds", "-o", "wide") //nolint:gosec
+	crdOutput, crdErr := crdCmd.CombinedOutput()
+	if crdErr != nil {
+		Logf("WARNING: failed to list CRDs: %v", crdErr)
+	} else {
+		Logf("CRDs:\n%s", string(crdOutput))
+	}
 }
 
 // InstallKubeRayOperatorFromSource installs the KubeRay operator Helm chart from a local kuberay source tree,
