@@ -572,6 +572,27 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 		return false
 	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "worker pod did not reach Running state")
 
+	By("verifying head pod has schedulingGroup referencing its PodGroup")
+	podGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	headPods, err := dynamicClient.Resource(podGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+		LabelSelector: "ray.io/node-type=head",
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(headPods.Items).NotTo(BeEmpty(), "expected at least one head pod")
+	headSchedulingGroup, _, _ := unstructured.NestedString(headPods.Items[0].Object, "spec", "schedulingGroup", "podGroupName")
+	Expect(headSchedulingGroup).To(Equal("raycluster-scheduling-e2e-head"), "head pod should reference its PodGroup via schedulingGroup")
+	Logf("Head pod %s has schedulingGroup.podGroupName=%s", headPods.Items[0].GetName(), headSchedulingGroup)
+
+	By("verifying worker pod has schedulingGroup referencing its PodGroup")
+	workerPods, err := dynamicClient.Resource(podGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+		LabelSelector: "ray.io/node-type=worker",
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(workerPods.Items).NotTo(BeEmpty(), "expected at least one worker pod")
+	workerSchedulingGroup, _, _ := unstructured.NestedString(workerPods.Items[0].Object, "spec", "schedulingGroup", "podGroupName")
+	Expect(workerSchedulingGroup).To(Equal("raycluster-scheduling-e2e-worker-small-group"), "worker pod should reference its PodGroup via schedulingGroup")
+	Logf("Worker pod %s has schedulingGroup.podGroupName=%s", workerPods.Items[0].GetName(), workerSchedulingGroup)
+
 	if !input.SkipCleanup {
 		By("deleting the RayCluster")
 		err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Delete(ctx, "raycluster-scheduling-e2e", metav1.DeleteOptions{})
