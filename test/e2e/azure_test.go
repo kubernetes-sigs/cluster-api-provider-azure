@@ -1675,4 +1675,52 @@ spec:
 			By("PASSED!")
 		})
 	})
+
+	// Negative test: verify that the NativeWorkloadScheduling feature does NOT create
+	// Workload or PodGroup resources when the opt-in annotation is absent.
+	// This runs on a separate cluster in parallel with the positive test above.
+	Context("Creating a self-managed cluster with native scheduling and deploying KubeRay from source (negative test) [KubeRay] [NativeScheduling]", func() {
+		It("Verifies no Workload/PodGroup resources are created without the annotation", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vm-nonatsched")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("ci-version-native-scheduling"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay NativeScheduling negative spec", func() {
+				KubeRayNativeSchedulingNegativeSpec(ctx, func() KubeRayNativeSchedulingNegativeSpecInput {
+					return KubeRayNativeSchedulingNegativeSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
 })
