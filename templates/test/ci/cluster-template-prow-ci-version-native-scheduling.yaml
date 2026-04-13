@@ -57,7 +57,7 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: ${K8S_FEATURE_GATES:-"GenericWorkload=true"}
+          feature-gates: GenericWorkload=true
           runtime-config: scheduling.k8s.io/v1alpha2=true
         timeoutForControlPlane: 20m
       controllerManager:
