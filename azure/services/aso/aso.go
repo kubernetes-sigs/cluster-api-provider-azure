@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -371,8 +372,21 @@ func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Sche
 		return false, err
 	}
 	existingOwner := metav1.GetControllerOf(resource)
-	return existingOwner != nil &&
-		existingOwner.APIVersion == ownerGVK.GroupVersion().String() &&
+	if existingOwner == nil {
+		return false, nil
+	}
+	// Compare Group + Kind + Name, ignoring API version. After an API version
+	// upgrade (e.g. v1beta1 → v1beta2), ASO resources created before the
+	// upgrade retain ownerReferences with the old API version (v1beta1), while
+	// the controller now resolves the owner's GVK as v1beta2. A strict version
+	// comparison would incorrectly conclude the resource is unmanaged, causing
+	// ShouldDeleteIndividualResources to fall back to slow per-resource
+	// deletion instead of deleting the whole resource group.
+	existingGV, err := schema.ParseGroupVersion(existingOwner.APIVersion)
+	if err != nil {
+		return false, err
+	}
+	return existingGV.Group == ownerGVK.Group &&
 		existingOwner.Kind == ownerGVK.Kind &&
 		existingOwner.Name == owner.GetName(), nil
 }
