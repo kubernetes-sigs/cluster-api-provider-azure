@@ -51,6 +51,43 @@ print_step() {
     echo -e "${BOLD}${CYAN}Step $1:${NC} $2"
 }
 
+# Retry wrapper for az commands to handle transient 429 (Too Many Requests) errors.
+# Only retries when stderr indicates throttling; other errors fail immediately.
+# Usage: az_retry <max_retries> az <subcommand> [args...]
+az_retry() {
+    local max_retries="$1"
+    shift
+    local attempt=0
+    local wait_time=5
+    local stderr_file
+    stderr_file=$(mktemp)
+    # shellcheck disable=SC2064
+    trap "rm -f '$stderr_file'" RETURN
+    while true; do
+        local exit_code=0
+        "$@" 2> >(tee "$stderr_file" >&2) || exit_code=$?
+        if [ "$exit_code" -eq 0 ]; then
+            return 0
+        fi
+        # Only retry on throttling (429) errors; fail immediately for anything else
+        if ! grep -qi -e "429" -e "Too Many Requests" -e "RetryAfter" -e "throttl" "$stderr_file"; then
+            return "$exit_code"
+        fi
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge "$max_retries" ]; then
+            print_error "Command throttled after $max_retries attempts: $*"
+            return 1
+        fi
+        print_warning "Throttled (attempt $attempt/$max_retries), retrying in ${wait_time}s..."
+        sleep "$wait_time"
+        # Exponential backoff capped at 60s
+        wait_time=$(( wait_time * 2 ))
+        if [ "$wait_time" -gt 60 ]; then
+            wait_time=60
+        fi
+    done
+}
+
 usage() {
     cat <<EOF
 Usage: $(basename "$0") <tilt-settings.yaml>
@@ -168,33 +205,53 @@ peer_vnets() {
 
     # Get VNET IDs with improved error handling
     az network vnet wait --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --created --timeout "${WAIT_TIMEOUT}" || error "Timeout waiting for management VNET"
-    MGMT_VNET_ID=$(az network vnet show --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --query id --output tsv) || error "Failed to get management VNET ID"
+    MGMT_VNET_ID=$(az_retry 5 az network vnet show --resource-group "${AKS_RESOURCE_GROUP}" --name "${AKS_MGMT_VNET_NAME}" --query id --output tsv) || error "Failed to get management VNET ID"
     print_step "1/4" "${AKS_MGMT_VNET_NAME} found and ${MGMT_VNET_ID} found"
 
     az network vnet wait --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --created --timeout "${WAIT_TIMEOUT}" || error "Timeout waiting for workload VNET"
-    WORKLOAD_VNET_ID=$(az network vnet show --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --query id --output tsv) || error "Failed to get workload VNET ID"
+    WORKLOAD_VNET_ID=$(az_retry 5 az network vnet show --resource-group "${CLUSTER_NAME}" --name "${CLUSTER_NAME}-vnet" --query id --output tsv) || error "Failed to get workload VNET ID"
     print_step "2/4" "${CLUSTER_NAME}-vnet found and ${WORKLOAD_VNET_ID} found"
 
-    # Peer mgmt vnet with improved error handling
-    az network vnet peering create \
+    # Create both peerings with --no-wait to reduce sequential API calls and
+    # mitigate 429 (Too Many Requests) throttling from Azure Resource Manager.
+    az_retry 5 az network vnet peering create \
         --name "mgmt-to-${CLUSTER_NAME}" \
         --resource-group "${AKS_RESOURCE_GROUP}" \
         --vnet-name "${AKS_MGMT_VNET_NAME}" \
         --remote-vnet "${WORKLOAD_VNET_ID}" \
         --allow-vnet-access true \
         --allow-forwarded-traffic true \
-        --only-show-errors --output none || error "Failed to create management peering"
-    print_step "3/4" "mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}"
+        --no-wait \
+        --only-show-errors --output none || error "Failed to submit management peering"
 
-    # Peer workload vnet with improved error handling
-    az network vnet peering create \
+    az_retry 5 az network vnet peering create \
         --name "${CLUSTER_NAME}-to-mgmt" \
         --resource-group "${CLUSTER_NAME}" \
         --vnet-name "${CLUSTER_NAME}-vnet" \
         --remote-vnet "${MGMT_VNET_ID}" \
         --allow-vnet-access true \
         --allow-forwarded-traffic true \
-        --only-show-errors --output none || error "Failed to create workload peering"
+        --no-wait \
+        --only-show-errors --output none || error "Failed to submit workload peering"
+
+    print_info "Both peering requests submitted, waiting for completion..."
+
+    # Wait for both peerings to complete. The wait command has built-in polling
+    # with backoff which handles transient errors more gracefully than synchronous creates.
+    az network vnet peering wait \
+        --name "mgmt-to-${CLUSTER_NAME}" \
+        --resource-group "${AKS_RESOURCE_GROUP}" \
+        --vnet-name "${AKS_MGMT_VNET_NAME}" \
+        --created --timeout "${WAIT_TIMEOUT}" \
+        --only-show-errors --output none || error "Timeout waiting for management peering to complete"
+    print_step "3/4" "mgmt-to-${CLUSTER_NAME} peering created in ${AKS_MGMT_VNET_NAME}"
+
+    az network vnet peering wait \
+        --name "${CLUSTER_NAME}-to-mgmt" \
+        --resource-group "${CLUSTER_NAME}" \
+        --vnet-name "${CLUSTER_NAME}-vnet" \
+        --created --timeout "${WAIT_TIMEOUT}" \
+        --only-show-errors --output none || error "Timeout waiting for workload peering to complete"
     print_step "4/4" "${CLUSTER_NAME}-to-mgmt peering created in ${CLUSTER_NAME}-vnet"
     print_success "VNET peering completed successfully"
 }
@@ -204,25 +261,39 @@ create_private_dns_zone() {
     print_header "Creating private DNS zone"
 
     # Create private DNS zone with improved error handling
-    az network private-dns zone create \
+    az_retry 5 az network private-dns zone create \
         --resource-group "${CLUSTER_NAME}" \
         --name "${DNS_ZONE}" \
         --only-show-errors --output none || error "Failed to create private DNS zone"
-    az network private-dns zone wait \
+    az_retry 5 az network private-dns zone wait \
         --resource-group "${CLUSTER_NAME}" \
         --name "${DNS_ZONE}" \
         --created --timeout "${WAIT_TIMEOUT}" \
         --only-show-errors --output none || error "Timeout waiting for private DNS zone"
     print_step "1/4" "${DNS_ZONE} private DNS zone created in ${CLUSTER_NAME}"
 
-    # Link private DNS Zone to workload vnet with improved error handling
-    az network private-dns link vnet create \
+    # Create both VNet links with --no-wait to reduce sequential API calls
+    az_retry 5 az network private-dns link vnet create \
         --resource-group "${CLUSTER_NAME}" \
         --zone-name "${DNS_ZONE}" \
         --name "${CLUSTER_NAME}-to-mgmt" \
         --virtual-network "${WORKLOAD_VNET_ID}" \
         --registration-enabled false \
-        --only-show-errors --output none || error "Failed to create workload DNS link"
+        --no-wait \
+        --only-show-errors --output none || error "Failed to submit workload DNS link"
+
+    az_retry 5 az network private-dns link vnet create \
+        --resource-group "${CLUSTER_NAME}" \
+        --zone-name "${DNS_ZONE}" \
+        --name "mgmt-to-${CLUSTER_NAME}" \
+        --virtual-network "${MGMT_VNET_ID}" \
+        --registration-enabled false \
+        --no-wait \
+        --only-show-errors --output none || error "Failed to submit management DNS link"
+
+    print_info "Both DNS link requests submitted, waiting for completion..."
+
+    # Wait for both links to complete
     az network private-dns link vnet wait \
         --resource-group "${CLUSTER_NAME}" \
         --zone-name "${DNS_ZONE}" \
@@ -231,14 +302,6 @@ create_private_dns_zone() {
         --only-show-errors --output none || error "Timeout waiting for workload DNS link"
     print_step "2/4" "workload cluster vnet ${CLUSTER_NAME}-vnet linked with private DNS zone"
 
-    # Link private DNS Zone to mgmt vnet with improved error handling
-    az network private-dns link vnet create \
-        --resource-group "${CLUSTER_NAME}" \
-        --zone-name "${DNS_ZONE}" \
-        --name "mgmt-to-${CLUSTER_NAME}" \
-        --virtual-network "${MGMT_VNET_ID}" \
-        --registration-enabled false \
-        --only-show-errors --output none || error "Failed to create management DNS link"
     az network private-dns link vnet wait \
         --resource-group "${CLUSTER_NAME}" \
         --zone-name "${DNS_ZONE}" \
@@ -248,7 +311,7 @@ create_private_dns_zone() {
     print_step "3/4" "management cluster vnet ${AKS_MGMT_VNET_NAME} linked with private DNS zone"
 
     # Create private DNS zone record with improved error handling
-    az network private-dns record-set a add-record \
+    az_retry 5 az network private-dns record-set a add-record \
         --resource-group "${CLUSTER_NAME}" \
         --zone-name "${DNS_ZONE}" \
         --record-set-name "@" \
@@ -319,7 +382,7 @@ wait_and_fix_nsg_rules() {
                 print_info "Allowed TCP ports: $tcp_ports"
                 if az network nsg rule show --resource-group "$rg" --nsg-name "$nsg" --name "NRMS-Rule-101" --output none 2>/dev/null; then
                     # shellcheck disable=SC2086
-                    az network nsg rule update \
+                    az_retry 5 az network nsg rule update \
                         --resource-group "$rg" \
                         --nsg-name "$nsg" \
                         --name "NRMS-Rule-101" \
@@ -337,7 +400,7 @@ wait_and_fix_nsg_rules() {
                     print_info "Configuring NRMS-Rule-103 in NSG '$nsg' (Resource Group: '$rg')"
                     print_info "Allowed UDP ports: $udp_ports"
                     # shellcheck disable=SC2086
-                    az network nsg rule update \
+                    az_retry 5 az network nsg rule update \
                         --resource-group "$rg" \
                         --nsg-name "$nsg" \
                         --name "NRMS-Rule-103" \
