@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -468,6 +469,34 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 		return false
 	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "Workload resource was not created for the RayCluster")
 
+	By("validating Workload .spec fields")
+	workload, err := dynamicClient.Resource(workloadGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to get Workload resource")
+
+	// Validate controllerRef points to the RayCluster
+	controllerRefAPIGroup, _, _ := unstructured.NestedString(workload.Object, "spec", "controllerRef", "apiGroup")
+	Expect(controllerRefAPIGroup).To(Equal("ray.io"), "Workload controllerRef.apiGroup should be ray.io")
+	controllerRefKind, _, _ := unstructured.NestedString(workload.Object, "spec", "controllerRef", "kind")
+	Expect(controllerRefKind).To(Equal("RayCluster"), "Workload controllerRef.kind should be RayCluster")
+	controllerRefName, _, _ := unstructured.NestedString(workload.Object, "spec", "controllerRef", "name")
+	Expect(controllerRefName).To(Equal("raycluster-scheduling-e2e"), "Workload controllerRef.name should match RayCluster name")
+
+	// Validate podGroupTemplates: expect 2 entries (head + 1 worker group)
+	podGroupTemplates, found, err := unstructured.NestedSlice(workload.Object, "spec", "podGroupTemplates")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(found).To(BeTrue(), "Workload should have podGroupTemplates")
+	Expect(podGroupTemplates).To(HaveLen(2), "Workload should have 2 podGroupTemplates (head + 1 worker group)")
+
+	templateNames := make([]string, 0, len(podGroupTemplates))
+	for _, t := range podGroupTemplates {
+		tMap, ok := t.(map[string]interface{})
+		Expect(ok).To(BeTrue())
+		name, _, _ := unstructured.NestedString(tMap, "name")
+		templateNames = append(templateNames, name)
+	}
+	Expect(templateNames).To(ConsistOf("head", "worker-small-group"), "Workload podGroupTemplates should contain head and worker-small-group")
+	Logf("Workload .spec validated: controllerRef=%s/%s/%s, podGroupTemplates=%v", controllerRefAPIGroup, controllerRefKind, controllerRefName, templateNames)
+
 	By("verifying PodGroup resources were created for the RayCluster")
 	Eventually(func() bool {
 		podGroups, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
@@ -487,6 +516,29 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 		}
 		return len(found) == len(expectedPrefixes)
 	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "PodGroup resources were not created for the RayCluster")
+
+	By("validating PodGroup .spec fields")
+	headPG, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e-head", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to get head PodGroup")
+	headWorkloadName, _, _ := unstructured.NestedString(headPG.Object, "spec", "podGroupTemplateRef", "workload", "workloadName")
+	Expect(headWorkloadName).To(Equal("raycluster-scheduling-e2e"), "head PodGroup should reference the Workload")
+	headTemplateName, _, _ := unstructured.NestedString(headPG.Object, "spec", "podGroupTemplateRef", "workload", "podGroupTemplateName")
+	Expect(headTemplateName).To(Equal("head"), "head PodGroup should reference the 'head' template")
+	Logf("Head PodGroup validated: workloadName=%s, podGroupTemplateName=%s", headWorkloadName, headTemplateName)
+
+	workerPG, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e-worker-small-group", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to get worker PodGroup")
+	workerWorkloadName, _, _ := unstructured.NestedString(workerPG.Object, "spec", "podGroupTemplateRef", "workload", "workloadName")
+	Expect(workerWorkloadName).To(Equal("raycluster-scheduling-e2e"), "worker PodGroup should reference the Workload")
+	workerTemplateName, _, _ := unstructured.NestedString(workerPG.Object, "spec", "podGroupTemplateRef", "workload", "podGroupTemplateName")
+	Expect(workerTemplateName).To(Equal("worker-small-group"), "worker PodGroup should reference the 'worker-small-group' template")
+
+	// Validate worker PodGroup has gang scheduling policy with correct minCount
+	workerGangMinCount, found, err := unstructured.NestedFieldNoCopy(workerPG.Object, "spec", "schedulingPolicy", "gang", "minCount")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(found).To(BeTrue(), "worker PodGroup should have gang scheduling policy with minCount")
+	Expect(workerGangMinCount).To(BeNumerically("==", 1), "worker PodGroup gang minCount should be 1 (matching replicas)")
+	Logf("Worker PodGroup validated: workloadName=%s, podGroupTemplateName=%s, gang.minCount=%v", workerWorkloadName, workerTemplateName, workerGangMinCount)
 
 	By("verifying the head pod is running")
 	Eventually(func() bool {
@@ -524,6 +576,21 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 		By("deleting the RayCluster")
 		err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Delete(ctx, "raycluster-scheduling-e2e", metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
+
+		By("verifying the Workload is cleaned up after RayCluster deletion")
+		Eventually(func() bool {
+			_, err := dynamicClient.Resource(workloadGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e", metav1.GetOptions{})
+			return apierrors.IsNotFound(err)
+		}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "Workload was not cleaned up after RayCluster deletion")
+
+		By("verifying PodGroups are cleaned up after RayCluster deletion")
+		Eventually(func() bool {
+			_, headErr := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e-head", metav1.GetOptions{})
+			_, workerErr := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e-worker-small-group", metav1.GetOptions{})
+			return apierrors.IsNotFound(headErr) && apierrors.IsNotFound(workerErr)
+		}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "PodGroups were not cleaned up after RayCluster deletion")
+
+		Logf("Cleanup cascade verified: Workload and PodGroups deleted with RayCluster")
 	}
 }
 
