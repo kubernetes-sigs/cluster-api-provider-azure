@@ -487,17 +487,17 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 	workerPGName = rayClusterName + "-worker-small-group"
 
 	By("verifying the worker PodGroup minCount is updated to 20")
-	Eventually(func() int64 {
+	Eventually(func() interface{} {
 		pg, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, workerPGName, metav1.GetOptions{})
 		if err != nil {
-			return 0
+			return nil
 		}
-		minCount, found, _ := unstructured.NestedInt64(pg.Object, "spec", "schedulingPolicy", "gang", "minCount")
+		minCount, found, _ := unstructured.NestedFieldNoCopy(pg.Object, "spec", "schedulingPolicy", "gang", "minCount")
 		if !found {
-			return 0
+			return nil
 		}
 		return minCount
-	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(Equal(int64(20)), "worker PodGroup minCount should be updated to 20")
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeNumerically("==", 20), "worker PodGroup minCount should be updated to 20")
 
 	By("verifying worker pods are Pending due to gang scheduling (all-or-nothing)")
 	Eventually(func() bool {
@@ -507,16 +507,23 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 		if err != nil {
 			return false
 		}
+		runningCount := 0
 		pendingCount := 0
 		for _, pod := range pods.Items {
-			if pod.Status.Phase == corev1.PodPending {
+			switch pod.Status.Phase {
+			case corev1.PodRunning:
+				runningCount++
+			case corev1.PodPending:
 				pendingCount++
 			}
 		}
-		Logf("Worker pods: %d total, %d Pending", len(pods.Items), pendingCount)
-		return pendingCount > 0
-	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "expected Pending worker pods when scaled beyond cluster capacity")
-	Logf("Gang scheduling verified: worker pods are Pending when replicas exceed available resources")
+		Logf("Worker pods: %d total, %d Running, %d Pending", len(pods.Items), runningCount, pendingCount)
+		// Gang scheduling all-or-nothing: with minCount=20 and insufficient resources,
+		// the scheduler should not schedule any new pods in the gang. At most 1 worker
+		// may remain Running from before the scale-up.
+		return runningCount <= 1 && pendingCount >= 19
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "expected gang scheduling to prevent new workers from Running (all-or-nothing)")
+	Logf("Gang scheduling verified: at most 1 worker Running, rest Pending (all-or-nothing)")
 
 	By("scaling workers back to 1 replica to verify recovery")
 	scaleDownPatch := []byte(`[
