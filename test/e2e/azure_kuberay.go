@@ -683,6 +683,118 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 	}
 }
 
+// KubeRayNativeSchedulingNegativeSpecInput is the input for KubeRayNativeSchedulingNegativeSpec.
+type KubeRayNativeSchedulingNegativeSpecInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	Namespace             *corev1.Namespace
+	ClusterName           string
+	SkipCleanup           bool
+}
+
+// KubeRayNativeSchedulingNegativeSpec implements a negative test that verifies the NativeWorkloadScheduling
+// feature does NOT create Workload or PodGroup resources when the opt-in annotation is absent.
+// It creates a RayCluster without the ray.io/native-workload-scheduling annotation, waits for
+// the cluster to become ready, and confirms that no scheduling.k8s.io/v1alpha2 resources exist.
+func KubeRayNativeSchedulingNegativeSpec(ctx context.Context, inputGetter func() KubeRayNativeSchedulingNegativeSpecInput) {
+	var (
+		specName       = "kuberay-native-scheduling"
+		input          KubeRayNativeSchedulingNegativeSpecInput
+		rayClusterName = "raycluster-no-scheduling-e2e"
+	)
+
+	input = inputGetter()
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+
+	By("creating a Kubernetes client to the workload cluster")
+	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
+	Expect(clusterProxy).NotTo(BeNil())
+	clientset := clusterProxy.GetClientSet()
+	Expect(clientset).NotTo(BeNil())
+
+	By("installing the KubeRay operator from source with NativeWorkloadScheduling enabled")
+	InstallKubeRayOperatorFromSource(ctx, clusterProxy, specName)
+
+	By("creating a RayCluster WITHOUT the native workload scheduling annotation")
+	dynamicClient := newDynamicClient(clusterProxy)
+	rayCluster := newRayClusterUnstructured(rayClusterName, corev1.NamespaceDefault)
+	_, err := dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Create(ctx, rayCluster, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("waiting for the RayCluster to become ready")
+	Eventually(func() bool {
+		rc, err := dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Get(ctx, rayClusterName, metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		state, found, err := unstructured.NestedString(rc.Object, "status", "state")
+		if err != nil || !found {
+			return false
+		}
+		return state == "ready"
+	}, e2eConfig.GetIntervals(specName, "wait-raycluster-ready")...).Should(BeTrue(), func() string {
+		return describeKubeRayOperatorLogs(ctx, clientset)
+	})
+
+	By("verifying the head and worker pods are Running")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=head",
+		})
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		return pods.Items[0].Status.Phase == corev1.PodRunning
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "head pod did not reach Running state")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=worker",
+		})
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		return pods.Items[0].Status.Phase == corev1.PodRunning
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "worker pod did not reach Running state")
+
+	By("verifying NO Workload resources were created")
+	workloads, err := dynamicClient.Resource(workloadGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(workloads.Items).To(BeEmpty(), "expected no Workload resources when annotation is absent, but found %d", len(workloads.Items))
+	Logf("Negative test verified: no Workload resources created without annotation")
+
+	By("verifying NO PodGroup resources were created")
+	podGroups, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(podGroups.Items).To(BeEmpty(), "expected no PodGroup resources when annotation is absent, but found %d", len(podGroups.Items))
+	Logf("Negative test verified: no PodGroup resources created without annotation")
+
+	By("verifying pods do NOT have schedulingGroup set")
+	podGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	headPods, err := dynamicClient.Resource(podGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+		LabelSelector: "ray.io/node-type=head",
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(headPods.Items).NotTo(BeEmpty())
+	headSchedulingGroup, found, _ := unstructured.NestedString(headPods.Items[0].Object, "spec", "schedulingGroup", "podGroupName")
+	Expect(found).To(BeFalse(), "head pod should not have schedulingGroup when annotation is absent, but found podGroupName=%s", headSchedulingGroup)
+
+	workerPods, err := dynamicClient.Resource(podGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+		LabelSelector: "ray.io/node-type=worker",
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(workerPods.Items).NotTo(BeEmpty())
+	workerSchedulingGroup, found, _ := unstructured.NestedString(workerPods.Items[0].Object, "spec", "schedulingGroup", "podGroupName")
+	Expect(found).To(BeFalse(), "worker pod should not have schedulingGroup when annotation is absent, but found podGroupName=%s", workerSchedulingGroup)
+	Logf("Negative test verified: pods do not have schedulingGroup without annotation")
+
+	if !input.SkipCleanup {
+		By("deleting the RayCluster")
+		err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Delete(ctx, rayClusterName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
 // newRayClusterWithNativeScheduling creates a RayCluster with the native workload scheduling
 // opt-in annotation. This triggers the KubeRay operator to create Workload and PodGroup resources
 // for gang scheduling via the Kubernetes-native scheduling.k8s.io/v1alpha2 API.
