@@ -186,6 +186,6 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 		pool := &clusterv1.MachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, string(clusterv1.ReadyV1Beta1Condition))).To(BeTrue())
+		g.Expect(conditions.IsTrue(pool, clusterv1.AvailableCondition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }
