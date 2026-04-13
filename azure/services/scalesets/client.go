@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -97,7 +98,9 @@ func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName stri
 	defer done()
 
 	var instances []armcompute.VirtualMachineScaleSetVM
-	pager := ac.scalesetvms.NewListPager(resourceGroupName, resourceName, nil)
+	pager := ac.scalesetvms.NewListPager(resourceGroupName, resourceName, &armcompute.VirtualMachineScaleSetVMsClientListOptions{
+		Expand: ptr.To("instanceView"),
+	})
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {

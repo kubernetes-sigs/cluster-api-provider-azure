@@ -18,6 +18,7 @@ package converters
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"k8s.io/utils/ptr"
@@ -89,6 +90,13 @@ func SDKVMToVMSSVM(sdkInstance armcompute.VirtualMachine, mode infrav1.Orchestra
 		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.Properties.ProvisioningState, ""))
 	}
 
+	// A stopped/deallocated VM has ProvisioningState "Succeeded" but is not healthy.
+	// Override the state to Failed so that the machine pool controller detects and replaces it.
+	if sdkInstance.Properties.InstanceView != nil &&
+		isVMStoppedOrDeallocated(sdkInstance.Properties.InstanceView.Statuses) {
+		instance.State = infrav1.Failed
+	}
+
 	if sdkInstance.Properties.OSProfile != nil && sdkInstance.Properties.OSProfile.ComputerName != nil {
 		instance.Name = *sdkInstance.Properties.OSProfile.ComputerName
 	}
@@ -131,6 +139,13 @@ func SDKToVMSSVM(sdkInstance armcompute.VirtualMachineScaleSetVM) *azure.VMSSVM 
 		instance.State = infrav1.ProvisioningState(ptr.Deref(sdkInstance.Properties.ProvisioningState, ""))
 	}
 
+	// A stopped/deallocated VM has ProvisioningState "Succeeded" but is not healthy.
+	// Override the state to Failed so that the machine pool controller detects and replaces it.
+	if sdkInstance.Properties.InstanceView != nil &&
+		isVMStoppedOrDeallocated(sdkInstance.Properties.InstanceView.Statuses) {
+		instance.State = infrav1.Failed
+	}
+
 	if sdkInstance.Properties.OSProfile != nil && sdkInstance.Properties.OSProfile.ComputerName != nil {
 		instance.Name = *sdkInstance.Properties.OSProfile.ComputerName
 	}
@@ -156,6 +171,21 @@ func SDKToVMSSVM(sdkInstance armcompute.VirtualMachineScaleSetVM) *azure.VMSSVM 
 	}
 
 	return &instance
+}
+
+// isVMStoppedOrDeallocated returns true if the instance view statuses indicate
+// the VM is stopped or deallocated (i.e. not running).
+func isVMStoppedOrDeallocated(statuses []*armcompute.InstanceViewStatus) bool {
+	for _, status := range statuses {
+		if status == nil || status.Code == nil {
+			continue
+		}
+		switch strings.ToLower(*status.Code) {
+		case "powerstate/stopped", "powerstate/deallocated":
+			return true
+		}
+	}
+	return false
 }
 
 // SDKImageToImage converts a SDK image reference to infrav1.Image.

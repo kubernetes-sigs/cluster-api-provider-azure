@@ -525,6 +525,18 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
+			By("Verifying stopped VMSS instances are cleaned up", func() {
+				AzureMachinePoolStoppedVMSpec(ctx, func() AzureMachinePoolStoppedVMSpecInput {
+					return AzureMachinePoolStoppedVMSpecInput{
+						Cluster:               result.Cluster,
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
+
 			By("PASSED!")
 		})
 	})
