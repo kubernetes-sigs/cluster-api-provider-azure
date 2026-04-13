@@ -381,11 +381,11 @@ func InstallKubeRayOperatorFromSource(ctx context.Context, clusterProxy framewor
 		"--set", "image.pullPolicy=Always",
 		"--set", "nodeSelector.kubernetes\\.io/os=linux",
 		"--set", "featureGates[0].name=RayClusterStatusConditions",
-		"--set-string", "featureGates[0].enabled=true",
+		"--set", "featureGates[0].enabled=true",
 		"--set", "featureGates[1].name=RayJobDeletionPolicy",
-		"--set-string", "featureGates[1].enabled=true",
+		"--set", "featureGates[1].enabled=true",
 		"--set", "featureGates[2].name=NativeWorkloadScheduling",
-		"--set-string", "featureGates[2].enabled=true",
+		"--set", "featureGates[2].enabled=true",
 	)
 
 	By("waiting for the KubeRay operator deployment to become available")
