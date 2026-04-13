@@ -1486,8 +1486,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayCluster spec", func() {
-				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
-					return KubeRayClusterSpecInput{
+				KubeRayClusterSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1519,8 +1519,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayJob spec", func() {
-				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
-					return KubeRayJobSpecInput{
+				KubeRayJobSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1566,8 +1566,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayCluster spec", func() {
-				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
-					return KubeRayClusterSpecInput{
+				KubeRayClusterSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1609,8 +1609,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayJob spec", func() {
-				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
-					return KubeRayJobSpecInput{
+				KubeRayJobSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1662,8 +1662,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay NativeScheduling spec", func() {
-				KubeRayNativeSchedulingSpec(ctx, func() KubeRayNativeSchedulingSpecInput {
-					return KubeRayNativeSchedulingSpecInput{
+				KubeRayNativeSchedulingSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1710,8 +1710,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay NativeScheduling negative spec", func() {
-				KubeRayNativeSchedulingNegativeSpec(ctx, func() KubeRayNativeSchedulingNegativeSpecInput {
-					return KubeRayNativeSchedulingNegativeSpecInput{
+				KubeRayNativeSchedulingNegativeSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
