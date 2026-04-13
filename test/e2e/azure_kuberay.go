@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -592,6 +593,73 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 	workerSchedulingGroup, _, _ := unstructured.NestedString(workerPods.Items[0].Object, "spec", "schedulingGroup", "podGroupName")
 	Expect(workerSchedulingGroup).To(Equal("raycluster-scheduling-e2e-worker-small-group"), "worker pod should reference its PodGroup via schedulingGroup")
 	Logf("Worker pod %s has schedulingGroup.podGroupName=%s", workerPods.Items[0].GetName(), workerSchedulingGroup)
+
+	By("testing gang scheduling: scaling workers beyond available resources")
+	scaleUpPatch := []byte(`[
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/replicas", "value": 20},
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/minReplicas", "value": 20},
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/maxReplicas", "value": 20}
+	]`)
+	_, err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Patch(ctx, "raycluster-scheduling-e2e", types.JSONPatchType, scaleUpPatch, metav1.PatchOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("verifying the worker PodGroup minCount is updated to 20")
+	Eventually(func() int64 {
+		pg, err := dynamicClient.Resource(podGroupGVR).Namespace(corev1.NamespaceDefault).Get(ctx, "raycluster-scheduling-e2e-worker-small-group", metav1.GetOptions{})
+		if err != nil {
+			return 0
+		}
+		minCount, found, _ := unstructured.NestedInt64(pg.Object, "spec", "schedulingPolicy", "gang", "minCount")
+		if !found {
+			return 0
+		}
+		return minCount
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(Equal(int64(20)), "worker PodGroup minCount should be updated to 20")
+
+	By("verifying worker pods are Pending due to gang scheduling (all-or-nothing)")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=worker",
+		})
+		if err != nil {
+			return false
+		}
+		pendingCount := 0
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodPending {
+				pendingCount++
+			}
+		}
+		Logf("Worker pods: %d total, %d Pending", len(pods.Items), pendingCount)
+		return pendingCount > 0
+	}, e2eConfig.GetIntervals(specName, "wait-workload-ready")...).Should(BeTrue(), "expected Pending worker pods when scaled beyond cluster capacity")
+	Logf("Gang scheduling verified: worker pods are Pending when replicas exceed available resources")
+
+	By("scaling workers back to 1 replica to verify recovery")
+	scaleDownPatch := []byte(`[
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/replicas", "value": 1},
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/minReplicas", "value": 1},
+		{"op": "replace", "path": "/spec/workerGroupSpecs/0/maxReplicas", "value": 1}
+	]`)
+	_, err = dynamicClient.Resource(rayClusterGVR).Namespace(corev1.NamespaceDefault).Patch(ctx, "raycluster-scheduling-e2e", types.JSONPatchType, scaleDownPatch, metav1.PatchOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("verifying worker pod is Running again after scaling back down")
+	Eventually(func() bool {
+		pods, err := clientset.CoreV1().Pods(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{
+			LabelSelector: "ray.io/node-type=worker",
+		})
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodRunning {
+				return true
+			}
+		}
+		return false
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(BeTrue(), "worker pod did not become Running after scaling back to 1")
+	Logf("Gang scheduling recovery verified: worker pod is Running after scaling back to 1 replica")
 
 	if !input.SkipCleanup {
 		By("deleting the RayCluster")
