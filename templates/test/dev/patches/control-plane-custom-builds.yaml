@@ -84,7 +84,7 @@ spec:
           key: control-plane-azure.json
           name: ${CLUSTER_NAME}-control-plane-azure-json
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane

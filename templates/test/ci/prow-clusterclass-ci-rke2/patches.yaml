@@ -20,7 +20,7 @@ spec:
               name: ${CLUSTER_NAME}-worker
           infrastructure:
             ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: AzureMachineTemplate
               name: ${CLUSTER_NAME}-worker
   patches:
@@ -67,7 +67,7 @@ spec:
     - name: additionalTags
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -82,7 +82,7 @@ spec:
     - name: clusterIdentityRef
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -94,7 +94,7 @@ spec:
     - name: location
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -106,7 +106,7 @@ spec:
     - name: subscriptionID
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -118,7 +118,7 @@ spec:
     - name: controlPlaneMachineType
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               controlPlane: true
@@ -130,7 +130,7 @@ spec:
     - name: controlPlaneMachineGalleryPatch
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               controlPlane: true
@@ -153,7 +153,7 @@ spec:
           valueFrom:
             variable: resourceGroup
         selector:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
           kind: AzureClusterTemplate
           matchResources:
             infrastructureCluster: true
@@ -162,7 +162,7 @@ spec:
     - name: workerMachineType
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -176,7 +176,7 @@ spec:
     - name: sshPublicKey
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               controlPlane: true
@@ -189,7 +189,7 @@ spec:
               valueFrom:
                 variable: sshPublicKey
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}-azure-cluster

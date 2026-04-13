@@ -7,7 +7,7 @@ spec:
   controlPlane:
     machineInfrastructure:
       ref:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-control-plane
     ref:
@@ -16,7 +16,7 @@ spec:
       name: ${CLUSTER_NAME}-control-plane
   infrastructure:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AzureClusterTemplate
       name: ${CLUSTER_NAME}-azure-cluster
   patches:
@@ -114,7 +114,7 @@ spec:
             creationTimestamp: {{ .timestamp }}
             jobName: {{ .jobName }}
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -126,7 +126,7 @@ spec:
         valueFrom:
           variable: clusterIdentityRef
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -138,7 +138,7 @@ spec:
         valueFrom:
           variable: location
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -150,7 +150,7 @@ spec:
         valueFrom:
           variable: subscriptionID
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -174,7 +174,7 @@ spec:
         valueFrom:
           variable: controlPlaneMachineType
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         matchResources:
           controlPlane: true
@@ -186,7 +186,7 @@ spec:
         valueFrom:
           variable: workerMachineType
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -200,7 +200,7 @@ spec:
         valueFrom:
           variable: workerMachineTypeWin
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -214,7 +214,7 @@ spec:
         valueFrom:
           variable: sshPublicKey
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -346,7 +346,7 @@ spec:
             name: ${CLUSTER_NAME}-worker
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             name: ${CLUSTER_NAME}-worker
     - class: ${CLUSTER_NAME}-worker-win
@@ -364,7 +364,7 @@ spec:
             name: ${CLUSTER_NAME}-worker-win
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             name: ${CLUSTER_NAME}-worker-win
 ---
@@ -433,7 +433,7 @@ spec:
         preKubeadmCommands: []
         verbosity: 10
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}-azure-cluster
@@ -444,7 +444,7 @@ spec:
       additionalTags:
         replace_me_key: replace_me_val
       identityRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureClusterIdentity
         name: ${CLUSTER_IDENTITY_NAME}
       location: ${AZURE_LOCATION}
@@ -458,7 +458,7 @@ spec:
           role: node
       subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -499,7 +499,7 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-worker
@@ -547,7 +547,7 @@ spec:
       - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   annotations:
@@ -565,7 +565,7 @@ spec:
       sshPublicKey: ""
       vmSize: replace_me
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureClusterIdentity
 metadata:
   labels:

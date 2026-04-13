@@ -20,7 +20,7 @@ spec:
               name: ${CLUSTER_NAME}-worker
           infrastructure:
             ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: AzureMachineTemplate
               name: ${CLUSTER_NAME}-worker
       - class: ${CLUSTER_NAME}-worker-win
@@ -32,7 +32,7 @@ spec:
               name: ${CLUSTER_NAME}-worker-win
           infrastructure:
             ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: AzureMachineTemplate
               name: ${CLUSTER_NAME}-worker-win
         machineHealthCheck:
@@ -129,7 +129,7 @@ spec:
     - name: additionalTags
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -144,7 +144,7 @@ spec:
     - name: clusterIdentityRef
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -156,7 +156,7 @@ spec:
     - name: location
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -168,7 +168,7 @@ spec:
     - name: subscriptionID
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -192,7 +192,7 @@ spec:
     - name: controlPlaneMachineType
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               controlPlane: true
@@ -204,7 +204,7 @@ spec:
     - name: workerMachineType
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -218,7 +218,7 @@ spec:
     - name: workerMachineTypeWin
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -232,7 +232,7 @@ spec:
     - name: sshPublicKey
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -287,7 +287,7 @@ spec:
                 template: |
                   - "powershell C:/create-temp-folder.ps1"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}-azure-cluster
@@ -297,7 +297,7 @@ spec:
       additionalTags:
         replace_me_key: replace_me_val
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane

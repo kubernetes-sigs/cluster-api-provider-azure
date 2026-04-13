@@ -17,10 +17,10 @@ spec:
           kind: KubeadmConfig
       infrastructureRef:
         name: "${CLUSTER_NAME}-mp-win"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachinePool
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachinePool
 metadata:
   name: "${CLUSTER_NAME}-mp-win"

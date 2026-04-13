@@ -1,4 +1,4 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool0
@@ -10,7 +10,7 @@ spec:
       name: pool0
       sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool1

@@ -12,18 +12,18 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AzureManagedControlPlane
     name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AzureManagedCluster
     name: ${CLUSTER_NAME}
 ---
 # The control plane abstracts readiness and provisioning of an AKS cluster.
 # Because AKS requires a default pool, this also requires a reference to the
 # default machine pool.
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}
@@ -39,7 +39,7 @@ spec:
 # Due to the nature of managed Kubernetes and the control plane implementation,
 # the infrastructure provider for AKS cluster is basically a no-op.
 # It sets itself to ready as soon as it sees the control plane ready.
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -61,14 +61,14 @@ spec:
         dataSecretName: ""
       clusterName: "${CLUSTER_NAME}"
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureManagedMachinePool
         name: "${CLUSTER_NAME}-pool0"
       version: "${KUBERNETES_VERSION}"
 ---
 # This first Azure-specific machine pool implementation drives the configuration of the
 # AKS "System" node pool to schedule and run kube-system and other system pods
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedMachinePool
 metadata:
   name: "${CLUSTER_NAME}-pool0"
@@ -92,14 +92,14 @@ spec:
         dataSecretName: ""
       clusterName: "${CLUSTER_NAME}"
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureManagedMachinePool
         name: "${CLUSTER_NAME}-pool1"
       version: "${KUBERNETES_VERSION}"
 ---
 # This first Azure-specific machine pool implementation drives the configuration of the
 # AKS "User" node pool to schedule and run user workloads
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedMachinePool
 metadata:
   name: "${CLUSTER_NAME}-pool1"

@@ -14,7 +14,7 @@ spec:
             name: ${CLUSTER_NAME}-pool0
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureManagedMachinePoolTemplate
             name: ${CLUSTER_NAME}-pool0
     - class: default-worker
@@ -26,7 +26,7 @@ spec:
             name: ${CLUSTER_NAME}-pool1
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AzureManagedMachinePoolTemplate
             name: ${CLUSTER_NAME}-pool1
   patches:

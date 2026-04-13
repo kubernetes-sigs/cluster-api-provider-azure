@@ -13,13 +13,13 @@ spec:
         dataSecretName: ""
       clusterName: "${CLUSTER_NAME}"
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureManagedMachinePool
         name: "${CLUSTER_NAME}-pool2"
       version: "${KUBERNETES_VERSION}"
 ---
 # The infrastructure backing the third pool will use the same VM SKU, which is the only required configuration
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureManagedMachinePool
 metadata:
   name: "${CLUSTER_NAME}-pool2"

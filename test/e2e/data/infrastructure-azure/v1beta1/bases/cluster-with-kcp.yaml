@@ -1,6 +1,6 @@
 ---
 # AzureCluster object referenced by the Cluster object
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureCluster
 metadata:
   name: '${CLUSTER_NAME}'
@@ -33,12 +33,12 @@ spec:
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
 # AzureMachineTemplate object referenced by the KubeadmControlPlane object
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -66,7 +66,7 @@ metadata:
 spec:
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:

@@ -16,11 +16,11 @@ spec:
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -31,7 +31,7 @@ spec:
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
   identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
@@ -302,13 +302,13 @@ spec:
     verbosity: 5
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -321,11 +321,6 @@ spec:
         lun: 0
         nameSuffix: etcddisk
       identity: UserAssigned
-      image:
-        computeGallery:
-          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
-          name: capi-ubun2-2404
-          version: ${CAPZ_GALLERY_VERSION}
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -353,12 +348,12 @@ spec:
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -367,11 +362,6 @@ spec:
   template:
     spec:
       identity: UserAssigned
-      image:
-        computeGallery:
-          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
-          name: capi-ubun2-2404
-          version: ${CAPZ_GALLERY_VERSION}
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -535,7 +525,7 @@ spec:
       - bash -c /tmp/replace-k8s-binaries.sh
       verbosity: 5
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureClusterIdentity
 metadata:
   labels:
@@ -722,12 +712,12 @@ spec:
           name: ${CLUSTER_NAME}-azl3-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-azl3-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-azl3-md-0
