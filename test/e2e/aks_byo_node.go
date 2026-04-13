@@ -30,6 +30,7 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
@@ -186,6 +187,6 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 		pool := &clusterv1.MachinePool{}
 		err := mgmtClient.Get(ctx, client.ObjectKeyFromObject(machinePool), pool)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(conditions.IsTrue(pool, clusterv1.AvailableCondition)).To(BeTrue())
+		g.Expect(deprecatedv1beta1conditions.IsTrue(pool, clusterv1.ReadyV1Beta1Condition)).To(BeTrue())
 	}, input.WaitIntervals...).Should(Succeed())
 }
