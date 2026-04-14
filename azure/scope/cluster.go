@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -452,8 +453,16 @@ func (s *ClusterScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1
 		numberOfSubnets++
 	}
 
-	subnetSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet], 0, numberOfSubnets)
+	ipConfigSubnetNames := make(map[string]struct{})
+	if apiServerLB := s.AzureCluster.Spec.NetworkSpec.APIServerLB; apiServerLB != nil {
+		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {
+			for _, ipConfig := range privateLink.NATIPConfigurations {
+				ipConfigSubnetNames[ipConfig.Subnet] = struct{}{}
+			}
+		}
+	}
 
+	subnetSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet], 0, numberOfSubnets)
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		subnetSpec := &subnets.SubnetSpec{
 			Name:              subnet.Name,
@@ -468,6 +477,11 @@ func (s *ClusterScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1
 			NatGatewayName:    subnet.NatGateway.Name,
 			ServiceEndpoints:  subnet.ServiceEndpoints,
 		}
+		// Check if subnet is used for the private link NAT IP
+		if _, ok := ipConfigSubnetNames[subnet.Name]; ok {
+			subnetSpec.UsedForPrivateLinkNATIP = true
+		}
+
 		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
 
@@ -1117,6 +1131,11 @@ func (s *ClusterScope) GetLongRunningOperationState(name, service, futureType st
 	return futures.Get(s.AzureCluster, name, service, futureType)
 }
 
+// GetLongRunningOperationStates will get the specified futures on the AzureCluster status.
+func (s *ClusterScope) GetLongRunningOperationStates(service, futureType string) infrav1.Futures {
+	return futures.GetByServiceAndType(s.AzureCluster, service, futureType)
+}
+
 // DeleteLongRunningOperationState will delete the future from the AzureCluster status.
 func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType string) {
 	futures.Delete(s.AzureCluster, name, service, futureType)
@@ -1237,7 +1256,41 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*aso
 	return privateEndpointSpecs
 }
 
-func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]any {
+// PrivateLinkSpecs returns the private link specs.
+func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
+	// First we get all private links to API server load balancer.
+	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
+	// for those.
+	privateLinks := s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks
+	privateLinksSpecs := make([]azure.ResourceSpecGetter, 0, len(privateLinks))
+
+	for _, privateLink := range privateLinks {
+		privateLinkSpec := privatelinks.PrivateLinkSpec{
+			Name:                      privateLink.Name,
+			ResourceGroup:             s.ResourceGroup(),
+			SubscriptionID:            s.SubscriptionID(),
+			Location:                  s.Location(),
+			VNetResourceGroup:         s.Vnet().ResourceGroup,
+			VNet:                      s.Vnet().Name,
+			LoadBalancerName:          s.APIServerLBName(),
+			LBFrontendIPConfigNames:   privateLink.LBFrontendIPConfigNames,
+			AllowedSubscriptions:      privateLink.AllowedSubscriptions,
+			AutoApprovedSubscriptions: privateLink.AutoApprovedSubscriptions,
+			EnableProxyProtocol:       privateLink.EnableProxyProtocol,
+			ClusterName:               s.ClusterName(),
+			AdditionalTags:            s.AdditionalTags(),
+		}
+		// Set NAT IP configuration
+		for _, natIPConfiguration := range privateLink.NATIPConfigurations {
+			privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIPConfiguration))
+		}
+		privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
+	}
+
+	return privateLinksSpecs
+}
+
+func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]interface{} {
 	// Retrieve the last applied security rules for all NSGs.
 	lastAppliedSecurityRulesAll, err := s.AnnotationJSON(azure.SecurityRuleLastAppliedAnnotation)
 	if err != nil {
