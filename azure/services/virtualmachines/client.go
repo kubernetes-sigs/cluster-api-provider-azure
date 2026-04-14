@@ -65,7 +65,9 @@ func (ac *AzureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Get")
 	defer done()
 
-	resp, err := ac.virtualmachines.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), nil)
+	resp, err := ac.virtualmachines.Get(ctx, spec.ResourceGroupName(), spec.ResourceName(), &armcompute.VirtualMachinesClientGetOptions{
+		Expand: ptr.To(armcompute.InstanceViewTypesInstanceView),
+	})
 	if err != nil {
 		return nil, err
 	}
