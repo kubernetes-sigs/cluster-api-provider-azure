@@ -24,11 +24,9 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
-	asocontainerservicev1api20210501 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20210501"
 	asocontainerservicev1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	asocontainerservicev1api20230315preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asocontainerservicev1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	asocontainerservicev1api20231102preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
 	asocontainerservicev1api20240402preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240402preview"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
@@ -83,13 +81,11 @@ func init() {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
-	_ = asocontainerservicev1api20210501.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230201.AddToScheme(scheme)
 	_ = asocontainerservicev1api20231001.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230315preview.AddToScheme(scheme)
-	_ = asocontainerservicev1api20231102preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240402preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240901.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
