@@ -1368,8 +1368,6 @@ spec:
 		})
 	})
 
-	// TODO: add a same test as above for a windows cluster
-
 	Context("Testing autoscaling from zero with Cluster Autoscaler [REQUIRED]", func() {
 		It("Scales MachineDeployment from 0 to 1+ when workload is scheduled", func() {
 			clusterName = getClusterName(clusterNamePrefix, "autoscale")

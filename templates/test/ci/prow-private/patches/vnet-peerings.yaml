@@ -10,6 +10,10 @@ spec:
         privateIP: ${AZURE_INTERNAL_LB_IP}
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
+      availabilityZones:
+        - "1"
+        - "2"
+        - "3"
     vnet:
       name: ${AZURE_VNET_NAME}
       cidrBlocks:
