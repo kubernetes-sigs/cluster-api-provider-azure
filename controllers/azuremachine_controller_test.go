@@ -185,7 +185,7 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should skip reconciliation if error state is detected on azure machine": {
 			azureMachineOptions: func(am *infrav1.AzureMachine) {
-				am.Status.FailureReason = ptr.To(azure.UpdateError)
+				am.Status.FailureReason = ptr.To(azure.UpdateError) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 			},
 			createAzureMachineService: getFakeAzureMachineService,
 		},
@@ -254,8 +254,8 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 				g.Expect(machineScope.AzureMachine.Status.Ready).To(BeTrue())
 			}
 			if tc.machineScopeFailureReason != "" {
-				g.Expect(machineScope.AzureMachine.Status.FailureReason).NotTo(BeNil())
-				g.Expect(*machineScope.AzureMachine.Status.FailureReason).To(Equal(tc.machineScopeFailureReason))
+				g.Expect(machineScope.AzureMachine.Status.FailureReason).NotTo(BeNil())                           //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
+				g.Expect(*machineScope.AzureMachine.Status.FailureReason).To(Equal(tc.machineScopeFailureReason)) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 			}
 			if tc.expectedErr != "" {
 				g.Expect(err).To(HaveOccurred())

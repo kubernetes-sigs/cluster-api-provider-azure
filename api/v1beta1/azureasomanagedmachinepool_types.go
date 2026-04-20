@@ -47,6 +47,19 @@ type AzureASOManagedMachinePoolStatus struct {
 
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
+
+	// initialization provides observations of the AzureASOManagedMachinePool initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial MachinePool provisioning.
+	// +optional
+	Initialization *AzureASOManagedMachinePoolInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AzureASOManagedMachinePoolInitializationStatus provides observations of the AzureASOManagedMachinePool initialization process.
+type AzureASOManagedMachinePoolInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the MachinePool's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial MachinePool provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true

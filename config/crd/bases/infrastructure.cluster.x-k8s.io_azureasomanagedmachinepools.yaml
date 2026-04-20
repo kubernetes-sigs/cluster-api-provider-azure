@@ -155,6 +155,17 @@ spec:
             description: AzureASOManagedMachinePoolStatus defines the observed state
               of AzureASOManagedMachinePool.
             properties:
+              initialization:
+                description: |-
+                  initialization provides observations of the AzureASOManagedMachinePool initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial MachinePool provisioning.
+                properties:
+                  provisioned:
+                    description: |-
+                      provisioned is true when the infrastructure provider reports that the MachinePool's infrastructure is fully provisioned.
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial MachinePool provisioning.
+                    type: boolean
+                type: object
               ready:
                 description: |-
                   Ready represents whether or not the infrastructure is ready to be used. It fulfills Cluster API's
