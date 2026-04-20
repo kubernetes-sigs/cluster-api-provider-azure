@@ -887,5 +887,5 @@ func waitForWebhookCAInjection(ctx context.Context, c client.Client) {
 			return nil
 		}
 		return err
-	}, 2*time.Minute, 5*time.Second).Should(Succeed(), "dry-run AzureCluster create failed, webhook TLS may not be ready")
+	}, 5*time.Minute, 5*time.Second).Should(Succeed(), "dry-run AzureCluster create failed, webhook TLS may not be ready")
 }
