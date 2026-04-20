@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
@@ -62,7 +63,9 @@ func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.Get")
 	defer done()
 
-	resp, err := ac.scalesetvms.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), nil)
+	resp, err := ac.scalesetvms.Get(ctx, spec.ResourceGroupName(), spec.OwnerResourceName(), spec.ResourceName(), &armcompute.VirtualMachineScaleSetVMsClientGetOptions{
+		Expand: ptr.To(armcompute.InstanceViewTypesInstanceView),
+	})
 	if err != nil {
 		return nil, err
 	}

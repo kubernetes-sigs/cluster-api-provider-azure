@@ -202,6 +202,69 @@ func Test_SDKToVMSSVM(t *testing.T) {
 				State:            "Creating",
 			},
 		},
+		{
+			Name: "VM stopped is reported as Failed",
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
+				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					ProvisioningState: ptr.To("Succeeded"),
+					OSProfile:         &armcompute.OSProfile{ComputerName: ptr.To("instance-000003")},
+					InstanceView: &armcompute.VirtualMachineScaleSetVMInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/stopped")},
+						},
+					},
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:    "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name:  "instance-000003",
+				State: infrav1.Failed,
+			},
+		},
+		{
+			Name: "VM deallocated is reported as Failed",
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
+				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					ProvisioningState: ptr.To("Succeeded"),
+					OSProfile:         &armcompute.OSProfile{ComputerName: ptr.To("instance-000004")},
+					InstanceView: &armcompute.VirtualMachineScaleSetVMInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/deallocated")},
+						},
+					},
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:    "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name:  "instance-000004",
+				State: infrav1.Failed,
+			},
+		},
+		{
+			Name: "VM running preserves provisioning state",
+			SDKInstance: armcompute.VirtualMachineScaleSetVM{
+				ID: ptr.To("/subscriptions/foo/resourceGroups/MY_RESOURCE_GROUP/providers/bar"),
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					ProvisioningState: ptr.To("Succeeded"),
+					OSProfile:         &armcompute.OSProfile{ComputerName: ptr.To("instance-000005")},
+					InstanceView: &armcompute.VirtualMachineScaleSetVMInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/running")},
+						},
+					},
+				},
+			},
+			VMSSVM: &azure.VMSSVM{
+				ID:    "/subscriptions/foo/resourceGroups/my_resource_group/providers/bar",
+				Name:  "instance-000005",
+				State: "Succeeded",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -392,6 +455,75 @@ func Test_SDKVMToVMSSVM(t *testing.T) {
 			Expected: &azure.VMSSVM{
 				ID:    "vmID4",
 				Name:  "vmwithstate",
+				State: "Succeeded",
+			},
+		},
+		{
+			Name: "VM stopped is reported as Failed",
+			Subject: armcompute.VirtualMachine{
+				ID: ptr.To("vmID5"),
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
+						ComputerName: ptr.To("vmstopped"),
+					},
+					ProvisioningState: ptr.To("Succeeded"),
+					InstanceView: &armcompute.VirtualMachineInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/stopped")},
+						},
+					},
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID:    "vmID5",
+				Name:  "vmstopped",
+				State: infrav1.Failed,
+			},
+		},
+		{
+			Name: "VM deallocated is reported as Failed",
+			Subject: armcompute.VirtualMachine{
+				ID: ptr.To("vmID6"),
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
+						ComputerName: ptr.To("vmdeallocated"),
+					},
+					ProvisioningState: ptr.To("Succeeded"),
+					InstanceView: &armcompute.VirtualMachineInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/deallocated")},
+						},
+					},
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID:    "vmID6",
+				Name:  "vmdeallocated",
+				State: infrav1.Failed,
+			},
+		},
+		{
+			Name: "VM running preserves provisioning state",
+			Subject: armcompute.VirtualMachine{
+				ID: ptr.To("vmID7"),
+				Properties: &armcompute.VirtualMachineProperties{
+					OSProfile: &armcompute.OSProfile{
+						ComputerName: ptr.To("vmrunning"),
+					},
+					ProvisioningState: ptr.To("Succeeded"),
+					InstanceView: &armcompute.VirtualMachineInstanceView{
+						Statuses: []*armcompute.InstanceViewStatus{
+							{Code: ptr.To("ProvisioningState/succeeded")},
+							{Code: ptr.To("PowerState/running")},
+						},
+					},
+				},
+			},
+			Expected: &azure.VMSSVM{
+				ID:    "vmID7",
+				Name:  "vmrunning",
 				State: "Succeeded",
 			},
 		},
