@@ -177,6 +177,8 @@ providers:
         targetName: "cluster-template-private.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version.yaml"
         targetName: "cluster-template-ci-version.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-native-scheduling.yaml"
+        targetName: "cluster-template-ci-version-native-scheduling.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-md-and-mp.yaml"
         targetName: "cluster-template-conformance-ci-artifacts.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ci-version-ipv6.yaml"
@@ -336,6 +338,9 @@ intervals:
   kuberay-cluster/wait-raycluster-ready: ["10m", "10s"]
   kuberay-job/wait-deployment: ["15m", "10s"]
   kuberay-job/wait-rayjob-complete: ["15m", "10s"]
+  kuberay-native-scheduling/wait-deployment: ["15m", "10s"]
+  kuberay-native-scheduling/wait-raycluster-ready: ["10m", "10s"]
+  kuberay-native-scheduling/wait-workload-ready: ["5m", "10s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]

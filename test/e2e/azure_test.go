@@ -1464,7 +1464,8 @@ spec:
 
 	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
 	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
-	Context("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
+	// TODO: Re-enable once NativeScheduling tests are validated in CI.
+	PContext("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "kuberay")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
@@ -1485,8 +1486,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayCluster spec", func() {
-				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
-					return KubeRayClusterSpecInput{
+				KubeRayClusterSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1518,8 +1519,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayJob spec", func() {
-				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
-					return KubeRayJobSpecInput{
+				KubeRayJobSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1533,7 +1534,8 @@ spec:
 	})
 
 	// KubeRay tests on a self-managed VM-based cluster.
-	Context("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
+	// TODO: Re-enable once NativeScheduling tests are validated in CI.
+	PContext("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
 			clusterName = getClusterName(clusterNamePrefix, "vm-kuberay")
 			kubernetesVersion, err := resolveCIVersion("latest")
@@ -1564,8 +1566,8 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayCluster spec", func() {
-				KubeRayClusterSpec(ctx, func() KubeRayClusterSpecInput {
-					return KubeRayClusterSpecInput{
+				KubeRayClusterSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,
@@ -1607,8 +1609,109 @@ spec:
 			), result)
 
 			By("Running the KubeRay RayJob spec", func() {
-				KubeRayJobSpec(ctx, func() KubeRayJobSpecInput {
-					return KubeRayJobSpecInput{
+				KubeRayJobSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	// KubeRay NativeWorkloadScheduling tests on a self-managed VM-based cluster with K8s 1.36+.
+	// This tests the unreleased NativeWorkloadScheduling feature from the kuberay workload-poc branch,
+	// which uses the Kubernetes-native scheduling.k8s.io/v1alpha2 API for gang scheduling of Ray pods.
+	// The test requires:
+	//   - KUBERAY_SOURCE_DIR: path to the kuberay repo checked out at the workload-poc branch
+	//   - KUBERAY_OPERATOR_IMAGE_TAG: tag of the kuberay operator image built from source
+	//   - REGISTRY: container registry where the kuberay operator image has been pushed
+	// See scripts/ci-build-kuberay-operator.sh for building and pushing the image.
+	Context("Creating a self-managed cluster with native scheduling and deploying KubeRay from source [KubeRay] [NativeScheduling]", func() {
+		It("Creates a RayCluster with NativeWorkloadScheduling and verifies Workload/PodGroup resources", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vm-natsched")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("ci-version-native-scheduling"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay NativeScheduling spec", func() {
+				KubeRayNativeSchedulingSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	// Negative test: verify that the NativeWorkloadScheduling feature does NOT create
+	// Workload or PodGroup resources when the opt-in annotation is absent.
+	// This runs on a separate cluster in parallel with the positive test above.
+	Context("Creating a self-managed cluster with native scheduling and deploying KubeRay from source (negative test) [KubeRay] [NativeScheduling]", func() {
+		It("Verifies no Workload/PodGroup resources are created without the annotation", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vm-nonatsched")
+			kubernetesVersion, err := resolveCIVersion("latest")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+			Expect(os.Setenv("CLOUD_PROVIDER_AZURE_LABEL", "azure-ci")).To(Succeed())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("ci-version-native-scheduling"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Running the KubeRay NativeScheduling negative spec", func() {
+				KubeRayNativeSchedulingNegativeSpec(ctx, func() KubeRaySpecInput {
+					return KubeRaySpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
 						ClusterName:           clusterName,

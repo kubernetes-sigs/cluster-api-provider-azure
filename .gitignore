@@ -95,3 +95,6 @@ azure_identity_id
 azure_wi_back_compat
 openid-configuration.json
 aks-mgmt.config
+
+# kuberay source checkout for NativeScheduling e2e tests
+_kuberay-source/
