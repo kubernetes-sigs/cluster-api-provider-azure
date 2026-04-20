@@ -421,6 +421,28 @@ func TestGetTokenCredential(t *testing.T) {
 			},
 		},
 		{
+			name: "system-assigned identity",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type: infrav1.UserAssignedMSI,
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreManagedIdentity(gomock.Cond(func(opts *azidentity.ManagedIdentityCredentialOptions) bool {
+					return opts.ID == nil
+				}))
+			},
+		},
+		{
 			name: "UserAssignedIdentityCredential",
 			cluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
