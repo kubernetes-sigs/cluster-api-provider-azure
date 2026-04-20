@@ -388,6 +388,11 @@ const (
 	Public = LBType("Public")
 )
 
+const (
+	// IPv6 is the value for IPv6 address version.
+	IPv6 = "IPv6"
+)
+
 // FrontendIP defines a load balancer frontend IP configuration.
 type FrontendIP struct {
 	// +kubebuilder:validation:MinLength=1

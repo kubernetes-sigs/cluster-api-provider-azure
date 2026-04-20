@@ -535,4 +535,9 @@ type SecurityGroupClass struct {
 type FrontendIPClass struct {
 	// +optional
 	PrivateIPAddress string `json:"privateIP,omitempty"`
+	// IPVersion specifies the IP version for this frontend IP. Valid values are "IPv4" and "IPv6".
+	// Defaults to "IPv4" if not specified.
+	// +kubebuilder:validation:Enum=IPv4;IPv6
+	// +optional
+	IPVersion string `json:"ipVersion,omitempty"`
 }
