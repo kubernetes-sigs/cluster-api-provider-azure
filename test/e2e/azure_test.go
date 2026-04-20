@@ -1530,6 +1530,43 @@ spec:
 
 			By("PASSED!")
 		})
+
+		// This test requires the ManagedGPUExperiencePreview feature flag to be registered
+		// on the Azure subscription, and GPU quota for the configured SKU (default: Standard_NC6s_v3).
+		// Override the SKU via AZURE_GPU_NODE_MACHINE_TYPE. The aks-aso-kuberay flavor includes
+		// a dedicated GPU node pool with the EnableManagedGPUExperience=true tag.
+		It("Creates a RayCluster with GPU workers using ManagedGPUExperiencePreview [GPU]", func() {
+			clusterName = getClusterName(clusterNamePrefix, "kuberay-gpu")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-kuberay"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-gpu-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Running the KubeRay GPU spec", func() {
+				KubeRayGPUClusterSpec(ctx, func() KubeRayGPUClusterSpecInput {
+					return KubeRayGPUClusterSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
 	})
 
 	// KubeRay tests on a self-managed VM-based cluster.
