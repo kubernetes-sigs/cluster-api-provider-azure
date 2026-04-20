@@ -23,14 +23,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -58,7 +58,7 @@ func TestAzureManagedClusterController(t *testing.T) {
 			Namespace: "fake-namespace",
 		},
 		Spec: infrav1.AzureManagedControlPlaneSpec{
-			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Host: "fake-host",
 				Port: int32(8080),
 			},
@@ -88,5 +88,5 @@ func TestAzureManagedClusterController(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(rec.Get(ctx, client.ObjectKeyFromObject(aksCluster), aksCluster)).To(Succeed())
 	g.Expect(aksCluster.Spec.ControlPlaneEndpoint).To(Equal(cp.Spec.ControlPlaneEndpoint))
-	g.Expect(aksCluster.Status.Ready).To(BeTrue())
+	g.Expect(ptr.Deref(aksCluster.Status.Initialization.Provisioned, false)).To(BeTrue())
 }

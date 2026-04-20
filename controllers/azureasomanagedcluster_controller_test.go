@@ -28,14 +28,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 type fakeResourceReconciler struct {
@@ -199,7 +198,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedClusterStatus{
-				Ready: true,
+				Initialization: infrav1.AzureASOManagedClusterInitializationStatus{
+					Provisioned: ptr.To(true),
+				},
 			},
 		}
 		c := fakeClientBuilder().
@@ -226,7 +227,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{}))
 
 		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
-		g.Expect(asoManagedCluster.Status.Ready).To(BeFalse())
+		g.Expect(ptr.Deref(asoManagedCluster.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles normally", func(t *testing.T) {
@@ -264,7 +265,9 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				},
 			},
 			Status: infrav1.AzureASOManagedClusterStatus{
-				Ready: false,
+				Initialization: infrav1.AzureASOManagedClusterInitializationStatus{
+					Provisioned: ptr.To(false),
+				},
 			},
 		}
 		asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
@@ -273,7 +276,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 				Namespace: cluster.Namespace,
 			},
 			Status: infrav1.AzureASOManagedControlPlaneStatus{
-				ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{Host: "endpoint"},
+				ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "endpoint"},
 			},
 		}
 		c := fakeClientBuilder().
@@ -295,7 +298,7 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 
 		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
 		g.Expect(asoManagedCluster.Spec.ControlPlaneEndpoint.Host).To(Equal("endpoint"))
-		g.Expect(asoManagedCluster.Status.Ready).To(BeTrue())
+		g.Expect(ptr.Deref(asoManagedCluster.Status.Initialization.Provisioned, false)).To(BeTrue())
 	})
 
 	t.Run("successfully reconciles pause", func(t *testing.T) {

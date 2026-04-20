@@ -39,7 +39,6 @@ type AzureASOManagedClusterTemplateResourceSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 
 // AzureASOManagedClusterTemplate is the Schema for the azureasomanagedclustertemplates API.
 type AzureASOManagedClusterTemplate struct {

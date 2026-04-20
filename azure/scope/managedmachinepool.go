@@ -23,14 +23,15 @@ import (
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
@@ -68,12 +69,12 @@ func NewManagedMachinePoolScope(ctx context.Context, params ManagedMachinePoolSc
 		return nil, errors.New("failed to generate new scope from nil ControlPlane")
 	}
 
-	helper, err := v1beta1patch.NewHelper(params.InfraMachinePool, params.Client)
+	helper, err := patch.NewHelper(params.InfraMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	capiMachinePoolPatchHelper, err := v1beta1patch.NewHelper(params.MachinePool, params.Client)
+	capiMachinePoolPatchHelper, err := patch.NewHelper(params.MachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -93,8 +94,8 @@ func NewManagedMachinePoolScope(ctx context.Context, params ManagedMachinePoolSc
 // ManagedMachinePoolScope defines the basic context for an actuator to operate upon.
 type ManagedMachinePoolScope struct {
 	Client                     client.Client
-	patchHelper                *v1beta1patch.Helper
-	capiMachinePoolPatchHelper *v1beta1patch.Helper
+	patchHelper                *patch.Helper
+	capiMachinePoolPatchHelper *patch.Helper
 
 	azure.ManagedClusterScoper
 	Cluster          *clusterv1.Cluster
@@ -108,13 +109,28 @@ func (s *ManagedMachinePoolScope) PatchObject(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "scope.ManagedMachinePoolScope.PatchObject")
 	defer done()
 
-	v1beta1conditions.SetSummary(s.InfraMachinePool)
+	if err := conditions.SetSummaryCondition(s.InfraMachinePool, s.InfraMachinePool, clusterv1.ReadyCondition, conditions.ForConditionTypes{
+		string(infrav1.AgentPoolsReadyCondition),
+	}); err != nil {
+		return err
+	}
+
+	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
+	setV1Beta1ConditionsFromV1Beta2(s.InfraMachinePool, s.InfraMachinePool, s.InfraMachinePool.GetConditions())
+
+	// v1beta1 owned conditions for backward compat patch conflict resolution.
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
+		clusterv1.ReadyV1Beta1Condition,
+		clusterv1.ConditionType(infrav1.AgentPoolsReadyCondition),
+	}
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.InfraMachinePool,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
-			clusterv1beta1.ReadyCondition,
+		patch.WithOwnedV1Beta1Conditions{Conditions: ownedV1Beta1Conditions},
+		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.ReadyCondition,
+			string(infrav1.AgentPoolsReadyCondition),
 		}})
 }
 
@@ -262,7 +278,7 @@ func (s *ManagedMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 
 // SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
 func (s *ManagedMachinePoolScope) SetAgentPoolReady(ready bool) {
-	s.InfraMachinePool.Status.Ready = ready
+	s.InfraMachinePool.Status.Initialization.Provisioned = ptr.To(ready)
 }
 
 // SetLongRunningOperationState will set the future on the AzureManagedMachinePool status to allow the resource to continue
@@ -285,11 +301,11 @@ func (s *ManagedMachinePoolScope) DeleteLongRunningOperationState(name, service,
 func (s *ManagedMachinePoolScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletedReason, Message: fmt.Sprintf("%s successfully deleted", service)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletingReason, Message: fmt.Sprintf("%s deleting", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletionFailedReason, Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error())})
 	}
 }
 
@@ -297,11 +313,11 @@ func (s *ManagedMachinePoolScope) UpdateDeleteStatus(condition clusterv1beta1.Co
 func (s *ManagedMachinePoolScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.InfraMachinePool, condition)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.CreatingReason, Message: fmt.Sprintf("%s creating or updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error())})
 	}
 }
 
@@ -309,11 +325,11 @@ func (s *ManagedMachinePoolScope) UpdatePutStatus(condition clusterv1beta1.Condi
 func (s *ManagedMachinePoolScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.InfraMachinePool, condition)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.UpdatingReason, Message: fmt.Sprintf("%s updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.InfraMachinePool, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error())})
 	}
 }
 

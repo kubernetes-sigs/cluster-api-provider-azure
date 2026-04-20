@@ -31,9 +31,9 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockInboundNatScope is a mock of InboundNatScope interface.
@@ -75,10 +75,10 @@ func (mr *MockInboundNatScopeMockRecorder) APIServerLBName() *gomock.Call {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockInboundNatScope) AdditionalTags() v1beta1.Tags {
+func (m *MockInboundNatScope) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -159,10 +159,10 @@ func (mr *MockInboundNatScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockInboundNatScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockInboundNatScope) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -241,10 +241,10 @@ func (mr *MockInboundNatScopeMockRecorder) DeleteLongRunningOperationState(arg0,
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockInboundNatScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockInboundNatScope) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -297,10 +297,10 @@ func (mr *MockInboundNatScopeMockRecorder) FailureDomains() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockInboundNatScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockInboundNatScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -381,7 +381,7 @@ func (mr *MockInboundNatScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockInboundNatScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockInboundNatScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -435,7 +435,7 @@ func (mr *MockInboundNatScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockInboundNatScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockInboundNatScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -447,7 +447,7 @@ func (mr *MockInboundNatScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 a
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockInboundNatScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockInboundNatScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -459,7 +459,7 @@ func (mr *MockInboundNatScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 an
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockInboundNatScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockInboundNatScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

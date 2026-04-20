@@ -22,10 +22,10 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
@@ -41,7 +41,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			oldAMC: &infrav1.AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 					},
 				},
@@ -49,7 +49,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			amc: &infrav1.AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 						Port: 443,
 					},
@@ -62,7 +62,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			oldAMC: &infrav1.AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Port: 443,
 					},
 				},
@@ -70,7 +70,7 @@ func TestAzureManagedCluster_ValidateUpdate(t *testing.T) {
 			amc: &infrav1.AzureManagedCluster{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "aks-8622-h4h26c44.hcp.eastus.azmk8s.io",
 						Port: 443,
 					},
@@ -103,7 +103,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Host during create (clusterctl move scenario)",
 			amc: &infrav1.AzureManagedCluster{
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "my-host",
 					},
 				},
@@ -114,7 +114,7 @@ func TestAzureManagedCluster_ValidateCreate(t *testing.T) {
 			name: "can set Spec.ControlPlaneEndpoint.Port during create (clusterctl move scenario)",
 			amc: &infrav1.AzureManagedCluster{
 				Spec: infrav1.AzureManagedClusterSpec{
-					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Port: 4443,
 					},
 				},

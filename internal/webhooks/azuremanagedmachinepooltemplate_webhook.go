@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
@@ -43,7 +43,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) SetupWebhookWithManager(mgr c
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,verbs=create;update,versions=v1beta1,name=default.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+//+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepooltemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,verbs=create;update,versions=v1beta2,name=default.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // AzureManagedMachinePoolTemplateWebhook implements a validating and defaulting webhook for AzureManagedMachinePoolTemplate.
 type AzureManagedMachinePoolTemplateWebhook struct {
@@ -66,7 +66,7 @@ func (mpw *AzureManagedMachinePoolTemplateWebhook) Default(_ context.Context, mp
 	return nil
 }
 
-//+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta1,name=validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+//+kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepooltemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremanagedmachinepooltemplates,versions=v1beta2,name=validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (mpw *AzureManagedMachinePoolTemplateWebhook) ValidateCreate(_ context.Context, mp *infrav1.AzureManagedMachinePoolTemplate) (admission.Warnings, error) {

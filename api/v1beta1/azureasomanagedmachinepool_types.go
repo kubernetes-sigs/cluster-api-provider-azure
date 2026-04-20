@@ -51,7 +51,6 @@ type AzureASOManagedMachinePoolStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
 
 // AzureASOManagedMachinePool is the Schema for the azureasomanagedmachinepools API.
 type AzureASOManagedMachinePool struct {

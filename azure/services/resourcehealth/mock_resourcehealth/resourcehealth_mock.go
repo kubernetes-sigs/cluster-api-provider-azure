@@ -30,8 +30,8 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 )
 
 // MockResourceHealthScope is a mock of ResourceHealthScope interface.
@@ -223,10 +223,10 @@ func (m *MockAvailabilityStatusFilterer) EXPECT() *MockAvailabilityStatusFiltere
 }
 
 // AvailabilityStatusFilter mocks base method.
-func (m *MockAvailabilityStatusFilterer) AvailabilityStatusFilter(cond *v1beta1.Condition) *v1beta1.Condition {
+func (m *MockAvailabilityStatusFilterer) AvailabilityStatusFilter(cond *v1.Condition) *v1.Condition {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AvailabilityStatusFilter", cond)
-	ret0, _ := ret[0].(*v1beta1.Condition)
+	ret0, _ := ret[0].(*v1.Condition)
 	return ret0
 }
 

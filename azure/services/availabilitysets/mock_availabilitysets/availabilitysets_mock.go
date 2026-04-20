@@ -31,9 +31,9 @@ import (
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockAvailabilitySetScope is a mock of AvailabilitySetScope interface.
@@ -61,10 +61,10 @@ func (m *MockAvailabilitySetScope) EXPECT() *MockAvailabilitySetScopeMockRecorde
 }
 
 // AdditionalTags mocks base method.
-func (m *MockAvailabilitySetScope) AdditionalTags() v1beta1.Tags {
+func (m *MockAvailabilitySetScope) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -159,10 +159,10 @@ func (mr *MockAvailabilitySetScopeMockRecorder) CloudEnvironment() *gomock.Call 
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockAvailabilitySetScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockAvailabilitySetScope) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -241,10 +241,10 @@ func (mr *MockAvailabilitySetScopeMockRecorder) DeleteLongRunningOperationState(
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockAvailabilitySetScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockAvailabilitySetScope) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -297,10 +297,10 @@ func (mr *MockAvailabilitySetScopeMockRecorder) FailureDomains() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockAvailabilitySetScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockAvailabilitySetScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -367,7 +367,7 @@ func (mr *MockAvailabilitySetScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockAvailabilitySetScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockAvailabilitySetScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -421,7 +421,7 @@ func (mr *MockAvailabilitySetScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockAvailabilitySetScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAvailabilitySetScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -433,7 +433,7 @@ func (mr *MockAvailabilitySetScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, a
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockAvailabilitySetScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAvailabilitySetScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -445,7 +445,7 @@ func (mr *MockAvailabilitySetScopeMockRecorder) UpdatePatchStatus(arg0, arg1, ar
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockAvailabilitySetScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAvailabilitySetScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

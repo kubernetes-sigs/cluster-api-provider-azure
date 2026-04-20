@@ -43,7 +43,6 @@ type AzureManagedClusterStatus struct {
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of this AzureManagedCluster"
 // +kubebuilder:resource:path=azuremanagedclusters,scope=Namespaced,categories=cluster-api,shortName=amc
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="AzureManagedCluster and the AzureManaged API are deprecated. Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedCluster and related AzureASOManaged resources instead."
 

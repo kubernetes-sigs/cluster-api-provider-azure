@@ -30,7 +30,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -39,12 +39,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -262,7 +262,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.Info("Reconciling AzureMachinePoolMachine")
 	// If the AzureMachine is in an error state, return early.
-	if machineScope.AzureMachinePool.Status.FailureReason != nil || machineScope.AzureMachinePool.Status.FailureMessage != nil {
+	if machineScope.AzureMachinePool.Status.Deprecated != nil && machineScope.AzureMachinePool.Status.Deprecated.V1Beta1 != nil && (machineScope.AzureMachinePool.Status.Deprecated.V1Beta1.FailureReason != nil || machineScope.AzureMachinePool.Status.Deprecated.V1Beta1.FailureMessage != nil) { //nolint:staticcheck // intentional use of deprecated field for backward compat
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}
@@ -304,7 +304,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 
 	log.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
 
-	bootstrappingCondition := v1beta1conditions.Get(machineScope.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+	bootstrappingCondition := conditions.Get(machineScope.AzureMachinePoolMachine, string(infrav1.BootstrapSucceededCondition))
 	if bootstrappingCondition != nil && bootstrappingCondition.Reason == infrav1.BootstrapFailedReason {
 		return reconcile.Result{}, nil
 	}

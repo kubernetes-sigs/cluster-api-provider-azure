@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 func TestSDKToVM(t *testing.T) {

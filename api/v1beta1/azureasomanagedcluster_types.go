@@ -68,7 +68,6 @@ type StatusResource struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
 
 // AzureASOManagedCluster is the Schema for the azureasomanagedclusters API.
 type AzureASOManagedCluster struct {

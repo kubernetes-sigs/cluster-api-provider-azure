@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -141,7 +141,7 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := v1beta1patch.NewHelper(asoManagedMachinePool, r.Client)
+	patchHelper, err := patch.NewHelper(asoManagedMachinePool, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
@@ -152,8 +152,6 @@ func (r *AzureASOManagedMachinePoolReconciler) Reconcile(ctx context.Context, re
 			result = ctrl.Result{}
 		}
 	}()
-
-	asoManagedMachinePool.Status.Ready = false
 
 	machinePool, err := GetOwnerMachinePool(ctx, r.Client, asoManagedMachinePool.ObjectMeta)
 	if err != nil {
@@ -283,7 +281,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 		machinePool.Spec.Replicas = &asoManagedMachinePool.Status.Replicas
 	}
 
-	asoManagedMachinePool.Status.Ready = true
+	asoManagedMachinePool.Status.Initialization.Provisioned = ptr.To(true)
 
 	return ctrl.Result{}, nil
 }

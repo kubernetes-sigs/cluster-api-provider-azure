@@ -666,7 +666,6 @@ type AKSExtension struct {
 // +kubebuilder:printcolumn:name="Message",type="string",priority=1,JSONPath=".status.conditions[?(@.type=='Ready')].message"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of this AzureManagedControlPlane"
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="AzureManagedControlPlane and the AzureManaged API are deprecated. Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedControlPlane and related AzureASOManaged resources instead."
 

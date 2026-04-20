@@ -33,9 +33,9 @@ import (
 	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	gomock "go.uber.org/mock/gomock"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockFutureScope is a mock of FutureScope interface.
@@ -117,10 +117,10 @@ func (mr *MockFutureScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockFutureScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockFutureScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -131,7 +131,7 @@ func (mr *MockFutureScopeMockRecorder) GetLongRunningOperationState(arg0, arg1, 
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockFutureScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockFutureScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -143,7 +143,7 @@ func (mr *MockFutureScopeMockRecorder) SetLongRunningOperationState(arg0 any) *g
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockFutureScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockFutureScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -155,7 +155,7 @@ func (mr *MockFutureScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) 
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockFutureScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockFutureScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -167,7 +167,7 @@ func (mr *MockFutureScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockFutureScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockFutureScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }
