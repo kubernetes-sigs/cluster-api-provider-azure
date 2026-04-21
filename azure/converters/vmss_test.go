@@ -298,18 +298,16 @@ func Test_SDKToVMSSVM(t *testing.T) {
 
 func Test_SDKImageToImage(t *testing.T) {
 	cases := []struct {
-		Name         string
-		SDKImageRef  *armcompute.ImageReference
-		IsThirdParty bool
-		SDKPlan      *armcompute.Plan
-		Image        infrav1.Image
+		Name        string
+		SDKImageRef *armcompute.ImageReference
+		SDKPlan     *armcompute.Plan
+		Image       infrav1.Image
 	}{
 		{
 			Name: "id image",
 			SDKImageRef: &armcompute.ImageReference{
 				ID: ptr.To("imageID"),
 			},
-			IsThirdParty: false,
 			Image: infrav1.Image{
 				ID: ptr.To("imageID"),
 			},
@@ -322,7 +320,6 @@ func Test_SDKImageToImage(t *testing.T) {
 				SKU:       ptr.To("sku"),
 				Version:   ptr.To("version"),
 			},
-			IsThirdParty: true,
 			SDKPlan: &armcompute.Plan{
 				Publisher: ptr.To("publisher"),
 				Product:   ptr.To("offer"),
@@ -453,11 +450,7 @@ func Test_SDKImageToImage(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			if c.SDKPlan != nil {
-				g.Expect(converters.SDKImageToImage(c.SDKImageRef, c.SDKPlan)).To(gomega.Equal(c.Image))
-				return
-			}
-			g.Expect(converters.SDKImageToImage(c.SDKImageRef, nil)).To(gomega.Equal(c.Image))
+			g.Expect(converters.SDKImageToImage(c.SDKImageRef, c.SDKPlan)).To(gomega.Equal(c.Image))
 		})
 	}
 }
