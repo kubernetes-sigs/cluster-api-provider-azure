@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 // AzureClusterClassSpecSetDefaults sets default values for AzureClusterClassSpec.

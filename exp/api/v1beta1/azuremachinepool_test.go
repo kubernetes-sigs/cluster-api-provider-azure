@@ -22,23 +22,23 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1expbeta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 func TestAzureMachinePool_Validate(t *testing.T) {
 	cases := []struct {
 		Name    string
-		Factory func(g *gomega.GomegaWithT) *infrav1exp.AzureMachinePool
+		Factory func(g *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool
 		Expect  func(g *gomega.GomegaWithT, actual error)
 	}{
 		{
 			Name: "HasNoImage",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							OSDisk: infrav1.OSDisk{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -52,12 +52,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasValidImage",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							Image: &infrav1.Image{
-								SharedGallery: &infrav1.AzureSharedGalleryImage{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							Image: &infrav1beta1.Image{
+								SharedGallery: &infrav1beta1.AzureSharedGalleryImage{
 									SubscriptionID: "foo",
 									ResourceGroup:  "blah",
 									Name:           "bin",
@@ -65,7 +65,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 									Version:        "1.2.3",
 								},
 							},
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -79,12 +79,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidImage",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							Image: new(infrav1.Image),
-							OSDisk: infrav1.OSDisk{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							Image: new(infrav1beta1.Image),
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -99,12 +99,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasValidTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: ptr.To(7),
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -118,12 +118,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidMaximumTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: ptr.To(20),
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -138,12 +138,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasInvalidMinimumTerminateNotificationTimeout",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: ptr.To(3),
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -158,12 +158,12 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasNoDiagnostics",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
 							Diagnostics: nil,
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -177,16 +177,16 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasValidDiagnostics",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							Diagnostics: &infrav1.Diagnostics{
-								Boot: &infrav1.BootDiagnostics{
-									StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1beta1.Diagnostics{
+								Boot: &infrav1beta1.BootDiagnostics{
+									StorageAccountType: infrav1beta1.ManagedDiagnosticsStorage,
 								},
 							},
-							OSDisk: infrav1.OSDisk{
+							OSDisk: infrav1beta1.OSDisk{
 								OSType:      "Linux",
 								CachingType: "None",
 							},
@@ -200,14 +200,14 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasMismatcingManagedDiagnosticsWithStorageAccountURI",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							Diagnostics: &infrav1.Diagnostics{
-								Boot: &infrav1.BootDiagnostics{
-									StorageAccountType: infrav1.ManagedDiagnosticsStorage,
-									UserManaged: &infrav1.UserManagedBootDiagnostics{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1beta1.Diagnostics{
+								Boot: &infrav1beta1.BootDiagnostics{
+									StorageAccountType: infrav1beta1.ManagedDiagnosticsStorage,
+									UserManaged: &infrav1beta1.UserManagedBootDiagnostics{
 										StorageAccountURI: "https://fake",
 									},
 								},
@@ -222,14 +222,14 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 		},
 		{
 			Name: "HasMismatcingDisabledDiagnosticsWithStorageAccountURI",
-			Factory: func(_ *gomega.GomegaWithT) *infrav1exp.AzureMachinePool {
-				return &infrav1exp.AzureMachinePool{
-					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachinePoolMachineTemplate{
-							Diagnostics: &infrav1.Diagnostics{
-								Boot: &infrav1.BootDiagnostics{
-									StorageAccountType: infrav1.DisabledDiagnosticsStorage,
-									UserManaged: &infrav1.UserManagedBootDiagnostics{
+			Factory: func(_ *gomega.GomegaWithT) *infrav1expbeta1.AzureMachinePool {
+				return &infrav1expbeta1.AzureMachinePool{
+					Spec: infrav1expbeta1.AzureMachinePoolSpec{
+						Template: infrav1expbeta1.AzureMachinePoolMachineTemplate{
+							Diagnostics: &infrav1beta1.Diagnostics{
+								Boot: &infrav1beta1.BootDiagnostics{
+									StorageAccountType: infrav1beta1.DisabledDiagnosticsStorage,
+									UserManaged: &infrav1beta1.UserManagedBootDiagnostics{
 										StorageAccountURI: "https://fake",
 									},
 								},

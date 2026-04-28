@@ -36,8 +36,8 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -358,10 +358,10 @@ func (m *MockNetworkDescriber) EXPECT() *MockNetworkDescriberMockRecorder {
 }
 
 // APIServerLB mocks base method.
-func (m *MockNetworkDescriber) APIServerLB() *v1beta1.LoadBalancerSpec {
+func (m *MockNetworkDescriber) APIServerLB() *v1beta2.LoadBalancerSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLB")
-	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	ret0, _ := ret[0].(*v1beta2.LoadBalancerSpec)
 	return ret0
 }
 
@@ -400,10 +400,10 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName() *gomock.Call {
 }
 
 // ControlPlaneRouteTable mocks base method.
-func (m *MockNetworkDescriber) ControlPlaneRouteTable() v1beta1.RouteTable {
+func (m *MockNetworkDescriber) ControlPlaneRouteTable() v1beta2.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(v1beta1.RouteTable)
+	ret0, _ := ret[0].(v1beta2.RouteTable)
 	return ret0
 }
 
@@ -414,10 +414,10 @@ func (mr *MockNetworkDescriberMockRecorder) ControlPlaneRouteTable() *gomock.Cal
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockNetworkDescriber) ControlPlaneSubnet() v1beta1.SubnetSpec {
+func (m *MockNetworkDescriber) ControlPlaneSubnet() v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
+	ret0, _ := ret[0].(v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -484,10 +484,10 @@ func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
 }
 
 // NodeSubnets mocks base method.
-func (m *MockNetworkDescriber) NodeSubnets() []v1beta1.SubnetSpec {
+func (m *MockNetworkDescriber) NodeSubnets() []v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnets")
-	ret0, _ := ret[0].([]v1beta1.SubnetSpec)
+	ret0, _ := ret[0].([]v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -526,7 +526,7 @@ func (mr *MockNetworkDescriberMockRecorder) OutboundPoolName(arg0 any) *gomock.C
 }
 
 // SetSubnet mocks base method.
-func (m *MockNetworkDescriber) SetSubnet(arg0 v1beta1.SubnetSpec) {
+func (m *MockNetworkDescriber) SetSubnet(arg0 v1beta2.SubnetSpec) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetSubnet", arg0)
 }
@@ -538,10 +538,10 @@ func (mr *MockNetworkDescriberMockRecorder) SetSubnet(arg0 any) *gomock.Call {
 }
 
 // Subnet mocks base method.
-func (m *MockNetworkDescriber) Subnet(arg0 string) v1beta1.SubnetSpec {
+func (m *MockNetworkDescriber) Subnet(arg0 string) v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnet", arg0)
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
+	ret0, _ := ret[0].(v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -552,10 +552,10 @@ func (mr *MockNetworkDescriberMockRecorder) Subnet(arg0 any) *gomock.Call {
 }
 
 // Subnets mocks base method.
-func (m *MockNetworkDescriber) Subnets() v1beta1.Subnets {
+func (m *MockNetworkDescriber) Subnets() v1beta2.Subnets {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnets")
-	ret0, _ := ret[0].(v1beta1.Subnets)
+	ret0, _ := ret[0].(v1beta2.Subnets)
 	return ret0
 }
 
@@ -566,10 +566,10 @@ func (mr *MockNetworkDescriberMockRecorder) Subnets() *gomock.Call {
 }
 
 // Vnet mocks base method.
-func (m *MockNetworkDescriber) Vnet() *v1beta1.VnetSpec {
+func (m *MockNetworkDescriber) Vnet() *v1beta2.VnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1beta1.VnetSpec)
+	ret0, _ := ret[0].(*v1beta2.VnetSpec)
 	return ret0
 }
 
@@ -604,10 +604,10 @@ func (m *MockClusterDescriber) EXPECT() *MockClusterDescriberMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockClusterDescriber) AdditionalTags() v1beta1.Tags {
+func (m *MockClusterDescriber) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -688,10 +688,10 @@ func (mr *MockClusterDescriberMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockClusterDescriber) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockClusterDescriber) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -716,10 +716,10 @@ func (mr *MockClusterDescriberMockRecorder) ClusterName() *gomock.Call {
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockClusterDescriber) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockClusterDescriber) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -948,10 +948,10 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) DeleteLongRunningOperationState(ar
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockAsyncStatusUpdater) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockAsyncStatusUpdater) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -962,7 +962,7 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) GetLongRunningOperationState(arg0,
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockAsyncStatusUpdater) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockAsyncStatusUpdater) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -974,7 +974,7 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) SetLongRunningOperationState(arg0 
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockAsyncStatusUpdater) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAsyncStatusUpdater) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -986,7 +986,7 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) UpdateDeleteStatus(arg0, arg1, arg
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockAsyncStatusUpdater) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAsyncStatusUpdater) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -998,7 +998,7 @@ func (mr *MockAsyncStatusUpdaterMockRecorder) UpdatePatchStatus(arg0, arg1, arg2
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockAsyncStatusUpdater) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockAsyncStatusUpdater) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }
@@ -1100,10 +1100,10 @@ func (m *MockClusterScoper) EXPECT() *MockClusterScoperMockRecorder {
 }
 
 // APIServerLB mocks base method.
-func (m *MockClusterScoper) APIServerLB() *v1beta1.LoadBalancerSpec {
+func (m *MockClusterScoper) APIServerLB() *v1beta2.LoadBalancerSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLB")
-	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	ret0, _ := ret[0].(*v1beta2.LoadBalancerSpec)
 	return ret0
 }
 
@@ -1142,10 +1142,10 @@ func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName() *gomock.Call {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockClusterScoper) AdditionalTags() v1beta1.Tags {
+func (m *MockClusterScoper) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -1226,10 +1226,10 @@ func (mr *MockClusterScoperMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockClusterScoper) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockClusterScoper) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -1254,10 +1254,10 @@ func (mr *MockClusterScoperMockRecorder) ClusterName() *gomock.Call {
 }
 
 // ControlPlaneRouteTable mocks base method.
-func (m *MockClusterScoper) ControlPlaneRouteTable() v1beta1.RouteTable {
+func (m *MockClusterScoper) ControlPlaneRouteTable() v1beta2.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(v1beta1.RouteTable)
+	ret0, _ := ret[0].(v1beta2.RouteTable)
 	return ret0
 }
 
@@ -1268,10 +1268,10 @@ func (mr *MockClusterScoperMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockClusterScoper) ControlPlaneSubnet() v1beta1.SubnetSpec {
+func (m *MockClusterScoper) ControlPlaneSubnet() v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
+	ret0, _ := ret[0].(v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -1336,10 +1336,10 @@ func (mr *MockClusterScoperMockRecorder) DeleteLongRunningOperationState(arg0, a
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockClusterScoper) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockClusterScoper) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 
@@ -1420,10 +1420,10 @@ func (mr *MockClusterScoperMockRecorder) GetDeletionTimestamp() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockClusterScoper) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockClusterScoper) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -1532,10 +1532,10 @@ func (mr *MockClusterScoperMockRecorder) NodeResourceGroup() *gomock.Call {
 }
 
 // NodeSubnets mocks base method.
-func (m *MockClusterScoper) NodeSubnets() []v1beta1.SubnetSpec {
+func (m *MockClusterScoper) NodeSubnets() []v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnets")
-	ret0, _ := ret[0].([]v1beta1.SubnetSpec)
+	ret0, _ := ret[0].([]v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -1588,7 +1588,7 @@ func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockClusterScoper) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockClusterScoper) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -1600,7 +1600,7 @@ func (mr *MockClusterScoperMockRecorder) SetLongRunningOperationState(arg0 any) 
 }
 
 // SetSubnet mocks base method.
-func (m *MockClusterScoper) SetSubnet(arg0 v1beta1.SubnetSpec) {
+func (m *MockClusterScoper) SetSubnet(arg0 v1beta2.SubnetSpec) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetSubnet", arg0)
 }
@@ -1612,10 +1612,10 @@ func (mr *MockClusterScoperMockRecorder) SetSubnet(arg0 any) *gomock.Call {
 }
 
 // Subnet mocks base method.
-func (m *MockClusterScoper) Subnet(arg0 string) v1beta1.SubnetSpec {
+func (m *MockClusterScoper) Subnet(arg0 string) v1beta2.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnet", arg0)
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
+	ret0, _ := ret[0].(v1beta2.SubnetSpec)
 	return ret0
 }
 
@@ -1626,10 +1626,10 @@ func (mr *MockClusterScoperMockRecorder) Subnet(arg0 any) *gomock.Call {
 }
 
 // Subnets mocks base method.
-func (m *MockClusterScoper) Subnets() v1beta1.Subnets {
+func (m *MockClusterScoper) Subnets() v1beta2.Subnets {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subnets")
-	ret0, _ := ret[0].(v1beta1.Subnets)
+	ret0, _ := ret[0].(v1beta2.Subnets)
 	return ret0
 }
 
@@ -1682,7 +1682,7 @@ func (mr *MockClusterScoperMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockClusterScoper) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockClusterScoper) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -1694,7 +1694,7 @@ func (mr *MockClusterScoperMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockClusterScoper) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockClusterScoper) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -1706,7 +1706,7 @@ func (mr *MockClusterScoperMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any)
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockClusterScoper) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockClusterScoper) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }
@@ -1718,10 +1718,10 @@ func (mr *MockClusterScoperMockRecorder) UpdatePutStatus(arg0, arg1, arg2 any) *
 }
 
 // Vnet mocks base method.
-func (m *MockClusterScoper) Vnet() *v1beta1.VnetSpec {
+func (m *MockClusterScoper) Vnet() *v1beta2.VnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1beta1.VnetSpec)
+	ret0, _ := ret[0].(*v1beta2.VnetSpec)
 	return ret0
 }
 
@@ -1756,10 +1756,10 @@ func (m *MockManagedClusterScoper) EXPECT() *MockManagedClusterScoperMockRecorde
 }
 
 // AdditionalTags mocks base method.
-func (m *MockManagedClusterScoper) AdditionalTags() v1beta1.Tags {
+func (m *MockManagedClusterScoper) AdditionalTags() v1beta2.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
+	ret0, _ := ret[0].(v1beta2.Tags)
 	return ret0
 }
 
@@ -1840,10 +1840,10 @@ func (mr *MockManagedClusterScoperMockRecorder) CloudEnvironment() *gomock.Call 
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockManagedClusterScoper) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+func (m *MockManagedClusterScoper) CloudProviderConfigOverrides() *v1beta2.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta2.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -1910,10 +1910,10 @@ func (mr *MockManagedClusterScoperMockRecorder) DefaultedReconcilerRequeue() *go
 }
 
 // ExtendedLocation mocks base method.
-func (m *MockManagedClusterScoper) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
+func (m *MockManagedClusterScoper) ExtendedLocation() *v1beta2.ExtendedLocationSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
+	ret0, _ := ret[0].(*v1beta2.ExtendedLocationSpec)
 	return ret0
 }
 

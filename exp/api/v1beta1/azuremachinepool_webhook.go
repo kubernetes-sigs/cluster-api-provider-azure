@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"unsafe"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/blang/semver"
@@ -28,27 +29,18 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
-func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
-	return ctrl.NewWebhookManagedBy(mgr, &AzureMachinePool{}).
-		WithDefaulter(ampw).
-		WithValidator(ampw).
-		Complete()
-}
-
-// +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1beta1,name=default.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
-
 // azureMachinePoolWebhook implements a validating and defaulting webhook for AzureMachinePool.
+// NOTE: this struct is kept for use by tests. The webhook registration has been moved to
+// internal/webhooks/azuremachinepool_webhook.go.
 type azureMachinePoolWebhook struct {
 	Client client.Client
 }
@@ -57,8 +49,6 @@ type azureMachinePoolWebhook struct {
 func (ampw *azureMachinePoolWebhook) Default(_ context.Context, amp *AzureMachinePool) error {
 	return amp.SetDefaults(ampw.Client)
 }
-
-// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, amp *AzureMachinePool) (admission.Warnings, error) {
@@ -111,7 +101,7 @@ func (amp *AzureMachinePool) ValidateNetwork() error {
 
 // ValidateOSDisk of an AzureMachinePool.
 func (amp *AzureMachinePool) ValidateOSDisk() error {
-	if errs := webhooks.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+	if errs := webhooks.ValidateOSDisk(*(*infrav1.OSDisk)(unsafe.Pointer(&amp.Spec.Template.OSDisk)), field.NewPath("osDisk")); len(errs) > 0 { //nolint:gosec // identical struct layout
 		return errs.ToAggregate()
 	}
 	return nil
@@ -121,7 +111,7 @@ func (amp *AzureMachinePool) ValidateOSDisk() error {
 func (amp *AzureMachinePool) ValidateImage() error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
-		if errs := webhooks.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
+		if errs := webhooks.ValidateImage((*infrav1.Image)(unsafe.Pointer(image)), field.NewPath("image")); len(errs) > 0 { //nolint:gosec // identical struct layout
 			return errs.ToAggregate()
 		}
 	}
@@ -161,7 +151,7 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 // ValidateUserAssignedIdentity validates the user-assigned identities list.
 func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	fldPath := field.NewPath("userAssignedIdentities")
-	if errs := webhooks.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
+	if errs := webhooks.ValidateUserAssignedIdentity(infrav1.VMIdentity(amp.Spec.Identity), *(*[]infrav1.UserAssignedIdentity)(unsafe.Pointer(&amp.Spec.UserAssignedIdentities)), fldPath); len(errs) > 0 { //nolint:gosec // identical struct layout
 		return kerrors.NewAggregate(errs.ToAggregate().Errors())
 	}
 
@@ -206,7 +196,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 		}
 
 		fldPath := field.NewPath("roleAssignmentName")
-		if errs := webhooks.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
+		if errs := webhooks.ValidateSystemAssignedIdentity(infrav1.VMIdentity(amp.Spec.Identity), oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 
@@ -220,7 +210,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
 	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
 	}
-	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+	if amp.Spec.Identity == infrav1beta1.VMIdentitySystemAssigned {
 		if amp.Spec.SystemAssignedIdentityRole.DefinitionID == "" {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "definitionID"), amp.Spec.SystemAssignedIdentityRole.DefinitionID, "the roleDefinitionID field cannot be empty"))
 		}
@@ -228,7 +218,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole", "scope"), amp.Spec.SystemAssignedIdentityRole.Scope, "the scope field cannot be empty"))
 		}
 	}
-	if amp.Spec.Identity != infrav1.VMIdentitySystemAssigned && amp.Spec.SystemAssignedIdentityRole != nil {
+	if amp.Spec.Identity != infrav1beta1.VMIdentitySystemAssigned && amp.Spec.SystemAssignedIdentityRole != nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole, "systemAssignedIdentityRole can only be set when identity is set to 'SystemAssigned'"))
 	}
 
@@ -248,27 +238,27 @@ func (amp *AzureMachinePool) ValidateDiagnostics() error {
 
 	if diagnostics != nil && diagnostics.Boot != nil {
 		switch diagnostics.Boot.StorageAccountType {
-		case infrav1.UserManagedDiagnosticsStorage:
+		case infrav1beta1.UserManagedDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged == nil {
 				allErrs = append(allErrs, field.Required(fieldPath.Child("UserManaged"),
-					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
+					fmt.Sprintf("userManaged must be specified when storageAccountType is '%s'", infrav1beta1.UserManagedDiagnosticsStorage)))
 			} else if diagnostics.Boot.UserManaged.StorageAccountURI == "" {
 				allErrs = append(allErrs, field.Required(fieldPath.Child("StorageAccountURI"),
-					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage)))
+					fmt.Sprintf("StorageAccountURI cannot be empty when storageAccountType is '%s'", infrav1beta1.UserManagedDiagnosticsStorage)))
 			}
-		case infrav1.ManagedDiagnosticsStorage:
+		case infrav1beta1.ManagedDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged != nil &&
 				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
 					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
-						infrav1.ManagedDiagnosticsStorage)))
+						infrav1beta1.ManagedDiagnosticsStorage)))
 			}
-		case infrav1.DisabledDiagnosticsStorage:
+		case infrav1beta1.DisabledDiagnosticsStorage:
 			if diagnostics.Boot.UserManaged != nil &&
 				diagnostics.Boot.UserManaged.StorageAccountURI != "" {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Child("StorageAccountURI"), diagnostics.Boot.UserManaged.StorageAccountURI,
 					fmt.Sprintf("StorageAccountURI cannot be set when storageAccountType is '%s'",
-						infrav1.ManagedDiagnosticsStorage)))
+						infrav1beta1.ManagedDiagnosticsStorage)))
 			}
 		}
 	}
@@ -284,7 +274,7 @@ func (amp *AzureMachinePool) ValidateDiagnostics() error {
 func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() error {
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
-		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(armcompute.OrchestrationModeFlexible) {
+		if amp.Spec.OrchestrationMode == infrav1beta1.OrchestrationModeType(armcompute.OrchestrationModeFlexible) {
 			parent, err := azureutil.FindParentMachinePoolWithRetryV1Beta1(amp.Name, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to find parent MachinePool")

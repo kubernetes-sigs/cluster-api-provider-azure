@@ -20,23 +20,22 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 // SDKAvailabilityStatusToCondition converts an Azure Resource Health availability status to a status condition.
-func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.AvailabilityStatus) *clusterv1beta1.Condition {
+func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.AvailabilityStatus) *metav1.Condition {
 	if availStatus.Properties == nil {
-		return v1beta1conditions.FalseCondition(infrav1.AzureResourceAvailableCondition, "", "", "")
+		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionFalse, Reason: "Unknown"}
 	}
 
 	state := availStatus.Properties.AvailabilityState
 
 	if ptr.Deref(state, "") == armresourcehealth.AvailabilityStateValuesAvailable {
-		return v1beta1conditions.TrueCondition(infrav1.AzureResourceAvailableCondition)
+		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.AzureResourceAvailableCondition)}
 	}
 
 	var reason strings.Builder
@@ -54,12 +53,9 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 		}
 	}
 
-	var severity clusterv1beta1.ConditionSeverity
-	switch ptr.Deref(availStatus.Properties.AvailabilityState, "") {
-	case armresourcehealth.AvailabilityStateValuesUnavailable:
-		severity = clusterv1beta1.ConditionSeverityError
-	case armresourcehealth.AvailabilityStateValuesDegraded, armresourcehealth.AvailabilityStateValuesUnknown:
-		severity = clusterv1beta1.ConditionSeverityWarning
+	reasonStr := reason.String()
+	if reasonStr == "" {
+		reasonStr = "Unknown"
 	}
 
 	var message string
@@ -67,5 +63,5 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 		message = *availStatus.Properties.Summary
 	}
 
-	return v1beta1conditions.FalseCondition(infrav1.AzureResourceAvailableCondition, reason.String(), severity, "%s", message)
+	return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionFalse, Reason: reasonStr, Message: message}
 }

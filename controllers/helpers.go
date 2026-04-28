@@ -33,13 +33,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -48,11 +47,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -630,8 +629,14 @@ func clusterIdentityFinalizer(prefix, clusterNamespace, clusterName string) stri
 	return fmt.Sprintf("%s/%s", prefix, hex.EncodeToString(hash[:]))
 }
 
+// conditionSetterObject combines conditions.Setter with client.Object for functions that need both.
+type conditionSetterObject interface {
+	conditions.Setter
+	client.Object
+}
+
 // EnsureClusterIdentity ensures that the identity ref is allowed in the namespace and sets a finalizer.
-func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1conditions.Setter, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
+func EnsureClusterIdentity(ctx context.Context, c client.Client, object conditionSetterObject, identityRef *corev1.ObjectReference, finalizerPrefix string) error {
 	name := object.GetName()
 	namespace := object.GetNamespace()
 	identity, err := GetClusterIdentityFromRef(ctx, c, namespace, identityRef)
@@ -640,7 +645,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1c
 	}
 
 	if !scope.IsClusterNamespaceAllowed(ctx, c, identity.Spec.AllowedNamespaces, namespace) {
-		v1beta1conditions.MarkFalse(object, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1beta1.ConditionSeverityError, "")
+		conditions.Set(object, metav1.Condition{Type: string(infrav1.NetworkInfrastructureReadyCondition), Status: metav1.ConditionFalse, Reason: infrav1.NamespaceNotAllowedByIdentity})
 		return errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 	}
 
@@ -649,7 +654,7 @@ func EnsureClusterIdentity(ctx context.Context, c client.Client, object v1beta1c
 	needsPatch = controllerutil.AddFinalizer(identity, clusterIdentityFinalizer(finalizerPrefix, namespace, name)) || needsPatch
 	if needsPatch {
 		// finalizers are added/removed then patch the object
-		identityHelper, err := v1beta1patch.NewHelper(identity, c)
+		identityHelper, err := patch.NewHelper(identity, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to init patch helper")
 		}
@@ -667,7 +672,7 @@ func RemoveClusterIdentityFinalizer(ctx context.Context, c client.Client, object
 	if err != nil {
 		return err
 	}
-	identityHelper, err := v1beta1patch.NewHelper(identity, c)
+	identityHelper, err := patch.NewHelper(identity, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to init patch helper")
 	}

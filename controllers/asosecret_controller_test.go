@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -420,8 +420,10 @@ func getASOAzureManagedControlPlane(changes ...func(*infrav1.AzureManagedControl
 		},
 		Spec: infrav1.AzureManagedControlPlaneSpec{},
 		Status: infrav1.AzureManagedControlPlaneStatus{
-			Ready:       true,
-			Initialized: true,
+			Initialization: infrav1.AzureManagedControlPlaneInitializationStatus{
+				Provisioned:             ptr.To(true),
+				ControlPlaneInitialized: ptr.To(true),
+			},
 		},
 	}
 	for _, change := range changes {

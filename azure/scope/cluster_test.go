@@ -33,11 +33,10 @@ import (
 	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
@@ -472,10 +471,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -505,10 +504,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -542,10 +541,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -602,10 +601,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -700,10 +699,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -757,10 +756,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -817,10 +816,10 @@ func TestPublicIPSpecs(t *testing.T) {
 					Name: "my-cluster",
 				},
 				Status: infrav1.AzureClusterStatus{
-					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-						"failure-domain-id-1": {},
-						"failure-domain-id-2": {},
-						"failure-domain-id-3": {},
+					FailureDomains: []clusterv1.FailureDomain{
+						{Name: "failure-domain-id-1"},
+						{Name: "failure-domain-id-2"},
+						{Name: "failure-domain-id-3"},
 					},
 				},
 				Spec: infrav1.AzureClusterSpec{
@@ -2751,8 +2750,8 @@ func TestFailureDomains(t *testing.T) {
 			expectFailureDomains: []*string{ptr.To("failure-domain-id")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
-				FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-					"failure-domain-id": {},
+				FailureDomains: []clusterv1.FailureDomain{
+					{Name: "failure-domain-id"},
 				},
 			},
 		},
@@ -2761,10 +2760,10 @@ func TestFailureDomains(t *testing.T) {
 			expectFailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
 			clusterName:          "my-cluster",
 			azureClusterStatus: infrav1.AzureClusterStatus{
-				FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
-					"failure-domain-id-1": {},
-					"failure-domain-id-2": {},
-					"failure-domain-id-3": {},
+				FailureDomains: []clusterv1.FailureDomain{
+					{Name: "failure-domain-id-1"},
+					{Name: "failure-domain-id-2"},
+					{Name: "failure-domain-id-3"},
 				},
 			},
 		},
@@ -3894,37 +3893,37 @@ func TestSetFailureDomain(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {
-		discoveredFDs clusterv1beta1.FailureDomains
-		specifiedFDs  clusterv1beta1.FailureDomains
-		expectedFDs   clusterv1beta1.FailureDomains
+		discoveredFDs []clusterv1.FailureDomain
+		specifiedFDs  []clusterv1.FailureDomain
+		expectedFDs   []clusterv1.FailureDomain
 	}{
 		"no failure domains specified": {
-			discoveredFDs: clusterv1beta1.FailureDomains{
-				"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true},
-				"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false},
+			discoveredFDs: []clusterv1.FailureDomain{
+				{Name: "fd1", ControlPlane: ptr.To(true)},
+				{Name: "fd2", ControlPlane: ptr.To(false)},
 			},
-			expectedFDs: clusterv1beta1.FailureDomains{
-				"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true},
-				"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false},
+			expectedFDs: []clusterv1.FailureDomain{
+				{Name: "fd1", ControlPlane: ptr.To(true)},
+				{Name: "fd2", ControlPlane: ptr.To(false)},
 			},
 		},
 		"no failure domains discovered": {
-			specifiedFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
+			specifiedFDs: []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(true)}},
 		},
 		"failure domain specified without intersection": {
-			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
-			specifiedFDs:  clusterv1beta1.FailureDomains{"fd2": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
-			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
+			discoveredFDs: []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(true)}},
+			specifiedFDs:  []clusterv1.FailureDomain{{Name: "fd2", ControlPlane: ptr.To(false)}},
+			expectedFDs:   []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(true)}},
 		},
 		"failure domain override to false succeeds": {
-			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
-			specifiedFDs:  clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
-			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
+			discoveredFDs: []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(true)}},
+			specifiedFDs:  []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(false)}},
+			expectedFDs:   []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(false)}},
 		},
 		"failure domain override to true fails": {
-			discoveredFDs: clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
-			specifiedFDs:  clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: true}},
-			expectedFDs:   clusterv1beta1.FailureDomains{"fd1": clusterv1beta1.FailureDomainSpec{ControlPlane: false}},
+			discoveredFDs: []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(false)}},
+			specifiedFDs:  []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(true)}},
+			expectedFDs:   []clusterv1.FailureDomain{{Name: "fd1", ControlPlane: ptr.To(false)}},
 		},
 	}
 
@@ -3946,18 +3945,22 @@ func TestSetFailureDomain(t *testing.T) {
 				},
 			}
 
-			for fdName, fd := range tc.discoveredFDs {
-				c.SetFailureDomain(fdName, fd)
+			for _, fd := range tc.discoveredFDs {
+				c.SetFailureDomain(fd.Name, fd)
 			}
 
-			for fdName, fd := range tc.expectedFDs {
-				g.Expect(fdName).Should(BeKeyOf(c.AzureCluster.Status.FailureDomains))
-				g.Expect(c.AzureCluster.Status.FailureDomains[fdName].ControlPlane).To(Equal(fd.ControlPlane))
-
-				delete(c.AzureCluster.Status.FailureDomains, fdName)
+			g.Expect(c.AzureCluster.Status.FailureDomains).To(HaveLen(len(tc.expectedFDs)))
+			for _, expectedFD := range tc.expectedFDs {
+				found := false
+				for _, actualFD := range c.AzureCluster.Status.FailureDomains {
+					if actualFD.Name == expectedFD.Name {
+						g.Expect(actualFD.ControlPlane).To(Equal(expectedFD.ControlPlane))
+						found = true
+						break
+					}
+				}
+				g.Expect(found).To(BeTrue(), "expected failure domain %s not found", expectedFD.Name)
 			}
-
-			g.Expect(c.AzureCluster.Status.FailureDomains).To(BeEmpty())
 		})
 	}
 }

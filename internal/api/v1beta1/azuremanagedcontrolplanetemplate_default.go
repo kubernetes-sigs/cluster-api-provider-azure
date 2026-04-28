@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/utils/ptr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 // SetDefaultsAzureManagedControlPlaneTemplate sets the default values for an AzureManagedControlPlaneTemplate.

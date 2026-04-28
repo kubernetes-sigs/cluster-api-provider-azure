@@ -43,7 +43,6 @@ type AzureASOManagedMachinePoolTemplateResourceSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 
 // AzureASOManagedMachinePoolTemplate is the Schema for the azureasomanagedmachinepooltemplates API.
 type AzureASOManagedMachinePoolTemplate struct {

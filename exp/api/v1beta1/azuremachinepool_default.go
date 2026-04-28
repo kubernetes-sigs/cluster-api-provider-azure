@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
@@ -70,7 +70,7 @@ func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
 		// and reject the request in the validating webhook which runs later.
 		return nil
 	}
-	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+	if amp.Spec.Identity == infrav1beta1.VMIdentitySystemAssigned {
 		machinePool, err := azureutil.FindParentMachinePoolWithRetryV1Beta1(amp.Name, client, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to find parent machine pool")
@@ -87,7 +87,7 @@ func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
 		}
 
 		if amp.Spec.SystemAssignedIdentityRole == nil {
-			amp.Spec.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
+			amp.Spec.SystemAssignedIdentityRole = &infrav1beta1.SystemAssignedIdentityRole{}
 		}
 		if amp.Spec.RoleAssignmentName != "" {
 			amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
@@ -110,9 +110,9 @@ func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
 // SetSpotEvictionPolicyDefaults sets the defaults for the spot VM eviction policy.
 func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
 	if amp.Spec.Template.SpotVMOptions != nil && amp.Spec.Template.SpotVMOptions.EvictionPolicy == nil {
-		defaultPolicy := infrav1.SpotEvictionPolicyDeallocate
+		defaultPolicy := infrav1beta1.SpotEvictionPolicyDeallocate
 		if amp.Spec.Template.OSDisk.DiffDiskSettings != nil && amp.Spec.Template.OSDisk.DiffDiskSettings.Option == "Local" {
-			defaultPolicy = infrav1.SpotEvictionPolicyDelete
+			defaultPolicy = infrav1beta1.SpotEvictionPolicyDelete
 		}
 		amp.Spec.Template.SpotVMOptions.EvictionPolicy = &defaultPolicy
 	}
@@ -120,12 +120,12 @@ func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
 
 // SetDiagnosticsDefaults sets the defaults for Diagnostic settings for an AzureMachinePool.
 func (amp *AzureMachinePool) SetDiagnosticsDefaults() {
-	bootDefault := &infrav1.BootDiagnostics{
-		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+	bootDefault := &infrav1beta1.BootDiagnostics{
+		StorageAccountType: infrav1beta1.ManagedDiagnosticsStorage,
 	}
 
 	if amp.Spec.Template.Diagnostics == nil {
-		amp.Spec.Template.Diagnostics = &infrav1.Diagnostics{
+		amp.Spec.Template.Diagnostics = &infrav1beta1.Diagnostics{
 			Boot: bootDefault,
 		}
 	}
@@ -145,7 +145,7 @@ func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
 	}
 
 	if len(amp.Spec.Template.NetworkInterfaces) == 0 {
-		amp.Spec.Template.NetworkInterfaces = []infrav1.NetworkInterface{
+		amp.Spec.Template.NetworkInterfaces = []infrav1beta1.NetworkInterface{
 			{
 				SubnetName:            amp.Spec.Template.SubnetName,
 				AcceleratedNetworking: amp.Spec.Template.AcceleratedNetworking,

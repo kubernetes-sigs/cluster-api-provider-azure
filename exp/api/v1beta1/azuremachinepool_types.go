@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 const (
@@ -53,14 +53,14 @@ type (
 		// which is based on Ubuntu.
 		// +kubebuilder:validation:nullable
 		// +optional
-		Image *infrav1.Image `json:"image,omitempty"`
+		Image *infrav1beta1.Image `json:"image,omitempty"`
 
 		// OSDisk contains the operating system disk information for a Virtual Machine
-		OSDisk infrav1.OSDisk `json:"osDisk"`
+		OSDisk infrav1beta1.OSDisk `json:"osDisk"`
 
 		// DataDisks specifies the list of data disks to be created for a Virtual Machine
 		// +optional
-		DataDisks []infrav1.DataDisk `json:"dataDisks,omitempty"`
+		DataDisks []infrav1beta1.DataDisk `json:"dataDisks,omitempty"`
 
 		// SSHPublicKey is the SSH public key string, base64-encoded to add to a Virtual Machine. Linux only.
 		// Refer to documentation on how to set up SSH access on Windows instances.
@@ -73,12 +73,12 @@ type (
 
 		// AdditionalCapabilities specifies additional capabilities enabled or disabled on the virtual machine.
 		// +optional
-		AdditionalCapabilities *infrav1.AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
+		AdditionalCapabilities *infrav1beta1.AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
 
 		// Diagnostics specifies the diagnostics settings for a virtual machine.
 		// If not specified then Boot diagnostics (Managed) will be enabled.
 		// +optional
-		Diagnostics *infrav1.Diagnostics `json:"diagnostics,omitempty"`
+		Diagnostics *infrav1beta1.Diagnostics `json:"diagnostics,omitempty"`
 
 		// TerminateNotificationTimeout enables or disables VMSS scheduled events termination notification with specified timeout
 		// allowed values are between 5 and 15 (mins)
@@ -87,11 +87,11 @@ type (
 
 		// SecurityProfile specifies the Security profile settings for a virtual machine.
 		// +optional
-		SecurityProfile *infrav1.SecurityProfile `json:"securityProfile,omitempty"`
+		SecurityProfile *infrav1beta1.SecurityProfile `json:"securityProfile,omitempty"`
 
 		// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
 		// +optional
-		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
+		SpotVMOptions *infrav1beta1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 
 		// Deprecated: SubnetName should be set in the networkInterfaces field.
 		// +optional
@@ -99,14 +99,14 @@ type (
 
 		// VMExtensions specifies a list of extensions to be added to the scale set.
 		// +optional
-		VMExtensions []infrav1.VMExtension `json:"vmExtensions,omitempty"`
+		VMExtensions []infrav1beta1.VMExtension `json:"vmExtensions,omitempty"`
 
 		// NetworkInterfaces specifies a list of network interface configurations.
 		// If left unspecified, the VM will get a single network interface with a
 		// single IPConfig in the subnet specified in the cluster's node subnet field.
 		// The primary interface will be the first networkInterface specified (index 0) in the list.
 		// +optional
-		NetworkInterfaces []infrav1.NetworkInterface `json:"networkInterfaces,omitempty"`
+		NetworkInterfaces []infrav1beta1.NetworkInterface `json:"networkInterfaces,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.
@@ -121,7 +121,7 @@ type (
 		// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
 		// AzureMachine's value takes precedence.
 		// +optional
-		AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
+		AdditionalTags infrav1beta1.Tags `json:"additionalTags,omitempty"`
 
 		// ProviderID is the identification ID of the Virtual Machine Scale Set
 		// +optional
@@ -139,18 +139,18 @@ type (
 		// and assigned to the VM
 		// +kubebuilder:default=None
 		// +optional
-		Identity infrav1.VMIdentity `json:"identity,omitempty"`
+		Identity infrav1beta1.VMIdentity `json:"identity,omitempty"`
 
 		// SystemAssignedIdentityRole defines the role and scope to assign to the system assigned identity.
 		// +optional
-		SystemAssignedIdentityRole *infrav1.SystemAssignedIdentityRole `json:"systemAssignedIdentityRole,omitempty"`
+		SystemAssignedIdentityRole *infrav1beta1.SystemAssignedIdentityRole `json:"systemAssignedIdentityRole,omitempty"`
 
 		// UserAssignedIdentities is a list of standalone Azure identities provided by the user
 		// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
 		// the AzureMachinePool.
 		// See https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
 		// +optional
-		UserAssignedIdentities []infrav1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
+		UserAssignedIdentities []infrav1beta1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 
 		// Deprecated: RoleAssignmentName should be set in the systemAssignedIdentityRole field.
 		// +optional
@@ -163,7 +163,7 @@ type (
 
 		// OrchestrationMode specifies the orchestration mode for the Virtual Machine Scale Set
 		// +kubebuilder:default=Uniform
-		OrchestrationMode infrav1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
+		OrchestrationMode infrav1beta1.OrchestrationModeType `json:"orchestrationMode,omitempty"`
 
 		// PlatformFaultDomainCount specifies the number of fault domains that the Virtual Machine Scale Set can use.
 		// The count determines the spreading algorithm of the Azure fault domain.
@@ -258,7 +258,7 @@ type (
 		// Image is the current image used in the AzureMachinePool. When the spec image is nil, this image is populated
 		// with the details of the defaulted Azure Marketplace "capi" offer.
 		// +optional
-		Image *infrav1.Image `json:"image,omitempty"`
+		Image *infrav1beta1.Image `json:"image,omitempty"`
 
 		// Version is the Kubernetes version for the current VMSS model
 		// +optional
@@ -266,7 +266,7 @@ type (
 
 		// ProvisioningState is the provisioning state of the Azure virtual machine.
 		// +optional
-		ProvisioningState *infrav1.ProvisioningState `json:"provisioningState,omitempty"`
+		ProvisioningState *infrav1beta1.ProvisioningState `json:"provisioningState,omitempty"`
 
 		// FailureReason will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a succinct value suitable
@@ -313,7 +313,7 @@ type (
 		// LongRunningOperationStates saves the state for Azure long-running operations so they can be continued on the
 		// next reconciliation loop.
 		// +optional
-		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+		LongRunningOperationStates infrav1beta1.Futures `json:"longRunningOperationStates,omitempty"`
 
 		// InfrastructureMachineKind is the kind of the infrastructure resources behind MachinePool Machines.
 		// +optional
@@ -328,7 +328,7 @@ type (
 
 		// ProvisioningState is the provisioning state of the Azure virtual machine instance.
 		// +optional
-		ProvisioningState *infrav1.ProvisioningState `json:"provisioningState"`
+		ProvisioningState *infrav1beta1.ProvisioningState `json:"provisioningState"`
 
 		// ProviderID is the provider identification of the VMSS Instance
 		// +optional
@@ -351,7 +351,6 @@ type (
 	// +kubebuilder:object:root=true
 	// +kubebuilder:subresource:status
 	// +kubebuilder:resource:path=azuremachinepools,scope=Namespaced,categories=cluster-api,shortName=amp
-	// +kubebuilder:storageversion
 	// +kubebuilder:printcolumn:name="Replicas",type="string",JSONPath=".status.replicas",description="AzureMachinePool replicas count"
 	// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="AzureMachinePool replicas count"
 	// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.provisioningState",description="Azure VMSS provisioning state"
@@ -391,12 +390,12 @@ func (amp *AzureMachinePool) SetConditions(conditions clusterv1beta1.Conditions)
 }
 
 // GetFutures returns the list of long running operation states for an AzureMachinePool API object.
-func (amp *AzureMachinePool) GetFutures() infrav1.Futures {
+func (amp *AzureMachinePool) GetFutures() infrav1beta1.Futures {
 	return amp.Status.LongRunningOperationStates
 }
 
 // SetFutures will set the given long running operation states on an AzureMachinePool object.
-func (amp *AzureMachinePool) SetFutures(futures infrav1.Futures) {
+func (amp *AzureMachinePool) SetFutures(futures infrav1beta1.Futures) {
 	amp.Status.LongRunningOperationStates = futures
 }
 

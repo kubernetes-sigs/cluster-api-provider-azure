@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -192,7 +192,7 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := v1beta1patch.NewHelper(asoManagedCluster, r.Client)
+	patchHelper, err := patch.NewHelper(asoManagedCluster, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
 	}
@@ -203,8 +203,6 @@ func (r *AzureASOManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 			result = ctrl.Result{}
 		}
 	}()
-
-	asoManagedCluster.Status.Ready = false
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, asoManagedCluster.ObjectMeta)
 	if err != nil {
@@ -273,7 +271,7 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	}
 	asoManagedCluster.Spec.ControlPlaneEndpoint = asoManagedControlPlane.Status.ControlPlaneEndpoint
 
-	asoManagedCluster.Status.Ready = !asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero()
+	asoManagedCluster.Status.Initialization.Provisioned = ptr.To(!asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero())
 
 	return ctrl.Result{}, nil
 }

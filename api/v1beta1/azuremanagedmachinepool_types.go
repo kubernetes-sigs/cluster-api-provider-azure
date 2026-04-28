@@ -490,7 +490,6 @@ type AzureManagedMachinePoolStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of this AzureManagedMachinePool"
 // +kubebuilder:printcolumn:name="Mode",type="string",JSONPath=".spec.mode"
 // +kubebuilder:resource:path=azuremanagedmachinepools,scope=Namespaced,categories=cluster-api,shortName=ammp
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="AzureManagedMachinePool and the AzureManaged API are deprecated. Please migrate to infrastructure.cluster.x-k8s.io/v1beta1 AzureASOManagedMachinePool and related AzureASOManaged resources instead."
 

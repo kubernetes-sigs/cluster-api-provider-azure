@@ -27,7 +27,6 @@ type AzureClusterTemplateSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azureclustertemplates,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 
 // AzureClusterTemplate is the Schema for the azureclustertemplates API.
 type AzureClusterTemplate struct {

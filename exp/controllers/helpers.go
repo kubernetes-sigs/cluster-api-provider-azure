@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,9 +38,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -358,7 +359,7 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 			shouldUpdate := oldAmp.Status.LatestModelApplied != newAmp.Status.LatestModelApplied ||
 				oldAmp.Status.Version != newAmp.Status.Version ||
 				oldAmp.Status.ProvisioningState != newAmp.Status.ProvisioningState ||
-				oldAmp.Status.Ready != newAmp.Status.Ready
+				ptr.Deref(oldAmp.Status.Initialization.Provisioned, false) != ptr.Deref(newAmp.Status.Initialization.Provisioned, false)
 
 			if shouldUpdate {
 				log.Info("machine pool machine predicate", "shouldUpdate", shouldUpdate)
