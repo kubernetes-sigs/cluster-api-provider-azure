@@ -333,6 +333,92 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "apiServerLB availability zones are immutable",
+			oldCluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2"}
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name:       "apiServerLB availability zones cannot be set when previously unset",
+			oldCluster: apifixtures.CreateValidCluster(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "apiServerLB availability zones cannot be removed",
+			oldCluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			cluster: apifixtures.CreateValidCluster(),
+			wantErr: true,
+		},
+		{
+			name: "apiServerLB availability zones unchanged is valid",
+			oldCluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "nodeOutboundLB availability zones are immutable",
+			oldCluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones = []string{"1", "2", "3"}
+				return cluster
+			}(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.NodeOutboundLB.AvailabilityZones = []string{"1"}
+				return cluster
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "controlPlaneOutboundLB availability zones are immutable",
+			oldCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							Name:              "cp-lb",
+							AvailabilityZones: []string{"1", "2", "3"},
+						},
+					},
+				},
+			},
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							Name:              "cp-lb",
+							AvailabilityZones: []string{"1"},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name:       "natGateway name can be empty before AzureCluster is updated",
 			oldCluster: apifixtures.CreateValidCluster(),
 			cluster: func() *infrav1.AzureCluster {
