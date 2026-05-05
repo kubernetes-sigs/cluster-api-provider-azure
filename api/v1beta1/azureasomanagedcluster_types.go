@@ -50,6 +50,19 @@ type AzureASOManagedClusterStatus struct {
 
 	//+optional
 	Resources []ResourceStatus `json:"resources,omitempty"`
+
+	// initialization provides observations of the AzureASOManagedCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization *AzureASOManagedClusterInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AzureASOManagedClusterInitializationStatus provides observations of the AzureASOManagedCluster initialization process.
+type AzureASOManagedClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // ResourceStatus represents the status of a resource.

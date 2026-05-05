@@ -36,6 +36,19 @@ type AzureManagedClusterStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
+
+	// initialization provides observations of the AzureManagedCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization *AzureManagedClusterInitializationStatus `json:"initialization,omitempty"`
+}
+
+// AzureManagedClusterInitializationStatus provides observations of the AzureManagedCluster initialization process.
+type AzureManagedClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true

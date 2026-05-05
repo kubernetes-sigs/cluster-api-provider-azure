@@ -639,12 +639,12 @@ func (m *MachinePoolScope) SetNotReady() {
 
 // SetFailureMessage sets the AzureMachinePool status failure message.
 func (m *MachinePoolScope) SetFailureMessage(v error) {
-	m.AzureMachinePool.Status.FailureMessage = ptr.To(v.Error())
+	m.AzureMachinePool.Status.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // SetFailureReason sets the AzureMachinePool status failure reason.
 func (m *MachinePoolScope) SetFailureReason(v string) {
-	m.AzureMachinePool.Status.FailureReason = &v
+	m.AzureMachinePool.Status.FailureReason = &v //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,

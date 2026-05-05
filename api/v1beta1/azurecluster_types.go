@@ -79,6 +79,33 @@ type AzureClusterStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
+
+	// initialization provides observations of the AzureCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization *AzureClusterInitializationStatus `json:"initialization,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in AzureCluster's status with the v1beta2 version of the Cluster API contract.
+	// +optional
+	V1Beta2 *AzureClusterV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// AzureClusterInitializationStatus provides observations of the AzureCluster initialization process.
+type AzureClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
+}
+
+// AzureClusterV1Beta2Status groups all the fields that will be added or modified in AzureCluster with the v1beta2 version of the Cluster API contract.
+type AzureClusterV1Beta2Status struct {
+	// conditions represents the observations of an AzureCluster's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -121,6 +148,24 @@ func (c *AzureCluster) GetConditions() clusterv1beta1.Conditions {
 // SetConditions will set the given conditions on an AzureCluster object.
 func (c *AzureCluster) SetConditions(conditions clusterv1beta1.Conditions) {
 	c.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the v1beta2 conditions for an AzureCluster API object.
+// Note: GetV1Beta2Conditions will be renamed to GetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (c *AzureCluster) GetV1Beta2Conditions() []metav1.Condition {
+	if c.Status.V1Beta2 == nil {
+		return nil
+	}
+	return c.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the v1beta2 conditions on an AzureCluster object.
+// Note: SetV1Beta2Conditions will be renamed to SetConditions in a later stage of the transition to the v1beta2 Cluster API contract.
+func (c *AzureCluster) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if c.Status.V1Beta2 == nil {
+		c.Status.V1Beta2 = &AzureClusterV1Beta2Status{}
+	}
+	c.Status.V1Beta2.Conditions = conditions
 }
 
 // GetFutures returns the list of long running operation states for an AzureCluster API object.

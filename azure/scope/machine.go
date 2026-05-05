@@ -602,12 +602,12 @@ func (m *MachineScope) SetNotReady() {
 
 // SetFailureMessage sets the AzureMachine status failure message.
 func (m *MachineScope) SetFailureMessage(v error) {
-	m.AzureMachine.Status.FailureMessage = ptr.To(v.Error())
+	m.AzureMachine.Status.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // SetFailureReason sets the AzureMachine status failure reason.
 func (m *MachineScope) SetFailureReason(v string) {
-	m.AzureMachine.Status.FailureReason = &v
+	m.AzureMachine.Status.FailureReason = &v //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // SetConditionFalse sets the specified AzureMachine condition to false.
