@@ -57,7 +57,8 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerPort:         6443,
+		APIServerFrontendPort: 6443,
 	}
 
 	fakePublicAPILBSpecWithAdditionalPorts = LBSpec{
@@ -81,7 +82,8 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerPort:         6443,
+		APIServerFrontendPort: 6443,
 		AdditionalPorts: []infrav1.LoadBalancerPort{{
 			Name: "rke2-agent",
 			Port: 9345,
@@ -108,7 +110,8 @@ var (
 				},
 			},
 		},
-		APIServerPort: 6443,
+		APIServerPort:         6443,
+		APIServerFrontendPort: 6443,
 	}
 
 	fakeInternalAPILBSpecWithZones = LBSpec{

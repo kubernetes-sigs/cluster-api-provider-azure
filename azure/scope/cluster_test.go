@@ -2865,32 +2865,52 @@ func TestAdditionalTags(t *testing.T) {
 	}
 }
 
-func TestAPIServerPort(t *testing.T) {
+func TestAPIServerPorts(t *testing.T) {
 	tests := []struct {
-		name                string
-		clusterName         string
-		clusterNetowrk      clusterv1.ClusterNetwork
-		expectAPIServerPort int32
+		name                        string
+		clusterName                 string
+		clusterNetwork              clusterv1.ClusterNetwork
+		controlPlaneEndpoint        clusterv1beta1.APIEndpoint
+		expectAPIServerPort         int32
+		expectAPIServerFrontendPort int32
 	}{
 		{
-			name:                "Nil cluster network",
-			clusterName:         "my-cluster",
-			expectAPIServerPort: 6443,
+			name:                        "Nil cluster network",
+			clusterName:                 "my-cluster",
+			expectAPIServerPort:         6443,
+			expectAPIServerFrontendPort: 6443,
 		},
 
 		{
-			name:                "Non nil cluster network but nil apiserverport",
-			clusterName:         "my-cluster",
-			clusterNetowrk:      clusterv1.ClusterNetwork{},
-			expectAPIServerPort: 6443,
+			name:                        "Non nil cluster network but nil apiserverport",
+			clusterName:                 "my-cluster",
+			clusterNetwork:              clusterv1.ClusterNetwork{},
+			expectAPIServerPort:         6443,
+			expectAPIServerFrontendPort: 6443,
 		},
 		{
 			name:        "Non nil cluster network and non nil apiserverport",
 			clusterName: "my-cluster",
-			clusterNetowrk: clusterv1.ClusterNetwork{
+			clusterNetwork: clusterv1.ClusterNetwork{
 				APIServerPort: 7000,
 			},
-			expectAPIServerPort: 7000,
+			expectAPIServerPort:         7000,
+			expectAPIServerFrontendPort: 7000,
+		},
+		{
+			name:                        "ControlPlaneEndpoint.Port set",
+			clusterName:                 "my-cluster",
+			controlPlaneEndpoint:        clusterv1beta1.APIEndpoint{Port: 443},
+			expectAPIServerPort:         6443,
+			expectAPIServerFrontendPort: 443,
+		},
+		{
+			name:                        "ControlPlaneEndpoint.Port differs from ClusterNetwork.APIServerPort",
+			clusterName:                 "my-cluster",
+			clusterNetwork:              clusterv1.ClusterNetwork{APIServerPort: 7000},
+			controlPlaneEndpoint:        clusterv1beta1.APIEndpoint{Port: 443},
+			expectAPIServerPort:         7000,
+			expectAPIServerFrontendPort: 443,
 		},
 	}
 	for _, tc := range tests {
@@ -2903,12 +2923,16 @@ func TestAPIServerPort(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: tc.clusterNetowrk,
+					ClusterNetwork: tc.clusterNetwork,
 				},
 			}
 			azureCluster := &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{},
+					ControlPlaneEndpoint:  tc.controlPlaneEndpoint,
 				},
 			}
 
@@ -2916,8 +2940,8 @@ func TestAPIServerPort(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
 			}
-			got := clusterScope.APIServerPort()
-			g.Expect(tc.expectAPIServerPort).Should(Equal(got))
+			g.Expect(clusterScope.APIServerPort()).To(Equal(tc.expectAPIServerPort))
+			g.Expect(clusterScope.APIServerFrontendPort()).To(Equal(tc.expectAPIServerFrontendPort))
 		})
 	}
 }
@@ -2999,8 +3023,9 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 						SubscriptionID: "123",
 						Location:       "westus2",
 					},
-					ControlPlaneEnabled: true,
-					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled:  true,
+					ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{Port: 443},
+					ResourceGroup:        "my-rg",
 					NetworkSpec: infrav1.NetworkSpec{
 						Vnet: infrav1.VnetSpec{
 							Name:          "my-vnet",
@@ -3098,12 +3123,13 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 						},
 					},
-					APIServerPort:        6443,
-					Type:                 infrav1.Public,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: ptr.To[int32](30),
+					APIServerPort:         6443,
+					APIServerFrontendPort: 443,
+					Type:                  infrav1.Public,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  ptr.To[int32](30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -3274,12 +3300,13 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 						},
 					},
-					APIServerPort:        6443,
-					Type:                 infrav1.Public,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: ptr.To[int32](30),
+					APIServerPort:         6443,
+					APIServerFrontendPort: 6443,
+					Type:                  infrav1.Public,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  ptr.To[int32](30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -3301,12 +3328,13 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 							},
 						},
 					},
-					APIServerPort:        6443,
-					Type:                 infrav1.Internal,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRoleInternal,
-					BackendPoolName:      "api-server-lb-backend-pool-internal",
-					IdleTimeoutInMinutes: ptr.To[int32](30),
+					APIServerPort:         6443,
+					APIServerFrontendPort: 6443,
+					Type:                  infrav1.Internal,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRoleInternal,
+					BackendPoolName:       "api-server-lb-backend-pool-internal",
+					IdleTimeoutInMinutes:  ptr.To[int32](30),
 					AdditionalTags: infrav1.Tags{
 						"foo": "bar",
 					},
@@ -3411,21 +3439,22 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			},
 			want: []azure.ResourceSpecGetter{
 				&loadbalancers.LBSpec{
-					Name:                 "api-server-lb",
-					ResourceGroup:        "my-rg",
-					SubscriptionID:       "123",
-					ClusterName:          "my-cluster",
-					Location:             "westus2",
-					VNetName:             "my-vnet",
-					VNetResourceGroup:    "my-rg",
-					SubnetName:           "cp-subnet",
-					APIServerPort:        6443,
-					Type:                 infrav1.Internal,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: ptr.To[int32](30),
-					AdditionalTags:       infrav1.Tags{},
+					Name:                  "api-server-lb",
+					ResourceGroup:         "my-rg",
+					SubscriptionID:        "123",
+					ClusterName:           "my-cluster",
+					Location:              "westus2",
+					VNetName:              "my-vnet",
+					VNetResourceGroup:     "my-rg",
+					SubnetName:            "cp-subnet",
+					APIServerPort:         6443,
+					APIServerFrontendPort: 6443,
+					Type:                  infrav1.Internal,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  ptr.To[int32](30),
+					AdditionalTags:        infrav1.Tags{},
 				},
 			},
 		},
@@ -3478,21 +3507,22 @@ func TestClusterScope_LBSpecs(t *testing.T) {
 			},
 			want: []azure.ResourceSpecGetter{
 				&loadbalancers.LBSpec{
-					Name:                 "api-server-lb",
-					ResourceGroup:        "my-rg",
-					SubscriptionID:       "123",
-					ClusterName:          "my-cluster",
-					Location:             "westus2",
-					VNetName:             "my-vnet",
-					VNetResourceGroup:    "my-rg",
-					SubnetName:           "cp-subnet",
-					APIServerPort:        6443,
-					Type:                 infrav1.Internal,
-					SKU:                  infrav1.SKUStandard,
-					Role:                 infrav1.APIServerRole,
-					BackendPoolName:      "api-server-lb-backend-pool",
-					IdleTimeoutInMinutes: ptr.To[int32](30),
-					AdditionalTags:       infrav1.Tags{},
+					Name:                  "api-server-lb",
+					ResourceGroup:         "my-rg",
+					SubscriptionID:        "123",
+					ClusterName:           "my-cluster",
+					Location:              "westus2",
+					VNetName:              "my-vnet",
+					VNetResourceGroup:     "my-rg",
+					SubnetName:            "cp-subnet",
+					APIServerPort:         6443,
+					APIServerFrontendPort: 6443,
+					Type:                  infrav1.Internal,
+					SKU:                   infrav1.SKUStandard,
+					Role:                  infrav1.APIServerRole,
+					BackendPoolName:       "api-server-lb-backend-pool",
+					IdleTimeoutInMinutes:  ptr.To[int32](30),
+					AdditionalTags:        infrav1.Tags{},
 				},
 			},
 		},

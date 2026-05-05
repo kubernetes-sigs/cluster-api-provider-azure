@@ -256,24 +256,25 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 	if s.ControlPlaneEnabled() {
 		frontendLB := &loadbalancers.LBSpec{
 			// API Server LB
-			Name:                 s.APIServerLB().Name,
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 s.APIServerLB().Type,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRole,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
-			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
+			Name:                  s.APIServerLB().Name,
+			ResourceGroup:         s.ResourceGroup(),
+			SubscriptionID:        s.SubscriptionID(),
+			ClusterName:           s.ClusterName(),
+			Location:              s.Location(),
+			ExtendedLocation:      s.ExtendedLocation(),
+			VNetName:              s.Vnet().Name,
+			VNetResourceGroup:     s.Vnet().ResourceGroup,
+			SubnetName:            s.ControlPlaneSubnet().Name,
+			APIServerPort:         s.APIServerPort(),
+			APIServerFrontendPort: s.APIServerFrontendPort(),
+			Type:                  s.APIServerLB().Type,
+			SKU:                   s.APIServerLB().SKU,
+			Role:                  infrav1.APIServerRole,
+			BackendPoolName:       s.APIServerLB().BackendPool.Name,
+			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:        s.AdditionalTags(),
+			AdditionalPorts:       s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:     s.APIServerLB().AvailabilityZones,
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -291,24 +292,25 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 
 	if s.APIServerLB().Type != infrav1.Internal && feature.Gates.Enabled(feature.APIServerILB) {
 		internalLB := &loadbalancers.LBSpec{
-			Name:                 s.APIServerLB().Name + "-internal",
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 infrav1.Internal,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRoleInternal,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
-			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
+			Name:                  s.APIServerLB().Name + "-internal",
+			ResourceGroup:         s.ResourceGroup(),
+			SubscriptionID:        s.SubscriptionID(),
+			ClusterName:           s.ClusterName(),
+			Location:              s.Location(),
+			ExtendedLocation:      s.ExtendedLocation(),
+			VNetName:              s.Vnet().Name,
+			VNetResourceGroup:     s.Vnet().ResourceGroup,
+			SubnetName:            s.ControlPlaneSubnet().Name,
+			APIServerPort:         s.APIServerPort(),
+			APIServerFrontendPort: s.APIServerFrontendPort(),
+			Type:                  infrav1.Internal,
+			SKU:                   s.APIServerLB().SKU,
+			Role:                  infrav1.APIServerRoleInternal,
+			BackendPoolName:       s.APIServerLB().BackendPool.Name + "-internal",
+			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:        s.AdditionalTags(),
+			AdditionalPorts:       s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:     s.APIServerLB().AvailabilityZones,
 		}
 
 		privateIPFound := false
@@ -989,12 +991,20 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 	return tags
 }
 
-// APIServerPort returns the APIServerPort to use when creating the load balancer.
+// APIServerPort returns the port the API server binds to.
 func (s *ClusterScope) APIServerPort() int32 {
 	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
 		return s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return 6443
+}
+
+// APIServerFrontendPort returns the port used to reach the API server through the load balancer.
+func (s *ClusterScope) APIServerFrontendPort() int32 {
+	if s.AzureCluster.Spec.ControlPlaneEndpoint.Port != 0 {
+		return s.AzureCluster.Spec.ControlPlaneEndpoint.Port
+	}
+	return s.APIServerPort()
 }
 
 // APIServerHost returns the hostname used to reach the API server.

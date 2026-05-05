@@ -61,6 +61,12 @@ func getExistingLBWithMissingOutboundRules() armnetwork.LoadBalancer {
 	return existingLB
 }
 
+func getPublicAPILBSpecWithFrontendPort(port int32) *LBSpec {
+	spec := fakePublicAPILBSpec
+	spec.APIServerFrontendPort = port
+	return &spec
+}
+
 func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -97,12 +103,32 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name:     "existing API server load balancer is updated to use the desired frontend port",
+			spec:     getPublicAPILBSpecWithFrontendPort(443),
+			existing: newSamplePublicAPIServerLB(false, false, false, false, false),
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(Equal(newSamplePublicAPIServerLB(false, false, false, false, false, func(lb *armnetwork.LoadBalancer) {
+					lb.Properties.LoadBalancingRules[0].Properties.FrontendPort = ptr.To[int32](443)
+				})))
+			},
+			expectedError: "",
+		},
+		{
+			name:     "existing API server rule and probe are updated when desired properties differ",
+			spec:     &fakePublicAPILBSpec,
+			existing: newSamplePublicAPIServerLB(false, false, true, true, false),
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(Equal(newSamplePublicAPIServerLB(false, false, false, false, false)))
+			},
+			expectedError: "",
+		},
+		{
 			name:     "load balancer exists with missing additional API server ports",
 			spec:     &fakePublicAPILBSpecWithAdditionalPorts,
 			existing: getExistingLBWithMissingFrontendIPConfigs(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, true, true, true, func(lb *armnetwork.LoadBalancer) {
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, false, false, true, func(lb *armnetwork.LoadBalancer) {
 					lb.Properties.LoadBalancingRules = append(lb.Properties.LoadBalancingRules, &armnetwork.LoadBalancingRule{
 						Name: ptr.To("rke2-agent"),
 						Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
@@ -134,7 +160,7 @@ func TestParameters(t *testing.T) {
 			existing: getExistingLBWithMissingFrontendIPConfigs(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, true, true, true)))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(false, true, false, false, true)))
 			},
 			expectedError: "",
 		},
@@ -144,7 +170,7 @@ func TestParameters(t *testing.T) {
 			existing: getExistingLBWithMissingBackendPool(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, false, true, true, true)))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, false, false, false, true)))
 			},
 			expectedError: "",
 		},
@@ -154,7 +180,7 @@ func TestParameters(t *testing.T) {
 			existing: getExistingLBWithMissingLBRules(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, false, true, true)))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, false, false, true)))
 			},
 			expectedError: "",
 		},
@@ -164,7 +190,7 @@ func TestParameters(t *testing.T) {
 			existing: getExistingLBWithMissingProbes(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, true, false, true)))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, false, false, true)))
 			},
 			expectedError: "",
 		},
@@ -174,7 +200,7 @@ func TestParameters(t *testing.T) {
 			existing: getExistingLBWithMissingOutboundRules(),
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
-				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, true, true, false)))
+				g.Expect(result.(armnetwork.LoadBalancer)).To(Equal(newSamplePublicAPIServerLB(true, true, false, false, false)))
 			},
 			expectedError: "",
 		},
@@ -227,6 +253,41 @@ func TestParameters(t *testing.T) {
 			tc.expect(g, result)
 		})
 	}
+}
+
+// TestAPIServerLBPortPropagation verifies that the API server LB uses the externally
+// reachable port for its frontend and the API server bind port for its backend and probe.
+func TestAPIServerLBPortPropagation(t *testing.T) {
+	g := NewWithT(t)
+
+	const (
+		frontendPort int32 = 443
+		backendPort  int32 = 6443
+	)
+	spec := LBSpec{
+		Name:                  "my-lb",
+		SubscriptionID:        "123",
+		ResourceGroup:         "my-rg",
+		BackendPoolName:       "my-lb-backendPool",
+		APIServerPort:         backendPort,
+		APIServerFrontendPort: frontendPort,
+		Role:                  infrav1.APIServerRole,
+		AdditionalPorts: []infrav1.LoadBalancerPort{
+			{Name: "https-alt", Port: 8443},
+		},
+	}
+	frontendIDs := []*armnetwork.SubResource{{ID: ptr.To("/some/frontend/id")}}
+
+	rules := getLoadBalancingRules(spec, frontendIDs)
+	g.Expect(rules).To(HaveLen(2))
+	g.Expect(rules[0].Properties.FrontendPort).To(Equal(ptr.To(frontendPort)))
+	g.Expect(rules[0].Properties.BackendPort).To(Equal(ptr.To(backendPort)))
+	g.Expect(rules[1].Properties.FrontendPort).To(Equal(ptr.To[int32](8443)))
+	g.Expect(rules[1].Properties.BackendPort).To(Equal(ptr.To[int32](8443)))
+
+	probes := getProbes(spec)
+	g.Expect(probes).To(HaveLen(1))
+	g.Expect(probes[0].Properties.Port).To(Equal(ptr.To(backendPort)))
 }
 
 func newDefaultNodeOutboundLB() armnetwork.LoadBalancer {
