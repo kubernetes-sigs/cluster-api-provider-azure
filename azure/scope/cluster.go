@@ -975,7 +975,12 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 }
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
+// AzureCluster.Spec.ControlPlaneEndpoint.Port takes precedence so users can override the
+// default port for the API server LB rule, health probe, and NSG rule.
 func (s *ClusterScope) APIServerPort() int32 {
+	if s.AzureCluster.Spec.ControlPlaneEndpoint.Port != 0 {
+		return s.AzureCluster.Spec.ControlPlaneEndpoint.Port
+	}
 	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
 		return s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}

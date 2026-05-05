@@ -196,6 +196,38 @@ func TestParameters(t *testing.T) {
 	}
 }
 
+// TestAPIServerLBPortPropagation verifies that a non-default LBSpec.APIServerPort
+// produces matching ports in the API server LB rule (frontend + backend) and the
+// HTTPS health probe.
+func TestAPIServerLBPortPropagation(t *testing.T) {
+	g := NewWithT(t)
+
+	const customPort int32 = 443
+	spec := LBSpec{
+		Name:            "my-lb",
+		SubscriptionID:  "123",
+		ResourceGroup:   "my-rg",
+		BackendPoolName: "my-lb-backendPool",
+		APIServerPort:   customPort,
+		Role:            infrav1.APIServerRole,
+		AdditionalPorts: []infrav1.LoadBalancerPort{
+			{Name: "https-alt", Port: 8443},
+		},
+	}
+	frontendIDs := []*armnetwork.SubResource{{ID: ptr.To("/some/frontend/id")}}
+
+	rules := getLoadBalancingRules(spec, frontendIDs)
+	g.Expect(rules).To(HaveLen(2))
+	g.Expect(rules[0].Properties.FrontendPort).To(Equal(ptr.To(customPort)))
+	g.Expect(rules[0].Properties.BackendPort).To(Equal(ptr.To(customPort)))
+	g.Expect(rules[1].Properties.FrontendPort).To(Equal(ptr.To[int32](8443)))
+	g.Expect(rules[1].Properties.BackendPort).To(Equal(ptr.To[int32](8443)))
+
+	probes := getProbes(spec)
+	g.Expect(probes).To(HaveLen(1))
+	g.Expect(probes[0].Properties.Port).To(Equal(ptr.To(customPort)))
+}
+
 func newDefaultNodeOutboundLB() armnetwork.LoadBalancer {
 	return armnetwork.LoadBalancer{
 		Tags: map[string]*string{
