@@ -1050,7 +1050,7 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterName = getClusterName(clusterNamePrefix, "cc")
 
 			// Init rke2 CP and bootstrap providers
-			rke2Version := "v0.21.1"
+			rke2Version := "v0.24.3"
 			initInput := clusterctl.InitInput{
 				// pass reference to the management cluster hosting this test
 				KubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
@@ -1075,7 +1075,7 @@ var _ = Describe("Workload cluster creation", func() {
 			//
 			// If that issue is resolved then we can remove this workaround.
 			objects, err := yaml.ToUnstructured([]byte(`
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: dry-run
@@ -1085,7 +1085,7 @@ spec:
     spec:
       rolloutStrategy: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: dry-run

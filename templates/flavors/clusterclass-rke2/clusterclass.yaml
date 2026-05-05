@@ -5,7 +5,7 @@ metadata:
 spec:
   controlPlane:
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: RKE2ControlPlaneTemplate
       name: ${CLUSTER_NAME}-control-plane
     machineInfrastructure:
@@ -24,7 +24,7 @@ spec:
         template:
           bootstrap:
             ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
               kind: RKE2ConfigTemplate
               name: ${CLUSTER_NAME}-worker
           infrastructure:
@@ -72,7 +72,7 @@ spec:
                 path: /etc/kubernetes/azure.json
                 permissions: "0644"
         selector:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
           kind: RKE2ConfigTemplate
           matchResources:
             machineDeploymentClass:
@@ -81,7 +81,7 @@ spec:
     - name: azureMachineTemplate
       definitions:
         - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
             kind: RKE2ControlPlaneTemplate
             matchResources:
               controlPlane: true
