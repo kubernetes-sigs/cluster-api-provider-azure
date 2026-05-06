@@ -111,6 +111,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrap(err, "failed to assign role to system assigned identity")
 		}
 		principalID = ID
+	case azure.RoleAssignmentsList:
+		principalID = nil
 	default:
 		return errors.Errorf("unexpected resource type %q. Expected one of [%s, %s]", resourceType,
 			azure.VirtualMachine, azure.VirtualMachineScaleSet)

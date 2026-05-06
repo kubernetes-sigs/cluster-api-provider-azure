@@ -26,7 +26,6 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,6 +33,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -63,6 +63,26 @@ type watcher interface {
 type resourceStatusObject interface {
 	client.Object
 	SetResourceStatuses([]infrav1.ResourceStatus)
+}
+
+// NewResourceReconciler creates a new ResourceReconciler.
+func NewResourceReconciler(c client.Client, resources []*unstructured.Unstructured, owner resourceStatusObject, opts ...func(*ResourceReconciler)) *ResourceReconciler {
+	r := &ResourceReconciler{
+		Client:    c,
+		resources: resources,
+		owner:     owner,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
+// WithWatcher sets the watcher for the ResourceReconciler.
+func WithWatcher(w watcher) func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.watcher = w
+	}
 }
 
 // Reconcile creates or updates the specified resources.
@@ -148,11 +168,19 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 			return fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
-		toWatch := meta.AsPartialObjectMetadata(spec)
-		toWatch.APIVersion = spec.GetAPIVersion()
-		toWatch.Kind = spec.GetKind()
-		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return fmt.Errorf("failed to watch resource: %w", err)
+		// Set up dynamic watch if watcher is configured
+		// This is optional - if no watcher is provided, reconciliation will still work
+		// but won't get automatic updates when ASO resources change
+		if r.watcher != nil {
+			toWatch := &unstructured.Unstructured{}
+			toWatch.SetAPIVersion(spec.GetAPIVersion())
+			toWatch.SetKind(spec.GetKind())
+			// Watch for generation changes (spec updates) and ASO Ready condition changes (status updates).
+			// Using Unstructured instead of PartialObjectMetadata so the predicate can inspect status.conditions.
+			watchPredicate := predicate.Or(predicate.GenerationChangedPredicate{}, ASOReadyChangedPredicate{})
+			if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner), watchPredicate); err != nil {
+				return fmt.Errorf("failed to watch resource: %w", err)
+			}
 		}
 
 		gvk := spec.GroupVersionKind()
@@ -385,4 +413,57 @@ func getOwnedKindsValue(ownedKinds []schema.GroupVersionKind) string {
 		fields = append(fields, strings.Join([]string{gvk.Kind, gvk.Version, gvk.Group}, "."))
 	}
 	return strings.Join(fields, ownedKindsSep)
+}
+
+// ASOReadyChangedPredicate triggers reconciliation when the ASO Ready condition status changes.
+// This allows the owner controller to react promptly when ASO finishes provisioning a resource,
+// without triggering on every status update (e.g., annotation or label changes).
+type ASOReadyChangedPredicate struct {
+	predicate.Funcs
+}
+
+// Update returns true when the ASO Ready condition status changes between old and new objects.
+func (ASOReadyChangedPredicate) Update(e event.UpdateEvent) bool {
+	if e.ObjectOld == nil || e.ObjectNew == nil {
+		return false
+	}
+	oldReady := getASOReadyStatus(e.ObjectOld)
+	newReady := getASOReadyStatus(e.ObjectNew)
+	changed := oldReady != newReady
+	if changed {
+		log := klog.Background()
+		log.V(4).Info("ASOReadyChangedPredicate: Ready condition changed",
+			"resource", klog.KObj(e.ObjectNew),
+			"kind", e.ObjectNew.GetObjectKind().GroupVersionKind().Kind,
+			"oldReady", oldReady,
+			"newReady", newReady,
+		)
+	}
+	return changed
+}
+
+// getASOReadyStatus extracts the Ready condition status string from an ASO resource.
+// Returns empty string if no Ready condition is found.
+func getASOReadyStatus(obj client.Object) string {
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return ""
+	}
+	statusConditions, found, err := unstructured.NestedSlice(u.Object, "status", "conditions")
+	if err != nil || !found {
+		return ""
+	}
+	for _, el := range statusConditions {
+		condition, ok := el.(map[string]any)
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(condition, "type")
+		if condType != conditions.ConditionTypeReady {
+			continue
+		}
+		status, _, _ := unstructured.NestedString(condition, "status")
+		return status
+	}
+	return ""
 }

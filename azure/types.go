@@ -44,6 +44,9 @@ const (
 
 	// VirtualMachineScaleSet ...
 	VirtualMachineScaleSet = "VirtualMachineScaleSet"
+
+	// RoleAssignmentsList represents a list of role assignments.
+	RoleAssignmentsList = "RoleAssignmentsList"
 )
 
 // ScaleSetSpec defines the specification for a Scale Set.

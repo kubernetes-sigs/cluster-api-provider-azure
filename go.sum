@@ -6,6 +6,8 @@ dario.cat/mergo v1.0.1 h1:Ra4+bf83h2ztPIQYNP99R6m+Y7KfnARDfID+a+vLl4s=
 dario.cat/mergo v1.0.1/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
+github.com/Azure/ARO-HCP/test/sdk/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp v0.0.0-20251215192205-b81971652ba7 h1:3DQqg7vfIu6PLN8NOcjr/6z/bMudzTD6gnCiRXWg6xw=
+github.com/Azure/ARO-HCP/test/sdk/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp v0.0.0-20251215192205-b81971652ba7/go.mod h1:Y1HQ9o+m8eF7AlWhKK+h2VZm9RmTNF1h+LxnY08TtrQ=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0 h1:fou+2+WFTib47nS+nz/ozhEBnvU96bKHy6LjRsY4E28=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0/go.mod h1:t76Ruy8AHvUAC8GfMWJMa0ElSbuIcO03NLpynfbgsPA=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1 h1:Hk5QBxZQC1jb2Fwj6mpzme37xbCDdNTxU7O9eb5+LB4=
@@ -97,8 +99,6 @@ github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 h1:nCYfg
 github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0/go.mod h1:ucUjca2JtSZboY8IoUqyQyuuXvwbMBVwFOm0vdQPNhA=
 github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel v0.4.0 h1:RTTsXUJWn0jumeX62Mb153wYXykqnrzYBYDeHp0kiuk=
 github.com/Azure/azure-sdk-for-go/sdk/tracing/azotel v0.4.0/go.mod h1:k4MMjrPHIEK+umaMGk1GNLgjEybJZ9mHSRDZ+sDFv3Y=
-github.com/Azure/azure-service-operator/v2 v2.13.0 h1:24xDkuGOjSDKKkthECRo/I76slmlt3u0buYQ4rvX3pQ=
-github.com/Azure/azure-service-operator/v2 v2.13.0/go.mod h1:3xfZMZm4yjdcjr3lh1kWqP2dtvZS/nCy7wpNERYDatg=
 github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c h1:udKWzYgxTojEKWjV8V+WSxDXJ4NFATAsZjh8iIbsQIg=
 github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/Azure/msi-dataplane v0.4.3 h1:dWPWzY4b54tLIR9T1Q014Xxd/1DxOsMIp6EjRFAJlQY=
@@ -321,6 +321,8 @@ github.com/lithammer/dedent v1.1.0 h1:VNzHMVCBNG1j0fh3OrsFRkVUwStdDArbgBWoPAffkt
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/mailru/easyjson v0.9.0 h1:PrnmzHw7262yW8sTBwxi1PdJA3Iw/EKBa8psRf7d9a4=
 github.com/mailru/easyjson v0.9.0/go.mod h1:1+xMtQp2MRNVL/V1bOzuP3aP8VNwRW55fQUto+XFtTU=
+github.com/marek-veber/azure-service-operator/v2 v2.13.0-hcpclusters.3 h1:CHcjxAl/ErCWDu6N/tXy0gNOb9OwCJJDiL5cW8MK7Ls=
+github.com/marek-veber/azure-service-operator/v2 v2.13.0-hcpclusters.3/go.mod h1:ubYYFw+3DxFcJFyie89ktwgNWx7+VlmDz//lWuHqx6o=
 github.com/maruel/natural v1.1.1 h1:Hja7XhhmvEFhcByqDoHz9QZbkWey+COd9xWfCfn1ioo=
 github.com/maruel/natural v1.1.1/go.mod h1:v+Rfd79xlw1AgVBjbO0BEQmptqb5HvL/k9GRHB7ZKEg=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
