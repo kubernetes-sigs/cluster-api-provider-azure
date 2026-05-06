@@ -14,21 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+      uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
       with:
         egress-policy: audit
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Get Go version
       id: vars
       run: echo "go_version=$(make go-version)" >> $GITHUB_OUTPUT
     - name: Set up Go
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ steps.vars.outputs.go_version }}
     - run: "PATH=/usr/local/go/bin:$PATH make test-cover"
-    - uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      with:
-        files: ./coverage.out
-        fail_ci_if_error: true
+#     - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+#       env:
+#         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#       with:
+#         files: ./coverage.out
+#         fail_ci_if_error: true

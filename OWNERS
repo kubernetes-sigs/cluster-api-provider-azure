@@ -5,10 +5,16 @@ approvers:
   - cluster-api-admins
   - cluster-api-maintainers
   - cluster-api-azure-maintainers
+  - RadekCap
+  - marek-veber
+  - mzazrivec
 
 reviewers:
   - cluster-api-azure-maintainers
   - cluster-api-azure-reviewers
+  - RadekCap
+  - marek-veber
+  - mzazrivec
 
 emeritus_approvers:
   - alexeldeib
@@ -16,7 +22,6 @@ emeritus_approvers:
   - CecileRobertMichon
   - justaugustus
   - nader-ziada
-  - nawazkh
   - ncdc
   - shysank
   - sonasingh46
