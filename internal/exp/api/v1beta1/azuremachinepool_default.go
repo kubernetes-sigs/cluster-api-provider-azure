@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,30 +27,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
 // SetDefaults sets the default values for an AzureMachinePool.
-func (amp *AzureMachinePool) SetDefaults(client client.Client) error {
+func SetDefaults(amp *infrav1exp.AzureMachinePool, c client.Client) error {
 	var errs []error
-	if err := amp.SetDefaultSSHPublicKey(); err != nil {
+	if err := SetDefaultSSHPublicKey(amp); err != nil {
 		errs = append(errs, errors.Wrap(err, "failed to set default SSH public key"))
 	}
 
-	if err := amp.SetIdentityDefaults(client); err != nil {
+	if err := SetIdentityDefaults(amp, c); err != nil {
 		errs = append(errs, errors.Wrap(err, "failed to set default managed identity defaults"))
 	}
-	amp.SetDiagnosticsDefaults()
-	amp.SetNetworkInterfacesDefaults()
-	amp.SetOSDiskDefaults()
+	SetDiagnosticsDefaults(amp)
+	SetNetworkInterfacesDefaults(amp)
+	SetOSDiskDefaults(amp)
 
 	return kerrors.NewAggregate(errs)
 }
 
 // SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool.
-func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
+func SetDefaultSSHPublicKey(amp *infrav1exp.AzureMachinePool) error {
 	if sshKeyData := amp.Spec.Template.SSHPublicKey; sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
 		if err != nil {
@@ -63,25 +64,25 @@ func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
 }
 
 // SetIdentityDefaults sets the defaults for VMSS Identity.
-func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
+func SetIdentityDefaults(amp *infrav1exp.AzureMachinePool, c client.Client) error {
 	// Ensure the deprecated fields and new fields are not populated simultaneously
-	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
+	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" { //nolint:staticcheck
 		// Both the deprecated and the new fields are both set, return without changes
 		// and reject the request in the validating webhook which runs later.
 		return nil
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
-		machinePool, err := azureutil.FindParentMachinePoolWithRetryV1Beta1(amp.Name, client, 5)
+		machinePool, err := azureutil.FindParentMachinePoolWithRetryV1Beta1(amp.Name, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to find parent machine pool")
 		}
 
-		ownerAzureClusterName, ownerAzureClusterNamespace, err := apiinternal.GetOwnerAzureClusterNameAndNamespace(client, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
+		ownerAzureClusterName, ownerAzureClusterNamespace, err := apiinternal.GetOwnerAzureClusterNameAndNamespace(c, machinePool.Spec.ClusterName, machinePool.Namespace, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to get owner cluster")
 		}
 
-		subscriptionID, err := apiinternal.GetSubscriptionID(client, ownerAzureClusterName, ownerAzureClusterNamespace, 5)
+		subscriptionID, err := apiinternal.GetSubscriptionID(c, ownerAzureClusterName, ownerAzureClusterNamespace, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to get subscription ID")
 		}
@@ -89,9 +90,9 @@ func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
 		if amp.Spec.SystemAssignedIdentityRole == nil {
 			amp.Spec.SystemAssignedIdentityRole = &infrav1.SystemAssignedIdentityRole{}
 		}
-		if amp.Spec.RoleAssignmentName != "" {
-			amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName
-			amp.Spec.RoleAssignmentName = ""
+		if amp.Spec.RoleAssignmentName != "" { //nolint:staticcheck
+			amp.Spec.SystemAssignedIdentityRole.Name = amp.Spec.RoleAssignmentName //nolint:staticcheck
+			amp.Spec.RoleAssignmentName = ""                                       //nolint:staticcheck
 		} else if amp.Spec.SystemAssignedIdentityRole.Name == "" {
 			amp.Spec.SystemAssignedIdentityRole.Name = string(uuid.NewUUID())
 		}
@@ -108,7 +109,7 @@ func (amp *AzureMachinePool) SetIdentityDefaults(client client.Client) error {
 }
 
 // SetSpotEvictionPolicyDefaults sets the defaults for the spot VM eviction policy.
-func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
+func SetSpotEvictionPolicyDefaults(amp *infrav1exp.AzureMachinePool) {
 	if amp.Spec.Template.SpotVMOptions != nil && amp.Spec.Template.SpotVMOptions.EvictionPolicy == nil {
 		defaultPolicy := infrav1.SpotEvictionPolicyDeallocate
 		if amp.Spec.Template.OSDisk.DiffDiskSettings != nil && amp.Spec.Template.OSDisk.DiffDiskSettings.Option == "Local" {
@@ -119,7 +120,7 @@ func (amp *AzureMachinePool) SetSpotEvictionPolicyDefaults() {
 }
 
 // SetDiagnosticsDefaults sets the defaults for Diagnostic settings for an AzureMachinePool.
-func (amp *AzureMachinePool) SetDiagnosticsDefaults() {
+func SetDiagnosticsDefaults(amp *infrav1exp.AzureMachinePool) {
 	bootDefault := &infrav1.BootDiagnostics{
 		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
 	}
@@ -136,9 +137,9 @@ func (amp *AzureMachinePool) SetDiagnosticsDefaults() {
 }
 
 // SetNetworkInterfacesDefaults sets the defaults for the network interfaces.
-func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
+func SetNetworkInterfacesDefaults(amp *infrav1exp.AzureMachinePool) {
 	// Ensure the deprecated fields and new fields are not populated simultaneously
-	if (amp.Spec.Template.SubnetName != "" || amp.Spec.Template.AcceleratedNetworking != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 {
+	if (amp.Spec.Template.SubnetName != "" || amp.Spec.Template.AcceleratedNetworking != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 { //nolint:staticcheck
 		// Both the deprecated and the new fields are both set, return without changes
 		// and reject the request in the validating webhook which runs later.
 		return
@@ -147,12 +148,12 @@ func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
 	if len(amp.Spec.Template.NetworkInterfaces) == 0 {
 		amp.Spec.Template.NetworkInterfaces = []infrav1.NetworkInterface{
 			{
-				SubnetName:            amp.Spec.Template.SubnetName,
-				AcceleratedNetworking: amp.Spec.Template.AcceleratedNetworking,
+				SubnetName:            amp.Spec.Template.SubnetName,            //nolint:staticcheck
+				AcceleratedNetworking: amp.Spec.Template.AcceleratedNetworking, //nolint:staticcheck
 			},
 		}
-		amp.Spec.Template.SubnetName = ""
-		amp.Spec.Template.AcceleratedNetworking = nil
+		amp.Spec.Template.SubnetName = ""             //nolint:staticcheck
+		amp.Spec.Template.AcceleratedNetworking = nil //nolint:staticcheck
 	}
 
 	// Ensure that PrivateIPConfigs defaults to 1 if not specified.
@@ -164,7 +165,7 @@ func (amp *AzureMachinePool) SetNetworkInterfacesDefaults() {
 }
 
 // SetOSDiskDefaults sets the defaults for the OSDisk.
-func (amp *AzureMachinePool) SetOSDiskDefaults() {
+func SetOSDiskDefaults(amp *infrav1exp.AzureMachinePool) {
 	if amp.Spec.Template.OSDisk.OSType == "" {
 		amp.Spec.Template.OSDisk.OSType = "Linux"
 	}

@@ -538,6 +538,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./api/... \
 		paths=./$(EXP_DIR)/api/... \
 		paths=./internal/webhooks/... \
+		paths=./internal/exp/webhooks/... \
 		crd:crdVersions=v1 \
 		rbac:roleName=base-manager-role \
 		output:crd:dir=$(CRD_ROOT) \
