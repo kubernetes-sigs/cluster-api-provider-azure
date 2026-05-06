@@ -15,7 +15,7 @@ spec:
         template:
           bootstrap:
             ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
               kind: RKE2ConfigTemplate
               name: ${CLUSTER_NAME}-worker
           infrastructure:
@@ -27,7 +27,7 @@ spec:
     - name: controlPlaneAzureJsonSecretName
       definitions:
         - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
             kind: RKE2ControlPlaneTemplate
             matchResources:
               controlPlane: true
@@ -46,7 +46,7 @@ spec:
     - name: workerAzureJsonSecretName
       definitions:
         - selector:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             matchResources:
               machineDeploymentClass:
