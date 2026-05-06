@@ -114,6 +114,8 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 // +kubebuilder:rbac:groups=network.azure.com,resources=privateendpoints/status;virtualnetworks/status;virtualnetworkssubnets/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=containerservice.azure.com,resources=fleetsmembers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=containerservice.azure.com,resources=fleetsmembers/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=containerservice.azure.com,resources=maintenanceconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=containerservice.azure.com,resources=maintenanceconfigurations/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubernetesconfiguration.azure.com,resources=extensions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubernetesconfiguration.azure.com,resources=extensions/status,verbs=get;list;watch
 

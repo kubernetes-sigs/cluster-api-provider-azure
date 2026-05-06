@@ -923,6 +923,15 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			By("Verifying AKS maintenance configurations", func() {
+				AKSMaintenanceConfigurationSpec(ctx, func() AKSMaintenanceConfigurationSpecInput {
+					return AKSMaintenanceConfigurationSpecInput{
+						Cluster:       result.Cluster,
+						WaitForUpdate: e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+					}
+				})
+			})
 		})
 	})
 
