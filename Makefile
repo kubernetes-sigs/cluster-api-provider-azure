@@ -575,6 +575,10 @@ generate-addons: fetch-calico-manifests $(ENVSUBST)
 
 .PHONY: generate-aso-crds
 # The yq command filters the list of all ASO CRDs to just the ones specified by ASO_CRDS.
+# The second yq command strips OpenAPI `description` fields from the schemas to keep
+# the resulting CRDs small enough for API servers (e.g. EKS) that have tighter
+# request-size or streaming-timeout budgets than kind/AKS. `description` is metadata
+# only, so removing it does not affect validation.
 # The sed command changes '$$' to '$$$$' so once the CRDs get run through
 # envsubst, '$$$$' changes back to '$$' so ASO will not detect a diff and try to
 # update the CRDs for which we don't give it permission.
@@ -582,6 +586,7 @@ generate-aso-crds: $(YQ)
 	$(YQ) e -i '.resources[] |= sub("^(https://github\.com/Azure/azure-service-operator/releases/download/)[^/]+(/.*_).*(\.yaml)$$", "$${1}$(ASO_VERSION)$${2}$(ASO_VERSION)$${3}")' $(ROOT_DIR)/config/aso/kustomization.yaml
 	curl -fSsL "https://github.com/Azure/azure-service-operator/releases/download/$(ASO_VERSION)/azureserviceoperator_customresourcedefinitions_$(ASO_VERSION).yaml" | \
 		$(YQ) e '. | select($(foreach name,$(ASO_CRDS),.metadata.name == "$(name)" or )false)' - | \
+		$(YQ) e 'del(.. | select(has("description")).description)' - | \
 		sed 's/\$$\$$/$$$$$$$$/g' \
 		> $(ASO_CRDS_PATH)
 
