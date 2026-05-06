@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 )
 
@@ -36,19 +37,17 @@ func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		amp *AzureMachinePool
+		amp *infrav1exp.AzureMachinePool
 	}
 
 	existingPublicKey := "testpublickey"
 	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(existingPublicKey)}
 	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey("")}
 
-	err := publicKeyExistTest.amp.SetDefaultSSHPublicKey()
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(SetDefaultSSHPublicKey(publicKeyExistTest.amp)).To(Succeed())
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
-	err = publicKeyNotExistTest.amp.SetDefaultSSHPublicKey()
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(SetDefaultSSHPublicKey(publicKeyNotExistTest.amp)).To(Succeed())
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
@@ -61,14 +60,14 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 
 	tests := []struct {
 		name                               string
-		machinePool                        *AzureMachinePool
+		machinePool                        *infrav1exp.AzureMachinePool
 		wantErr                            bool
 		expectedRoleAssignmentName         string
 		expectedSystemAssignedIdentityRole *infrav1.SystemAssignedIdentityRole
 	}{
 		{
 			name: "bothRoleAssignmentNamesPopulated",
-			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+			machinePool: &infrav1exp.AzureMachinePool{Spec: infrav1exp.AzureMachinePoolSpec{
 				Identity:           infrav1.VMIdentitySystemAssigned,
 				RoleAssignmentName: existingRoleAssignmentName,
 				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
@@ -82,7 +81,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		},
 		{
 			name: "roleAssignmentExist",
-			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+			machinePool: &infrav1exp.AzureMachinePool{Spec: infrav1exp.AzureMachinePoolSpec{
 				Identity: infrav1.VMIdentitySystemAssigned,
 				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 					Name: existingRoleAssignmentName,
@@ -96,14 +95,14 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		},
 		{
 			name: "notSystemAssigned",
-			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+			machinePool: &infrav1exp.AzureMachinePool{Spec: infrav1exp.AzureMachinePoolSpec{
 				Identity: infrav1.VMIdentityUserAssigned,
 			}},
 			expectedSystemAssignedIdentityRole: nil,
 		},
 		{
 			name: "systemAssignedIdentityRoleExist",
-			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+			machinePool: &infrav1exp.AzureMachinePool{Spec: infrav1exp.AzureMachinePoolSpec{
 				Identity: infrav1.VMIdentitySystemAssigned,
 				SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 					Name:         existingRoleAssignmentName,
@@ -119,7 +118,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 		},
 		{
 			name: "deprecatedRoleAssignmentName",
-			machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+			machinePool: &infrav1exp.AzureMachinePool{Spec: infrav1exp.AzureMachinePoolSpec{
 				Identity:           infrav1.VMIdentitySystemAssigned,
 				RoleAssignmentName: existingRoleAssignmentName,
 			}},
@@ -136,7 +135,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			g := NewWithT(t)
 
 			scheme := runtime.NewScheme()
-			_ = AddToScheme(scheme)
+			_ = infrav1exp.AddToScheme(scheme)
 			_ = infrav1.AddToScheme(scheme)
 			_ = clusterv1.AddToScheme(scheme)
 
@@ -176,12 +175,12 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 			}
 
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.machinePool, machinePool, azureCluster, cluster).Build()
-			err := tc.machinePool.SetIdentityDefaults(fakeClient)
+			err := SetIdentityDefaults(tc.machinePool, fakeClient)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(tc.machinePool.Spec.RoleAssignmentName).To(Equal(tc.expectedRoleAssignmentName))
+				g.Expect(tc.machinePool.Spec.RoleAssignmentName).To(Equal(tc.expectedRoleAssignmentName)) //nolint:staticcheck
 				g.Expect(tc.machinePool.Spec.SystemAssignedIdentityRole).To(Equal(tc.expectedSystemAssignedIdentityRole))
 			}
 		})
@@ -192,16 +191,16 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		machinePool *AzureMachinePool
+		machinePool *infrav1exp.AzureMachinePool
 	}
 
 	bootDiagnosticsDefault := &infrav1.BootDiagnostics{
 		StorageAccountType: infrav1.ManagedDiagnosticsStorage,
 	}
 
-	managedStorageDiagnostics := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	managedStorageDiagnostics := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.ManagedDiagnosticsStorage,
@@ -211,9 +210,9 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 		},
 	}}
 
-	disabledStorageDiagnostics := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	disabledStorageDiagnostics := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.DisabledDiagnosticsStorage,
@@ -223,9 +222,9 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 		},
 	}}
 
-	userManagedDiagnostics := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	userManagedDiagnostics := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: &infrav1.Diagnostics{
 					Boot: &infrav1.BootDiagnostics{
 						StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
@@ -238,36 +237,36 @@ func TestAzureMachinePool_SetDiagnosticsDefaults(t *testing.T) {
 		},
 	}}
 
-	nilDiagnostics := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	nilDiagnostics := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: nil,
 			},
 		},
 	}}
 
 	// Test that when no diagnostics are specified, the defaults are set correctly
-	nilBootDiagnostics := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	nilBootDiagnostics := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: &infrav1.Diagnostics{},
 			},
 		},
 	}}
 
-	nilBootDiagnostics.machinePool.SetDiagnosticsDefaults()
+	SetDiagnosticsDefaults(nilBootDiagnostics.machinePool)
 	g.Expect(nilBootDiagnostics.machinePool.Spec.Template.Diagnostics.Boot).To(Equal(bootDiagnosticsDefault))
 
-	managedStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
+	SetDiagnosticsDefaults(managedStorageDiagnostics.machinePool)
 	g.Expect(managedStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
 
-	disabledStorageDiagnostics.machinePool.SetDiagnosticsDefaults()
+	SetDiagnosticsDefaults(disabledStorageDiagnostics.machinePool)
 	g.Expect(disabledStorageDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.DisabledDiagnosticsStorage))
 
-	userManagedDiagnostics.machinePool.SetDiagnosticsDefaults()
+	SetDiagnosticsDefaults(userManagedDiagnostics.machinePool)
 	g.Expect(userManagedDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.UserManagedDiagnosticsStorage))
 
-	nilDiagnostics.machinePool.SetDiagnosticsDefaults()
+	SetDiagnosticsDefaults(nilDiagnostics.machinePool)
 	g.Expect(nilDiagnostics.machinePool.Spec.Template.Diagnostics.Boot.StorageAccountType).To(Equal(infrav1.ManagedDiagnosticsStorage))
 }
 
@@ -275,28 +274,28 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		machinePool *AzureMachinePool
+		machinePool *infrav1exp.AzureMachinePool
 	}
 
 	// test to Ensure the default policy is set to Deallocate if EvictionPolicy is nil
 	defaultEvictionPolicy := infrav1.SpotEvictionPolicyDeallocate
-	nilDiffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	nilDiffDiskSettingsPolicy := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				SpotVMOptions: &infrav1.SpotVMOptions{
 					EvictionPolicy: nil,
 				},
 			},
 		},
 	}}
-	nilDiffDiskSettingsPolicy.machinePool.SetSpotEvictionPolicyDefaults()
+	SetSpotEvictionPolicyDefaults(nilDiffDiskSettingsPolicy.machinePool)
 	g.Expect(nilDiffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&defaultEvictionPolicy))
 
 	// test to Ensure the default policy is set to Delete if diffDiskSettings option is set to "Local"
 	expectedEvictionPolicy := infrav1.SpotEvictionPolicyDelete
-	diffDiskSettingsPolicy := test{machinePool: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	diffDiskSettingsPolicy := test{machinePool: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				SpotVMOptions: &infrav1.SpotVMOptions{},
 				OSDisk: infrav1.OSDisk{
 					DiffDiskSettings: &infrav1.DiffDiskSettings{
@@ -306,28 +305,28 @@ func TestAzureMachinePool_SetSpotEvictionPolicyDefaults(t *testing.T) {
 			},
 		},
 	}}
-	diffDiskSettingsPolicy.machinePool.SetSpotEvictionPolicyDefaults()
+	SetSpotEvictionPolicyDefaults(diffDiskSettingsPolicy.machinePool)
 	g.Expect(diffDiskSettingsPolicy.machinePool.Spec.Template.SpotVMOptions.EvictionPolicy).To(Equal(&expectedEvictionPolicy))
 }
 
 func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 	testCases := []struct {
 		name        string
-		machinePool *AzureMachinePool
-		want        *AzureMachinePool
+		machinePool *infrav1exp.AzureMachinePool
+		want        *infrav1exp.AzureMachinePool
 	}{
 		{
 			name: "defaulting webhook updates MachinePool with deprecated subnetName field",
-			machinePool: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			machinePool: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName: "test-subnet",
 					},
 				},
 			},
-			want: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			want: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName: "",
 						NetworkInterfaces: []infrav1.NetworkInterface{
 							{
@@ -341,17 +340,17 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 		},
 		{
 			name: "defaulting webhook updates MachinePool with deprecated acceleratedNetworking field",
-			machinePool: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			machinePool: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
 						AcceleratedNetworking: ptr.To(true),
 					},
 				},
 			},
-			want: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			want: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName:            "",
 						AcceleratedNetworking: nil,
 						NetworkInterfaces: []infrav1.NetworkInterface{
@@ -367,9 +366,9 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 		},
 		{
 			name: "defaulting webhook does nothing if both new and deprecated subnetName fields are set",
-			machinePool: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			machinePool: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName: "test-subnet",
 						NetworkInterfaces: []infrav1.NetworkInterface{{
 							SubnetName: "test-subnet",
@@ -377,9 +376,9 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 					},
 				},
 			},
-			want: &AzureMachinePool{
-				Spec: AzureMachinePoolSpec{
-					Template: AzureMachinePoolMachineTemplate{
+			want: &infrav1exp.AzureMachinePool{
+				Spec: infrav1exp.AzureMachinePoolSpec{
+					Template: infrav1exp.AzureMachinePoolMachineTemplate{
 						SubnetName:            "test-subnet",
 						AcceleratedNetworking: nil,
 						NetworkInterfaces: []infrav1.NetworkInterface{
@@ -396,20 +395,16 @@ func TestAzureMachinePool_SetNetworkInterfacesDefaults(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			tc.machinePool.SetNetworkInterfacesDefaults()
+			SetNetworkInterfacesDefaults(tc.machinePool)
 			g.Expect(tc.machinePool).To(Equal(tc.want))
 		})
 	}
 }
 
-func createMachinePoolWithSSHPublicKey(sshPublicKey string) *AzureMachinePool {
-	return hardcodedAzureMachinePoolWithSSHKey(sshPublicKey)
-}
-
-func hardcodedAzureMachinePoolWithSSHKey(sshPublicKey string) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+func createMachinePoolWithSSHPublicKey(sshPublicKey string) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				SSHPublicKey: sshPublicKey,
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",

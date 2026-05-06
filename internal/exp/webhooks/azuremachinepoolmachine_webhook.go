@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package webhooks
 
 import (
 	"context"
@@ -22,29 +22,31 @@ import (
 	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
-func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	w := new(azureMachinePoolMachineWebhook)
-	return ctrl.NewWebhookManagedBy(mgr, ampm).
+func (w *AzureMachinePoolMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1exp.AzureMachinePoolMachine{}).
 		WithValidator(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,versions=v1beta1,name=azuremachinepoolmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-type azureMachinePoolMachineWebhook struct{}
+// AzureMachinePoolMachineWebhook implements a validating webhook for AzureMachinePoolMachine.
+type AzureMachinePoolMachineWebhook struct{}
 
-var _ admission.Validator[*AzureMachinePoolMachine] = &azureMachinePoolMachineWebhook{}
+var _ admission.Validator[*infrav1exp.AzureMachinePoolMachine] = &AzureMachinePoolMachineWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (*azureMachinePoolMachineWebhook) ValidateCreate(_ context.Context, _ *AzureMachinePoolMachine) (admission.Warnings, error) {
+func (*AzureMachinePoolMachineWebhook) ValidateCreate(_ context.Context, _ *infrav1exp.AzureMachinePoolMachine) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (*azureMachinePoolMachineWebhook) ValidateUpdate(_ context.Context, oldMachine, ampm *AzureMachinePoolMachine) (admission.Warnings, error) {
+func (*AzureMachinePoolMachineWebhook) ValidateUpdate(_ context.Context, oldMachine, ampm *infrav1exp.AzureMachinePoolMachine) (admission.Warnings, error) {
 	if oldMachine.Spec.ProviderID != "" && ampm.Spec.ProviderID != oldMachine.Spec.ProviderID {
 		return nil, errors.New("providerID is immutable")
 	}
@@ -53,6 +55,6 @@ func (*azureMachinePoolMachineWebhook) ValidateUpdate(_ context.Context, oldMach
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (*azureMachinePoolMachineWebhook) ValidateDelete(_ context.Context, _ *AzureMachinePoolMachine) (admission.Warnings, error) {
+func (*AzureMachinePoolMachineWebhook) ValidateDelete(_ context.Context, _ *infrav1exp.AzureMachinePoolMachine) (admission.Warnings, error) {
 	return nil, nil
 }
