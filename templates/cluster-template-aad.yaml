@@ -54,6 +54,7 @@ spec:
           oidc-issuer-url: https://sts.windows.net/${AZURE_TENANT_ID}/
           oidc-username-claim: oid
           oidc-username-prefix: '-'
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
