@@ -22,6 +22,12 @@
       "matchManagers": [
         "dockerfile"
       ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
       "enabled": true,
       "matchFileNames": [
         "stolostron/Dockerfile.stolostron"
