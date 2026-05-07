@@ -1,5 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": [
+    "tekton",
+    "dockerfile"
+  ],
   "baseBranchPatterns": [
     "main",
     "/^backplane-2\\.[0-9]+$/",
@@ -36,12 +40,6 @@
       "addLabels": [
         "ok-to-test"
       ]
-    },
-    {
-      "matchManagers": [
-        "gomod"
-      ],
-      "enabled": false
     }
   ],
   "rebaseWhen": "behind-base-branch",
