@@ -3,10 +3,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: bastionhosts.network.azure.com
 spec:
   conversion:
@@ -1110,10 +1110,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: extensions.kubernetesconfiguration.azure.com
 spec:
   conversion:
@@ -2727,10 +2727,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: fleetsmembers.containerservice.azure.com
 spec:
   conversion:
@@ -2756,324 +2756,6 @@ spec:
   preserveUnknownFields: false
   scope: Namespaced
   versions:
-    - additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=='Ready')].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].severity
-          name: Severity
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].reason
-          name: Reason
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].message
-          name: Message
-          type: string
-      name: v1api20230315preview
-      schema:
-        openAPIV3Schema:
-          properties:
-            apiVersion:
-              type: string
-            kind:
-              type: string
-            metadata:
-              type: object
-            spec:
-              properties:
-                azureName:
-                  maxLength: 50
-                  minLength: 1
-                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                  type: string
-                clusterResourceReference:
-                  properties:
-                    armId:
-                      pattern: (?i)(^(/subscriptions/([^/]+)(/resourcegroups/([^/]+))?)?/providers/([^/]+)/([^/]+/[^/]+)(/([^/]+/[^/]+))*$|^/subscriptions/([^/]+)(/resourcegroups/([^/]+))?$)
-                      type: string
-                    group:
-                      type: string
-                    kind:
-                      type: string
-                    name:
-                      type: string
-                  type: object
-                group:
-                  maxLength: 50
-                  minLength: 1
-                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                  type: string
-                operatorSpec:
-                  properties:
-                    configMapExpressions:
-                      items:
-                        properties:
-                          key:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                          - name
-                          - value
-                        type: object
-                      type: array
-                    secretExpressions:
-                      items:
-                        properties:
-                          key:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                          - name
-                          - value
-                        type: object
-                      type: array
-                  type: object
-                owner:
-                  properties:
-                    armId:
-                      pattern: (?i)(^(/subscriptions/([^/]+)(/resourcegroups/([^/]+))?)?/providers/([^/]+)/([^/]+/[^/]+)(/([^/]+/[^/]+))*$|^/subscriptions/([^/]+)(/resourcegroups/([^/]+))?$)
-                      type: string
-                    name:
-                      type: string
-                  type: object
-              required:
-                - clusterResourceReference
-                - owner
-              type: object
-            status:
-              properties:
-                clusterResourceId:
-                  type: string
-                conditions:
-                  items:
-                    properties:
-                      lastTransitionTime:
-                        format: date-time
-                        type: string
-                      message:
-                        type: string
-                      observedGeneration:
-                        format: int64
-                        type: integer
-                      reason:
-                        type: string
-                      severity:
-                        type: string
-                      status:
-                        type: string
-                      type:
-                        type: string
-                    required:
-                      - lastTransitionTime
-                      - reason
-                      - status
-                      - type
-                    type: object
-                  type: array
-                eTag:
-                  type: string
-                group:
-                  type: string
-                id:
-                  type: string
-                name:
-                  type: string
-                provisioningState:
-                  type: string
-                systemData:
-                  properties:
-                    createdAt:
-                      type: string
-                    createdBy:
-                      type: string
-                    createdByType:
-                      type: string
-                    lastModifiedAt:
-                      type: string
-                    lastModifiedBy:
-                      type: string
-                    lastModifiedByType:
-                      type: string
-                  type: object
-                type:
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: false
-      subresources:
-        status: {}
-    - additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=='Ready')].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].severity
-          name: Severity
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].reason
-          name: Reason
-          type: string
-        - jsonPath: .status.conditions[?(@.type=='Ready')].message
-          name: Message
-          type: string
-      name: v1api20230315previewstorage
-      schema:
-        openAPIV3Schema:
-          properties:
-            apiVersion:
-              type: string
-            kind:
-              type: string
-            metadata:
-              type: object
-            spec:
-              properties:
-                $propertyBag:
-                  additionalProperties:
-                    type: string
-                  type: object
-                azureName:
-                  type: string
-                clusterResourceReference:
-                  properties:
-                    armId:
-                      pattern: (?i)(^(/subscriptions/([^/]+)(/resourcegroups/([^/]+))?)?/providers/([^/]+)/([^/]+/[^/]+)(/([^/]+/[^/]+))*$|^/subscriptions/([^/]+)(/resourcegroups/([^/]+))?$)
-                      type: string
-                    group:
-                      type: string
-                    kind:
-                      type: string
-                    name:
-                      type: string
-                  type: object
-                group:
-                  type: string
-                operatorSpec:
-                  properties:
-                    $propertyBag:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    configMapExpressions:
-                      items:
-                        properties:
-                          key:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                          - name
-                          - value
-                        type: object
-                      type: array
-                    secretExpressions:
-                      items:
-                        properties:
-                          key:
-                            type: string
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                          - name
-                          - value
-                        type: object
-                      type: array
-                  type: object
-                originalVersion:
-                  type: string
-                owner:
-                  properties:
-                    armId:
-                      pattern: (?i)(^(/subscriptions/([^/]+)(/resourcegroups/([^/]+))?)?/providers/([^/]+)/([^/]+/[^/]+)(/([^/]+/[^/]+))*$|^/subscriptions/([^/]+)(/resourcegroups/([^/]+))?$)
-                      type: string
-                    name:
-                      type: string
-                  type: object
-              required:
-                - clusterResourceReference
-                - owner
-              type: object
-            status:
-              properties:
-                $propertyBag:
-                  additionalProperties:
-                    type: string
-                  type: object
-                clusterResourceId:
-                  type: string
-                conditions:
-                  items:
-                    properties:
-                      lastTransitionTime:
-                        format: date-time
-                        type: string
-                      message:
-                        type: string
-                      observedGeneration:
-                        format: int64
-                        type: integer
-                      reason:
-                        type: string
-                      severity:
-                        type: string
-                      status:
-                        type: string
-                      type:
-                        type: string
-                    required:
-                      - lastTransitionTime
-                      - reason
-                      - status
-                      - type
-                    type: object
-                  type: array
-                eTag:
-                  type: string
-                group:
-                  type: string
-                id:
-                  type: string
-                name:
-                  type: string
-                provisioningState:
-                  type: string
-                systemData:
-                  properties:
-                    $propertyBag:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    createdAt:
-                      type: string
-                    createdBy:
-                      type: string
-                    createdByType:
-                      type: string
-                    lastModifiedAt:
-                      type: string
-                    lastModifiedBy:
-                      type: string
-                    lastModifiedByType:
-                      type: string
-                  type: object
-                type:
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: false
-      subresources:
-        status: {}
     - additionalPrinterColumns:
         - jsonPath: .status.conditions[?(@.type=='Ready')].status
           name: Ready
@@ -3512,10 +3194,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: maintenanceconfigurations.containerservice.azure.com
 spec:
   conversion:
@@ -4921,10 +4603,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: managedclusters.containerservice.azure.com
 spec:
   conversion:
@@ -31036,10 +30718,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: managedclustersagentpools.containerservice.azure.com
 spec:
   conversion:
@@ -38797,10 +38479,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: natgateways.network.azure.com
 spec:
   conversion:
@@ -39736,10 +39418,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: privateendpoints.network.azure.com
 spec:
   conversion:
@@ -41443,10 +41125,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: resourcegroups.resources.azure.com
 spec:
   conversion:
@@ -41740,10 +41422,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: virtualnetworks.network.azure.com
 spec:
   conversion:
@@ -42920,10 +42602,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: azureserviceoperator-system/azureserviceoperator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.1
+    app.kubernetes.io/version: v2.17.0
   name: virtualnetworkssubnets.network.azure.com
 spec:
   conversion:
