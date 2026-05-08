@@ -63,6 +63,7 @@ spec:
       apiServer:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-""}
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
