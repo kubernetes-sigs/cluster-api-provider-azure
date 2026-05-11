@@ -58,7 +58,8 @@ spec:
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
-        extraArgs: {}
+        extraArgs:
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
       controllerManager:
         extraArgs:
           allocate-node-cidrs: "false"

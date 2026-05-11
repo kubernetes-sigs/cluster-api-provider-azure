@@ -62,6 +62,7 @@ spec:
       apiServer:
         extraArgs:
           bind-address: '::'
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
