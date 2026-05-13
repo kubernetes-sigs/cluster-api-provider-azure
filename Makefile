@@ -38,7 +38,7 @@ export GOTOOLCHAIN
 export GO111MODULE=on
 
 # Kubebuilder.
-export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.34.0
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.35.0
 export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?= 60s
 export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?= 60s
 
@@ -94,7 +94,7 @@ GOLANGCI_LINT_KAL_BIN := golangci-lint-kube-api-linter
 GOLANGCI_LINT_KAL := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_KAL_BIN)
 
 GOVULNCHECK_BIN := govulncheck
-GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK_VER := v1.3.0
 GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
 GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
 
@@ -323,12 +323,7 @@ verify-codespell: codespell ## Verify codespell.
 
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
-	$(GOVULNCHECK) ./... && R1=$$? || R1=$$?; \
-	$(GOVULNCHECK) -C "$(TOOLS_DIR)" ./... && R2=$$? || R2=$$?; \
-	$(GOVULNCHECK) -C "$(TEST_DIR)" ./... && R3=$$? || R3=$$?; \
-	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ] || [ "$$R3" -ne "0" ]; then \
-		exit 1; \
-	fi
+	$(GOVULNCHECK) -tags=e2e ./...
 
 .PHONY: verify-security
 verify-security: ## Verify code and images for vulnerabilities
@@ -365,7 +360,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.5/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.8/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Deploy CAAPH
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.1/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"

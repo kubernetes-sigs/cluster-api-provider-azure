@@ -63,8 +63,8 @@ require (
 	k8s.io/kubectl v0.34.2
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/cloud-provider-azure v1.34.3
-	sigs.k8s.io/cluster-api v1.12.7
-	sigs.k8s.io/cluster-api/test v1.12.7
+	sigs.k8s.io/cluster-api v1.12.8
+	sigs.k8s.io/cluster-api/test v1.12.8
 	sigs.k8s.io/controller-runtime v0.22.5
 	sigs.k8s.io/kind v0.31.0
 )
@@ -151,7 +151,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/moby/api v1.54.1 // indirect
 	github.com/moby/moby/client v0.4.0 // indirect
-	github.com/moby/spdystream v0.5.0 // indirect
+	github.com/moby/spdystream v0.5.1 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
