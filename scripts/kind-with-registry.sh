@@ -202,6 +202,13 @@ EOF
       --audiences "api://AzureADTokenExchange" \
       --subject "system:serviceaccount:capz-system:azureserviceoperator-default" --output none --only-show-errors
   fi
+
+  # Persist SERVICE_ACCOUNT_ISSUER so that downstream make targets
+  # (e.g., create-workload-cluster) running in separate shell contexts
+  # can pick it up via the .service-account-issuer.env file.
+  if [ -n "${SERVICE_ACCOUNT_ISSUER}" ]; then
+    echo "SERVICE_ACCOUNT_ISSUER=${SERVICE_ACCOUNT_ISSUER}" > "${REPO_ROOT}/.service-account-issuer.env"
+  fi
 }
 
 function upload_to_blob() {
