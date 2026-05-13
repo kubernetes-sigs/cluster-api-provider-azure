@@ -415,7 +415,13 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	# Create workload Cluster.
-	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
+	# Source SERVICE_ACCOUNT_ISSUER from kind-with-registry.sh if available,
+	# so the workload cluster template gets the correct OIDC issuer URL.
+	@if [ -f "$(ROOT_DIR)/.service-account-issuer.env" ]; then \
+		. "$(ROOT_DIR)/.service-account-issuer.env"; \
+		export SERVICE_ACCOUNT_ISSUER; \
+	fi; \
+	if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
 	if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
