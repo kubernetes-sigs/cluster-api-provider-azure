@@ -90,6 +90,7 @@ func ValidateAzureMachinePool(old runtime.Object, amp *infrav1exp.AzureMachinePo
 		func() error { return validateSystemAssignedIdentityRole(amp) },
 		func() error { return validateNetwork(amp) },
 		func() error { return validateOSDisk(amp) },
+		validateDisableVMBootstrapExtension(amp, old),
 	}
 
 	var errs []error
@@ -288,6 +289,43 @@ func validateOrchestrationMode(amp *infrav1exp.AzureMachinePool, c client.Client
 			if k8sVersion.LT(semver.MustParse("1.26.0")) {
 				return fmt.Errorf("specified Kubernetes version %s must be >= 1.26.0 for Flexible orchestration mode", k8sVersion)
 			}
+		}
+
+		return nil
+	}
+}
+
+// validateDisableVMBootstrapExtension enforces immutability of
+// spec.template.disableVMBootstrapExtension once it has been explicitly set,
+// while still permitting the nil -> set transition so users can opt back in to
+// the bootstrap extension on AzureMachinePools created before the runtime
+// default flipped from false to true.
+func validateDisableVMBootstrapExtension(amp *infrav1exp.AzureMachinePool, old runtime.Object) func() error {
+	return func() error {
+		if old == nil {
+			return nil
+		}
+
+		oldAMP, ok := old.(*infrav1exp.AzureMachinePool)
+		if !ok {
+			return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
+				"AzureMachinePool", reflect.TypeOf(old))
+		}
+
+		oldVal := oldAMP.Spec.Template.DisableVMBootstrapExtension
+		newVal := amp.Spec.Template.DisableVMBootstrapExtension
+
+		// nil -> anything is allowed (upgrade opt-in/opt-out).
+		if oldVal == nil {
+			return nil
+		}
+
+		// Once explicitly set, the field is immutable.
+		if newVal == nil {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable, unable to unset once explicitly set")
+		}
+		if *oldVal != *newVal {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable")
 		}
 
 		return nil

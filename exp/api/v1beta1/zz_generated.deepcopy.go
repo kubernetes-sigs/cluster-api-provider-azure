@@ -301,6 +301,11 @@ func (in *AzureMachinePoolMachineTemplate) DeepCopyInto(out *AzureMachinePoolMac
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.DisableVMBootstrapExtension != nil {
+		in, out := &in.DisableVMBootstrapExtension, &out.DisableVMBootstrapExtension
+		*out = new(bool)
+		**out = **in
+	}
 	if in.NetworkInterfaces != nil {
 		in, out := &in.NetworkInterfaces, &out.NetworkInterfaces
 		*out = make([]apiv1beta1.NetworkInterface, len(*in))

@@ -386,6 +386,36 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension transition from nil to true is allowed",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(nil),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension transition from nil to false is allowed",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(nil),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(false)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension is immutable once explicitly set",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(false)),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension same value passes immutability",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension cannot be unset once explicitly set",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(nil),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -545,6 +575,21 @@ func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.
 			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				SubnetName:        subnetName,
 				NetworkInterfaces: interfaces,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
+		},
+	}
+}
+
+func createMachinePoolWithDisableVMBootstrapExtension(disable *bool) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
+				SSHPublicKey:                validSSHPublicKey,
+				DisableVMBootstrapExtension: disable,
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
