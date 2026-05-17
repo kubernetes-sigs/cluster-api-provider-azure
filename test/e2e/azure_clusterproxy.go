@@ -107,7 +107,14 @@ func (acp *AzureClusterProxy) collectPodLogs(ctx context.Context, namespace stri
 	workload := acp.GetWorkloadCluster(ctx, namespace, name)
 	pods := &corev1.PodList{}
 
-	Expect(workload.GetClient().List(ctx, pods)).To(Succeed())
+	// Failing to collect pod logs should not cause the test to fail. The workload cluster
+	// API server may be unreachable during teardown (for example due to a transient Azure
+	// load balancer / DNS issue), and we should not turn an otherwise-successful spec into
+	// a failure during [AfterEach] log collection.
+	if err := workload.GetClient().List(ctx, pods); err != nil {
+		Logf("Failed to list pods for workload cluster %s/%s: %v", namespace, name, err)
+		return
+	}
 
 	var err error
 	var podDescribe string
