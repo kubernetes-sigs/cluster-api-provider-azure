@@ -6,7 +6,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: bastionhosts.network.azure.com
 spec:
   conversion:
@@ -1706,7 +1706,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: extensions.kubernetesconfiguration.azure.com
 spec:
   conversion:
@@ -4182,7 +4182,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: fleetsmembers.containerservice.azure.com
 spec:
   conversion:
@@ -5437,7 +5437,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: maintenanceconfigurations.containerservice.azure.com
 spec:
   conversion:
@@ -7596,7 +7596,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: managedclusters.containerservice.azure.com
 spec:
   conversion:
@@ -47375,7 +47375,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: managedclustersagentpools.containerservice.azure.com
 spec:
   conversion:
@@ -59325,7 +59325,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: natgateways.network.azure.com
 spec:
   conversion:
@@ -60802,7 +60802,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: privateendpoints.network.azure.com
 spec:
   conversion:
@@ -63485,7 +63485,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: resourcegroups.resources.azure.com
 spec:
   conversion:
@@ -63957,7 +63957,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: virtualnetworks.network.azure.com
 spec:
   conversion:
@@ -65806,7 +65806,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     app.kubernetes.io/name: azure-service-operator
-    app.kubernetes.io/version: v2.16.0
+    app.kubernetes.io/version: v2.16.1
   name: virtualnetworkssubnets.network.azure.com
 spec:
   conversion:
