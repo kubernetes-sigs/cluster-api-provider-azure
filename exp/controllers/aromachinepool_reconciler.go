@@ -19,7 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
+	"slices"
 	"time"
 
 	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20240610preview"
@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/validation"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -236,66 +237,58 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		s.scope.InfraMachinePool.Status.Replicas = *s.scope.MachinePool.Spec.Replicas
 	}
 
-	// Populate providerIDList from workload cluster nodes
-	// This is required by CAPI to match MachinePool replicas to actual nodes
-	// Get client for the workload cluster (not management cluster)
+	// Populate providerIDList from workload cluster nodes using label-based matching.
+	// This mirrors the approach used by AzureASOManagedMachinePool.
 	clusterClient, err := s.tracker.GetClient(ctx, util.ObjectKey(s.cluster))
 	if err != nil {
 		log.V(4).Info("failed to get workload cluster client", "error", err)
 		// Don't fail reconciliation if we can't get cluster client yet - control plane may not be ready
 	} else {
-		// List all nodes from the workload cluster
-		// Note: We list all nodes and filter by node pool name pattern rather than using labels
-		// This is because ARO HCP node labels may vary
+		azureNodePoolName := nodePoolName
+		if azureName != "" {
+			azureNodePoolName = azureName
+		}
+
+		// The hypershift.openshift.io/nodePool label is <baseDomainPrefix>-<azureName>.
+		// The baseDomainPrefix may differ from the CAPI cluster name when
+		// explicitly set on HcpOpenShiftCluster.spec.properties.dns.
+		hypershiftPrefix := s.scope.ClusterName()
+		if prefix := s.getBaseDomainPrefix(ctx); prefix != "" {
+			hypershiftPrefix = prefix
+		}
+
+		hypershiftNodePoolName := hypershiftPrefix + "-" + azureNodePoolName
 		nodes := &corev1.NodeList{}
-		err = clusterClient.List(ctx, nodes)
+		err = clusterClient.List(ctx, nodes,
+			client.MatchingLabels(expectedNodeLabels(hypershiftNodePoolName)),
+		)
 		if err != nil {
 			log.V(4).Info("failed to list nodes in workload cluster", "error", err)
-			// Don't fail reconciliation if we can't list nodes yet
 		} else {
-			// Determine the Azure node pool name to use for pattern matching
-			// ARO HCP uses spec.azureName (if set) when creating nodes, not the k8s resource name
-			azureNodePoolName := nodePoolName // Default to k8s resource name for backward compatibility
-			if azureName != "" {
-				azureNodePoolName = azureName
-			}
-
-			// Filter nodes by providerID pattern matching this node pool
-			// ARO HCP node names contain the node pool name: <cluster-name>-<azureName>-<random-suffix>
-			nodePoolNamePattern := s.scope.ClusterName() + "-" + azureNodePoolName + "-"
-			var providerIDs []string
+			providerIDs := make([]string, 0, len(nodes.Items))
 			for _, node := range nodes.Items {
 				if node.Spec.ProviderID == "" {
-					// The node will receive a provider ID soon
 					log.V(4).Info("node does not have providerID yet", "nodeName", node.Name)
 					continue
 				}
-				// Check if the node name matches the expected pattern for this node pool
-				if strings.Contains(node.Name, nodePoolNamePattern) {
-					providerIDs = append(providerIDs, node.Spec.ProviderID)
-				}
+				providerIDs = append(providerIDs, node.Spec.ProviderID)
 			}
+			slices.Sort(providerIDs)
 
-			// Set the provider IDs on the AROMachinePool
 			s.scope.SetAgentPoolProviderIDList(providerIDs)
 
-			// Update replicas count based on actual nodes if we successfully listed them
-			// This ensures the replica count matches the actual number of nodes
 			currentReplicas := int32(len(providerIDs))
 			if currentReplicas > 0 {
 				s.scope.InfraMachinePool.Status.Replicas = currentReplicas
 
-				// If autoscaling is enabled, update MachinePool.Spec.Replicas to match actual count
-				// This prevents CAPI from thinking we're in a ScalingDown state when autoscaler scales up
+				// Sync spec.replicas to prevent CAPI from reporting incorrect ScalingDown state when autoscaler scales up
 				if _, autoscaling := s.scope.MachinePool.Annotations[clusterv1.ReplicasManagedByAnnotation]; autoscaling {
 					s.scope.MachinePool.Spec.Replicas = &currentReplicas
 				}
 			}
 
 			log.V(4).Info("populated providerIDList from workload cluster nodes",
-				"k8sNodePoolName", nodePoolName,
 				"azureNodePoolName", azureNodePoolName,
-				"nodePoolNamePattern", nodePoolNamePattern,
 				"providerIDCount", len(providerIDs))
 		}
 	}
@@ -466,7 +459,41 @@ func (s *aroMachinePoolService) deleteResources(ctx context.Context) error {
 
 // getHcpClusterName retrieves the HCP cluster name from the control plane.
 func (s *aroMachinePoolService) getHcpClusterName() string {
-	// The HCP cluster name should match the CAPI cluster name
-	// This is consistent with how AROControlPlane names its HcpOpenShiftCluster
 	return s.scope.ClusterName()
+}
+
+// getBaseDomainPrefix reads the baseDomainPrefix from the HcpOpenShiftCluster
+// status. This is the prefix used in the hypershift.openshift.io/nodePool node
+// label and may differ from the CAPI cluster name.
+func (s *aroMachinePoolService) getBaseDomainPrefix(ctx context.Context) string {
+	name := client.ObjectKey{Namespace: s.scope.InfraMachinePool.Namespace, Name: s.getHcpClusterName()}
+
+	v1 := &asoredhatopenshiftv1.HcpOpenShiftCluster{}
+	if err := s.kubeclient.Get(ctx, name, v1); err == nil {
+		if v1.Status.Properties != nil && v1.Status.Properties.Dns != nil && v1.Status.Properties.Dns.BaseDomainPrefix != nil {
+			return *v1.Status.Properties.Dns.BaseDomainPrefix
+		}
+		return ""
+	}
+
+	v2 := &asoredhatopenshiftv1api2025.HcpOpenShiftCluster{}
+	if err := s.kubeclient.Get(ctx, name, v2); err == nil {
+		if v2.Status.Properties != nil && v2.Status.Properties.Dns != nil && v2.Status.Properties.Dns.BaseDomainPrefix != nil {
+			return *v2.Status.Properties.Dns.BaseDomainPrefix
+		}
+	}
+
+	return ""
+}
+
+// expectedNodeLabels returns the labels used to match workload cluster nodes
+// to an ARO-HCP node pool. The nodePoolName is the HyperShift NodePool name,
+// constructed as <cluster-name>-<azureNodePoolName>.
+func expectedNodeLabels(nodePoolName string) map[string]string {
+	if len(nodePoolName) > validation.LabelValueMaxLength {
+		nodePoolName = nodePoolName[:validation.LabelValueMaxLength]
+	}
+	return map[string]string{
+		"hypershift.openshift.io/nodePool": nodePoolName,
+	}
 }

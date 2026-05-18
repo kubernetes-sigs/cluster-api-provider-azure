@@ -57,12 +57,13 @@ func TestProviderIDListSync_AzureNameMatchesK8sName(t *testing.T) {
 		resourceGroupName = "test-rg"
 	)
 
-	// Create nodes in the managed cluster with the expected naming pattern
-	// Pattern: <clusterName>-<azureName>-<suffix>
+	// Create nodes in the managed cluster with the expected HyperShift labels
+	// Label: hypershift.openshift.io/nodePool=<clusterName>-<azureName>
 	nodes := []corev1.Node{
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-cluster-test-cluster-mp1-abc123",
+				Name:   "test-cluster-test-cluster-mp1-abc123",
+				Labels: expectedNodeLabels(clusterName + "-" + azureName),
 			},
 			Spec: corev1.NodeSpec{
 				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/test-cluster-test-cluster-mp1-abc123",
@@ -70,7 +71,8 @@ func TestProviderIDListSync_AzureNameMatchesK8sName(t *testing.T) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-cluster-test-cluster-mp1-def456",
+				Name:   "test-cluster-test-cluster-mp1-def456",
+				Labels: expectedNodeLabels(clusterName + "-" + azureName),
 			},
 			Spec: corev1.NodeSpec{
 				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/test-cluster-test-cluster-mp1-def456",
@@ -190,7 +192,8 @@ func TestProviderIDListSync_AzureNameDiffersFromK8sName(t *testing.T) {
 	nodes := []corev1.Node{
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "aro04-sbx-va7-workeraro1-9cg4d-qjx25",
+				Name:   "aro04-sbx-va7-workeraro1-9cg4d-qjx25",
+				Labels: expectedNodeLabels(clusterName + "-" + azureName),
 			},
 			Spec: corev1.NodeSpec{
 				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/aro04-sbx-va7-workeraro1-9cg4d-qjx25",
@@ -198,7 +201,8 @@ func TestProviderIDListSync_AzureNameDiffersFromK8sName(t *testing.T) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "aro04-sbx-va7-workeraro1-9cg4d-slvd6",
+				Name:   "aro04-sbx-va7-workeraro1-9cg4d-slvd6",
+				Labels: expectedNodeLabels(clusterName + "-" + azureName),
 			},
 			Spec: corev1.NodeSpec{
 				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/aro04-sbx-va7-workeraro1-9cg4d-slvd6",
@@ -301,6 +305,137 @@ func TestProviderIDListSync_AzureNameDiffersFromK8sName(t *testing.T) {
 	g.Expect(aroMachinePool.Spec.ProviderIDList).To(HaveLen(2))
 	g.Expect(aroMachinePool.Spec.ProviderIDList).To(ContainElement(nodes[0].Spec.ProviderID))
 	g.Expect(aroMachinePool.Spec.ProviderIDList).To(ContainElement(nodes[1].Spec.ProviderID))
+}
+
+// TestProviderIDListSync_BaseDomainPrefixDiffersFromCAPIName tests the case where
+// HcpOpenShiftCluster.status.properties.dns.baseDomainPrefix differs from the
+// CAPI cluster name. The node label uses the baseDomainPrefix, so we must read
+// it from the HcpOpenShiftCluster on the management cluster.
+func TestProviderIDListSync_BaseDomainPrefixDiffersFromCAPIName(t *testing.T) {
+	g := NewWithT(t)
+	ctx := t.Context()
+
+	const (
+		clusterName       = "ethos700-dev-va7"
+		namespace         = "ethos700-dev-va7"
+		nodePoolName      = "ethos700-dev-va7-watsonxcomp-1"
+		azureName         = "watsonxcomp1"
+		baseDomainPrefix  = "f4k6p2z2p0z9b3a" // differs from CAPI cluster name
+		subscriptionID    = "00000000-0000-0000-0000-000000000000"
+		resourceGroupName = "ethos_700_dev_va7"
+	)
+
+	// Nodes use baseDomainPrefix in labels, NOT the CAPI cluster name
+	nodes := []corev1.Node{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   baseDomainPrefix + "-" + azureName + "-wpcr6-95pzn",
+				Labels: expectedNodeLabels(baseDomainPrefix + "-" + azureName),
+			},
+			Spec: corev1.NodeSpec{
+				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/" + baseDomainPrefix + "-" + azureName + "-wpcr6-95pzn",
+			},
+		},
+	}
+
+	managedClusterScheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(managedClusterScheme)
+	managedClusterClient := fake.NewClientBuilder().
+		WithScheme(managedClusterScheme).
+		WithObjects(&nodes[0]).
+		Build()
+
+	nodePool := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HcpOpenShiftClustersNodePool",
+			APIVersion: asoredhatopenshiftv1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nodePoolName,
+			Namespace: namespace,
+		},
+		Spec: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_Spec{
+			AzureName: azureName,
+			Owner: &genruntime.KnownResourceReference{
+				Name: clusterName,
+			},
+		},
+		Status: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_STATUS{
+			Properties: &asoredhatopenshiftv1.NodePoolProperties_STATUS{
+				Replicas: ptr.To(1),
+			},
+		},
+	}
+
+	// HcpOpenShiftCluster on the management cluster with baseDomainPrefix in status
+	hcpCluster := &asoredhatopenshiftv1.HcpOpenShiftCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: namespace,
+		},
+		Status: asoredhatopenshiftv1.HcpOpenShiftCluster_STATUS{
+			Properties: &asoredhatopenshiftv1.HcpOpenShiftClusterProperties_STATUS{
+				Dns: &asoredhatopenshiftv1.DnsProfile_STATUS{
+					BaseDomainPrefix: ptr.To(baseDomainPrefix),
+				},
+			},
+		},
+	}
+
+	aroMachinePool := createTestAROMachinePool(namespace, nodePoolName, clusterName, nodePool)
+	machinePool := createTestMachinePool(namespace, nodePoolName, clusterName)
+	cluster := createTestCluster(namespace, clusterName)
+	aroControlPlane := createTestAROControlPlane(namespace, clusterName)
+	aroCluster := createTestAROCluster(namespace, clusterName)
+	aroClusterIdentity := createTestAROClusterIdentity(namespace, "test-identity")
+
+	mgmtScheme := runtime.NewScheme()
+	_ = infrav1.AddToScheme(mgmtScheme)
+	_ = infrav2exp.AddToScheme(mgmtScheme)
+	_ = cplane.AddToScheme(mgmtScheme)
+	_ = clusterv1.AddToScheme(mgmtScheme)
+	_ = asoredhatopenshiftv1.AddToScheme(mgmtScheme)
+
+	mgmtClient := fake.NewClientBuilder().
+		WithScheme(mgmtScheme).
+		WithObjects(aroMachinePool, machinePool, cluster, aroControlPlane, aroCluster, aroClusterIdentity, nodePool, hcpCluster).
+		WithStatusSubresource(aroMachinePool).
+		Build()
+
+	mpScope, err := scope.NewAROMachinePoolScope(ctx, scope.AROMachinePoolScopeParams{
+		Client:         mgmtClient,
+		Cluster:        cluster,
+		ControlPlane:   aroControlPlane,
+		MachinePool:    machinePool,
+		AROMachinePool: aroMachinePool,
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	tracker := &FakeClusterTracker{
+		getClientFunc: func(ctx context.Context, name types.NamespacedName) (client.Client, error) {
+			return managedClusterClient, nil
+		},
+	}
+
+	reconcilerService := &aroMachinePoolService{
+		scope:      mpScope,
+		kubeclient: mgmtClient,
+		tracker:    tracker,
+		cluster:    cluster,
+		newResourceReconciler: func(machinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
+			return basecontrollers.NewResourceReconciler(mgmtClient, resources, machinePool)
+		},
+	}
+
+	err = reconcilerService.Reconcile(ctx)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	// Without reading baseDomainPrefix, the code would construct
+	// "ethos700-dev-va7-watsonxcomp1" and find zero matches.
+	// With the fix, it reads "f4k6p2z2p0z9b3a" from HcpOpenShiftCluster
+	// and constructs "f4k6p2z2p0z9b3a-watsonxcomp1" which matches.
+	g.Expect(aroMachinePool.Spec.ProviderIDList).To(HaveLen(1))
+	g.Expect(aroMachinePool.Spec.ProviderIDList).To(ContainElement(nodes[0].Spec.ProviderID))
 }
 
 // Helper functions to create test objects
