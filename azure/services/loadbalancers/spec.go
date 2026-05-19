@@ -177,6 +177,11 @@ func getFrontendIPConfigs(lbSpec LBSpec) ([]*armnetwork.FrontendIPConfiguration,
 				},
 				PrivateIPAddress: ptr.To(ipConfig.PrivateIPAddress),
 			}
+			if ipConfig.IPVersion == infrav1.IPv6 {
+				properties.PrivateIPAddressVersion = ptr.To(armnetwork.IPVersionIPv6)
+				properties.PrivateIPAllocationMethod = ptr.To(armnetwork.IPAllocationMethodDynamic)
+				properties.PrivateIPAddress = nil
+			}
 		} else {
 			properties = armnetwork.FrontendIPConfigurationPropertiesFormat{
 				PublicIPAddress: &armnetwork.PublicIPAddress{
