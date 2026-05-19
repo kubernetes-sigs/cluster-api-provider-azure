@@ -253,7 +253,9 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		// The baseDomainPrefix may differ from the CAPI cluster name when
 		// explicitly set on HcpOpenShiftCluster.spec.properties.dns.
 		hypershiftPrefix := s.scope.ClusterName()
-		if prefix := s.getBaseDomainPrefix(ctx); prefix != "" {
+		if prefix, err := s.getBaseDomainPrefix(ctx); err != nil {
+			return errors.Wrap(err, "failed to resolve hypershift baseDomainPrefix")
+		} else if prefix != "" {
 			hypershiftPrefix = prefix
 		}
 
@@ -465,25 +467,30 @@ func (s *aroMachinePoolService) getHcpClusterName() string {
 // getBaseDomainPrefix reads the baseDomainPrefix from the HcpOpenShiftCluster
 // status. This is the prefix used in the hypershift.openshift.io/nodePool node
 // label and may differ from the CAPI cluster name.
-func (s *aroMachinePoolService) getBaseDomainPrefix(ctx context.Context) string {
+func (s *aroMachinePoolService) getBaseDomainPrefix(ctx context.Context) (string, error) {
 	name := client.ObjectKey{Namespace: s.scope.InfraMachinePool.Namespace, Name: s.getHcpClusterName()}
 
 	v1 := &asoredhatopenshiftv1.HcpOpenShiftCluster{}
 	if err := s.kubeclient.Get(ctx, name, v1); err == nil {
 		if v1.Status.Properties != nil && v1.Status.Properties.Dns != nil && v1.Status.Properties.Dns.BaseDomainPrefix != nil {
-			return *v1.Status.Properties.Dns.BaseDomainPrefix
+			return *v1.Status.Properties.Dns.BaseDomainPrefix, nil
 		}
-		return ""
+		return "", nil
+	} else if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {
+		return "", errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20240610preview)")
 	}
 
 	v2 := &asoredhatopenshiftv1api2025.HcpOpenShiftCluster{}
 	if err := s.kubeclient.Get(ctx, name, v2); err == nil {
 		if v2.Status.Properties != nil && v2.Status.Properties.Dns != nil && v2.Status.Properties.Dns.BaseDomainPrefix != nil {
-			return *v2.Status.Properties.Dns.BaseDomainPrefix
+			return *v2.Status.Properties.Dns.BaseDomainPrefix, nil
 		}
+		return "", nil
+	} else if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {
+		return "", errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20251223preview)")
 	}
 
-	return ""
+	return "", nil
 }
 
 // expectedNodeLabels returns the labels used to match workload cluster nodes
