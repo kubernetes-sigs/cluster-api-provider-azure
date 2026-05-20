@@ -1,0 +1,260 @@
+---
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: '17 8 * * 1'  # Every Monday at 08:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: upstream-sync-${{ matrix.target }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - upstream: release-1.22
+            target: backplane-2.11
+          - upstream: release-1.22
+            target: backplane-2.17
+          - upstream: release-1.23
+            target: main
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ matrix.target }}
+
+      - name: Configure git
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream https://github.com/kubernetes-sigs/cluster-api-provider-azure.git
+          git fetch upstream ${{ matrix.upstream }}
+
+      - name: Find new upstream commits
+        id: find-commits
+        run: |
+          mapfile -t ALL_COMMITS < <(git cherry origin/${{ matrix.target }} upstream/${{ matrix.upstream }} | awk '/^\+ / {print $2}')
+          COMMITS=()
+          for SHA in "${ALL_COMMITS[@]}"; do
+            PARENT_COUNT=$(git rev-list --parents -n1 "$SHA" | awk '{print NF-1}')
+            if [ "$PARENT_COUNT" -le 1 ]; then
+              COMMITS+=("$SHA")
+            fi
+          done
+          COMMIT_COUNT=${#COMMITS[@]}
+          echo "count=${COMMIT_COUNT}" >> "$GITHUB_OUTPUT"
+
+          if [ "$COMMIT_COUNT" -eq 0 ]; then
+            echo "No new upstream commits found."
+          else
+            echo "Found ${COMMIT_COUNT} new upstream commits (excluded $((${#ALL_COMMITS[@]} - COMMIT_COUNT)) merge commits)."
+          fi
+
+      - name: Check for existing sync PR
+        if: steps.find-commits.outputs.count != '0'
+        id: existing-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          PR_NUMBER="$(
+            gh pr list \
+              --state open \
+              --base "$TARGET" \
+              --json number,headRefName \
+              --jq '.[] | select(.headRefName | startswith("upstream-sync/'"${TARGET}"'/")) | .number' \
+              | head -n1
+          )"
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Open sync PR #${PR_NUMBER} already exists for ${TARGET}, skipping."
+          fi
+
+      - name: Cherry-pick commits
+        if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == ''
+        id: cherry-pick
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="upstream-sync/${{ matrix.target }}/${DATE}"
+          SUFFIX=1
+          while git ls-remote --heads origin "${BRANCH}" 2>/dev/null | grep -q .; do
+            SUFFIX=$((SUFFIX + 1))
+            BRANCH="upstream-sync/${{ matrix.target }}/${DATE}-${SUFFIX}"
+          done
+
+          git checkout -b "$BRANCH"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+          mapfile -t SHAS < <(git cherry origin/${{ matrix.target }} upstream/${{ matrix.upstream }} | awk '/^\+ / {print $2}')
+          TOTAL=${#SHAS[@]}
+          APPLIED=0
+          CONFLICT_SHA=""
+          CONFLICT_TITLE=""
+          CONFLICT_FULL_SHA=""
+          APPLIED_LINES=""
+          REMAINING_LINES=""
+          HIT_CONFLICT=false
+
+          for SHA in "${SHAS[@]}"; do
+            TITLE=$(git log --format="%s" -1 "$SHA")
+            SHORT=$(echo "$SHA" | cut -c1-8)
+            PARENT_COUNT=$(git rev-list --parents -n1 "$SHA" | awk '{print NF-1}')
+
+            if [ "$PARENT_COUNT" -gt 1 ]; then
+              echo "⏭️ Skipping merge commit: ${SHORT} ${TITLE}"
+              TOTAL=$((TOTAL - 1))
+              continue
+            fi
+
+            if [ "$HIT_CONFLICT" = true ]; then
+              REMAINING_LINES=$(printf '%s\n- `%s` %s' "$REMAINING_LINES" "$SHORT" "$TITLE")
+              continue
+            fi
+
+            if git cherry-pick --no-edit "$SHA"; then
+              APPLIED=$((APPLIED + 1))
+              APPLIED_LINES=$(printf '%s\n- `%s` %s' "$APPLIED_LINES" "$SHORT" "$TITLE")
+              echo "✅ Applied: ${SHORT} ${TITLE}"
+            else
+              git cherry-pick --abort 2>/dev/null || true
+              HIT_CONFLICT=true
+              CONFLICT_SHA="$SHORT"
+              CONFLICT_TITLE="$TITLE"
+              CONFLICT_FULL_SHA="$SHA"
+              echo "❌ Conflict: ${SHORT} ${TITLE}"
+            fi
+          done
+
+          echo "applied=${APPLIED}" >> "$GITHUB_OUTPUT"
+          echo "total=${TOTAL}" >> "$GITHUB_OUTPUT"
+          echo "conflict_sha=${CONFLICT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "conflict_full_sha=${CONFLICT_FULL_SHA}" >> "$GITHUB_OUTPUT"
+
+          DELIM=$(openssl rand -hex 16)
+          {
+            echo "conflict_title<<${DELIM}"
+            echo "$CONFLICT_TITLE"
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+          DELIM=$(openssl rand -hex 16)
+          {
+            echo "applied_lines<<${DELIM}"
+            echo "$APPLIED_LINES"
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+          DELIM=$(openssl rand -hex 16)
+          {
+            echo "remaining_lines<<${DELIM}"
+            echo "$REMAINING_LINES"
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Push and create draft PR
+        if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == '' && steps.cherry-pick.outputs.applied != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_BRANCH: ${{ steps.cherry-pick.outputs.branch }}
+          APPLIED: ${{ steps.cherry-pick.outputs.applied }}
+          TOTAL: ${{ steps.cherry-pick.outputs.total }}
+          CONFLICT_SHA: ${{ steps.cherry-pick.outputs.conflict_sha }}
+          CONFLICT_TITLE: ${{ steps.cherry-pick.outputs.conflict_title }}
+          CONFLICT_FULL_SHA: ${{ steps.cherry-pick.outputs.conflict_full_sha }}
+          APPLIED_LINES: ${{ steps.cherry-pick.outputs.applied_lines }}
+          REMAINING_LINES: ${{ steps.cherry-pick.outputs.remaining_lines }}
+          TARGET: ${{ matrix.target }}
+          UPSTREAM: ${{ matrix.upstream }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+
+          git push origin "$SYNC_BRANCH"
+
+          {
+            echo "## Upstream Sync — ${DATE}"
+            echo ""
+            echo "Applied **${APPLIED}/${TOTAL}** commits from [kubernetes-sigs/cluster-api-provider-azure](https://github.com/kubernetes-sigs/cluster-api-provider-azure) \`${UPSTREAM}\` into \`${TARGET}\`."
+            echo ""
+            echo "### Applied"
+            echo "$APPLIED_LINES"
+            echo ""
+
+            if [ -n "$CONFLICT_SHA" ]; then
+              echo "### ❌ Conflict"
+              echo "- \`${CONFLICT_SHA}\` ${CONFLICT_TITLE}"
+              echo ""
+
+              if [ -n "$REMAINING_LINES" ]; then
+                echo "### Remaining (not attempted)"
+                echo "$REMAINING_LINES"
+                echo ""
+              fi
+
+              echo "### How to resolve"
+              echo "1. **Merge this PR** — it contains all cleanly applied commits"
+              echo "2. **Resolve the conflict locally:**"
+              echo '```bash'
+              echo "git checkout ${TARGET} && git pull"
+              echo "git cherry-pick ${CONFLICT_FULL_SHA}"
+              echo "# fix conflicts"
+              echo "git add . && git cherry-pick --continue"
+              echo "git push origin ${TARGET}"
+              echo '```'
+              echo "3. **Re-run this workflow** (Actions → Upstream Sync → Run workflow)"
+              echo "4. **Repeat** until all upstream commits are applied"
+              echo ""
+              echo "Once all commits are synced, the weekly schedule maintains alignment automatically."
+            fi
+          } > /tmp/pr-body.md
+
+          gh pr create \
+            --title "Upstream sync ${TARGET} ← ${UPSTREAM} (${DATE}): ${APPLIED}/${TOTAL} commits" \
+            --body-file /tmp/pr-body.md \
+            --base "$TARGET" \
+            --head "$SYNC_BRANCH" \
+            --draft
+
+      - name: Report when first commit conflicts
+        if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == '' && steps.cherry-pick.outputs.applied == '0'
+        env:
+          CONFLICT_FULL_SHA: ${{ steps.cherry-pick.outputs.conflict_full_sha }}
+          CONFLICT_TITLE: ${{ steps.cherry-pick.outputs.conflict_title }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          echo "::error::The first upstream commit conflicts and no PR was created."
+          echo ""
+          echo "Conflicting commit:"
+          echo "  SHA:   ${CONFLICT_FULL_SHA}"
+          echo "  Title: ${CONFLICT_TITLE}"
+          echo ""
+          echo "Resolve manually:"
+          echo "  git checkout ${TARGET} && git pull"
+          echo "  git cherry-pick ${CONFLICT_FULL_SHA}"
+          echo "  # resolve conflicts"
+          echo "  git add . && git cherry-pick --continue"
+          echo "  git push origin ${TARGET}"
+          echo ""
+          echo "Then re-run this workflow."
+          exit 1
