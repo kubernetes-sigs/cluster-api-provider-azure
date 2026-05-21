@@ -304,8 +304,8 @@ func (m *MachinePoolScope) SetVMSSState(vmssState *azure.VMSS) {
 	m.vmssState = vmssState
 }
 
-// NeedsRequeue return true if any machines are not on the latest model or the VMSS is not in a terminal provisioning
-// state.
+// NeedsRequeue returns true if the VMSS is not in a terminal provisioning state, desired replicas do not match actual,
+// or (when SkipMachinePoolModelReconciliation is disabled) any machines are not on the latest model.
 func (m *MachinePoolScope) NeedsRequeue() bool {
 	state := m.AzureMachinePool.Status.ProvisioningState
 	if m.vmssState == nil {

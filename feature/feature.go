@@ -63,6 +63,8 @@ const (
 	// of AzureMachinePool instances to match the latest VMSS model. When enabled, instances
 	// with stale models will persist until the pool is explicitly scaled. This is useful for
 	// testing scenarios where model changes should not trigger automatic instance replacement.
+	// This gate does not prevent VMSS template updates and does not block surge behavior for
+	// model changes in the VMSS reconciler.
 	// Defaults to false.
 	// owner: @jackfrancis
 	// alpha: v1.24
