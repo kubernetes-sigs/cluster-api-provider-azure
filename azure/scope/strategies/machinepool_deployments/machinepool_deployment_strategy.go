@@ -29,6 +29,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -182,14 +183,19 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 	// we have too many machines, let's choose the oldest to remove
 	if overProvisionCount > 0 {
 		var toDelete []infrav1exp.AzureMachinePoolMachine
-		log.Info("over-provisioned", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "machinesWithoutLatestModel", getProviderIDs(machinesWithoutLatestModel))
-		// we are over-provisioned try to remove old models
-		for _, v := range machinesWithoutLatestModel {
-			if len(toDelete) >= overProvisionCount {
-				return toDelete, nil
-			}
+		log.Info("over-provisioned", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "machinesWithoutLatestModel", getProviderIDs(machinesWithoutLatestModel), "skipModelReconciliation", feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation))
 
-			toDelete = append(toDelete, v)
+		// When SkipMachinePoolModelReconciliation is enabled, skip prioritizing machines without latest model.
+		// Just delete the oldest ready machines to meet the desired replica count.
+		if !feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation) {
+			// we are over-provisioned try to remove old models
+			for _, v := range machinesWithoutLatestModel {
+				if len(toDelete) >= overProvisionCount {
+					return toDelete, nil
+				}
+
+				toDelete = append(toDelete, v)
+			}
 		}
 
 		log.Info("over-provisioned ready", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "readyMachines", getProviderIDs(readyMachines))
@@ -205,7 +211,9 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		return toDelete, nil
 	}
 
-	if len(machinesWithoutLatestModel) == 0 {
+	// When SkipMachinePoolModelReconciliation is disabled, check if all machines have latest model.
+	// When enabled, skip this check to allow stale model machines to persist.
+	if !feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation) && len(machinesWithoutLatestModel) == 0 {
 		log.Info("nothing more to do since all the AzureMachinePoolMachine(s) are the latest model and not over-provisioned")
 		return []infrav1exp.AzureMachinePoolMachine{}, nil
 	}
@@ -216,10 +224,16 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 	}
 
 	var toDelete []infrav1exp.AzureMachinePoolMachine
-	log.Info("removing ready machines within disruption budget", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "readyMachines", getProviderIDs(readyMachines), "readyMachinesCount", len(readyMachines))
+	log.Info("removing ready machines within disruption budget", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "readyMachines", getProviderIDs(readyMachines), "readyMachinesCount", len(readyMachines), "skipModelReconciliation", feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation))
 	for _, v := range readyMachines {
 		if len(toDelete) >= disruptionBudget {
 			return toDelete, nil
+		}
+
+		// When SkipMachinePoolModelReconciliation is enabled, don't use LatestModelApplied as a deletion criterion.
+		// This allows machines with stale models to persist at steady desired replica count.
+		if feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation) {
+			continue
 		}
 
 		if !v.Status.LatestModelApplied {

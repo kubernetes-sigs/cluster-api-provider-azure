@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -311,8 +312,12 @@ func (m *MachinePoolScope) NeedsRequeue() bool {
 		return state != nil && infrav1.IsTerminalProvisioningState(*state)
 	}
 
-	if !m.vmssState.HasLatestModelAppliedToAll() {
-		return true
+	// Skip requeue for model state when SkipMachinePoolModelReconciliation is enabled.
+	// This allows instances with stale models to persist until explicitly scaled.
+	if !feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation) {
+		if !m.vmssState.HasLatestModelAppliedToAll() {
+			return true
+		}
 	}
 
 	desiredMatchesActual := len(m.vmssState.Instances) == int(m.DesiredReplicas())
