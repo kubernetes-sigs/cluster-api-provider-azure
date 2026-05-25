@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SYNC_PAT }}
           ref: ${{ matrix.target }}
 
       - name: Configure git
@@ -78,7 +78,7 @@ jobs:
         if: steps.find-commits.outputs.count != '0'
         id: existing-pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
           TARGET: ${{ matrix.target }}
         run: |
           PR_NUMBER="$(
@@ -176,7 +176,7 @@ jobs:
       - name: Push and create draft PR
         if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == '' && steps.cherry-pick.outputs.applied != '0'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
           SYNC_BRANCH: ${{ steps.cherry-pick.outputs.branch }}
           APPLIED: ${{ steps.cherry-pick.outputs.applied }}
           TOTAL: ${{ steps.cherry-pick.outputs.total }}
