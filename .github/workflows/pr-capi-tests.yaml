@@ -44,15 +44,15 @@ jobs:
           set -euo pipefail
           case "$BASE_REF" in
             main)
-              echo "konflux_check=cluster-api-provider-azure-mce-50-on-pull-request" >> "$GITHUB_OUTPUT"
+              echo "konflux_check=Red Hat Konflux / cluster-api-provider-azure-mce-50-on-pull-request" >> "$GITHUB_OUTPUT"
               echo "aro_branch=backplane-5.0" >> "$GITHUB_OUTPUT"
               ;;
             backplane-2.17)
-              echo "konflux_check=cluster-api-provider-azure-mce-217-on-pull-request" >> "$GITHUB_OUTPUT"
+              echo "konflux_check=Red Hat Konflux / cluster-api-provider-azure-mce-217-on-pull-request" >> "$GITHUB_OUTPUT"
               echo "aro_branch=backplane-2.17" >> "$GITHUB_OUTPUT"
               ;;
             backplane-2.11)
-              echo "konflux_check=cluster-api-provider-azure-mce-211-on-pull-request" >> "$GITHUB_OUTPUT"
+              echo "konflux_check=Red Hat Konflux / cluster-api-provider-azure-mce-211-on-pull-request" >> "$GITHUB_OUTPUT"
               echo "aro_branch=backplane-2.11" >> "$GITHUB_OUTPUT"
               ;;
             *)
