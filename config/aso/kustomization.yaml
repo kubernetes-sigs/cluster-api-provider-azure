@@ -2,22 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-  # The ASO version here is managed by `make generate-aso-crds`
-  - https://github.com/Azure/azure-service-operator/releases/download/v2.16.1/azureserviceoperator_v2.16.1.yaml
-  - crds.yaml
+  - https://github.com/Azure/azure-service-operator/releases/download/v2.17.0/azureserviceoperator_v2.17.0.yaml
   - settings.yaml
 patches:
-  - path: patches/visualizer_label_in_bastionhosts.yaml
-  - path: patches/visualizer_label_in_extensions.yaml
-  - path: patches/visualizer_label_in_fleetmembers.yaml
-  - path: patches/visualizer_label_in_managedclusteragentpools.yaml
-  - path: patches/visualizer_label_in_managed_clusters.yaml
-  - path: patches/visualizer_label_in_maintenanceconfigurations.yaml
-  - path: patches/visualizer_label_in_natgateways.yaml
-  - path: patches/visualizer_label_in_privateendpoints.yaml
-  - path: patches/visualizer_label_in_resourcegroups.yaml
-  - path: patches/visualizer_label_in_subnets.yaml
-  - path: patches/visualizer_label_in_virtualnetworks.yaml
+  - path: patches/migrate_stored_versions.yaml
+    target:
+      group: apps
+      kind: Deployment
+      name: azureserviceoperator-controller-manager
+      version: v1
   - patch: |- # default kustomization includes a namespace already
       $patch: delete
       apiVersion: v1
@@ -28,13 +21,53 @@ patches:
       - op: test
         path: /spec/template/spec/containers/0/args/6
         value: --crd-pattern=
-      - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
+      - op: replace # CAPZ lets ASO install and manage its own CRDs; users can extend the set via ADDITIONAL_ASO_CRDS (';'-delimited). The ADDITIONAL_ASO_CRDS default duplicates a base pattern so that, when the variable is unset, the value still parses as a non-empty list of fully-matching patterns (ASO rejects empty/whitespace pattern entries).
         path: /spec/template/spec/containers/0/args/6
-        value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
+        value: --crd-pattern=containerservice.azure.com/FleetsMember;containerservice.azure.com/MaintenanceConfiguration;containerservice.azure.com/ManagedCluster;containerservice.azure.com/ManagedClustersAgentPool;kubernetesconfiguration.azure.com/Extension;network.azure.com/BastionHost;network.azure.com/NatGateway;network.azure.com/PrivateEndpoint;network.azure.com/VirtualNetwork;network.azure.com/VirtualNetworksSubnet;resources.azure.com/ResourceGroup;${ADDITIONAL_ASO_CRDS:=resources.azure.com/ResourceGroup}
     target:
       group: apps
       kind: Deployment
       name: azureserviceoperator-controller-manager
+      version: v1
+  - patch: |- # Grant the ASO controller's SA permission to delete the CRDs it
+      # manages. The migrate-aso-crd-stored-versions init container deletes
+      # CRDs that have stale entries in status.storedVersions which the new
+      # bundle no longer lists in spec.versions; the new ASO controller then
+      # re-creates them from its bundled definitions. Without this verb the
+      # init container's `kubectl delete crd` call is denied. The upstream ASO
+      # azureserviceoperator-crd-manager-role grants
+      # [create get list patch update watch] on customresourcedefinitions
+      # cluster-wide; we add delete as a separate rule scoped via resourceNames
+      # to just the CAPZ-managed CRDs, so a compromised ASO pod can't delete
+      # arbitrary CRDs in the cluster.
+      - op: test
+        path: /rules/0/resources/0
+        value: customresourcedefinitions
+      - op: add
+        path: /rules/-
+        value:
+          apiGroups:
+            - apiextensions.k8s.io
+          resources:
+            - customresourcedefinitions
+          resourceNames:
+            - fleetsmembers.containerservice.azure.com
+            - maintenanceconfigurations.containerservice.azure.com
+            - managedclusters.containerservice.azure.com
+            - managedclustersagentpools.containerservice.azure.com
+            - extensions.kubernetesconfiguration.azure.com
+            - bastionhosts.network.azure.com
+            - natgateways.network.azure.com
+            - privateendpoints.network.azure.com
+            - virtualnetworks.network.azure.com
+            - virtualnetworkssubnets.network.azure.com
+            - resourcegroups.resources.azure.com
+          verbs:
+            - delete
+    target:
+      group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: azureserviceoperator-crd-manager-role
       version: v1
 replacements:
   - source:
