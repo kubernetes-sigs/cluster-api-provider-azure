@@ -105,7 +105,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 			vms = append(vms, nextResult.Value...)
 		}
 
-		By("Verifying specified VM extensions are created on Azure")
+		By("Verifying specified VM extensions are created on Azure and bootstrap extension is not installed")
 		for _, machine := range vms {
 			vmExtensionListResult, err := vmExtensionsClient.List(ctx, resource.ResourceGroupName, *machine.Name, nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -115,7 +115,8 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 				vmExtensionNames = append(vmExtensionNames, *vmExtension.Name)
 			}
 			osName := string(*machine.Properties.StorageProfile.OSDisk.OSType)
-			Expect(vmExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
+			// The CAPZ bootstrap extension is disabled by default; assert it is not installed.
+			Expect(vmExtensionNames).NotTo(ContainElements("CAPZ." + osName + ".Bootstrapping"))
 			Expect(vmExtensionNames).To(ContainElements(expectedVMExtensionMap[*machine.ID]))
 		}
 	}
@@ -160,7 +161,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 			vmsses = append(vmsses, nextResult.Value...)
 		}
 
-		By("Verifying VMSS extensions are created on Azure")
+		By("Verifying VMSS extensions are created on Azure and bootstrap extension is not installed")
 		for _, machinePool := range vmsses {
 			var vmssExts []*armcompute.VirtualMachineScaleSetExtension
 			pager := vmssExtensionsClient.NewListPager(resource.ResourceGroupName, *machinePool.Name, nil)
@@ -174,7 +175,8 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 				vmssExtensionNames = append(vmssExtensionNames, *vmssExtension.Name)
 			}
 			osName := string(*machinePool.Properties.VirtualMachineProfile.StorageProfile.OSDisk.OSType)
-			Expect(vmssExtensionNames).To(ContainElements("CAPZ." + osName + ".Bootstrapping"))
+			// The CAPZ bootstrap extension is disabled by default; assert it is not installed.
+			Expect(vmssExtensionNames).NotTo(ContainElements("CAPZ." + osName + ".Bootstrapping"))
 			Expect(vmssExtensionNames).To(ContainElements(expectedVMSSExtensionMap[*machinePool.ID]))
 		}
 	}
