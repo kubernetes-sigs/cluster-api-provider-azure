@@ -208,12 +208,13 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
-				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
-					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfig,
-						ClusterctlConfigPath:      clusterctlConfigPath,
-						WorkloadFlavor:            "machine-and-machine-pool",
-						BootstrapClusterProxy:     bootstrapClusterProxy,
+				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
+					return ClusterctlUpgradeSpecInput{
+						E2EConfig:             e2eConfig,
+						ClusterctlConfigPath:  clusterctlConfigPath,
+						WorkloadFlavor:        "machine-and-machine-pool",
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						ManagementClusterControlPlaneMachineCount: ptr.To[int64](3),
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						PreInit:                   getPreInitFunc(ctx),
@@ -233,12 +234,13 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from the latest version of v1beta1 to current, and scale workload clusters created in the old version", func() {
-				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
-					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfig,
-						ClusterctlConfigPath:      clusterctlConfigPath,
-						WorkloadFlavor:            "machine-and-machine-pool",
-						BootstrapClusterProxy:     bootstrapClusterProxy,
+				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
+					return ClusterctlUpgradeSpecInput{
+						E2EConfig:             e2eConfig,
+						ClusterctlConfigPath:  clusterctlConfigPath,
+						WorkloadFlavor:        "machine-and-machine-pool",
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						ManagementClusterControlPlaneMachineCount: ptr.To[int64](3),
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						PreInit:                   getPreInitFunc(ctx),
@@ -258,18 +260,19 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale AKS workload clusters created in the old version", func() {
-				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
-					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfig,
-						ClusterctlConfigPath:      clusterctlConfigPath,
-						WorkloadFlavor:            "aks",
-						WorkloadKubernetesVersion: aksKubernetesVersion,
-						ControlPlaneMachineCount:  ptr.To[int64](0),
-						BootstrapClusterProxy:     bootstrapClusterProxy,
-						ArtifactFolder:            artifactFolder,
-						SkipCleanup:               skipCleanup,
-						PreInit:                   getPreInitFunc(ctx),
-						InitWithProvidersContract: "v1beta1",
+				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
+					return ClusterctlUpgradeSpecInput{
+						E2EConfig:                                 e2eConfig,
+						ClusterctlConfigPath:                      clusterctlConfigPath,
+						WorkloadFlavor:                            "aks",
+						WorkloadKubernetesVersion:                 aksKubernetesVersion,
+						ControlPlaneMachineCount:                  ptr.To[int64](0),
+						BootstrapClusterProxy:                     bootstrapClusterProxy,
+						ManagementClusterControlPlaneMachineCount: ptr.To[int64](3),
+						ArtifactFolder:                            artifactFolder,
+						SkipCleanup:                               skipCleanup,
+						PreInit:                                   getPreInitFunc(ctx),
+						InitWithProvidersContract:                 "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 						},
@@ -277,7 +280,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(OldCAPIUpgradeVersion)),
 						InitWithCoreProvider:            "cluster-api:" + e2eConfig.MustGetVariable(OldCAPIUpgradeVersion),
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(OldProviderUpgradeVersion)},
-						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
+						Upgrades: []ClusterctlUpgradeSpecInputUpgrade{
 							{
 								Contract: clusterv1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
@@ -296,18 +299,19 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from the latest version of v1beta1 to current, and scale AKS workload clusters created in the old version", func() {
-				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
-					return capi_e2e.ClusterctlUpgradeSpecInput{
-						E2EConfig:                 e2eConfig,
-						ClusterctlConfigPath:      clusterctlConfigPath,
-						WorkloadFlavor:            "aks",
-						WorkloadKubernetesVersion: aksKubernetesVersion,
-						ControlPlaneMachineCount:  ptr.To[int64](0),
-						BootstrapClusterProxy:     bootstrapClusterProxy,
-						ArtifactFolder:            artifactFolder,
-						SkipCleanup:               skipCleanup,
-						PreInit:                   getPreInitFunc(ctx),
-						InitWithProvidersContract: "v1beta1",
+				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
+					return ClusterctlUpgradeSpecInput{
+						E2EConfig:                                 e2eConfig,
+						ClusterctlConfigPath:                      clusterctlConfigPath,
+						WorkloadFlavor:                            "aks",
+						WorkloadKubernetesVersion:                 aksKubernetesVersion,
+						ControlPlaneMachineCount:                  ptr.To[int64](0),
+						BootstrapClusterProxy:                     bootstrapClusterProxy,
+						ManagementClusterControlPlaneMachineCount: ptr.To[int64](3),
+						ArtifactFolder:                            artifactFolder,
+						SkipCleanup:                               skipCleanup,
+						PreInit:                                   getPreInitFunc(ctx),
+						InitWithProvidersContract:                 "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 						},
@@ -315,7 +319,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion)),
 						InitWithCoreProvider:            "cluster-api:" + e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion),
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(LatestProviderUpgradeVersion)},
-						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
+						Upgrades: []ClusterctlUpgradeSpecInputUpgrade{
 							{
 								Contract: clusterv1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
