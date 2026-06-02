@@ -29,22 +29,41 @@ patches:
       kind: Deployment
       name: azureserviceoperator-controller-manager
       version: v1
-  - patch: |- # Grant the ASO controller's SA permission to delete
-      # customresourcedefinitions. The migrate-aso-crd-stored-versions
-      # init container deletes CRDs that have stale entries in
-      # status.storedVersions which the new bundle no longer lists in
-      # spec.versions; the new ASO controller then re-creates them from
-      # its bundled definitions. Without this verb, the init container's
-      # `kubectl delete crd` call is denied. The upstream ASO
+  - patch: |- # Grant the ASO controller's SA permission to delete the CRDs it
+      # manages. The migrate-aso-crd-stored-versions init container deletes
+      # CRDs that have stale entries in status.storedVersions which the new
+      # bundle no longer lists in spec.versions; the new ASO controller then
+      # re-creates them from its bundled definitions. Without this verb the
+      # init container's `kubectl delete crd` call is denied. The upstream ASO
       # azureserviceoperator-crd-manager-role grants
-      # [create get list patch update watch] on this resource; we
-      # additionally need delete.
+      # [create get list patch update watch] on customresourcedefinitions
+      # cluster-wide; we add delete as a separate rule scoped via resourceNames
+      # to just the CAPZ-managed CRDs, so a compromised ASO pod can't delete
+      # arbitrary CRDs in the cluster.
       - op: test
         path: /rules/0/resources/0
         value: customresourcedefinitions
       - op: add
-        path: /rules/0/verbs/-
-        value: delete
+        path: /rules/-
+        value:
+          apiGroups:
+            - apiextensions.k8s.io
+          resources:
+            - customresourcedefinitions
+          resourceNames:
+            - fleetsmembers.containerservice.azure.com
+            - maintenanceconfigurations.containerservice.azure.com
+            - managedclusters.containerservice.azure.com
+            - managedclustersagentpools.containerservice.azure.com
+            - extensions.kubernetesconfiguration.azure.com
+            - bastionhosts.network.azure.com
+            - natgateways.network.azure.com
+            - privateendpoints.network.azure.com
+            - virtualnetworks.network.azure.com
+            - virtualnetworkssubnets.network.azure.com
+            - resourcegroups.resources.azure.com
+          verbs:
+            - delete
     target:
       group: rbac.authorization.k8s.io
       kind: ClusterRole
