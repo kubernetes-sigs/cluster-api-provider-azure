@@ -43,7 +43,9 @@ spec:
           # deadline during upgrade on fresh management-cluster nodes.
           # The registry.k8s.io/kubectl distroless image has no /bin/sh
           # and cannot execute the inline migration script below.
-          image: docker.io/dtzar/helm-kubectl:4.2.0
+          # Pinned by digest (not just the mutable :4.2.0 tag) so the image
+          # this install path depends on can't change underneath us.
+          image: docker.io/dtzar/helm-kubectl:4.2.0@sha256:2d9159438b0d791e7082ef5c3884f68dcda9d99d44f4fdca4df5fa7206cc80b6
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
