@@ -70,7 +70,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              set -eu
+              set -euo pipefail
 
               # Each line: "<crd-name> <stale-stored-version>".
               # Add a new line here when a future ASO release removes another
@@ -104,8 +104,28 @@ spec:
 
                 instances=0
                 for v in $versions; do
-                  n=$(kubectl get "$${plural}.$${v}.$${group}" --all-namespaces \
-                        --ignore-not-found --no-headers 2>/dev/null | wc -l)
+                  resource="$${plural}.$${v}.$${group}"
+                  # Count instances while failing closed: send kubectl's stdout
+                  # to a file and capture only its stderr, so a real listing
+                  # failure (conversion webhook down, apiserver hiccup, RBAC
+                  # denial) can never be silently misread as "zero instances"
+                  # the way a piped `2>/dev/null | wc -l` would.
+                  if err=$(kubectl get "$resource" --all-namespaces --no-headers \
+                        -o name 2>&1 >/tmp/aso-migrate-instances.out); then
+                    n=$(sed '/^[[:space:]]*$/d' /tmp/aso-migrate-instances.out | wc -l)
+                  else
+                    case "$err" in
+                      *"the server doesn't have a resource type"*|*NotFound*|*NoMatchingResources*)
+                        # The served version genuinely has no resource type.
+                        n=0
+                        ;;
+                      *)
+                        echo "[migrate] ERROR: could not list $resource to confirm it is empty: $err" >&2
+                        echo "[migrate] Refusing to delete $crd while its instance count is unknown." >&2
+                        exit 1
+                        ;;
+                    esac
+                  fi
                   instances=$((instances + n))
                 done
 
