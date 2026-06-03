@@ -54,16 +54,48 @@ jobs:
           git remote add upstream https://github.com/kubernetes-sigs/cluster-api-provider-azure.git
           git fetch upstream ${{ matrix.upstream }}
 
+      - name: Read sync state
+        id: sync-state
+        run: |
+          STATE_FILE=".github/upstream-sync-state.json"
+          if [ -f "$STATE_FILE" ]; then
+            LAST_PROCESSED=$(jq -r '.last_processed_commit // ""' "$STATE_FILE")
+            jq -r '.excluded_commits | keys[]' "$STATE_FILE" > /tmp/excluded-shas.txt 2>/dev/null || true
+            EXCLUDED_COUNT=$(wc -l < /tmp/excluded-shas.txt | tr -d ' ')
+          else
+            LAST_PROCESSED=""
+            touch /tmp/excluded-shas.txt
+            EXCLUDED_COUNT=0
+          fi
+          echo "last_processed=${LAST_PROCESSED}" >> "$GITHUB_OUTPUT"
+          echo "excluded_count=${EXCLUDED_COUNT}" >> "$GITHUB_OUTPUT"
+          if [ -n "$LAST_PROCESSED" ]; then
+            echo "Last processed commit: ${LAST_PROCESSED}"
+          fi
+          if [ "$EXCLUDED_COUNT" -gt 0 ]; then
+            echo "Excluded commits configured: ${EXCLUDED_COUNT}"
+          fi
+
       - name: Find new upstream commits
         id: find-commits
         run: |
           mapfile -t ALL_COMMITS < <(git cherry origin/${{ matrix.target }} upstream/${{ matrix.upstream }} | awk '/^\+ / {print $2}')
           COMMITS=()
+          MERGE_SKIPPED=0
+          EXCLUDED_SKIPPED=0
           for SHA in "${ALL_COMMITS[@]}"; do
             PARENT_COUNT=$(git rev-list --parents -n1 "$SHA" | awk '{print NF-1}')
-            if [ "$PARENT_COUNT" -le 1 ]; then
-              COMMITS+=("$SHA")
+            if [ "$PARENT_COUNT" -gt 1 ]; then
+              MERGE_SKIPPED=$((MERGE_SKIPPED + 1))
+              continue
             fi
+            if grep -qx "$SHA" /tmp/excluded-shas.txt 2>/dev/null; then
+              EXCLUDED_SKIPPED=$((EXCLUDED_SKIPPED + 1))
+              TITLE=$(git log --format="%s" -1 "$SHA")
+              echo "🚫 Excluded: $(echo "$SHA" | cut -c1-8) ${TITLE}"
+              continue
+            fi
+            COMMITS+=("$SHA")
           done
           COMMIT_COUNT=${#COMMITS[@]}
           echo "count=${COMMIT_COUNT}" >> "$GITHUB_OUTPUT"
@@ -71,7 +103,7 @@ jobs:
           if [ "$COMMIT_COUNT" -eq 0 ]; then
             echo "No new upstream commits found."
           else
-            echo "Found ${COMMIT_COUNT} new upstream commits (excluded $((${#ALL_COMMITS[@]} - COMMIT_COUNT)) merge commits)."
+            echo "Found ${COMMIT_COUNT} new upstream commits (skipped ${MERGE_SKIPPED} merge, ${EXCLUDED_SKIPPED} excluded)."
           fi
 
       - name: Check for existing sync PR
@@ -112,12 +144,15 @@ jobs:
           mapfile -t SHAS < <(git cherry origin/${{ matrix.target }} upstream/${{ matrix.upstream }} | awk '/^\+ / {print $2}')
           TOTAL=${#SHAS[@]}
           APPLIED=0
+          EXCLUDED=0
           CONFLICT_SHA=""
           CONFLICT_TITLE=""
           CONFLICT_FULL_SHA=""
           APPLIED_LINES=""
+          EXCLUDED_LINES=""
           REMAINING_LINES=""
           HIT_CONFLICT=false
+          LAST_PROCESSED=""
 
           for SHA in "${SHAS[@]}"; do
             TITLE=$(git log --format="%s" -1 "$SHA")
@@ -130,6 +165,15 @@ jobs:
               continue
             fi
 
+            if grep -qx "$SHA" /tmp/excluded-shas.txt 2>/dev/null; then
+              EXCLUDED=$((EXCLUDED + 1))
+              TOTAL=$((TOTAL - 1))
+              LAST_PROCESSED="$SHA"
+              EXCLUDED_LINES=$(printf '%s\n- `%s` %s' "$EXCLUDED_LINES" "$SHORT" "$TITLE")
+              echo "🚫 Excluded: ${SHORT} ${TITLE}"
+              continue
+            fi
+
             if [ "$HIT_CONFLICT" = true ]; then
               REMAINING_LINES=$(printf '%s\n- `%s` %s' "$REMAINING_LINES" "$SHORT" "$TITLE")
               continue
@@ -137,6 +181,7 @@ jobs:
 
             if git cherry-pick --no-edit "$SHA"; then
               APPLIED=$((APPLIED + 1))
+              LAST_PROCESSED="$SHA"
               APPLIED_LINES=$(printf '%s\n- `%s` %s' "$APPLIED_LINES" "$SHORT" "$TITLE")
               echo "✅ Applied: ${SHORT} ${TITLE}"
             else
@@ -151,6 +196,8 @@ jobs:
 
           echo "applied=${APPLIED}" >> "$GITHUB_OUTPUT"
           echo "total=${TOTAL}" >> "$GITHUB_OUTPUT"
+          echo "excluded=${EXCLUDED}" >> "$GITHUB_OUTPUT"
+          echo "last_processed=${LAST_PROCESSED}" >> "$GITHUB_OUTPUT"
           echo "conflict_sha=${CONFLICT_SHA}" >> "$GITHUB_OUTPUT"
           echo "conflict_full_sha=${CONFLICT_FULL_SHA}" >> "$GITHUB_OUTPUT"
 
@@ -168,10 +215,32 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           DELIM=$(openssl rand -hex 16)
           {
+            echo "excluded_lines<<${DELIM}"
+            echo "$EXCLUDED_LINES"
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+          DELIM=$(openssl rand -hex 16)
+          {
             echo "remaining_lines<<${DELIM}"
             echo "$REMAINING_LINES"
             echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Update sync state
+        if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == '' && steps.cherry-pick.outputs.last_processed != ''
+        env:
+          LAST_PROCESSED: ${{ steps.cherry-pick.outputs.last_processed }}
+        run: |
+          STATE_FILE=".github/upstream-sync-state.json"
+          if [ ! -f "$STATE_FILE" ]; then
+            echo '{"last_processed_commit":"","excluded_commits":{}}' > "$STATE_FILE"
+          fi
+          jq --arg sha "$LAST_PROCESSED" '.last_processed_commit = $sha' "$STATE_FILE" > /tmp/state-update.json
+          mv /tmp/state-update.json "$STATE_FILE"
+          git add "$STATE_FILE"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update upstream sync state"
+          fi
 
       - name: Push and create draft PR
         if: steps.find-commits.outputs.count != '0' && steps.existing-pr.outputs.number == '' && steps.cherry-pick.outputs.applied != '0'
@@ -180,10 +249,12 @@ jobs:
           SYNC_BRANCH: ${{ steps.cherry-pick.outputs.branch }}
           APPLIED: ${{ steps.cherry-pick.outputs.applied }}
           TOTAL: ${{ steps.cherry-pick.outputs.total }}
+          EXCLUDED: ${{ steps.cherry-pick.outputs.excluded }}
           CONFLICT_SHA: ${{ steps.cherry-pick.outputs.conflict_sha }}
           CONFLICT_TITLE: ${{ steps.cherry-pick.outputs.conflict_title }}
           CONFLICT_FULL_SHA: ${{ steps.cherry-pick.outputs.conflict_full_sha }}
           APPLIED_LINES: ${{ steps.cherry-pick.outputs.applied_lines }}
+          EXCLUDED_LINES: ${{ steps.cherry-pick.outputs.excluded_lines }}
           REMAINING_LINES: ${{ steps.cherry-pick.outputs.remaining_lines }}
           TARGET: ${{ matrix.target }}
           UPSTREAM: ${{ matrix.upstream }}
@@ -200,6 +271,14 @@ jobs:
             echo "### Applied"
             echo "$APPLIED_LINES"
             echo ""
+
+            if [ "$EXCLUDED" -gt 0 ] 2>/dev/null; then
+              echo "### 🚫 Excluded (${EXCLUDED})"
+              echo "$EXCLUDED_LINES"
+              echo ""
+              echo "_Excluded commits are configured in \`.github/upstream-sync-state.json\`._"
+              echo ""
+            fi
 
             if [ -n "$CONFLICT_SHA" ]; then
               echo "### ❌ Conflict"
@@ -258,3 +337,43 @@ jobs:
           echo ""
           echo "Then re-run this workflow."
           exit 1
+
+      - name: Write status summary
+        if: always()
+        env:
+          TARGET: ${{ matrix.target }}
+          UPSTREAM: ${{ matrix.upstream }}
+          COMMIT_COUNT: ${{ steps.find-commits.outputs.count || '0' }}
+          APPLIED: ${{ steps.cherry-pick.outputs.applied || '0' }}
+          EXCLUDED: ${{ steps.cherry-pick.outputs.excluded || '0' }}
+          TOTAL: ${{ steps.cherry-pick.outputs.total || '0' }}
+          LAST_PROCESSED: ${{ steps.cherry-pick.outputs.last_processed || steps.sync-state.outputs.last_processed }}
+          EXISTING_PR: ${{ steps.existing-pr.outputs.number }}
+          EXCLUDED_COUNT: ${{ steps.sync-state.outputs.excluded_count || '0' }}
+        run: |
+          {
+            echo "## Sync Status: \`${UPSTREAM}\` → \`${TARGET}\`"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|--------|-------|"
+            if [ -n "$LAST_PROCESSED" ]; then
+              LP_SHORT=$(echo "$LAST_PROCESSED" | cut -c1-8)
+              echo "| Last processed commit | \`${LP_SHORT}\` |"
+            else
+              echo "| Last processed commit | _none_ |"
+            fi
+            echo "| New commits found | ${COMMIT_COUNT} |"
+            echo "| Applied this run | ${APPLIED} |"
+            echo "| Excluded (configured) | ${EXCLUDED_COUNT} |"
+            if [ -n "$EXISTING_PR" ]; then
+              echo "| Status | ⏸️ Skipped — open PR #${EXISTING_PR} exists |"
+            elif [ "$COMMIT_COUNT" = "0" ]; then
+              echo "| Status | ✅ Fully synced |"
+            elif [ "$APPLIED" = "$TOTAL" ] 2>/dev/null; then
+              echo "| Status | ✅ All commits applied |"
+            else
+              REMAINING=$((TOTAL - APPLIED))
+              echo "| Remaining after this run | ${REMAINING} |"
+              echo "| Status | ⚠️ Partial sync |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
