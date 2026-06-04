@@ -34,9 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["go", "python"]
-        # CodeQL supports [ $supported-codeql-languages ]
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+        language: ["actions", "go", "python"]
 
     steps:
       - name: Harden Runner
