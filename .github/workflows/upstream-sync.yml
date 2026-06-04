@@ -6,13 +6,12 @@ on:
     - cron: '17 8 * * 1'  # Every Monday at 08:17 UTC
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     timeout-minutes: 30
     concurrency:
       group: upstream-sync-${{ matrix.target }}
