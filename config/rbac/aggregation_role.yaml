@@ -7,4 +7,3 @@ aggregationRule:
   clusterRoleSelectors:
   - matchLabels:
       cluster.x-k8s.io/aggregate-to-capz-manager: "true"
-rules: []
