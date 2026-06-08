@@ -11,23 +11,6 @@ patches:
 - path: ../patches/tags.yaml
 - path: ../patches/controller-manager.yaml
 - path: ../patches/cluster-label-cloud-provider-azure.yaml
-- path: ../patches/azl4-azuremachinetemplate-image.yaml
-- path: ../patches/azl4-remove-marketplace-image.yaml
-- path: ../patches/azl4-kubeadmcontrolplane-setup.yaml
-  target:
-    group: controlplane.cluster.x-k8s.io
-    kind: KubeadmControlPlane
-    name: .*-control-plane
-    version: v1beta1
-- path: ../patches/azl4-kubeadmconfigtemplate-setup.yaml
-  target:
-    group: bootstrap.cluster.x-k8s.io
-    kind: KubeadmConfigTemplate
-    name: .*-md-0
-    namespace: default
-    version: v1beta1
-- path: ../patches/azl4-cloud-provider-azure-cacertdir.yaml
-- path: ../patches/azl4-cloud-provider-azure-ci-cacertdir.yaml
 
 sortOptions:
   order: fifo
