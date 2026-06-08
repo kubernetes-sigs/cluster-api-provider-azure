@@ -99,7 +99,7 @@ spec:
 
 ### Skipping Model Reconciliation
 - **Feature status:** Experimental (Alpha)
-- **Feature gate:** SkipMachinePoolModelReconciliation=false
+- **Feature gate:** SkipMachinePoolModelReconciliation
 - **Default value:** false (disabled)
 
 By default, when the VMSS model changes (for example, when the OS image, VM SKU, or any other field that maps to the
@@ -121,7 +121,7 @@ proactively replace instances running an older model with new instances (running
 
 This is useful for testing scenarios and for operators who want to manage instance refresh on their own schedule
 without disabling other reconciliation behavior. To enable it, set `EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION=true`
-in the CAPZ controller-manager environment (or pass `--feature-gates=SkipMachinePoolModelReconciliation=true`).
+in the CAPZ controller-manager environment, or pass `--feature-gates=SkipMachinePoolModelReconciliation=true` when running the manager directly.
 
 ### AzureMachinePoolMachines
 `AzureMachinePoolMachine` represents a virtual machine in the scale set. `AzureMachinePoolMachines` are created by the
