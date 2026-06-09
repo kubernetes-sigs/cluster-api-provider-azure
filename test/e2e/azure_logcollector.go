@@ -26,11 +26,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -129,15 +131,24 @@ func collectAzureMachinePoolLog(ctx context.Context, managementClusterClient cli
 		return err
 	}
 
-	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
-	if err != nil {
-		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Namespace, cluster.Spec.InfrastructureRef.Name, err)
-	}
-	subscriptionID := azureCluster.Spec.SubscriptionID
-	resourceGroup := azureCluster.Spec.ResourceGroup
 	name := (&scope.MachinePoolScope{AzureMachinePool: am}).Name()
 
-	return collectVMSSLog(ctx, cluster, subscriptionID, resourceGroup, name, outputPath)
+	azureCluster, err := getAzureCluster(ctx, managementClusterClient, cluster.Namespace, cluster.Spec.InfrastructureRef.Name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("get AzureCluster %s/%s: %w", cluster.Namespace, cluster.Spec.InfrastructureRef.Name, err)
+	}
+	if err == nil {
+		return collectVMSSLog(ctx, cluster, azureCluster.Spec.SubscriptionID, azureCluster.Spec.ResourceGroup, name, outputPath)
+	}
+
+	// For BYO VMSS attached to an AKS (AzureManagedControlPlane) cluster the VMSS lives in the
+	// AKS-managed node resource group and the cluster control plane endpoint isn't reachable via
+	// SSH, so use the Run Command API to grab bootstrap diagnostics directly from each instance.
+	amcp, err := getAzureManagedControlPlane(ctx, managementClusterClient, cluster.Namespace, cluster.Spec.ControlPlaneRef.Name)
+	if err != nil {
+		return fmt.Errorf("get AzureManagedControlPlane %s/%s: %w", cluster.Namespace, cluster.Spec.ControlPlaneRef.Name, err)
+	}
+	return collectVMSSLogViaRunCommand(ctx, amcp.Spec.SubscriptionID, amcp.Spec.NodeResourceGroupName, name, outputPath)
 }
 
 func collectVMLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptionID, resourceGroup, name, outputPath string) error {
@@ -302,6 +313,126 @@ func collectVMSSLog(ctx context.Context, cluster *clusterv1.Cluster, subscriptio
 	default:
 		return fmt.Errorf("unknown orchestration mode %q", mode)
 	}
+}
+
+// collectVMSSLogViaRunCommand collects bootstrap diagnostics from each instance of a VMSS via the
+// Azure Run Command API. This is used for BYO MachinePools attached to AKS clusters, where the
+// cluster's control plane endpoint isn't SSH-accessible but the VMSS instances are reachable via
+// the Azure control plane.
+func collectVMSSLogViaRunCommand(ctx context.Context, subscriptionID, resourceGroup, name, outputPath string) error {
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default azure credential")
+	}
+	vmssClient, err := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create virtual machine scale sets client")
+	}
+	instanceClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create virtual machine scale set VMs client")
+	}
+
+	vmss, err := vmssClient.Get(ctx, resourceGroup, name, nil)
+	if err != nil {
+		return fmt.Errorf("get VMSS %s/%s: %w", resourceGroup, name, err)
+	}
+	vmssName := ptr.Deref(vmss.Name, name)
+
+	pager := instanceClient.NewListPager(resourceGroup, name, nil)
+	var errs []error
+	for pager.More() {
+		instances, err := pager.NextPage(ctx)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("list VMSS %s/%s instances: %w", resourceGroup, name, err))
+			continue
+		}
+		for _, instance := range instances.Value {
+			if instance == nil || instance.InstanceID == nil {
+				errs = append(errs, fmt.Errorf("VMSS %s/%s instance has no ID", resourceGroup, name))
+				continue
+			}
+
+			instanceID := *instance.InstanceID
+			instanceDir := "instance-" + instanceID
+			if instance.Properties != nil &&
+				instance.Properties.OSProfile != nil &&
+				instance.Properties.OSProfile.ComputerName != nil {
+				instanceDir = *instance.Properties.OSProfile.ComputerName
+			}
+
+			if err := collectVMSSInstanceBootLog(ctx, instanceClient, resourceGroup, vmssName, instanceID, filepath.Join(outputPath, instanceDir)); err != nil {
+				errs = append(errs, errors.Wrapf(err, "collect boot log for VMSS %s/%s instance %s", resourceGroup, vmssName, instanceID))
+			}
+			if err := collectVMSSInstanceBootstrapLogViaRunCommand(ctx, instanceClient, resourceGroup, vmssName, instanceID, filepath.Join(outputPath, instanceDir)); err != nil {
+				errs = append(errs, errors.Wrapf(err, "collect bootstrap log for VMSS %s/%s instance %s", resourceGroup, vmssName, instanceID))
+			}
+		}
+	}
+	return kinderrors.NewAggregate(errs)
+}
+
+// collectVMSSInstanceBootstrapLogViaRunCommand invokes a single RunShellScript on a VMSS instance
+// to dump cloud-init and kubelet state. The combined output is written to bootstrap-diagnostics.log
+// in outputPath.
+//
+// The script is intentionally small. Azure Run Command caps the response message size and
+// truncates from the front, so we put the most verbose items first (they get dropped if anything
+// has to be cut) and the smallest, highest-signal items last so they always survive.
+func collectVMSSInstanceBootstrapLogViaRunCommand(ctx context.Context, instanceClient *armcompute.VirtualMachineScaleSetVMsClient, resourceGroup, vmssName, instanceID, outputPath string) error {
+	Logf("Collecting bootstrap diagnostics via Run Command for resource group %s, VMSS %s, instance %s", resourceGroup, vmssName, instanceID)
+
+	script := strings.Join([]string{
+		"set +e",
+		`echo "===== journalctl -u kubelet (tail 50) ====="`,
+		"journalctl -u kubelet --no-pager --output=short-precise -n 50 2>&1",
+		`echo "===== /var/log/cloud-init-output.log (tail 100) ====="`,
+		"tail -n 100 /var/log/cloud-init-output.log 2>&1",
+		`echo "===== cloud-init status ====="`,
+		"cloud-init status --long 2>&1",
+		`echo "===== /etc/kubernetes ====="`,
+		"ls -la /etc/kubernetes 2>&1",
+		`echo "===== /run/cluster-api sentinel files ====="`,
+		"ls -la /run/cluster-api/ 2>&1",
+	}, "\n")
+
+	runCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	poller, err := instanceClient.BeginRunCommand(runCtx, resourceGroup, vmssName, instanceID, armcompute.RunCommandInput{
+		CommandID: ptr.To("RunShellScript"),
+		Script:    []*string{ptr.To(script)},
+	}, nil)
+	if err != nil {
+		return errors.Wrap(err, "BeginRunCommand")
+	}
+	resp, err := poller.PollUntilDone(runCtx, nil)
+	if err != nil {
+		return errors.Wrap(err, "PollUntilDone")
+	}
+
+	var sb strings.Builder
+	for _, s := range resp.Value {
+		if s == nil {
+			continue
+		}
+		if s.Code != nil {
+			fmt.Fprintf(&sb, "[%s]\n", *s.Code)
+		}
+		if s.Message != nil {
+			sb.WriteString(*s.Message)
+			if !strings.HasSuffix(*s.Message, "\n") {
+				sb.WriteString("\n")
+			}
+		}
+	}
+
+	f, err := fileOnHost(filepath.Join(outputPath, "bootstrap-diagnostics.log"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(sb.String())
+	return err
 }
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
