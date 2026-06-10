@@ -1142,6 +1142,52 @@ func TestRouteTableSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "de-duplicates route tables shared by multiple subnets",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+							Location: "centralIndia",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "my-rg",
+							},
+							Subnets: infrav1.Subnets{
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetControlPlane},
+									RouteTable: infrav1.RouteTable{
+										Name: "shared-route-table",
+									},
+								},
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetNode},
+									RouteTable: infrav1.RouteTable{
+										Name: "shared-route-table",
+									},
+								},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: []azure.ResourceSpecGetter{
+				&routetables.RouteTableSpec{
+					Name:           "shared-route-table",
+					ResourceGroup:  "my-rg",
+					Location:       "centralIndia",
+					ClusterName:    "my-cluster",
+					AdditionalTags: make(infrav1.Tags),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
