@@ -342,6 +342,30 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			}(),
 			wantErr: false,
 		},
+		{
+			name:       "route table name can be defaulted from empty before AzureCluster is updated",
+			oldCluster: apifixtures.CreateValidCluster(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].RouteTable.Name = "cluster-test-node-routetable"
+				return cluster
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "route table name is immutable once set to a non-empty value",
+			oldCluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].RouteTable.Name = "cluster-test-node-routetable"
+				return cluster
+			}(),
+			cluster: func() *infrav1.AzureCluster {
+				cluster := apifixtures.CreateValidCluster()
+				cluster.Spec.NetworkSpec.Subnets[0].RouteTable.Name = "some-other-routetable"
+				return cluster
+			}(),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
