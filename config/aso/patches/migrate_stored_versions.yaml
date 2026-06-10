@@ -131,7 +131,11 @@ spec:
                         ;;
                     esac
                   fi
-                  instances=$((instances + n))
+                  # Every served version exposes the same stored objects
+                  # (the apiserver converts on the fly), so take the max
+                  # across versions rather than summing, which would
+                  # overcount by the number of served versions.
+                  [ "$n" -gt "$instances" ] && instances=$n
                 done
 
                 if [ "$instances" -ne 0 ]; then
