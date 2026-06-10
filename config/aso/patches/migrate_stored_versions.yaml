@@ -36,16 +36,17 @@ spec:
     spec:
       initContainers:
         - name: migrate-aso-crd-stored-versions
-          # dtzar/helm-kubectl is an alpine-based image (~63MB compressed)
-          # that bundles kubectl + helm alongside a POSIX shell. It is
-          # ~5x smaller than docker.io/alpine/k8s, which helps the new ASO
-          # deployment come Ready within clusterctl's 5m --wait-providers
-          # deadline during upgrade on fresh management-cluster nodes.
-          # The registry.k8s.io/kubectl distroless image has no /bin/sh
-          # and cannot execute the inline migration script below.
-          # Pinned by digest (not just the mutable :4.2.0 tag) so the image
+          # mcr.microsoft.com/oss/v2/kubernetes/kubectl is Microsoft's
+          # official AKS kubectl image, built on Azure Linux. Unlike the
+          # distroless registry.k8s.io/kubectl (which has no /bin/sh and
+          # cannot run the inline migration script below), it ships a POSIX
+          # shell and coreutils alongside kubectl, while staying small
+          # (~76MB compressed) by omitting helm. Sourcing it from
+          # mcr.microsoft.com avoids Docker Hub rate limits and works in
+          # air-gapped and sovereign Azure clouds.
+          # Pinned by digest (not just the mutable :v1.34.2 tag) so the image
           # this install path depends on can't change underneath us.
-          image: docker.io/dtzar/helm-kubectl:4.2.0@sha256:2d9159438b0d791e7082ef5c3884f68dcda9d99d44f4fdca4df5fa7206cc80b6
+          image: mcr.microsoft.com/oss/v2/kubernetes/kubectl:v1.34.2@sha256:86b29e730877e29eda8c94a2c0ab47f7a154b72ef7f8a081bacf2bae239a691e
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -117,7 +118,11 @@ spec:
                   # the way a piped `2>/dev/null | wc -l` would.
                   if err=$(kubectl get "$resource" --all-namespaces --no-headers \
                         -o name 2>&1 >/tmp/aso-migrate-instances.out); then
-                    n=$(sed '/^[[:space:]]*$/d' /tmp/aso-migrate-instances.out | wc -l)
+                    # grep -c counts non-blank lines (the Azure Linux kubectl
+                    # image has grep but no sed); `|| true` swallows grep's
+                    # exit-1-on-no-match so an empty list reads as 0, not a
+                    # pipefail abort.
+                    n=$(grep -c '[^[:space:]]' /tmp/aso-migrate-instances.out || true)
                   else
                     case "$err" in
                       *"the server doesn't have a resource type"*|*NotFound*|*NoMatchingResources*)
