@@ -208,6 +208,13 @@ MGMT_CLUSTER_TYPE ?= kind
 SKIP_CREATE_MGMT_CLUSTER ?= true
 WIN_REPO_URL ?=
 
+# Enable the SkipMachinePoolModelReconciliation feature gate for all E2E scenarios.
+# None of our test scenarios depend on CAPZ replacing stale VMSS VMs (those not
+# running the latest VMSS model), so we enable this to avoid unnecessary machine
+# replacement. Exporting it here propagates the value to the CAPZ controller-manager
+# deployment manifest (config/manager/manager.yaml) for make-driven E2E flows.
+export EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION ?= true
+
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
 

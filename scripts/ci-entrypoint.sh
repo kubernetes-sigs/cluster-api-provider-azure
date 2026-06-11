@@ -121,6 +121,10 @@ setup() {
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
     export MONITORING_MACHINE_COUNT="${MONITORING_MACHINE_COUNT:-0}"
     export EXP_CLUSTER_RESOURCE_SET="true"
+    # None of our test scenarios depend on CAPZ replacing stale VMSS VMs (those not
+    # running the latest VMSS model), so enable the SkipMachinePoolModelReconciliation
+    # feature gate to avoid unnecessary machine replacement.
+    export EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION="${EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION:-true}"
 
     # TODO figure out a better way to account for expected Windows node count
     if [[ "${TEST_WINDOWS:-}" == "true" ]]; then
