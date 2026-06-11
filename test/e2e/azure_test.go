@@ -826,10 +826,18 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 
 			By("creating a byo nodepool", func() {
+				// Pin the BYO (self-managed) node to one patch below the AKS
+				// control plane version as a disambiguation experiment and
+				// stopgap for #6354: the BYO kubelet stopped joining the AKS
+				// control plane when AKS rolled its patch version forward. A
+				// self-managed node only needs a published community-gallery
+				// image, so n-1 is a safe, available choice.
+				byoKubernetesVersion := previousPatchVersion(kubernetesVersion)
+				Byf("Pinning BYO nodepool to k8s version %s (AKS control plane is %s); see #6354", byoKubernetesVersion, kubernetesVersion)
 				AKSBYONodeSpec(ctx, func() AKSBYONodeSpecInput {
 					return AKSBYONodeSpecInput{
 						Cluster:             result.Cluster,
-						KubernetesVersion:   kubernetesVersion,
+						KubernetesVersion:   byoKubernetesVersion,
 						WaitIntervals:       e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 						ExpectedWorkerNodes: result.ExpectedWorkerNodes(),
 					}

@@ -22,6 +22,8 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
@@ -53,6 +55,22 @@ func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfi
 	}
 
 	return maxVersion, nil
+}
+
+// previousPatchVersion returns the Kubernetes version one patch release below v
+// (e.g. "v1.35.5" -> "v1.35.4"), preserving the leading "v". If v can't be
+// parsed or the patch is already zero, v is returned unchanged. This is used to
+// pin self-managed (BYO) nodes one patch below the AKS control plane; see #6354.
+func previousPatchVersion(v string) string {
+	parts := strings.SplitN(strings.TrimPrefix(v, "v"), ".", 3)
+	if len(parts) != 3 {
+		return v
+	}
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil || patch <= 0 {
+		return v
+	}
+	return fmt.Sprintf("v%s.%s.%d", parts[0], parts[1], patch-1)
 }
 
 // GetWorkingAKSKubernetesVersion returns an available Kubernetes version of AKS given a desired semver version, if possible.

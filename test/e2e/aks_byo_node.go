@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -53,6 +54,19 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 	infraControlPlane := &infrav1.AzureManagedControlPlane{}
 	err := mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
 	Expect(err).NotTo(HaveOccurred())
+
+	// The standard e2e log collector can't reach BYO nodes that never joined
+	// (it SSHes through a control-plane bastion, which a managed AKS control
+	// plane doesn't have). Collect BYO node diagnostics ourselves, but only if
+	// the spec fails, before the cluster is torn down in AfterEach. See #6354.
+	DeferCleanup(func(ctx SpecContext) {
+		if !CurrentSpecReport().Failed() {
+			return
+		}
+		clientset := bootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Spec.ControlPlaneRef.Name).GetClientSet()
+		outputPath := filepath.Join(artifactFolder, "clusters", input.Cluster.Name, "byo-pool-debug")
+		collectBYONodeDiagnostics(ctx, clientset, getSubscriptionID(Default), infraControlPlane.Spec.NodeResourceGroupName, "byo-pool", outputPath)
+	})
 
 	By("Creating a self-managed machine pool with 2 nodes")
 	infraMachinePool := &infrav1exp.AzureMachinePool{
