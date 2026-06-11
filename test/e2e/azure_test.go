@@ -651,7 +651,10 @@ var _ = Describe("Workload cluster creation", func() {
 
 	// You can override the default SKU `Standard_D2s_v3` by setting the
 	// `AZURE_AKS_NODE_MACHINE_TYPE` environment variable.
-	Context("Creating an AKS cluster for control plane tests [Managed Kubernetes]", func() {
+	// DO NOT MERGE: temporarily marked Pending (PContext) so the e2e-aks job
+	// runs only the node-pool spec below while iterating on the BYO node-join
+	// diagnostics. Pending specs are skipped cleanly (no non-zero exit). Revert.
+	PContext("Creating an AKS cluster for control plane tests [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, aksClusterNameSuffix)
 			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
@@ -856,7 +859,8 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating an AKS cluster using ClusterClass [Managed Kubernetes]", func() {
+	// DO NOT MERGE: temporarily Pending; see note above. Revert before merge.
+	PContext("Creating an AKS cluster using ClusterClass [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			// Use default as the clusterclass name so test infra can find the clusterclass template
 			Expect(os.Setenv("CLUSTER_CLASS_NAME", "default")).To(Succeed())
@@ -901,7 +905,8 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating an AKS cluster with the ASO API [Managed Kubernetes]", func() {
+	// DO NOT MERGE: temporarily Pending; see note above. Revert before merge.
+	PContext("Creating an AKS cluster with the ASO API [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "asoapi")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
