@@ -341,7 +341,7 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -408,7 +408,7 @@ func TestSubnetDefaults(t *testing.T) {
 									Name:       "my-controlplane-subnet",
 								},
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -474,7 +474,7 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -673,6 +673,76 @@ func TestSubnetDefaults(t *testing.T) {
 			},
 		},
 		{
+			name: "control plane subnet inherits the node subnet's custom route table",
+			cluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetControlPlane,
+									Name: "cluster-test-controlplane-subnet",
+								},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role: infrav1.SubnetNode,
+									Name: "cluster-test-node-subnet",
+								},
+								RouteTable: infrav1.RouteTable{
+									Name: "custom-node-route-table",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetControlPlane,
+									CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+									Name:       "cluster-test-controlplane-subnet",
+								},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								// Inherits the node subnet's custom route table name, not
+								// the generated default, so it shares the table CCM manages.
+								RouteTable: infrav1.RouteTable{Name: "custom-node-route-table"},
+							},
+							{
+								SubnetClassSpec: infrav1.SubnetClassSpec{
+									Role:       infrav1.SubnetNode,
+									CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+									Name:       "cluster-test-node-subnet",
+								},
+								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    infrav1.RouteTable{Name: "custom-node-route-table"},
+								NatGateway: infrav1.NatGateway{
+									NatGatewayClassSpec: infrav1.NatGatewayClassSpec{
+										Name: "cluster-test-node-natgw-1",
+									},
+									NatGatewayIP: infrav1.PublicIPSpec{
+										Name: "pip-cluster-test-node-natgw-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "only node subnet specified",
 			cluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -725,7 +795,7 @@ func TestSubnetDefaults(t *testing.T) {
 									Name:       "cluster-test-controlplane-subnet",
 								},
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 						},
 					},
@@ -785,7 +855,7 @@ func TestSubnetDefaults(t *testing.T) {
 									Name:       "cluster-test-controlplane-subnet",
 								},
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -896,6 +966,7 @@ func TestSubnetDefaults(t *testing.T) {
 									},
 									Name: "my-custom-sg",
 								},
+								RouteTable: infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -1008,6 +1079,7 @@ func TestSubnetDefaults(t *testing.T) {
 									},
 									Name: "my-custom-sg",
 								},
+								RouteTable: infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
@@ -1075,7 +1147,7 @@ func TestSubnetDefaults(t *testing.T) {
 								},
 								ID:            "my-subnet-id",
 								SecurityGroup: infrav1.SecurityGroup{Name: "cluster-test-controlplane-nsg"},
-								RouteTable:    infrav1.RouteTable{},
+								RouteTable:    infrav1.RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								SubnetClassSpec: infrav1.SubnetClassSpec{
