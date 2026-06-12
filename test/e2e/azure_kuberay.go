@@ -41,8 +41,8 @@ const (
 	kubeRayOperatorHelmChartName   = "kuberay-operator"
 	kubeRayOperatorHelmReleaseName = "kuberay-operator"
 	kubeRayOperatorNamespace       = "default"
-	kubeRayVersion                 = "1.6.0"
-	rayVersion                     = "2.54.1"
+	kubeRayVersion                 = "1.6.1"
+	rayVersion                     = "2.55.1"
 	rayImage                       = "rayproject/ray:" + rayVersion
 	objectStoreMemory              = "200000000" // ~200MB, prevents Ray from consuming all of /dev/shm
 )
