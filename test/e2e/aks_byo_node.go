@@ -116,7 +116,13 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 					},
 				},
 			},
-			PreKubeadmCommands: []string{"kubeadm init phase upload-config all"},
+			PreKubeadmCommands: []string{
+				// Retry upload-config because the AKS apiserver intermittently returns connection-refused
+				// or rate-limit-exceeded during the BYO cloud-init window. A single failure here leaves
+				// kubeadm-config absent, which then causes the subsequent kubeadm join to fail with
+				// "configmaps \"kubeadm-config\" not found" and the node never registers.
+				`bash -c 'for i in 1 2 3 4 5 6; do kubeadm init phase upload-config all && exit 0; echo "kubeadm upload-config failed (attempt $i/6), retrying in 10s..."; sleep 10; done; echo "kubeadm upload-config failed after 6 attempts"; exit 1'`,
+			},
 		},
 	}
 	err = mgmtClient.Create(ctx, kubeadmConfig)
