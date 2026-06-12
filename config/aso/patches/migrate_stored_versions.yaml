@@ -1,0 +1,178 @@
+# Init container that cleans up obsolete entries in
+# `status.storedVersions` for ASO-managed CRDs before the new ASO controller
+# tries to apply them. Without this, an upgrade from a CAPZ release bundling
+# ASO <= v2.16 to this release (auto-managed-CRDs mode) fails because the new
+# ASO CRD bundle no longer lists previously-stored API versions in
+# `spec.versions`, and the Kubernetes API server rejects the CRD update with:
+#
+#   status.storedVersions[i]: Invalid value: "<version>": missing from
+#   spec.versions; ... must remain in spec.versions until a storage migration
+#   ensures no data remains persisted in <version> ...
+#
+# For each known-affected CRD, this script:
+#   * exits cleanly if the CRD doesn't exist (fresh install) or no stale
+#     stored versions are present;
+#   * deletes the CRD when no instances exist (the common case, since the
+#     affected resources are opt-in features). The new ASO controller
+#     re-creates the CRD from its bundled definition during startup, with
+#     `status.storedVersions` containing only the new storage version.
+#     We delete (rather than patch) because the new ASO bundle's
+#     `spec.versions` for the affected CRDs is fully disjoint from the
+#     pre-existing one (e.g. fleetsmembers drops the `v1api20230315preview*`
+#     series entirely in favor of `v1api20250301*`), so there is no served
+#     version we could flip the storage flag onto that the new bundle would
+#     keep, and any in-place patch leaves a stale storedVersions entry that
+#     the subsequent CRD apply will reject;
+#   * fails the init container with a clear message when instances do exist,
+#     so the upgrade fails fast with actionable guidance instead of leaving
+#     the ASO deployment stuck.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azureserviceoperator-controller-manager
+  namespace: capz-system
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: migrate-aso-crd-stored-versions
+          # mcr.microsoft.com/oss/v2/kubernetes/kubectl is Microsoft's
+          # official AKS kubectl image, built on Azure Linux. Unlike the
+          # distroless registry.k8s.io/kubectl (which has no /bin/sh and
+          # cannot run the inline migration script below), it ships a POSIX
+          # shell and coreutils alongside kubectl, while staying small
+          # (~76MB compressed) by omitting helm. Sourcing it from
+          # mcr.microsoft.com avoids Docker Hub rate limits and works in
+          # air-gapped and sovereign Azure clouds.
+          # Pinned by digest (not just the mutable :v1.34.2 tag) so the image
+          # this install path depends on can't change underneath us.
+          image: mcr.microsoft.com/oss/v2/kubernetes/kubectl:v1.34.2@sha256:86b29e730877e29eda8c94a2c0ab47f7a154b72ef7f8a081bacf2bae239a691e
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            # Keep kubectl's discovery cache out of $HOME so the container can
+            # run without a writable home directory.
+            - name: KUBECACHEDIR
+              value: /tmp/.kube/cache
+            - name: HOME
+              value: /tmp
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+
+              # Each line: "<crd-name> <stale-stored-version>".
+              # Add a new line here when a future ASO release removes another
+              # previously-stored version (e.g., the planned v2.18 removal of
+              # containerservice/v1api20230201 and v1api20231001 from
+              # ManagedCluster and AgentPool).
+              CASES="
+              fleetsmembers.containerservice.azure.com v1api20230315previewstorage
+              "
+
+              echo "$CASES" | while read -r crd stale; do
+                [ -z "$crd" ] && continue
+
+                if ! kubectl get crd "$crd" >/dev/null 2>&1; then
+                  echo "[migrate] $crd not present; skipping."
+                  continue
+                fi
+
+                stored=$(kubectl get crd "$crd" -o 'jsonpath={.status.storedVersions[*]}')
+                case " $stored " in
+                  *" $stale "*) ;;
+                  *)
+                    echo "[migrate] $crd has no stale stored version $stale; skipping."
+                    continue
+                    ;;
+                esac
+
+                group=$(kubectl get crd "$crd" -o 'jsonpath={.spec.group}')
+                plural=$(kubectl get crd "$crd" -o 'jsonpath={.spec.names.plural}')
+                versions=$(kubectl get crd "$crd" -o 'jsonpath={.spec.versions[*].name}')
+
+                instances=0
+                for v in $versions; do
+                  resource="$${plural}.$${v}.$${group}"
+                  # Count instances while failing closed: send kubectl's stdout
+                  # to a file and capture only its stderr, so a real listing
+                  # failure (conversion webhook down, apiserver hiccup, RBAC
+                  # denial) can never be silently misread as "zero instances"
+                  # the way a piped `2>/dev/null | wc -l` would.
+                  if err=$(kubectl get "$resource" --all-namespaces --no-headers \
+                        -o name 2>&1 >/tmp/aso-migrate-instances.out); then
+                    # grep -c counts non-blank lines (the Azure Linux kubectl
+                    # image has grep but no sed); `|| true` swallows grep's
+                    # exit-1-on-no-match so an empty list reads as 0, not a
+                    # pipefail abort.
+                    n=$(grep -c '[^[:space:]]' /tmp/aso-migrate-instances.out || true)
+                  else
+                    case "$err" in
+                      *"the server doesn't have a resource type"*|*NotFound*|*NoMatchingResources*)
+                        # The served version genuinely has no resource type.
+                        n=0
+                        ;;
+                      *)
+                        echo "[migrate] ERROR: could not list $resource to confirm it is empty: $err" >&2
+                        echo "[migrate] Refusing to delete $crd while its instance count is unknown." >&2
+                        exit 1
+                        ;;
+                    esac
+                  fi
+                  # Every served version exposes the same stored objects
+                  # (the apiserver converts on the fly), so take the max
+                  # across versions rather than summing, which would
+                  # overcount by the number of served versions.
+                  [ "$n" -gt "$instances" ] && instances=$n
+                done
+
+                if [ "$instances" -ne 0 ]; then
+                  cat >&2 <<EOF
+              [migrate] ERROR: $crd has $instances instance(s) but its
+              status.storedVersions still references $stale, which the new
+              Azure Service Operator no longer serves.
+
+              Run 'asoctl clean crds' against this cluster to migrate the
+              stored objects before retrying the CAPZ upgrade. See
+              https://azure.github.io/azure-service-operator/guide/crd-management/
+              for details.
+              EOF
+                  exit 1
+                fi
+
+                # A direct `kubectl patch ... --subresource=status` to drop
+                # the stale entry from status.storedVersions is silently a
+                # no-op whenever the stale version is also the
+                # currently-active storage version (the API server refuses
+                # to remove the active storage version from storedVersions).
+                # Flipping the storage flag onto another existing served
+                # version doesn't help either: the new ASO bundle's
+                # spec.versions for these CRDs is fully disjoint from what
+                # the pre-existing CRD lists, so any version we could flip
+                # to would itself be stale on the next CRD apply.
+                #
+                # Since there are no instances, simply delete the CRD. The
+                # new ASO controller will recreate it from the bundled
+                # definition with status.storedVersions containing only the
+                # new storage version.
+                echo "[migrate] $crd has no instances and stale storedVersions=[$stored]; deleting CRD so the new ASO controller can recreate it from the bundled definition."
+                kubectl delete crd "$crd" --wait=true
+                echo "[migrate] $crd deleted."
+              done
