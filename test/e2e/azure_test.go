@@ -836,6 +836,11 @@ var _ = Describe("Workload cluster creation", func() {
 				// self-managed node only needs a published community-gallery
 				// image, so n-1 is a safe, available choice.
 				byoKubernetesVersion := previousPatchVersion(kubernetesVersion)
+				// DO NOT MERGE: temporarily disable the n-1 pin so the BYO node
+				// uses the same patch version as the AKS control plane. This
+				// reproduces the #6354 join failure on purpose so the on-failure
+				// diagnostics (CSR/kubelet/boot logs) are captured. Revert.
+				byoKubernetesVersion = kubernetesVersion
 				Byf("Pinning BYO nodepool to k8s version %s (AKS control plane is %s); see #6354", byoKubernetesVersion, kubernetesVersion)
 				AKSBYONodeSpec(ctx, func() AKSBYONodeSpecInput {
 					return AKSBYONodeSpecInput{
