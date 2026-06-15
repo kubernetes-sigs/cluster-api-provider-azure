@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -180,18 +181,29 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 
 	By("Adding the expected AKS labels to the nodes")
 	// TODO: move this to the MachinePool object once MachinePools support label propagation
-	Eventually(func(g Gomega) {
-		nodeList, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(int32(len(nodeList.Items))).To(Equal(input.ExpectedWorkerNodes + 2))
-		for i, node := range nodeList.Items {
-			if _, ok := node.Labels["kubernetes.azure.com/cluster"]; !ok {
-				node.Labels["kubernetes.azure.com/cluster"] = infraControlPlane.Spec.NodeResourceGroupName
-				_, err := clientset.CoreV1().Nodes().Update(ctx, &nodeList.Items[i], metav1.UpdateOptions{})
-				g.Expect(err).NotTo(HaveOccurred())
+	// The standard e2e log collector can't reach BYO nodes that never joined
+	// (it SSHes through a control-plane bastion, which a managed AKS control
+	// plane doesn't have). If the nodes never appear, collect BYO node
+	// diagnostics inline (before any cleanup runs) so the failure is
+	// diagnosable from CI artifacts. See #6354.
+	if failure := InterceptGomegaFailure(func() {
+		Eventually(func(g Gomega) {
+			nodeList, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(int32(len(nodeList.Items))).To(Equal(input.ExpectedWorkerNodes + 2))
+			for i, node := range nodeList.Items {
+				if _, ok := node.Labels["kubernetes.azure.com/cluster"]; !ok {
+					node.Labels["kubernetes.azure.com/cluster"] = infraControlPlane.Spec.NodeResourceGroupName
+					_, err := clientset.CoreV1().Nodes().Update(ctx, &nodeList.Items[i], metav1.UpdateOptions{})
+					g.Expect(err).NotTo(HaveOccurred())
+				}
 			}
-		}
-	}, input.WaitIntervals...).Should(Succeed())
+		}, input.WaitIntervals...).Should(Succeed())
+	}); failure != nil {
+		outputPath := filepath.Join(artifactFolder, "clusters", input.Cluster.Name, "byo-pool-debug")
+		collectBYONodeDiagnostics(ctx, clientset, getSubscriptionID(Default), infraControlPlane.Spec.NodeResourceGroupName, "byo-pool", outputPath)
+		Fail(failure.Error())
+	}
 
 	By("Verifying the MachinePool becomes ready")
 	Eventually(func(g Gomega) {
