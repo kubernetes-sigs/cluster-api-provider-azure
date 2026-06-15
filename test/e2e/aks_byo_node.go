@@ -116,7 +116,18 @@ func AKSBYONodeSpec(ctx context.Context, inputGetter func() AKSBYONodeSpecInput)
 					},
 				},
 			},
-			PreKubeadmCommands: []string{"kubeadm init phase upload-config all"},
+			// Copy the AKS admin kubeconfig to a non-default path before running
+			// "upload-config". As of kubeadm v1.35.5, "init" special-cases the
+			// default /etc/kubernetes/admin.conf path and reroutes the client to
+			// the local API endpoint (this node's own IP), which a self-managed
+			// worker doesn't run, so upload-config fails and the kubeadm-config
+			// ConfigMap is never created. Pointing --kubeconfig at a non-default
+			// path bypasses that rewrite and targets the AKS control plane. This
+			// is backward-compatible with older kubeadm versions.
+			PreKubeadmCommands: []string{
+				"cp /etc/kubernetes/admin.conf /etc/kubernetes/aks-admin.conf",
+				"kubeadm init phase upload-config all --kubeconfig /etc/kubernetes/aks-admin.conf",
+			},
 		},
 	}
 	err = mgmtClient.Create(ctx, kubeadmConfig)
