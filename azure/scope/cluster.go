@@ -381,8 +381,16 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 // RouteTableSpecs returns the subnet route tables.
 func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 	var specs []azure.ResourceSpecGetter
+	// Multiple subnets may reference the same route table (e.g. the control
+	// plane and node subnets both share the node route table), so de-duplicate
+	// by name to avoid reconciling the same route table more than once.
+	seen := make(map[string]struct{})
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if subnet.RouteTable.Name != "" {
+			if _, ok := seen[subnet.RouteTable.Name]; ok {
+				continue
+			}
+			seen[subnet.RouteTable.Name] = struct{}{}
 			specs = append(specs, &routetables.RouteTableSpec{
 				Name:           subnet.RouteTable.Name,
 				Location:       s.Location(),
