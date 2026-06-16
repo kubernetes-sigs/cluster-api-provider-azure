@@ -34,7 +34,7 @@ patches:
       # CRDs that have stale entries in status.storedVersions which the new
       # bundle no longer lists in spec.versions; the new ASO controller then
       # re-creates them from its bundled definitions. Without this verb the
-      # init container's `kubectl delete crd` call is denied. The upstream ASO
+      # init container's CRD delete is denied. The upstream ASO
       # azureserviceoperator-crd-manager-role grants
       # [create get list patch update watch] on customresourcedefinitions
       # cluster-wide; we add delete as a separate rule scoped via resourceNames
