@@ -171,9 +171,17 @@ create_cluster() {
 wait_for_nodes() {
   echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s), and ${MONITORING_MACHINE_COUNT} monitoring machine(s) to become Ready"
 
-    # Ensure that all nodes are registered with the API server before checking for readiness
-    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT + MONITORING_MACHINE_COUNT))"
-    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+    # EXPECTED_NODE_COUNT is set by install_addons from the actual CAPI replicas.
+    # Fall back to the machine count env vars if unset or it could not be computed.
+    local total_nodes="${EXPECTED_NODE_COUNT:-0}"
+    if [[ "${total_nodes}" -le 0 ]]; then
+        total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT + MONITORING_MACHINE_COUNT))"
+    fi
+
+    # Wait for at least total_nodes to register. -lt (not an exact match) avoids
+    # hanging when a template defines both a MachineDeployment and a MachinePool.
+    echo "Waiting for at least ${total_nodes} node(s) to become Ready"
+    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -lt "${total_nodes}" ]]; do
         sleep 10
     done
 
@@ -207,6 +215,18 @@ install_addons() {
     # In order to determine the successful outcome of CNI and cloud-provider-azure,
     # we need to wait a little bit for nodes and pods terminal state,
     # so we block successful return upon the cluster being fully operational.
+
+    # Derive the expected node count from the actual CAPI replicas (KCP +
+    # MachineDeployments + MachinePools). The CONTROL_PLANE/WORKER_MACHINE_COUNT
+    # formula undercounts templates with both a MachineDeployment and a MachinePool,
+    # since each consumes WORKER_MACHINE_COUNT (e.g. dual-stack and ipv6).
+    EXPECTED_NODE_COUNT=$("${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" \
+        get kubeadmcontrolplanes.v1beta1.controlplane.cluster.x-k8s.io,machinedeployments.v1beta1.cluster.x-k8s.io,machinepools.v1beta1.cluster.x-k8s.io \
+        -A -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" \
+        -o jsonpath='{range .items[*]}{.spec.replicas}{"\n"}{end}' 2>/dev/null \
+        | awk '{sum += $1} END {print sum + 0}') || EXPECTED_NODE_COUNT=0
+    export EXPECTED_NODE_COUNT
+
     export -f wait_for_nodes
     timeout --foreground 1800 bash -c wait_for_nodes
     export -f wait_for_pods
