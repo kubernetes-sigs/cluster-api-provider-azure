@@ -65,13 +65,13 @@ var rayJobGVR = schema.GroupVersionResource{
 
 var workloadGVR = schema.GroupVersionResource{
 	Group:    "scheduling.k8s.io",
-	Version:  "v1alpha2",
+	Version:  "v1alpha3",
 	Resource: "workloads",
 }
 
 var podGroupGVR = schema.GroupVersionResource{
 	Group:    "scheduling.k8s.io",
-	Version:  "v1alpha2",
+	Version:  "v1alpha3",
 	Resource: "podgroups",
 }
 
@@ -563,7 +563,7 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 // KubeRayNativeSchedulingNegativeSpec implements a negative test that verifies the NativeWorkloadScheduling
 // feature does NOT create Workload or PodGroup resources when the opt-in annotation is absent.
 // It creates a RayCluster without the ray.io/native-workload-scheduling annotation, waits for
-// the cluster to become ready, and confirms that no scheduling.k8s.io/v1alpha2 resources exist.
+// the cluster to become ready, and confirms that no scheduling.k8s.io/v1alpha3 resources exist.
 func KubeRayNativeSchedulingNegativeSpec(ctx context.Context, inputGetter func() KubeRaySpecInput) {
 	var (
 		specName       = "kuberay-native-scheduling"
@@ -634,7 +634,7 @@ func KubeRayNativeSchedulingNegativeSpec(ctx context.Context, inputGetter func()
 
 // newRayClusterWithNativeScheduling creates a RayCluster with the native workload scheduling
 // opt-in annotation. This triggers the KubeRay operator to create Workload and PodGroup resources
-// for gang scheduling via the Kubernetes-native scheduling.k8s.io/v1alpha2 API.
+// for gang scheduling via the Kubernetes-native scheduling.k8s.io/v1alpha3 API.
 func newRayClusterWithNativeScheduling(name, namespace string) *unstructured.Unstructured {
 	rc := newRayClusterUnstructured(name, namespace)
 	annotations := map[string]interface{}{
