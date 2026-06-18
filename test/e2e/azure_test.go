@@ -1634,7 +1634,7 @@ spec:
 
 	// KubeRay NativeWorkloadScheduling tests on a self-managed VM-based cluster with K8s 1.36+.
 	// This tests the unreleased NativeWorkloadScheduling feature from the kuberay workload-poc branch,
-	// which uses the Kubernetes-native scheduling.k8s.io/v1alpha2 API for gang scheduling of Ray pods.
+	// which uses the Kubernetes-native scheduling.k8s.io/v1alpha3 API for gang scheduling of Ray pods.
 	// The test requires:
 	//   - KUBERAY_SOURCE_DIR: path to the kuberay repo checked out at the workload-poc branch
 	//   - KUBERAY_OPERATOR_IMAGE_TAG: tag of the kuberay operator image built from source
