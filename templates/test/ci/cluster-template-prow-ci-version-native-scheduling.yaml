@@ -69,7 +69,7 @@ spec:
           v: "4"
       scheduler:
         extraArgs:
-          feature-gates: GenericWorkload=true,GangScheduling=true
+          feature-gates: GenericWorkload=true
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
