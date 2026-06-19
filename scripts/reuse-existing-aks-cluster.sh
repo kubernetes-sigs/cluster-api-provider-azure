@@ -85,14 +85,17 @@ delete_resources() {
 }
 
 delete_crds() {
-    # delete all the CRDs from the ASO_CRDS_PATH. ASO_CRDS_PATH is defined in Makefile.
-    # ASO_CRDS_PATH has the path to the yaml that has all the CRDs required for ASO.
-    print_info "Deleting all the CRDs from the ASO_CRDS_PATH using kubectl delete -f ${ASO_CRDS_PATH}"
-    if ! kubectl delete -f "${ASO_CRDS_PATH}" --force 2>/dev/null; then
-        print_warning "No ASO CRDs found or error deleting them, continuing..."
-    else
-        print_success "Successfully deleted ASO CRDs"
-    fi
+    # ASO_CRDS is a space-separated list of CRD names (defined in the Makefile) that
+    # CAPZ has historically asked ASO to manage. We delete them by name instead of by
+    # file path, since CAPZ no longer ships an aggregated ASO CRDs YAML.
+    print_info "Deleting ASO CRDs: ${ASO_CRDS}"
+    for crd in ${ASO_CRDS}; do
+        if ! kubectl delete crd "${crd}" --force 2>/dev/null; then
+            print_warning "CRD ${crd} not found or failed to delete, continuing..."
+        else
+            print_success "Successfully deleted ASO CRD ${crd}"
+        fi
+    done
 
     # delete all the CRDs from the CRD_ROOT. CRD_ROOT is defined in Makefile.
     # CRD_ROOT leads to a directory with a list of CRD yaml files for CAPZ.

@@ -25,10 +25,10 @@ import (
 
 	// +kubebuilder:scaffold:imports
 	asocontainerservicev1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
-	asocontainerservicev1api20230315preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
 	asocontainerservicev1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asocontainerservicev1api20240402preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240402preview"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
+	asocontainerservicev1api20250301 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250301"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
@@ -61,6 +61,7 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/asomigration"
 	expwebhooks "sigs.k8s.io/cluster-api-provider-azure/internal/exp/webhooks"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -86,7 +87,7 @@ func init() {
 	_ = asocontainerservicev1api20231001.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
-	_ = asocontainerservicev1api20230315preview.AddToScheme(scheme)
+	_ = asocontainerservicev1api20250301.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240402preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240901.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
@@ -278,6 +279,20 @@ func InitFlags(fs *pflag.FlagSet) {
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 func main() {
+	// migrate-aso-crds is a one-off maintenance subcommand run as an init
+	// container in the ASO deployment before the ASO controller applies its
+	// CRDs. It reuses this manager image so the upgrade path needs no separate
+	// image dependency.
+	if len(os.Args) > 1 && os.Args[1] == "migrate-aso-crds" {
+		ctrl.SetLogger(klog.Background())
+		if err := asomigration.MigrateStoredVersions(ctrl.SetupSignalHandler(), ctrl.GetConfigOrDie()); err != nil {
+			setupLog.Error(err, "ASO CRD stored-version migration failed")
+			os.Exit(1)
+		}
+		setupLog.Info("ASO CRD stored-version migration complete")
+		os.Exit(0)
+	}
+
 	InitFlags(pflag.CommandLine)
 	klog.InitFlags(flag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
