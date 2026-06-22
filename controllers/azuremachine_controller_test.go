@@ -18,9 +18,13 @@ package controllers
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -236,6 +240,41 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 			createAzureMachineService: getFakeAzureMachineServiceWithGeneralError,
 			cache:                     &scope.MachineCache{},
 			expectedErr:               "failed to reconcile AzureMachine",
+		},
+		"should set quota failure timestamp on first quota failure": {
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to reconcile AzureMachine service virtualmachines",
+		},
+		"should not cleanup NIC when grace period not elapsed": {
+			azureMachineOptions: func(am *infrav1.AzureMachine) {
+				am.Annotations = map[string]string{
+					azure.QuotaFailureTimestampAnnotation: time.Now().Add(-30 * time.Second).Format(time.RFC3339),
+				}
+			},
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to reconcile AzureMachine service virtualmachines",
+		},
+		"should cleanup NIC and fail permanently when grace period elapsed": {
+			azureMachineOptions: func(am *infrav1.AzureMachine) {
+				am.Annotations = map[string]string{
+					azure.QuotaFailureTimestampAnnotation: time.Now().Add(-2 * time.Minute).Format(time.RFC3339),
+				}
+			},
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaErrorAndNICDelete,
+			machineScopeFailureReason: azure.CreateError,
+			cache:                     &scope.MachineCache{},
+		},
+		"should return NIC delete error when grace period elapsed": {
+			azureMachineOptions: func(am *infrav1.AzureMachine) {
+				am.Annotations = map[string]string{
+					azure.QuotaFailureTimestampAnnotation: time.Now().Add(-2 * time.Minute).Format(time.RFC3339),
+				}
+			},
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaErrorAndNICDeleteError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to delete network interfaces",
 		},
 	}
 
@@ -513,6 +552,60 @@ func getFakeAzureMachineServiceWithGeneralError(machineScope *scope.MachineScope
 	return ams, nil
 }
 
+func getFakeAzureMachineServiceWithQuotaError(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
+	ams := getDefaultAzureMachineService(machineScope, cache)
+	quotaErr := &azcore.ResponseError{ErrorCode: "QuotaExceeded"}
+	ams.Reconcile = func(context.Context) error {
+		machineScope.UpdatePutStatus(infrav1.VMRunningCondition, "virtualmachines", quotaErr)
+		return errors.Wrapf(quotaErr, "failed to reconcile AzureMachine service virtualmachines")
+	}
+
+	return ams, nil
+}
+
+func getFakeAzureMachineServiceWithQuotaErrorAndNICDelete(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
+	ams := getDefaultAzureMachineService(machineScope, cache)
+	quotaErr := &azcore.ResponseError{ErrorCode: "QuotaExceeded"}
+	ams.Reconcile = func(context.Context) error {
+		machineScope.UpdatePutStatus(infrav1.VMRunningCondition, "virtualmachines", quotaErr)
+		return errors.Wrapf(quotaErr, "failed to reconcile AzureMachine service virtualmachines")
+	}
+	ams.DeleteNetworkInterfaces = func(context.Context) error {
+		return nil
+	}
+
+	return ams, nil
+}
+
+func getFakeAzureMachineServiceWithQuotaErrorAndNICDeleteError(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
+	ams := getDefaultAzureMachineService(machineScope, cache)
+	quotaErr := &azcore.ResponseError{ErrorCode: "QuotaExceeded"}
+	ams.Reconcile = func(context.Context) error {
+		machineScope.UpdatePutStatus(infrav1.VMRunningCondition, "virtualmachines", quotaErr)
+		return errors.Wrapf(quotaErr, "failed to reconcile AzureMachine service virtualmachines")
+	}
+	ams.DeleteNetworkInterfaces = func(context.Context) error {
+		return errors.New("failed to delete network interfaces")
+	}
+
+	return ams, nil
+}
+
 func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *resourceskus.Cache) *azureMachineService {
 	return &azureMachineService{
 		scope:    machineScope,
@@ -525,6 +618,9 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 			return nil
 		},
 		Delete: func(context.Context) error {
+			return nil
+		},
+		DeleteNetworkInterfaces: func(context.Context) error {
 			return nil
 		},
 	}
@@ -830,4 +926,93 @@ func conditionsMatch(i, j clusterv1beta1.Condition) bool {
 		i.Status == j.Status &&
 		i.Reason == j.Reason &&
 		i.Severity == j.Severity
+}
+
+func TestQuotaHandling(t *testing.T) {
+	t.Run("detects quota errors", func(t *testing.T) {
+		g := NewWithT(t)
+
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "QuotaExceeded"})).To(BeTrue())
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "ResourceQuotaExceeded"})).To(BeTrue())
+
+		// OperationNotAllowed uses respErr.Error() for message text; RawResponse.Body exercises that path.
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{
+			ErrorCode:  "OperationNotAllowed",
+			StatusCode: 409,
+			RawResponse: &http.Response{
+				StatusCode: http.StatusConflict,
+				Body:       io.NopCloser(strings.NewReader("Operation results in exceeding quota limits")),
+			},
+		})).To(BeTrue())
+
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{
+			ErrorCode:  "OperationNotAllowed",
+			StatusCode: 429,
+			RawResponse: &http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       io.NopCloser(strings.NewReader("Operation results in exceeding quota limits")),
+			},
+		})).To(BeTrue())
+
+		// OperationNotAllowed without quota keyword should be false
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{
+			ErrorCode:  "OperationNotAllowed",
+			StatusCode: 409,
+		})).To(BeFalse())
+
+		// OperationNotAllowed with quota keyword but wrong status should be false
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{
+			ErrorCode:  "OperationNotAllowed",
+			StatusCode: 403,
+			RawResponse: &http.Response{
+				StatusCode: http.StatusForbidden,
+				Body:       io.NopCloser(strings.NewReader("Operation results in exceeding quota limits")),
+			},
+		})).To(BeFalse())
+
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "OperationNotAllowed"})).To(BeFalse())
+		g.Expect(isQuotaExceededError(errors.New("other error"))).To(BeFalse())
+	})
+
+	t.Run("checks grace period from annotation", func(t *testing.T) {
+		g := NewWithT(t)
+
+		recentMachine := &infrav1.AzureMachine{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					azure.QuotaFailureTimestampAnnotation: time.Now().Add(-30 * time.Second).Format(time.RFC3339),
+				},
+			},
+		}
+		oldMachine := &infrav1.AzureMachine{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					azure.QuotaFailureTimestampAnnotation: time.Now().Add(-2 * time.Minute).Format(time.RFC3339),
+				},
+			},
+		}
+		g.Expect(isQuotaFailureGracePeriodElapsed(recentMachine)).To(BeFalse())
+		g.Expect(isQuotaFailureGracePeriodElapsed(oldMachine)).To(BeTrue())
+	})
+
+	t.Run("sets and removes quota failure timestamp annotation", func(t *testing.T) {
+		g := NewWithT(t)
+
+		azureMachine := &infrav1.AzureMachine{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-machine", Namespace: "default"},
+		}
+
+		setQuotaFailureTimestampIfAbsent(azureMachine)
+		_, ok := getQuotaFailureTimestamp(azureMachine)
+		g.Expect(ok).To(BeTrue())
+
+		originalTime, _ := getQuotaFailureTimestamp(azureMachine)
+		setQuotaFailureTimestampIfAbsent(azureMachine)
+		sameTime, _ := getQuotaFailureTimestamp(azureMachine)
+		g.Expect(sameTime).To(Equal(originalTime))
+
+		removeQuotaFailureTimestamp(azureMachine)
+		_, ok = getQuotaFailureTimestamp(azureMachine)
+		g.Expect(ok).To(BeFalse())
+	})
 }
