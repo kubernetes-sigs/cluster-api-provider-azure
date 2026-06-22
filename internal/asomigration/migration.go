@@ -50,11 +50,14 @@ type storedVersionMigration struct {
 }
 
 // storedVersionMigrations lists the known-affected ASO-managed CRDs. Add an
-// entry here when a future ASO release removes a previously-stored version
-// (e.g., the planned v2.18 removal of containerservice/v1api20230201 and
-// v1api20231001 from ManagedCluster and AgentPool).
+// entry here when a future ASO release removes a previously-stored version.
+// ASO v2.18 removes containerservice/v1api20231001 from ManagedCluster and
+// AgentPool; clusters that ran an early CAPZ-bundled ASO (v2.5-v2.8, where
+// v1api20231001storage was the hub) may still list it in status.storedVersions.
 var storedVersionMigrations = []storedVersionMigration{
 	{crd: "fleetsmembers.containerservice.azure.com", stale: "v1api20230315previewstorage"},
+	{crd: "managedclusters.containerservice.azure.com", stale: "v1api20231001storage"},
+	{crd: "managedclustersagentpools.containerservice.azure.com", stale: "v1api20231001storage"},
 }
 
 // crdDeletionTimeout bounds how long we wait for a deleted CRD to disappear.

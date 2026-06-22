@@ -24,7 +24,7 @@ import (
 	"slices"
 	"strings"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	// NOTE: when the hub API version is updated, verify the
 	// ManagedClusterAgentPoolProfile below has every field defined. If a field
 	// isn't defined, the agent pool will be created with a zero/null value, and

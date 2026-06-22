@@ -19,8 +19,8 @@ package controllers
 import (
 	"testing"
 
-	asocontainerservicev1api20231001 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250301"
+	asocontainerservicev1api20250801 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/gomega"
@@ -116,7 +116,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 		clusterv1.AddToScheme,
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
-		asocontainerservicev1api20231001.AddToScheme,
+		asocontainerservicev1api20250801.AddToScheme,
 		asonetworkv1.AddToScheme,
 		corev1.AddToScheme,
 		asocontainerservicev1.AddToScheme,
@@ -224,7 +224,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	}
 	g.Expect(c.Create(ctx, rg)).To(Succeed())
 
-	mc := &asocontainerservicev1api20231001.ManagedCluster{
+	mc := &asocontainerservicev1api20250801.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
