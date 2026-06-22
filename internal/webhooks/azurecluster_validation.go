@@ -392,6 +392,18 @@ func validateSecurityRule(rule infrav1.SecurityRule, fldPath *field.Path) (allEr
 	return allErrs
 }
 
+func validateAPIServerLBPrivateIPUnchanged(lb, old *infrav1.LoadBalancerSpec, fldPath *field.Path) *field.Error {
+	if lb == nil || old == nil || len(old.FrontendIPs) == 0 || len(lb.FrontendIPs) == 0 {
+		return nil
+	}
+	if old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
+		return field.Forbidden(
+			fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+			"API Server load balancer private IP should not be modified after AzureCluster creation.")
+	}
+	return nil
+}
+
 func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
@@ -434,12 +446,13 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 			if err := validateInternalLBIPAddress(privateIP, cidrs, fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
 				allErrs = append(allErrs, err)
 			}
-		} else {
-			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
-			if privateIPCount > 0 {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					"Public Load Balancers cannot have a Private IP"))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
+		} else if privateIPCount > 0 {
+			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+				"Public Load Balancers cannot have a Private IP"))
 		}
 	}
 
@@ -458,8 +471,8 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 				allErrs = append(allErrs, err)
 			}
 
-			if old != nil && len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
 		}
 	}
