@@ -204,6 +204,13 @@ func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, old, m *infrav1
 	}
 
 	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "virtualMachineScaleSetID"),
+		old.Spec.VirtualMachineScaleSetID,
+		m.Spec.VirtualMachineScaleSetID); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "disableExtensionOperations"),
 		old.Spec.DisableExtensionOperations,
 		m.Spec.DisableExtensionOperations); err != nil {
