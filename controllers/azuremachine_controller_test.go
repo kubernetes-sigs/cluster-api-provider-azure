@@ -18,9 +18,13 @@ package controllers
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +35,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -236,6 +241,41 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 			createAzureMachineService: getFakeAzureMachineServiceWithGeneralError,
 			cache:                     &scope.MachineCache{},
 			expectedErr:               "failed to reconcile AzureMachine",
+		},
+		"should mark condition on first quota failure": {
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to reconcile AzureMachine service virtualmachines",
+		},
+		"should not cleanup NIC when grace period not elapsed": {
+			azureMachineOptions: func(am *infrav1.AzureMachine) {
+				v1beta1conditions.Set(am, &clusterv1beta1.Condition{
+					Type:               infrav1.VMRunningCondition,
+					Status:             corev1.ConditionFalse,
+					Reason:             infrav1.VMProvisionFailedReason,
+					Severity:           clusterv1beta1.ConditionSeverityWarning,
+					LastTransitionTime: metav1.Time{Time: time.Now().Add(-30 * time.Second)},
+					Message:            "quota error",
+				})
+			},
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaError,
+			cache:                     &scope.MachineCache{},
+			expectedErr:               "failed to reconcile AzureMachine service virtualmachines",
+		},
+		"should cleanup NIC and fail permanently when grace period elapsed": {
+			azureMachineOptions: func(am *infrav1.AzureMachine) {
+				v1beta1conditions.Set(am, &clusterv1beta1.Condition{
+					Type:               infrav1.VMRunningCondition,
+					Status:             corev1.ConditionFalse,
+					Reason:             infrav1.VMProvisionFailedReason,
+					Severity:           clusterv1beta1.ConditionSeverityWarning,
+					LastTransitionTime: metav1.Time{Time: time.Now().Add(-2 * time.Minute)},
+					Message:            "quota error",
+				})
+			},
+			createAzureMachineService: getFakeAzureMachineServiceWithQuotaErrorAndNICDelete,
+			machineScopeFailureReason: azure.CreateError,
+			cache:                     &scope.MachineCache{},
 		},
 	}
 
@@ -513,6 +553,41 @@ func getFakeAzureMachineServiceWithGeneralError(machineScope *scope.MachineScope
 	return ams, nil
 }
 
+func getFakeAzureMachineServiceWithQuotaError(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
+	ams := getDefaultAzureMachineService(machineScope, cache)
+	quotaErr := &azcore.ResponseError{ErrorCode: "QuotaExceeded"}
+	ams.Reconcile = func(context.Context) error {
+		machineScope.UpdatePutStatus(infrav1.VMRunningCondition, "virtualmachines", quotaErr)
+		return errors.Wrapf(quotaErr, "failed to reconcile AzureMachine service virtualmachines")
+	}
+
+	return ams, nil
+}
+
+func getFakeAzureMachineServiceWithQuotaErrorAndNICDelete(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
+	ams := getDefaultAzureMachineService(machineScope, cache)
+	quotaErr := &azcore.ResponseError{ErrorCode: "QuotaExceeded"}
+	ams.Reconcile = func(context.Context) error {
+		machineScope.UpdatePutStatus(infrav1.VMRunningCondition, "virtualmachines", quotaErr)
+		return errors.Wrapf(quotaErr, "failed to reconcile AzureMachine service virtualmachines")
+	}
+	ams.DeleteOrphanedNIC = func(context.Context) error {
+		return nil
+	}
+
+	return ams, nil
+}
+
 func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *resourceskus.Cache) *azureMachineService {
 	return &azureMachineService{
 		scope:    machineScope,
@@ -525,6 +600,9 @@ func getDefaultAzureMachineService(machineScope *scope.MachineScope, cache *reso
 			return nil
 		},
 		Delete: func(context.Context) error {
+			return nil
+		},
+		DeleteOrphanedNIC: func(context.Context) error {
 			return nil
 		},
 	}
@@ -830,4 +908,56 @@ func conditionsMatch(i, j clusterv1beta1.Condition) bool {
 		i.Status == j.Status &&
 		i.Reason == j.Reason &&
 		i.Severity == j.Severity
+}
+
+func TestQuotaHandling(t *testing.T) {
+	g := NewWithT(t)
+
+	t.Run("detects quota errors", func(t *testing.T) {
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "QuotaExceeded"})).To(BeTrue())
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "ResourceQuotaExceeded"})).To(BeTrue())
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "OperationNotAllowed", RawResponse: &http.Response{
+			Body: io.NopCloser(strings.NewReader("Operation results in exceeding quota limits")),
+		}})).To(BeTrue())
+		g.Expect(isQuotaExceededError(&azcore.ResponseError{ErrorCode: "OperationNotAllowed"})).To(BeFalse())
+		g.Expect(isQuotaExceededError(errors.New("other error"))).To(BeFalse())
+	})
+
+	t.Run("checks grace period", func(t *testing.T) {
+		recentCond := &clusterv1beta1.Condition{
+			Type:               infrav1.VMRunningCondition,
+			Status:             corev1.ConditionFalse,
+			Reason:             infrav1.VMProvisionFailedReason,
+			LastTransitionTime: metav1.Time{Time: time.Now().Add(-30 * time.Second)},
+		}
+		oldCond := &clusterv1beta1.Condition{
+			Type:               infrav1.VMRunningCondition,
+			Status:             corev1.ConditionFalse,
+			Reason:             infrav1.VMProvisionFailedReason,
+			LastTransitionTime: metav1.Time{Time: time.Now().Add(-2 * time.Minute)},
+		}
+		g.Expect(isQuotaFailureGracePeriodElapsed(recentCond)).To(BeFalse())
+		g.Expect(isQuotaFailureGracePeriodElapsed(oldCond)).To(BeTrue())
+	})
+
+	t.Run("marks condition and preserves timestamp", func(t *testing.T) {
+		azureMachine := &infrav1.AzureMachine{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-machine", Namespace: "default"},
+		}
+		machineScope := &scope.MachineScope{AzureMachine: azureMachine}
+		existingCond := &clusterv1beta1.Condition{
+			Type:               infrav1.VMRunningCondition,
+			Status:             corev1.ConditionFalse,
+			Reason:             infrav1.VMProvisionFailedReason,
+			Severity:           clusterv1beta1.ConditionSeverityWarning,
+			LastTransitionTime: metav1.Time{Time: time.Now().Add(-30 * time.Second)},
+		}
+		originalTime := existingCond.LastTransitionTime
+
+		markQuotaProvisionFailedCondition(machineScope, errors.New("quota exceeded"), existingCond)
+
+		condition := v1beta1conditions.Get(machineScope.AzureMachine, infrav1.VMRunningCondition)
+		g.Expect(condition.Reason).To(Equal(infrav1.VMProvisionFailedReason))
+		g.Expect(condition.LastTransitionTime).To(Equal(originalTime))
+	})
 }

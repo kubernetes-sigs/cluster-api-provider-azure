@@ -19,7 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -235,6 +238,118 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return amr.reconcileNormal(ctx, machineScope, clusterScope)
 }
 
+const (
+	quotaFailureGracePeriod = 1 * time.Minute
+)
+
+const (
+	azureQuotaExceededCode           = "QuotaExceeded"
+	azureOperationNotAllowedCode     = "OperationNotAllowed"
+	azureResourceQuotaExceededCode   = "ResourceQuotaExceeded"
+	azureDeploymentQuotaExceededCode = "DeploymentQuotaExceeded"
+)
+
+// quotaExceededErrorCodes contains Azure error codes that indicate quota exhaustion.
+// Note: OperationNotAllowed requires message validation to avoid non-quota errors.
+// Reference: https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/error-resource-quota
+var quotaExceededErrorCodes = []string{
+	azureQuotaExceededCode,
+	azureOperationNotAllowedCode,
+	azureResourceQuotaExceededCode,
+	azureDeploymentQuotaExceededCode,
+}
+
+// isQuotaExceededError checks if error is due to Azure quota exhaustion.
+func isQuotaExceededError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) {
+		for _, code := range quotaExceededErrorCodes {
+			if respErr.ErrorCode == code {
+				if code == azureOperationNotAllowedCode {
+					errMsg := strings.ToLower(respErr.Error())
+					return strings.Contains(errMsg, "quota")
+				}
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// getQuotaProvisionFailedCondition returns the quota provision failure condition if it exists.
+func getQuotaProvisionFailedCondition(azureMachine *infrav1.AzureMachine) *clusterv1beta1.Condition {
+	cond := v1beta1conditions.Get(azureMachine, infrav1.VMRunningCondition)
+	if cond == nil || cond.Status != corev1.ConditionFalse || cond.Reason != infrav1.VMProvisionFailedReason {
+		return nil
+	}
+	return cond
+}
+
+// isQuotaFailureGracePeriodElapsed checks if grace period has elapsed since the condition was first set.
+func isQuotaFailureGracePeriodElapsed(cond *clusterv1beta1.Condition) bool {
+	if cond == nil {
+		return false
+	}
+	return time.Since(cond.LastTransitionTime.Time) >= quotaFailureGracePeriod
+}
+
+// markQuotaProvisionFailedCondition sets VMRunningCondition to False with VMProvisionFailedReason,
+// preserving LastTransitionTime if a snapshot is provided.
+func markQuotaProvisionFailedCondition(machineScope *scope.MachineScope, err error, quotaFailureCond *clusterv1beta1.Condition) {
+	if quotaFailureCond == nil {
+		v1beta1conditions.MarkFalse(
+			machineScope.AzureMachine,
+			infrav1.VMRunningCondition,
+			infrav1.VMProvisionFailedReason,
+			clusterv1beta1.ConditionSeverityWarning,
+			"VM creation failed due to quota exhaustion: %s", err.Error(),
+		)
+	} else {
+		v1beta1conditions.Set(
+			machineScope.AzureMachine,
+			&clusterv1beta1.Condition{
+				Type:               infrav1.VMRunningCondition,
+				Status:             corev1.ConditionFalse,
+				Reason:             infrav1.VMProvisionFailedReason,
+				Severity:           clusterv1beta1.ConditionSeverityWarning,
+				LastTransitionTime: quotaFailureCond.LastTransitionTime,
+				Message:            fmt.Sprintf("VM creation failed due to quota exhaustion: %s", err.Error()),
+			},
+		)
+	}
+}
+
+/*
+// getRetryCount retrieves retry count from Machine annotations.
+// Used by exponential backoff retry mechanism (Option 1).
+func getRetryCount(machineScope *scope.MachineScope) int {
+	countStr, exists := machineScope.AzureMachine.Annotations["azure.infrastructure.cluster.x-k8s.io/quota-retry-count"]
+	if !exists {
+		return 0
+	}
+
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
+// setRetryCount stores retry count in Machine annotations.
+// Used by exponential backoff retry mechanism (Option 1).
+func setRetryCount(machineScope *scope.MachineScope, count int) {
+	if machineScope.AzureMachine.Annotations == nil {
+		machineScope.AzureMachine.Annotations = make(map[string]string)
+	}
+	machineScope.AzureMachine.Annotations["azure.infrastructure.cluster.x-k8s.io/quota-retry-count"] = strconv.Itoa(count)
+}.
+*/
+
 func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.reconcileNormal")
 	defer done()
@@ -300,6 +415,12 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
 	}
 
+	// Snapshot before ams.Reconcile: virtualmachines.Reconcile calls UpdatePutStatus(VMRunningCondition, ..., err),
+	// overwriting the reason to infrav1.FailedReason. A post-reconcile grace check would see "Failed", not "VMProvisionFailedReason",
+	// and re-marking afterward would reset LastTransitionTime, so the grace window would never elapse.
+	quotaFailureCondSnapshot := getQuotaProvisionFailedCondition(machineScope.AzureMachine)
+	graceExpired := isQuotaFailureGracePeriodElapsed(quotaFailureCondSnapshot)
+
 	if err := ams.Reconcile(ctx); err != nil {
 		// This means that a VM was created and managed by this controller, but is not present anymore.
 		// In this case, we mark it as failed and leave it to MHC for remediation
@@ -310,6 +431,28 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 			machineScope.SetNotReady()
 			machineScope.SetVMState(infrav1.Deleted)
 			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
+		}
+
+		// Check for quota errors and cleanup orphaned NIC if grace period expired
+		if isQuotaExceededError(err) {
+			if graceExpired {
+				log.Info("Grace period expired, cleaning up orphaned NIC", "error", err.Error())
+				if nicErr := ams.DeleteOrphanedNIC(ctx); nicErr != nil {
+					log.Error(nicErr, "Failed to delete orphaned NIC during quota failure cleanup: %s", nicErr.Error())
+					return reconcile.Result{}, nicErr
+				}
+
+				machineScope.SetFailureReason(azure.CreateError)
+				machineScope.SetFailureMessage(err)
+				machineScope.SetNotReady()
+
+				log.Info("Machine marked as Failed due to persistent quota exhaustion")
+				return reconcile.Result{}, nil
+			}
+
+			markQuotaProvisionFailedCondition(machineScope, err, quotaFailureCondSnapshot)
+			log.Info("Quota failure detected, will cleanup NIC on next reconcile if still failing",
+				"gracePeriod", quotaFailureGracePeriod, "error", err.Error())
 		}
 
 		// Handle transient and terminal errors
