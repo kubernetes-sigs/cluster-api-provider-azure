@@ -1293,15 +1293,15 @@ func TestValidateAPIServerLB(t *testing.T) {
 				FrontendIPs: []infrav1.FrontendIP{
 					{
 						Name: "ip-1",
-						FrontendIPClass: infrav1.FrontendIPClass{
-							PrivateIPAddress: "10.0.0.10",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
 						},
 					},
 					{
 						Name: "ip-2",
-						PublicIP: &infrav1.PublicIPSpec{
-							Name:    "my-valid-ip",
-							DNSName: "my-valid-ip",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
 						},
 					},
 				},
@@ -1315,15 +1315,15 @@ func TestValidateAPIServerLB(t *testing.T) {
 				FrontendIPs: []infrav1.FrontendIP{
 					{
 						Name: "ip-1",
-						FrontendIPClass: infrav1.FrontendIPClass{
-							PrivateIPAddress: "10.0.0.11",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
 						},
 					},
 					{
 						Name: "ip-2",
-						PublicIP: &infrav1.PublicIPSpec{
-							Name:    "my-valid-ip",
-							DNSName: "my-valid-ip",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.11",
 						},
 					},
 				},
@@ -1337,7 +1337,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			wantErr: true,
 			expectedErr: field.Error{
 				Type:   "FieldValueForbidden",
-				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Field:  "apiServerLB.frontendIPConfigs[1].privateIP",
 				Detail: "API Server load balancer private IP should not be modified after AzureCluster creation.",
 			},
 		},
@@ -1388,15 +1388,15 @@ func TestValidateAPIServerLB(t *testing.T) {
 				FrontendIPs: []infrav1.FrontendIP{
 					{
 						Name: "ip-1",
-						FrontendIPClass: infrav1.FrontendIPClass{
-							PrivateIPAddress: "10.0.0.10",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
 						},
 					},
 					{
 						Name: "ip-2",
-						PublicIP: &infrav1.PublicIPSpec{
-							Name:    "my-valid-ip",
-							DNSName: "my-valid-ip",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
 						},
 					},
 				},
@@ -1410,15 +1410,15 @@ func TestValidateAPIServerLB(t *testing.T) {
 				FrontendIPs: []infrav1.FrontendIP{
 					{
 						Name: "ip-1",
-						FrontendIPClass: infrav1.FrontendIPClass{
-							PrivateIPAddress: "10.0.0.10",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
 						},
 					},
 					{
 						Name: "ip-2",
-						PublicIP: &infrav1.PublicIPSpec{
-							Name:    "my-valid-ip",
-							DNSName: "my-valid-ip",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
 						},
 					},
 				},
