@@ -393,12 +393,31 @@ func validateSecurityRule(rule infrav1.SecurityRule, fldPath *field.Path) (allEr
 }
 
 func validateAPIServerLBPrivateIPUnchanged(lb, old *infrav1.LoadBalancerSpec, fldPath *field.Path) *field.Error {
-	if lb == nil || old == nil || len(old.FrontendIPs) == 0 || len(lb.FrontendIPs) == 0 {
+	if lb == nil || old == nil {
 		return nil
 	}
-	if old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
+	var oldPrivateIP string
+	for i := range old.FrontendIPs {
+		if old.FrontendIPs[i].PrivateIPAddress != "" {
+			oldPrivateIP = old.FrontendIPs[i].PrivateIPAddress
+			break
+		}
+	}
+	var newPrivateIP string
+	var newIdx int
+	for i := range lb.FrontendIPs {
+		if lb.FrontendIPs[i].PrivateIPAddress != "" {
+			newPrivateIP = lb.FrontendIPs[i].PrivateIPAddress
+			newIdx = i
+			break
+		}
+	}
+	if oldPrivateIP == "" || newPrivateIP == "" {
+		return nil
+	}
+	if oldPrivateIP != newPrivateIP {
 		return field.Forbidden(
-			fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+			fldPath.Child("frontendIPConfigs").Index(newIdx).Child("privateIP"),
 			"API Server load balancer private IP should not be modified after AzureCluster creation.")
 	}
 	return nil
