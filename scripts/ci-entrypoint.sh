@@ -282,6 +282,7 @@ fi
     echo "This is a known issue with CAPI v1beta1 condition mirroring for Windows nodes."
     echo "All nodes and pods are confirmed Ready by wait_for_nodes/wait_for_pods — proceeding."
     "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get machinedeployments.v1beta1.cluster.x-k8s.io -A -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" -o wide || true
+    "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" get machinepools.v1beta1.cluster.x-k8s.io -A -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" -o wide || true
 }
 
 echo "Cluster ${CLUSTER_NAME} created and fully operational"
