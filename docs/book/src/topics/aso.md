@@ -10,6 +10,18 @@ More context around the decision for CAPZ to pivot towards using ASO can be foun
 
 [Visit this page](../managed/asomanagedcluster.md) to learn more about the AzureASOManaged cluster API which provisions an AKS cluster.
 
+## Upgrading
+
+Each CAPZ release bundles a specific version of ASO, and CAPZ advances that bundled ASO version by at most one
+minor version per CAPZ minor release. Because ASO itself
+[must be upgraded one minor version at a time](https://azure.github.io/azure-service-operator/guide/upgrading/),
+**you must also upgrade CAPZ one minor version at a time** and not skip any minor versions.
+
+For example, to upgrade from CAPZ v1.18.x to v1.20.x, first upgrade to v1.19.x and let the management cluster
+stabilize before upgrading to v1.20.x. Skipping a CAPZ minor version can cause the bundled ASO to jump more
+than one minor version, which is unsupported and can result in failed CRD migrations or an unstable management
+cluster.
+
 ## Primary changes
 
 For most users, the introduction of ASO is expected to be fully transparent and backwards compatible. Changes
