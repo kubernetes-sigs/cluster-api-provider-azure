@@ -100,13 +100,71 @@ been created by CAPZ, which comes with some [caveats](./adopting-clusters#caveat
 To migrate one cluster to the ASO-based APIs:
 
 1. Pause the cluster by setting the Cluster's `spec.paused` to `true`.
+   ```sh
+   kubectl patch cluster <name> --type merge -p '{"spec": {"paused": true}}'
+   ```
 1. Wait for the cluster to be paused by waiting for the _absence_ of the `clusterctl.cluster.x-k8s.io/block-move`
    annotation on the AzureManagedControlPlane and its AzureManagedMachinePools. This should be fairly instantaneous.
+1. Disarm the old ASO resources to prevent them from deleting the underlying Azure resources during cleanup.
+   The old ASO resources (ResourceGroup, ManagedCluster, ManagedClustersAgentPools) have owner references to
+   old CAPZ resources and ASO finalizers. Without this step, deleting or accidentally garbage-collecting the
+   old CAPZ resources would cascade to the ASO resources, causing ASO to delete the actual Azure resources.
+   This must be done **before** creating new ASO resources or deleting any old resources.
+   ```sh
+   # For each old ASO resource (ManagedClustersAgentPools, ManagedCluster, ResourceGroup):
+   kubectl patch <resource> --type merge -p '{"metadata": {"annotations": {"serviceoperator.azure.com/reconcile-policy": "skip"}, "finalizers": null}}'
+   ```
 1. Create a new namespace to contain the new resources to avoid conflicting ASO definitions.
+   ```sh
+   kubectl create namespace <new-namespace>
+   ```
+1. Copy the ASO credential secret used by the existing cluster into the new namespace. The secret name can be
+   found in the `serviceoperator.azure.com/credential-from` annotation on the existing ASO ManagedCluster
+   resource.
+   ```sh
+   kubectl get secret <aso-credential-secret> -o json | \
+     jq '.metadata = {name: .metadata.name, namespace: "<new-namespace>"}' | \
+     kubectl apply -f -
+   ```
 1. [Adopt](./adopting-clusters#option-1-using-the-new-azureasomanaged-api) the underlying AKS resources from
-   the new namespace, which creates the new CAPI and CAPZ resources.
+   the new namespace, which creates the new CAPI and CAPZ resources. This must be done in order:
+   1. Create an ASO ResourceGroup resource in the new namespace pointing at the existing resource group. The
+      adoption controller requires this resource to exist before it can process the ManagedCluster. Wait for
+      it to become Ready.
+      ```yaml
+      apiVersion: resources.azure.com/v1api20200601
+      kind: ResourceGroup
+      metadata:
+        name: <name>
+        namespace: <new-namespace>
+        annotations:
+          serviceoperator.azure.com/credential-from: <aso-credential-secret>
+      spec:
+        azureName: <azure-resource-group-name>
+        location: <location>
+      ```
+   1. Create an ASO ManagedCluster resource in the new namespace with the
+      `sigs.k8s.io/cluster-api-provider-azure-adopt: "true"` annotation. Its `spec.owner.name` must reference
+      the ResourceGroup created above. Wait for the ManagedCluster to become Ready and for CAPZ to scaffold
+      the Cluster, AzureASOManagedCluster, and AzureASOManagedControlPlane resources.
+
+      > **Important**: The spec **must** include `agentPoolProfiles`. The old CAPZ controller strips
+      > `agentPoolProfiles` from the ASO ManagedCluster spec (it manages pools separately via
+      > ManagedClustersAgentPool resources), so the existing ASO resource's `.spec` will not have them.
+      > Extract them from `.status.agentPoolProfiles` instead:
+      > ```bash
+      > kubectl get managedcluster.containerservice.azure.com/<name> -o json | jq '.status.agentPoolProfiles'
+      > ```
+      > Without `agentPoolProfiles`, ASO will PUT the spec to Azure without pool definitions, triggering
+      > an update cycle that prevents the AzureASOManagedControlPlane from becoming ready.
+   1. Create ASO ManagedClustersAgentPool resources in the new namespace, one per node pool, each with the
+      `sigs.k8s.io/cluster-api-provider-azure-adopt: "true"` annotation. Their `spec.owner.name` must
+      reference the ManagedCluster. Wait for CAPZ to scaffold the MachinePools and
+      AzureASOManagedMachinePools.
+   1. Wait for the new Cluster to show `AVAILABLE=True`.
 1. Forcefully delete the old Cluster. This is more complicated than normal because CAPI controllers do not reconcile
-   paused resources at all, even when they are deleted. The underlying Azure resources will not be affected.
+   paused resources at all, even when they are deleted. The underlying Azure resources will not be affected
+   because the old ASO resources were disarmed earlier.
    - Delete the cluster: `kubectl delete cluster <name> --wait=false`
    - Delete the cluster infrastructure object: `kubectl delete azuremanagedcluster <name> --wait=false`
    - Delete the cluster control plane object: `kubectl delete azuremanagedcontrolplane <name> --wait=false`
@@ -117,7 +175,8 @@ To migrate one cluster to the ASO-based APIs:
    - Remove finalizers from the cluster control plane object: `kubectl patch azuremanagedcontrolplane <name> --type merge -p '{"metadata": {"finalizers": null}}'`
    - Note: the cluster infrastructure object should not have any finalizers and should already be deleted
    - Remove finalizers from the cluster: `kubectl patch cluster <name> --type merge -p '{"metadata": {"finalizers": null}}'`
-   - Verify the old ASO resources like ResourceGroup and ManagedCluster managed by the old Cluster are deleted.
+   - Verify the old ASO resources like ResourceGroup and ManagedCluster are deleted from Kubernetes. The
+     actual Azure resources should still exist, now managed by the new ASO resources in the new namespace.
 
 ### Migrating from v1alpha1 to v1beta1
 

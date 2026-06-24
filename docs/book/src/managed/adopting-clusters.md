@@ -14,6 +14,17 @@ and AzureASOManagedMachinePools. The [`asoctl import
 azure-resource`](https://azure.github.io/azure-service-operator/tools/asoctl/#import-azure-resource) command
 can help generate the required YAML.
 
+The adoption must be performed in order:
+
+1. An ASO ResourceGroup resource must exist in the same namespace before creating the ManagedCluster, as the
+   adoption controller requires it. The ResourceGroup does not need the adopt annotation.
+1. Create the ASO ManagedCluster with the adopt annotation and wait for CAPZ to create the Cluster,
+   AzureASOManagedCluster, and AzureASOManagedControlPlane.
+1. Create the ASO ManagedClustersAgentPool resources with the adopt annotation. These depend on the
+   ManagedCluster and its owning AzureASOManagedControlPlane already existing.
+1. An ASO credential secret (referenced by `serviceoperator.azure.com/credential-from` annotation on the ASO
+   resources) must exist in the same namespace.
+
 This method can also be used to [migrate](./asomanagedcluster#migrating-existing-clusters-to-azureasomanagedcontrolplane) from AzureManagedControlPlane and its associated APIs.
 
 #### Caveats
@@ -25,9 +36,11 @@ This method can also be used to [migrate](./asomanagedcluster#migrating-existing
 - Configuring the automatically generated Cluster API resources is not currently possible. If you need to
   change something like the `metadata.name` of a resource from what CAPZ generates, create the Cluster API
   resources manually referencing the pre-existing resources.
-- Adopting existing clusters created with the GA AzureManagedControlPlane API to the experimental API with
-  this method is theoretically possible, but untested. Care should be taken to prevent CAPZ from reconciling
-  two different representations of the same underlying Azure resources.
+- Adopting existing clusters created with the GA AzureManagedControlPlane API to the AzureASOManagedControlPlane
+  API with this method is supported. See the
+  [migration guide](./asomanagedcluster#migrating-existing-clusters-to-azureasomanagedcontrolplane)
+  for detailed steps. Care should be taken to prevent CAPZ from reconciling two different representations of
+  the same underlying Azure resources, which the migration guide addresses by pausing the old cluster first.
 - This method cannot be used to import existing clusters as a ClusterClass or a topology, only as a standalone
   Cluster.
 
