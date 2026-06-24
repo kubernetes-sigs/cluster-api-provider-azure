@@ -208,8 +208,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale workload clusters created in the old version", func() {
-				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
-					return ClusterctlUpgradeSpecInput{
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:             e2eConfig,
 						ClusterctlConfigPath:  clusterctlConfigPath,
 						WorkloadFlavor:        "machine-and-machine-pool",
@@ -234,8 +234,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from the latest version of v1beta1 to current, and scale workload clusters created in the old version", func() {
-				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
-					return ClusterctlUpgradeSpecInput{
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:             e2eConfig,
 						ClusterctlConfigPath:  clusterctlConfigPath,
 						WorkloadFlavor:        "machine-and-machine-pool",
@@ -260,8 +260,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from an old version of v1beta1 to current, and scale AKS workload clusters created in the old version", func() {
-				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
-					return ClusterctlUpgradeSpecInput{
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:                                 e2eConfig,
 						ClusterctlConfigPath:                      clusterctlConfigPath,
 						WorkloadFlavor:                            "aks",
@@ -280,7 +280,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(OldCAPIUpgradeVersion)),
 						InitWithCoreProvider:            "cluster-api:" + e2eConfig.MustGetVariable(OldCAPIUpgradeVersion),
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(OldProviderUpgradeVersion)},
-						Upgrades: []ClusterctlUpgradeSpecInputUpgrade{
+						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
 							{
 								Contract: clusterv1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
@@ -299,8 +299,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 
 			Context("upgrade from the latest version of v1beta1 to current, and scale AKS workload clusters created in the old version", func() {
-				ClusterctlUpgradeSpec(ctx, func() ClusterctlUpgradeSpecInput {
-					return ClusterctlUpgradeSpecInput{
+				capi_e2e.ClusterctlUpgradeSpec(ctx, func() capi_e2e.ClusterctlUpgradeSpecInput {
+					return capi_e2e.ClusterctlUpgradeSpecInput{
 						E2EConfig:                                 e2eConfig,
 						ClusterctlConfigPath:                      clusterctlConfigPath,
 						WorkloadFlavor:                            "aks",
@@ -319,7 +319,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						InitWithBinary:                  fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api/releases/download/%s/clusterctl-{OS}-{ARCH}", e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion)),
 						InitWithCoreProvider:            "cluster-api:" + e2eConfig.MustGetVariable(LatestCAPIUpgradeVersion),
 						InitWithInfrastructureProviders: []string{"azure:" + e2eConfig.MustGetVariable(LatestProviderUpgradeVersion)},
-						Upgrades: []ClusterctlUpgradeSpecInputUpgrade{
+						Upgrades: []capi_e2e.ClusterctlUpgradeSpecInputUpgrade{
 							{
 								Contract: clusterv1.GroupVersion.Version,
 								PostUpgrade: func(managementClusterProxy framework.ClusterProxy, clusterNamespace, clusterName string) {
