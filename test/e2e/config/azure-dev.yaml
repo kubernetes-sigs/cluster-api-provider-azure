@@ -7,13 +7,19 @@ images:
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.4
     loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.14.0-beta.1
+    loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.10
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.4
     loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.14.0-beta.1
+    loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.10
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.4
+    loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.14.0-beta.1
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.2
     loadBehavior: tryLoad
@@ -44,6 +50,17 @@ providers:
         new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
     - name: v1.13.4
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/core-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "- --leader-elect"
+        new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
+    - name: v1.14.0-beta.1
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0-beta.1/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -84,6 +101,15 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
+    - name: v1.14.0-beta.1
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0-beta.1/bootstrap-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
 
   - name: kubeadm
     type: ControlPlaneProvider
@@ -108,6 +134,15 @@ providers:
         new: "imagePullPolicy: IfNotPresent"
     - name: v1.13.4
       value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/control-plane-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v1.14.0-beta.1
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0-beta.1/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
