@@ -262,7 +262,7 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 		"--timeout", "5m0s",
 	}
 	helmArgs = append(helmArgs, extraArgs...)
-	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
+	installCmd := exec.CommandContext(ctx, "helm", helmArgs...)
 	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err = installCmd.CombinedOutput()
 	Logf("helm install output: %s", string(output))
