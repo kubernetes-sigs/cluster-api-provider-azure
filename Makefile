@@ -243,7 +243,7 @@ binaries: manager ## Builds all binaries.
 
 .PHONY: manager
 manager: ## Build manager binary.
-	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/manager .
+	go build -tags=fieldsv1string -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/manager .
 
 ## --------------------------------------
 ## Cleanup / Verification
@@ -722,7 +722,7 @@ release-binary: $(RELEASE_DIR) ## Compile and build release binaries.
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
 		golang:$(GO_VERSION) \
-		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
+		go build -tags=fieldsv1string -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
 .PHONY: release-staging

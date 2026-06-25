@@ -34,10 +34,11 @@ ARG ARCH
 ARG ldflags
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
+# TODO: Remove fieldsv1string once it becomes the apimachinery default (https://github.com/kubernetes/kubernetes/issues/137109)
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
-    go build -ldflags "${ldflags} -extldflags '-static'" \
+    go build -tags=fieldsv1string -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
 # Production image
