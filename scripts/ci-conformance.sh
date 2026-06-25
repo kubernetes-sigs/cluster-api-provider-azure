@@ -79,7 +79,7 @@ fi
 # Less likely with GPU scenarios but FYI.
 export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
 export AZURE_LOCATION_EDGEZONE="${AZURE_LOCATION_EDGEZONE:-$(capz::util::get_random_region_edgezone)}"
-export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_B2s"}"
+export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_B2s"}"
 export WINDOWS="${WINDOWS:-false}"
 export WINDOWS_SERVER_VERSION="${WINDOWS_SERVER_VERSION:-windows-2022}"
