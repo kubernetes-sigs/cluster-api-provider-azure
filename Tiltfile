@@ -266,7 +266,7 @@ def capz():
     # Forge the build command
     ldflags = "-extldflags \"-static\" " + str(local("hack/version.sh")).rstrip("\n")
     build_env = "CGO_ENABLED=0 GOOS=linux GOARCH={arch}".format(arch = os_arch)
-    build_cmd = "{build_env} go build -ldflags '{ldflags}' -o .tiltbuild/manager".format(
+    build_cmd = "{build_env} go build -tags=fieldsv1string -ldflags '{ldflags}' -o .tiltbuild/manager".format(
         build_env = build_env,
         ldflags = ldflags,
     )
