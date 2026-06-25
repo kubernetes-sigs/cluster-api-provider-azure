@@ -67,7 +67,7 @@ worker-templates:
     AZURE_RESOURCE_GROUP: test-resource-group-name
     CONTROL_PLANE_MACHINE_COUNT: "1"
     KUBERNETES_VERSION: v1.35.4
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
     WORKER_MACHINE_COUNT: "2"
     AZURE_NODE_MACHINE_TYPE: Standard_B2s
 ```
@@ -86,7 +86,7 @@ worker-templates:
     nvidia-gpu:
       AZURE_NODE_MACHINE_TYPE: Standard_NC6s_v3
   metadata:
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
     AZURE_LOCATION: southcentralus
     KUBERNETES_VERSION: v1.35.4
     WORKER_MACHINE_COUNT: "1"
