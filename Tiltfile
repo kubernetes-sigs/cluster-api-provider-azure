@@ -22,7 +22,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.12.8",
+    "capi_version": "v1.12.9",
     "caaph_version": "v0.6.1",
     "cert_manager_version": "v1.20.2",
     "kubernetes_version": "v1.33.6",
