@@ -3,17 +3,17 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.8
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.9
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.2
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.3
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.8
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.9
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.2
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.3
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.8
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.9
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.2
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.3
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.2
     loadBehavior: tryLoad
@@ -31,8 +31,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.8
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.8/core-components.yaml
+    - name: v1.12.9
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -42,8 +42,8 @@ providers:
         new: "imagePullPolicy: IfNotPresent"
       - old: "- --leader-elect"
         new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
-    - name: v1.13.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.2/core-components.yaml
+    - name: v1.13.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -66,8 +66,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.8
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.8/bootstrap-components.yaml
+    - name: v1.12.9
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -75,8 +75,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.2/bootstrap-components.yaml
+    - name: v1.13.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -97,8 +97,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.8
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.8/control-plane-components.yaml
+    - name: v1.12.9
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -106,8 +106,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.2/control-plane-components.yaml
+    - name: v1.13.3
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -296,7 +296,7 @@ variables:
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
   OLD_CAPI_UPGRADE_VERSION: "v1.11.11"
-  LATEST_CAPI_UPGRADE_VERSION: "v1.12.8"
+  LATEST_CAPI_UPGRADE_VERSION: "v1.12.9"
   OLD_PROVIDER_UPGRADE_VERSION: "v1.22.2"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.23.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
