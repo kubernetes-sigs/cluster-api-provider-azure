@@ -1,4 +1,34 @@
 {
+  "australiaeast_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
+  "canadacentral_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
+  "francecentral_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
+  "germanywestcentral_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
+  "switzerlandnorth_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
+  "uksouth_Standard_D2s_v3": [
+    "1",
+    "2",
+    "3"
+  ],
   "eastus_Standard_B1ls": [
     "2",
     "1",
