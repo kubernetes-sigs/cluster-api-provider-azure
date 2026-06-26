@@ -40,14 +40,21 @@ Sometimes pull requests touch a large number of files and are more likely to cre
 
 The release process can be assisted by any contributor, but requires some specific steps to be be done by a maintainer as shown by (maintainer) to the right of the step title. The process is as follows:
 
-### 1. Update main metadata.yaml (skip for patch releases)
+### 1. Verify the image promotion machinery is healthy
+
+Before starting a release, confirm that the job which builds and pushes staging images is working. This machinery only runs when promoting images, so a broken `cloudbuild.yaml` often goes unnoticed until a release is underway, forcing a follow-on patch release just to fix it.
+
+- Check that the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images) is green.
+- Confirm that the image pinned in [cloudbuild.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/cloudbuild.yaml) is in sync with the one [Cluster API uses](https://github.com/kubernetes-sigs/cluster-api/blob/main/cloudbuild.yaml). If it is out of date, open a [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/6406) to update it before proceeding.
+
+### 2. Update main metadata.yaml (skip for patch releases)
 
 - Make sure the [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/metadata.yaml) file in the root of the project is up to date and contains the new release with the correct cluster-api contract version.
   - If not, open a [PR](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1928) to add it.
 
 This must be done prior to generating release artifacts, so the release contains the correct metadata information for `clusterctl` to use.
 
-### 2. Change milestone (skip for patch releases) (maintainer)
+### 3. Change milestone (skip for patch releases) (maintainer)
 
 - Create a [new GitHub milestone](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestones/new) for the next release.
 - Change the milestone applier so new changes can be applied to the appropriate release. [A sample PR](https://github.com/kubernetes/test-infra/pull/34225) in test infra to update the release.
@@ -64,7 +71,7 @@ Example versions:
 - Major release: `v1.0.0`
 
 
-### 3. Open a PR for release notes
+### 4. Open a PR for release notes
 
 1. If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.  If you would like the next step (promote image) to automatically create a PR from your fork, then the token will also need pull request permissions, else you can create the PR manually.
 
@@ -100,7 +107,7 @@ Example versions:
 
 Merging the PR will automatically trigger a [Github Action](https://github.com/kubernetes-sigs/cluster-api-provider-azure/actions) to create a release branch (if needed), push a tag, and publish a draft release.
 
-### 4. Promote image to prod repo
+### 5. Promote image to prod repo
 
 - Images are built by the [post push images job](https://testgrid.k8s.io/sig-cluster-lifecycle-cluster-api-provider-azure#post-cluster-api-provider-azure-push-images). This will push the image to a [staging repository][staging-repository].
 - Wait for the above job to complete for the tag commit and for the image to exist in the staging directory, then create a PR to promote the image and tag. Assuming you're on the `main` branch and that `$RELEASE_TAG` is still set in your environment:
@@ -113,7 +120,7 @@ This will automatically create a PR in [k8s.io](https://github.com/kubernetes/k8
 <code class="hjls">make promote-images</code> assumes your git remote entries are using <code class="hjls">https://</code> URLs. Using <code class="hjls">git@</code> URLs will cause the command to fail and instead manually change the <a  href="https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/8cb43376223b1a3b2634215de38182e0068ebb04/Makefile#L590"> USER_FORK </a> value in the Makefile to your forked root repository URL e.g. 'dtzar'.
 </aside>
 
-### 5. Review and approve promoted prod image (maintainer)
+### 6. Review and approve promoted prod image (maintainer)
 
 For reviewers of the above-created PR, to confirm that the resultant image SHA-to-tag addition is valid, you can check against the [staging repository][staging-repository].
 
@@ -121,7 +128,7 @@ Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to
 
 - https://console.cloud.google.com/artifacts/docker/k8s-staging-cluster-api-azure/us/gcr.io/cluster-api-azure-controller
 
-### 6. Release in GitHub (maintainer)
+### 7. Release in GitHub (maintainer)
 
 - Proofread the GitHub release content and fix any remaining errors. (This is copied from the release notes generated earlier.) If you made changes, save it as a draft–don't publish it yet.
 - Ensure that the promoted release image is live:
@@ -140,7 +147,7 @@ Using [the above example PR](https://github.com/kubernetes/k8s.io/pull/4284), to
 
 - Publish the release in GitHub. Check `Set as the latest release` if appropriate.
 
-### 7. Update docs (skip for patch releases) (maintainer)
+### 8. Update docs (skip for patch releases) (maintainer)
 
 Go to [the Netlify branches and deploy contexts in site settings](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/settings/deploys#branches-and-deploy-contexts) and click "edit settings". Update the "Production branch" to the new release branch and click "Save". The, go to the [Netlify site deploys](https://app.netlify.com/sites/kubernetes-sigs-cluster-api-provider-azure/deploys) and trigger a new deploy.
 
@@ -148,7 +155,7 @@ Go to [the Netlify branches and deploy contexts in site settings](https://app.ne
 
 Note: this step requires access to the Netlify site. If you don't have access, please ask a maintainer to update the branch.
 
-### 8. Update security scanner branches (skip for patch releases)
+### 9. Update security scanner branches (skip for patch releases)
 
 Open a pull request to update the branches in the [weekly security scan workflow](../../.github/workflows/weekly-security-scan.yaml) to include the new release branch. For example, if the new release branch is `release-1.23`, update the `branch` matrix to:
 
@@ -157,7 +164,7 @@ Open a pull request to update the branches in the [weekly security scan workflow
         branch: [ main, release-1.23, release-1.22 ]
 ```
 
-### 9. Announce the new release
+### 10. Announce the new release
 
 #### Patch Releases
 
