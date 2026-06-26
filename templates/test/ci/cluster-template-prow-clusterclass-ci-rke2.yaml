@@ -229,7 +229,7 @@ spec:
     required: false
     schema:
       openAPIV3Schema:
-        default: Standard_B2s
+        default: Standard_D2s_v3
         type: string
   - name: workerMachineType
     required: false
