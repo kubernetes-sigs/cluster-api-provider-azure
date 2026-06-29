@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240402preview"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -86,7 +86,7 @@ func TestPostCreateOrUpdateResourceHook(t *testing.T) {
 			Spec: asocontainerservicev1preview.ManagedCluster_Spec{
 				KubernetesVersion: ptr.To("1.19.0"),
 				AutoUpgradeProfile: &asocontainerservicev1preview.ManagedClusterAutoUpgradeProfile{
-					UpgradeChannel: ptr.To(asocontainerservicev1preview.ManagedClusterAutoUpgradeProfile_UpgradeChannel_Stable),
+					UpgradeChannel: ptr.To(asocontainerservicev1preview.UpgradeChannel_Stable),
 				},
 			},
 			Status: asocontainerservicev1preview.ManagedCluster_STATUS{
