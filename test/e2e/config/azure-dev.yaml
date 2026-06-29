@@ -305,6 +305,11 @@ variables:
   CI_RG: "${CI_RG:-capz-ci}"
   USER_IDENTITY: "${USER_IDENTITY:-cloud-provider-user-identity}"
   EXP_APISERVER_ILB: "true"
+  MULTIKUEUE_AKS_FLAVOR: "${MULTIKUEUE_AKS_FLAVOR:-aks-aso}"
+  KUEUE_VERSION: "${KUEUE_VERSION:-0.18.2}"
+  JOBSET_VERSION: "${JOBSET_VERSION:-0.12.0}"
+  MULTIKUEUE_WORKER_CLUSTER_COUNT: "${MULTIKUEUE_WORKER_CLUSTER_COUNT:-3}"
+  MULTIKUEUE_STRESS_JOB_COUNT: "${MULTIKUEUE_STRESS_JOB_COUNT:-8}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
@@ -337,6 +342,16 @@ intervals:
   kuberay-cluster/wait-raycluster-ready: ["10m", "10s"]
   kuberay-job/wait-deployment: ["15m", "10s"]
   kuberay-job/wait-rayjob-complete: ["15m", "10s"]
+  multikueue/wait-deployment: ["15m", "10s"]
+  multikueue/wait-kueue-active: ["10m", "10s"]
+  multikueue/wait-service-account-token: ["5m", "5s"]
+  multikueue/wait-workload-created: ["5m", "5s"]
+  multikueue/wait-workload-pending: ["5m", "5s"]
+  multikueue/wait-workload-admitted: ["10m", "5s"]
+  multikueue/wait-remote-workload: ["10m", "5s"]
+  multikueue/wait-remote-cleanup: ["10m", "5s"]
+  multikueue/wait-workload-finished: ["15m", "5s"]
+  multikueue/wait-job-complete: ["15m", "10s"]
   csi-migration/wait-controlplane-upgrade: ["60m", "10s"]
   csi-migration/wait-worker-nodes: ["60m", "10s"]
   csi-migration/wait-control-plane: ["60m", "10s"]
