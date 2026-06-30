@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ main, release-1.25, release-1.24 ]
+        branch: [ main, release-1.26, release-1.25, release-1.24 ]
     name: Trivy
     runs-on: ubuntu-latest
     steps:
