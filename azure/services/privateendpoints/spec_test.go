@@ -74,8 +74,10 @@ var (
 			AzureName: fakePrivateEndpoint.Name,
 			PrivateLinkServiceConnections: []asonetworkv1.PrivateLinkServiceConnection{{
 				Name: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].Name),
-				PrivateLinkServiceReference: &genruntime.ResourceReference{
-					ARMID: fakePrivateEndpoint.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
+				PrivateLinkServiceReference: &genruntime.WellKnownResourceReference{
+					ResourceReference: genruntime.ResourceReference{
+						ARMID: fakePrivateEndpoint.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
+					},
 				},
 				GroupIds:       fakePrivateEndpoint.PrivateLinkServiceConnections[0].GroupIDs,
 				RequestMessage: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].RequestMessage),
