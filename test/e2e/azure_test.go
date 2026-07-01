@@ -144,7 +144,7 @@ var _ = Describe("Workload cluster creation", func() {
 	if os.Getenv("USE_LOCAL_KIND_REGISTRY") != "true" {
 		// This spec expects a user-assigned identity with Contributor role assignment named "cloud-provider-user-identity" in a "capz-ci"
 		// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-		Context("Creating a private cluster [OPTIONAL]", func() {
+		PContext("Creating a private cluster [OPTIONAL]", func() {
 			It("Creates a public management cluster in a custom vnet", func() {
 				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				By("Creating a custom virtual network", func() {
@@ -347,7 +347,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a Flatcar sysext cluster [OPTIONAL]", func() {
+	PContext("Creating a Flatcar sysext cluster [OPTIONAL]", func() {
 		It("With Flatcar control-plane and worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "flatcar-sysext")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
@@ -385,7 +385,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating a cluster with spot vms [OPTIONAL]", func() {
+	PContext("Creating a cluster with spot vms [OPTIONAL]", func() {
 		It("With spot vm machine deployments", func() {
 			clusterName = getClusterName(clusterNamePrefix, "spot")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
@@ -535,7 +535,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// You can override the default SKU `Standard_NV12s_v3` and `Premium_LRS` storage by setting
 	// the `AZURE_GPU_NODE_MACHINE_TYPE` and `AZURE_GPU_NODE_STORAGE_TYPE` environment variables.
 	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
-	Context("Creating a GPU-enabled cluster [OPTIONAL]", func() {
+	PContext("Creating a GPU-enabled cluster [OPTIONAL]", func() {
 		It("with a single control plane node and 1 node", func() {
 			Skip("Skipping since the e2e subscription has no quota for GPU SKUs")
 			clusterName = getClusterName(clusterNamePrefix, "gpu")
@@ -594,7 +594,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
-	Context("Creating a cluster with VMSS flex machinepools [OPTIONAL]", func() {
+	PContext("Creating a cluster with VMSS flex machinepools [OPTIONAL]", func() {
 		It("with 1 control plane node and 1 machinepool", func() {
 			clusterName = getClusterName(clusterNamePrefix, "flex")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
@@ -938,7 +938,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
-	Context("Creating a dual-stack cluster [OPTIONAL]", func() {
+	PContext("Creating a dual-stack cluster [OPTIONAL]", func() {
 		It("With dual-stack worker node", func() {
 			By("using user-assigned identity")
 			clusterName = getClusterName(clusterNamePrefix, "dual-stack")
@@ -1006,7 +1006,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating clusters using clusterclass [OPTIONAL]", func() {
+	PContext("Creating clusters using clusterclass [OPTIONAL]", func() {
 		It("with a single control plane node and one linux worker node", func() {
 			// Use ci-default as the clusterclass name so test infra can find the clusterclass template
 			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-default")).To(Succeed())
@@ -1050,7 +1050,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating RKE2 clusters using clusterclass [OPTIONAL]", func() {
+	PContext("Creating RKE2 clusters using clusterclass [OPTIONAL]", func() {
 		It("with 3 control plane node and one linux worker node", func() {
 			// Use ci-rke2 as the clusterclass name so test infra can find the clusterclass template
 			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-rke2")).To(Succeed())
@@ -1150,7 +1150,7 @@ spec:
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.
 	// You can also override the default SKU `Standard_DS2_v2` and `Standard_DS4_v2` storage by setting
 	// the `AZURE_EDGEZONE_CONTROL_PLANE_MACHINE_TYPE` and `AZURE_EDGEZONE_NODE_MACHINE_TYPE` environment variables.
-	Context("Creating clusters on public MEC [OPTIONAL]", func() {
+	PContext("Creating clusters on public MEC [OPTIONAL]", func() {
 		It("with 1 control plane nodes and 1 worker node", func() {
 			Skip("Skipping public MEC test until a new edgezone is available")
 			By("using user-assigned identity")
@@ -1191,7 +1191,7 @@ spec:
 		})
 	})
 
-	Context("Creating a self-managed VM based cluster using API Server ILB feature gate using default template [OPTIONAL][API-Server-ILB]", func() {
+	PContext("Creating a self-managed VM based cluster using API Server ILB feature gate using default template [OPTIONAL][API-Server-ILB]", func() {
 		It("with three controlplane node and three worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "apiserver-ilb")
 
@@ -1237,7 +1237,7 @@ spec:
 		})
 	})
 
-	Context("Creating a self-managed VM based cluster using API Server ILB feature gate and fully spec-ed out APIServer ILB template [OPTIONAL][API-Server-ILB]", func() {
+	PContext("Creating a self-managed VM based cluster using API Server ILB feature gate and fully spec-ed out APIServer ILB template [OPTIONAL][API-Server-ILB]", func() {
 		It("with three controlplane node and three worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "apiserver-ilb")
 
@@ -1288,7 +1288,7 @@ spec:
 		})
 	})
 
-	Context("Creating a highly-available cluster with Azure Linux 3 [OPTIONAL]", func() {
+	PContext("Creating a highly-available cluster with Azure Linux 3 [OPTIONAL]", func() {
 		It("with three controlplane node and two worker nodes", func() {
 			clusterName = getClusterName(clusterNamePrefix, "azl3")
 			kubernetesVersion := e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)
@@ -1301,6 +1301,95 @@ spec:
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withFlavor("azl3"),
+				withControlPlaneMachineCount(3),
+				withWorkerMachineCount(2),
+				withControlPlaneInterval(specName, "wait-control-plane-ha"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+				withPostMachinesProvisioned(func() {
+					EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
+						return DaemonsetsSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+						}
+					})
+				}),
+			), result)
+
+			By("Verifying expected VM extensions are present on the node", func() {
+				AzureVMExtensionsSpec(ctx, func() AzureVMExtensionsSpecInput {
+					return AzureVMExtensionsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Verifying security rules are deleted on azure side", func() {
+				AzureSecurityGroupsSpec(ctx, func() AzureSecurityGroupsSpecInput {
+					return AzureSecurityGroupsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						Cluster:               result.Cluster,
+						WaitForUpdate:         e2eConfig.GetIntervals(specName, "wait-nsg-update"),
+					}
+				})
+			})
+
+			By("Validating failure domains", func() {
+				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
+					return AzureFailureDomainsSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Cluster:               result.Cluster,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
+			By("Creating an accessible load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("Validating network policies", func() {
+				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
+					return AzureNetPolSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
+	Context("Creating a highly-available cluster with Azure Linux 4 [OPTIONAL]", func() {
+		It("with three controlplane node and two worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "azl4")
+			kubernetesVersion := e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)
+			kubernetesVersion = strings.TrimPrefix(kubernetesVersion, "v")
+			Expect(os.Setenv("AZL4_VERSION", kubernetesVersion)).To(Succeed())
+			skipResourceGroupCheck = true
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withFlavor("azl4"),
 				withControlPlaneMachineCount(3),
 				withWorkerMachineCount(2),
 				withControlPlaneInterval(specName, "wait-control-plane-ha"),
