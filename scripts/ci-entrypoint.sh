@@ -259,7 +259,16 @@ capz::ci-entrypoint::on_exit() {
     "${REPO_ROOT}/hack/log/redact.sh" || true
     # cleanup all resources we use
     if [[ ! "${SKIP_CLEANUP:-}" == "true" ]]; then
-        timeout 1800 "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" -n default || echo "Unable to delete cluster ${CLUSTER_NAME}"
+        if [[ "${ASYNC_DELETE_CLUSTER:-}" == "true" ]]; then
+            # Fire-and-forget delete: kubectl returns once the API server
+            # accepts the request and CAPI/CAPZ controllers reconcile Azure
+            # resource removal asynchronously. Boskos reclaims the entire
+            # subscription afterwards so orphans are bounded. Useful for
+            # prow jobs whose total time approaches the entrypoint timeout.
+            "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" -n default --wait=false --timeout=2m || echo "Unable to delete cluster ${CLUSTER_NAME}"
+        else
+            timeout 1800 "${KUBECTL}" --kubeconfig "${REPO_ROOT}/${KIND_CLUSTER_NAME}.kubeconfig" delete cluster "${CLUSTER_NAME}" -n default || echo "Unable to delete cluster ${CLUSTER_NAME}"
+        fi
         make --directory="${REPO_ROOT}" kind-reset || true
     fi
 }
