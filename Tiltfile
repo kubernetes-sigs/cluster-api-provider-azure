@@ -22,7 +22,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.13.3",
+    "capi_version": "v1.14.0-alpha.0",
     "caaph_version": "v0.6.2",
     "cert_manager_version": "v1.20.2",
     "kubernetes_version": "v1.35.4",
@@ -266,7 +266,7 @@ def capz():
     # Forge the build command
     ldflags = "-extldflags \"-static\" " + str(local("hack/version.sh")).rstrip("\n")
     build_env = "CGO_ENABLED=0 GOOS=linux GOARCH={arch}".format(arch = os_arch)
-    build_cmd = "{build_env} go build -ldflags '{ldflags}' -o .tiltbuild/manager".format(
+    build_cmd = "{build_env} go build -tags=fieldsv1string -ldflags '{ldflags}' -o .tiltbuild/manager".format(
         build_env = build_env,
         ldflags = ldflags,
     )

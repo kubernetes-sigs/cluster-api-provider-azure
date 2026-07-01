@@ -532,7 +532,6 @@ const (
     "useInstanceMetadata": true,
     "enableVmssFlexNodes": true
 }`
-	//nolint:gosec // Ignore "G101: Potential hardcoded credentials" check.
 	spWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",

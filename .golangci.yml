@@ -51,6 +51,10 @@ linters:
     - usetesting # reports uses of functions with replacement inside the testing package
     - whitespace # unnecessary newlines
   settings:
+    goconst:
+      # goconst now counts occurrences package-wide. Ignore common strings that
+      # are intentionally not constants to avoid noise from this newer behavior.
+      ignore-string-values: '^(1\.0|true|1\.28\.12|cncf-upstream|containerd|Cluster|vmss|azure\.json|AzureManagedMachinePool|MachinePool|test-cluster|custom-vnet|my-vnet|spec|name)$'
     exhaustruct:
       include:
         # Hub ASO agent pools should be fully defined to prevent unnecessary updates
@@ -260,6 +264,30 @@ linters:
       - linters:
           - staticcheck
         text: 'QF1008: could remove embedded field'
+      - linters:
+          - staticcheck
+        text: 'QF1012:'
+      # The govet "inline" analyzer only emits informational notes; ignore them.
+      - linters:
+          - govet
+        text: 'cannot inline'
+      # gosec credential/taint rules: false positives in test fixtures.
+      - linters:
+          - gosec
+        path: _test\.go
+        text: '(G101|G705):'
+      - linters:
+          - gosec
+        path: ^test/
+        text: 'G703:'
+      - linters:
+          - gosec
+        path: ^test/e2e/
+        text: 'G204:'
+      # images.go is a version-to-image data map; goconst noise on map values.
+      - linters:
+          - goconst
+        path: azure/services/virtualmachineimages/images\.go$
       # We don't care about defer in for loops in test files.
       - linters:
           - gocritic
