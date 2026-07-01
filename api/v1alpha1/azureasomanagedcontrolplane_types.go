@@ -82,5 +82,5 @@ type AzureASOManagedControlPlaneList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&AzureASOManagedControlPlane{}, &AzureASOManagedControlPlaneList{})
+	objectTypes = append(objectTypes, &AzureASOManagedControlPlane{}, &AzureASOManagedControlPlaneList{})
 }

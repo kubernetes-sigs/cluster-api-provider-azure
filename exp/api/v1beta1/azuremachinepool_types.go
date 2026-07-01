@@ -409,5 +409,5 @@ func (amp *AzureMachinePool) SetFutures(futures infrav1.Futures) {
 }
 
 func init() {
-	SchemeBuilder.Register(&AzureMachinePool{}, &AzureMachinePoolList{})
+	objectTypes = append(objectTypes, &AzureMachinePool{}, &AzureMachinePoolList{})
 }
