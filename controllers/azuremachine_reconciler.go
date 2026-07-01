@@ -42,11 +42,12 @@ type azureMachineService struct {
 	scope *scope.MachineScope
 	// services is the list of services to be reconciled.
 	// The order of the services is important as it determines the order in which the services are reconciled.
-	services  []azure.ServiceReconciler
-	skuCache  *resourceskus.Cache
-	Reconcile func(context.Context) error
-	Pause     func(context.Context) error
-	Delete    func(context.Context) error
+	services          []azure.ServiceReconciler
+	skuCache          *resourceskus.Cache
+	Reconcile         func(context.Context) error
+	Pause             func(context.Context) error
+	Delete            func(context.Context) error
+	DeleteOrphanedNIC func(context.Context) error
 }
 
 // newAzureMachineService populates all the services based on input scope.
@@ -109,6 +110,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	ams.Reconcile = ams.reconcile
 	ams.Pause = ams.pause
 	ams.Delete = ams.delete
+	ams.DeleteOrphanedNIC = ams.deleteOrphanedNIC
 
 	return ams, nil
 }
@@ -161,6 +163,20 @@ func (s *azureMachineService) delete(ctx context.Context) error {
 	for i := len(s.services) - 1; i >= 0; i-- {
 		if err := s.services[i].Delete(ctx); err != nil {
 			return errors.Wrapf(err, "failed to delete AzureMachine service %s", s.services[i].Name())
+		}
+	}
+
+	return nil
+}
+
+// deleteOrphanedNIC deletes the network interface service.
+func (s *azureMachineService) deleteOrphanedNIC(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.deleteOrphanedNIC")
+	defer done()
+
+	for _, service := range s.services {
+		if service.Name() == "interfaces" {
+			return service.Delete(ctx)
 		}
 	}
 
