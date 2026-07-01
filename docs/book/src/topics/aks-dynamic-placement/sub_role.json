@@ -1,0 +1,32 @@
+{
+  "Name": "Dynamic Placement AKS Cluster Deployer (sub)",
+  "IsCustom": true,
+  "Description": "Can use to deploy AKS clusters using dynamic placement. This role has the permissions required at the subscription scope level.",
+  "Actions": [
+    "Microsoft.Compute/virtualMachineScaleSets/extensions/read",
+    "Microsoft.Compute/virtualMachineScaleSets/extensions/roles/read",
+    "Microsoft.Compute/virtualMachineScaleSets/instanceView/read",
+    "Microsoft.Compute/virtualMachineScaleSets/networkInterfaces/read",
+    "Microsoft.Compute/virtualMachineScaleSets/osUpgradeHistory/read",
+    "Microsoft.Compute/virtualMachineScaleSets/providers/Microsoft.Insights/diagnosticSettings/read",
+    "Microsoft.Compute/virtualMachineScaleSets/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Compute/virtualMachineScaleSets/providers/Microsoft.Insights/metricDefinitions/read",
+    "Microsoft.Compute/virtualMachineScaleSets/publicIPAddresses/read",
+    "Microsoft.Compute/virtualMachineScaleSets/read",
+    "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades/read",
+    "Microsoft.Compute/virtualMachineScaleSets/skus/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/extensions/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/instanceView/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/networkInterfaces/ipConfigurations/publicIPAddresses/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/networkInterfaces/ipConfigurations/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/networkInterfaces/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/providers/Microsoft.Insights/metricDefinitions/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/read",
+    "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/runCommands/read",
+    "Microsoft.Compute/virtualMachineScaleSets/vmSizes/read"
+  ],
+  "NotActions": [],
+  "AssignableScopes": [
+    "/subscriptions/$SUBSCRIPTION_ID"
+  ]
+}
