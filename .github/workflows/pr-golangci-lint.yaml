@@ -46,4 +46,8 @@ jobs:
         with:
           # update the version when updating golangci-lint
           version: v2.7.0
+          # Build golangci-lint from source with the repo's Go toolchain so it
+          # can lint modules that target a newer Go version than the prebuilt
+          # release binary was built with.
+          install-mode: goinstall
           working-directory: ${{matrix.working-directory}}
