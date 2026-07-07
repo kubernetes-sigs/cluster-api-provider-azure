@@ -172,6 +172,9 @@ create_cluster() {
 }
 
 # wait_for_nodes returns when all nodes in the workload cluster are Ready.
+# If MIN_WINDOWS_WORKER_MACHINE_COUNT is set, the function will proceed once
+# at least that many Windows worker nodes (plus all control plane and linux
+# workers) are Ready, even if some Windows nodes failed to provision.
 wait_for_nodes() {
   echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s), ${WORKER_MACHINE_COUNT} worker machine(s), ${WINDOWS_WORKER_MACHINE_COUNT:-0} windows machine(s), and ${MONITORING_MACHINE_COUNT} monitoring machine(s) to become Ready"
 
@@ -182,10 +185,52 @@ wait_for_nodes() {
         total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + WINDOWS_WORKER_MACHINE_COUNT + MONITORING_MACHINE_COUNT))"
     fi
 
-    # Wait for at least total_nodes to register. -lt (not an exact match) avoids
-    # hanging when a template defines both a MachineDeployment and a MachinePool.
-    echo "Waiting for at least ${total_nodes} node(s) to become Ready"
-    while [[ $("${KUBECTL}" get nodes -ojson | jq '.items | length') -lt "${total_nodes}" ]]; do
+    # Compute the minimum acceptable node count. If MIN_WINDOWS_WORKER_MACHINE_COUNT
+    # is set and lower than WINDOWS_WORKER_MACHINE_COUNT, allow proceeding with fewer
+    # Windows nodes while still requiring all control plane and linux workers.
+    local min_nodes="${total_nodes}"
+    if [[ -n "${MIN_WINDOWS_WORKER_MACHINE_COUNT:-}" ]] && [[ "${MIN_WINDOWS_WORKER_MACHINE_COUNT}" -lt "${WINDOWS_WORKER_MACHINE_COUNT:-0}" ]]; then
+        min_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT + MIN_WINDOWS_WORKER_MACHINE_COUNT + MONITORING_MACHINE_COUNT))"
+    fi
+
+    # Wait for at least min_nodes to register, with a secondary timeout
+    # for the remaining nodes.
+    echo "Waiting for at least ${total_nodes} node(s) to become Ready (minimum: ${min_nodes})"
+    local node_wait_start
+    node_wait_start=$(date +%s)
+    local node_wait_deadline=$((node_wait_start + 1200))  # 20 min for all nodes
+    local min_reached=false
+
+    while true; do
+        local current_nodes
+        current_nodes=$("${KUBECTL}" get nodes -ojson | jq '.items | length')
+
+        # All expected nodes are registered
+        if [[ "${current_nodes}" -ge "${total_nodes}" ]]; then
+            break
+        fi
+
+        # Minimum nodes reached — wait a bit more for stragglers, then proceed
+        if [[ "${current_nodes}" -ge "${min_nodes}" ]] && [[ "${min_reached}" == "false" ]]; then
+            min_reached=true
+            # Give remaining nodes 5 more minutes to join
+            local extended_deadline=$(($(date +%s) + 300))
+            if [[ "${extended_deadline}" -lt "${node_wait_deadline}" ]]; then
+                node_wait_deadline="${extended_deadline}"
+            fi
+            echo "Minimum ${min_nodes} node(s) registered. Waiting up to 5 more minutes for remaining nodes..."
+        fi
+
+        # Deadline exceeded
+        if [[ $(date +%s) -ge "${node_wait_deadline}" ]]; then
+            if [[ "${current_nodes}" -ge "${min_nodes}" ]]; then
+                echo "WARNING: Only ${current_nodes}/${total_nodes} node(s) registered (minimum ${min_nodes} met). Proceeding with available nodes."
+                break
+            else
+                echo "ERROR: Only ${current_nodes}/${total_nodes} node(s) registered (minimum ${min_nodes} not met). Continuing to wait..."
+            fi
+        fi
+
         sleep 10
     done
 
