@@ -63,6 +63,7 @@ spec:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-"AllAlpha=true,AllBeta=true"}
           runtime-config: api/all=true
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:

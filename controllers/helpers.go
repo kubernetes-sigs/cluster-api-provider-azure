@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -148,22 +147,6 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-// GetObjectsToRequestsByNamespaceAndClusterName returns the slice of ctrl.Requests consisting the list items contained in the unstructured list.
-func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client.Client, clusterKey client.ObjectKey, list *unstructured.UnstructuredList) []ctrl.Request {
-	// list all of the requested objects within the cluster namespace with the cluster name label
-	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1.ClusterNameLabel: clusterKey.Name}); err != nil {
-		return nil
-	}
-
-	results := make([]ctrl.Request, len(list.Items))
-	for i, obj := range list.Items {
-		results[i] = ctrl.Request{
-			NamespacedName: client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()},
-		}
-	}
-	return results
 }
 
 // referSameObject returns true if a and b point to the same object.
@@ -558,14 +541,6 @@ func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.O
 		}
 	}
 	return nil, nil
-}
-
-// GetMachinePoolByName finds and return a MachinePool object using the specified params.
-func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*clusterv1.MachinePool, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.GetMachinePoolByName")
-	defer done()
-
-	return util.GetMachinePoolByName(ctx, c, namespace, name)
 }
 
 // GetAzureMachinePoolByName finds and return an AzureMachinePool object using the specified params.

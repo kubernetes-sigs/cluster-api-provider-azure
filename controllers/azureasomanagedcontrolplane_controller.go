@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

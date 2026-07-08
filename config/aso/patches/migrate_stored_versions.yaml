@@ -1,0 +1,72 @@
+# Init container that cleans up obsolete entries in
+# `status.storedVersions` for ASO-managed CRDs before the new ASO controller
+# tries to apply them. Without this, an upgrade from a CAPZ release bundling
+# ASO <= v2.16 to this release (auto-managed-CRDs mode) fails because the new
+# ASO CRD bundle no longer lists previously-stored API versions in
+# `spec.versions`, and the Kubernetes API server rejects the CRD update with:
+#
+#   status.storedVersions[i]: Invalid value: "<version>": missing from
+#   spec.versions; ... must remain in spec.versions until a storage migration
+#   ensures no data remains persisted in <version> ...
+#
+# The migration logic lives in the CAPZ manager binary (the `migrate-aso-crds`
+# subcommand in internal/asomigration) and runs here as an init container so it
+# completes before the ASO controller reconciles its CRDs. Reusing the manager
+# image means this upgrade path takes on no extra image dependency; the image
+# is kept in sync with the capz-controller-manager image by a kustomize
+# replacement in config/default/kustomization.yaml.
+#
+# For each known-affected CRD the subcommand:
+#   * exits cleanly if the CRD doesn't exist (fresh install) or has no stale
+#     stored versions;
+#   * deletes the CRD when no instances exist (the common case, since the
+#     affected resources are opt-in features). The new ASO controller
+#     re-creates the CRD from its bundled definition during startup, with
+#     `status.storedVersions` containing only the new storage version.
+#     We delete (rather than patch) because the new ASO bundle's
+#     `spec.versions` for the affected CRDs is fully disjoint from the
+#     pre-existing one (e.g. fleetsmembers drops the `v1api20230315preview*`
+#     series entirely in favor of `v1api20250301*`), so there is no served
+#     version we could flip the storage flag onto that the new bundle would
+#     keep, and any in-place patch leaves a stale storedVersions entry that
+#     the subsequent CRD apply will reject;
+#   * fails the init container with a clear message when instances do exist,
+#     so the upgrade fails fast with actionable guidance instead of leaving
+#     the ASO deployment stuck.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azureserviceoperator-controller-manager
+  namespace: capz-system
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: migrate-aso-crd-stored-versions
+          # Reuses the CAPZ manager image. The :latest tag here is a
+          # placeholder; a replacement in config/default/kustomization.yaml
+          # overwrites it with the capz-controller-manager image so the two
+          # always match.
+          image: controller:latest
+          command:
+            - /manager
+          args:
+            - migrate-aso-crds
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

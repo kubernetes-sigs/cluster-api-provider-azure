@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachineimages"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -303,16 +304,20 @@ func (m *MachinePoolScope) SetVMSSState(vmssState *azure.VMSS) {
 	m.vmssState = vmssState
 }
 
-// NeedsRequeue return true if any machines are not on the latest model or the VMSS is not in a terminal provisioning
-// state.
+// NeedsRequeue returns true if the VMSS is not in a terminal provisioning state, desired replicas do not match actual,
+// or (when SkipMachinePoolModelReconciliation is disabled) any machines are not on the latest model.
 func (m *MachinePoolScope) NeedsRequeue() bool {
 	state := m.AzureMachinePool.Status.ProvisioningState
 	if m.vmssState == nil {
 		return state != nil && infrav1.IsTerminalProvisioningState(*state)
 	}
 
-	if !m.vmssState.HasLatestModelAppliedToAll() {
-		return true
+	// Skip requeue for model state when SkipMachinePoolModelReconciliation is enabled.
+	// This allows instances with stale models to persist until explicitly scaled.
+	if !feature.Gates.Enabled(feature.SkipMachinePoolModelReconciliation) {
+		if !m.vmssState.HasLatestModelAppliedToAll() {
+			return true
+		}
 	}
 
 	desiredMatchesActual := len(m.vmssState.Instances) == int(m.DesiredReplicas())
@@ -860,14 +865,16 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ResourceSpecGetter {
 		})
 	}
 
-	cpuArchitectureType, _ := m.cache.VMSKU.GetCapability(resourceskus.CPUArchitectureType)
-	bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name(), cpuArchitectureType)
+	if !ptr.Deref(m.AzureMachinePool.Spec.Template.DisableVMBootstrapExtension, true) {
+		cpuArchitectureType, _ := m.cache.VMSKU.GetCapability(resourceskus.CPUArchitectureType)
+		bootstrapExtensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name(), cpuArchitectureType)
 
-	if bootstrapExtensionSpec != nil {
-		extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
-			ExtensionSpec: *bootstrapExtensionSpec,
-			ResourceGroup: m.NodeResourceGroup(),
-		})
+		if bootstrapExtensionSpec != nil {
+			extensionSpecs = append(extensionSpecs, &scalesets.VMSSExtensionSpec{
+				ExtensionSpec: *bootstrapExtensionSpec,
+				ResourceGroup: m.NodeResourceGroup(),
+			})
+		}
 	}
 
 	return extensionSpecs

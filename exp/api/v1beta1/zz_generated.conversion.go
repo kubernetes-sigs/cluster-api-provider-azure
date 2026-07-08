@@ -530,6 +530,7 @@ func autoConvert_v1beta1_AzureMachinePoolMachineTemplate_To_v1beta2_AzureMachine
 	} else {
 		out.VMExtensions = nil
 	}
+	out.DisableVMBootstrapExtension = (*bool)(unsafe.Pointer(in.DisableVMBootstrapExtension))
 	if in.NetworkInterfaces != nil {
 		in, out := &in.NetworkInterfaces, &out.NetworkInterfaces
 		*out = make([]apiv1beta2.NetworkInterface, len(*in))
@@ -625,6 +626,7 @@ func autoConvert_v1beta2_AzureMachinePoolMachineTemplate_To_v1beta1_AzureMachine
 	} else {
 		out.VMExtensions = nil
 	}
+	out.DisableVMBootstrapExtension = (*bool)(unsafe.Pointer(in.DisableVMBootstrapExtension))
 	if in.NetworkInterfaces != nil {
 		in, out := &in.NetworkInterfaces, &out.NetworkInterfaces
 		*out = make([]apiv1beta1.NetworkInterface, len(*in))

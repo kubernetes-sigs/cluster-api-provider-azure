@@ -19,8 +19,8 @@ package agentpools
 import (
 	"testing"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -188,10 +188,10 @@ func TestParameters(t *testing.T) {
 				NodeLabels:             map[string]string{"node": "labels"},
 				NodeTaints:             []string{"node taints"},
 				OrchestratorVersion:    ptr.To("1.26.6"),
-				OsDiskSizeGB:           ptr.To(asocontainerservicev1preview.ContainerServiceOSDisk(2)),
+				OsDiskSizeGB:           ptr.To(2),
 				OsDiskType:             ptr.To(asocontainerservicev1preview.OSDiskType("disk type")),
-				OsType:                 ptr.To(asocontainerservicev1preview.OSType("os type")),
-				ScaleSetPriority:       ptr.To(asocontainerservicev1preview.ScaleSetPriority("scaleset priority")),
+				OsType:                 ptr.To(asocontainerservicev1preview.ManagedClusterAgentPoolProfileProperties_OsType("os type")),
+				ScaleSetPriority:       ptr.To(asocontainerservicev1preview.ManagedClusterAgentPoolProfileProperties_ScaleSetPriority("scaleset priority")),
 				ScaleDownMode:          ptr.To(asocontainerservicev1preview.ScaleDownMode("scale down mode")),
 				Type:                   ptr.To(asocontainerservicev1preview.AgentPoolType_VirtualMachineScaleSets),
 				EnableNodePublicIP:     ptr.To(true),
@@ -270,7 +270,7 @@ func TestParameters(t *testing.T) {
 			Spec: asocontainerservicev1preview.ManagedClustersAgentPool_Spec{
 				AzureName: "set by the user",
 				PowerState: &asocontainerservicev1preview.PowerState{
-					Code: ptr.To(asocontainerservicev1preview.PowerState_Code("set by the user")),
+					Code: ptr.To(asocontainerservicev1preview.Code("set by the user")),
 				},
 				OrchestratorVersion: ptr.To("1.27.2"),
 			},
@@ -286,7 +286,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(actualTyped.Spec.AzureName).To(Equal("managed by CAPZ"))
 		g.Expect(actualTyped.Spec.Count).To(Equal(ptr.To(1212)))
-		g.Expect(actualTyped.Spec.PowerState.Code).To(Equal(ptr.To(asocontainerservicev1preview.PowerState_Code("set by the user"))))
+		g.Expect(actualTyped.Spec.PowerState.Code).To(Equal(ptr.To(asocontainerservicev1preview.Code("set by the user"))))
 		g.Expect(actualTyped.Spec.OrchestratorVersion).NotTo(BeNil())
 		g.Expect(*actualTyped.Spec.OrchestratorVersion).To(Equal("1.27.2"))
 	})

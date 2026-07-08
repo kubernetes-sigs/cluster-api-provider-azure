@@ -4,7 +4,7 @@ In `clusterctl` the infrastructure provider authors can provide different type o
 or flavors; use the --flavor flag to specify which flavor to use; e.g
 
 ```shell
-clusterctl generate cluster my-cluster --kubernetes-version v1.33.6 \
+clusterctl generate cluster my-cluster --kubernetes-version v1.35.4 \
     --flavor private > my-cluster.yaml
 ```
 
@@ -66,8 +66,8 @@ worker-templates:
     AZURE_LOCATION: eastus
     AZURE_RESOURCE_GROUP: test-resource-group-name
     CONTROL_PLANE_MACHINE_COUNT: "1"
-    KUBERNETES_VERSION: v1.33.6
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
+    KUBERNETES_VERSION: v1.35.4
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
     WORKER_MACHINE_COUNT: "2"
     AZURE_NODE_MACHINE_TYPE: Standard_B2s
 ```
@@ -86,8 +86,8 @@ worker-templates:
     nvidia-gpu:
       AZURE_NODE_MACHINE_TYPE: Standard_NC6s_v3
   metadata:
-    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_B2s
+    AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D2s_v3
     AZURE_LOCATION: southcentralus
-    KUBERNETES_VERSION: v1.33.6
+    KUBERNETES_VERSION: v1.35.4
     WORKER_MACHINE_COUNT: "1"
 ```

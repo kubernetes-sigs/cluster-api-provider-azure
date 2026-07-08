@@ -22,8 +22,8 @@ import (
 	"slices"
 	"testing"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -771,9 +771,9 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 			// Not all pools have to be the same version, or the same version as the cluster.
 			&asocontainerservicev1preview.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1preview.ManagedClustersAgentPool_Spec{
-					AzureName:           "pool1",
-					MinCount:            ptr.To(2),
-					EnableCustomCATrust: ptr.To(true),
+					AzureName:                "pool1",
+					MinCount:                 ptr.To(2),
+					NodeInitializationTaints: []string{"preview-only-taint"},
 				},
 			},
 		}
@@ -785,7 +785,7 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 			{
 				Name:     ptr.To("pool1"),
 				MinCount: ptr.To(2),
-				// EnableCustomCATrust is a preview-only feature that can't be represented here, so it should be lost.
+				// NodeInitializationTaints is a preview-only feature that can't be represented here, so it should be lost.
 			},
 		}
 
@@ -807,9 +807,9 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 			},
 			&asocontainerservicev1preview.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1preview.ManagedClustersAgentPool_Spec{
-					AzureName:           "pool1",
-					MinCount:            ptr.To(2),
-					EnableCustomCATrust: ptr.To(true),
+					AzureName:                "pool1",
+					MinCount:                 ptr.To(2),
+					NodeInitializationTaints: []string{"preview-only-taint"},
 				},
 			},
 		}
@@ -819,9 +819,9 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 				MaxCount: ptr.To(1),
 			},
 			{
-				Name:                ptr.To("pool1"),
-				MinCount:            ptr.To(2),
-				EnableCustomCATrust: ptr.To(true),
+				Name:                     ptr.To("pool1"),
+				MinCount:                 ptr.To(2),
+				NodeInitializationTaints: []string{"preview-only-taint"},
 			},
 		}
 

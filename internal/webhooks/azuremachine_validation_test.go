@@ -443,12 +443,152 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "nil LUN",
+			disks: []infrav1.DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         nil,
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "LUN below valid range",
+			disks: []infrav1.DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         ptr.To[int32](-1),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "LUN above valid range",
+			disks: []infrav1.DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         ptr.To[int32](64),
+					CachingType: string(armcompute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
 			g := NewWithT(t)
 			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
+			if test.wantErr {
+				g.Expect(err).NotTo(BeEmpty())
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
+func TestAzureMachine_ValidateDiagnostics(t *testing.T) {
+	testcases := []struct {
+		name        string
+		diagnostics *infrav1.Diagnostics
+		wantErr     bool
+	}{
+		{
+			name:        "nil diagnostics",
+			diagnostics: nil,
+			wantErr:     false,
+		},
+		{
+			name:        "nil boot diagnostics",
+			diagnostics: &infrav1.Diagnostics{},
+			wantErr:     false,
+		},
+		{
+			name: "managed storage account type without user-managed config",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "managed storage account type with user-managed StorageAccountURI",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.ManagedDiagnosticsStorage,
+					UserManaged: &infrav1.UserManagedBootDiagnostics{
+						StorageAccountURI: "https://example.blob.core.windows.net/",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "disabled storage account type without user-managed config",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "disabled storage account type with user-managed StorageAccountURI",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.DisabledDiagnosticsStorage,
+					UserManaged: &infrav1.UserManagedBootDiagnostics{
+						StorageAccountURI: "https://example.blob.core.windows.net/",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "user-managed storage account type with valid URI",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+					UserManaged: &infrav1.UserManagedBootDiagnostics{
+						StorageAccountURI: "https://example.blob.core.windows.net/",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "user-managed storage account type missing UserManaged",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "user-managed storage account type with empty URI",
+			diagnostics: &infrav1.Diagnostics{
+				Boot: &infrav1.BootDiagnostics{
+					StorageAccountType: infrav1.UserManagedDiagnosticsStorage,
+					UserManaged:        &infrav1.UserManagedBootDiagnostics{},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := ValidateDiagnostics(test.diagnostics, field.NewPath("diagnostics"))
 			if test.wantErr {
 				g.Expect(err).NotTo(BeEmpty())
 			} else {

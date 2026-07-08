@@ -111,6 +111,59 @@ var (
 		APIServerPort: 6443,
 	}
 
+	fakeInternalAPILBSpecWithZones = LBSpec{
+		Name:                 "my-private-lb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Internal,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-private-lb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		AvailabilityZones:    []string{"1", "2", "3"},
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-private-lb-frontEnd",
+				FrontendIPClass: infrav1.FrontendIPClass{
+					PrivateIPAddress: "10.0.0.10",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
+	// fakePublicAPILBSpecWithZones tests that zones are NOT applied to public LB frontends.
+	// Azure does not allow zones on frontend IP configurations that reference public IP addresses.
+	// Instead, zone-redundancy for public LBs is achieved by setting zones on the public IP itself.
+	// See: https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer#zone-redundant-load-balancer
+	fakePublicAPILBSpecWithZones = LBSpec{
+		Name:                 "my-publiclb",
+		ResourceGroup:        "my-rg",
+		SubscriptionID:       "123",
+		ClusterName:          "my-cluster",
+		Location:             "my-location",
+		Role:                 infrav1.APIServerRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		SubnetName:           "my-cp-subnet",
+		BackendPoolName:      "my-publiclb-backendPool",
+		IdleTimeoutInMinutes: ptr.To[int32](4),
+		AvailabilityZones:    []string{"1", "2", "3"}, // These should NOT be applied to frontend
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: "my-publiclb-frontEnd",
+				PublicIP: &infrav1.PublicIPSpec{
+					Name:    "my-publicip",
+					DNSName: "my-cluster.12345.mydomain.com",
+				},
+			},
+		},
+		APIServerPort: 6443,
+	}
+
 	fakeNodeOutboundLBSpec = LBSpec{
 		Name:                 "my-cluster",
 		ResourceGroup:        "my-rg",

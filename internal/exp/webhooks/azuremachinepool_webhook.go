@@ -36,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
@@ -184,6 +185,7 @@ func validateAzureMachinePool(amp *infrav1exp.AzureMachinePool, old *infrav1exp.
 		validateAzureMachinePoolSystemAssignedIdentityRole(amp),
 		validateAzureMachinePoolNetwork(amp),
 		validateAzureMachinePoolOSDisk(amp),
+		validateAzureMachinePoolDisableVMBootstrapExtension(amp, old),
 	}
 
 	var errs []error
@@ -207,7 +209,7 @@ func validateAzureMachinePoolNetwork(amp *infrav1exp.AzureMachinePool) func() er
 
 func validateAzureMachinePoolOSDisk(amp *infrav1exp.AzureMachinePool) func() error {
 	return func() error {
-		if errs := ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		if errs := webhooks.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
 			return errs.ToAggregate()
 		}
 		return nil
@@ -217,7 +219,7 @@ func validateAzureMachinePoolOSDisk(amp *infrav1exp.AzureMachinePool) func() err
 func validateAzureMachinePoolImage(amp *infrav1exp.AzureMachinePool) func() error {
 	return func() error {
 		if amp.Spec.Template.Image != nil {
-			if errs := ValidateImage(amp.Spec.Template.Image, field.NewPath("image")); len(errs) > 0 {
+			if errs := webhooks.ValidateImage(amp.Spec.Template.Image, field.NewPath("image")); len(errs) > 0 {
 				return errs.ToAggregate()
 			}
 		}
@@ -243,7 +245,7 @@ func validateAzureMachinePoolTerminateNotificationTimeout(amp *infrav1exp.AzureM
 func validateAzureMachinePoolSSHKey(amp *infrav1exp.AzureMachinePool) func() error {
 	return func() error {
 		if amp.Spec.Template.SSHPublicKey != "" {
-			if errs := ValidateSSHKey(amp.Spec.Template.SSHPublicKey, field.NewPath("sshKey")); len(errs) > 0 {
+			if errs := webhooks.ValidateSSHKey(amp.Spec.Template.SSHPublicKey, field.NewPath("sshKey")); len(errs) > 0 {
 				return kerrors.NewAggregate(errs.ToAggregate().Errors())
 			}
 		}
@@ -254,7 +256,7 @@ func validateAzureMachinePoolSSHKey(amp *infrav1exp.AzureMachinePool) func() err
 func validateAzureMachinePoolUserAssignedIdentity(amp *infrav1exp.AzureMachinePool) func() error {
 	return func() error {
 		fldPath := field.NewPath("userAssignedIdentities")
-		if errs := ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
+		if errs := webhooks.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 		return nil
@@ -291,7 +293,7 @@ func validateAzureMachinePoolSystemAssignedIdentity(amp *infrav1exp.AzureMachine
 		}
 
 		fldPath := field.NewPath("roleAssignmentName")
-		if errs := ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
+		if errs := webhooks.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, roleAssignmentName, fldPath); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 
@@ -384,6 +386,37 @@ func validateAzureMachinePoolOrchestrationMode(amp *infrav1exp.AzureMachinePool,
 			if k8sVersion.LT(semver.MustParse("1.26.0")) {
 				return fmt.Errorf("specified Kubernetes version %s must be >= 1.26.0 for Flexible orchestration mode", k8sVersion)
 			}
+		}
+
+		return nil
+	}
+}
+
+// validateAzureMachinePoolDisableVMBootstrapExtension enforces immutability of
+// spec.template.disableVMBootstrapExtension once it has been explicitly set,
+// while still permitting the nil -> set transition so users can opt back in to
+// the bootstrap extension on AzureMachinePools created before the runtime
+// default flipped from false to true.
+func validateAzureMachinePoolDisableVMBootstrapExtension(amp *infrav1exp.AzureMachinePool, old *infrav1exp.AzureMachinePool) func() error {
+	return func() error {
+		if old == nil {
+			return nil
+		}
+
+		oldVal := old.Spec.Template.DisableVMBootstrapExtension
+		newVal := amp.Spec.Template.DisableVMBootstrapExtension
+
+		// nil -> anything is allowed (upgrade opt-in/opt-out).
+		if oldVal == nil {
+			return nil
+		}
+
+		// Once explicitly set, the field is immutable.
+		if newVal == nil {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable, unable to unset once explicitly set")
+		}
+		if *oldVal != *newVal {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable")
 		}
 
 		return nil

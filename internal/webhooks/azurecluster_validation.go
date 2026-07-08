@@ -829,7 +829,11 @@ func validateAzureClusterSubnetUpdate(c *infrav1.AzureCluster, old *infrav1.Azur
 						c.Spec.NetworkSpec.Subnets[i].CIDRBlocks, "field is immutable"),
 				)
 			}
-			if subnet.RouteTable.Name != oldSubnet.RouteTable.Name {
+			// RouteTable.Name is immutable once set, but allow defaulting it from
+			// empty to a generated name so existing clusters (whose control plane
+			// subnet had no route table) can adopt the shared node route table on
+			// upgrade. This mirrors the NatGateway.Name handling below.
+			if (subnet.RouteTable.Name != oldSubnet.RouteTable.Name) && (oldSubnet.RouteTable.Name != "") {
 				allErrs = append(allErrs,
 					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("RouteTable").Child("Name"),
 						c.Spec.NetworkSpec.Subnets[i].RouteTable.Name, "field is immutable"),

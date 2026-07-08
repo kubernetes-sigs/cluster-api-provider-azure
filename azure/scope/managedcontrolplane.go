@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250301"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
@@ -324,11 +324,11 @@ func (s *ManagedControlPlaneScope) VNetSpec() azure.ASOResourceSpecGetter[*asone
 }
 
 // AzureFleetsMemberSpec returns the fleet spec.
-func (s *ManagedControlPlaneScope) AzureFleetsMemberSpec() []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.FleetsMember] {
+func (s *ManagedControlPlaneScope) AzureFleetsMemberSpec() []azure.ASOResourceSpecGetter[*asocontainerservicev1.FleetsMember] {
 	if s.AzureFleetMembership() == nil {
 		return nil
 	}
-	return []azure.ASOResourceSpecGetter[*asocontainerservicev1preview.FleetsMember]{&fleetsmembers.AzureFleetsMemberSpec{
+	return []azure.ASOResourceSpecGetter[*asocontainerservicev1.FleetsMember]{&fleetsmembers.AzureFleetsMemberSpec{
 		Name:                 s.AzureFleetMembership().Name,
 		ClusterName:          s.ClusterName(),
 		ClusterResourceGroup: s.ResourceGroup(),

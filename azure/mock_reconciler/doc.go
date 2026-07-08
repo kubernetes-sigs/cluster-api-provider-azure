@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package identity
-
-import "fmt"
-
-// GetAzureIdentityName formats the name of the AzureIdentity created by the capz controller.
-func GetAzureIdentityName(clusterName, clusterNamespace, identityName string) string {
-	return fmt.Sprintf("%s-%s-%s", clusterName, clusterNamespace, identityName)
-}
+// Run go generate to regenerate this mock.
+//
+//go:generate ../../hack/tools/bin/mockgen -destination reconciler_mock.go -package mock_reconciler -source ../reconcile.go
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt reconciler_mock.go > _reconciler_mock.go && mv _reconciler_mock.go reconciler_mock.go"
+package mock_reconciler

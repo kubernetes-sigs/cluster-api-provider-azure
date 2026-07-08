@@ -210,11 +210,16 @@ func (mw *AzureMachineWebhook) ValidateUpdate(_ context.Context, old, m *infrav1
 		allErrs = append(allErrs, err)
 	}
 
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "disableVMBootstrapExtension"),
-		old.Spec.DisableVMBootstrapExtension,
-		m.Spec.DisableVMBootstrapExtension); err != nil {
-		allErrs = append(allErrs, err)
+	// Only validate immutability of disableVMBootstrapExtension if it was previously set explicitly.
+	// This permits users to opt back in (nil -> false) or opt out (nil -> true) on AzureMachines
+	// created before the runtime default flipped from false to true.
+	if old.Spec.DisableVMBootstrapExtension != nil {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("spec", "disableVMBootstrapExtension"),
+			old.Spec.DisableVMBootstrapExtension,
+			m.Spec.DisableVMBootstrapExtension); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if len(allErrs) == 0 {

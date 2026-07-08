@@ -827,6 +827,76 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension transition from nil to true is allowed",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: nil,
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension transition from nil to false is allowed",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: nil,
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(false),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.disableVMBootstrapExtension is immutable once explicitly set",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.disableVMBootstrapExtension same value passes immutability",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.disableVMBootstrapExtension cannot be unset once explicitly set",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: ptr.To(true),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					DisableVMBootstrapExtension: nil,
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "validTest: azuremachine.spec.networkInterfaces is immutable",
 			oldMachine: &infrav1.AzureMachine{
 				Spec: infrav1.AzureMachineSpec{

@@ -74,8 +74,10 @@ var (
 			AzureName: fakePrivateEndpoint.Name,
 			PrivateLinkServiceConnections: []asonetworkv1.PrivateLinkServiceConnection{{
 				Name: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].Name),
-				PrivateLinkServiceReference: &genruntime.ResourceReference{
-					ARMID: fakePrivateEndpoint.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
+				PrivateLinkServiceReference: &genruntime.WellKnownResourceReference{
+					ResourceReference: genruntime.ResourceReference{
+						ARMID: fakePrivateEndpoint.PrivateLinkServiceConnections[0].PrivateLinkServiceID,
+					},
 				},
 				GroupIds:       fakePrivateEndpoint.PrivateLinkServiceConnections[0].GroupIDs,
 				RequestMessage: ptr.To(fakePrivateEndpoint.PrivateLinkServiceConnections[0].RequestMessage),
@@ -102,7 +104,7 @@ var (
 		},
 	}
 
-	fakeASOPrivateEndpointsStatus = asonetworkv1.PrivateEndpoint_STATUS_PrivateEndpoint_SubResourceEmbedded{
+	fakeASOPrivateEndpointsStatus = asonetworkv1.PrivateEndpoint_STATUS{
 		ApplicationSecurityGroups: []asonetworkv1.ApplicationSecurityGroup_STATUS_PrivateEndpoint_SubResourceEmbedded{
 			{
 				Id: ptr.To(fakePrivateEndpoint.ApplicationSecurityGroups[0]),

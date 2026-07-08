@@ -24,11 +24,13 @@ import (
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomega"
 )
 
@@ -188,6 +190,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 		strategy        DeleteSelector
 		input           map[string]infrav1exp.AzureMachinePoolMachine
 		desiredReplicas int32
+		skipModel       bool
 		want            types.GomegaMatcher
 		errStr          string
 	}{
@@ -386,6 +389,32 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			want: HaveLen(1),
 		},
 		{
+			name:            "if skip model reconciliation is enabled, do not select stale model machines at steady desired count",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{MaxUnavailable: &one}),
+			desiredReplicas: 3,
+			skipModel:       true,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+			},
+			want: BeEmpty(),
+		},
+		{
+			name:            "if over-provisioned and skip model reconciliation is enabled, select by delete policy and not stale model priority",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 2,
+			skipModel:       true,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(4 * time.Hour))}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(3 * time.Hour))}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+			},
+			want: gomega.DiffEq([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+			}),
+		},
+		{
 			name:            "if maxUnavailable is 30%, and there are 2 with the latest model == false, delete 0.",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{MaxUnavailable: &thirtyPercent}),
 			desiredReplicas: 3,
@@ -401,6 +430,7 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
+			featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, feature.SkipMachinePoolModelReconciliation, tt.skipModel)
 			got, err := tt.strategy.SelectMachinesToDelete(t.Context(), tt.desiredReplicas, tt.input)
 			if tt.errStr == "" {
 				g.Expect(err).To(Succeed())

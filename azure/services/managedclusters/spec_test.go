@@ -20,8 +20,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231001"
-	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -234,7 +234,7 @@ func TestParameters(t *testing.T) {
 						},
 					},
 					LoadBalancerSku:   ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_LoadBalancerSku("lb sku")),
-					NetworkPlugin:     ptr.To(asocontainerservicev1.NetworkPlugin("network plugin")),
+					NetworkPlugin:     ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPlugin("network plugin")),
 					NetworkPluginMode: ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPluginMode("network plugin mode")),
 					NetworkPolicy:     ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_NetworkPolicy("network policy")),
 					OutboundType:      ptr.To(asocontainerservicev1.ContainerServiceNetworkProfile_OutboundType("outbound type")),
@@ -340,8 +340,8 @@ func TestParameters(t *testing.T) {
 		}
 		existing := &asocontainerservicev1.ManagedCluster{
 			Spec: asocontainerservicev1.ManagedCluster_Spec{
-				DnsPrefix:               ptr.To("set by the user"),
-				EnablePodSecurityPolicy: ptr.To(true), // set by the user
+				DnsPrefix:     ptr.To("set by the user"),
+				FqdnSubdomain: ptr.To("set by the user"),
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
 				AgentPoolProfiles:        []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{},
@@ -357,7 +357,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
 		g.Expect(actual.Spec.Tags).To(BeNil())
 		g.Expect(actual.Spec.DnsPrefix).To(Equal(ptr.To("managed by CAPZ")))
-		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
+		g.Expect(actual.Spec.FqdnSubdomain).To(Equal(ptr.To("set by the user")))
 		g.Expect(actual.Spec.KubernetesVersion).NotTo(BeNil())
 		g.Expect(*actual.Spec.KubernetesVersion).To(Equal("1.26.6"))
 	})
@@ -373,9 +373,8 @@ func TestParameters(t *testing.T) {
 		}
 		existing := &asocontainerservicev1.ManagedCluster{
 			Spec: asocontainerservicev1.ManagedCluster_Spec{
-				DnsPrefix:               ptr.To("set by the user"),
-				EnablePodSecurityPolicy: ptr.To(true), // set by the user
-
+				DnsPrefix:     ptr.To("set by the user"),
+				FqdnSubdomain: ptr.To("set by the user"),
 			},
 			Status: asocontainerservicev1.ManagedCluster_STATUS{
 				AgentPoolProfiles: []asocontainerservicev1.ManagedClusterAgentPoolProfile_STATUS{},
@@ -390,7 +389,7 @@ func TestParameters(t *testing.T) {
 		g.Expect(actual.Spec.AgentPoolProfiles).To(BeNil())
 		g.Expect(actual.Spec.Tags).To(BeNil())
 		g.Expect(actual.Spec.DnsPrefix).To(Equal(ptr.To("managed by CAPZ")))
-		g.Expect(actual.Spec.EnablePodSecurityPolicy).To(Equal(ptr.To(true)))
+		g.Expect(actual.Spec.FqdnSubdomain).To(Equal(ptr.To("set by the user")))
 		g.Expect(actual.Spec.NetworkProfile.DnsServiceIP).To(Equal(ptr.To("123.200.198.99")))
 		g.Expect(actual.Spec.NetworkProfile.ServiceCidr).To(Equal(ptr.To("123.200.198.0/10")))
 	})

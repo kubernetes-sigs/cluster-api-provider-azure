@@ -42,6 +42,7 @@ you have access to Azure cloud services.
   - `SERVICE_ACCOUNT_NAME`: Name of the capz-manager or azureserviceoperator-default k8s service account. Default is `capz-manager` for CAPZ and `azureserviceoperator-default` for ASO.
   - `SERVICE_ACCOUNT_ISSUER`: Path of the Azure storage container created in the previous step, specifically:
     - `"https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER}/"`
+    - If unset, the cluster template falls back to kubeadm's default `https://kubernetes.default.svc.cluster.local`. Set it to your Azure storage container URL when running `clusterctl generate cluster ...` so projected service account tokens in the workload cluster are signed with an AAD-discoverable issuer.
 
   Create two federated identity credentials, one for CAPZ and one for ASO, by following [these instructions](https://azure.github.io/azure-workload-identity/docs/topics/federated-identity-credential.html). You'll need to set `SERVICE_ACCOUNT_NAME` and `SERVICE_ACCOUNT_NAMESPACE` to different values for each credential.
   Use either `user-assigned-identity` or `AD application` when creating the credentials, and add the `contributor` role to each.
@@ -98,7 +99,7 @@ to give the identity Contributor access to the Azure subscription where the work
   # This is the client ID of the AAD app or user-assigned identity that you used to created the federated identity.
   export AZURE_CLIENT_ID=<your-azure-client-id>
   export AZURE_TENANT_ID=<your-azure-tenant-id>
-  export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_B2s"
+  export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
   export AZURE_NODE_MACHINE_TYPE="Standard_B2s"
   export AZURE_LOCATION="eastus"
 

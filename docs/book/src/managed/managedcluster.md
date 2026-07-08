@@ -40,7 +40,7 @@ executing clusterctl.
 # Kubernetes values
 export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.33.6"
+export KUBERNETES_VERSION="v1.35.4"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
@@ -357,7 +357,7 @@ spec:
   resourceGroupName: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
-  version: v1.33.6
+  version: v1.35.4
   identity:
     type: UserAssigned
     userAssignedIdentityResourceID: /subscriptions/00000000-0000-0000-0000-00000000/resourcegroups/<your-resource-group>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<your-managed-identity>
@@ -384,7 +384,9 @@ spec:
 
 To enable preview features for managed clusters, you can use the `enablePreviewFeatures` field in the `AzureManagedControlPlane` resource spec. To use any of the new fields included in the preview API version, use the `asoManagedClusterPatches` field in the `AzureManagedControlPlane` resource spec and the `asoManagedClustersAgentPoolPatches` field in the `AzureManagedMachinePool` resource spec to patch in the new fields.
 
-Please refer to the [ASO Docs](https://azure.github.io/azure-service-operator/reference/containerservice/) for the ContainerService API reference for the latest preview fields and their usage.
+When `enablePreviewFeatures` is set, CAPZ manages the underlying ASO resources using the `containerservice.azure.com/v20251002preview` API version. Any preview fields you patch in must exist in that version. See the [ASO Docs](https://azure.github.io/azure-service-operator/reference/containerservice/) for the ContainerService API reference.
+
+> :warning: Some fields available in older preview API versions have changed or been removed. For example, the per-agent-pool `enableCustomCATrust` field no longer exists; configure custom CA trust through the cluster-level `securityProfile.customCATrustCertificates` field instead. If you previously patched preview fields, confirm they still exist in `v20251002preview` before upgrading.
 
 Example for enabling preview features for managed clusters:
 
@@ -405,7 +407,7 @@ metadata:
   ...
 spec:
   asoManagedClustersAgentPoolPatches:
-  - '{"spec": {"enableCustomCATrust": true}}'
+  - '{"spec": {"nodeInitializationTaints": ["capz.io/preview=true:NoSchedule"]}}'
 ```
 
 ### OIDC Issuer on AKS

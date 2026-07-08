@@ -58,6 +58,7 @@ spec:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
           runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:

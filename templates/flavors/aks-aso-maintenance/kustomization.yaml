@@ -1,0 +1,81 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../aks-aso
+
+patches:
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedCluster
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: containerservice.azure.com/v1api20240901
+        kind: MaintenanceConfiguration
+        metadata:
+          name: ${CLUSTER_NAME}-default
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: default
+          owner:
+            name: ${CLUSTER_NAME}
+          timeInWeek:
+          - day: Sunday
+            hourSlots:
+            - 0
+            - 1
+            - 2
+            - 3
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: containerservice.azure.com/v1api20240901
+        kind: MaintenanceConfiguration
+        metadata:
+          name: ${CLUSTER_NAME}-aksmanagedautoupgradeschedule
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: aksManagedAutoUpgradeSchedule
+          owner:
+            name: ${CLUSTER_NAME}
+          maintenanceWindow:
+            durationHours: 4
+            utcOffset: "-05:00"
+            startTime: "02:00"
+            schedule:
+              weekly:
+                intervalWeeks: 1
+                dayOfWeek: Sunday
+            notAllowedDates:
+            - start: "2026-12-23"
+              end: "2026-12-26"
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: containerservice.azure.com/v1api20240901
+        kind: MaintenanceConfiguration
+        metadata:
+          name: ${CLUSTER_NAME}-aksmanagednodeosupgradeschedule
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: aksManagedNodeOSUpgradeSchedule
+          owner:
+            name: ${CLUSTER_NAME}
+          maintenanceWindow:
+            durationHours: 4
+            utcOffset: "-05:00"
+            startTime: "02:00"
+            schedule:
+              weekly:
+                intervalWeeks: 1
+                dayOfWeek: Sunday
+  target:
+    kind: AzureASOManagedControlPlane
+
+sortOptions:
+  order: fifo

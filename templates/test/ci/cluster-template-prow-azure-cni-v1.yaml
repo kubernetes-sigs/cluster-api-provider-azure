@@ -54,7 +54,8 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
-        extraArgs: {}
+        extraArgs:
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:

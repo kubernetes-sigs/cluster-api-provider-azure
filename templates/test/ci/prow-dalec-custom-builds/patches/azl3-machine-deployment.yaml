@@ -110,7 +110,46 @@ spec:
           [[ -n "${KUBELET_REVISION}" ]] && ANY_REVISION_SET="true"
 
           if [[ "$${ANY_REVISION_SET}" != "true" ]]; then
-            echo "No *_REVISION variables set. Skipping binary replacement."
+            # No dalec revisions set — download official upstream binaries from
+            # dl.k8s.io to ensure binaries match the dalec container image version.
+            TARGET_VERSION="v$${VERSION}"
+
+            echo "============================================================"
+            echo "DALEC IMAGE-ONLY TEST: No dalec binary revisions set."
+            echo "Downloading official upstream binaries ($${TARGET_VERSION})"
+            echo "from dl.k8s.io for version consistency with dalec images."
+            echo "============================================================"
+
+            # Download all binaries to temp files first, then replace
+            DOWNLOAD_DIR=$$(mktemp -d)
+            ALL_UPSTREAM_BINARIES=("kubeadm" "kubectl" "kubelet")
+            for BINARY in "$${ALL_UPSTREAM_BINARIES[@]}"; do
+              DL_URL="https://dl.k8s.io/release/$${TARGET_VERSION}/bin/linux/amd64/$${BINARY}"
+              echo "* downloading $${BINARY} $${TARGET_VERSION} from $${DL_URL}"
+              curl --fail --location --retry 10 --retry-delay 5 "$${DL_URL}" --output "$${DOWNLOAD_DIR}/$${BINARY}"
+              chmod +x "$${DOWNLOAD_DIR}/$${BINARY}"
+            done
+
+            # All downloads succeeded — now stop kubelet and replace binaries
+            systemctl stop kubelet
+            for BINARY in "$${ALL_UPSTREAM_BINARIES[@]}"; do
+              mv "$${DOWNLOAD_DIR}/$${BINARY}" "/usr/bin/$${BINARY}"
+            done
+            rm -rf "$${DOWNLOAD_DIR}"
+
+            # Clean up stale kubelet flags in /etc/sysconfig/kubelet.
+            # The gallery image may ship flags removed in newer k8s versions
+            # (e.g. --pod-infra-container-image was removed in v1.35).
+            if [ -f /etc/sysconfig/kubelet ]; then
+              echo "Sanitizing /etc/sysconfig/kubelet for $${TARGET_VERSION}"
+              sed -i 's/--pod-infra-container-image=[^ ]*//g' /etc/sysconfig/kubelet
+            fi
+
+            systemctl restart kubelet
+
+            echo "kubeadm version: $(kubeadm version -o=short)"
+            echo "kubectl version: $(kubectl version --client=true)"
+            echo "kubelet version: $(kubelet --version)"
             exit 0
           fi
 

@@ -535,7 +535,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 		want         []azure.ResourceSpecGetter
 	}{
 		{
-			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Linux and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -546,6 +546,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						OSDisk: infrav1.OSDisk{
 							OSType: "Linux",
 						},
+						DisableVMBootstrapExtension: ptr.To(false),
 					},
 				},
 				ClusterScoper: &ClusterScope{
@@ -649,7 +650,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Windows and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -660,6 +661,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						OSDisk: infrav1.OSDisk{
 							OSType: "Windows",
 						},
+						DisableVMBootstrapExtension: ptr.To(false),
 					},
 				},
 				ClusterScoper: &ClusterScope{
@@ -795,7 +797,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If a custom VM extension is specified, it returns the custom VM extension",
+			name: "If a custom VM extension is specified, it returns only the custom VM extension (bootstrap extension disabled by default)",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{
@@ -806,6 +808,70 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 						OSDisk: infrav1.OSDisk{
 							OSType: "Linux",
 						},
+						VMExtensions: []infrav1.VMExtension{
+							{
+								Name:      "custom-vm-extension",
+								Publisher: "Microsoft.Azure.Extensions",
+								Version:   "2.0",
+								Settings: map[string]string{
+									"timestamp": "1234567890",
+								},
+								ProtectedSettings: map[string]string{
+									"commandToExecute": "echo hello world",
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						cloudEnvironment: azure.PublicCloudName,
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+				cache: &MachineCache{
+					VMSKU: resourceskus.SKU{},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&vmextensions.VMExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "custom-vm-extension",
+						VMName:    "machine-name",
+						Publisher: "Microsoft.Azure.Extensions",
+						Version:   "2.0",
+						Settings: map[string]string{
+							"timestamp": "1234567890",
+						},
+						ProtectedSettings: map[string]string{
+							"commandToExecute": "echo hello world",
+						},
+					},
+					ResourceGroup: "my-rg",
+					Location:      "westus",
+				},
+			},
+		},
+		{
+			name: "If a custom VM extension is specified and bootstrap extension is enabled, it returns both extensions",
+			machineScope: MachineScope{
+				Machine: &clusterv1.Machine{},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							OSType: "Linux",
+						},
+						DisableVMBootstrapExtension: ptr.To(false),
 						VMExtensions: []infrav1.VMExtension{
 							{
 								Name:      "custom-vm-extension",
@@ -871,7 +937,7 @@ func TestMachineScope_VMExtensionSpecs(t *testing.T) {
 			},
 		},
 		{
-			name: "If a custom VM extension is specified and bootstrap extension is disabled, it returns only the custom VM extension",
+			name: "If a custom VM extension is specified and bootstrap extension is explicitly disabled, it returns only the custom VM extension",
 			machineScope: MachineScope{
 				Machine: &clusterv1.Machine{},
 				AzureMachine: &infrav1.AzureMachine{

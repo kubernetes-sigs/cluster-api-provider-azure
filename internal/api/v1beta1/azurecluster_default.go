@@ -170,6 +170,39 @@ func setDefaultAzureClusterSubnets(c *infrav1.AzureCluster) {
 		}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
 	}
+
+	// Default the control plane subnet to share the same route table as the
+	// node subnet. The cloud-controller-manager route controller programs
+	// pod-CIDR routes into a single route table (the one on the node/cluster
+	// subnet, see getOneNodeSubnet and the cloud config routeTableName). When
+	// the control plane and node subnets differ and the CNI relies on Azure
+	// routing (e.g. dual-stack/IPv6 with encapsulation disabled), the control
+	// plane node must share that route table; otherwise the API server
+	// aggregator cannot reach aggregated-API/webhook pods scheduled on worker
+	// nodes. For overlay CNIs (e.g. single-stack VXLAN) the route table carries
+	// no pod routes, so sharing it is a no-op. We copy the node subnet's actual
+	// route table name (rather than the generated default) so this also works
+	// when a custom node route table name is configured.
+	if c.Spec.ControlPlaneEnabled {
+		if cpSubnet, err := c.Spec.NetworkSpec.GetSubnet(infrav1.SubnetControlPlane); err == nil && cpSubnet.RouteTable.Name == "" {
+			if rtName := nodeRouteTableName(c); rtName != "" {
+				cpSubnet.RouteTable.Name = rtName
+				c.Spec.NetworkSpec.UpdateSubnet(cpSubnet, infrav1.SubnetControlPlane)
+			}
+		}
+	}
+}
+
+// nodeRouteTableName returns the route table name of the subnet that the
+// cloud-controller-manager programs pod routes into. This mirrors the subnet
+// selection in getOneNodeSubnet (the first node- or cluster-role subnet).
+func nodeRouteTableName(c *infrav1.AzureCluster) string {
+	for _, subnet := range c.Spec.NetworkSpec.Subnets {
+		if subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster {
+			return subnet.RouteTable.Name
+		}
+	}
+	return ""
 }
 
 // setDefaultSubnetSpecNodeSubnet sets default values for a node SubnetSpec.

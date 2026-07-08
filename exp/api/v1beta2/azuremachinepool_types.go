@@ -101,6 +101,14 @@ type (
 		// +optional
 		VMExtensions []infrav1.VMExtension `json:"vmExtensions,omitempty"`
 
+		// DisableVMBootstrapExtension specifies whether the VM bootstrap extension should be disabled on the virtual machine scale set.
+		// Use this setting if you want to disable only the bootstrapping extension and not all extensions.
+		// If unset, CAPZ treats this as true during reconciliation, meaning the bootstrap extension is not installed on new VMSSes.
+		// Set to false to opt back in to the bootstrap extension. Changing this field on an existing AzureMachinePool only takes
+		// effect on newly created VMSS instances.
+		// +optional
+		DisableVMBootstrapExtension *bool `json:"disableVMBootstrapExtension,omitempty"`
+
 		// NetworkInterfaces specifies a list of network interface configurations.
 		// If left unspecified, the VM will get a single network interface with a
 		// single IPConfig in the subnet specified in the cluster's node subnet field.

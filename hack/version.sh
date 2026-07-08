@@ -17,6 +17,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+set -o xtrace
+
 version::get_version_vars() {
     # shellcheck disable=SC1083
     GIT_COMMIT="$(git rev-parse HEAD^{commit})"

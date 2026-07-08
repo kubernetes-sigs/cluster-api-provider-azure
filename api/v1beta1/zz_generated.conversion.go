@@ -5447,6 +5447,7 @@ func autoConvert_v1beta1_LoadBalancerSpec_To_v1beta2_LoadBalancerSpec(in *LoadBa
 	if err := Convert_v1beta1_LoadBalancerClassSpec_To_v1beta2_LoadBalancerClassSpec(&in.LoadBalancerClassSpec, &out.LoadBalancerClassSpec, s); err != nil {
 		return err
 	}
+	out.AvailabilityZones = *(*[]string)(unsafe.Pointer(&in.AvailabilityZones))
 	return nil
 }
 
@@ -5466,6 +5467,7 @@ func autoConvert_v1beta2_LoadBalancerSpec_To_v1beta1_LoadBalancerSpec(in *v1beta
 	if err := Convert_v1beta2_LoadBalancerClassSpec_To_v1beta1_LoadBalancerClassSpec(&in.LoadBalancerClassSpec, &out.LoadBalancerClassSpec, s); err != nil {
 		return err
 	}
+	out.AvailabilityZones = *(*[]string)(unsafe.Pointer(&in.AvailabilityZones))
 	return nil
 }
 

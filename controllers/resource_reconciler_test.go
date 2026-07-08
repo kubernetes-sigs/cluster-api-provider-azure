@@ -17,14 +17,15 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	"github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
+	"github.com/onsi/gomega/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,29 +39,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
-
-type FakeClient struct {
-	client.Client
-	// Override the Patch method because controller-runtime's doesn't really support
-	// server-side apply, so we make our own dollar store version:
-	// https://github.com/kubernetes-sigs/controller-runtime/issues/2341
-	patchFunc func(context.Context, client.Object, client.Patch, ...client.PatchOption) error
-	applyFunc func(context.Context, runtime.ApplyConfiguration, ...client.ApplyOption) error
-}
-
-func (c *FakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	if c.patchFunc == nil {
-		return c.Client.Patch(ctx, obj, patch, opts...)
-	}
-	return c.patchFunc(ctx, obj, patch, opts...)
-}
-
-func (c *FakeClient) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
-	if c.applyFunc == nil {
-		return c.Client.Apply(ctx, obj, opts...)
-	}
-	return c.applyFunc(ctx, obj, opts...)
-}
 
 type FakeWatcher struct {
 	watching map[string]struct{}
@@ -105,22 +83,11 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		w := &FakeWatcher{}
-		c := fakeClientBuilder().
-			Build()
 
 		asoManagedCluster := &infrav1.AzureASOManagedCluster{}
 
-		unpatchedRGs := map[string]struct{}{}
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
-					o := obj.(client.Object)
-					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
-					delete(unpatchedRGs, o.GetName())
-					return nil
-				},
-			},
+			Client: fakeClientBuilder().Build(),
 			resources: []*unstructured.Unstructured{
 				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +107,6 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		err := r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(BeEmpty())
-		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
 		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
@@ -149,6 +115,10 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(resourcesStatuses[0].Ready).To(BeFalse())
 		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
 		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
+
+		resourceGroups := new(asoresourcesv1.ResourceGroupList)
+		g.Expect(r.List(ctx, resourceGroups)).To(Succeed())
+		g.Expect(resourceGroups.Items).To(BeEmpty(), "Resources should not have been created")
 	})
 
 	t.Run("create resources with acknowledged types", func(t *testing.T) {
@@ -163,23 +133,9 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		}
 
 		w := &FakeWatcher{}
-		c := fakeClientBuilder().
-			Build()
 
-		unpatchedRGs := map[string]struct{}{
-			"rg1": {},
-			"rg2": {},
-		}
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
-					o := obj.(client.Object)
-					g.Expect(unpatchedRGs).To(HaveKey(o.GetName()))
-					delete(unpatchedRGs, o.GetName())
-					return nil
-				},
-			},
+			Client: fakeClientBuilder().Build(),
 			resources: []*unstructured.Unstructured{
 				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
@@ -216,7 +172,6 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		err := r.Reconcile(ctx)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(w.watching).To(HaveKey("ResourceGroup.resources.azure.com"))
-		g.Expect(unpatchedRGs).To(BeEmpty()) // all expected resources were patched
 		g.Expect(asoManagedCluster.Annotations).To(HaveKeyWithValue(ownedKindsAnnotation, getOwnedKindsValue([]schema.GroupVersionKind{asoresourcesv1.GroupVersion.WithKind("ResourceGroup")})))
 
 		resourcesStatuses := asoManagedCluster.Status.Resources
@@ -225,6 +180,13 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 		g.Expect(resourcesStatuses[0].Ready).To(BeTrue())
 		g.Expect(resourcesStatuses[1].Resource.Name).To(Equal("rg2"))
 		g.Expect(resourcesStatuses[1].Ready).To(BeFalse())
+
+		resourceGroups := new(asoresourcesv1.ResourceGroupList)
+		g.Expect(r.List(ctx, resourceGroups)).To(Succeed())
+		g.Expect(resourceGroups.Items).To(ConsistOf(
+			HaveField("Name", "rg1"),
+			HaveField("Name", "rg2"),
+		), "Expected ResourceGroups should have been created")
 	})
 
 	t.Run("delete stale resources", func(t *testing.T) {
@@ -280,17 +242,10 @@ func TestResourceReconcilerReconcile(t *testing.T) {
 			},
 		}
 
-		c := fakeClientBuilder().
-			WithObjects(objs...).
-			Build()
-
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
-					return nil
-				},
-			},
+			Client: fakeClientBuilder().
+				WithObjects(objs...).
+				Build(),
 			resources: []*unstructured.Unstructured{
 				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
@@ -401,25 +356,10 @@ func TestResourceReconcilerPause(t *testing.T) {
 			},
 		}
 
-		c := fakeClientBuilder().
-			WithObjects(objs...).
-			Build()
-
-		var patchedRGs []string
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-				applyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
-					o := obj.(client.Object)
-					g.Expect(o.GetAnnotations()).To(HaveKeyWithValue(annotations.ReconcilePolicy, string(annotations.ReconcilePolicySkip)))
-					if err := c.Get(ctx, client.ObjectKeyFromObject(o), &asoresourcesv1.ResourceGroup{}); err != nil {
-						// propagate errors like "NotFound"
-						return err
-					}
-					patchedRGs = append(patchedRGs, o.GetName())
-					return nil
-				},
-			},
+			Client: fakeClientBuilder().
+				WithObjects(objs...).
+				Build(),
 			resources: []*unstructured.Unstructured{
 				rgJSON(g, s, &asoresourcesv1.ResourceGroup{
 					ObjectMeta: metav1.ObjectMeta{
@@ -441,7 +381,24 @@ func TestResourceReconcilerPause(t *testing.T) {
 		}
 
 		g.Expect(r.Pause(ctx)).To(Succeed())
-		g.Expect(patchedRGs).To(ConsistOf("rg1", "rg2"))
+
+		haveNameAndAnnotations := func(name string, haveAnnotations types.GomegaMatcher) types.GomegaMatcher {
+			return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Name":        Equal(name),
+					"Annotations": haveAnnotations,
+				}),
+			})
+		}
+
+		resourceGroups := new(asoresourcesv1.ResourceGroupList)
+		g.Expect(r.List(ctx, resourceGroups)).To(Succeed())
+		g.Expect(resourceGroups.Items).To(ConsistOf(
+			haveNameAndAnnotations("deleted from spec", BeEmpty()),
+			haveNameAndAnnotations("not-yet-created", HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip))),
+			haveNameAndAnnotations("rg1", HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip))),
+			haveNameAndAnnotations("rg2", HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip))),
+		), "Expected ResourceGroups should have been updated")
 	})
 }
 
@@ -506,14 +463,10 @@ func TestResourceReconcilerDelete(t *testing.T) {
 			},
 		}
 
-		c := fakeClientBuilder().
-			WithObjects(objs...).
-			Build()
-
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-			},
+			Client: fakeClientBuilder().
+				WithObjects(objs...).
+				Build(),
 			owner: owner,
 		}
 
@@ -541,14 +494,9 @@ func TestResourceReconcilerDelete(t *testing.T) {
 			},
 		}
 
-		c := fakeClientBuilder().
-			Build()
-
 		r := &ResourceReconciler{
-			Client: &FakeClient{
-				Client: c,
-			},
-			owner: owner,
+			Client: fakeClientBuilder().Build(),
+			owner:  owner,
 		}
 
 		g.Expect(r.Delete(ctx)).To(Succeed())
