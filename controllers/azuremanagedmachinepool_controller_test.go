@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
@@ -198,6 +200,73 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			c.Verify(g, res, err)
 		})
 	}
+}
+
+func TestDetachASOAgentPoolOnDelete(t *testing.T) {
+	g := NewWithT(t)
+	_, _, controlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+
+	sch := runtime.NewScheme()
+	for _, addTo := range []func(*runtime.Scheme) error{
+		scheme.AddToScheme,
+		clusterv1.AddToScheme,
+		infrav1.AddToScheme,
+		corev1.AddToScheme,
+		asocontainerservicev1.AddToScheme,
+	} {
+		g.Expect(addTo(sch)).To(Succeed())
+	}
+
+	agentPool := &asocontainerservicev1.ManagedClustersAgentPool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      azure.GetNormalizedKubernetesName(ammp.Name),
+			Namespace: ammp.Namespace,
+			Annotations: map[string]string{
+				asoannotations.PerResourceSecret: "foo-aso-secret",
+				asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+			},
+		},
+	}
+	c := fake.NewClientBuilder().WithScheme(sch).WithObjects(agentPool).Build()
+	mcpScope := &scope.ManagedMachinePoolScope{
+		Client:           c,
+		ControlPlane:     controlPlane,
+		MachinePool:      mp,
+		InfraMachinePool: ammp,
+	}
+
+	g.Expect(detachASOAgentPoolOnDelete(t.Context(), mcpScope)).To(Succeed())
+
+	updated := &asocontainerservicev1.ManagedClustersAgentPool{}
+	g.Expect(c.Get(t.Context(), types.NamespacedName{Name: agentPool.Name, Namespace: agentPool.Namespace}, updated)).To(Succeed())
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.PerResourceSecret, "foo-aso-secret"))
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyDetachOnDelete)))
+}
+
+func TestDetachASOAgentPoolOnDeleteSkipsMissingResource(t *testing.T) {
+	g := NewWithT(t)
+	_, _, controlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+
+	sch := runtime.NewScheme()
+	for _, addTo := range []func(*runtime.Scheme) error{
+		scheme.AddToScheme,
+		clusterv1.AddToScheme,
+		infrav1.AddToScheme,
+		corev1.AddToScheme,
+		asocontainerservicev1.AddToScheme,
+	} {
+		g.Expect(addTo(sch)).To(Succeed())
+	}
+
+	c := fake.NewClientBuilder().WithScheme(sch).Build()
+	mcpScope := &scope.ManagedMachinePoolScope{
+		Client:           c,
+		ControlPlane:     controlPlane,
+		MachinePool:      mp,
+		InfraMachinePool: ammp,
+	}
+
+	g.Expect(detachASOAgentPoolOnDelete(t.Context(), mcpScope)).To(Succeed())
 }
 
 func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.AzureManagedCluster, *infrav1.AzureManagedControlPlane, *infrav1.AzureManagedMachinePool, *clusterv1.MachinePool) {
