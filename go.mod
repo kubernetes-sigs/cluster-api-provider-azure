@@ -215,3 +215,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace sigs.k8s.io/cluster-api => github.com/mboersma/cluster-api v1.13.4-0.20260708191210-5bc253232aca
+
+replace sigs.k8s.io/cluster-api/test => github.com/mboersma/cluster-api/test v1.13.4-0.20260708191210-5bc253232aca
