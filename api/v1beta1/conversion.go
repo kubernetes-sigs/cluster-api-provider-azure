@@ -19,12 +19,30 @@ package v1beta1
 // Conversion functions intentionally access deprecated fields for v1beta1↔v1beta2 roundtrip.
 
 import (
+	"slices"
+
 	"k8s.io/apimachinery/pkg/conversion"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
+
+// sortFailureDomainsByName sorts failure domains by name so that a map→slice
+// conversion produces a deterministic order (Go map iteration is random),
+// avoiding spurious spec/status churn on v1beta1↔v1beta2 roundtrips.
+func sortFailureDomainsByName(fds []clusterv1.FailureDomain) {
+	slices.SortFunc(fds, func(a, b clusterv1.FailureDomain) int {
+		switch {
+		case a.Name < b.Name:
+			return -1
+		case a.Name > b.Name:
+			return 1
+		default:
+			return 0
+		}
+	})
+}
 
 // hasNonEmptyConditions returns true if the conditions slice contains at least
 // one condition with a non-empty Type. During v1beta2→v1beta1→v1beta2 roundtrips,
@@ -56,6 +74,7 @@ func Convert_v1beta1_AzureClusterClassSpec_To_v1beta2_AzureClusterClassSpec(in *
 				Attributes:   fd.Attributes,
 			})
 		}
+		sortFailureDomainsByName(out.FailureDomains)
 	}
 	return nil
 }
@@ -100,6 +119,7 @@ func Convert_v1beta1_AzureClusterStatus_To_v1beta2_AzureClusterStatus(in *AzureC
 				Attributes:   fd.Attributes,
 			})
 		}
+		sortFailureDomainsByName(out.FailureDomains)
 	}
 	if in.Ready {
 		provisioned := true
