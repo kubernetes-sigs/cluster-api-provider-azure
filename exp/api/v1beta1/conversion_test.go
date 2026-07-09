@@ -73,16 +73,10 @@ func expFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 
 func hubAzureMachinePoolStatus(in *infrav1exp.AzureMachinePoolStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Initialization = infrav1exp.AzureMachinePoolInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureMachinePoolMachineStatus(in *infrav1exp.AzureMachinePoolMachineStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Initialization = infrav1exp.AzureMachinePoolMachineInitializationStatus{}
-	in.Deprecated = nil
 }
 
 // expSpokeCondition ensures v1beta1 conditions have non-empty Type so they

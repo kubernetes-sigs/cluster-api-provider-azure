@@ -56,16 +56,6 @@ func fuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 // - FailureDomains lose ordering (slice→map→slice).
 func hubAzureClusterStatus(in *infrav1.AzureClusterStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-
-	// metav1.Conditions don't survive; the spoke uses Deprecated.V1Beta1.Conditions.
-	in.Conditions = nil
-
-	// Initialization and Deprecated are derived from the spoke's Ready/Conditions.
-	// Clear them so the hub→spoke→hub test covers non-lossy fields; the reverse
-	// direction (spoke→hub→spoke) verifies these fields roundtrip correctly.
-	in.Initialization = infrav1.AzureClusterInitializationStatus{}
-	in.Deprecated = nil
-
 	normalizeHubFailureDomains(in.FailureDomains, c)
 }
 
@@ -77,53 +67,34 @@ func hubAzureClusterClassSpec(in *infrav1.AzureClusterClassSpec, c randfill.Cont
 
 func hubAzureClusterIdentityStatus(in *infrav1.AzureClusterIdentityStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Deprecated = nil
 }
 
 func hubAzureMachineStatus(in *infrav1.AzureMachineStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Initialization = infrav1.AzureMachineInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureManagedClusterStatus(in *infrav1.AzureManagedClusterStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Initialization = infrav1.AzureManagedClusterInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureManagedControlPlaneStatus(in *infrav1.AzureManagedControlPlaneStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Initialization = infrav1.AzureManagedControlPlaneInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureManagedMachinePoolStatus(in *infrav1.AzureManagedMachinePoolStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Conditions = nil
-	in.Initialization = infrav1.AzureManagedMachinePoolInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureASOManagedClusterStatus(in *infrav1.AzureASOManagedClusterStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Initialization = infrav1.AzureASOManagedClusterInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureASOManagedControlPlaneStatus(in *infrav1.AzureASOManagedControlPlaneStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Initialization = infrav1.AzureASOManagedControlPlaneInitializationStatus{}
-	in.Deprecated = nil
 }
 
 func hubAzureASOManagedMachinePoolStatus(in *infrav1.AzureASOManagedMachinePoolStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
-	in.Initialization = infrav1.AzureASOManagedMachinePoolInitializationStatus{}
-	in.Deprecated = nil
 }
 
 // hubFailureDomain ensures ControlPlane is never nil (nil→false→&false is lossy).

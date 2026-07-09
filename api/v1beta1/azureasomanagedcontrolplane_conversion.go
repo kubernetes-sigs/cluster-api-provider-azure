@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
@@ -25,13 +26,31 @@ import (
 // ConvertTo converts this AzureASOManagedControlPlane to the Hub version (v1beta2).
 func (src *AzureASOManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.AzureASOManagedControlPlane)
-	return Convert_v1beta1_AzureASOManagedControlPlane_To_v1beta2_AzureASOManagedControlPlane(src, dst, nil)
+	if err := Convert_v1beta1_AzureASOManagedControlPlane_To_v1beta2_AzureASOManagedControlPlane(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Restore hub-only status fields that don't roundtrip through v1beta1.
+	restored := &infrav1.AzureASOManagedControlPlane{}
+	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil {
+		return err
+	} else if ok {
+		dst.Status.Initialization = restored.Status.Initialization
+		dst.Status.Deprecated = restored.Status.Deprecated
+	}
+
+	return nil
 }
 
 // ConvertFrom converts from the Hub version (v1beta2) to this version (v1beta1).
 func (dst *AzureASOManagedControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.AzureASOManagedControlPlane)
-	return Convert_v1beta2_AzureASOManagedControlPlane_To_v1beta1_AzureASOManagedControlPlane(src, dst, nil)
+	if err := Convert_v1beta2_AzureASOManagedControlPlane_To_v1beta1_AzureASOManagedControlPlane(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve hub-only fields in an annotation for lossless roundtrips.
+	return utilconversion.MarshalData(src, dst)
 }
 
 // ConvertTo converts this AzureASOManagedControlPlaneList to the Hub version.
