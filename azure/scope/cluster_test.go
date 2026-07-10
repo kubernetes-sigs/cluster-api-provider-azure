@@ -2804,6 +2804,62 @@ func TestGenerateFQDN(t *testing.T) {
 	}
 }
 
+func TestValidateAPIServerDNSName(t *testing.T) {
+	tests := []struct {
+		name                string
+		controlPlaneEnabled bool
+		apiServerLB         *infrav1.LoadBalancerSpec
+		vmDNSSuffix         string
+		expectErr           bool
+	}{
+		{
+			name:                "public API server with VM DNS suffix set is valid",
+			controlPlaneEnabled: true,
+			vmDNSSuffix:         "cloudapp.example.com",
+		},
+		{
+			name:                "public API server without VM DNS suffix returns an error",
+			controlPlaneEnabled: true,
+			vmDNSSuffix:         "",
+			expectErr:           true,
+		},
+		{
+			name:                "private API server without VM DNS suffix is valid",
+			controlPlaneEnabled: true,
+			apiServerLB:         &infrav1.LoadBalancerSpec{LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{Type: infrav1.Internal}},
+			vmDNSSuffix:         "",
+		},
+		{
+			name:                "control plane disabled is valid regardless of suffix",
+			controlPlaneEnabled: false,
+			vmDNSSuffix:         "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-cluster"},
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: tc.controlPlaneEnabled,
+					NetworkSpec:         infrav1.NetworkSpec{APIServerLB: tc.apiServerLB},
+				},
+			}
+			clusterScope := &ClusterScope{
+				Cluster:      &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "my-cluster"}},
+				AzureCluster: azureCluster,
+				AzureClients: AzureClients{ResourceManagerVMDNSSuffix: tc.vmDNSSuffix},
+			}
+			err := clusterScope.ValidateAPIServerDNSName()
+			if tc.expectErr {
+				g.Expect(err).To(HaveOccurred())
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+		})
+	}
+}
+
 func TestAdditionalTags(t *testing.T) {
 	tests := []struct {
 		name                       string
