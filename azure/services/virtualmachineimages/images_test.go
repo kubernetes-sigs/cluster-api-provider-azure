@@ -90,7 +90,7 @@ func TestGetDefaultLinuxImage(t *testing.T) {
 
 			g := NewWithT(t)
 			svc := Service{}
-			image, err := svc.GetDefaultLinuxImage(t.Context(), location, test.k8sVersion)
+			image, err := svc.GetDefaultLinuxImage(t.Context(), location, test.k8sVersion, "")
 			if test.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -208,7 +208,7 @@ func TestGetDefaultWindowsImage(t *testing.T) {
 
 			g := NewWithT(t)
 			svc := Service{}
-			image, err := svc.GetDefaultWindowsImage(t.Context(), location, test.k8sVersion, test.runtime, test.osAndVersion)
+			image, err := svc.GetDefaultWindowsImage(t.Context(), location, test.k8sVersion, test.runtime, test.osAndVersion, "")
 			if test.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

@@ -54,6 +54,9 @@ func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*AzureClien
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create virtualmachines client options")
 	}
+	if auth.CloudEnvironment() == azure.USSecCloudName {
+		opts.Cloud = auth.CloudConfiguration()
+	}
 	factory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armcompute client factory")

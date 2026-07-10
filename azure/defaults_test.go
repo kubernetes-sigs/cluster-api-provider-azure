@@ -62,6 +62,11 @@ func TestARMClientOptions(t *testing.T) {
 			expectedCloud: cloud.AzureGovernment,
 		},
 		{
+			name:          "should accept Azure US Government Secret cloud",
+			cloudName:     USSecCloudName,
+			expectedCloud: cloud.Configuration{},
+		},
+		{
 			name:        "should return error if cloudName is unrecognized",
 			cloudName:   "AzureUnrecognizedCloud",
 			expectError: true,
