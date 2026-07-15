@@ -341,7 +341,7 @@ func InstallKubeRayOperatorFromSource(ctx context.Context, clusterProxy framewor
 		"--set", "featureGates[0].enabled=true",
 		"--set", "featureGates[1].name=RayJobDeletionPolicy",
 		"--set", "featureGates[1].enabled=true",
-		"--set", "featureGates[2].name=NativeWorkloadScheduling",
+		"--set", "featureGates[2].name=K8sWorkloadScheduling",
 		"--set", "featureGates[2].enabled=true",
 	)
 
@@ -562,7 +562,7 @@ func KubeRayNativeSchedulingSpec(ctx context.Context, inputGetter func() KubeRay
 
 // KubeRayNativeSchedulingNegativeSpec implements a negative test that verifies the NativeWorkloadScheduling
 // feature does NOT create Workload or PodGroup resources when the opt-in annotation is absent.
-// It creates a RayCluster without the ray.io/native-workload-scheduling annotation, waits for
+// It creates a RayCluster without the ray.io/k8s-workload-scheduling annotation, waits for
 // the cluster to become ready, and confirms that no scheduling.k8s.io/v1alpha3 resources exist.
 func KubeRayNativeSchedulingNegativeSpec(ctx context.Context, inputGetter func() KubeRaySpecInput) {
 	var (
@@ -638,7 +638,7 @@ func KubeRayNativeSchedulingNegativeSpec(ctx context.Context, inputGetter func()
 func newRayClusterWithNativeScheduling(name, namespace string) *unstructured.Unstructured {
 	rc := newRayClusterUnstructured(name, namespace)
 	annotations := map[string]interface{}{
-		"ray.io/native-workload-scheduling": "true",
+		"ray.io/k8s-workload-scheduling": "true",
 	}
 	err := unstructured.SetNestedField(rc.Object, annotations, "metadata", "annotations")
 	Expect(err).NotTo(HaveOccurred())
