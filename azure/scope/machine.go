@@ -832,5 +832,5 @@ func (m *MachineScope) GetCapacityReservationGroupID() string {
 // GetVirtualMachineScaleSetID returns the VirtualMachineScaleSetID from the spec if the
 // value is assigned, or else returns an empty string.
 func (m *MachineScope) GetVirtualMachineScaleSetID() string {
-	return ptr.Deref(m.AzureMachine.Spec.VirtualMachineScaleSetID, "")
+	return strings.TrimPrefix(ptr.Deref(m.AzureMachine.Spec.VirtualMachineScaleSetID, ""), azureutil.ProviderIDPrefix)
 }

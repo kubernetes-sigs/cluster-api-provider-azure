@@ -3415,7 +3415,7 @@ func TestMachineScope_GetVirtualMachineScaleSetID(t *testing.T) {
 		want         string
 	}{
 		{
-			name: "returns the entire virtual machine scale set ID",
+			name: "returns the virtual machine scale set ID without the provider prefix",
 			machineScope: MachineScope{
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -3426,7 +3426,21 @@ func TestMachineScope_GetVirtualMachineScaleSetID(t *testing.T) {
 					},
 				},
 			},
-			want: "azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name",
+			want: "/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name",
+		},
+		{
+			name: "returns the virtual machine scale set ID without changes",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						VirtualMachineScaleSetID: ptr.To("/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name"),
+					},
+				},
+			},
+			want: "/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name",
 		},
 		{
 			name: "returns empty if virtual machine scale set ID is empty",
