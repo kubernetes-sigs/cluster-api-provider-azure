@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -41,6 +40,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -330,10 +330,10 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 		// will be garbage collected when the AzureManagedMachinePool is deleted. If
 		// ASO sees a managed deleting agent pool after the parent AKS cluster delete
 		// has started, Azure rejects the child delete as an update to a deleting
-		// cluster. Detach the ASO resource so ASO removes its own finalizer without
+		// cluster. Pause the ASO resource so ASO removes its own finalizer without
 		// issuing the child Azure delete.
-		if err := detachASOAgentPoolOnDelete(ctx, scope); err != nil {
-			return reconcile.Result{}, err
+		if err := agentpools.New(scope).Pause(ctx); err != nil && !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, errors.Wrap(err, "failed to pause ASO agent pool before deletion")
 		}
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
@@ -365,33 +365,4 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func detachASOAgentPoolOnDelete(ctx context.Context, scope *scope.ManagedMachinePoolScope) error {
-	resource := scope.AgentPoolSpec().ResourceRef()
-	resource.SetNamespace(scope.InfraMachinePool.Namespace)
-
-	if err := scope.Client.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrapf(err, "failed to get ASO agent pool %s/%s", resource.GetNamespace(), resource.GetName())
-	}
-
-	annotations := resource.GetAnnotations()
-	if annotations[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicyDetachOnDelete) {
-		return nil
-	}
-
-	patch := client.MergeFrom(resource.DeepCopyObject().(client.Object))
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-	annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicyDetachOnDelete)
-	resource.SetAnnotations(annotations)
-
-	if err := scope.Client.Patch(ctx, resource, patch); err != nil {
-		return errors.Wrapf(err, "failed to detach ASO agent pool %s/%s", resource.GetNamespace(), resource.GetName())
-	}
-	return nil
 }
