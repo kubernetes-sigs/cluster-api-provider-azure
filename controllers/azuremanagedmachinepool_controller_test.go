@@ -30,12 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -215,7 +214,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 		},
 		Spec: infrav1.AzureManagedClusterSpec{
-			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Host: "foo.bar",
 				Port: 123,
 			},
@@ -235,7 +234,7 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 		},
 		Spec: infrav1.AzureManagedControlPlaneSpec{
-			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Host: "foo.bar",
 				Port: 123,
 			},
@@ -248,8 +247,10 @@ func newReadyAzureManagedMachinePoolCluster() (*clusterv1.Cluster, *infrav1.Azur
 			},
 		},
 		Status: infrav1.AzureManagedControlPlaneStatus{
-			Ready:       true,
-			Initialized: true,
+			Initialization: infrav1.AzureManagedControlPlaneInitializationStatus{
+				Provisioned:             ptr.To(true),
+				ControlPlaneInitialized: ptr.To(true),
+			},
 		},
 	}
 	// Cluster

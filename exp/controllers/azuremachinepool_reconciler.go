@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
-	apiinternalexp "sigs.k8s.io/cluster-api-provider-azure/internal/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -74,7 +73,7 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	defer done()
 
 	// Ensure that the deprecated networking field values have been migrated to the new NetworkInterfaces field.
-	apiinternalexp.SetNetworkInterfacesDefaults(s.scope.AzureMachinePool)
+	s.scope.AzureMachinePool.SetNetworkInterfacesDefaults()
 
 	if err := s.scope.SetSubnetName(); err != nil {
 		return errors.Wrap(err, "failed defaulting subnet name")

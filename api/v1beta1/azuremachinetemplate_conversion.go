@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,32 @@ limitations under the License.
 
 package v1beta1
 
-// Hub marks AzureMachineTemplate as a conversion hub.
-func (*AzureMachineTemplate) Hub() {}
+import (
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-// Hub marks AzureMachineTemplateList as a conversion hub.
-func (*AzureMachineTemplateList) Hub() {}
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
+)
+
+// ConvertTo converts this AzureMachineTemplate to the Hub version (v1beta2).
+func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*infrav1.AzureMachineTemplate)
+	return Convert_v1beta1_AzureMachineTemplate_To_v1beta2_AzureMachineTemplate(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta2) to this version (v1beta1).
+func (dst *AzureMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*infrav1.AzureMachineTemplate)
+	return Convert_v1beta2_AzureMachineTemplate_To_v1beta1_AzureMachineTemplate(src, dst, nil)
+}
+
+// ConvertTo converts this AzureMachineTemplateList to the Hub version.
+func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*infrav1.AzureMachineTemplateList)
+	return Convert_v1beta1_AzureMachineTemplateList_To_v1beta2_AzureMachineTemplateList(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version to this version.
+func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*infrav1.AzureMachineTemplateList)
+	return Convert_v1beta2_AzureMachineTemplateList_To_v1beta1_AzureMachineTemplateList(src, dst, nil)
+}

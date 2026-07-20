@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 const (
@@ -56,7 +56,7 @@ type (
 
 		// ProvisioningState is the provisioning state of the Azure virtual machine instance.
 		// +optional
-		ProvisioningState *infrav1.ProvisioningState `json:"provisioningState"`
+		ProvisioningState *infrav1beta1.ProvisioningState `json:"provisioningState"`
 
 		// InstanceName is the name of the Machine Instance within the VMSS
 		// +optional
@@ -89,7 +89,7 @@ type (
 		// LongRunningOperationStates saves the state for Azure long running operations so they can be continued on the
 		// next reconciliation loop.
 		// +optional
-		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+		LongRunningOperationStates infrav1beta1.Futures `json:"longRunningOperationStates,omitempty"`
 
 		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
 		// the image version the VM is running. If the instance is not running the latest model, it means the instance
@@ -111,7 +111,6 @@ type (
 	// +kubebuilder:printcolumn:name="Cluster",type="string",priority=1,JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureMachinePoolMachine belongs"
 	// +kubebuilder:printcolumn:name="VMSS VM ID",type="string",priority=1,JSONPath=".spec.providerID",description="Azure VMSS VM ID"
 	// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of this AzureMachinePoolMachine"
-	// +kubebuilder:storageversion
 
 	// AzureMachinePoolMachine is the Schema for the azuremachinepoolmachines API.
 	AzureMachinePoolMachine struct {
@@ -143,12 +142,12 @@ func (ampm *AzureMachinePoolMachine) SetConditions(conditions clusterv1beta1.Con
 }
 
 // GetFutures returns the list of long running operation states for an AzureMachinePoolMachine API object.
-func (ampm *AzureMachinePoolMachine) GetFutures() infrav1.Futures {
+func (ampm *AzureMachinePoolMachine) GetFutures() infrav1beta1.Futures {
 	return ampm.Status.LongRunningOperationStates
 }
 
 // SetFutures will set the given long running operation states on an AzureMachinePoolMachine object.
-func (ampm *AzureMachinePoolMachine) SetFutures(futures infrav1.Futures) {
+func (ampm *AzureMachinePoolMachine) SetFutures(futures infrav1beta1.Futures) {
 	ampm.Status.LongRunningOperationStates = futures
 }
 

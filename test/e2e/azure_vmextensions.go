@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -77,7 +77,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		expectedVMExtensionMap := make(map[string][]string)
 		for _, machine := range machineList.Items {
 			for _, extension := range machine.Spec.VMExtensions {
-				expectedVMExtensionMap[*machine.Spec.ProviderID] = append(expectedVMExtensionMap[*machine.Spec.ProviderID], extension.Name)
+				expectedVMExtensionMap[machine.Spec.ProviderID] = append(expectedVMExtensionMap[machine.Spec.ProviderID], extension.Name)
 			}
 		}
 
@@ -94,7 +94,7 @@ func AzureVMExtensionsSpec(ctx context.Context, inputGetter func() AzureVMExtens
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the resource group name
-		resource, err := azureutil.ParseResourceID(*machineList.Items[0].Spec.ProviderID)
+		resource, err := azureutil.ParseResourceID(machineList.Items[0].Spec.ProviderID)
 		Expect(err).NotTo(HaveOccurred())
 
 		var vms []*armcompute.VirtualMachine

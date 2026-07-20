@@ -18,26 +18,28 @@ package scope
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -81,7 +83,7 @@ type (
 		Machine                 *clusterv1.Machine
 		MachinePoolScope        *MachinePoolScope
 		client                  client.Client
-		patchHelper             *v1beta1patch.Helper
+		patchHelper             *patch.Helper
 		instance                *azure.VMSSVM
 
 		// workloadNodeGetter is only used for testing purposes and provides a way for mocking requests to the workload cluster
@@ -136,7 +138,7 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 		return nil, errors.Wrap(err, "failed to build machine pool scope")
 	}
 
-	helper, err := v1beta1patch.NewHelper(params.AzureMachinePoolMachine, params.Client)
+	helper, err := patch.NewHelper(params.AzureMachinePoolMachine, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -212,11 +214,11 @@ func (s *MachinePoolMachineScope) DeleteLongRunningOperationState(name, service,
 func (s *MachinePoolMachineScope) UpdateDeleteStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletedReason, clusterv1beta1.ConditionSeverityInfo, "%s successfully deleted", service)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletedReason, Message: fmt.Sprintf("%s successfully deleted", service)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "%s deleting", service)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletingReason, Message: fmt.Sprintf("%s deleting", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.DeletionFailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.DeletionFailedReason, Message: fmt.Sprintf("%s failed to delete. err: %s", service, err.Error())})
 	}
 }
 
@@ -224,11 +226,11 @@ func (s *MachinePoolMachineScope) UpdateDeleteStatus(condition clusterv1beta1.Co
 func (s *MachinePoolMachineScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, condition)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.CreatingReason, Message: fmt.Sprintf("%s creating or updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to create or update. err: %s", service, err.Error())})
 	}
 }
 
@@ -236,11 +238,11 @@ func (s *MachinePoolMachineScope) UpdatePutStatus(condition clusterv1beta1.Condi
 func (s *MachinePoolMachineScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType, service string, err error) {
 	switch {
 	case err == nil:
-		v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, condition)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionTrue, Reason: string(condition)})
 	case azure.IsOperationNotDoneError(err):
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.UpdatingReason, clusterv1beta1.ConditionSeverityInfo, "%s updating", service)
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.UpdatingReason, Message: fmt.Sprintf("%s updating", service)})
 	default:
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(condition), Status: metav1.ConditionFalse, Reason: infrav1.FailedReason, Message: fmt.Sprintf("%s failed to update. err: %s", service, err.Error())})
 	}
 }
 
@@ -267,17 +269,29 @@ func (s *MachinePoolMachineScope) ProvisioningState() infrav1.ProvisioningState 
 // IsReady indicates the machine has successfully provisioned and has a node ref associated.
 func (s *MachinePoolMachineScope) IsReady() bool {
 	state := s.AzureMachinePoolMachine.Status.ProvisioningState
-	return s.AzureMachinePoolMachine.Status.Ready && state != nil && *state == infrav1.Succeeded
+	return ptr.Deref(s.AzureMachinePoolMachine.Status.Initialization.Provisioned, false) && state != nil && *state == infrav1.Succeeded
 }
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
 func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
-	s.AzureMachinePoolMachine.Status.FailureMessage = ptr.To(v.Error())
+	if s.AzureMachinePoolMachine.Status.Deprecated == nil {
+		s.AzureMachinePoolMachine.Status.Deprecated = &infrav1exp.AzureMachinePoolMachineDeprecatedStatus{}
+	}
+	if s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 == nil {
+		s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolMachineV1Beta1DeprecatedStatus{}
+	}
+	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureMessage = ptr.To(v.Error())
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.
 func (s *MachinePoolMachineScope) SetFailureReason(v string) {
-	s.AzureMachinePoolMachine.Status.FailureReason = &v
+	if s.AzureMachinePoolMachine.Status.Deprecated == nil {
+		s.AzureMachinePoolMachine.Status.Deprecated = &infrav1exp.AzureMachinePoolMachineDeprecatedStatus{}
+	}
+	if s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 == nil {
+		s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1 = &infrav1exp.AzureMachinePoolMachineV1Beta1DeprecatedStatus{}
+	}
+	s.AzureMachinePoolMachine.Status.Deprecated.V1Beta1.FailureReason = &v
 }
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
@@ -300,14 +314,28 @@ func (s *MachinePoolMachineScope) updateDeleteMachineAnnotation() {
 
 // PatchObject persists the MachinePoolMachine spec and status.
 func (s *MachinePoolMachineScope) PatchObject(ctx context.Context) error {
-	v1beta1conditions.SetSummary(s.AzureMachinePoolMachine)
+	if err := conditions.SetSummaryCondition(s.AzureMachinePoolMachine, s.AzureMachinePoolMachine, clusterv1.ReadyCondition, conditions.ForConditionTypes{
+		string(clusterv1.MachineNodeHealthyCondition),
+	}); err != nil {
+		return err
+	}
+
+	// Populate deprecated v1beta1 conditions from v1beta2 conditions for backward compat.
+	setV1Beta1ConditionsFromV1Beta2(s.AzureMachinePoolMachine, s.AzureMachinePoolMachine, s.AzureMachinePoolMachine.GetConditions())
+
+	// v1beta1 owned conditions for backward compat patch conflict resolution.
+	ownedV1Beta1Conditions := []clusterv1.ConditionType{
+		clusterv1.ReadyV1Beta1Condition,
+		clusterv1.ConditionType(clusterv1.MachineNodeHealthyCondition),
+	}
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureMachinePoolMachine,
-		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
-			clusterv1beta1.ReadyCondition,
-			clusterv1.MachineNodeHealthyCondition,
+		patch.WithOwnedV1Beta1Conditions{Conditions: ownedV1Beta1Conditions},
+		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.ReadyCondition,
+			string(clusterv1.MachineNodeHealthyCondition),
 		}})
 }
 
@@ -337,13 +365,13 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 	if s.instance != nil {
 		switch s.instance.BootstrappingState {
 		case infrav1.Creating:
-			v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1beta1.ConditionSeverityInfo, "VM bootstrapping")
+			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(infrav1.BootstrapSucceededCondition), Status: metav1.ConditionFalse, Reason: infrav1.BootstrapInProgressReason, Message: "VM bootstrapping"})
 		case infrav1.Failed:
 			log.Info("VM bootstrapping failed")
-			v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1beta1.ConditionSeverityInfo, "VM bootstrapping failed")
+			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(infrav1.BootstrapSucceededCondition), Status: metav1.ConditionFalse, Reason: infrav1.BootstrapFailedReason, Message: "VM bootstrapping failed"})
 		case infrav1.Succeeded:
 			log.Info("VM bootstrapping succeeded")
-			v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, infrav1.BootstrapSucceededCondition)
+			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(infrav1.BootstrapSucceededCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.BootstrapSucceededCondition)})
 		}
 	}
 
@@ -355,24 +383,24 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 	switch {
 	case err != nil && apierrors.IsNotFound(err) && nodeRef != nil && nodeRef.Name != "":
 		// Node was not found due to 404 when finding by ObjectReference.
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeNotFoundReason, clusterv1beta1.ConditionSeverityError, "")
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeNotFoundReason})
 	case err != nil:
 		// Failed due to an unexpected error
 		return err
 	case !found && s.ProviderID() == "":
 		// Node was not found due to not having a providerID set
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.WaitingForNodeRefReason, clusterv1beta1.ConditionSeverityInfo, "")
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.WaitingForNodeRefReason})
 	case !found && s.ProviderID() != "":
 		// Node was not found due to not finding a matching node by providerID
-		v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeProvisioningReason, clusterv1beta1.ConditionSeverityInfo, "")
+		conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeProvisioningReason})
 	default:
 		// Node was found. Check if it is ready.
 		nodeReady := noderefutil.IsNodeReady(node)
-		s.AzureMachinePoolMachine.Status.Ready = nodeReady
+		s.AzureMachinePoolMachine.Status.Initialization.Provisioned = ptr.To(nodeReady)
 		if nodeReady {
-			v1beta1conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition)
+			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionTrue, Reason: string(clusterv1.MachineNodeHealthyCondition)})
 		} else {
-			v1beta1conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeConditionsFailedReason, clusterv1beta1.ConditionSeverityWarning, "")
+			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeConditionsFailedReason})
 		}
 
 		s.AzureMachinePoolMachine.Status.NodeRef = &corev1.ObjectReference{

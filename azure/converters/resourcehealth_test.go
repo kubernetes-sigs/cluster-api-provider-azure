@@ -21,22 +21,24 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 	tests := []struct {
 		name     string
 		avail    armresourcehealth.AvailabilityStatus
-		expected *clusterv1beta1.Condition
+		expected *metav1.Condition
 	}{
 		{
 			name:  "empty",
 			avail: armresourcehealth.AvailabilityStatus{},
-			expected: &clusterv1beta1.Condition{
-				Status: corev1.ConditionFalse,
+			expected: &metav1.Condition{
+				Status: metav1.ConditionFalse,
+				Reason: "Unknown",
 			},
 		},
 		{
@@ -46,8 +48,9 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					AvailabilityState: ptr.To(armresourcehealth.AvailabilityStateValuesAvailable),
 				},
 			},
-			expected: &clusterv1beta1.Condition{
-				Status: corev1.ConditionTrue,
+			expected: &metav1.Condition{
+				Status: metav1.ConditionTrue,
+				Reason: string(infrav1.AzureResourceAvailableCondition),
 			},
 		},
 		{
@@ -59,11 +62,10 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					Summary:           ptr.To("The Summary"),
 				},
 			},
-			expected: &clusterv1beta1.Condition{
-				Status:   corev1.ConditionFalse,
-				Severity: clusterv1beta1.ConditionSeverityError,
-				Reason:   "ThisIsAReason",
-				Message:  "The Summary",
+			expected: &metav1.Condition{
+				Status:  metav1.ConditionFalse,
+				Reason:  "ThisIsAReason",
+				Message: "The Summary",
 			},
 		},
 		{
@@ -75,11 +77,10 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 					Summary:           ptr.To("The Summary"),
 				},
 			},
-			expected: &clusterv1beta1.Condition{
-				Status:   corev1.ConditionFalse,
-				Severity: clusterv1beta1.ConditionSeverityWarning,
-				Reason:   "TheReason",
-				Message:  "The Summary",
+			expected: &metav1.Condition{
+				Status:  metav1.ConditionFalse,
+				Reason:  "TheReason",
+				Message: "The Summary",
 			},
 		},
 	}
@@ -92,7 +93,6 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 			cond := SDKAvailabilityStatusToCondition(test.avail)
 
 			g.Expect(cond.Status).To(Equal(test.expected.Status))
-			g.Expect(cond.Severity).To(Equal(test.expected.Severity))
 			g.Expect(cond.Reason).To(Equal(test.expected.Reason))
 			g.Expect(cond.Message).To(Equal(test.expected.Message))
 		})

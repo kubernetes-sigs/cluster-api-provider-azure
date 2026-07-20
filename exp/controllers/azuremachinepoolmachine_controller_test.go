@@ -33,11 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	reconcilerutils "sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -75,8 +75,10 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				}, ampm)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(ampm.Status.FailureReason).To(BeNil())
-				g.Expect(ampm.Status.FailureMessage).To(BeNil())
+				if ampm.Status.Deprecated != nil && ampm.Status.Deprecated.V1Beta1 != nil {
+					g.Expect(ampm.Status.Deprecated.V1Beta1.FailureReason).To(BeNil())  //nolint:staticcheck // intentional use of deprecated field for backward compat
+					g.Expect(ampm.Status.Deprecated.V1Beta1.FailureMessage).To(BeNil()) //nolint:staticcheck // intentional use of deprecated field for backward compat
+				}
 			},
 		},
 		{
@@ -148,7 +150,7 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 
 					return s
 				}()
-				cb = fake.NewClientBuilder().WithScheme(scheme)
+				cb = fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&infrav1exp.AzureMachinePoolMachine{})
 			)
 			defer mockCtrl.Finish()
 

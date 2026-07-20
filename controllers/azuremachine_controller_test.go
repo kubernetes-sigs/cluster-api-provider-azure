@@ -29,14 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -185,7 +184,11 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should skip reconciliation if error state is detected on azure machine": {
 			azureMachineOptions: func(am *infrav1.AzureMachine) {
-				am.Status.FailureReason = ptr.To(azure.UpdateError)
+				am.Status.Deprecated = &infrav1.AzureMachineDeprecatedStatus{
+					V1Beta1: &infrav1.AzureMachineV1Beta1DeprecatedStatus{
+						FailureReason: ptr.To(azure.UpdateError),
+					},
+				}
 			},
 			createAzureMachineService: getFakeAzureMachineService,
 		},
@@ -197,11 +200,11 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 		},
 		"should fail if identities are not ready": {
 			azureMachineOptions: func(am *infrav1.AzureMachine) {
-				am.Status.Conditions = clusterv1beta1.Conditions{
+				am.Status.Conditions = []metav1.Condition{
 					{
-						Type:   infrav1.VMIdentitiesReadyCondition,
-						Reason: infrav1.UserAssignedIdentityMissingReason,
-						Status: corev1.ConditionFalse,
+						Type:   string(infrav1.VMIdentitiesReadyCondition),
+						Reason: string(infrav1.UserAssignedIdentityMissingReason),
+						Status: metav1.ConditionFalse,
 					},
 				}
 			},
@@ -251,11 +254,13 @@ func TestAzureMachineReconcileNormal(t *testing.T) {
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			if tc.ready {
-				g.Expect(machineScope.AzureMachine.Status.Ready).To(BeTrue())
+				g.Expect(ptr.Deref(machineScope.AzureMachine.Status.Initialization.Provisioned, false)).To(BeTrue())
 			}
 			if tc.machineScopeFailureReason != "" {
-				g.Expect(machineScope.AzureMachine.Status.FailureReason).NotTo(BeNil())
-				g.Expect(*machineScope.AzureMachine.Status.FailureReason).To(Equal(tc.machineScopeFailureReason))
+				g.Expect(machineScope.AzureMachine.Status.Deprecated).NotTo(BeNil())
+				g.Expect(machineScope.AzureMachine.Status.Deprecated.V1Beta1).NotTo(BeNil())
+				g.Expect(machineScope.AzureMachine.Status.Deprecated.V1Beta1.FailureReason).NotTo(BeNil())                           //nolint:staticcheck // intentional use of deprecated field for backward compat
+				g.Expect(*machineScope.AzureMachine.Status.Deprecated.V1Beta1.FailureReason).To(Equal(tc.machineScopeFailureReason)) //nolint:staticcheck // intentional use of deprecated field for backward compat
 			}
 			if tc.expectedErr != "" {
 				g.Expect(err).To(HaveOccurred())
@@ -588,7 +593,7 @@ func getFakeAzureCluster(changes ...func(*infrav1.AzureCluster)) *infrav1.AzureC
 					},
 				},
 			},
-			ControlPlaneEndpoint: clusterv1beta1.APIEndpoint{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Port: 6443,
 			},
 		},
@@ -686,7 +691,7 @@ func TestConditions(t *testing.T) {
 		clusterStatus      clusterv1.ClusterStatus
 		machine            *clusterv1.Machine
 		azureMachine       *infrav1.AzureMachine
-		expectedConditions []clusterv1beta1.Condition
+		expectedConditions []metav1.Condition
 	}{
 		{
 			name: "cluster infrastructure is not ready yet",
@@ -715,12 +720,18 @@ func TestConditions(t *testing.T) {
 					},
 				},
 			},
-			expectedConditions: []clusterv1beta1.Condition{{
-				Type:     "VMRunning",
-				Status:   corev1.ConditionFalse,
-				Severity: clusterv1beta1.ConditionSeverityInfo,
-				Reason:   "WaitingForClusterInfrastructure",
-			}},
+			expectedConditions: []metav1.Condition{
+				{
+					Type:   clusterv1.ReadyCondition,
+					Status: metav1.ConditionUnknown,
+					Reason: "UnknownReported",
+				},
+				{
+					Type:   "VMRunning",
+					Status: metav1.ConditionFalse,
+					Reason: "WaitingForClusterInfrastructure",
+				},
+			},
 		},
 		{
 			name: "bootstrap data secret reference is not yet available",
@@ -749,12 +760,18 @@ func TestConditions(t *testing.T) {
 					},
 				},
 			},
-			expectedConditions: []clusterv1beta1.Condition{{
-				Type:     "VMRunning",
-				Status:   corev1.ConditionFalse,
-				Severity: clusterv1beta1.ConditionSeverityInfo,
-				Reason:   "WaitingForBootstrapData",
-			}},
+			expectedConditions: []metav1.Condition{
+				{
+					Type:   clusterv1.ReadyCondition,
+					Status: metav1.ConditionUnknown,
+					Reason: "UnknownReported",
+				},
+				{
+					Type:   "VMRunning",
+					Status: metav1.ConditionFalse,
+					Reason: "WaitingForBootstrapData",
+				},
+			},
 		},
 	}
 	for _, tc := range testcases {
@@ -788,7 +805,7 @@ func TestConditions(t *testing.T) {
 				azureClusterIdentity,
 				defaultSecret,
 			}
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).WithStatusSubresource(&infrav1.AzureMachine{}).Build()
 			resultIdentity := &infrav1.AzureClusterIdentity{}
 			key := client.ObjectKey{Name: azureClusterIdentity.Name, Namespace: azureClusterIdentity.Namespace}
 			g.Expect(fakeClient.Get(t.Context(), key, resultIdentity)).To(Succeed())
@@ -825,9 +842,8 @@ func TestConditions(t *testing.T) {
 	}
 }
 
-func conditionsMatch(i, j clusterv1beta1.Condition) bool {
+func conditionsMatch(i, j metav1.Condition) bool {
 	return i.Type == j.Type &&
 		i.Status == j.Status &&
-		i.Reason == j.Reason &&
-		i.Severity == j.Severity
+		i.Reason == j.Reason
 }

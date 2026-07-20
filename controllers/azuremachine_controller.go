@@ -23,13 +23,14 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -38,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
@@ -241,7 +242,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 
 	log.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
-	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil {
+	if machineScope.AzureMachine.Status.Deprecated != nil && machineScope.AzureMachine.Status.Deprecated.V1Beta1 != nil && (machineScope.AzureMachine.Status.Deprecated.V1Beta1.FailureReason != nil || machineScope.AzureMachine.Status.Deprecated.V1Beta1.FailureMessage != nil) { //nolint:staticcheck // intentional use of deprecated field for backward compat
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}
@@ -259,14 +260,14 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	// Make sure the Cluster Infrastructure is provisioned.
 	if !ptr.Deref(clusterScope.Cluster.Status.Initialization.InfrastructureProvisioned, false) {
 		log.Info("Cluster infrastructure is not provisioned yet")
-		v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1beta1.ConditionSeverityInfo, "")
+		conditions.Set(machineScope.AzureMachine, metav1.Condition{Type: string(infrav1.VMRunningCondition), Status: metav1.ConditionFalse, Reason: infrav1.WaitingForClusterInfrastructureReason})
 		return reconcile.Result{}, nil
 	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret reference is not yet available")
-		v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForBootstrapDataReason, clusterv1beta1.ConditionSeverityInfo, "")
+		conditions.Set(machineScope.AzureMachine, metav1.Condition{Type: string(infrav1.VMRunningCondition), Status: metav1.ConditionFalse, Reason: infrav1.WaitingForBootstrapDataReason})
 		return reconcile.Result{}, nil
 	}
 
@@ -287,8 +288,8 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	}
 
 	// Mark the AzureMachine as failed if the identities are not ready.
-	cond := v1beta1conditions.Get(machineScope.AzureMachine, infrav1.VMIdentitiesReadyCondition)
-	if cond != nil && cond.Status == corev1.ConditionFalse && cond.Reason == infrav1.UserAssignedIdentityMissingReason {
+	cond := conditions.Get(machineScope.AzureMachine, string(infrav1.VMIdentitiesReadyCondition))
+	if cond != nil && cond.Status == metav1.ConditionFalse && cond.Reason == infrav1.UserAssignedIdentityMissingReason {
 		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, infrav1.UserAssignedIdentityMissingReason, "VM is unhealthy")
 		machineScope.SetFailureReason(azure.UnsupportedChange)
 		machineScope.SetFailureMessage(errors.New("VM identities are not ready"))
@@ -366,7 +367,7 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 	defer done()
 
 	log.Info("Handling deleted AzureMachine")
-	v1beta1conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1beta1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "")
+	conditions.Set(machineScope.AzureMachine, metav1.Condition{Type: string(infrav1.VMRunningCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.DeletingReason})
 	if err := machineScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}

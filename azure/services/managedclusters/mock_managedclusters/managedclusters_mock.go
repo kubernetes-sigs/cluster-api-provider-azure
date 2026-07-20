@@ -34,9 +34,9 @@ import (
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -245,10 +245,10 @@ func (mr *MockManagedClusterScopeMockRecorder) GetClient() *gomock.Call {
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockManagedClusterScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockManagedClusterScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -381,7 +381,7 @@ func (mr *MockManagedClusterScopeMockRecorder) SetAutoUpgradeVersionStatus(versi
 }
 
 // SetControlPlaneEndpoint mocks base method.
-func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1beta10.APIEndpoint) {
+func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1beta1.APIEndpoint) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetControlPlaneEndpoint", arg0)
 }
@@ -393,7 +393,7 @@ func (mr *MockManagedClusterScopeMockRecorder) SetControlPlaneEndpoint(arg0 any)
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockManagedClusterScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockManagedClusterScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -405,7 +405,7 @@ func (mr *MockManagedClusterScopeMockRecorder) SetLongRunningOperationState(arg0
 }
 
 // SetOIDCIssuerProfileStatus mocks base method.
-func (m *MockManagedClusterScope) SetOIDCIssuerProfileStatus(arg0 *v1beta1.OIDCIssuerProfileStatus) {
+func (m *MockManagedClusterScope) SetOIDCIssuerProfileStatus(arg0 *v1beta2.OIDCIssuerProfileStatus) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetOIDCIssuerProfileStatus", arg0)
 }
@@ -497,7 +497,7 @@ func (mr *MockManagedClusterScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockManagedClusterScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockManagedClusterScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -509,7 +509,7 @@ func (mr *MockManagedClusterScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, ar
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockManagedClusterScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockManagedClusterScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -521,7 +521,7 @@ func (mr *MockManagedClusterScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockManagedClusterScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockManagedClusterScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }

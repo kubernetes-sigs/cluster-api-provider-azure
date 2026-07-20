@@ -20,11 +20,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -37,14 +36,14 @@ const serviceName = "resourcehealth"
 type ResourceHealthScope interface {
 	azure.Authorizer
 	AvailabilityStatusResourceURI() string
-	AvailabilityStatusResource() v1beta1conditions.Setter
+	AvailabilityStatusResource() conditions.Setter
 }
 
 // AvailabilityStatusFilterer transforms the condition derived from the
 // availability status to allow the condition to be overridden in specific
 // circumstances.
 type AvailabilityStatusFilterer interface {
-	AvailabilityStatusFilter(cond *clusterv1beta1.Condition) *clusterv1beta1.Condition
+	AvailabilityStatusFilter(cond *metav1.Condition) *metav1.Condition
 }
 
 // Service provides operations on Azure resources.
@@ -76,7 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer done()
 
 	if !feature.Gates.Enabled(feature.AKSResourceHealth) {
-		v1beta1conditions.Delete(s.Scope.AvailabilityStatusResource(), infrav1.AzureResourceAvailableCondition)
+		conditions.Delete(s.Scope.AvailabilityStatusResource(), string(infrav1.AzureResourceAvailableCondition))
 		return nil
 	}
 
@@ -92,9 +91,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		cond = filterer.AvailabilityStatusFilter(cond)
 	}
 
-	v1beta1conditions.Set(s.Scope.AvailabilityStatusResource(), cond)
+	conditions.Set(s.Scope.AvailabilityStatusResource(), *cond)
 
-	if cond.Status == corev1.ConditionFalse {
+	if cond.Status == metav1.ConditionFalse {
 		return errors.Errorf("resource is not available: %s", cond.Message)
 	}
 

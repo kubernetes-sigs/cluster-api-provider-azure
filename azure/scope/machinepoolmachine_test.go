@@ -27,17 +27,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -348,12 +349,12 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeTrue())
+				g.Expect(ptr.Deref(scope.AzureMachinePoolMachine.Status.Initialization.Provisioned, false)).To(BeTrue())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionTrue})
 			},
 		},
 		{
@@ -363,12 +364,12 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeFalse())
+				g.Expect(ptr.Deref(scope.AzureMachinePoolMachine.Status.Initialization.Provisioned, false)).To(BeFalse())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeConditionsFailedReason, clusterv1beta1.ConditionSeverityWarning, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeConditionsFailedReason})
 			},
 		},
 		{
@@ -386,7 +387,7 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.FalseCondition(clusterv1.MachineNodeHealthyCondition, clusterv1beta1.NodeProvisioningReason, clusterv1beta1.ConditionSeverityInfo, ""))
+				assertCondition(t, scope.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeProvisioningReason})
 			},
 		},
 		{
@@ -400,12 +401,12 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 				return nil, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				g.Expect(scope.AzureMachinePoolMachine.Status.Ready).To(BeTrue())
+				g.Expect(ptr.Deref(scope.AzureMachinePoolMachine.Status.Initialization.Provisioned, false)).To(BeTrue())
 				g.Expect(scope.AzureMachinePoolMachine.Status.Version).To(Equal("1.2.3"))
 				g.Expect(scope.AzureMachinePoolMachine.Status.NodeRef).To(Equal(&corev1.ObjectReference{
 					Name: "node1",
 				}))
-				assertCondition(t, scope.AzureMachinePoolMachine, v1beta1conditions.TrueCondition(clusterv1.MachineNodeHealthyCondition))
+				assertCondition(t, scope.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionTrue})
 			},
 		},
 	}
@@ -502,21 +503,18 @@ func getNotReadyNode() *corev1.Node {
 // asserts whether a condition of type is set on the Getter object
 // when the condition is true, asserting the reason/severity/message
 // for the condition are avoided.
-func assertCondition(t *testing.T, from v1beta1conditions.Getter, condition *clusterv1beta1.Condition) {
+func assertCondition(t *testing.T, from conditions.Getter, condition metav1.Condition) {
 	t.Helper()
 
 	g := NewWithT(t)
-	g.Expect(v1beta1conditions.Has(from, condition.Type)).To(BeTrue())
+	actual := conditions.Get(from, condition.Type)
+	g.Expect(actual).ToNot(BeNil())
 
-	if condition.Status == corev1.ConditionTrue {
-		v1beta1conditions.IsTrue(from, condition.Type)
-	} else {
-		conditionToBeAsserted := v1beta1conditions.Get(from, condition.Type)
-		g.Expect(conditionToBeAsserted.Status).To(Equal(condition.Status))
-		g.Expect(conditionToBeAsserted.Severity).To(Equal(condition.Severity))
-		g.Expect(conditionToBeAsserted.Reason).To(Equal(condition.Reason))
+	g.Expect(actual.Status).To(Equal(condition.Status))
+	if condition.Status != metav1.ConditionTrue {
+		g.Expect(actual.Reason).To(Equal(condition.Reason))
 		if condition.Message != "" {
-			g.Expect(conditionToBeAsserted.Message).To(Equal(condition.Message))
+			g.Expect(actual.Message).To(Equal(condition.Message))
 		}
 	}
 }

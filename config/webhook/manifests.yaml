@@ -11,7 +11,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azurecluster
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.azurecluster.infrastructure.cluster.x-k8s.io
@@ -19,7 +19,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -33,7 +33,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azureclustertemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azureclustertemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.azureclustertemplate.infrastructure.cluster.x-k8s.io
@@ -41,7 +41,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -55,7 +55,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachine
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.azuremachine.infrastructure.cluster.x-k8s.io
@@ -63,7 +63,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -77,14 +77,15 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinepool
   failurePolicy: Fail
+  matchPolicy: Equivalent
   name: default.azuremachinepool.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -98,7 +99,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinetemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinetemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.azuremachinetemplate.infrastructure.cluster.x-k8s.io
@@ -106,7 +107,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -120,14 +121,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplane
   failurePolicy: Fail
   name: default.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -141,14 +142,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplanetemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplanetemplate
   failurePolicy: Fail
   name: default.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -162,7 +163,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepool
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io
@@ -170,7 +171,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -184,14 +185,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepooltemplate
   failurePolicy: Fail
   name: default.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -211,14 +212,15 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinepoolmachine
   failurePolicy: Fail
+  matchPolicy: Equivalent
   name: azuremachinepoolmachine.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -232,14 +234,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedcluster
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azureasomanagedcluster
   failurePolicy: Fail
   name: validation.azureasomanagedcluster.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     resources:
@@ -252,14 +254,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedcontrolplane
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azureasomanagedcontrolplane
   failurePolicy: Fail
   name: validation.azureasomanagedcontrolplane.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     resources:
@@ -272,14 +274,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azureasomanagedmachinepool
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azureasomanagedmachinepool
   failurePolicy: Fail
   name: validation.azureasomanagedmachinepool.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     resources:
@@ -292,7 +294,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azurecluster
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azurecluster.infrastructure.cluster.x-k8s.io
@@ -300,7 +302,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -314,7 +316,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azureclusteridentity
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azureclusteridentity
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azureclusteridentity.infrastructure.cluster.x-k8s.io
@@ -322,7 +324,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -336,7 +338,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azureclustertemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azureclustertemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azureclustertemplate.infrastructure.cluster.x-k8s.io
@@ -344,7 +346,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -358,7 +360,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachine
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachine
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azuremachine.infrastructure.cluster.x-k8s.io
@@ -366,7 +368,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -380,14 +382,15 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinepool
   failurePolicy: Fail
+  matchPolicy: Equivalent
   name: validation.azuremachinepool.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -401,7 +404,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinetemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinetemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azuremachinetemplate.infrastructure.cluster.x-k8s.io
@@ -409,7 +412,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -423,14 +426,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcluster
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcluster
   failurePolicy: Fail
   name: validation.azuremanagedclusters.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -444,14 +447,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedclustertemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedclustertemplate
   failurePolicy: Fail
   name: validation.azuremanagedclustertemplates.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - UPDATE
     resources:
@@ -464,14 +467,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplane
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplane
   failurePolicy: Fail
   name: validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -485,14 +488,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedcontrolplanetemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedcontrolplanetemplate
   failurePolicy: Fail
   name: validation.azuremanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -506,7 +509,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepool
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepool
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.azuremanagedmachinepools.infrastructure.cluster.x-k8s.io
@@ -514,7 +517,7 @@ webhooks:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -529,14 +532,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremanagedmachinepooltemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremanagedmachinepooltemplate
   failurePolicy: Fail
   name: validation.azuremanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE

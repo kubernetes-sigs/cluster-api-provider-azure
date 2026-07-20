@@ -201,6 +201,127 @@ spec:
             type: object
         type: object
     served: true
+    storage: false
+    subresources:
+      status: {}
+  - name: v1beta2
+    schema:
+      openAPIV3Schema:
+        description: AzureASOManagedCluster is the Schema for the azureasomanagedclusters
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AzureASOManagedClusterSpec defines the desired state of AzureASOManagedCluster.
+            properties:
+              controlPlaneEndpoint:
+                description: |-
+                  ControlPlaneEndpoint is the location of the API server within the control plane. CAPZ manages this field
+                  and it should not be set by the user. It fulfills Cluster API's cluster infrastructure provider contract.
+                  Because this field is programmatically set by CAPZ after resource creation, we define it as +optional
+                  in the API schema to permit resource admission.
+                minProperties: 1
+                properties:
+                  host:
+                    description: host is the hostname on which the API server is serving.
+                    maxLength: 512
+                    minLength: 1
+                    type: string
+                  port:
+                    description: port is the port on which the API server is serving.
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                type: object
+              resources:
+                description: Resources are embedded ASO resources to be managed by
+                  this resource.
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                type: array
+            type: object
+          status:
+            description: AzureASOManagedClusterStatus defines the observed state of
+              AzureASOManagedCluster.
+            properties:
+              deprecated:
+                description: deprecated groups all the status fields that are deprecated
+                  and will be removed in a future version.
+                properties:
+                  v1beta1:
+                    description: v1beta1 groups all the status fields that are deprecated
+                      and will be removed when support for v1beta1 will be dropped.
+                    properties:
+                      ready:
+                        description: |-
+                          ready is true when the provider resource is ready.
+
+                          Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped.
+                        type: boolean
+                    type: object
+                type: object
+              initialization:
+                description: |-
+                  initialization provides observations of the AzureASOManagedCluster initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+                minProperties: 1
+                properties:
+                  provisioned:
+                    description: |-
+                      provisioned is true when the infrastructure provider reports that the AzureASOManagedCluster's infrastructure is fully provisioned.
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate provisioning.
+                      The value of this field is never updated after provisioning is completed.
+                    type: boolean
+                type: object
+              resources:
+                items:
+                  description: ResourceStatus represents the status of a resource.
+                  properties:
+                    ready:
+                      type: boolean
+                    resource:
+                      description: StatusResource is a handle to a resource.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - name
+                      - version
+                      type: object
+                  required:
+                  - ready
+                  - resource
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
     storage: true
     subresources:
       status: {}

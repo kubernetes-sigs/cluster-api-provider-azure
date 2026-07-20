@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"fmt"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 )
 
 // SetDefaultsAzureClusterTemplate sets default values for an AzureClusterTemplate.

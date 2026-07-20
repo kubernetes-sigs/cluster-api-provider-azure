@@ -19,7 +19,7 @@ package privateendpoints
 import (
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso"
 )

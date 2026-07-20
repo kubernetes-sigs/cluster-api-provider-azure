@@ -44,7 +44,6 @@ type AzureASOManagedControlPlaneTemplateResourceSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 
 // AzureASOManagedControlPlaneTemplate is the Schema for the azureasomanagedcontrolplanetemplates API.
 type AzureASOManagedControlPlaneTemplate struct {

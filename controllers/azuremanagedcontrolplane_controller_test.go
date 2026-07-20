@@ -32,12 +32,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
@@ -125,6 +125,7 @@ func TestAzureManagedControlPlaneReconcilePaused(t *testing.T) {
 	g.Expect(sb.AddToScheme(s)).To(Succeed())
 	c := fake.NewClientBuilder().
 		WithScheme(s).
+		WithStatusSubresource(&infrav1.AzureManagedControlPlane{}).
 		Build()
 
 	recorder := record.NewFakeRecorder(1)
@@ -280,10 +281,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 				Version: "0.0.1",
 			},
 		},
-		Status: infrav1.AzureManagedControlPlaneStatus{
-			Ready:       false,
-			Initialized: false,
-		},
+		Status: infrav1.AzureManagedControlPlaneStatus{},
 	}
 	scheme, err := newScheme()
 	g.Expect(err).NotTo(HaveOccurred())
@@ -293,7 +291,7 @@ func TestAzureManagedControlPlaneReconcileNormal(t *testing.T) {
 		Client: client,
 	}
 
-	helper, err := v1beta1patch.NewHelper(cp, client)
+	helper, err := patch.NewHelper(cp, client)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	scopes := &scope.ManagedControlPlaneScope{

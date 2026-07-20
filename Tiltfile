@@ -104,7 +104,7 @@ if "aks_as_mgmt_settings" in settings and os_arch != "amd64":
 def deploy_capi():
     version = settings.get("capi_version")
     capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
-    cmd = "curl --retry 3 -sSL {} | {} | {} apply -f -".format(capi_uri, envsubst_cmd, kubectl_cmd)
+    cmd = "curl --retry 3 -sSL {} | {} | {} apply --server-side --force-conflicts -f -".format(capi_uri, envsubst_cmd, kubectl_cmd)
     local(cmd, quiet = True)
     if settings.get("extra_args"):
         extra_args = settings.get("extra_args")

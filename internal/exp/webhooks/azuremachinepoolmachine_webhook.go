@@ -23,17 +23,17 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
-func (w *AzureMachinePoolMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (ampmw *AzureMachinePoolMachineWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &infrav1exp.AzureMachinePoolMachine{}).
-		WithValidator(w).
+		WithValidator(ampmw).
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepoolmachine,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,versions=v1beta1,name=azuremachinepoolmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-azuremachinepoolmachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,versions=v1beta2,name=azuremachinepoolmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 // AzureMachinePoolMachineWebhook implements a validating webhook for AzureMachinePoolMachine.
 type AzureMachinePoolMachineWebhook struct{}

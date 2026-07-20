@@ -32,9 +32,9 @@ import (
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 // MockVMScope is a mock of VMScope interface.
@@ -172,10 +172,10 @@ func (mr *MockVMScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1, a
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockVMScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta1.Future {
+func (m *MockVMScope) GetLongRunningOperationState(arg0, arg1, arg2 string) *v1beta2.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1beta1.Future)
+	ret0, _ := ret[0].(*v1beta2.Future)
 	return ret0
 }
 
@@ -224,7 +224,7 @@ func (mr *MockVMScopeMockRecorder) SetAnnotation(arg0, arg1 any) *gomock.Call {
 }
 
 // SetConditionFalse mocks base method.
-func (m *MockVMScope) SetConditionFalse(arg0 v1beta10.ConditionType, arg1 string, arg2 v1beta10.ConditionSeverity, arg3 string) {
+func (m *MockVMScope) SetConditionFalse(arg0 v1beta1.ConditionType, arg1 string, arg2 v1beta1.ConditionSeverity, arg3 string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetConditionFalse", arg0, arg1, arg2, arg3)
 }
@@ -236,7 +236,7 @@ func (mr *MockVMScopeMockRecorder) SetConditionFalse(arg0, arg1, arg2, arg3 any)
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockVMScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
+func (m *MockVMScope) SetLongRunningOperationState(arg0 *v1beta2.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -260,7 +260,7 @@ func (mr *MockVMScopeMockRecorder) SetProviderID(arg0 any) *gomock.Call {
 }
 
 // SetVMState mocks base method.
-func (m *MockVMScope) SetVMState(arg0 v1beta1.ProvisioningState) {
+func (m *MockVMScope) SetVMState(arg0 v1beta2.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMState", arg0)
 }
@@ -314,7 +314,7 @@ func (mr *MockVMScopeMockRecorder) Token() *gomock.Call {
 }
 
 // UpdateDeleteStatus mocks base method.
-func (m *MockVMScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVMScope) UpdateDeleteStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
@@ -326,7 +326,7 @@ func (mr *MockVMScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 any) *gom
 }
 
 // UpdatePatchStatus mocks base method.
-func (m *MockVMScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVMScope) UpdatePatchStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
 }
@@ -338,7 +338,7 @@ func (mr *MockVMScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 any) *gomo
 }
 
 // UpdatePutStatus mocks base method.
-func (m *MockVMScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+func (m *MockVMScope) UpdatePutStatus(arg0 v1beta1.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
 }
