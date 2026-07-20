@@ -57,7 +57,7 @@ require (
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/cloud-provider-azure v1.34.3
 	sigs.k8s.io/cluster-api v1.13.3
-	sigs.k8s.io/cluster-api/test v1.13.3
+	sigs.k8s.io/cluster-api/test v1.13.4
 	sigs.k8s.io/controller-runtime v0.23.3
 	sigs.k8s.io/kind v0.32.0
 )
