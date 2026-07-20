@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
@@ -33,6 +35,7 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -54,7 +57,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 	cases := []struct {
 		name   string
 		Setup  func(cb *fake.ClientBuilder, reconciler pausingReconciler, agentpools *mock_agentpools.MockAgentPoolScopeMockRecorder, nodelister *MockNodeListerMockRecorder)
-		Verify func(g *WithT, result ctrl.Result, err error)
+		Verify func(g *WithT, c client.Client, result ctrl.Result, err error)
 	}{
 		{
 			name: "Reconcile succeed",
@@ -85,7 +88,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -99,7 +102,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
@@ -113,8 +116,68 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				}
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
+			},
+		},
+		{
+			name: "Reconcile delete with deleting cluster",
+			Setup: func(cb *fake.ClientBuilder, _ pausingReconciler, _ *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
+				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+				cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+				cluster.Finalizers = []string{"test"}
+				ammp.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+				ammp.Finalizers = []string{infrav1.ClusterFinalizer, "test"}
+
+				agentPool := &asocontainerservicev1.ManagedClustersAgentPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      azure.GetNormalizedKubernetesName(ammp.Name),
+						Namespace: ammp.Namespace,
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: infrav1.GroupVersion.String(),
+								Kind:       infrav1.AzureManagedMachinePoolKind,
+								Name:       ammp.Name,
+								Controller: ptr.To(true),
+							},
+						},
+						Annotations: map[string]string{
+							asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+						},
+					},
+				}
+
+				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp, agentPool)
+			},
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+
+				agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
+				g.Expect(c.Get(t.Context(), types.NamespacedName{Name: "foo-ammp", Namespace: "foobar"}, agentPool)).To(Succeed())
+				g.Expect(agentPool.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
+
+				ammp := &infrav1.AzureManagedMachinePool{}
+				g.Expect(c.Get(t.Context(), types.NamespacedName{Name: "foo-ammp", Namespace: "foobar"}, ammp)).To(Succeed())
+				g.Expect(ammp.Finalizers).NotTo(ContainElement(infrav1.ClusterFinalizer))
+			},
+		},
+		{
+			name: "Reconcile delete with deleting cluster and missing ASO agent pool",
+			Setup: func(cb *fake.ClientBuilder, _ pausingReconciler, _ *mock_agentpools.MockAgentPoolScopeMockRecorder, _ *MockNodeListerMockRecorder) {
+				cluster, azManagedCluster, azManagedControlPlane, ammp, mp := newReadyAzureManagedMachinePoolCluster()
+				cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+				cluster.Finalizers = []string{"test"}
+				ammp.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+				ammp.Finalizers = []string{infrav1.ClusterFinalizer, "test"}
+
+				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
+			},
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
+
+				ammp := &infrav1.AzureManagedMachinePool{}
+				g.Expect(c.Get(t.Context(), types.NamespacedName{Name: "foo-ammp", Namespace: "foobar"}, ammp)).To(Succeed())
+				g.Expect(ammp.Finalizers).NotTo(ContainElement(infrav1.ClusterFinalizer))
 			},
 		},
 		{
@@ -128,7 +191,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 				}
 				cb.WithObjects(cluster, azManagedCluster, azManagedControlPlane, ammp, mp)
 			},
-			Verify: func(g *WithT, result ctrl.Result, err error) {
+			Verify: func(g *WithT, _ client.Client, result ctrl.Result, err error) {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result.RequeueAfter).To(Equal(76 * time.Second))
 			},
@@ -165,6 +228,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 						clusterv1.AddToScheme,
 						infrav1.AddToScheme,
 						corev1.AddToScheme,
+						asocontainerservicev1.AddToScheme,
 					} {
 						g.Expect(addTo(s)).To(Succeed())
 					}
@@ -181,7 +245,8 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			c.Setup(cb, reconciler, agentpools.EXPECT(), nodelister.EXPECT())
-			controller := NewAzureManagedMachinePoolReconciler(cb.Build(), nil, reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
+			fakeClient := cb.Build()
+			controller := NewAzureManagedMachinePoolReconciler(fakeClient, nil, reconcilerutils.Timeouts{}, "foo", azure.NewCredentialCache())
 			controller.createAzureManagedMachinePoolService = func(_ *scope.ManagedMachinePoolScope, _ time.Duration) (*azureManagedMachinePoolService, error) {
 				return &azureManagedMachinePoolService{
 					scope:         agentpools,
@@ -195,7 +260,7 @@ func TestAzureManagedMachinePoolReconcile(t *testing.T) {
 					Namespace: "foobar",
 				},
 			})
-			c.Verify(g, res, err)
+			c.Verify(g, fakeClient, res, err)
 		})
 	}
 }
