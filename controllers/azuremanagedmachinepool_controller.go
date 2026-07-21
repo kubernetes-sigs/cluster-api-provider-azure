@@ -40,6 +40,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -325,6 +326,15 @@ func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Cont
 
 	if !scope.Cluster.DeletionTimestamp.IsZero() {
 		// Cluster was deleted, skip machine pool deletion and let AKS delete the whole cluster.
+		// The ASO agent pool resource is owned by the AzureManagedMachinePool and
+		// will be garbage collected when the AzureManagedMachinePool is deleted. If
+		// ASO sees a managed deleting agent pool after the parent AKS cluster delete
+		// has started, Azure rejects the child delete as an update to a deleting
+		// cluster. Pause the ASO resource so ASO removes its own finalizer without
+		// issuing the child Azure delete.
+		if err := agentpools.New(scope).Pause(ctx); err != nil && !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, errors.Wrap(err, "failed to pause ASO agent pool before deletion")
+		}
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	} else {
