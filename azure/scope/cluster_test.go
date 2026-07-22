@@ -2867,10 +2867,11 @@ func TestAdditionalTags(t *testing.T) {
 
 func TestAPIServerPort(t *testing.T) {
 	tests := []struct {
-		name                string
-		clusterName         string
-		clusterNetowrk      clusterv1.ClusterNetwork
-		expectAPIServerPort int32
+		name                 string
+		clusterName          string
+		clusterNetowrk       clusterv1.ClusterNetwork
+		controlPlaneEndpoint clusterv1beta1.APIEndpoint
+		expectAPIServerPort  int32
 	}{
 		{
 			name:                "Nil cluster network",
@@ -2892,6 +2893,19 @@ func TestAPIServerPort(t *testing.T) {
 			},
 			expectAPIServerPort: 7000,
 		},
+		{
+			name:                 "ControlPlaneEndpoint.Port set",
+			clusterName:          "my-cluster",
+			controlPlaneEndpoint: clusterv1beta1.APIEndpoint{Port: 443},
+			expectAPIServerPort:  443,
+		},
+		{
+			name:                 "ControlPlaneEndpoint.Port takes precedence over ClusterNetwork.APIServerPort",
+			clusterName:          "my-cluster",
+			clusterNetowrk:       clusterv1.ClusterNetwork{APIServerPort: 7000},
+			controlPlaneEndpoint: clusterv1beta1.APIEndpoint{Port: 443},
+			expectAPIServerPort:  443,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2909,6 +2923,10 @@ func TestAPIServerPort(t *testing.T) {
 			azureCluster := &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,
+				},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{},
+					ControlPlaneEndpoint:  tc.controlPlaneEndpoint,
 				},
 			}
 
