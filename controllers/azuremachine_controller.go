@@ -197,7 +197,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		CredentialCache: amr.CredentialCache,
 	})
 	if err != nil {
-		amr.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "Error creating the cluster scope", err.Error())
+		amr.Recorder.Event(azureCluster, corev1.EventTypeWarning, "Error creating the cluster scope", err.Error())
 		return reconcile.Result{}, err
 	}
 
@@ -209,7 +209,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		ClusterScope: clusterScope,
 	})
 	if err != nil {
-		amr.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())
+		amr.Recorder.Event(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())
 		return reconcile.Result{}, errors.Wrap(err, "failed to create scope")
 	}
 
@@ -276,7 +276,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 	err := machineScope.InitMachineCache(ctx)
 	if err != nil {
 		if errors.As(err, &reconcileError) && reconcileError.IsTerminal() {
-			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machine cache").Error())
+			amr.Recorder.Event(machineScope.AzureMachine, corev1.EventTypeWarning, "SKUNotFound", errors.Wrap(err, "failed to initialize machine cache").Error())
 			log.Error(err, "Failed to initialize machine cache")
 			machineScope.SetFailureReason(azure.InvalidConfiguration)
 			machineScope.SetFailureMessage(err)
@@ -304,7 +304,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		// This means that a VM was created and managed by this controller, but is not present anymore.
 		// In this case, we mark it as failed and leave it to MHC for remediation
 		if errors.As(err, &azure.VMDeletedError{}) {
-			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "VMDeleted", errors.Wrap(err, "failed to reconcile AzureMachine").Error())
+			amr.Recorder.Event(machineScope.AzureMachine, corev1.EventTypeWarning, "VMDeleted", errors.Wrap(err, "failed to reconcile AzureMachine").Error())
 			machineScope.SetFailureReason(azure.UpdateError)
 			machineScope.SetFailureMessage(err)
 			machineScope.SetNotReady()
@@ -315,7 +315,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		// Handle transient and terminal errors
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTerminal() {
-				amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
+				amr.Recorder.Event(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 				log.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
 				machineScope.SetFailureReason(azure.CreateError)
 				machineScope.SetFailureMessage(err)
@@ -333,7 +333,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 		}
-		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
+		amr.Recorder.Event(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 	}
 
@@ -392,7 +392,7 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 				}
 			}
 
-			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", machineScope.Namespace(), machineScope.Name()).Error())
+			amr.Recorder.Event(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", machineScope.Namespace(), machineScope.Name()).Error())
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", machineScope.Namespace(), machineScope.Name())
 		}
 	} else {

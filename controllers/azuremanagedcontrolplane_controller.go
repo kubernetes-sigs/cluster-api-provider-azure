@@ -215,7 +215,7 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 			"Using Azure credentials from the manager environment is deprecated and will be removed in future releases. " +
 			"Please specify an AzureClusterIdentity for the AzureManagedControlPlane instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html "
 		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
-		amcpr.Recorder.Eventf(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
+		amcpr.Recorder.Event(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
 	}
 
 	// Handle deleted clusters
