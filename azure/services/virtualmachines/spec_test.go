@@ -434,6 +434,48 @@ func TestParameters(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "can create a vm and assign it to a vmss flex",
+			spec: &VMSpec{
+				Name:                     "my-vm",
+				Role:                     infrav1.Node,
+				NICIDs:                   []string{"my-nic"},
+				SSHKeyData:               "fakesshpublickey",
+				Size:                     "Standard_D2v3",
+				VirtualMachineScaleSetID: "fake-vmss-id",
+				Zone:                     "",
+				Image:                    &infrav1.Image{ID: ptr.To("fake-image-id")},
+				SKU:                      validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armcompute.VirtualMachine{}))
+				g.Expect(result.(armcompute.VirtualMachine).Zones).To(BeNil())
+				g.Expect(result.(armcompute.VirtualMachine).Properties.VirtualMachineScaleSet.ID).To(Equal(ptr.To("fake-vmss-id")))
+				g.Expect(result.(armcompute.VirtualMachine).Properties.AvailabilitySet).To(BeNil())
+			},
+			expectedError: "",
+		},
+		{
+			name: "fails if vmss flex and availability set are both set",
+			spec: &VMSpec{
+				Name:                     "my-vm",
+				Role:                     infrav1.Node,
+				NICIDs:                   []string{"my-nic"},
+				SSHKeyData:               "fakesshpublickey",
+				Size:                     "Standard_D2v3",
+				AvailabilitySetID:        "fake-availability-set-id",
+				VirtualMachineScaleSetID: "fake-vmss-id",
+				Zone:                     "",
+				Image:                    &infrav1.Image{ID: ptr.To("fake-image-id")},
+				SKU:                      validSKU,
+			},
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeNil())
+			},
+			expectedError: "reconcile error that cannot be recovered occurred: availabilitySetID and virtualMachineScaleSetID cannot both be set. Object will not be requeued",
+		},
+		{
 			name: "can create a vm with EphemeralOSDisk",
 			spec: &VMSpec{
 				Name:       "my-vm",

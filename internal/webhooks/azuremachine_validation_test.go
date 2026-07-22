@@ -892,6 +892,57 @@ func TestAzureMachine_ValidateNetwork(t *testing.T) {
 	}
 }
 
+func TestAzureMachine_ValidateVirtualMachineScaleSetID(t *testing.T) {
+	tests := []struct {
+		name                     string
+		virtualMachineScaleSetID *string
+		wantErr                  bool
+	}{
+		{
+			name:                     "empty is valid",
+			virtualMachineScaleSetID: nil,
+			wantErr:                  false,
+		},
+		{
+			name:                     "valid resource ID",
+			virtualMachineScaleSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss"),
+			wantErr:                  false,
+		},
+		{
+			name:                     "valid resource ID with provider prefix",
+			virtualMachineScaleSetID: ptr.To("azure:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss"),
+			wantErr:                  false,
+		},
+		{
+			name:                     "invalid resource ID",
+			virtualMachineScaleSetID: ptr.To("/prescriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss"),
+			wantErr:                  true,
+		},
+		{
+			name:                     "wrong resource type",
+			virtualMachineScaleSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachines/my-vm"),
+			wantErr:                  true,
+		},
+		{
+			name:                     "wrong child resource type",
+			virtualMachineScaleSetID: ptr.To("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss/virtualMachines/0"),
+			wantErr:                  true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+			errs := ValidateVirtualMachineScaleSetID(test.virtualMachineScaleSetID, field.NewPath("virtualMachineScaleSetID"))
+			if test.wantErr {
+				g.Expect(errs).NotTo(BeEmpty())
+			} else {
+				g.Expect(errs).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestAzureMachine_ValidateConfidentialCompute(t *testing.T) {
 	tests := []struct {
 		name            string
