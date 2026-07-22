@@ -134,9 +134,31 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		failedMachines             = order(getFailedMachines(machinesByProviderID))
 		deletingMachines           = order(getDeletingMachines(machinesByProviderID))
 		readyMachines              = order(getReadyMachines(machinesByProviderID))
+		unreadyMachines            = order(getUnreadyMachines(machinesByProviderID))
 		machinesWithoutLatestModel = order(getMachinesWithoutLatestModel(machinesByProviderID))
-		overProvisionCount         = len(readyMachines) - int(desiredReplicaCount)
-		disruptionBudget           = func() int {
+		protectedUnreadyCount      = func() int {
+			readyOldModelCount := 0
+			for _, machine := range readyMachines {
+				if !machine.Status.LatestModelApplied {
+					readyOldModelCount++
+				}
+			}
+
+			unreadyLatestModelCount := 0
+			for _, machine := range unreadyMachines {
+				if machine.Status.LatestModelApplied {
+					unreadyLatestModelCount++
+				}
+			}
+
+			return min(readyOldModelCount, unreadyLatestModelCount)
+		}()
+		overProvisionCount = func() int {
+			// During a rollout, don't count an unready latest-model replacement as excess capacity while the
+			// ready old-model machine it replaces is still present.
+			return len(readyMachines) + len(unreadyMachines) - protectedUnreadyCount - int(desiredReplicaCount)
+		}()
+		disruptionBudget = func() int {
 			if maxUnavailable > int(desiredReplicaCount) {
 				return int(desiredReplicaCount)
 			}
@@ -152,6 +174,8 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 
 	log.Info("selecting machines to delete",
 		"readyMachines", len(readyMachines),
+		"unreadyMachines", len(unreadyMachines),
+		"protectedUnreadyMachines", protectedUnreadyCount,
 		"desiredReplicaCount", desiredReplicaCount,
 		"maxUnavailable", maxUnavailable,
 		"disruptionBudget", disruptionBudget,
@@ -173,20 +197,52 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		return deleteAnnotatedMachines, nil
 	}
 
-	// if we have not yet reached our desired count, don't try to delete anything
-	if len(readyMachines) < int(desiredReplicaCount) {
-		log.Info("not enough ready machines", "desiredReplicaCount", desiredReplicaCount, "readyMachinesCount", len(readyMachines), "machinesByProviderID", len(machinesByProviderID))
-		return []infrav1exp.AzureMachinePoolMachine{}, nil
-	}
-
 	// we have too many machines, let's choose the oldest to remove
 	if overProvisionCount > 0 {
 		var toDelete []infrav1exp.AzureMachinePoolMachine
-		log.Info("over-provisioned", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "machinesWithoutLatestModel", getProviderIDs(machinesWithoutLatestModel))
-		// we are over-provisioned try to remove old models
+		log.Info("over-provisioned", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "unreadyMachines", getProviderIDs(unreadyMachines), "machinesWithoutLatestModel", getProviderIDs(machinesWithoutLatestModel))
+
+		// Prefer deleting unready machines when explicitly scaling down. Counting only ready machines here can
+		// leave the pool permanently over-provisioned if an extra VM joins the cluster but never becomes ready.
+		for _, v := range unreadyMachines {
+			if len(toDelete) >= overProvisionCount {
+				return toDelete, nil
+			}
+			if v.Status.LatestModelApplied {
+				continue
+			}
+
+			toDelete = append(toDelete, v)
+		}
+		unreadyLatestModelDeleteCount := 0
+		for _, v := range unreadyMachines {
+			if v.Status.LatestModelApplied {
+				unreadyLatestModelDeleteCount++
+			}
+		}
+		unreadyLatestModelDeleteCount -= protectedUnreadyCount
+		for _, v := range unreadyMachines {
+			if len(toDelete) >= overProvisionCount {
+				return toDelete, nil
+			}
+			if unreadyLatestModelDeleteCount <= 0 {
+				break
+			}
+			if !v.Status.LatestModelApplied {
+				continue
+			}
+
+			toDelete = append(toDelete, v)
+			unreadyLatestModelDeleteCount--
+		}
+
+		// We are over-provisioned; try to remove old models.
 		for _, v := range machinesWithoutLatestModel {
 			if len(toDelete) >= overProvisionCount {
 				return toDelete, nil
+			}
+			if !v.Status.Ready {
+				continue
 			}
 
 			toDelete = append(toDelete, v)
@@ -198,11 +254,20 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 			if len(toDelete) >= overProvisionCount {
 				return toDelete, nil
 			}
+			if !v.Status.LatestModelApplied {
+				continue
+			}
 
 			toDelete = append(toDelete, v)
 		}
 
 		return toDelete, nil
+	}
+
+	// if we have not yet reached our desired count, don't try to replace anything
+	if len(readyMachines) < int(desiredReplicaCount) {
+		log.Info("not enough ready machines", "desiredReplicaCount", desiredReplicaCount, "readyMachinesCount", len(readyMachines), "machinesByProviderID", len(machinesByProviderID))
+		return []infrav1exp.AzureMachinePoolMachine{}, nil
 	}
 
 	if len(machinesWithoutLatestModel) == 0 {
@@ -287,6 +352,22 @@ func getReadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoo
 	}
 
 	return readyMachines
+}
+
+func getUnreadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
+	var unreadyMachines []infrav1exp.AzureMachinePoolMachine
+	for _, v := range machinesByProviderID {
+		if v.Status.Ready || v.Status.ProvisioningState == nil || !v.DeletionTimestamp.IsZero() {
+			continue
+		}
+		if *v.Status.ProvisioningState == infrav1.Failed || *v.Status.ProvisioningState == infrav1.Deleting {
+			continue
+		}
+
+		unreadyMachines = append(unreadyMachines, v)
+	}
+
+	return unreadyMachines
 }
 
 func getMachinesWithoutLatestModel(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) []infrav1exp.AzureMachinePoolMachine {
