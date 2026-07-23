@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -44,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 func TestMachinePoolScope_Name(t *testing.T) {
@@ -508,9 +510,10 @@ func TestMachinePoolScope_GetVMImage(t *testing.T) {
 
 func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 	cases := []struct {
-		Name   string
-		Setup  func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS)
-		Verify func(g *WithT, requeue bool)
+		Name      string
+		Setup     func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS)
+		SkipModel bool
+		Verify    func(g *WithT, requeue bool)
 	}{
 		{
 			Name: "should requeue if the machine is not in succeeded state",
@@ -582,10 +585,33 @@ func TestMachinePoolScope_NeedsRequeue(t *testing.T) {
 				g.Expect(requeue).To(BeTrue())
 			},
 		},
+		{
+			Name: "should not requeue if an instance VM image does not match the VMSS when SkipMachinePoolModelReconciliation is enabled",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, vmss *azure.VMSS) {
+				succeeded := infrav1.Succeeded
+				mp.Spec.Replicas = ptr.To[int32](1)
+				amp.Status.ProvisioningState = &succeeded
+				vmss.Instances = []azure.VMSSVM{
+					{
+						Name: "instance1",
+						Image: infrav1.Image{
+							Marketplace: &infrav1.AzureMarketplaceImage{
+								Version: "foo1",
+							},
+						},
+					},
+				}
+			},
+			SkipModel: true,
+			Verify: func(g *WithT, requeue bool) {
+				g.Expect(requeue).To(BeFalse())
+			},
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, feature.Gates, feature.SkipMachinePoolModelReconciliation, c.SkipModel)
 			var (
 				g        = NewWithT(t)
 				mockCtrl = gomock.NewController(t)
@@ -887,7 +913,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 		want             []azure.ResourceSpecGetter
 	}{
 		{
-			name: "If OS type is Linux and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Linux and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -899,6 +925,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							OSDisk: infrav1.OSDisk{
 								OSType: "Linux",
 							},
+							DisableVMBootstrapExtension: ptr.To(false),
 						},
 					},
 				},
@@ -964,7 +991,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If OS type is Windows and cloud is AzurePublicCloud, it returns ExtensionSpec",
+			name: "If OS type is Windows and cloud is AzurePublicCloud and bootstrap extension is enabled, it returns ExtensionSpec",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -977,6 +1004,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							OSDisk: infrav1.OSDisk{
 								OSType: "Windows",
 							},
+							DisableVMBootstrapExtension: ptr.To(false),
 						},
 					},
 				},
@@ -1107,7 +1135,7 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 			want: []azure.ResourceSpecGetter{},
 		},
 		{
-			name: "If a custom VM extension is specified, it returns the custom VM extension",
+			name: "If a custom VM extension is specified, it returns only the custom VM extension (bootstrap extension disabled by default)",
 			machinePoolScope: MachinePoolScope{
 				MachinePool: &clusterv1.MachinePool{},
 				AzureMachinePool: &infrav1exp.AzureMachinePool{
@@ -1119,6 +1147,71 @@ func TestMachinePoolScope_VMSSExtensionSpecs(t *testing.T) {
 							OSDisk: infrav1.OSDisk{
 								OSType: "Linux",
 							},
+							VMExtensions: []infrav1.VMExtension{
+								{
+									Name:      "custom-vm-extension",
+									Publisher: "Microsoft.Azure.Extensions",
+									Version:   "2.0",
+									Settings: map[string]string{
+										"timestamp": "1234567890",
+									},
+									ProtectedSettings: map[string]string{
+										"commandToExecute": "echo hello world",
+									},
+								},
+							},
+						},
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					AzureClients: AzureClients{
+						cloudEnvironment: azure.PublicCloudName,
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								Location: "westus",
+							},
+						},
+					},
+				},
+				cache: &MachinePoolCache{
+					VMSKU: resourceskus.SKU{},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&scalesets.VMSSExtensionSpec{
+					ExtensionSpec: azure.ExtensionSpec{
+						Name:      "custom-vm-extension",
+						VMName:    "machinepool-name",
+						Publisher: "Microsoft.Azure.Extensions",
+						Version:   "2.0",
+						Settings: map[string]string{
+							"timestamp": "1234567890",
+						},
+						ProtectedSettings: map[string]string{
+							"commandToExecute": "echo hello world",
+						},
+					},
+					ResourceGroup: "my-rg",
+				},
+			},
+		},
+		{
+			name: "If a custom VM extension is specified and bootstrap extension is enabled, it returns both extensions",
+			machinePoolScope: MachinePoolScope{
+				MachinePool: &clusterv1.MachinePool{},
+				AzureMachinePool: &infrav1exp.AzureMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machinepool-name",
+					},
+					Spec: infrav1exp.AzureMachinePoolSpec{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
+							OSDisk: infrav1.OSDisk{
+								OSType: "Linux",
+							},
+							DisableVMBootstrapExtension: ptr.To(false),
 							VMExtensions: []infrav1.VMExtension{
 								{
 									Name:      "custom-vm-extension",

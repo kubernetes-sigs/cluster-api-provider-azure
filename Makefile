@@ -38,7 +38,7 @@ export GOTOOLCHAIN
 export GO111MODULE=on
 
 # Kubebuilder.
-export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.35.0
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.36.0
 export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?= 60s
 export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?= 60s
 
@@ -94,7 +94,7 @@ GOLANGCI_LINT_KAL_BIN := golangci-lint-kube-api-linter
 GOLANGCI_LINT_KAL := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_KAL_BIN)
 
 GOVULNCHECK_BIN := govulncheck
-GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK_VER := v1.3.0
 GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
 GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
 
@@ -181,9 +181,8 @@ MANIFEST_ROOT ?= config
 CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
-ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
 ASO_VERSION := $(shell go list -m -f '{{ .Version }}' github.com/Azure/azure-service-operator/v2)
-ASO_CRDS := resourcegroups.resources.azure.com natgateways.network.azure.com managedclusters.containerservice.azure.com managedclustersagentpools.containerservice.azure.com bastionhosts.network.azure.com virtualnetworks.network.azure.com virtualnetworkssubnets.network.azure.com privateendpoints.network.azure.com fleetsmembers.containerservice.azure.com extensions.kubernetesconfiguration.azure.com
+ASO_CRDS := resourcegroups.resources.azure.com natgateways.network.azure.com managedclusters.containerservice.azure.com managedclustersagentpools.containerservice.azure.com bastionhosts.network.azure.com virtualnetworks.network.azure.com virtualnetworkssubnets.network.azure.com privateendpoints.network.azure.com fleetsmembers.containerservice.azure.com extensions.kubernetesconfiguration.azure.com maintenanceconfigurations.containerservice.azure.com
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
@@ -207,6 +206,13 @@ MGMT_CLUSTER_TYPE ?= kind
 # that meets workload identity pre-requisites.
 SKIP_CREATE_MGMT_CLUSTER ?= true
 WIN_REPO_URL ?=
+
+# Enable the SkipMachinePoolModelReconciliation feature gate for all E2E scenarios.
+# None of our test scenarios depend on CAPZ replacing stale VMSS VMs (those not
+# running the latest VMSS model), so we enable this to avoid unnecessary machine
+# replacement. Exporting it here propagates the value to the CAPZ controller-manager
+# deployment manifest (config/manager/manager.yaml) for make-driven E2E flows.
+export EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION ?= true
 
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
@@ -323,12 +329,7 @@ verify-codespell: codespell ## Verify codespell.
 
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
-	$(GOVULNCHECK) ./... && R1=$$? || R1=$$?; \
-	$(GOVULNCHECK) -C "$(TOOLS_DIR)" ./... && R2=$$? || R2=$$?; \
-	$(GOVULNCHECK) -C "$(TEST_DIR)" ./... && R3=$$? || R3=$$?; \
-	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ] || [ "$$R3" -ne "0" ]; then \
-		exit 1; \
-	fi
+	$(GOVULNCHECK) -tags=e2e ./...
 
 .PHONY: verify-security
 verify-security: ## Verify code and images for vulnerabilities
@@ -365,7 +366,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 	./hack/create-custom-cloud-provider-config.sh
 
 	# Deploy CAPI
-	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.0/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
+	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
 
 	# Deploy CAAPH
 	timeout --foreground 300 bash -c "until curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.2/addon-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f - --server-side=true; do sleep 5; done"
@@ -407,7 +408,13 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL) $(KIND) ## Create
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST) $(KUBECTL) ## Create a workload cluster.
 	# Create workload Cluster.
-	@if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
+	# Source SERVICE_ACCOUNT_ISSUER from kind-with-registry.sh if available,
+	# so the workload cluster template gets the correct OIDC issuer URL.
+	@if [ -f "$(ROOT_DIR)/.service-account-issuer.env" ]; then \
+		. "$(ROOT_DIR)/.service-account-issuer.env"; \
+		export SERVICE_ACCOUNT_ISSUER; \
+	fi; \
+	if [ -z "${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}" ]; then \
 		export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY=$(shell cat $(AZURE_IDENTITY_ID_FILEPATH)); \
 	fi; \
 	if [ -f "$(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE)" ]; then \
@@ -522,7 +529,6 @@ generate: ## Generate go related targets, manifests, flavors, e2e-templates and 
 	$(MAKE) generate-flavors
 	$(MAKE) generate-e2e-templates
 	$(MAKE) generate-addons
-	$(MAKE) generate-aso-crds
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets.
@@ -538,6 +544,7 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./api/... \
 		paths=./$(EXP_DIR)/api/... \
 		paths=./internal/webhooks/... \
+		paths=./internal/exp/webhooks/... \
 		crd:crdVersions=v1 \
 		rbac:roleName=base-manager-role \
 		output:crd:dir=$(CRD_ROOT) \
@@ -572,18 +579,6 @@ generate-addons: fetch-calico-manifests $(ENVSUBST)
 	$(KUSTOMIZE) build $(ADDONS_DIR)/metrics-server > $(ADDONS_DIR)/metrics-server/metrics-server.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/calico | $(ENVSUBST) > $(ADDONS_DIR)/calico.yaml
 	$(KUSTOMIZE) build $(ADDONS_DIR)/azure-cni-v1 > $(ADDONS_DIR)/azure-cni-v1.yaml
-
-.PHONY: generate-aso-crds
-# The yq command filters the list of all ASO CRDs to just the ones specified by ASO_CRDS.
-# The sed command changes '$$' to '$$$$' so once the CRDs get run through
-# envsubst, '$$$$' changes back to '$$' so ASO will not detect a diff and try to
-# update the CRDs for which we don't give it permission.
-generate-aso-crds: $(YQ)
-	$(YQ) e -i '.resources[] |= sub("^(https://github\.com/Azure/azure-service-operator/releases/download/)[^/]+(/.*_).*(\.yaml)$$", "$${1}$(ASO_VERSION)$${2}$(ASO_VERSION)$${3}")' $(ROOT_DIR)/config/aso/kustomization.yaml
-	curl -fSsL "https://github.com/Azure/azure-service-operator/releases/download/$(ASO_VERSION)/azureserviceoperator_customresourcedefinitions_$(ASO_VERSION).yaml" | \
-		$(YQ) e '. | select($(foreach name,$(ASO_CRDS),.metadata.name == "$(name)" or )false)' - | \
-		sed 's/\$$\$$/$$$$$$$$/g' \
-		> $(ASO_CRDS_PATH)
 
 export CALICO_VERSION := v3.29.4
 # Where all downloaded Calico manifests are unpacked and stored.
@@ -854,7 +849,7 @@ kind-reset: $(KIND) ## Destroys the "capz" and "capz-e2e" kind clusters.
 
 .PHONY: aks-cleanup
 aks-cleanup: $(KUBECTL) ## Deletes deployments, secrets and service-accounts from existing AKS as mgmt cluster
-	@ASO_CRDS_PATH=$(ASO_CRDS_PATH) \
+	@ASO_CRDS="$(ASO_CRDS)" \
 	CRD_ROOT=$(CRD_ROOT) \
 	DELETE_CRDS=$${DELETE_CRDS:-"false"} \
 	MGMT_CLUSTER_NAME=$${MGMT_CLUSTER_NAME:-} \

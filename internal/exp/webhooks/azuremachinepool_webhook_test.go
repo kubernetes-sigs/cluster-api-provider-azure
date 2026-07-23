@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package webhooks
 
 import (
 	"context"
@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	apiinternal "sigs.k8s.io/cluster-api-provider-azure/internal/api/v1beta1"
 	apifixtures "sigs.k8s.io/cluster-api-provider-azure/internal/test/apifixtures"
@@ -52,12 +53,12 @@ type mockClient struct {
 	ReturnError bool
 }
 
-func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	obj.(*clusterv1.MachinePool).Spec.Template.Spec.Version = m.Version
 	return nil
 }
 
-func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m mockClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	if m.ReturnError {
 		return errors.New("MachinePool.cluster.x-k8s.io \"mock-machinepool-mp-0\" not found")
 	}
@@ -71,7 +72,7 @@ func (m mockClient) List(ctx context.Context, list client.ObjectList, opts ...cl
 func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	tests := []struct {
 		name          string
-		amp           *AzureMachinePool
+		amp           *infrav1exp.AzureMachinePool
 		version       string
 		ownerNotFound bool
 		wantErr       bool
@@ -176,9 +177,9 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azuremachinepool with invalid MaxSurge and MaxUnavailable rolling upgrade configuration",
-			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
-				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
-				RollingUpdate: &MachineRollingUpdateDeployment{
+			amp: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{
+				Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &infrav1exp.MachineRollingUpdateDeployment{
 					MaxSurge:       &zero,
 					MaxUnavailable: &zero,
 				},
@@ -187,9 +188,9 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name: "azuremachinepool with valid MaxSurge and MaxUnavailable rolling upgrade configuration",
-			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
-				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
-				RollingUpdate: &MachineRollingUpdateDeployment{
+			amp: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{
+				Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &infrav1exp.MachineRollingUpdateDeployment{
 					MaxSurge:       &zero,
 					MaxUnavailable: &one,
 				},
@@ -248,11 +249,11 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		client := mockClient{Version: tc.version, ReturnError: tc.ownerNotFound}
+		c := mockClient{Version: tc.version, ReturnError: tc.ownerNotFound}
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			ampw := &azureMachinePoolWebhook{
-				Client: client,
+			ampw := &AzureMachinePoolWebhook{
+				Client: c,
 			}
 			_, err := ampw.ValidateCreate(t.Context(), tc.amp)
 			if tc.wantErr {
@@ -273,7 +274,7 @@ type mockDefaultClient struct {
 	ReturnError    bool
 }
 
-func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (m mockDefaultClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	switch obj := obj.(type) {
 	case *infrav1.AzureCluster:
 		obj.Spec.SubscriptionID = m.SubscriptionID
@@ -288,7 +289,7 @@ func (m mockDefaultClient) Get(ctx context.Context, key client.ObjectKey, obj cl
 	return nil
 }
 
-func (m mockDefaultClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m mockDefaultClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	list.(*clusterv1.MachinePoolList).Items = []clusterv1.MachinePool{
 		{
 			Spec: clusterv1.MachinePoolSpec{
@@ -315,8 +316,8 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		oldAMP  *AzureMachinePool
-		amp     *AzureMachinePool
+		oldAMP  *infrav1exp.AzureMachinePool
+		amp     *infrav1exp.AzureMachinePool
 		wantErr bool
 	}{
 		{
@@ -345,10 +346,10 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name:   "azuremachinepool with invalid MaxSurge and MaxUnavailable rolling upgrade configuration",
-			oldAMP: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{}),
-			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
-				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
-				RollingUpdate: &MachineRollingUpdateDeployment{
+			oldAMP: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{}),
+			amp: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{
+				Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &infrav1exp.MachineRollingUpdateDeployment{
 					MaxSurge:       &zero,
 					MaxUnavailable: &zero,
 				},
@@ -357,10 +358,10 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name:   "azuremachinepool with valid MaxSurge and MaxUnavailable rolling upgrade configuration",
-			oldAMP: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{}),
-			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
-				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
-				RollingUpdate: &MachineRollingUpdateDeployment{
+			oldAMP: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{}),
+			amp: createMachinePoolWithStrategy(infrav1exp.AzureMachinePoolDeploymentStrategy{
+				Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &infrav1exp.MachineRollingUpdateDeployment{
 					MaxSurge:       &zero,
 					MaxUnavailable: &one,
 				},
@@ -385,11 +386,41 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 			amp:     createMachinePoolWithNetworkConfig("subnet", []infrav1.NetworkInterface{{SubnetName: "testSubnet2"}}),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension transition from nil to true is allowed",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(nil),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension transition from nil to false is allowed",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(nil),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(false)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension is immutable once explicitly set",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(false)),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension same value passes immutability",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool disableVMBootstrapExtension cannot be unset once explicitly set",
+			oldAMP:  createMachinePoolWithDisableVMBootstrapExtension(ptr.To(true)),
+			amp:     createMachinePoolWithDisableVMBootstrapExtension(nil),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			ampw := &azureMachinePoolWebhook{}
+			ampw := &AzureMachinePoolWebhook{}
 			_, err := ampw.ValidateUpdate(t.Context(), tc.oldAMP, tc.amp)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
@@ -404,7 +435,7 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
-		amp *AzureMachinePool
+		amp *infrav1exp.AzureMachinePool
 	}
 
 	existingPublicKey := validSSHPublicKey
@@ -416,10 +447,10 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	fakeSubscriptionID := guuid.New().String()
 	fakeClusterName := "testcluster"
 	fakeMachinePoolName := "testmachinepool"
-	mockClient := mockDefaultClient{Name: fakeMachinePoolName, ClusterName: fakeClusterName, SubscriptionID: fakeSubscriptionID}
+	c := mockDefaultClient{Name: fakeMachinePoolName, ClusterName: fakeClusterName, SubscriptionID: fakeSubscriptionID}
 
-	roleAssignmentExistTest := test{amp: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+	roleAssignmentExistTest := test{amp: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Identity: "SystemAssigned",
 			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Name:         existingRoleAssignmentName,
@@ -432,8 +463,8 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		},
 	}}
 
-	emptyTest := test{amp: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+	emptyTest := test{amp: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Identity:                   "SystemAssigned",
 			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{},
 		},
@@ -442,8 +473,8 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		},
 	}}
 
-	systemAssignedIdentityRoleExistTest := test{amp: &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+	systemAssignedIdentityRoleExistTest := test{amp: &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Identity: "SystemAssigned",
 			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				DefinitionID: "testroledefinitionid",
@@ -455,8 +486,8 @@ func TestAzureMachinePool_Default(t *testing.T) {
 		},
 	}}
 
-	ampw := &azureMachinePoolWebhook{
-		Client: mockClient,
+	ampw := &AzureMachinePoolWebhook{
+		Client: c,
 	}
 
 	err := ampw.Default(t.Context(), roleAssignmentExistTest.amp)
@@ -479,14 +510,13 @@ func TestAzureMachinePool_Default(t *testing.T) {
 	err = ampw.Default(t.Context(), emptyTest.amp)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name).To(Not(BeEmpty()))
-	_, err = guuid.Parse(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)
-	g.Expect(err).To(Not(HaveOccurred()))
+	g.Expect(guuid.Validate(emptyTest.amp.Spec.SystemAssignedIdentityRole.Name)).To(Succeed())
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole).To(Not(BeNil()))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.Scope).To(Equal(fmt.Sprintf("/subscriptions/%s/", fakeSubscriptionID)))
 	g.Expect(emptyTest.amp.Spec.SystemAssignedIdentityRole.DefinitionID).To(Equal(fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", fakeSubscriptionID, apiinternal.ContributorRoleID)))
 }
 
-func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *infrav1exp.AzureMachinePool {
 	image := infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
@@ -498,9 +528,9 @@ func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string
 		},
 	}
 
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
@@ -513,7 +543,7 @@ func createMachinePoolWithMarketPlaceImage(publisher, offer, sku, version string
 	}
 }
 
-func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *infrav1exp.AzureMachinePool {
 	image := infrav1.Image{
 		SharedGallery: &infrav1.AzureSharedGalleryImage{
 			SubscriptionID: subscriptionID,
@@ -524,9 +554,9 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 		},
 	}
 
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
@@ -539,10 +569,10 @@ func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, galle
 	}
 }
 
-func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.NetworkInterface) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.NetworkInterface) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				SubnetName:        subnetName,
 				NetworkInterfaces: interfaces,
 				OSDisk: infrav1.OSDisk{
@@ -554,14 +584,29 @@ func createMachinePoolWithNetworkConfig(subnetName string, interfaces []infrav1.
 	}
 }
 
-func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
+func createMachinePoolWithDisableVMBootstrapExtension(disable *bool) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
+				SSHPublicKey:                validSSHPublicKey,
+				DisableVMBootstrapExtension: disable,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
+		},
+	}
+}
+
+func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout *int) *infrav1exp.AzureMachinePool {
 	image := infrav1.Image{
 		ID: &imageID,
 	}
 
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
@@ -574,16 +619,33 @@ func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout
 	}
 }
 
-func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+func createMachinePoolWithSSHPublicKey(sshPublicKey string) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
+				SSHPublicKey: sshPublicKey,
+				OSDisk: infrav1.OSDisk{
+					CachingType: "None",
+					OSType:      "Linux",
+				},
+			},
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "testmachinepool",
+		},
+	}
+}
+
+func createMachinePoolWithSystemAssignedIdentity(role string) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Identity: infrav1.VMIdentitySystemAssigned,
 			SystemAssignedIdentityRole: &infrav1.SystemAssignedIdentityRole{
 				Name:         role,
 				Scope:        "scope",
 				DefinitionID: "definitionID",
 			},
-			Template: AzureMachinePoolMachineTemplate{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
@@ -593,7 +655,7 @@ func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool 
 	}
 }
 
-func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsStorageAccountType, userManaged *infrav1.UserManagedBootDiagnostics) *AzureMachinePool {
+func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsStorageAccountType, userManaged *infrav1.UserManagedBootDiagnostics) *infrav1exp.AzureMachinePool {
 	var diagnostics *infrav1.Diagnostics
 
 	if diagnosticsType != "" {
@@ -608,9 +670,9 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 		diagnostics.Boot.UserManaged = userManaged
 	}
 
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Diagnostics: diagnostics,
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
@@ -621,7 +683,7 @@ func createMachinePoolWithDiagnostics(diagnosticsType infrav1.BootDiagnosticsSto
 	}
 }
 
-func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachinePool {
+func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *infrav1exp.AzureMachinePool {
 	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIDs))
 
 	for _, providerID := range providerIDs {
@@ -630,11 +692,11 @@ func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachi
 		})
 	}
 
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Identity:               infrav1.VMIdentityUserAssigned,
 			UserAssignedIdentities: userAssignedIdentities,
-			Template: AzureMachinePoolMachineTemplate{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
@@ -644,11 +706,11 @@ func createMachinePoolWithUserAssignedIdentity(providerIDs []string) *AzureMachi
 	}
 }
 
-func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+func createMachinePoolWithStrategy(strategy infrav1exp.AzureMachinePoolDeploymentStrategy) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			Strategy: strategy,
-			Template: AzureMachinePoolMachineTemplate{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
@@ -658,11 +720,11 @@ func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) 
 	}
 }
 
-func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
+func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
 			OrchestrationMode: infrav1.OrchestrationModeType(mode),
-			Template: AzureMachinePoolMachineTemplate{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				OSDisk: infrav1.OSDisk{
 					CachingType: "None",
 					OSType:      "Linux",
@@ -672,10 +734,10 @@ func createMachinePoolWithOrchestrationMode(mode armcompute.OrchestrationMode) *
 	}
 }
 
-func createMachinePoolWithDiffDiskSettings(settings infrav1.DiffDiskSettings) *AzureMachinePool {
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+func createMachinePoolWithDiffDiskSettings(settings infrav1.DiffDiskSettings) *infrav1exp.AzureMachinePool {
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				OSDisk: infrav1.OSDisk{
 					DiffDiskSettings: &settings,
 				},
@@ -689,7 +751,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		amp                *AzureMachinePool
+		amp                *infrav1exp.AzureMachinePool
 		featureGateEnabled *bool
 		expectError        bool
 	}{
@@ -705,7 +767,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 			if tc.featureGateEnabled != nil {
 				utilfeature.SetFeatureGateDuringTest(t, feature.Gates, capifeature.MachinePool, *tc.featureGateEnabled)
 			}
-			ampw := &azureMachinePoolWebhook{}
+			ampw := &AzureMachinePoolWebhook{}
 			_, err := ampw.ValidateCreate(t.Context(), tc.amp)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -716,7 +778,7 @@ func TestAzureMachinePool_ValidateCreateFailure(t *testing.T) {
 	}
 }
 
-func getKnownValidAzureMachinePool() *AzureMachinePool {
+func getKnownValidAzureMachinePool() *infrav1exp.AzureMachinePool {
 	image := infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			ImagePlan: infrav1.ImagePlan{
@@ -727,9 +789,9 @@ func getKnownValidAzureMachinePool() *AzureMachinePool {
 			Version: "1.0.0",
 		},
 	}
-	return &AzureMachinePool{
-		Spec: AzureMachinePoolSpec{
-			Template: AzureMachinePoolMachineTemplate{
+	return &infrav1exp.AzureMachinePool{
+		Spec: infrav1exp.AzureMachinePoolSpec{
+			Template: infrav1exp.AzureMachinePoolMachineTemplate{
 				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: ptr.To(10),
@@ -744,9 +806,9 @@ func getKnownValidAzureMachinePool() *AzureMachinePool {
 				Scope:        "scope",
 				DefinitionID: "definitionID",
 			},
-			Strategy: AzureMachinePoolDeploymentStrategy{
-				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
-				RollingUpdate: &MachineRollingUpdateDeployment{
+			Strategy: infrav1exp.AzureMachinePoolDeploymentStrategy{
+				Type: infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &infrav1exp.MachineRollingUpdateDeployment{
 					MaxSurge:       &zero,
 					MaxUnavailable: &one,
 				},

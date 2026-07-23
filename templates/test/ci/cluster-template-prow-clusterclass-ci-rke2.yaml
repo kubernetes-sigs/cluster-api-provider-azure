@@ -11,7 +11,7 @@ spec:
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-control-plane
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: RKE2ControlPlaneTemplate
       name: ${CLUSTER_NAME}-control-plane
   infrastructure:
@@ -34,7 +34,7 @@ spec:
             path: /etc/kubernetes/azure.json
             permissions: "0644"
       selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta2
         kind: RKE2ControlPlaneTemplate
         matchResources:
           controlPlane: true
@@ -53,7 +53,7 @@ spec:
               path: /etc/kubernetes/azure.json
               permissions: "0644"
       selector:
-        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
         kind: RKE2ConfigTemplate
         matchResources:
           machineDeploymentClass:
@@ -229,7 +229,7 @@ spec:
     required: false
     schema:
       openAPIV3Schema:
-        default: Standard_B2s
+        default: Standard_D2s_v3
         type: string
   - name: workerMachineType
     required: false
@@ -273,7 +273,7 @@ spec:
       template:
         bootstrap:
           ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             name: ${CLUSTER_NAME}-worker
         infrastructure:
@@ -282,7 +282,7 @@ spec:
             kind: AzureMachineTemplate
             name: ${CLUSTER_NAME}-worker
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -372,7 +372,7 @@ spec:
         diskSizeGB: 30
         osType: Linux
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-worker

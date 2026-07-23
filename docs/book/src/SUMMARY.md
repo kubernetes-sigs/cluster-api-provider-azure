@@ -38,6 +38,7 @@
     - [Flatcar](./self-managed/flatcar.md)
     - [GPU-enabled Clusters](./self-managed/gpu.md)
     - [IPv6](./self-managed/ipv6.md)
+    - [Load Balancer Zone Redundancy](./self-managed/load-balancer-zone-redundancy.md)
     - [Machine Pools (VMSS)](./self-managed/machinepools.md)
     - [Node Outbound Connection](./self-managed/node-outbound-connection.md)
     - [Spot Virtual Machines](./self-managed/spot-vms.md)

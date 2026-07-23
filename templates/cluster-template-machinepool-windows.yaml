@@ -52,7 +52,8 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
-        extraArgs: {}
+        extraArgs:
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
@@ -274,6 +275,7 @@ spec:
       criSocket: npipe:////./pipe/containerd-containerd
       kubeletExtraArgs:
         cloud-provider: external
+        register-with-taints: node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START

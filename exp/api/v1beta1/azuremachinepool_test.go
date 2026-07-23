@@ -24,6 +24,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	expwebhooks "sigs.k8s.io/cluster-api-provider-azure/internal/exp/webhooks"
 )
 
 func TestAzureMachinePool_Validate(t *testing.T) {
@@ -249,7 +250,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			// Don't add t.Parallel() here or the test will fail.
 			g := gomega.NewGomegaWithT(t)
 			amp := c.Factory(g)
-			actualErr := amp.Validate(nil, nil)
+			actualErr := expwebhooks.ValidateAzureMachinePool(nil, amp, nil)
 			c.Expect(g, actualErr)
 		})
 	}

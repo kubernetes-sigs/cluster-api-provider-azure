@@ -97,6 +97,32 @@ spec:
     type: RollingUpdate
 ```
 
+### Skipping Model Reconciliation
+- **Feature status:** Experimental (Alpha)
+- **Feature gate:** SkipMachinePoolModelReconciliation
+- **Default value:** false (disabled)
+
+By default, when the VMSS model changes (for example, when the OS image, VM SKU, or any other field that maps to the
+underlying VMSS model is updated), CAPZ will progressively replace existing VMSS instances so that every instance is
+running the latest model. This is implemented in the `AzureMachinePool` reconciler by requeueing as long as any instance
+is detected to be running a stale model, and by prioritizing stale-model instances when selecting machines to delete.
+
+The `SkipMachinePoolModelReconciliation` feature gate disables that automatic convergence. When the gate is enabled:
+
+- `AzureMachinePool` will not requeue solely because one or more VMSS instances are running a stale model.
+- The rolling update strategy will not preferentially delete stale-model instances; deletion is driven only by the
+  configured `deletePolicy` (e.g., `Oldest`, `Newest`, `Random`) and `maxUnavailable` / `maxSurge` budgets.
+- Existing instances on a previous model will persist until the pool is explicitly scaled, an instance is manually
+  deleted, or the user otherwise triggers replacement.
+
+This gate does **not** prevent CAPZ from updating the underlying VMSS template when the `AzureMachinePool` spec
+changes, and it does **not** block surge behavior in the VMSS reconciler itself. It only controls whether CAPZ will
+proactively replace instances running an older model with new instances (running the latest model).
+
+This is useful for testing scenarios and for operators who want to manage instance refresh on their own schedule
+without disabling other reconciliation behavior. To enable it, set `EXP_SKIP_MACHINE_POOL_MODEL_RECONCILIATION=true`
+in the CAPZ controller-manager environment, or pass `--feature-gates=SkipMachinePoolModelReconciliation=true` when running the manager directly.
+
 ### AzureMachinePoolMachines
 `AzureMachinePoolMachine` represents a virtual machine in the scale set. `AzureMachinePoolMachines` are created by the
 `AzureMachinePool` controller and are used to track the life cycle of a virtual machine in the scale set. When a 

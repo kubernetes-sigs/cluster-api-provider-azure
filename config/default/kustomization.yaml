@@ -11,6 +11,19 @@ replacements:
     fieldPath: spec.template.spec.containers.[name=manager].image
     kind: Deployment
     name: capz-controller-manager
+  targets:
+  # Keep the ASO stored-version migration init container on the same image as
+  # the CAPZ manager, since it runs the manager binary's migrate-aso-crds
+  # subcommand.
+  - fieldPaths:
+    - spec.template.spec.initContainers.[name=migrate-aso-crd-stored-versions].image
+    select:
+      kind: Deployment
+      name: azureserviceoperator-controller-manager
+- source:
+    fieldPath: spec.template.spec.containers.[name=manager].image
+    kind: Deployment
+    name: capz-controller-manager
     options:
       delimiter: ':'
       index: 1

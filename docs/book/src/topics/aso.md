@@ -10,6 +10,18 @@ More context around the decision for CAPZ to pivot towards using ASO can be foun
 
 [Visit this page](../managed/asomanagedcluster.md) to learn more about the AzureASOManaged cluster API which provisions an AKS cluster.
 
+## Upgrading
+
+Each CAPZ release bundles a specific version of ASO, and CAPZ advances that bundled ASO version by at most one
+minor version per CAPZ minor release. Because ASO itself
+[must be upgraded one minor version at a time](https://azure.github.io/azure-service-operator/guide/upgrading/),
+**you must also upgrade CAPZ one minor version at a time** and not skip any minor versions.
+
+For example, to upgrade from CAPZ v1.18.x to v1.20.x, first upgrade to v1.19.x and let the management cluster
+stabilize before upgrading to v1.20.x. Skipping a CAPZ minor version can cause the bundled ASO to jump more
+than one minor version, which is unsupported and can result in failed CRD migrations or an unstable management
+cluster.
+
 ## Primary changes
 
 For most users, the introduction of ASO is expected to be fully transparent and backwards compatible. Changes
@@ -37,6 +49,27 @@ the resource will not be deleted in Azure.
 
 Additionally, BYO resources may include ASO resources managed by the user. CAPZ will not modify or delete such
 resources. Note that `clusterctl move` will not move user-managed ASO resources.
+
+### Migrating a cluster with `clusterctl move`
+
+When you `clusterctl move` a cluster between management clusters, the ASO resources that CAPZ creates and owns
+move automatically along with the Cluster that owns them: `clusterctl` discovers every CRD present on the
+source cluster and moves the objects reachable through the Cluster's owner-reference hierarchy. CAPZ does not
+need to ship or label the ASO CRDs for this to work.
+
+A few things to keep in mind:
+
+- **The ASO CRDs must exist on the target cluster** so `clusterctl` can recreate the moved objects there. CAPZ
+  configures ASO to install the CRDs it needs (via the operator's `--crd-pattern`, plus any
+  `ADDITIONAL_ASO_CRDS`), so make sure the `azureserviceoperator-controller-manager` pod in `capz-system` is
+  installed and healthy on the target *before* running `move`.
+- **`clusterctl move` deletes the moved objects from the source cluster** after recreating them on the target,
+  so only one ASO instance reconciles a given Azure resource at a time. CAPZ pauses an ASO resource (sets its
+  `serviceoperator.azure.com/reconcile-policy` annotation to `skip`) before the object is moved and restores
+  the previous policy on the target, so the two management clusters never fight over the same Azure resource
+  during the migration.
+- **User-managed (BYO) ASO resources are not moved** (see above); you are responsible for migrating those
+  yourself.
 
 ## Configuration with Environment Variables
 
@@ -73,7 +106,7 @@ For example, to install the all CRDs of `cache.azure.com` and `MongodbDatabase.d
 You will see that the `--crd-pattern` in Azure Service Operator's Deployment (in the `capz-system` namespace) looks like below:
    ```
    .
-   - --crd-names=cache.azure.com/*;documentdb.azure.com/MongodbDatabase
+   - --crd-pattern=cache.azure.com/*;documentdb.azure.com/MongodbDatabase
    .
    ```
 

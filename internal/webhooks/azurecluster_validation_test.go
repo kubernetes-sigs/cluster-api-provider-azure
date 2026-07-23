@@ -1286,6 +1286,187 @@ func TestValidateAPIServerLB(t *testing.T) {
 				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
 			},
 		},
+		{
+			name:        "public LB with APIServerILB enabled changing private IP after creation is forbidden",
+			featureGate: feature.APIServerILB,
+			old: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
+						},
+					},
+					{
+						Name: "ip-2",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-public-lb",
+			},
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
+						},
+					},
+					{
+						Name: "ip-2",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.11",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-public-lb",
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[1].privateIP",
+				Detail: "API Server load balancer private IP should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "internal LB: changing private IP after creation is forbidden",
+			old: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.1.0.4",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			cpCIDRS: []string{"10.1.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "API Server load balancer private IP should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name:        "public LB with APIServerILB enabled and unchanged private IP",
+			featureGate: feature.APIServerILB,
+			old: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
+						},
+					},
+					{
+						Name: "ip-2",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-public-lb",
+			},
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &infrav1.PublicIPSpec{
+							Name:    "my-valid-ip",
+							DNSName: "my-valid-ip",
+						},
+					},
+					{
+						Name: "ip-2",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.10",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-public-lb",
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: false,
+		},
+		{
+			name:        "internal LB with APIServerILB enabled and unchanged private IP",
+			featureGate: feature.APIServerILB,
+			old: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.1.0.3",
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			cpCIDRS: []string{"10.1.0.0/24"},
+			wantErr: false,
+		},
 	}
 
 	for _, test := range testcases {

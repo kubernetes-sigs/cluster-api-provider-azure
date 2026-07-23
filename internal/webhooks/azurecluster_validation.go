@@ -395,6 +395,37 @@ func validateSecurityRule(rule infrav1.SecurityRule, fldPath *field.Path) (allEr
 	return allErrs
 }
 
+func validateAPIServerLBPrivateIPUnchanged(lb, old *infrav1.LoadBalancerSpec, fldPath *field.Path) *field.Error {
+	if lb == nil || old == nil {
+		return nil
+	}
+	var oldPrivateIP string
+	for i := range old.FrontendIPs {
+		if old.FrontendIPs[i].PrivateIPAddress != "" {
+			oldPrivateIP = old.FrontendIPs[i].PrivateIPAddress
+			break
+		}
+	}
+	var newPrivateIP string
+	var newIdx int
+	for i := range lb.FrontendIPs {
+		if lb.FrontendIPs[i].PrivateIPAddress != "" {
+			newPrivateIP = lb.FrontendIPs[i].PrivateIPAddress
+			newIdx = i
+			break
+		}
+	}
+	if oldPrivateIP == "" || newPrivateIP == "" {
+		return nil
+	}
+	if oldPrivateIP != newPrivateIP {
+		return field.Forbidden(
+			fldPath.Child("frontendIPConfigs").Index(newIdx).Child("privateIP"),
+			"API Server load balancer private IP should not be modified after AzureCluster creation.")
+	}
+	return nil
+}
+
 func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, subnets infrav1.Subnets, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
@@ -437,12 +468,13 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 			if err := validateInternalLBIPAddress(privateIP, cidrs, fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
 				allErrs = append(allErrs, err)
 			}
-		} else {
-			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
-			if privateIPCount > 0 {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					"Public Load Balancers cannot have a Private IP"))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
+		} else if privateIPCount > 0 {
+			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+				"Public Load Balancers cannot have a Private IP"))
 		}
 	}
 
@@ -461,8 +493,8 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 				allErrs = append(allErrs, err)
 			}
 
-			if old != nil && len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
 		}
 	}
@@ -995,7 +1027,11 @@ func validateAzureClusterSubnetUpdate(c *infrav1.AzureCluster, old *infrav1.Azur
 						c.Spec.NetworkSpec.Subnets[i].CIDRBlocks, "field is immutable"),
 				)
 			}
-			if subnet.RouteTable.Name != oldSubnet.RouteTable.Name {
+			// RouteTable.Name is immutable once set, but allow defaulting it from
+			// empty to a generated name so existing clusters (whose control plane
+			// subnet had no route table) can adopt the shared node route table on
+			// upgrade. This mirrors the NatGateway.Name handling below.
+			if (subnet.RouteTable.Name != oldSubnet.RouteTable.Name) && (oldSubnet.RouteTable.Name != "") {
 				allErrs = append(allErrs,
 					field.Invalid(field.NewPath("spec", "networkSpec", "subnets").Index(oldSubnetIndex[subnet.Name]).Child("RouteTable").Child("Name"),
 						c.Spec.NetworkSpec.Subnets[i].RouteTable.Name, "field is immutable"),

@@ -905,6 +905,149 @@ func TestPublicIPSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Azure cluster with public LB and AvailabilityZones uses LB zones instead of failure domains",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Status: infrav1.AzureClusterStatus{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
+						"failure-domain-id-1": {},
+						"failure-domain-id-2": {},
+						"failure-domain-id-3": {},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location: "centralIndia",
+						AdditionalTags: infrav1.Tags{
+							"Name": "my-publicip-ipv6",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									PublicIP: &infrav1.PublicIPSpec{
+										Name:    "my-apiserver-ip",
+										DNSName: "my-cluster.centralIndia.cloudapp.azure.com",
+									},
+								},
+							},
+							AvailabilityZones: []string{"1", "2", "3"},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Public,
+							},
+						},
+					},
+				},
+			},
+			expectedPublicIPSpec: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "my-apiserver-ip",
+					ResourceGroup:  "my-rg",
+					DNSName:        "my-cluster.centralIndia.cloudapp.azure.com",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: []*string{ptr.To("1"), ptr.To("2"), ptr.To("3")},
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name: "Azure cluster with internal LB and AvailabilityZones and node outbound LB with zones",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Status: infrav1.AzureClusterStatus{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
+						"failure-domain-id-1": {},
+						"failure-domain-id-2": {},
+						"failure-domain-id-3": {},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location: "centralIndia",
+						AdditionalTags: infrav1.Tags{
+							"Name": "my-publicip-ipv6",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							AvailabilityZones: []string{"1", "2", "3"},
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
+							},
+						},
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							FrontendIPsCount: ptr.To[int32](1),
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "cp-outbound-frontend",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-cp-outbound",
+									},
+								},
+							},
+							AvailabilityZones: []string{"1", "2"},
+						},
+						NodeOutboundLB: &infrav1.LoadBalancerSpec{
+							FrontendIPsCount: ptr.To[int32](1),
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "node-outbound-frontend",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-node-outbound",
+									},
+								},
+							},
+							AvailabilityZones: []string{"1", "3"},
+						},
+					},
+				},
+			},
+			expectedPublicIPSpec: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "pip-cp-outbound",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: []*string{ptr.To("1"), ptr.To("2")},
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+				&publicips.PublicIPSpec{
+					Name:           "pip-node-outbound",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: []*string{ptr.To("1"), ptr.To("3")},
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -993,6 +1136,52 @@ func TestRouteTableSpecs(t *testing.T) {
 				},
 				&routetables.RouteTableSpec{
 					Name:           "fake-route-table-2",
+					ResourceGroup:  "my-rg",
+					Location:       "centralIndia",
+					ClusterName:    "my-cluster",
+					AdditionalTags: make(infrav1.Tags),
+				},
+			},
+		},
+		{
+			name: "de-duplicates route tables shared by multiple subnets",
+			clusterScope: ClusterScope{
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-cluster",
+					},
+				},
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+							Location: "centralIndia",
+						},
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{
+								ResourceGroup: "my-rg",
+							},
+							Subnets: infrav1.Subnets{
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetControlPlane},
+									RouteTable: infrav1.RouteTable{
+										Name: "shared-route-table",
+									},
+								},
+								{
+									SubnetClassSpec: infrav1.SubnetClassSpec{Role: infrav1.SubnetNode},
+									RouteTable: infrav1.RouteTable{
+										Name: "shared-route-table",
+									},
+								},
+							},
+						},
+					},
+				},
+				cache: &ClusterCache{},
+			},
+			want: []azure.ResourceSpecGetter{
+				&routetables.RouteTableSpec{
+					Name:           "shared-route-table",
 					ResourceGroup:  "my-rg",
 					Location:       "centralIndia",
 					ClusterName:    "my-cluster",

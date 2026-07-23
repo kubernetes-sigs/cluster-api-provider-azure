@@ -22,7 +22,7 @@ package v1beta1
 
 import (
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	apiv1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	corev1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -300,6 +300,11 @@ func (in *AzureMachinePoolMachineTemplate) DeepCopyInto(out *AzureMachinePoolMac
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.DisableVMBootstrapExtension != nil {
+		in, out := &in.DisableVMBootstrapExtension, &out.DisableVMBootstrapExtension
+		*out = new(bool)
+		**out = **in
 	}
 	if in.NetworkInterfaces != nil {
 		in, out := &in.NetworkInterfaces, &out.NetworkInterfaces

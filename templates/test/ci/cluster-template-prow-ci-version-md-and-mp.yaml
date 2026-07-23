@@ -59,6 +59,7 @@ spec:
         extraArgs:
           feature-gates: ${K8S_FEATURE_GATES:-"AllAlpha=true,AllBeta=true"}
           runtime-config: api/all=true
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
@@ -970,6 +971,27 @@ spec:
       echo "$${LINE_SEPARATOR}"
       CI_VERSION=${CI_VERSION}
 
+      download() {
+        local url="$${1}"
+        local output="$${2}"
+        local attempts=10
+
+        for ((attempt = 1; attempt <= attempts; attempt++)); do
+          if wget --inet4-only "$${url}" -O "$${output}"; then
+            return 0
+          fi
+
+          rm -f "$${output}"
+          if ((attempt == attempts)); then
+            echo "* failed to download $${url} after $${attempts} attempts" >&2
+            return 1
+          fi
+
+          echo "* download failed; retrying in 5 seconds ($${attempt}/$${attempts})"
+          sleep 5
+        done
+      }
+
       # Note: We assume if kubectl has the right version, everything else has as well
       if [[ $(kubectl version --client=true -o json | jq '.clientVersion.gitVersion' -r) = "$${CI_VERSION}" ]]; then
         echo "Detected Kubernetes $${CI_VERSION} via kubectl version, nothing to do"
@@ -992,7 +1014,7 @@ spec:
           # Browser: https://console.cloud.google.com/storage/browser/k8s-release-dev?project=k8s-release-dev
           # e.g.: https://storage.googleapis.com/k8s-release-dev/ci/v1.21.0-beta.1.378+cf3374e43491c5/bin/linux/amd64/kubectl
           echo "* downloading binary: $${CI_URL}/$${CI_PACKAGE}"
-          wget --inet4-only "$${CI_URL}/$${CI_PACKAGE}" -O "$${CI_DIR}/$${CI_PACKAGE}"
+          download "$${CI_URL}/$${CI_PACKAGE}" "$${CI_DIR}/$${CI_PACKAGE}"
           chmod +x "$${CI_DIR}/$${CI_PACKAGE}"
           mv "$${CI_DIR}/$${CI_PACKAGE}" "/usr/bin/$${CI_PACKAGE}"
         done
@@ -1005,7 +1027,7 @@ spec:
         fi
         for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
           echo "* downloading package: $${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
-          wget --inet4-only "$${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}" -O "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
+          download "$${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}" "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
           $${SUDO} ctr -n k8s.io images import "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}" || echo "* ignoring expected 'ctr images import' result"
           $${SUDO} ctr -n k8s.io images tag "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}-amd64:$${CI_VERSION//+/_}" "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}:$${CI_VERSION//+/_}"
           $${SUDO} ctr -n k8s.io images tag "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}-amd64:$${CI_VERSION//+/_}" "gcr.io/k8s-staging-ci-images/$${CI_CONTAINER}:$${CI_VERSION//+/_}"

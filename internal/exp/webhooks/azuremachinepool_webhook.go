@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package webhooks
 
 import (
 	"context"
@@ -33,62 +33,64 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	apiinternalexp "sigs.k8s.io/cluster-api-provider-azure/internal/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/webhooks"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
-// SetupAzureMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
-func SetupAzureMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
-	ampw := &azureMachinePoolWebhook{Client: mgr.GetClient()}
-	return ctrl.NewWebhookManagedBy(mgr, &AzureMachinePool{}).
-		WithDefaulter(ampw).
-		WithValidator(ampw).
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
+func (mw *AzureMachinePoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	mw.Client = mgr.GetClient()
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1exp.AzureMachinePool{}).
+		WithDefaulter(mw).
+		WithValidator(mw).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1beta1,name=default.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-// azureMachinePoolWebhook implements a validating and defaulting webhook for AzureMachinePool.
-type azureMachinePoolWebhook struct {
+// AzureMachinePoolWebhook implements a validating and defaulting webhook for AzureMachinePool.
+type AzureMachinePoolWebhook struct {
 	Client client.Client
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) Default(_ context.Context, amp *AzureMachinePool) error {
-	return amp.SetDefaults(ampw.Client)
+func (mw *AzureMachinePoolWebhook) Default(_ context.Context, amp *infrav1exp.AzureMachinePool) error {
+	return apiinternalexp.SetDefaults(amp, mw.Client)
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1beta1,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
-
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateCreate(_ context.Context, amp *AzureMachinePool) (admission.Warnings, error) {
-	return nil, amp.Validate(nil, ampw.Client)
+func (mw *AzureMachinePoolWebhook) ValidateCreate(_ context.Context, amp *infrav1exp.AzureMachinePool) (admission.Warnings, error) {
+	return nil, ValidateAzureMachinePool(nil, amp, mw.Client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, amp *AzureMachinePool) (admission.Warnings, error) {
-	return nil, amp.Validate(oldObj, ampw.Client)
+func (mw *AzureMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, amp *infrav1exp.AzureMachinePool) (admission.Warnings, error) {
+	return nil, ValidateAzureMachinePool(oldObj, amp, mw.Client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *azureMachinePoolWebhook) ValidateDelete(_ context.Context, _ *AzureMachinePool) (admission.Warnings, error) {
+func (mw *AzureMachinePoolWebhook) ValidateDelete(_ context.Context, _ *infrav1exp.AzureMachinePool) (admission.Warnings, error) {
 	return nil, nil
 }
 
-// Validate the Azure Machine Pool and return an aggregate error.
-func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) error {
+// ValidateAzureMachinePool runs the Azure Machine Pool validators and returns an aggregate error.
+func ValidateAzureMachinePool(old runtime.Object, amp *infrav1exp.AzureMachinePool, c client.Client) error {
 	validators := []func() error{
-		amp.ValidateImage,
-		amp.ValidateTerminateNotificationTimeout,
-		amp.ValidateSSHKey,
-		amp.ValidateUserAssignedIdentity,
-		amp.ValidateDiagnostics,
-		amp.ValidateOrchestrationMode(client),
-		amp.ValidateStrategy(),
-		amp.ValidateSystemAssignedIdentity(old),
-		amp.ValidateSystemAssignedIdentityRole,
-		amp.ValidateNetwork,
-		amp.ValidateOSDisk,
+		func() error { return validateImage(amp) },
+		func() error { return validateTerminateNotificationTimeout(amp) },
+		func() error { return validateSSHKey(amp) },
+		func() error { return validateUserAssignedIdentity(amp) },
+		func() error { return validateDiagnostics(amp) },
+		validateOrchestrationMode(amp, c),
+		validateStrategy(amp),
+		validateSystemAssignedIdentity(amp, old),
+		func() error { return validateSystemAssignedIdentityRole(amp) },
+		func() error { return validateNetwork(amp) },
+		func() error { return validateOSDisk(amp) },
+		validateDisableVMBootstrapExtension(amp, old),
 	}
 
 	var errs []error
@@ -101,36 +103,31 @@ func (amp *AzureMachinePool) Validate(old runtime.Object, client client.Client) 
 	return kerrors.NewAggregate(errs)
 }
 
-// ValidateNetwork of an AzureMachinePool.
-func (amp *AzureMachinePool) ValidateNetwork() error {
-	if (amp.Spec.Template.NetworkInterfaces != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 && amp.Spec.Template.SubnetName != "" {
+func validateNetwork(amp *infrav1exp.AzureMachinePool) error {
+	if (amp.Spec.Template.NetworkInterfaces != nil) && len(amp.Spec.Template.NetworkInterfaces) > 0 && amp.Spec.Template.SubnetName != "" { //nolint:staticcheck
 		return errors.New("cannot set both NetworkInterfaces and machine SubnetName")
 	}
 	return nil
 }
 
-// ValidateOSDisk of an AzureMachinePool.
-func (amp *AzureMachinePool) ValidateOSDisk() error {
+func validateOSDisk(amp *infrav1exp.AzureMachinePool) error {
 	if errs := webhooks.ValidateOSDisk(amp.Spec.Template.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
 		return errs.ToAggregate()
 	}
 	return nil
 }
 
-// ValidateImage of an AzureMachinePool.
-func (amp *AzureMachinePool) ValidateImage() error {
+func validateImage(amp *infrav1exp.AzureMachinePool) error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
 		if errs := webhooks.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
 			return errs.ToAggregate()
 		}
 	}
-
 	return nil
 }
 
-// ValidateTerminateNotificationTimeout termination notification timeout to be between 5 and 15.
-func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
+func validateTerminateNotificationTimeout(amp *infrav1exp.AzureMachinePool) error {
 	if amp.Spec.Template.TerminateNotificationTimeout == nil {
 		return nil
 	}
@@ -145,21 +142,18 @@ func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 	return nil
 }
 
-// ValidateSSHKey validates an SSHKey.
-func (amp *AzureMachinePool) ValidateSSHKey() error {
+func validateSSHKey(amp *infrav1exp.AzureMachinePool) error {
 	if amp.Spec.Template.SSHPublicKey != "" {
 		sshKey := amp.Spec.Template.SSHPublicKey
 		if errs := webhooks.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
-			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			return agg
+			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}
 	}
 
 	return nil
 }
 
-// ValidateUserAssignedIdentity validates the user-assigned identities list.
-func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
+func validateUserAssignedIdentity(amp *infrav1exp.AzureMachinePool) error {
 	fldPath := field.NewPath("userAssignedIdentities")
 	if errs := webhooks.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
 		return kerrors.NewAggregate(errs.ToAggregate().Errors())
@@ -168,10 +162,9 @@ func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	return nil
 }
 
-// ValidateStrategy validates the strategy.
-func (amp *AzureMachinePool) ValidateStrategy() func() error {
+func validateStrategy(amp *infrav1exp.AzureMachinePool) func() error {
 	return func() error {
-		if amp.Spec.Strategy.Type == RollingUpdateAzureMachinePoolDeploymentStrategyType && amp.Spec.Strategy.RollingUpdate != nil {
+		if amp.Spec.Strategy.Type == infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType && amp.Spec.Strategy.RollingUpdate != nil {
 			rollingUpdateStrategy := amp.Spec.Strategy.RollingUpdate
 			maxSurge := rollingUpdateStrategy.MaxSurge
 			maxUnavailable := rollingUpdateStrategy.MaxUnavailable
@@ -185,12 +178,11 @@ func (amp *AzureMachinePool) ValidateStrategy() func() error {
 	}
 }
 
-// ValidateSystemAssignedIdentity validates system-assigned identity role.
-func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) func() error {
+func validateSystemAssignedIdentity(amp *infrav1exp.AzureMachinePool, old runtime.Object) func() error {
 	return func() error {
 		var oldRole string
 		if old != nil {
-			oldMachinePool, ok := old.(*AzureMachinePool)
+			oldMachinePool, ok := old.(*infrav1exp.AzureMachinePool)
 			if !ok {
 				return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
 					"AzureMachinePool", reflect.TypeOf(old))
@@ -214,10 +206,9 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) 
 	}
 }
 
-// ValidateSystemAssignedIdentityRole validates the scope and roleDefinitionID for the system-assigned identity.
-func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
+func validateSystemAssignedIdentityRole(amp *infrav1exp.AzureMachinePool) error {
 	var allErrs field.ErrorList
-	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" {
+	if amp.Spec.RoleAssignmentName != "" && amp.Spec.SystemAssignedIdentityRole != nil && amp.Spec.SystemAssignedIdentityRole.Name != "" { //nolint:staticcheck
 		allErrs = append(allErrs, field.Invalid(field.NewPath("systemAssignedIdentityRole"), amp.Spec.SystemAssignedIdentityRole.Name, "cannot set both roleAssignmentName and systemAssignedIdentityRole.name"))
 	}
 	if amp.Spec.Identity == infrav1.VMIdentitySystemAssigned {
@@ -239,8 +230,7 @@ func (amp *AzureMachinePool) ValidateSystemAssignedIdentityRole() error {
 	return nil
 }
 
-// ValidateDiagnostics validates the Diagnostic spec.
-func (amp *AzureMachinePool) ValidateDiagnostics() error {
+func validateDiagnostics(amp *infrav1exp.AzureMachinePool) error {
 	var allErrs field.ErrorList
 	fieldPath := field.NewPath("diagnostics")
 
@@ -280,8 +270,7 @@ func (amp *AzureMachinePool) ValidateDiagnostics() error {
 	return nil
 }
 
-// ValidateOrchestrationMode validates requirements for the VMSS orchestration mode.
-func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() error {
+func validateOrchestrationMode(amp *infrav1exp.AzureMachinePool, c client.Client) func() error {
 	return func() error {
 		// Only Flexible orchestration mode requires validation.
 		if amp.Spec.OrchestrationMode == infrav1.OrchestrationModeType(armcompute.OrchestrationModeFlexible) {
@@ -300,6 +289,43 @@ func (amp *AzureMachinePool) ValidateOrchestrationMode(c client.Client) func() e
 			if k8sVersion.LT(semver.MustParse("1.26.0")) {
 				return fmt.Errorf("specified Kubernetes version %s must be >= 1.26.0 for Flexible orchestration mode", k8sVersion)
 			}
+		}
+
+		return nil
+	}
+}
+
+// validateDisableVMBootstrapExtension enforces immutability of
+// spec.template.disableVMBootstrapExtension once it has been explicitly set,
+// while still permitting the nil -> set transition so users can opt back in to
+// the bootstrap extension on AzureMachinePools created before the runtime
+// default flipped from false to true.
+func validateDisableVMBootstrapExtension(amp *infrav1exp.AzureMachinePool, old runtime.Object) func() error {
+	return func() error {
+		if old == nil {
+			return nil
+		}
+
+		oldAMP, ok := old.(*infrav1exp.AzureMachinePool)
+		if !ok {
+			return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
+				"AzureMachinePool", reflect.TypeOf(old))
+		}
+
+		oldVal := oldAMP.Spec.Template.DisableVMBootstrapExtension
+		newVal := amp.Spec.Template.DisableVMBootstrapExtension
+
+		// nil -> anything is allowed (upgrade opt-in/opt-out).
+		if oldVal == nil {
+			return nil
+		}
+
+		// Once explicitly set, the field is immutable.
+		if newVal == nil {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable, unable to unset once explicitly set")
+		}
+		if *oldVal != *newVal {
+			return errors.New("spec.template.disableVMBootstrapExtension is immutable")
 		}
 
 		return nil

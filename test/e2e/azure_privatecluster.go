@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 )
 
@@ -201,6 +202,55 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		err = wait.ExponentialBackoff(backoff, retryFn)
 
 		Expect(err).NotTo(HaveOccurred())
+	}
+
+	// Verify zone-redundant load balancer configuration
+	{
+		By("verifying the internal API server load balancer has zone-redundant frontend IPs")
+		expectedZones := []string{"1", "2", "3"}
+
+		azureCluster := &infrav1.AzureCluster{}
+		err := publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+			Namespace: input.Namespace.Name,
+			Name:      clusterName,
+		}, azureCluster)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(azureCluster.Spec.NetworkSpec.APIServerLB).NotTo(BeNil())
+		Expect(azureCluster.Spec.NetworkSpec.APIServerLB.AvailabilityZones).To(Equal(expectedZones),
+			"APIServerLB should have availability zones configured in AzureCluster spec")
+
+		resourceGroupName := azureCluster.Spec.ResourceGroup
+		Expect(resourceGroupName).NotTo(BeEmpty())
+
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		lbClient, err := armnetwork.NewLoadBalancersClient(getSubscriptionID(Default), cred, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		lbName := azureCluster.Spec.NetworkSpec.APIServerLB.Name
+		Eventually(func(g Gomega) {
+			lb, err := lbClient.Get(ctx, resourceGroupName, lbName, nil)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(lb.Properties).NotTo(BeNil())
+			g.Expect(lb.Properties.FrontendIPConfigurations).NotTo(BeEmpty())
+
+			for _, frontendIP := range lb.Properties.FrontendIPConfigurations {
+				g.Expect(frontendIP.Zones).NotTo(BeNil(), "Internal LB frontend IP should have zones configured")
+				g.Expect(frontendIP.Zones).To(HaveLen(3), "Internal LB frontend IP should have 3 zones")
+
+				zonesMap := make(map[string]bool)
+				for _, zone := range frontendIP.Zones {
+					if zone != nil {
+						zonesMap[*zone] = true
+					}
+				}
+				for _, expectedZone := range expectedZones {
+					g.Expect(zonesMap[expectedZone]).To(BeTrue(), "Zone %s should be configured on internal LB frontend IP", expectedZone)
+				}
+			}
+		}, retryableOperationTimeout, retryableOperationSleepBetweenRetries).Should(Succeed())
 	}
 }
 
