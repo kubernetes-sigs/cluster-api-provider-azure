@@ -216,6 +216,124 @@ func TestMachinePoolRollingUpdateStrategy_SelectMachinesToDelete(t *testing.T) {
 			}),
 		},
 		{
+			name:            "if over-provisioned by an unready machine, select the unready machine",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			}),
+		},
+		{
+			name:            "if an unready machine is needed to reach the desired count, do not select it",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 3,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: BeEmpty(),
+		},
+		{
+			name:            "if active machines exceed desired replicas, scale down even when ready machines are below desired replicas",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 3,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+				"qux": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: HaveLen(1),
+		},
+		{
+			name: "if an unready latest-model surge replacement exists, wait for it to become ready before deleting an old-model machine",
+			strategy: makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{
+				MaxSurge: &one,
+			}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: BeEmpty(),
+		},
+		{
+			name: "if model reconciliation is skipped, delete an excess unready latest-model machine",
+			strategy: makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{
+				MaxSurge: &one,
+			}),
+			desiredReplicas: 2,
+			skipModel:       true,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			}),
+		},
+		{
+			name:            "if over-provisioned by an unready old-model machine, select the unready old-model machine",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: false, ProvisioningState: succeeded}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: false, LatestModel: false, ProvisioningState: succeeded}),
+			}),
+		},
+		{
+			name:            "if a new machine has empty status during a rollout, do not select it",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"baz": makeAMPMWithEmptyStatus(),
+			},
+			want: BeEmpty(),
+		},
+		{
+			name:            "if protected unready replacements exist with separate ready excess, select a ready old-model machine",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{}),
+			desiredReplicas: 2,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"qux": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: true, LatestModel: false, ProvisioningState: succeeded}),
+			}),
+		},
+		{
+			name:            "if model reconciliation is skipped, order mixed-model unready machines by delete policy",
+			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.OldestDeletePolicyType}),
+			desiredReplicas: 3,
+			skipModel:       true,
+			input: map[string]infrav1exp.AzureMachinePoolMachine{
+				"foo": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"bin": makeAMPM(ampmOptions{Ready: true, LatestModel: true, ProvisioningState: succeeded}),
+				"baz": makeAMPM(ampmOptions{Ready: false, LatestModel: false, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(2 * time.Hour))}),
+				"qux": makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			},
+			want: Equal([]infrav1exp.AzureMachinePoolMachine{
+				makeAMPM(ampmOptions{Ready: false, LatestModel: true, ProvisioningState: succeeded, CreationTime: metav1.NewTime(baseTime.Add(1 * time.Hour))}),
+			}),
+		},
+		{
 			name:            "if over-provisioned, select a machine with an out-of-date model when using Random Delete Policy",
 			strategy:        makeRollingUpdateStrategy(infrav1exp.MachineRollingUpdateDeployment{DeletePolicy: infrav1exp.RandomDeletePolicyType}),
 			desiredReplicas: 2,
@@ -475,4 +593,8 @@ func makeAMPM(opts ampmOptions) infrav1exp.AzureMachinePoolMachine {
 	}
 
 	return ampm
+}
+
+func makeAMPMWithEmptyStatus() infrav1exp.AzureMachinePoolMachine {
+	return infrav1exp.AzureMachinePoolMachine{}
 }
