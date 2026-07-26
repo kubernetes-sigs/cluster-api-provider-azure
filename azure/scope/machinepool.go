@@ -627,6 +627,7 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		m.SetNotReady()
 	case v == infrav1.Failed:
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetProvisionFailedReason, clusterv1beta1.ConditionSeverityInfo, "")
+		m.SetNotReady()
 	default:
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1beta1.ConditionSeverityInfo, "")
 	}
