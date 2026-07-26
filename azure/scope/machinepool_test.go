@@ -2037,9 +2037,13 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			ProvisioningState: infrav1.Deleting,
 		},
 		{
-			Name:  "if provisioning state is set to Failed, MachinePool ready state is not adjusted, and scale set running condition is set to Failed",
-			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {},
+			Name: "if provisioning state is set to Failed, MachinePool is NotReady and scale set running condition is set to Failed",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				// A previously-ready MachinePool (e.g. a stalled scale-up) must be marked NotReady when it fails.
+				amp.Status.Ready = true
+			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeFalse())
 				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(infrav1.ScaleSetProvisionFailedReason))
