@@ -205,15 +205,15 @@ func isExistingUpToDate(existing armnetwork.PrivateLinkService, wanted armnetwor
 
 	// Check allowed subscriptions
 	if !compareStringPointerSlicesUnordered(
-		wanted.Properties.Visibility.Subscriptions,
-		existing.Properties.Visibility.Subscriptions) {
+		visibilitySubscriptionsOrNil(wanted.Properties),
+		visibilitySubscriptionsOrNil(existing.Properties)) {
 		return false
 	}
 
 	// Check auto-approved subscriptions
 	if !compareStringPointerSlicesUnordered(
-		wanted.Properties.AutoApproval.Subscriptions,
-		existing.Properties.AutoApproval.Subscriptions) {
+		autoApprovalSubscriptionsOrNil(wanted.Properties),
+		autoApprovalSubscriptionsOrNil(existing.Properties)) {
 		return false
 	}
 
@@ -240,4 +240,20 @@ func compareStringPointerSlicesUnordered(a, b []*string) bool {
 		}
 	}
 	return true
+}
+
+func visibilitySubscriptionsOrNil(p *armnetwork.PrivateLinkServiceProperties) []*string {
+	if p.Visibility == nil {
+		return nil
+	}
+
+	return p.Visibility.Subscriptions
+}
+
+func autoApprovalSubscriptionsOrNil(p *armnetwork.PrivateLinkServiceProperties) []*string {
+	if p.AutoApproval == nil {
+		return nil
+	}
+
+	return p.AutoApproval.Subscriptions
 }

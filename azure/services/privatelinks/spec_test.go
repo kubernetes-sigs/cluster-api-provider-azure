@@ -211,6 +211,34 @@ var (
 		},
 	}
 
+	// fakePrivateLinkSpec6 is a modified fakePrivateLinkSpec1 with following changes:
+	// - removed allowed subscription
+	// - removed auto-approved subscription
+	// It is used to exercise nil checks.
+	fakePrivateLinkSpec6 = PrivateLinkSpec{
+		Name:              fakePrivateLinkName,
+		ResourceGroup:     fakeClusterName,
+		SubscriptionID:    fakeSubscriptionID1,
+		Location:          fakeRegion,
+		VNetResourceGroup: fakeVNetResourceGroup,
+		VNet:              fakeVNetName,
+		NATIPConfiguration: []NATIPConfiguration{
+			{
+				AllocationMethod: string(armnetwork.IPAllocationMethodDynamic),
+				Subnet:           fakeSubnetName,
+			},
+		},
+		LoadBalancerName: fakeLbName,
+		LBFrontendIPConfigNames: []string{
+			fakeLbIPConfigName1,
+		},
+		EnableProxyProtocol: ptr.To(false),
+		ClusterName:         fakeClusterName,
+		AdditionalTags: map[string]string{
+			"hello": "capz",
+		},
+	}
+
 	// fakePrivateLink1 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec1.
 	fakePrivateLink1 = armnetwork.PrivateLinkService{
 		Name:     ptr.To(fakePrivateLinkName),
@@ -477,6 +505,48 @@ var (
 			"hello": ptr.To("capz"),
 		},
 	}
+
+	// fakePrivateLink6 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec6.
+	fakePrivateLink6 = armnetwork.PrivateLinkService{
+		Name:     ptr.To(fakePrivateLinkName),
+		Location: ptr.To(fakeRegion),
+		Properties: &armnetwork.PrivateLinkServiceProperties{
+			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+				{
+					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
+					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
+						Subnet: &armnetwork.Subnet{
+							ID: ptr.To(
+								fmt.Sprintf(
+									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+									fakeSubscriptionID1,
+									fakeVNetResourceGroup,
+									fakeVNetName,
+									fakeSubnetName)),
+						},
+						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
+						Primary:                   ptr.To(true),
+					},
+				},
+			},
+			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+				{
+					ID: ptr.To(
+						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+							fakeSubscriptionID1,
+							fakeClusterName,
+							fakeLbName,
+							fakeLbIPConfigName1)),
+				},
+			},
+			EnableProxyProtocol: ptr.To(false),
+		},
+		Tags: map[string]*string{
+			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
+			"Name":  ptr.To(fakePrivateLinkName),
+			"hello": ptr.To("capz"),
+		},
+	}
 )
 
 func TestEqualStringSlicesPtrIgnoreOrder(t *testing.T) {
@@ -612,6 +682,15 @@ func TestParameters(t *testing.T) {
 			expect: func(g *WithT, result any) {
 				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
 				g.Expect(result).To(Equal(fakePrivateLink5)) // expects (updated) private link with changed LB frontend config name
+			},
+		},
+		{
+			name:     "PrivateLink without allowed or auto-approved subscriptions",
+			spec:     fakePrivateLinkSpec6, // spec without allowed or auto-approved subscriptions
+			existing: fakePrivateLink1,     // existing private link with 1 allowed and 1 auto-approved subscription
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
+				g.Expect(result).To(Equal(fakePrivateLink6))
 			},
 		},
 	}
