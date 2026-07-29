@@ -22,6 +22,22 @@ stabilize before upgrading to v1.20.x. Skipping a CAPZ minor version can cause t
 than one minor version, which is unsupported and can result in failed CRD migrations or an unstable management
 cluster.
 
+### Pre-upgrade workaround for ASO-managed CRDs
+
+Until CAPZ's embedded ASO applies the CAPZ provider label automatically, label the ASO-managed CRDs before
+upgrading CAPZ. Run this command against the management cluster before `clusterctl upgrade`:
+
+```bash
+kubectl label customresourcedefinitions \
+  --selector=app.kubernetes.io/name=azure-service-operator \
+  cluster.x-k8s.io/provider=infrastructure-azure \
+  --overwrite
+```
+
+The command is idempotent. Without this label, `clusterctl upgrade` can scale down ASO and then try to list an
+ASO resource that requires the unavailable ASO conversion webhook. This can cause the upgrade to fail with a
+client rate limiter or context deadline error.
+
 ## Primary changes
 
 For most users, the introduction of ASO is expected to be fully transparent and backwards compatible. Changes

@@ -35,6 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+
+	"sigs.k8s.io/cluster-api-provider-azure/internal/asomigration"
 )
 
 const (
@@ -407,6 +409,6 @@ func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 func getPreUpgradeFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 	return func(clusterProxy framework.ClusterProxy) {
 		By("Labeling ASO-managed CRDs for the provider upgrade")
-		Expect(labelASOCRDsForClusterctlUpgrade(ctx, clusterProxy.GetClient())).To(Succeed())
+		Expect(asomigration.LabelCRDsForClusterctlUpgrade(ctx, clusterProxy.GetClient())).To(Succeed())
 	}
 }
