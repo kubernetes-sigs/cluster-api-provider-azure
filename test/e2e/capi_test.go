@@ -35,6 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+
+	"sigs.k8s.io/cluster-api-provider-azure/internal/asomigration"
 )
 
 const (
@@ -218,6 +220,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						PreInit:                   getPreInitFunc(ctx),
+						PreUpgrade:                getPreUpgradeFunc(ctx),
 						InitWithProvidersContract: "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
@@ -244,6 +247,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:            artifactFolder,
 						SkipCleanup:               skipCleanup,
 						PreInit:                   getPreInitFunc(ctx),
+						PreUpgrade:                getPreUpgradeFunc(ctx),
 						InitWithProvidersContract: "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
@@ -272,6 +276,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:                            artifactFolder,
 						SkipCleanup:                               skipCleanup,
 						PreInit:                                   getPreInitFunc(ctx),
+						PreUpgrade:                                getPreUpgradeFunc(ctx),
 						InitWithProvidersContract:                 "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
@@ -311,6 +316,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 						ArtifactFolder:                            artifactFolder,
 						SkipCleanup:                               skipCleanup,
 						PreInit:                                   getPreInitFunc(ctx),
+						PreUpgrade:                                getPreUpgradeFunc(ctx),
 						InitWithProvidersContract:                 "v1beta1",
 						ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
 							WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
@@ -397,5 +403,12 @@ func getPreInitFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
 	return func(clusterProxy framework.ClusterProxy) {
 		identityName := e2eConfig.MustGetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
+	}
+}
+
+func getPreUpgradeFunc(ctx context.Context) func(proxy framework.ClusterProxy) {
+	return func(clusterProxy framework.ClusterProxy) {
+		By("Labeling ASO-managed CRDs for the provider upgrade")
+		Expect(asomigration.LabelCRDsForClusterctlUpgrade(ctx, clusterProxy.GetClient())).To(Succeed())
 	}
 }
