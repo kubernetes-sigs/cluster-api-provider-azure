@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright The Kubernetes Authors.
 
@@ -17,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package asomigration
 
 import (
 	"context"
@@ -32,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestLabelASOCRDsForClusterctlUpgrade(t *testing.T) {
+func TestLabelCRDsForClusterctlUpgrade(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	g.Expect(apiextensionsv1.AddToScheme(scheme)).To(Succeed())
@@ -61,8 +58,8 @@ func TestLabelASOCRDsForClusterctlUpgrade(t *testing.T) {
 
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(asoCRD, mislabeledASOCRD, nonASOCRD).Build()
 	ctx := context.Background()
-	g.Expect(labelASOCRDsForClusterctlUpgrade(ctx, c)).To(Succeed())
-	g.Expect(labelASOCRDsForClusterctlUpgrade(ctx, c)).To(Succeed())
+	g.Expect(LabelCRDsForClusterctlUpgrade(ctx, c)).To(Succeed())
+	g.Expect(LabelCRDsForClusterctlUpgrade(ctx, c)).To(Succeed())
 
 	got := &apiextensionsv1.CustomResourceDefinition{}
 	g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoCRD), got)).To(Succeed())
@@ -76,12 +73,12 @@ func TestLabelASOCRDsForClusterctlUpgrade(t *testing.T) {
 	g.Expect(got.Labels).NotTo(HaveKey(clusterv1.ProviderNameLabel))
 }
 
-func TestLabelASOCRDsForClusterctlUpgradeRequiresASOCRDs(t *testing.T) {
+func TestLabelCRDsForClusterctlUpgradeRequiresASOCRDs(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	g.Expect(apiextensionsv1.AddToScheme(scheme)).To(Succeed())
 
 	c := fake.NewClientBuilder().WithScheme(scheme).Build()
-	err := labelASOCRDsForClusterctlUpgrade(context.Background(), c)
+	err := LabelCRDsForClusterctlUpgrade(context.Background(), c)
 	g.Expect(err).To(MatchError("no ASO-managed CRDs found"))
 }

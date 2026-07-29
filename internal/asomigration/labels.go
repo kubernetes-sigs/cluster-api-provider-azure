@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright The Kubernetes Authors.
 
@@ -17,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package asomigration
 
 import (
 	"context"
@@ -35,7 +32,8 @@ const (
 	infrastructureProviderLabel = "infrastructure-azure"
 )
 
-func labelASOCRDsForClusterctlUpgrade(ctx context.Context, c client.Client) error {
+// LabelCRDsForClusterctlUpgrade labels ASO-managed CRDs as CAPZ provider resources.
+func LabelCRDsForClusterctlUpgrade(ctx context.Context, c client.Client) error {
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := c.List(ctx, crds, client.MatchingLabels{asoCRDAppLabel: asoCRDAppValue}); err != nil {
 		return fmt.Errorf("listing ASO-managed CRDs: %w", err)
