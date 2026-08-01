@@ -1121,6 +1121,14 @@ spec:
                   - latestModelApplied
                   type: object
                 type: array
+              lastReconciledReplicas:
+                description: |-
+                  LastReconciledReplicas is the desired replica count that was most recently reconciled onto the
+                  VMSS. It is used to tell an explicit scale-down (the desired count dropped below this value)
+                  apart from a rollout, where the desired count is unchanged and the extra instances come from
+                  surge capacity. Those two states are otherwise indistinguishable from the instance list alone.
+                format: int32
+                type: integer
               longRunningOperationStates:
                 description: |-
                   LongRunningOperationStates saves the state for Azure long-running operations so they can be continued on the

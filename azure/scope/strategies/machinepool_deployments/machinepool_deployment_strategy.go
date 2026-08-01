@@ -40,8 +40,14 @@ type (
 	}
 
 	// DeleteSelector is the ability to select nodes to be delete with respect to a desired number of replicas.
+	//
+	// rolloutInProgress tells the selector why the pool is over-provisioned. When true, the excess machines
+	// exist because the VMSS was surged to replace instances after a model change, so unready replacements
+	// must be given time to become ready. When false, the user lowered the replica count and every excess
+	// machine is a pre-existing instance that should be removed. The two states are indistinguishable from
+	// the machine list alone, so the caller must supply the intent.
 	DeleteSelector interface {
-		SelectMachinesToDelete(ctx context.Context, desiredReplicas int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) ([]infrav1exp.AzureMachinePoolMachine, error)
+		SelectMachinesToDelete(ctx context.Context, desiredReplicas int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine, rolloutInProgress bool) ([]infrav1exp.AzureMachinePoolMachine, error)
 	}
 
 	// TypedDeleteSelector is the ability to select nodes to be deleted with respect to a desired number of nodes, and
@@ -107,7 +113,7 @@ func (rollingUpdateStrategy *rollingUpdateStrategy) maxUnavailable(desiredReplic
 
 // SelectMachinesToDelete selects the machines to delete based on the machine state, desired replica count, and
 // the DeletePolicy.
-func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx context.Context, desiredReplicaCount int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) ([]infrav1exp.AzureMachinePoolMachine, error) {
+func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx context.Context, desiredReplicaCount int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine, rolloutInProgress bool) ([]infrav1exp.AzureMachinePoolMachine, error) {
 	ctx, _, done := tele.StartSpanWithLogger(
 		ctx,
 		"strategies.rollingUpdateStrategy.SelectMachinesToDelete",
@@ -140,7 +146,10 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		unreadyMachines            = order(getUnreadyMachines(machinesByProviderID))
 		machinesWithoutLatestModel = order(getMachinesWithoutLatestModel(machinesByProviderID))
 		protectedUnreadyCount      = func() int {
-			if skipModelReconciliation {
+			// Only a rollout creates replacement machines that need time to become ready. During an
+			// explicit scale-down every excess machine is a pre-existing instance, so protecting any of
+			// them would leave the pool permanently over-provisioned.
+			if !rolloutInProgress {
 				return 0
 			}
 
@@ -151,6 +160,9 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 				}
 			}
 
+			// Only an unready machine already reporting the latest model is a replacement. MachinePoolScope
+			// refreshes LatestModelApplied from live VMSS state before selecting, so this classification is
+			// authoritative for every machine backed by a VMSS instance.
 			unreadyLatestModelCount := 0
 			for _, machine := range unreadyMachines {
 				if machine.Status.LatestModelApplied {
@@ -183,6 +195,7 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		"readyMachines", len(readyMachines),
 		"unreadyMachines", len(unreadyMachines),
 		"protectedUnreadyMachines", protectedUnreadyCount,
+		"rolloutInProgress", rolloutInProgress,
 		"desiredReplicaCount", desiredReplicaCount,
 		"maxUnavailable", maxUnavailable,
 		"disruptionBudget", disruptionBudget,
@@ -212,9 +225,27 @@ func (rollingUpdateStrategy rollingUpdateStrategy) SelectMachinesToDelete(ctx co
 		// Prefer deleting unready machines when explicitly scaling down. Counting only ready machines here can
 		// leave the pool permanently over-provisioned if an extra VM joins the cluster but never becomes ready.
 		if skipModelReconciliation {
+			// Protected replacements are always unready latest-model machines, so only the latest-model
+			// machines in excess of the protected count are eligible for deletion. Old-model unready
+			// machines stay eligible. Skipping rather than stopping preserves the delete policy ordering
+			// across the machines that remain eligible.
+			unreadyLatestModelDeleteCount := 0
+			for _, v := range unreadyMachines {
+				if v.Status.LatestModelApplied {
+					unreadyLatestModelDeleteCount++
+				}
+			}
+			unreadyLatestModelDeleteCount -= protectedUnreadyCount
+
 			for _, v := range unreadyMachines {
 				if len(toDelete) >= overProvisionCount {
 					return toDelete, nil
+				}
+				if v.Status.LatestModelApplied {
+					if unreadyLatestModelDeleteCount <= 0 {
+						continue
+					}
+					unreadyLatestModelDeleteCount--
 				}
 
 				toDelete = append(toDelete, v)
