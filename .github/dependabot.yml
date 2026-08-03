@@ -43,7 +43,108 @@ updates:
     - dependency-name: "github.com/prometheus/*"
       update-types: [ "version-update:semver-major", "version-update:semver-minor"] # Consume only patch updates.
     - dependency-name: "go.etcd.io/*"
-    - dependency-name: "google.golang.org/grpc"
+    - dependency-name: "sigs.k8s.io/cloud-provider-azure"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
+  labels:
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
+
+# Go - root directory, release-1.26 branch
+# Release branches only get Go updates for the root module, since that's what the
+# weekly security scan checks. Updates are grouped into a single PR to limit churn
+# on a stable branch. Keep this list in sync with the weekly security scan matrix.
+- directory: "/"
+  package-ecosystem: "gomod"
+  target-branch: "release-1.26"
+  open-pull-requests-limit: 5
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
+  commit-message:
+    prefix: "dependabot"
+    include: scope
+  ignore:
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "github.com/prometheus/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor"] # Consume only patch updates.
+    - dependency-name: "go.etcd.io/*"
+    - dependency-name: "sigs.k8s.io/cloud-provider-azure"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
+  labels:
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
+
+# Go - root directory, release-1.25 branch
+- directory: "/"
+  package-ecosystem: "gomod"
+  target-branch: "release-1.25"
+  open-pull-requests-limit: 5
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
+  commit-message:
+    prefix: "dependabot"
+    include: scope
+  ignore:
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "github.com/prometheus/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor"] # Consume only patch updates.
+    - dependency-name: "go.etcd.io/*"
+    - dependency-name: "sigs.k8s.io/cloud-provider-azure"
+    # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
+    - dependency-name: "go.opentelemetry.io/contrib/*"
+    - dependency-name: "go.opentelemetry.io/otel/exporters/*"
+    - dependency-name: "go.opentelemetry.io/otel/metric"
+    - dependency-name: "go.opentelemetry.io/otel/sdk*"
+    - dependency-name: "go.opentelemetry.io/otel/trace"
+  labels:
+    - "ok-to-test"
+    - "kind/cleanup"
+    - "release-note-none"
+
+# Go - root directory, release-1.24 branch
+- directory: "/"
+  package-ecosystem: "gomod"
+  target-branch: "release-1.24"
+  open-pull-requests-limit: 5
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    # Use America/New_York Standard Time (UTC -05:00)
+    timezone: "America/New_York"
+  commit-message:
+    prefix: "dependabot"
+    include: scope
+  ignore:
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "github.com/prometheus/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor"] # Consume only patch updates.
+    - dependency-name: "go.etcd.io/*"
     - dependency-name: "sigs.k8s.io/cloud-provider-azure"
     # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
     - dependency-name: "go.opentelemetry.io/contrib/*"
@@ -74,7 +175,6 @@ updates:
     # Ignore k8s and its transitives modules as they are upgraded manually together with controller-runtime.
     - dependency-name: "k8s.io/*"
     - dependency-name: "go.etcd.io/*"
-    - dependency-name: "google.golang.org/grpc"
     # Ignore subpackage releases of opentelemetry-go; just watch go.opentelemetry.io/otel.
     - dependency-name: "go.opentelemetry.io/contrib/*"
     - dependency-name: "go.opentelemetry.io/otel/exporters/*"
