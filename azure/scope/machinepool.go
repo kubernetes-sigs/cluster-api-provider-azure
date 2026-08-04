@@ -628,9 +628,14 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 	case v == infrav1.Failed:
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetProvisionFailedReason, clusterv1beta1.ConditionSeverityInfo, "")
 		m.SetNotReady()
-	default:
+	case v == infrav1.Canceled || v == infrav1.Deleted:
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1beta1.ConditionSeverityInfo, "")
 		m.SetNotReady()
+	default:
+		// Migrating and any future or unrecognized in-progress states are left as-is:
+		// Azure still considers the operation running, and flipping Ready here would
+		// make CAPI return before spec.providerIDList is updated (see #5537).
+		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1beta1.ConditionSeverityInfo, "")
 	}
 }
 
