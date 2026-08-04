@@ -346,6 +346,14 @@ func (s *VMSpec) generateSecurityProfile(storageProfile *armcompute.StorageProfi
 			VTpmEnabled:       s.SecurityProfile.UefiSettings.VTpmEnabled,
 		}
 
+		if s.SecurityProfile.EncryptionAtHost != nil {
+			if !s.SKU.HasCapability(resourceskus.EncryptionAtHost) && *s.SecurityProfile.EncryptionAtHost {
+				return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", s.Size))
+			}
+
+			securityProfile.EncryptionAtHost = s.SecurityProfile.EncryptionAtHost
+		}
+
 		return securityProfile, nil
 	}
 
