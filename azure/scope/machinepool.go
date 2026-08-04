@@ -627,9 +627,7 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1beta1.ConditionSeverityInfo, "")
 		m.SetNotReady()
 	default:
-		// Migrating and any future or unrecognized in-progress states are left as-is:
-		// Azure still considers the operation running, and flipping Ready here would
-		// make CAPI return before spec.providerIDList is updated (see #5537).
+		// Preserve readiness for unhandled provisioning states.
 		v1beta1conditions.MarkFalse(m.AzureMachinePool, infrav1.ScaleSetRunningCondition, string(v), clusterv1beta1.ConditionSeverityInfo, "")
 	}
 }
