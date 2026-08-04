@@ -56,8 +56,8 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
-          runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
+          feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true"}
+          runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true,scheduling.k8s.io/v1beta1=true
           service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
@@ -65,7 +65,7 @@ spec:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           v: "4"
       etcd:
         local:
@@ -75,7 +75,7 @@ spec:
       kubernetesVersion: ci/${CI_VERSION}
       scheduler:
         extraArgs:
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -208,7 +208,7 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -216,7 +216,7 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -469,7 +469,7 @@ spec:
     nodeRegistration:
       kubeletExtraArgs:
         cloud-provider: external
-        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
+        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true"}
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
       name: '{{ ds.meta_data["local_hostname"] }}'
