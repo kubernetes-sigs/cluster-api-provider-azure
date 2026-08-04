@@ -1816,13 +1816,41 @@ func TestMachinePoolScope_setProvisioningStateAndConditions(t *testing.T) {
 			ProvisioningState: infrav1.Failed,
 		},
 		{
-			Name: "if provisioning state is set to something not explicitly handled, MachinePool is NotReady and scale set running condition is set to the ProvisioningState",
+			Name: "if provisioning state is set to Canceled, MachinePool is NotReady and scale set running condition is set to the ProvisioningState",
 			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
 				// A previously-ready MachinePool (e.g. an aborted scale operation reporting Canceled) must be marked NotReady.
 				amp.Status.Ready = true
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
 				g.Expect(amp.Status.Ready).To(BeFalse())
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(string(infrav1.Canceled)))
+			},
+			ProvisioningState: infrav1.Canceled,
+		},
+		{
+			Name: "if provisioning state is set to Deleted, MachinePool is NotReady and scale set running condition is set to the ProvisioningState",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				amp.Status.Ready = true
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeFalse())
+				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
+				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal(string(infrav1.Deleted)))
+			},
+			ProvisioningState: infrav1.Deleted,
+		},
+		{
+			Name: "if provisioning state is set to Migrating, MachinePool Ready status is left unchanged and scale set running condition is set to the ProvisioningState",
+			Setup: func(mp *clusterv1.MachinePool, amp *infrav1exp.AzureMachinePool, cb *fake.ClientBuilder) {
+				// Migrating is not a terminal state; a previously-ready MachinePool must stay Ready so CAPI
+				// keeps updating spec.providerIDList instead of returning early (see #5537).
+				amp.Status.Ready = true
+			},
+			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, c client.Client) {
+				g.Expect(amp.Status.Ready).To(BeTrue())
 				condition := v1beta1conditions.Get(amp, infrav1.ScaleSetRunningCondition)
 				g.Expect(condition.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal(string(infrav1.Migrating)))
