@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
@@ -1471,6 +1472,110 @@ spec:
 		})
 	})
 
+	Context("Creating AKS clusters and stressing Kueue MultiKueue [MultiKueue]", Label("MultiKueue"), func() {
+		It("dispatches batch Jobs and JobSets exactly once across worker clusters", func() {
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			aksFlavor := e2eConfigVariableOrDefault(multiKueueAKSFlavorVariable, "aks-aso")
+			workerCount := e2eConfigIntVariableOrDefault(multiKueueWorkerClusterCountVariable, multiKueueWorkerCount)
+			Expect(workerCount).To(BeNumerically(">=", 2), "MultiKueue requires at least two worker clusters")
+
+			managerClusterName := fmt.Sprintf("%s-mk-manager", clusterNamePrefix)
+			workerClusterNames := make([]string, 0, workerCount)
+			for i := 0; i < workerCount; i++ {
+				workerClusterNames = append(workerClusterNames, fmt.Sprintf("%s-mk-worker-%d", clusterNamePrefix, i+1))
+			}
+
+			newAKSClusterInput := func(name string) clusterctl.ApplyClusterTemplateAndWaitInput {
+				input := createApplyClusterTemplateInput(
+					specName,
+					withFlavor(aksFlavor),
+					withNamespace(namespace.Name),
+					withClusterName(name),
+					withKubernetesVersion(kubernetesVersion),
+					withWorkerMachineCount(1),
+					withMachinePoolInterval(specName, "wait-worker-nodes"),
+					withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+						WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+						WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+					}),
+				)
+				input.ConfigCluster.ClusterctlVariables = map[string]string{
+					AzureResourceGroup: name,
+					AzureVNetName:      fmt.Sprintf("%s-vnet", name),
+				}
+				return input
+			}
+
+			type clusterToCreate struct {
+				name   string
+				result *clusterctl.ApplyClusterTemplateAndWaitResult
+				input  clusterctl.ApplyClusterTemplateAndWaitInput
+				yaml   []byte
+			}
+
+			clustersToCreate := []clusterToCreate{{name: managerClusterName, result: result}}
+			for _, workerClusterName := range workerClusterNames {
+				clustersToCreate = append(clustersToCreate, clusterToCreate{
+					name:   workerClusterName,
+					result: &clusterctl.ApplyClusterTemplateAndWaitResult{},
+				})
+			}
+
+			clusterName = managerClusterName
+			for i := range clustersToCreate {
+				clustersToCreate[i].input = newAKSClusterInput(clustersToCreate[i].name)
+				clustersToCreate[i].yaml = singlePoolAKSTemplate(clusterctl.ConfigCluster(ctx, clustersToCreate[i].input.ConfigCluster))
+				Expect(clustersToCreate[i].yaml).NotTo(BeNil(), "Failed to get the cluster template")
+			}
+
+			By("Creating the MultiKueue AKS manager and worker clusters in parallel")
+			var wg sync.WaitGroup
+			for _, cluster := range clustersToCreate {
+				wg.Add(1)
+				go func(cluster clusterToCreate) {
+					defer GinkgoRecover()
+					defer wg.Done()
+					clusterctl.ApplyCustomClusterTemplateAndWait(ctx, clusterctl.ApplyCustomClusterTemplateAndWaitInput{
+						ClusterProxy:                 cluster.input.ClusterProxy,
+						CustomTemplateYAML:           cluster.yaml,
+						ClusterName:                  cluster.input.ConfigCluster.ClusterName,
+						Namespace:                    cluster.input.ConfigCluster.Namespace,
+						CNIManifestPath:              cluster.input.CNIManifestPath,
+						Flavor:                       cluster.input.ConfigCluster.Flavor,
+						WaitForClusterIntervals:      cluster.input.WaitForClusterIntervals,
+						WaitForControlPlaneIntervals: cluster.input.WaitForControlPlaneIntervals,
+						WaitForMachineDeployments:    cluster.input.WaitForMachineDeployments,
+						WaitForMachinePools:          cluster.input.WaitForMachinePools,
+						CreateOpts:                   cluster.input.CreateOpts,
+						PreWaitForCluster:            cluster.input.PreWaitForCluster,
+						PostMachinesProvisioned:      cluster.input.PostMachinesProvisioned,
+						ControlPlaneWaiters:          cluster.input.ControlPlaneWaiters,
+					}, (*clusterctl.ApplyCustomClusterTemplateAndWaitResult)(cluster.result))
+				}(cluster)
+			}
+			wg.Wait()
+			Expect(os.Setenv(AzureResourceGroup, managerClusterName)).To(Succeed())
+			Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", managerClusterName))).To(Succeed())
+
+			MultiKueueSpec(ctx, func() MultiKueueSpecInput {
+				return MultiKueueSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ManagerClusterName:    managerClusterName,
+					WorkerClusterNames:    workerClusterNames,
+					KueueVersion:          e2eConfigVariableOrDefault(multiKueueKueueVersionVariable, defaultKueueVersion),
+					JobSetVersion:         e2eConfigVariableOrDefault(multiKueueJobSetVersionVariable, defaultJobSetVersion),
+					StressJobCount:        e2eConfigIntVariableOrDefault(multiKueueStressJobCountVariable, multiKueueDefaultStressJobs),
+					SkipCleanup:           skipCleanup,
+				}
+			})
+
+			By("PASSED!")
+		})
+	})
+
 	// KubeRay tests deploy the KubeRay operator and verify Ray workloads run on a CAPZ cluster.
 	// These correspond to the RayCluster and RayJob E2E test cases from the KubeRay buildkite CI.
 	Context("Creating an AKS cluster and deploying KubeRay [KubeRay]", func() {
@@ -1630,3 +1735,23 @@ spec:
 		})
 	})
 })
+
+func singlePoolAKSTemplate(template []byte) []byte {
+	objects, err := yaml.ToUnstructured(template)
+	Expect(err).NotTo(HaveOccurred())
+
+	filtered := objects[:0]
+	for _, obj := range objects {
+		switch obj.GetKind() {
+		case "MachinePool", "AzureManagedMachinePool", "AzureASOManagedMachinePool":
+			if !strings.HasSuffix(obj.GetName(), "-pool0") {
+				continue
+			}
+		}
+		filtered = append(filtered, obj)
+	}
+
+	out, err := yaml.FromUnstructured(filtered)
+	Expect(err).NotTo(HaveOccurred())
+	return out
+}
