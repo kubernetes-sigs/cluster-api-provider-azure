@@ -4307,6 +4307,21 @@ func TestPrivateLinks(t *testing.T) {
 			},
 			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{},
 		},
+
+		{
+			// When AzureCluster.Spec.ControlPlaneEnabled equals false,
+			// AzureCluster.Spec.NetworkSpec.APIServerLB will be set to 'nil'.
+			name: "AzureCluster with externally managed control plane",
+			azureCluster: infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					ControlPlaneEnabled: true,
+					NetworkSpec: infrav1.NetworkSpec{
+						APIServerLB: nil,
+					},
+				},
+			},
+			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{},
+		},
 	}
 
 	for _, tc := range tests {

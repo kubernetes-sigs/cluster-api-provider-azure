@@ -1293,30 +1293,31 @@ func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
 	// First we get all private links to API server load balancer.
 	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
 	// for those.
-	privateLinks := s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks
-	privateLinksSpecs := make([]azure.ResourceSpecGetter, 0, len(privateLinks))
+	privateLinksSpecs := make([]azure.ResourceSpecGetter, 0)
 
-	for _, privateLink := range privateLinks {
-		privateLinkSpec := privatelinks.PrivateLinkSpec{
-			Name:                      privateLink.Name,
-			ResourceGroup:             s.ResourceGroup(),
-			SubscriptionID:            s.SubscriptionID(),
-			Location:                  s.Location(),
-			VNetResourceGroup:         s.Vnet().ResourceGroup,
-			VNet:                      s.Vnet().Name,
-			LoadBalancerName:          s.APIServerLBName(),
-			LBFrontendIPConfigNames:   privateLink.LBFrontendIPConfigNames,
-			AllowedSubscriptions:      privateLink.AllowedSubscriptions,
-			AutoApprovedSubscriptions: privateLink.AutoApprovedSubscriptions,
-			EnableProxyProtocol:       privateLink.EnableProxyProtocol,
-			ClusterName:               s.ClusterName(),
-			AdditionalTags:            s.AdditionalTags(),
+	if s.AzureCluster.Spec.NetworkSpec.APIServerLB != nil {
+		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {
+			privateLinkSpec := privatelinks.PrivateLinkSpec{
+				Name:                      privateLink.Name,
+				ResourceGroup:             s.ResourceGroup(),
+				SubscriptionID:            s.SubscriptionID(),
+				Location:                  s.Location(),
+				VNetResourceGroup:         s.Vnet().ResourceGroup,
+				VNet:                      s.Vnet().Name,
+				LoadBalancerName:          s.APIServerLBName(),
+				LBFrontendIPConfigNames:   privateLink.LBFrontendIPConfigNames,
+				AllowedSubscriptions:      privateLink.AllowedSubscriptions,
+				AutoApprovedSubscriptions: privateLink.AutoApprovedSubscriptions,
+				EnableProxyProtocol:       privateLink.EnableProxyProtocol,
+				ClusterName:               s.ClusterName(),
+				AdditionalTags:            s.AdditionalTags(),
+			}
+			// Set NAT IP configuration
+			for _, natIPConfiguration := range privateLink.NATIPConfigurations {
+				privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIPConfiguration))
+			}
+			privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
 		}
-		// Set NAT IP configuration
-		for _, natIPConfiguration := range privateLink.NATIPConfigurations {
-			privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIPConfiguration))
-		}
-		privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
 	}
 
 	return privateLinksSpecs
