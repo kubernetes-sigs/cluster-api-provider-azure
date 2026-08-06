@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
@@ -56,7 +55,7 @@ var (
 		VNet:              fakeVNetName,
 		NATIPConfiguration: []NATIPConfiguration{
 			{
-				AllocationMethod: string(armnetwork.IPAllocationMethodDynamic),
+				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
 				Subnet:           fakeSubnetName,
 			},
 		},
@@ -93,7 +92,7 @@ var (
 		VNet:              fakeVNetName,
 		NATIPConfiguration: []NATIPConfiguration{
 			{
-				AllocationMethod: string(armnetwork.IPAllocationMethodDynamic),
+				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
 				Subnet:           fakeSubnetName,
 			},
 		},

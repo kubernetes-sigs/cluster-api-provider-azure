@@ -4207,7 +4207,7 @@ func TestPrivateLinks(t *testing.T) {
 									Name: fmt.Sprintf("%s-privatelink", fakeAPILBName),
 									NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
 										{
-											AllocationMethod: string(infrav1.NATIPAllocationMethodDynamic),
+											AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
 											Subnet:           fakeSubnetName,
 										},
 									},

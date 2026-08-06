@@ -50,7 +50,7 @@ type PrivateLinkSpec struct {
 // NATIPConfiguration defines the NAT IP configuration for the private link service.
 type NATIPConfiguration struct {
 	// AllocationMethod can be Static or Dynamic.
-	AllocationMethod string
+	AllocationMethod infrav1.PrivateLinkNATIPAllocationMethod
 
 	// Subnet from the VNet from which the IP is allocated.
 	Subnet string
@@ -119,7 +119,8 @@ func (s *PrivateLinkSpec) constructParameters() (params armnetwork.PrivateLinkSe
 	for i, natIPConfiguration := range s.NATIPConfiguration {
 		ipAllocationMethod := armnetwork.IPAllocationMethod(natIPConfiguration.AllocationMethod)
 		if ipAllocationMethod != armnetwork.IPAllocationMethodDynamic && ipAllocationMethod != armnetwork.IPAllocationMethodStatic {
-			return armnetwork.PrivateLinkService{}, errors.Errorf("%T is not a supported armnetwork.IPAllocationMethodStatic", natIPConfiguration.AllocationMethod)
+			return armnetwork.PrivateLinkService{}, errors.Errorf("%q is not a supported NAT IP allocation method (must be %q or %q)",
+				natIPConfiguration.AllocationMethod, infrav1.NATIPAllocationMethodStatic, infrav1.NATIPAllocationMethodDynamic)
 		}
 		var privateIPAddress *string
 		if ipAllocationMethod == armnetwork.IPAllocationMethodStatic {

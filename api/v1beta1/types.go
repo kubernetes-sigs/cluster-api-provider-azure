@@ -459,7 +459,7 @@ type PrivateLink struct {
 // PrivateLinkNATIPConfiguration specifies NAT IP configuration for the private link.
 type PrivateLinkNATIPConfiguration struct {
 	// AllocationMethod specifies how the private link NAT IPs are allocated: "Static" or "Dynamic".
-	AllocationMethod string `json:"allocationMethod"`
+	AllocationMethod PrivateLinkNATIPAllocationMethod `json:"allocationMethod"`
 
 	// Subnet from which the IP is allocated.
 	Subnet string `json:"subnet"`

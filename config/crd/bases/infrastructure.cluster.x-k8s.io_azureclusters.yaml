@@ -815,6 +815,9 @@ spec:
                                     description: 'AllocationMethod specifies how the
                                       private link NAT IPs are allocated: "Static"
                                       or "Dynamic".'
+                                    enum:
+                                    - Static
+                                    - Dynamic
                                     type: string
                                   privateIPAddress:
                                     type: string
@@ -972,6 +975,9 @@ spec:
                                     description: 'AllocationMethod specifies how the
                                       private link NAT IPs are allocated: "Static"
                                       or "Dynamic".'
+                                    enum:
+                                    - Static
+                                    - Dynamic
                                     type: string
                                   privateIPAddress:
                                     type: string
@@ -1128,6 +1134,9 @@ spec:
                                     description: 'AllocationMethod specifies how the
                                       private link NAT IPs are allocated: "Static"
                                       or "Dynamic".'
+                                    enum:
+                                    - Static
+                                    - Dynamic
                                     type: string
                                   privateIPAddress:
                                     type: string

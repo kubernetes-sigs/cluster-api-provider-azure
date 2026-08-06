@@ -928,7 +928,7 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 							pl.NATIPConfigurations[j].Subnet,
 							fmt.Sprintf("NATIPConfiguration must use existing subnet (subnet %s not specified in AzureCluster resource)", natIPConfig.Subnet)))
 				}
-				if natIPConfig.AllocationMethod == "Static" {
+				if natIPConfig.AllocationMethod == infrav1.NATIPAllocationMethodStatic {
 					err := validateIPAddress(
 						natIPConfig.PrivateIPAddress,
 						subnetCIDRs,
