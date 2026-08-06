@@ -2528,6 +2528,18 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 				Detail:   "Max front end ips allowed is 16",
 			},
 		},
+		{
+			name: "private links are forbidden",
+			lb: &infrav1.LoadBalancerSpec{
+				PrivateLinks: make([]infrav1.PrivateLink, 1),
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "nodeOutboundLB.privateLinks",
+				Detail: "privateLinks are only supported on the API server load balancer",
+			},
+		},
 	}
 
 	for _, test := range testcases {
@@ -2605,6 +2617,23 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 				Field:    "controlPlaneOutboundLB.frontendIPsCount",
 				BadValue: 100,
 				Detail:   "Max front end ips allowed is 16",
+			},
+		},
+		{
+			name: "private links are forbidden",
+			lb: &infrav1.LoadBalancerSpec{
+				PrivateLinks: make([]infrav1.PrivateLink, 1),
+			},
+			apiServerLB: infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "controlPlaneOutboundLB.privateLinks",
+				Detail: "privateLinks are only supported on the API server load balancer",
 			},
 		},
 	}

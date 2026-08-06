@@ -552,6 +552,12 @@ func validateNodeOutboundLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalan
 			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
 	}
 
+	if len(lb.PrivateLinks) > 0 {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("privateLinks"),
+			"privateLinks are only supported on the API server load balancer",
+		))
+	}
+
 	return allErrs
 }
 
@@ -570,6 +576,12 @@ func validateControlPlaneOutboundLB(lb *infrav1.LoadBalancerSpec, apiserverLB *i
 		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
 				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+		}
+
+		if len(lb.PrivateLinks) > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("privateLinks"),
+				"privateLinks are only supported on the API server load balancer",
+			))
 		}
 	}
 

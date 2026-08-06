@@ -364,6 +364,7 @@ type LoadBalancerSpec struct {
 	// +optional
 	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
 	// PrivateLinks to the load balancer (max 8 private links).
+	// Only supported on the API server load balancer.
 	// +optional
 	PrivateLinks []PrivateLink `json:"privateLinks,omitempty"`
 	// BackendPool describes the backend pool of the load balancer.

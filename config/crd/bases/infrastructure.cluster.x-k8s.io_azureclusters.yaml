@@ -770,8 +770,9 @@ spec:
                       name:
                         type: string
                       privateLinks:
-                        description: PrivateLinks to the load balancer (max 8 private
-                          links).
+                        description: |-
+                          PrivateLinks to the load balancer (max 8 private links).
+                          Only supported on the API server load balancer.
                         items:
                           description: PrivateLink configures an Azure private link.
                           properties:
@@ -926,8 +927,9 @@ spec:
                       name:
                         type: string
                       privateLinks:
-                        description: PrivateLinks to the load balancer (max 8 private
-                          links).
+                        description: |-
+                          PrivateLinks to the load balancer (max 8 private links).
+                          Only supported on the API server load balancer.
                         items:
                           description: PrivateLink configures an Azure private link.
                           properties:
@@ -1081,8 +1083,9 @@ spec:
                       name:
                         type: string
                       privateLinks:
-                        description: PrivateLinks to the load balancer (max 8 private
-                          links).
+                        description: |-
+                          PrivateLinks to the load balancer (max 8 private links).
+                          Only supported on the API server load balancer.
                         items:
                           description: PrivateLink configures an Azure private link.
                           properties:
