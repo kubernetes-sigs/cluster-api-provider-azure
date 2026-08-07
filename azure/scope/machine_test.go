@@ -1556,6 +1556,35 @@ func TestMachineScope_AvailabilitySet(t *testing.T) {
 			wantAvailabilitySetName:      "",
 			wantAvailabilitySetExistence: false,
 		},
+		{
+			name: "returns empty and false if azureMachine has virtualMachineScaleSetID set",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						Status: infrav1.AzureClusterStatus{},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							clusterv1.MachineDeploymentNameLabel: "foo-machine-deployment",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					Spec: infrav1.AzureMachineSpec{
+						VirtualMachineScaleSetID: ptr.To("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss"),
+					},
+				},
+			},
+			wantAvailabilitySetName:      "",
+			wantAvailabilitySetExistence: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -3374,6 +3403,65 @@ func TestMachineScope_GetCapacityReservationGroupID(t *testing.T) {
 			got := tt.machineScope.GetCapacityReservationGroupID()
 			if got != tt.want {
 				t.Errorf("MachineScope.GetCapacityReservationGroupID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMachineScope_GetVirtualMachineScaleSetID(t *testing.T) {
+	tests := []struct {
+		name         string
+		machineScope MachineScope
+		want         string
+	}{
+		{
+			name: "returns the virtual machine scale set ID without the provider prefix",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						VirtualMachineScaleSetID: ptr.To("azure:///subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name"),
+					},
+				},
+			},
+			want: "/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name",
+		},
+		{
+			name: "returns the virtual machine scale set ID without changes",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						VirtualMachineScaleSetID: ptr.To("/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name"),
+					},
+				},
+			},
+			want: "/subscriptions/1234-5678/resourceGroups/my-cluster/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-name",
+		},
+		{
+			name: "returns empty if virtual machine scale set ID is empty",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						VirtualMachineScaleSetID: ptr.To(""),
+					},
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.machineScope.GetVirtualMachineScaleSetID()
+			if got != tt.want {
+				t.Errorf("MachineScope.GetVirtualMachineScaleSetID() = %v, want %v", got, tt.want)
 			}
 		})
 	}
