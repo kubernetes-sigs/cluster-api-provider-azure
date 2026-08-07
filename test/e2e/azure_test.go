@@ -104,6 +104,12 @@ var _ = Describe("Workload cluster creation", func() {
 		identityName := e2eConfig.MustGetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).To(Succeed())
 		Expect(os.Setenv(ClusterIdentityNamespace, defaultNamespace)).To(Succeed())
+
+		// AZL4_VERSION selects the Azure Linux 4 community gallery image version, which is
+		// keyed to the Kubernetes version. Several specs default to Azure Linux 4 nodes.
+		azl4Version := strings.TrimPrefix(e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion), "v")
+		Expect(os.Setenv("AZL4_VERSION", azl4Version)).To(Succeed())
+
 		additionalCleanup = nil
 	})
 
