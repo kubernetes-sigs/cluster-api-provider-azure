@@ -256,7 +256,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	if err := reconcileAzureSecret(ctx, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {
-		r.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error reconciling cloud provider secret for AzureMachine", err.Error())
+		r.Recorder.Event(azureMachine, corev1.EventTypeWarning, "Error reconciling cloud provider secret for AzureMachine", err.Error())
 		return ctrl.Result{}, errors.Wrap(err, "failed to reconcile azure secret")
 	}
 
