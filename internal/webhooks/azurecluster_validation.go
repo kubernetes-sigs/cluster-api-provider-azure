@@ -909,10 +909,6 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 					pl.NATIPConfigurations,
 					"maximum number of NAT IP Configurations is 8 (Azure limit)"))
 		default:
-			var subnetCIDRs []string
-			for _, subnet := range subnets {
-				subnetCIDRs = append(subnetCIDRs, subnet.CIDRBlocks...)
-			}
 			// validate that NAT IP configurations are correct
 			for j, natIPConfig := range pl.NATIPConfigurations {
 				if natIPConfig.Subnet == "" {
@@ -929,6 +925,16 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 				for _, subnet := range subnets {
 					if natIPConfig.Subnet == subnet.Name {
 						usesValidSubnet = true
+						if natIPConfig.AllocationMethod == infrav1.NATIPAllocationMethodStatic {
+							err := validateIPAddress(
+								natIPConfig.PrivateIPAddress,
+								subnet.CIDRBlocks,
+								fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("privateIPAddress"),
+								pl.Name)
+							if err != nil {
+								allErrs = append(allErrs, err)
+							}
+						}
 					}
 				}
 				if !usesValidSubnet {
@@ -938,16 +944,6 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 							fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("subnet"),
 							pl.NATIPConfigurations[j].Subnet,
 							fmt.Sprintf("NATIPConfiguration must use existing subnet (subnet %s not specified in AzureCluster resource)", natIPConfig.Subnet)))
-				}
-				if natIPConfig.AllocationMethod == infrav1.NATIPAllocationMethodStatic {
-					err := validateIPAddress(
-						natIPConfig.PrivateIPAddress,
-						subnetCIDRs,
-						fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("privateIPAddress"),
-						pl.Name)
-					if err != nil {
-						allErrs = append(allErrs, err)
-					}
 				}
 			}
 

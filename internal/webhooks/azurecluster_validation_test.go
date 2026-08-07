@@ -2240,6 +2240,53 @@ func TestValidatePrivateLinks(t *testing.T) {
 				BadValue: "duplicate-pl",
 			},
 		},
+		{
+			name: "NAT IP config that targets subnet-a with IP from subnet-b",
+			lb: infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+				PrivateLinks: []infrav1.PrivateLink{
+					{
+						Name:                    "test-pl",
+						LBFrontendIPConfigNames: []string{"ip-1"},
+						NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
+							{
+								Subnet:           "subnet-a",
+								AllocationMethod: "Static",
+								PrivateIPAddress: "172.16.0.10", // An IP in subnet-b
+							},
+						},
+					},
+				},
+			},
+			subnets: infrav1.Subnets{
+				{
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Name:       "subnet-a",
+						CIDRBlocks: []string{"10.0.0.0/8"},
+					},
+				},
+				{
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Name:       "subnet-b",
+						CIDRBlocks: []string{"172.16.0.0/10"},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations[0].privateIPAddress",
+				BadValue: "172.16.0.10",
+				Detail:   "test-pl IP address needs to be in subnet range ([10.0.0.0/8])",
+			},
+		},
 	}
 
 	for _, test := range testcases {
