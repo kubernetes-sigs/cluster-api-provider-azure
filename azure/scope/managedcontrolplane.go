@@ -861,6 +861,11 @@ func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.
 	futures.Set(s.ControlPlane, future)
 }
 
+// GetLongRunningOperationStates will get the specified futures on the AzureCluster status.
+func (s *ManagedControlPlaneScope) GetLongRunningOperationStates(service, futureType string) infrav1.Futures {
+	return futures.GetByServiceAndType(s.ControlPlane, service, futureType)
+}
+
 // GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
 func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
 	return futures.Get(s.ControlPlane, name, service, futureType)
