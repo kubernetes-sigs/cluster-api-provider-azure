@@ -2218,6 +2218,28 @@ func TestValidatePrivateLinks(t *testing.T) {
 				Detail: "NATIPConfigurations cannot be modified",
 			},
 		},
+		{
+			name: "private links with duplicate names",
+			lb: infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+				PrivateLinks: []infrav1.PrivateLink{
+					{
+						Name: "duplicate-pl",
+					},
+					{
+						Name: "duplicate-pl",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueDuplicate",
+				Field:    "apiServerLB.privateLinks[1].name",
+				BadValue: "duplicate-pl",
+			},
+		},
 	}
 
 	for _, test := range testcases {

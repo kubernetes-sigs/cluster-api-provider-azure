@@ -829,9 +829,20 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 		}
 	}
 
+	privateLinkNames := make(map[string]struct{})
 	for i, pl := range lb.PrivateLinks {
 		if err := validatePrivateLinkName(pl.Name, fldPath.Child("privateLinks").Index(i).Child("name")); err != nil {
 			allErrs = append(allErrs, err)
+		}
+		if _, ok := privateLinkNames[pl.Name]; !ok {
+			privateLinkNames[pl.Name] = struct{}{}
+		} else {
+			allErrs = append(allErrs,
+				field.Duplicate(
+					fldPath.Child("privateLinks").Index(i).Child("name"),
+					pl.Name,
+				),
+			)
 		}
 
 		// validate LB front end names that the private link is using:
