@@ -986,6 +986,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			infrav1.PrivateDNSLinkReadyCondition,
 			infrav1.PrivateDNSRecordReadyCondition,
 			infrav1.PrivateEndpointsReadyCondition,
+			infrav1.PrivateLinksReadyCondition,
 		}})
 }
 
