@@ -290,6 +290,9 @@ var (
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
 			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec1.ResourceGroup,
+			},
 		},
 	}
 
@@ -342,6 +345,9 @@ var (
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
+			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec2.ResourceGroup,
 			},
 		},
 	}
@@ -397,6 +403,9 @@ var (
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
 			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec3.ResourceGroup,
+			},
 		},
 	}
 
@@ -450,6 +459,9 @@ var (
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
+			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec4.ResourceGroup,
 			},
 		},
 	}
@@ -506,6 +518,9 @@ var (
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
 			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec5.ResourceGroup,
+			},
 		},
 	}
 
@@ -547,6 +562,9 @@ var (
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
 				"Name":  fakePrivateLinkName,
 				"hello": "capz",
+			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec6.ResourceGroup,
 			},
 		},
 	}
