@@ -105,7 +105,8 @@ spec:
         - name: lb-private-ip-frontend
           privateIP: 172.16.0.100
       privateLinks:
-        - lbFrontendIPConfigNames:
+        - name: my-private-link
+          lbFrontendIPConfigNames:
           - lb-private-ip-frontend
           natIPConfigurations:
             - allocationMethod: Dynamic
