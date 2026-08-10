@@ -2287,6 +2287,49 @@ func TestValidatePrivateLinks(t *testing.T) {
 				Detail:   "test-pl IP address needs to be in subnet range ([10.0.0.0/8])",
 			},
 		},
+		{
+			name: "subscription that is auto approved but not allowed",
+			lb: infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+				PrivateLinks: []infrav1.PrivateLink{
+					{
+						Name:                    "test-pl",
+						LBFrontendIPConfigNames: []string{"ip-1"},
+						NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
+							{
+								Subnet:           "subnet-a",
+								AllocationMethod: "Static",
+								PrivateIPAddress: "10.0.0.10",
+							},
+						},
+						AllowedSubscriptions:      []string{"123"},
+						AutoApprovedSubscriptions: []string{"123", "456"},
+					},
+				},
+			},
+			subnets: infrav1.Subnets{
+				{
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Name:       "subnet-a",
+						CIDRBlocks: []string{"10.0.0.0/8"},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].autoApprovedSubscriptions[1]",
+				BadValue: "456",
+				Detail:   "test-pl auto approved subscription must also be specified in allowed subscriptions",
+			},
+		},
 	}
 
 	for _, test := range testcases {

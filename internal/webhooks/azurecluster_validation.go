@@ -21,6 +21,7 @@ import (
 	"net"
 	"reflect"
 	"regexp"
+	"slices"
 
 	valid "github.com/asaskevich/govalidator/v11"
 	corev1 "k8s.io/api/core/v1"
@@ -955,6 +956,17 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 						fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations"),
 						pl.NATIPConfigurations,
 						"NATIPConfigurations cannot be modified"))
+			}
+		}
+
+		for j, id := range pl.AutoApprovedSubscriptions {
+			if !slices.Contains(pl.AllowedSubscriptions, id) {
+				allErrs = append(
+					allErrs,
+					field.Invalid(
+						fldPath.Child("privateLinks").Index(i).Child("autoApprovedSubscriptions").Index(j),
+						pl.AutoApprovedSubscriptions[j],
+						fmt.Sprintf("%s auto approved subscription must also be specified in allowed subscriptions", pl.Name)))
 			}
 		}
 	}
