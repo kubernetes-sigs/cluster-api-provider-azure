@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -64,11 +65,11 @@ var (
 		LBFrontendIPConfigNames: []string{
 			fakeLbIPConfigName1,
 		},
-		AllowedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
+		AllowedSubscriptions: []string{
+			fakeSubscriptionID1,
 		},
-		AutoApprovedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
+		AutoApprovedSubscriptions: []string{
+			fakeSubscriptionID1,
 		},
 		EnableProxyProtocol: ptr.To(false),
 		ClusterName:         fakeClusterName,
@@ -96,12 +97,12 @@ var (
 		LBFrontendIPConfigNames: []string{
 			fakeLbIPConfigName1,
 		},
-		AllowedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AllowedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
-		AutoApprovedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
+		AutoApprovedSubscriptions: []string{
+			fakeSubscriptionID1,
 		},
 		EnableProxyProtocol: ptr.To(false),
 		ClusterName:         fakeClusterName,
@@ -129,13 +130,13 @@ var (
 		LBFrontendIPConfigNames: []string{
 			fakeLbIPConfigName1,
 		},
-		AllowedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AllowedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
-		AutoApprovedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AutoApprovedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
 		EnableProxyProtocol: ptr.To(false),
 		ClusterName:         fakeClusterName,
@@ -163,13 +164,13 @@ var (
 		LBFrontendIPConfigNames: []string{
 			fakeLbIPConfigName1,
 		},
-		AllowedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AllowedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
-		AutoApprovedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AutoApprovedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
 		EnableProxyProtocol: ptr.To(true),
 		ClusterName:         fakeClusterName,
@@ -197,13 +198,13 @@ var (
 		LBFrontendIPConfigNames: []string{
 			fakeLbIPConfigName2,
 		},
-		AllowedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AllowedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
-		AutoApprovedSubscriptions: []*string{
-			ptr.To(fakeSubscriptionID1),
-			ptr.To(fakeSubscriptionID2),
+		AutoApprovedSubscriptions: []string{
+			fakeSubscriptionID1,
+			fakeSubscriptionID2,
 		},
 		EnableProxyProtocol: ptr.To(true),
 		ClusterName:         fakeClusterName,
@@ -241,311 +242,312 @@ var (
 	}
 
 	// fakePrivateLink1 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec1.
-	fakePrivateLink1 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink1 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1)),
+							fakeLbIPConfigName1),
+					},
 				},
 			},
-			Visibility: &armnetwork.PrivateLinkServicePropertiesVisibility{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
+			Visibility: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
 				},
 			},
-			AutoApproval: &armnetwork.PrivateLinkServicePropertiesAutoApproval{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
+			AutoApproval: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
 				},
 			},
 			EnableProxyProtocol: ptr.To(false),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 
 	// fakePrivateLink2 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec2.
-	fakePrivateLink2 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink2 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1)),
+							fakeLbIPConfigName1),
+					},
 				},
 			},
-			Visibility: &armnetwork.PrivateLinkServicePropertiesVisibility{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			Visibility: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
-			AutoApproval: &armnetwork.PrivateLinkServicePropertiesAutoApproval{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
+			AutoApproval: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
 				},
 			},
 			EnableProxyProtocol: ptr.To(false),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 
 	// fakePrivateLink3 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec3.
-	fakePrivateLink3 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink3 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1)),
+							fakeLbIPConfigName1),
+					},
 				},
 			},
-			Visibility: &armnetwork.PrivateLinkServicePropertiesVisibility{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			Visibility: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
-			AutoApproval: &armnetwork.PrivateLinkServicePropertiesAutoApproval{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			AutoApproval: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
 			EnableProxyProtocol: ptr.To(false),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 
 	// fakePrivateLink4 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec4.
-	fakePrivateLink4 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink4 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1)),
+							fakeLbIPConfigName1),
+					},
 				},
 			},
-			Visibility: &armnetwork.PrivateLinkServicePropertiesVisibility{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			Visibility: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
-			AutoApproval: &armnetwork.PrivateLinkServicePropertiesAutoApproval{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			AutoApproval: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
 			EnableProxyProtocol: ptr.To(true),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 
 	// fakePrivateLink5 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec5.
-	fakePrivateLink5 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink5 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName2)),
+							fakeLbIPConfigName2),
+					},
 				},
 			},
-			Visibility: &armnetwork.PrivateLinkServicePropertiesVisibility{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			Visibility: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
-			AutoApproval: &armnetwork.PrivateLinkServicePropertiesAutoApproval{
-				Subscriptions: []*string{
-					ptr.To(fakeSubscriptionID1),
-					ptr.To(fakeSubscriptionID2),
+			AutoApproval: &asonetworkv1.ResourceSet{
+				Subscriptions: []string{
+					fakeSubscriptionID1,
+					fakeSubscriptionID2,
 				},
 			},
 			EnableProxyProtocol: ptr.To(true),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 
 	// fakePrivateLink6 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec6.
-	fakePrivateLink6 = armnetwork.PrivateLinkService{
-		Name:     ptr.To(fakePrivateLinkName),
-		Location: ptr.To(fakeRegion),
-		Properties: &armnetwork.PrivateLinkServiceProperties{
-			IPConfigurations: []*armnetwork.PrivateLinkServiceIPConfiguration{
+	fakePrivateLink6 = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
 				{
 					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Properties: &armnetwork.PrivateLinkServiceIPConfigurationProperties{
-						Subnet: &armnetwork.Subnet{
-							ID: ptr.To(
-								fmt.Sprintf(
-									"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-									fakeSubscriptionID1,
-									fakeVNetResourceGroup,
-									fakeVNetName,
-									fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID1,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
 						},
-						PrivateIPAllocationMethod: ptr.To(armnetwork.IPAllocationMethodDynamic),
-						Primary:                   ptr.To(true),
 					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
 				},
 			},
-			LoadBalancerFrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 				{
-					ID: ptr.To(
-						fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
 							fakeSubscriptionID1,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1)),
+							fakeLbIPConfigName1),
+					},
 				},
 			},
 			EnableProxyProtocol: ptr.To(false),
-		},
-		Tags: map[string]*string{
-			"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: ptr.To("owned"),
-			"Name":  ptr.To(fakePrivateLinkName),
-			"hello": ptr.To("capz"),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
 		},
 	}
 )
@@ -553,8 +555,8 @@ var (
 func TestEqualStringSlicesPtrIgnoreOrder(t *testing.T) {
 	testCases := []struct {
 		name     string
-		value1   []*string
-		value2   []*string
+		value1   []string
+		value2   []string
 		expected bool
 	}{
 		{
@@ -565,50 +567,50 @@ func TestEqualStringSlicesPtrIgnoreOrder(t *testing.T) {
 		},
 		{
 			name:     "Empty slices",
-			value1:   []*string{},
-			value2:   []*string{},
+			value1:   []string{},
+			value2:   []string{},
 			expected: true,
 		},
 		{
 			name:     "Nil and empty slice",
 			value1:   nil,
-			value2:   []*string{},
+			value2:   []string{},
 			expected: true,
 		},
 		{
 			name:     "Same slices with 1 element",
-			value1:   []*string{ptr.To("a")},
-			value2:   []*string{ptr.To("a")},
+			value1:   []string{"a"},
+			value2:   []string{"a"},
 			expected: true,
 		},
 		{
 			name:     "Same slices with 3 elements in same order",
-			value1:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c")},
-			value2:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c")},
+			value1:   []string{"a", "b", "c"},
+			value2:   []string{"a", "b", "c"},
 			expected: true,
 		},
 		{
 			name:     "Same slices with 3 elements in different order",
-			value1:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c")},
-			value2:   []*string{ptr.To("c"), ptr.To("a"), ptr.To("b")},
+			value1:   []string{"a", "b", "c"},
+			value2:   []string{"c", "a", "b"},
 			expected: true,
 		},
 		{
 			name:     "Different slices with 1 element",
-			value1:   []*string{ptr.To("a")},
-			value2:   []*string{ptr.To("b")},
+			value1:   []string{"a"},
+			value2:   []string{"b"},
 			expected: false,
 		},
 		{
 			name:     "Different slices with 3 elements",
-			value1:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c")},
-			value2:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("d")},
+			value1:   []string{"a", "b", "c"},
+			value2:   []string{"a", "b", "d"},
 			expected: false,
 		},
 		{
 			name:     "Slices with different lengths",
-			value1:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c")},
-			value2:   []*string{ptr.To("a"), ptr.To("b"), ptr.To("c"), ptr.To("d")},
+			value1:   []string{"a", "b", "c"},
+			value2:   []string{"a", "b", "c", "d"},
 			expected: false,
 		},
 	}
@@ -618,7 +620,7 @@ func TestEqualStringSlicesPtrIgnoreOrder(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			result := compareStringPointerSlicesUnordered(tc.value1, tc.value2)
+			result := compareStringSlicesUnordered(tc.value1, tc.value2)
 			g.Expect(tc.expected).To(Equal(result))
 		})
 	}
@@ -628,70 +630,70 @@ func TestParameters(t *testing.T) {
 	testcases := []struct {
 		name          string
 		spec          PrivateLinkSpec
-		existing      any
-		expect        func(g *WithT, result any)
+		existing      *asonetworkv1.PrivateLinkService
+		expect        func(g *WithT, result *asonetworkv1.PrivateLinkService)
 		expectedError string
 	}{
 		{
 			name:     "PrivateLink does not exist",
 			spec:     fakePrivateLinkSpec1,
 			existing: nil,
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink1))
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink1))
 			},
 		},
 		{
 			name:     "PrivateLink already exists with the same config",
 			spec:     fakePrivateLinkSpec1,
-			existing: fakePrivateLink1,
-			expect: func(g *WithT, result any) {
+			existing: &fakePrivateLink1,
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
 				g.Expect(result).To(BeNil())
 			},
 		},
 		{
 			name:     "PrivateLink changed and added one new allowed subscription",
 			spec:     fakePrivateLinkSpec2, // spec with 2 allowed subscriptions
-			existing: fakePrivateLink1,     // existing private link with 1 allowed subscription
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink2)) // expects (updated) private link with 2 allowed subscriptions
+			existing: &fakePrivateLink1,    // existing private link with 1 allowed subscription
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink2)) // expects (updated) private link with 2 allowed subscriptions
 			},
 		},
 		{
 			name:     "PrivateLink changed and added one new auto-approved subscription",
 			spec:     fakePrivateLinkSpec3, // spec with 2 auto-approved subscriptions
-			existing: fakePrivateLink2,     // existing private link with 1 auto-approved subscription
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink3)) // expects (updated) private link with 2 auto-approved subscriptions
+			existing: &fakePrivateLink2,    // existing private link with 1 auto-approved subscription
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink3)) // expects (updated) private link with 2 auto-approved subscriptions
 			},
 		},
 		{
 			name:     "PrivateLink changed and enabled proxy protocol",
 			spec:     fakePrivateLinkSpec4, // spec with enabled proxy protocol
-			existing: fakePrivateLink3,     // existing private link with disabled proxy protocol
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink4)) // expects (updated) private link with enabled proxy protocol
+			existing: &fakePrivateLink3,    // existing private link with disabled proxy protocol
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink4)) // expects (updated) private link with enabled proxy protocol
 			},
 		},
 		{
 			name:     "PrivateLink changed LB frontend config name",
 			spec:     fakePrivateLinkSpec5, // spec with changed LB frontend config name
-			existing: fakePrivateLink4,     // existing private link with old LB frontend config name
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink5)) // expects (updated) private link with changed LB frontend config name
+			existing: &fakePrivateLink4,    // existing private link with old LB frontend config name
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink5)) // expects (updated) private link with changed LB frontend config name
 			},
 		},
 		{
 			name:     "PrivateLink without allowed or auto-approved subscriptions",
 			spec:     fakePrivateLinkSpec6, // spec without allowed or auto-approved subscriptions
-			existing: fakePrivateLink1,     // existing private link with 1 allowed and 1 auto-approved subscription
-			expect: func(g *WithT, result any) {
-				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.PrivateLinkService{}))
-				g.Expect(result).To(Equal(fakePrivateLink6))
+			existing: &fakePrivateLink1,    // existing private link with 1 allowed and 1 auto-approved subscription
+			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
+				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
+				g.Expect(result).To(Equal(&fakePrivateLink6))
 			},
 		},
 	}

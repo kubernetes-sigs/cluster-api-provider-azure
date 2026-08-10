@@ -29,9 +29,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	v1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	gomock "go.uber.org/mock/gomock"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 	v1beta10 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -62,144 +61,18 @@ func (m *MockPrivateLinkScope) EXPECT() *MockPrivateLinkScopeMockRecorder {
 	return m.recorder
 }
 
-// APIServerLB mocks base method.
-func (m *MockPrivateLinkScope) APIServerLB() *v1beta1.LoadBalancerSpec {
+// ASOOwner mocks base method.
+func (m *MockPrivateLinkScope) ASOOwner() client.Object {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLB")
-	ret0, _ := ret[0].(*v1beta1.LoadBalancerSpec)
+	ret := m.ctrl.Call(m, "ASOOwner")
+	ret0, _ := ret[0].(client.Object)
 	return ret0
 }
 
-// APIServerLB indicates an expected call of APIServerLB.
-func (mr *MockPrivateLinkScopeMockRecorder) APIServerLB() *gomock.Call {
+// ASOOwner indicates an expected call of ASOOwner.
+func (mr *MockPrivateLinkScopeMockRecorder) ASOOwner() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLB", reflect.TypeOf((*MockPrivateLinkScope)(nil).APIServerLB))
-}
-
-// APIServerLBName mocks base method.
-func (m *MockPrivateLinkScope) APIServerLBName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// APIServerLBName indicates an expected call of APIServerLBName.
-func (mr *MockPrivateLinkScopeMockRecorder) APIServerLBName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockPrivateLinkScope)(nil).APIServerLBName))
-}
-
-// APIServerLBPoolName mocks base method.
-func (m *MockPrivateLinkScope) APIServerLBPoolName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockPrivateLinkScopeMockRecorder) APIServerLBPoolName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockPrivateLinkScope)(nil).APIServerLBPoolName))
-}
-
-// AdditionalTags mocks base method.
-func (m *MockPrivateLinkScope) AdditionalTags() v1beta1.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
-}
-
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockPrivateLinkScopeMockRecorder) AdditionalTags() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockPrivateLinkScope)(nil).AdditionalTags))
-}
-
-// AvailabilitySetEnabled mocks base method.
-func (m *MockPrivateLinkScope) AvailabilitySetEnabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockPrivateLinkScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockPrivateLinkScope)(nil).AvailabilitySetEnabled))
-}
-
-// BaseURI mocks base method.
-func (m *MockPrivateLinkScope) BaseURI() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockPrivateLinkScopeMockRecorder) BaseURI() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockPrivateLinkScope)(nil).BaseURI))
-}
-
-// ClientID mocks base method.
-func (m *MockPrivateLinkScope) ClientID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientID indicates an expected call of ClientID.
-func (mr *MockPrivateLinkScopeMockRecorder) ClientID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockPrivateLinkScope)(nil).ClientID))
-}
-
-// ClientSecret mocks base method.
-func (m *MockPrivateLinkScope) ClientSecret() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClientSecret")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClientSecret indicates an expected call of ClientSecret.
-func (mr *MockPrivateLinkScopeMockRecorder) ClientSecret() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockPrivateLinkScope)(nil).ClientSecret))
-}
-
-// CloudEnvironment mocks base method.
-func (m *MockPrivateLinkScope) CloudEnvironment() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudEnvironment")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// CloudEnvironment indicates an expected call of CloudEnvironment.
-func (mr *MockPrivateLinkScopeMockRecorder) CloudEnvironment() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockPrivateLinkScope)(nil).CloudEnvironment))
-}
-
-// CloudProviderConfigOverrides mocks base method.
-func (m *MockPrivateLinkScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
-	return ret0
-}
-
-// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
-func (mr *MockPrivateLinkScopeMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockPrivateLinkScope)(nil).CloudProviderConfigOverrides))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ASOOwner", reflect.TypeOf((*MockPrivateLinkScope)(nil).ASOOwner))
 }
 
 // ClusterName mocks base method.
@@ -214,34 +87,6 @@ func (m *MockPrivateLinkScope) ClusterName() string {
 func (mr *MockPrivateLinkScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockPrivateLinkScope)(nil).ClusterName))
-}
-
-// ControlPlaneRouteTable mocks base method.
-func (m *MockPrivateLinkScope) ControlPlaneRouteTable() v1beta1.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(v1beta1.RouteTable)
-	return ret0
-}
-
-// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
-func (mr *MockPrivateLinkScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockPrivateLinkScope)(nil).ControlPlaneRouteTable))
-}
-
-// ControlPlaneSubnet mocks base method.
-func (m *MockPrivateLinkScope) ControlPlaneSubnet() v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
-	return ret0
-}
-
-// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
-func (mr *MockPrivateLinkScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockPrivateLinkScope)(nil).ControlPlaneSubnet))
 }
 
 // DefaultedAzureCallTimeout mocks base method.
@@ -298,62 +143,6 @@ func (mr *MockPrivateLinkScopeMockRecorder) DeleteLongRunningOperationState(arg0
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockPrivateLinkScope)(nil).DeleteLongRunningOperationState), arg0, arg1, arg2)
 }
 
-// ExtendedLocation mocks base method.
-func (m *MockPrivateLinkScope) ExtendedLocation() *v1beta1.ExtendedLocationSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtendedLocation")
-	ret0, _ := ret[0].(*v1beta1.ExtendedLocationSpec)
-	return ret0
-}
-
-// ExtendedLocation indicates an expected call of ExtendedLocation.
-func (mr *MockPrivateLinkScopeMockRecorder) ExtendedLocation() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocation", reflect.TypeOf((*MockPrivateLinkScope)(nil).ExtendedLocation))
-}
-
-// ExtendedLocationName mocks base method.
-func (m *MockPrivateLinkScope) ExtendedLocationName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtendedLocationName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ExtendedLocationName indicates an expected call of ExtendedLocationName.
-func (mr *MockPrivateLinkScopeMockRecorder) ExtendedLocationName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationName", reflect.TypeOf((*MockPrivateLinkScope)(nil).ExtendedLocationName))
-}
-
-// ExtendedLocationType mocks base method.
-func (m *MockPrivateLinkScope) ExtendedLocationType() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtendedLocationType")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ExtendedLocationType indicates an expected call of ExtendedLocationType.
-func (mr *MockPrivateLinkScopeMockRecorder) ExtendedLocationType() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendedLocationType", reflect.TypeOf((*MockPrivateLinkScope)(nil).ExtendedLocationType))
-}
-
-// FailureDomains mocks base method.
-func (m *MockPrivateLinkScope) FailureDomains() []*string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]*string)
-	return ret0
-}
-
-// FailureDomains indicates an expected call of FailureDomains.
-func (mr *MockPrivateLinkScopeMockRecorder) FailureDomains() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockPrivateLinkScope)(nil).FailureDomains))
-}
-
 // GetClient mocks base method.
 func (m *MockPrivateLinkScope) GetClient() client.Client {
 	m.ctrl.T.Helper()
@@ -366,20 +155,6 @@ func (m *MockPrivateLinkScope) GetClient() client.Client {
 func (mr *MockPrivateLinkScopeMockRecorder) GetClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockPrivateLinkScope)(nil).GetClient))
-}
-
-// GetDeletionTimestamp mocks base method.
-func (m *MockPrivateLinkScope) GetDeletionTimestamp() *v1.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
-	ret0, _ := ret[0].(*v1.Time)
-	return ret0
-}
-
-// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
-func (mr *MockPrivateLinkScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockPrivateLinkScope)(nil).GetDeletionTimestamp))
 }
 
 // GetLongRunningOperationState mocks base method.
@@ -396,151 +171,11 @@ func (mr *MockPrivateLinkScopeMockRecorder) GetLongRunningOperationState(arg0, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockPrivateLinkScope)(nil).GetLongRunningOperationState), arg0, arg1, arg2)
 }
 
-// GetPrivateDNSZoneName mocks base method.
-func (m *MockPrivateLinkScope) GetPrivateDNSZoneName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPrivateDNSZoneName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetPrivateDNSZoneName indicates an expected call of GetPrivateDNSZoneName.
-func (mr *MockPrivateLinkScopeMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockPrivateLinkScope)(nil).GetPrivateDNSZoneName))
-}
-
-// HashKey mocks base method.
-func (m *MockPrivateLinkScope) HashKey() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HashKey")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// HashKey indicates an expected call of HashKey.
-func (mr *MockPrivateLinkScopeMockRecorder) HashKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockPrivateLinkScope)(nil).HashKey))
-}
-
-// IsAPIServerPrivate mocks base method.
-func (m *MockPrivateLinkScope) IsAPIServerPrivate() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
-func (mr *MockPrivateLinkScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockPrivateLinkScope)(nil).IsAPIServerPrivate))
-}
-
-// IsIPv6Enabled mocks base method.
-func (m *MockPrivateLinkScope) IsIPv6Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPv6Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
-func (mr *MockPrivateLinkScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockPrivateLinkScope)(nil).IsIPv6Enabled))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockPrivateLinkScope) IsVnetManaged() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockPrivateLinkScopeMockRecorder) IsVnetManaged() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockPrivateLinkScope)(nil).IsVnetManaged))
-}
-
-// Location mocks base method.
-func (m *MockPrivateLinkScope) Location() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Location")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Location indicates an expected call of Location.
-func (mr *MockPrivateLinkScopeMockRecorder) Location() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockPrivateLinkScope)(nil).Location))
-}
-
-// NodeResourceGroup mocks base method.
-func (m *MockPrivateLinkScope) NodeResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// NodeResourceGroup indicates an expected call of NodeResourceGroup.
-func (mr *MockPrivateLinkScopeMockRecorder) NodeResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeResourceGroup", reflect.TypeOf((*MockPrivateLinkScope)(nil).NodeResourceGroup))
-}
-
-// NodeSubnets mocks base method.
-func (m *MockPrivateLinkScope) NodeSubnets() []v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnets")
-	ret0, _ := ret[0].([]v1beta1.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnets indicates an expected call of NodeSubnets.
-func (mr *MockPrivateLinkScopeMockRecorder) NodeSubnets() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnets", reflect.TypeOf((*MockPrivateLinkScope)(nil).NodeSubnets))
-}
-
-// OutboundLBName mocks base method.
-func (m *MockPrivateLinkScope) OutboundLBName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// OutboundLBName indicates an expected call of OutboundLBName.
-func (mr *MockPrivateLinkScopeMockRecorder) OutboundLBName(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockPrivateLinkScope)(nil).OutboundLBName), arg0)
-}
-
-// OutboundPoolName mocks base method.
-func (m *MockPrivateLinkScope) OutboundPoolName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// OutboundPoolName indicates an expected call of OutboundPoolName.
-func (mr *MockPrivateLinkScopeMockRecorder) OutboundPoolName(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockPrivateLinkScope)(nil).OutboundPoolName), arg0)
-}
-
 // PrivateLinkSpecs mocks base method.
-func (m *MockPrivateLinkScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
+func (m *MockPrivateLinkScope) PrivateLinkSpecs() []azure.ASOResourceSpecGetter[*v1api20220701.PrivateLinkService] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PrivateLinkSpecs")
-	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
+	ret0, _ := ret[0].([]azure.ASOResourceSpecGetter[*v1api20220701.PrivateLinkService])
 	return ret0
 }
 
@@ -548,20 +183,6 @@ func (m *MockPrivateLinkScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
 func (mr *MockPrivateLinkScopeMockRecorder) PrivateLinkSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrivateLinkSpecs", reflect.TypeOf((*MockPrivateLinkScope)(nil).PrivateLinkSpecs))
-}
-
-// ResourceGroup mocks base method.
-func (m *MockPrivateLinkScope) ResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockPrivateLinkScopeMockRecorder) ResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockPrivateLinkScope)(nil).ResourceGroup))
 }
 
 // SetLongRunningOperationState mocks base method.
@@ -574,88 +195,6 @@ func (m *MockPrivateLinkScope) SetLongRunningOperationState(arg0 *v1beta1.Future
 func (mr *MockPrivateLinkScopeMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockPrivateLinkScope)(nil).SetLongRunningOperationState), arg0)
-}
-
-// SetSubnet mocks base method.
-func (m *MockPrivateLinkScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSubnet", arg0)
-}
-
-// SetSubnet indicates an expected call of SetSubnet.
-func (mr *MockPrivateLinkScopeMockRecorder) SetSubnet(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockPrivateLinkScope)(nil).SetSubnet), arg0)
-}
-
-// Subnet mocks base method.
-func (m *MockPrivateLinkScope) Subnet(arg0 string) v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Subnet", arg0)
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
-	return ret0
-}
-
-// Subnet indicates an expected call of Subnet.
-func (mr *MockPrivateLinkScopeMockRecorder) Subnet(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnet", reflect.TypeOf((*MockPrivateLinkScope)(nil).Subnet), arg0)
-}
-
-// Subnets mocks base method.
-func (m *MockPrivateLinkScope) Subnets() v1beta1.Subnets {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Subnets")
-	ret0, _ := ret[0].(v1beta1.Subnets)
-	return ret0
-}
-
-// Subnets indicates an expected call of Subnets.
-func (mr *MockPrivateLinkScopeMockRecorder) Subnets() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnets", reflect.TypeOf((*MockPrivateLinkScope)(nil).Subnets))
-}
-
-// SubscriptionID mocks base method.
-func (m *MockPrivateLinkScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockPrivateLinkScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockPrivateLinkScope)(nil).SubscriptionID))
-}
-
-// TenantID mocks base method.
-func (m *MockPrivateLinkScope) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockPrivateLinkScopeMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockPrivateLinkScope)(nil).TenantID))
-}
-
-// Token mocks base method.
-func (m *MockPrivateLinkScope) Token() azcore.TokenCredential {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Token")
-	ret0, _ := ret[0].(azcore.TokenCredential)
-	return ret0
-}
-
-// Token indicates an expected call of Token.
-func (mr *MockPrivateLinkScopeMockRecorder) Token() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockPrivateLinkScope)(nil).Token))
 }
 
 // UpdateDeleteStatus mocks base method.
@@ -692,18 +231,4 @@ func (m *MockPrivateLinkScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1
 func (mr *MockPrivateLinkScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockPrivateLinkScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
-}
-
-// Vnet mocks base method.
-func (m *MockPrivateLinkScope) Vnet() *v1beta1.VnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1beta1.VnetSpec)
-	return ret0
-}
-
-// Vnet indicates an expected call of Vnet.
-func (mr *MockPrivateLinkScopeMockRecorder) Vnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockPrivateLinkScope)(nil).Vnet))
 }

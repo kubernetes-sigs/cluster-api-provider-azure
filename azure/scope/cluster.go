@@ -1289,11 +1289,11 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*aso
 }
 
 // PrivateLinkSpecs returns the private link specs.
-func (s *ClusterScope) PrivateLinkSpecs() []azure.ResourceSpecGetter {
+func (s *ClusterScope) PrivateLinkSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService] {
 	// First we get all private links to API server load balancer.
 	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
 	// for those.
-	privateLinksSpecs := make([]azure.ResourceSpecGetter, 0)
+	privateLinksSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService], 0)
 
 	if s.AzureCluster.Spec.NetworkSpec.APIServerLB != nil {
 		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {

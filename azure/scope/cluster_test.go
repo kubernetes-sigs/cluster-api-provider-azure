@@ -4166,7 +4166,7 @@ func TestPrivateLinks(t *testing.T) {
 	tests := []struct {
 		name                     string
 		azureCluster             infrav1.AzureCluster
-		expectedPrivateLinkSpecs []azure.ResourceSpecGetter
+		expectedPrivateLinkSpecs []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService]
 	}{
 		{
 			name: "AzureCluster with a private link",
@@ -4214,11 +4214,11 @@ func TestPrivateLinks(t *testing.T) {
 									LBFrontendIPConfigNames: []string{
 										fmt.Sprintf("%s-frontend", fakeAPILBName),
 									},
-									AllowedSubscriptions: []*string{
-										&fakeSubscriptionID,
+									AllowedSubscriptions: []string{
+										fakeSubscriptionID,
 									},
-									AutoApprovedSubscriptions: []*string{
-										&fakeSubscriptionID,
+									AutoApprovedSubscriptions: []string{
+										fakeSubscriptionID,
 									},
 								},
 							},
@@ -4237,7 +4237,7 @@ func TestPrivateLinks(t *testing.T) {
 					},
 				},
 			},
-			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{
+			expectedPrivateLinkSpecs: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService]{
 				&privatelinks.PrivateLinkSpec{
 					Name:              fmt.Sprintf("%s-privatelink", fakeAPILBName),
 					ResourceGroup:     fakeResourceGroup,
@@ -4255,11 +4255,11 @@ func TestPrivateLinks(t *testing.T) {
 							Subnet:           fakeSubnetName,
 						},
 					},
-					AllowedSubscriptions: []*string{
-						&fakeSubscriptionID,
+					AllowedSubscriptions: []string{
+						fakeSubscriptionID,
 					},
-					AutoApprovedSubscriptions: []*string{
-						&fakeSubscriptionID,
+					AutoApprovedSubscriptions: []string{
+						fakeSubscriptionID,
 					},
 					ClusterName:    fakeClusterName,
 					AdditionalTags: map[string]string{},
@@ -4305,7 +4305,7 @@ func TestPrivateLinks(t *testing.T) {
 					},
 				},
 			},
-			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{},
+			expectedPrivateLinkSpecs: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService]{},
 		},
 
 		{
@@ -4320,7 +4320,7 @@ func TestPrivateLinks(t *testing.T) {
 					},
 				},
 			},
-			expectedPrivateLinkSpecs: []azure.ResourceSpecGetter{},
+			expectedPrivateLinkSpecs: []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService]{},
 		},
 	}
 

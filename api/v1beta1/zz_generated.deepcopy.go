@@ -4025,25 +4025,13 @@ func (in *PrivateLink) DeepCopyInto(out *PrivateLink) {
 	}
 	if in.AllowedSubscriptions != nil {
 		in, out := &in.AllowedSubscriptions, &out.AllowedSubscriptions
-		*out = make([]*string, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
-				**out = **in
-			}
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.AutoApprovedSubscriptions != nil {
 		in, out := &in.AutoApprovedSubscriptions, &out.AutoApprovedSubscriptions
-		*out = make([]*string, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(string)
-				**out = **in
-			}
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.EnableProxyProtocol != nil {
 		in, out := &in.EnableProxyProtocol, &out.EnableProxyProtocol

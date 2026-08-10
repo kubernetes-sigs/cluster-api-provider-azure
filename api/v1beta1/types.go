@@ -444,12 +444,12 @@ type PrivateLink struct {
 
 	// AllowedSubscriptions is a list of subscriptions from which the private link can be accessed.
 	// +optional
-	AllowedSubscriptions []*string `json:"allowedSubscriptions,omitempty"`
+	AllowedSubscriptions []string `json:"allowedSubscriptions,omitempty"`
 
 	// AutoApprovedSubscriptions is a list of subscription for which the connections to private link are automatically
 	// approved.
 	// +optional
-	AutoApprovedSubscriptions []*string `json:"autoApprovedSubscriptions,omitempty"`
+	AutoApprovedSubscriptions []string `json:"autoApprovedSubscriptions,omitempty"`
 
 	// EnableProxyProtocol indicates whether the private link service is enabled for proxy protocol or not.
 	// +optional
