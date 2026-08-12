@@ -261,6 +261,17 @@ linters:
       - linters:
           - staticcheck
         text: 'QF1008: could remove embedded field'
+      - linters:
+          - staticcheck
+        text: 'QF1012:'
+      # The govet "inline" analyzer only emits informational notes; ignore them.
+      - linters:
+          - govet
+        text: 'cannot inline'
+      # gosec taint rules: false positives in test code.
+      - linters:
+          - gosec
+        text: '(G204|G703):'
     paths:
       - zz_generated\.(\w*)\.go$
       - third_party$

@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - role.yaml
 - aggregation_role.yaml
+- kubeadm_bootstrap_control_plane_role.yaml
 - role_binding.yaml
 - service_account.yaml
 - leader_election_role.yaml

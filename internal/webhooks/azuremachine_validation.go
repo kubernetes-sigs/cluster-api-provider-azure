@@ -83,11 +83,11 @@ func validateAzureMachineSpec(spec infrav1.AzureMachineSpec) field.ErrorList {
 
 // ValidateNetwork validates the network configuration.
 func ValidateNetwork(subnetName string, acceleratedNetworking *bool, networkInterfaces []infrav1.NetworkInterface, fldPath *field.Path) field.ErrorList {
-	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && subnetName != "" {
+	if len(networkInterfaces) > 0 && subnetName != "" {
 		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both networkInterfaces and machine subnetName")}
 	}
 
-	if (networkInterfaces != nil) && len(networkInterfaces) > 0 && acceleratedNetworking != nil {
+	if len(networkInterfaces) > 0 && acceleratedNetworking != nil {
 		return field.ErrorList{field.Invalid(fldPath, networkInterfaces, "cannot set both networkInterfaces and machine acceleratedNetworking")}
 	}
 
