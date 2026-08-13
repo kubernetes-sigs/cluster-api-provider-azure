@@ -71,7 +71,31 @@ var (
 		},
 	}
 
-	// fakePrivateLink is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec1.
+	fakePrivateLinkSpecWithoutSubscriptions = PrivateLinkSpec{
+		Name:              fakePrivateLinkName,
+		ResourceGroup:     fakeClusterName,
+		SubscriptionID:    fakeSubscriptionID,
+		Location:          fakeRegion,
+		VNetResourceGroup: fakeVNetResourceGroup,
+		VNet:              fakeVNetName,
+		NATIPConfiguration: []NATIPConfiguration{
+			{
+				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
+				Subnet:           fakeSubnetName,
+			},
+		},
+		LoadBalancerName: fakeLbName,
+		LBFrontendIPConfigNames: []string{
+			fakeLbIPConfigName,
+		},
+		EnableProxyProtocol: ptr.To(true),
+		ClusterName:         fakeClusterName,
+		AdditionalTags: map[string]string{
+			"hello": "capz",
+		},
+	}
+
+	// fakePrivateLink is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec.
 	fakePrivateLink = asonetworkv1.PrivateLinkService{
 		Spec: asonetworkv1.PrivateLinkService_Spec{
 			AzureName: fakePrivateLinkName,
@@ -125,6 +149,51 @@ var (
 			},
 		},
 	}
+
+	// fakePrivateLinkWithoutSubscriptions corresponds to fakePrivateLinkSpecWithoutSubscriptions
+	fakePrivateLinkWithoutSubscriptions = asonetworkv1.PrivateLinkService{
+		Spec: asonetworkv1.PrivateLinkService_Spec{
+			AzureName: fakePrivateLinkName,
+			Location:  ptr.To(fakeRegion),
+			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
+				{
+					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
+					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
+						Reference: &genruntime.ResourceReference{
+							ARMID: fmt.Sprintf(
+								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+								fakeSubscriptionID,
+								fakeVNetResourceGroup,
+								fakeVNetName,
+								fakeSubnetName),
+						},
+					},
+					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
+					Primary:                   ptr.To(true),
+				},
+			},
+			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
+				{
+					Reference: &genruntime.ResourceReference{
+						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
+							fakeSubscriptionID,
+							fakeClusterName,
+							fakeLbName,
+							fakeLbIPConfigName),
+					},
+				},
+			},
+			EnableProxyProtocol: ptr.To(true),
+			Tags: map[string]string{
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
+				"Name":  fakePrivateLinkName,
+				"hello": "capz",
+			},
+			Owner: &genruntime.KnownResourceReference{
+				Name: fakePrivateLinkSpec.ResourceGroup,
+			},
+		},
+	}
 )
 
 func TestParameters(t *testing.T) {
@@ -155,6 +224,12 @@ func TestParameters(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "removing subscriptions from existing PrivateLink",
+			spec:     fakePrivateLinkSpecWithoutSubscriptions,
+			existing: &fakePrivateLink,
+			expected: &fakePrivateLinkWithoutSubscriptions,
+		},
 	}
 
 	for _, tc := range testcases {
@@ -162,7 +237,7 @@ func TestParameters(t *testing.T) {
 			g := NewGomegaWithT(t)
 			t.Parallel()
 
-			result, err := tc.spec.Parameters(t.Context(), tc.existing)
+			result, err := tc.spec.Parameters(t.Context(), tc.existing.DeepCopy())
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cmp.Diff(tc.expected, result)).To(BeEmpty())
 		})

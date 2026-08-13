@@ -106,11 +106,14 @@ func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *aso
 		}
 	}
 
+	privateLink.Spec.Visibility = nil
 	if len(s.AllowedSubscriptions) > 0 {
 		privateLink.Spec.Visibility = &asonetworkv1.ResourceSet{
 			Subscriptions: s.AllowedSubscriptions,
 		}
 	}
+
+	privateLink.Spec.AutoApproval = nil
 	if len(s.AutoApprovedSubscriptions) > 0 {
 		privateLink.Spec.AutoApproval = &asonetworkv1.ResourceSet{
 			Subscriptions: s.AutoApprovedSubscriptions,
