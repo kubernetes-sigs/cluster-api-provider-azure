@@ -60,6 +60,7 @@ type NATIPConfiguration struct {
 	PrivateIPAddress string
 }
 
+// ResourceRef implements [azure.ASOResourceSpecGetter.ResourceRef].
 func (s *PrivateLinkSpec) ResourceRef() *asonetworkv1.PrivateLinkService {
 	return &asonetworkv1.PrivateLinkService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -68,196 +69,83 @@ func (s *PrivateLinkSpec) ResourceRef() *asonetworkv1.PrivateLinkService {
 	}
 }
 
-// Parameters returns the parameters for the private link.
+// Parameters implements [azure.ASOResourceSpecGetter.Parameters].
 func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *asonetworkv1.PrivateLinkService) (*asonetworkv1.PrivateLinkService, error) {
-	// Private link already exists, so we have to check if it should be updated.
-	if existingPrivateLink != nil {
-		privateLinkToCreate, err := s.constructParameters()
-		if err != nil {
-			return nil, err
-		}
-
-		if isExistingUpToDate(existingPrivateLink, privateLinkToCreate) {
-			// Existing private link is up-to-date.
-			return nil, nil
-		}
-
-		// Existing private link is outdated, we return new updated parameters.
-		return privateLinkToCreate, nil
+	privateLink := existingPrivateLink
+	if privateLink == nil {
+		privateLink = new(asonetworkv1.PrivateLinkService)
 	}
 
-	// Private link does not exist, so we create it here.
-	privateLinkToCreate, err := s.constructParameters()
-	if err != nil {
-		return nil, err
-	}
+	privateLink.Spec.AzureName = s.Name
+	privateLink.Spec.Location = ptr.To(s.Location)
+	privateLink.Spec.EnableProxyProtocol = s.EnableProxyProtocol
 
-	return privateLinkToCreate, nil
-}
-
-func (s *PrivateLinkSpec) constructParameters() (params *asonetworkv1.PrivateLinkService, err error) {
-	if len(s.NATIPConfiguration) == 0 {
-		return nil, errors.Errorf("At least one private link NAT IP configuration must be specified")
-	}
-	if len(s.LBFrontendIPConfigNames) == 0 {
-		return nil, errors.Errorf("At least one load balancer front end name must be specified")
-	}
-
-	// NAT IP configurations
-	ipConfigurations := make([]asonetworkv1.PrivateLinkServiceIpConfiguration, 0, len(s.NATIPConfiguration))
-	for i, natIPConfiguration := range s.NATIPConfiguration {
-		ipAllocationMethod := asonetworkv1.IPAllocationMethod(natIPConfiguration.AllocationMethod)
+	privateLink.Spec.IpConfigurations = make([]asonetworkv1.PrivateLinkServiceIpConfiguration, len(s.NATIPConfiguration))
+	for i, natIpConfiguration := range s.NATIPConfiguration {
+		ipAllocationMethod := asonetworkv1.IPAllocationMethod(natIpConfiguration.AllocationMethod)
 		if ipAllocationMethod != asonetworkv1.IPAllocationMethod_Dynamic && ipAllocationMethod != asonetworkv1.IPAllocationMethod_Static {
 			return nil, errors.Errorf("%q is not a supported NAT IP allocation method (must be %q or %q)",
-				natIPConfiguration.AllocationMethod, infrav1.NATIPAllocationMethodStatic, infrav1.NATIPAllocationMethodDynamic)
+				natIpConfiguration.AllocationMethod, infrav1.NATIPAllocationMethodStatic, infrav1.NATIPAllocationMethodDynamic)
 		}
 
 		var privateIPAddress *string
 		if ipAllocationMethod == asonetworkv1.IPAllocationMethod_Static {
-			if natIPConfiguration.PrivateIPAddress != "" {
-				privateIPAddress = ptr.To(natIPConfiguration.PrivateIPAddress)
+			if natIpConfiguration.PrivateIPAddress != "" {
+				privateIPAddress = ptr.To(natIpConfiguration.PrivateIPAddress)
 			} else {
 				return nil, errors.Errorf("Private link NAT IP configuration with static IP allocation must specify a private address")
 			}
 		}
 
-		ipConfiguration := asonetworkv1.PrivateLinkServiceIpConfiguration{
-			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIPConfiguration.Subnet, i+1)),
+		privateLink.Spec.IpConfigurations[i] = asonetworkv1.PrivateLinkServiceIpConfiguration{
+			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIpConfiguration.Subnet, i+1)),
 			Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
 				Reference: &genruntime.ResourceReference{
-					ARMID: azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIPConfiguration.Subnet),
+					ARMID: azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIpConfiguration.Subnet),
 				},
 			},
 			PrivateIPAllocationMethod: &ipAllocationMethod,
 			PrivateIPAddress:          privateIPAddress,
 		}
-		ipConfigurations = append(ipConfigurations, ipConfiguration)
-		ipConfigurations[0].Primary = ptr.To(true)
-	}
 
-	// Load balancer front-end IP configurations
-	frontendIPConfigurations := make([]asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded, 0, len(s.LBFrontendIPConfigNames))
-	for _, frontendIPConfigName := range s.LBFrontendIPConfigNames {
-		frontendIPConfig := asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
+	}
+	privateLink.Spec.IpConfigurations[0].Primary = ptr.To(true)
+
+	privateLink.Spec.LoadBalancerFrontendIpConfigurations = make([]asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded, len(s.LBFrontendIPConfigNames))
+	for i, frontendIPConfigName := range s.LBFrontendIPConfigNames {
+		privateLink.Spec.LoadBalancerFrontendIpConfigurations[i] = asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
 			Reference: &genruntime.ResourceReference{
 				ARMID: azure.FrontendIPConfigID(s.SubscriptionID, s.ResourceGroup, s.LoadBalancerName, frontendIPConfigName),
 			},
 		}
-		frontendIPConfigurations = append(frontendIPConfigurations, frontendIPConfig)
-	}
-
-	privateLinkToCreate := &asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName:                            s.Name,
-			Location:                             ptr.To(s.Location),
-			IpConfigurations:                     ipConfigurations,
-			LoadBalancerFrontendIpConfigurations: frontendIPConfigurations,
-			EnableProxyProtocol:                  s.EnableProxyProtocol,
-			Owner: &genruntime.KnownResourceReference{
-				Name: azure.GetNormalizedKubernetesName(s.ResourceGroup),
-			},
-			Tags: infrav1.Build(infrav1.BuildParams{
-				ClusterName: s.ClusterName,
-				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Name:        ptr.To(s.Name),
-				Additional:  s.AdditionalTags,
-			}),
-		},
 	}
 
 	if len(s.AllowedSubscriptions) > 0 {
-		privateLinkToCreate.Spec.Visibility = &asonetworkv1.ResourceSet{
+		privateLink.Spec.Visibility = &asonetworkv1.ResourceSet{
 			Subscriptions: s.AllowedSubscriptions,
 		}
 	}
 	if len(s.AutoApprovedSubscriptions) > 0 {
-		privateLinkToCreate.Spec.AutoApproval = &asonetworkv1.ResourceSet{
+		privateLink.Spec.AutoApproval = &asonetworkv1.ResourceSet{
 			Subscriptions: s.AutoApprovedSubscriptions,
 		}
 	}
 
-	return privateLinkToCreate, nil
+	privateLink.Spec.Owner = &genruntime.KnownResourceReference{
+		Name: azure.GetNormalizedKubernetesName(s.ResourceGroup),
+	}
+
+	privateLink.Spec.Tags = infrav1.Build(infrav1.BuildParams{
+		ClusterName: s.ClusterName,
+		Lifecycle:   infrav1.ResourceLifecycleOwned,
+		Name:        ptr.To(s.Name),
+		Additional:  s.AdditionalTags,
+	})
+
+	return privateLink, nil
 }
 
-func isExistingUpToDate(existing *asonetworkv1.PrivateLinkService, wanted *asonetworkv1.PrivateLinkService) bool {
-	// NAT IP configuration is not checked as it cannot be changed.
-
-	// Check load balancer configurations
-	wantedFrontendIDs := make([]string, len(wanted.Spec.LoadBalancerFrontendIpConfigurations))
-	for _, wantedFrontendIPConfig := range wanted.Spec.LoadBalancerFrontendIpConfigurations {
-		wantedFrontendIDs = append(wantedFrontendIDs, wantedFrontendIPConfig.Reference.ARMID)
-	}
-
-	existingFrontendIDs := make([]string, len(existing.Spec.LoadBalancerFrontendIpConfigurations))
-	for _, existingFrontendIPConfig := range existing.Spec.LoadBalancerFrontendIpConfigurations {
-		existingFrontendIDs = append(existingFrontendIDs, existingFrontendIPConfig.Reference.ARMID)
-	}
-
-	if !compareStringSlicesUnordered(wantedFrontendIDs, existingFrontendIDs) {
-		return false
-	}
-
-	// Check proxy protocol config
-	if !ptr.Equal(wanted.Spec.EnableProxyProtocol, existing.Spec.EnableProxyProtocol) {
-		return false
-	}
-
-	// Check allowed subscriptions
-	if !compareStringSlicesUnordered(
-		visibilitySubscriptionsOrNil(wanted.Spec),
-		visibilitySubscriptionsOrNil(existing.Spec)) {
-		return false
-	}
-
-	// Check auto-approved subscriptions
-	if !compareStringSlicesUnordered(
-		autoApprovalSubscriptionsOrNil(wanted.Spec),
-		autoApprovalSubscriptionsOrNil(existing.Spec)) {
-		return false
-	}
-
-	return true
-}
-
-func compareStringSlicesUnordered(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	m := make(map[string]struct{}, len(a))
-	for _, x := range a {
-		if x == "" {
-			continue
-		}
-		m[x] = struct{}{}
-	}
-	for _, y := range b {
-		if y == "" {
-			continue
-		}
-		if _, ok := m[y]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-func visibilitySubscriptionsOrNil(p asonetworkv1.PrivateLinkService_Spec) []string {
-	if p.Visibility == nil {
-		return nil
-	}
-
-	return p.Visibility.Subscriptions
-}
-
-func autoApprovalSubscriptionsOrNil(p asonetworkv1.PrivateLinkService_Spec) []string {
-	if p.AutoApproval == nil {
-		return nil
-	}
-
-	return p.AutoApproval.Subscriptions
-}
-
-// WasManaged implements azure.ASOResourceSpecGetter.
+// WasManaged implements [azure.ASOResourceSpecGetter.WasManaged].
 // It always returns true since CAPZ doesn't support BYO private links.
 func (s *PrivateLinkSpec) WasManaged(_ *asonetworkv1.PrivateLinkService) bool {
 	return true

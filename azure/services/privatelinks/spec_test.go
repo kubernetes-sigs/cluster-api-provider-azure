@@ -17,12 +17,12 @@ limitations under the License.
 package privatelinks
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -30,28 +30,21 @@ import (
 
 const (
 	fakeRegion            = "westeurope"
-	fakeSubscriptionID1   = "abcd"
-	fakeSubscriptionID2   = "efgh"
+	fakeSubscriptionID    = "abcd"
 	fakeClusterName       = "my-cluster"
 	fakeVNetResourceGroup = fakeClusterName
 	fakeVNetName          = fakeClusterName + "-vnet"
 	fakeSubnetName        = fakeClusterName + "-node-subnet"
 	fakeLbName            = fakeClusterName + "-internal-lb"
-	fakeLbIPConfigName1   = fakeLbName + "-frontend1"
-	fakeLbIPConfigName2   = fakeLbName + "-frontend2"
+	fakeLbIPConfigName    = fakeLbName + "-frontend1"
 	fakePrivateLinkName   = "apiserver-privatelink"
 )
 
 var (
-	// fakePrivateLinkSpec1 is private link spec with:
-	// - 1 allowed subscription,
-	// - 1 auto-approved subscription,
-	// - disabled proxy protocol and
-	// - additional tag "hello:capz".
-	fakePrivateLinkSpec1 = PrivateLinkSpec{
+	fakePrivateLinkSpec = PrivateLinkSpec{
 		Name:              fakePrivateLinkName,
 		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
+		SubscriptionID:    fakeSubscriptionID,
 		Location:          fakeRegion,
 		VNetResourceGroup: fakeVNetResourceGroup,
 		VNet:              fakeVNetName,
@@ -63,114 +56,13 @@ var (
 		},
 		LoadBalancerName: fakeLbName,
 		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName1,
+			fakeLbIPConfigName,
 		},
 		AllowedSubscriptions: []string{
-			fakeSubscriptionID1,
+			fakeSubscriptionID,
 		},
 		AutoApprovedSubscriptions: []string{
-			fakeSubscriptionID1,
-		},
-		EnableProxyProtocol: ptr.To(false),
-		ClusterName:         fakeClusterName,
-		AdditionalTags: map[string]string{
-			"hello": "capz",
-		},
-	}
-
-	// fakePrivateLinkSpec2 is modified fakePrivateLinkSpec1 with following changes:
-	// - 1 added allowed subscription.
-	fakePrivateLinkSpec2 = PrivateLinkSpec{
-		Name:              fakePrivateLinkName,
-		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
-		Location:          fakeRegion,
-		VNetResourceGroup: fakeVNetResourceGroup,
-		VNet:              fakeVNetName,
-		NATIPConfiguration: []NATIPConfiguration{
-			{
-				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
-				Subnet:           fakeSubnetName,
-			},
-		},
-		LoadBalancerName: fakeLbName,
-		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName1,
-		},
-		AllowedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		AutoApprovedSubscriptions: []string{
-			fakeSubscriptionID1,
-		},
-		EnableProxyProtocol: ptr.To(false),
-		ClusterName:         fakeClusterName,
-		AdditionalTags: map[string]string{
-			"hello": "capz",
-		},
-	}
-
-	// fakePrivateLinkSpec3 is modified fakePrivateLinkSpec2 with following changes:
-	// - 1 added auto-approved subscription.
-	fakePrivateLinkSpec3 = PrivateLinkSpec{
-		Name:              fakePrivateLinkName,
-		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
-		Location:          fakeRegion,
-		VNetResourceGroup: fakeVNetResourceGroup,
-		VNet:              fakeVNetName,
-		NATIPConfiguration: []NATIPConfiguration{
-			{
-				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
-				Subnet:           fakeSubnetName,
-			},
-		},
-		LoadBalancerName: fakeLbName,
-		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName1,
-		},
-		AllowedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		AutoApprovedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		EnableProxyProtocol: ptr.To(false),
-		ClusterName:         fakeClusterName,
-		AdditionalTags: map[string]string{
-			"hello": "capz",
-		},
-	}
-
-	// fakePrivateLinkSpec4 is modified fakePrivateLinkSpec3 with following changes:
-	// - enabled proxy protocol.
-	fakePrivateLinkSpec4 = PrivateLinkSpec{
-		Name:              fakePrivateLinkName,
-		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
-		Location:          fakeRegion,
-		VNetResourceGroup: fakeVNetResourceGroup,
-		VNet:              fakeVNetName,
-		NATIPConfiguration: []NATIPConfiguration{
-			{
-				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
-				Subnet:           fakeSubnetName,
-			},
-		},
-		LoadBalancerName: fakeLbName,
-		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName1,
-		},
-		AllowedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		AutoApprovedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
+			fakeSubscriptionID,
 		},
 		EnableProxyProtocol: ptr.To(true),
 		ClusterName:         fakeClusterName,
@@ -179,70 +71,8 @@ var (
 		},
 	}
 
-	// fakePrivateLinkSpec5 is modified fakePrivateLinkSpec4 with following changes:
-	// - changed LB frontend config name.
-	fakePrivateLinkSpec5 = PrivateLinkSpec{
-		Name:              fakePrivateLinkName,
-		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
-		Location:          fakeRegion,
-		VNetResourceGroup: fakeVNetResourceGroup,
-		VNet:              fakeVNetName,
-		NATIPConfiguration: []NATIPConfiguration{
-			{
-				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
-				Subnet:           fakeSubnetName,
-			},
-		},
-		LoadBalancerName: fakeLbName,
-		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName2,
-		},
-		AllowedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		AutoApprovedSubscriptions: []string{
-			fakeSubscriptionID1,
-			fakeSubscriptionID2,
-		},
-		EnableProxyProtocol: ptr.To(true),
-		ClusterName:         fakeClusterName,
-		AdditionalTags: map[string]string{
-			"hello": "capz",
-		},
-	}
-
-	// fakePrivateLinkSpec6 is a modified fakePrivateLinkSpec1 with following changes:
-	// - removed allowed subscription
-	// - removed auto-approved subscription
-	// It is used to exercise nil checks.
-	fakePrivateLinkSpec6 = PrivateLinkSpec{
-		Name:              fakePrivateLinkName,
-		ResourceGroup:     fakeClusterName,
-		SubscriptionID:    fakeSubscriptionID1,
-		Location:          fakeRegion,
-		VNetResourceGroup: fakeVNetResourceGroup,
-		VNet:              fakeVNetName,
-		NATIPConfiguration: []NATIPConfiguration{
-			{
-				AllocationMethod: infrav1.NATIPAllocationMethodDynamic,
-				Subnet:           fakeSubnetName,
-			},
-		},
-		LoadBalancerName: fakeLbName,
-		LBFrontendIPConfigNames: []string{
-			fakeLbIPConfigName1,
-		},
-		EnableProxyProtocol: ptr.To(false),
-		ClusterName:         fakeClusterName,
-		AdditionalTags: map[string]string{
-			"hello": "capz",
-		},
-	}
-
-	// fakePrivateLink1 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec1.
-	fakePrivateLink1 = asonetworkv1.PrivateLinkService{
+	// fakePrivateLink is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec1.
+	fakePrivateLink = asonetworkv1.PrivateLinkService{
 		Spec: asonetworkv1.PrivateLinkService_Spec{
 			AzureName: fakePrivateLinkName,
 			Location:  ptr.To(fakeRegion),
@@ -253,7 +83,7 @@ var (
 						Reference: &genruntime.ResourceReference{
 							ARMID: fmt.Sprintf(
 								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
+								fakeSubscriptionID,
 								fakeVNetResourceGroup,
 								fakeVNetName,
 								fakeSubnetName),
@@ -267,191 +97,21 @@ var (
 				{
 					Reference: &genruntime.ResourceReference{
 						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
+							fakeSubscriptionID,
 							fakeClusterName,
 							fakeLbName,
-							fakeLbIPConfigName1),
+							fakeLbIPConfigName),
 					},
 				},
 			},
 			Visibility: &asonetworkv1.ResourceSet{
 				Subscriptions: []string{
-					fakeSubscriptionID1,
+					fakeSubscriptionID,
 				},
 			},
 			AutoApproval: &asonetworkv1.ResourceSet{
 				Subscriptions: []string{
-					fakeSubscriptionID1,
-				},
-			},
-			EnableProxyProtocol: ptr.To(false),
-			Tags: map[string]string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
-				"Name":  fakePrivateLinkName,
-				"hello": "capz",
-			},
-			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec1.ResourceGroup,
-			},
-		},
-	}
-
-	// fakePrivateLink2 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec2.
-	fakePrivateLink2 = asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName: fakePrivateLinkName,
-			Location:  ptr.To(fakeRegion),
-			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
-				{
-					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
-						Reference: &genruntime.ResourceReference{
-							ARMID: fmt.Sprintf(
-								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
-								fakeVNetResourceGroup,
-								fakeVNetName,
-								fakeSubnetName),
-						},
-					},
-					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
-					Primary:                   ptr.To(true),
-				},
-			},
-			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
-				{
-					Reference: &genruntime.ResourceReference{
-						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
-							fakeClusterName,
-							fakeLbName,
-							fakeLbIPConfigName1),
-					},
-				},
-			},
-			Visibility: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			AutoApproval: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-				},
-			},
-			EnableProxyProtocol: ptr.To(false),
-			Tags: map[string]string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
-				"Name":  fakePrivateLinkName,
-				"hello": "capz",
-			},
-			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec2.ResourceGroup,
-			},
-		},
-	}
-
-	// fakePrivateLink3 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec3.
-	fakePrivateLink3 = asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName: fakePrivateLinkName,
-			Location:  ptr.To(fakeRegion),
-			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
-				{
-					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
-						Reference: &genruntime.ResourceReference{
-							ARMID: fmt.Sprintf(
-								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
-								fakeVNetResourceGroup,
-								fakeVNetName,
-								fakeSubnetName),
-						},
-					},
-					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
-					Primary:                   ptr.To(true),
-				},
-			},
-			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
-				{
-					Reference: &genruntime.ResourceReference{
-						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
-							fakeClusterName,
-							fakeLbName,
-							fakeLbIPConfigName1),
-					},
-				},
-			},
-			Visibility: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			AutoApproval: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			EnableProxyProtocol: ptr.To(false),
-			Tags: map[string]string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
-				"Name":  fakePrivateLinkName,
-				"hello": "capz",
-			},
-			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec3.ResourceGroup,
-			},
-		},
-	}
-
-	// fakePrivateLink4 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec4.
-	fakePrivateLink4 = asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName: fakePrivateLinkName,
-			Location:  ptr.To(fakeRegion),
-			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
-				{
-					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
-						Reference: &genruntime.ResourceReference{
-							ARMID: fmt.Sprintf(
-								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
-								fakeVNetResourceGroup,
-								fakeVNetName,
-								fakeSubnetName),
-						},
-					},
-					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
-					Primary:                   ptr.To(true),
-				},
-			},
-			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
-				{
-					Reference: &genruntime.ResourceReference{
-						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
-							fakeClusterName,
-							fakeLbName,
-							fakeLbIPConfigName1),
-					},
-				},
-			},
-			Visibility: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			AutoApproval: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
+					fakeSubscriptionID,
 				},
 			},
 			EnableProxyProtocol: ptr.To(true),
@@ -461,274 +121,50 @@ var (
 				"hello": "capz",
 			},
 			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec4.ResourceGroup,
-			},
-		},
-	}
-
-	// fakePrivateLink5 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec5.
-	fakePrivateLink5 = asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName: fakePrivateLinkName,
-			Location:  ptr.To(fakeRegion),
-			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
-				{
-					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
-						Reference: &genruntime.ResourceReference{
-							ARMID: fmt.Sprintf(
-								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
-								fakeVNetResourceGroup,
-								fakeVNetName,
-								fakeSubnetName),
-						},
-					},
-					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
-					Primary:                   ptr.To(true),
-				},
-			},
-			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
-				{
-					Reference: &genruntime.ResourceReference{
-
-						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
-							fakeClusterName,
-							fakeLbName,
-							fakeLbIPConfigName2),
-					},
-				},
-			},
-			Visibility: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			AutoApproval: &asonetworkv1.ResourceSet{
-				Subscriptions: []string{
-					fakeSubscriptionID1,
-					fakeSubscriptionID2,
-				},
-			},
-			EnableProxyProtocol: ptr.To(true),
-			Tags: map[string]string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
-				"Name":  fakePrivateLinkName,
-				"hello": "capz",
-			},
-			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec5.ResourceGroup,
-			},
-		},
-	}
-
-	// fakePrivateLink6 is Azure PrivateLinkService that corresponds to fakePrivateLinkSpec6.
-	fakePrivateLink6 = asonetworkv1.PrivateLinkService{
-		Spec: asonetworkv1.PrivateLinkService_Spec{
-			AzureName: fakePrivateLinkName,
-			Location:  ptr.To(fakeRegion),
-			IpConfigurations: []asonetworkv1.PrivateLinkServiceIpConfiguration{
-				{
-					Name: ptr.To(fmt.Sprintf("%s-natipconfig-1", fakeSubnetName)),
-					Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
-						Reference: &genruntime.ResourceReference{
-							ARMID: fmt.Sprintf(
-								"/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-								fakeSubscriptionID1,
-								fakeVNetResourceGroup,
-								fakeVNetName,
-								fakeSubnetName),
-						},
-					},
-					PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod_Dynamic),
-					Primary:                   ptr.To(true),
-				},
-			},
-			LoadBalancerFrontendIpConfigurations: []asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded{
-				{
-					Reference: &genruntime.ResourceReference{
-						ARMID: fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s",
-							fakeSubscriptionID1,
-							fakeClusterName,
-							fakeLbName,
-							fakeLbIPConfigName1),
-					},
-				},
-			},
-			EnableProxyProtocol: ptr.To(false),
-			Tags: map[string]string{
-				"sigs.k8s.io_cluster-api-provider-azure_cluster_" + fakeClusterName: "owned",
-				"Name":  fakePrivateLinkName,
-				"hello": "capz",
-			},
-			Owner: &genruntime.KnownResourceReference{
-				Name: fakePrivateLinkSpec6.ResourceGroup,
+				Name: fakePrivateLinkSpec.ResourceGroup,
 			},
 		},
 	}
 )
 
-func TestEqualStringSlicesPtrIgnoreOrder(t *testing.T) {
-	testCases := []struct {
-		name     string
-		value1   []string
-		value2   []string
-		expected bool
-	}{
-		{
-			name:     "Nil slices",
-			value1:   nil,
-			value2:   nil,
-			expected: true,
-		},
-		{
-			name:     "Empty slices",
-			value1:   []string{},
-			value2:   []string{},
-			expected: true,
-		},
-		{
-			name:     "Nil and empty slice",
-			value1:   nil,
-			value2:   []string{},
-			expected: true,
-		},
-		{
-			name:     "Same slices with 1 element",
-			value1:   []string{"a"},
-			value2:   []string{"a"},
-			expected: true,
-		},
-		{
-			name:     "Same slices with 3 elements in same order",
-			value1:   []string{"a", "b", "c"},
-			value2:   []string{"a", "b", "c"},
-			expected: true,
-		},
-		{
-			name:     "Same slices with 3 elements in different order",
-			value1:   []string{"a", "b", "c"},
-			value2:   []string{"c", "a", "b"},
-			expected: true,
-		},
-		{
-			name:     "Different slices with 1 element",
-			value1:   []string{"a"},
-			value2:   []string{"b"},
-			expected: false,
-		},
-		{
-			name:     "Different slices with 3 elements",
-			value1:   []string{"a", "b", "c"},
-			value2:   []string{"a", "b", "d"},
-			expected: false,
-		},
-		{
-			name:     "Slices with different lengths",
-			value1:   []string{"a", "b", "c"},
-			value2:   []string{"a", "b", "c", "d"},
-			expected: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			t.Parallel()
-
-			result := compareStringSlicesUnordered(tc.value1, tc.value2)
-			g.Expect(tc.expected).To(Equal(result))
-		})
-	}
-}
-
 func TestParameters(t *testing.T) {
 	testcases := []struct {
-		name          string
-		spec          PrivateLinkSpec
-		existing      *asonetworkv1.PrivateLinkService
-		expect        func(g *WithT, result *asonetworkv1.PrivateLinkService)
-		expectedError string
+		name     string
+		spec     PrivateLinkSpec
+		existing *asonetworkv1.PrivateLinkService
+		expected *asonetworkv1.PrivateLinkService
 	}{
 		{
-			name:     "PrivateLink does not exist",
-			spec:     fakePrivateLinkSpec1,
+			name:     "no existing PrivateLink",
+			spec:     fakePrivateLinkSpec,
 			existing: nil,
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink1))
-			},
+			expected: &fakePrivateLink,
 		},
 		{
-			name:     "PrivateLink already exists with the same config",
-			spec:     fakePrivateLinkSpec1,
-			existing: &fakePrivateLink1,
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeNil())
+			name: "with existing PrivateLink",
+			spec: fakePrivateLinkSpec,
+			existing: &asonetworkv1.PrivateLinkService{
+				Status: asonetworkv1.PrivateLinkService_STATUS{
+					Id: ptr.To("status is preserved"),
+				},
 			},
-		},
-		{
-			name:     "PrivateLink changed and added one new allowed subscription",
-			spec:     fakePrivateLinkSpec2, // spec with 2 allowed subscriptions
-			existing: &fakePrivateLink1,    // existing private link with 1 allowed subscription
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink2)) // expects (updated) private link with 2 allowed subscriptions
-			},
-		},
-		{
-			name:     "PrivateLink changed and added one new auto-approved subscription",
-			spec:     fakePrivateLinkSpec3, // spec with 2 auto-approved subscriptions
-			existing: &fakePrivateLink2,    // existing private link with 1 auto-approved subscription
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink3)) // expects (updated) private link with 2 auto-approved subscriptions
-			},
-		},
-		{
-			name:     "PrivateLink changed and enabled proxy protocol",
-			spec:     fakePrivateLinkSpec4, // spec with enabled proxy protocol
-			existing: &fakePrivateLink3,    // existing private link with disabled proxy protocol
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink4)) // expects (updated) private link with enabled proxy protocol
-			},
-		},
-		{
-			name:     "PrivateLink changed LB frontend config name",
-			spec:     fakePrivateLinkSpec5, // spec with changed LB frontend config name
-			existing: &fakePrivateLink4,    // existing private link with old LB frontend config name
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink5)) // expects (updated) private link with changed LB frontend config name
-			},
-		},
-		{
-			name:     "PrivateLink without allowed or auto-approved subscriptions",
-			spec:     fakePrivateLinkSpec6, // spec without allowed or auto-approved subscriptions
-			existing: &fakePrivateLink1,    // existing private link with 1 allowed and 1 auto-approved subscription
-			expect: func(g *WithT, result *asonetworkv1.PrivateLinkService) {
-				g.Expect(result).To(BeAssignableToTypeOf(&asonetworkv1.PrivateLinkService{}))
-				g.Expect(result).To(Equal(&fakePrivateLink6))
+			expected: &asonetworkv1.PrivateLinkService{
+				Spec: fakePrivateLink.Spec,
+				Status: asonetworkv1.PrivateLinkService_STATUS{
+					Id: ptr.To("status is preserved"),
+				},
 			},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
+			g := NewGomegaWithT(t)
 			t.Parallel()
 
-			result, err := tc.spec.Parameters(context.TODO(), tc.existing)
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-			tc.expect(g, result)
+			result, err := tc.spec.Parameters(t.Context(), tc.existing)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cmp.Diff(tc.expected, result)).To(BeEmpty())
 		})
 	}
 }
