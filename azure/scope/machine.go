@@ -174,6 +174,7 @@ func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
 		OSDisk:                      m.AzureMachine.Spec.OSDisk,
 		DataDisks:                   m.AzureMachine.Spec.DataDisks,
 		AvailabilitySetID:           m.AvailabilitySetID(),
+		VirtualMachineScaleSetID:    m.GetVirtualMachineScaleSetID(),
 		Zone:                        m.AvailabilityZone(),
 		Identity:                    m.AzureMachine.Spec.Identity,
 		UserAssignedIdentities:      m.AzureMachine.Spec.UserAssignedIdentities,
@@ -518,7 +519,7 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 	// AvailabilitySet service is not supported on EdgeZone currently.
 	// AvailabilitySet cannot be used with Spot instances.
 	if !m.AvailabilitySetEnabled() || m.AzureMachine.Spec.SpotVMOptions != nil || m.ExtendedLocation() != nil ||
-		m.AzureMachine.Spec.FailureDomain != nil || m.Machine.Spec.FailureDomain != "" {
+		m.AzureMachine.Spec.FailureDomain != nil || m.Machine.Spec.FailureDomain != "" || m.AzureMachine.Spec.VirtualMachineScaleSetID != nil {
 		return "", false
 	}
 
@@ -826,4 +827,10 @@ func (m *MachineScope) UpdatePatchStatus(condition clusterv1beta1.ConditionType,
 // value is assigned, or else returns an empty string.
 func (m *MachineScope) GetCapacityReservationGroupID() string {
 	return ptr.Deref(m.AzureMachine.Spec.CapacityReservationGroupID, "")
+}
+
+// GetVirtualMachineScaleSetID returns the VirtualMachineScaleSetID from the spec if the
+// value is assigned, or else returns an empty string.
+func (m *MachineScope) GetVirtualMachineScaleSetID() string {
+	return strings.TrimPrefix(ptr.Deref(m.AzureMachine.Spec.VirtualMachineScaleSetID, ""), azureutil.ProviderIDPrefix)
 }

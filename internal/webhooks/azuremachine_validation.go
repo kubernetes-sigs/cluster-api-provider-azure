@@ -19,6 +19,7 @@ package webhooks
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/uuid"
@@ -71,6 +72,10 @@ func validateAzureMachineSpec(spec infrav1.AzureMachineSpec) field.ErrorList {
 	}
 
 	if errs := ValidateCapacityReservationGroupID(spec.CapacityReservationGroupID, field.NewPath("capacityReservationGroupID")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateVirtualMachineScaleSetID(spec.VirtualMachineScaleSetID, field.NewPath("virtualMachineScaleSetID")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -421,6 +426,22 @@ func ValidateCapacityReservationGroupID(capacityReservationGroupID *string, fldP
 	if capacityReservationGroupID != nil {
 		if _, err := azureutil.ParseResourceID(*capacityReservationGroupID); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath, capacityReservationGroupID, "must be a valid Azure resource ID"))
+		}
+	}
+
+	return allErrs
+}
+
+// ValidateVirtualMachineScaleSetID validates the virtual machine scale set id.
+func ValidateVirtualMachineScaleSetID(virtualMachineScaleSetID *string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if virtualMachineScaleSetID != nil {
+		parsed, err := azureutil.ParseResourceID(*virtualMachineScaleSetID)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, virtualMachineScaleSetID, "must be a valid Azure resource ID"))
+		} else if !strings.EqualFold(parsed.ResourceType.String(), "Microsoft.Compute/virtualMachineScaleSets") {
+			allErrs = append(allErrs, field.Invalid(fldPath, virtualMachineScaleSetID, "must be a valid Azure Virtual Machine Scale Set resource ID"))
 		}
 	}
 

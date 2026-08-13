@@ -994,6 +994,62 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "invalidTest: azuremachine.spec.virtualMachineScaleSetID is immutable",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-1"),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-2"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: updating azuremachine.spec.virtualMachineScaleSetID from empty to non-empty",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: nil,
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-1"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalidTest: updating azuremachine.spec.virtualMachineScaleSetID from non-empty to empty",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-1"),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: nil,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.virtualMachineScaleSetID is immutable",
+			oldMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-1"),
+				},
+			},
+			newMachine: &infrav1.AzureMachine{
+				Spec: infrav1.AzureMachineSpec{
+					VirtualMachineScaleSetID: ptr.To("virtualMachineScaleSetID-1"),
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
