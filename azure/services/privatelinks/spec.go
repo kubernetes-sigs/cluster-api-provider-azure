@@ -22,7 +22,6 @@ import (
 
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -82,21 +81,6 @@ func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *aso
 
 	privateLink.Spec.IpConfigurations = make([]asonetworkv1.PrivateLinkServiceIpConfiguration, len(s.NATIPConfiguration))
 	for i, natIpConfiguration := range s.NATIPConfiguration {
-		ipAllocationMethod := asonetworkv1.IPAllocationMethod(natIpConfiguration.AllocationMethod)
-		if ipAllocationMethod != asonetworkv1.IPAllocationMethod_Dynamic && ipAllocationMethod != asonetworkv1.IPAllocationMethod_Static {
-			return nil, errors.Errorf("%q is not a supported NAT IP allocation method (must be %q or %q)",
-				natIpConfiguration.AllocationMethod, infrav1.NATIPAllocationMethodStatic, infrav1.NATIPAllocationMethodDynamic)
-		}
-
-		var privateIPAddress *string
-		if ipAllocationMethod == asonetworkv1.IPAllocationMethod_Static {
-			if natIpConfiguration.PrivateIPAddress != "" {
-				privateIPAddress = ptr.To(natIpConfiguration.PrivateIPAddress)
-			} else {
-				return nil, errors.Errorf("Private link NAT IP configuration with static IP allocation must specify a private address")
-			}
-		}
-
 		privateLink.Spec.IpConfigurations[i] = asonetworkv1.PrivateLinkServiceIpConfiguration{
 			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIpConfiguration.Subnet, i+1)),
 			Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
@@ -104,10 +88,12 @@ func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *aso
 					ARMID: azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIpConfiguration.Subnet),
 				},
 			},
-			PrivateIPAllocationMethod: &ipAllocationMethod,
-			PrivateIPAddress:          privateIPAddress,
+			PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod(natIpConfiguration.AllocationMethod)),
 		}
 
+		if *privateLink.Spec.IpConfigurations[i].PrivateIPAllocationMethod == asonetworkv1.IPAllocationMethod_Static {
+			privateLink.Spec.IpConfigurations[i].PrivateIPAddress = ptr.To(natIpConfiguration.PrivateIPAddress)
+		}
 	}
 	privateLink.Spec.IpConfigurations[0].Primary = ptr.To(true)
 

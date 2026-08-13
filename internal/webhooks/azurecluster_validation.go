@@ -922,6 +922,16 @@ func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBal
 					break
 				}
 
+				if natIPConfig.AllocationMethod != infrav1.NATIPAllocationMethodDynamic &&
+					natIPConfig.AllocationMethod != infrav1.NATIPAllocationMethodStatic {
+					allErrs = append(allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("allocationMethod"),
+							natIPConfig.AllocationMethod,
+							fmt.Sprintf("allocation method must be %q or %q", infrav1.NATIPAllocationMethodDynamic, infrav1.NATIPAllocationMethodStatic),
+						))
+				}
+
 				usesValidSubnet := false
 				for _, subnet := range subnets {
 					if natIPConfig.Subnet == subnet.Name {

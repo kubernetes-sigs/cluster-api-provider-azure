@@ -2330,6 +2330,67 @@ func TestValidatePrivateLinks(t *testing.T) {
 				Detail:   "test-pl auto approved subscription must also be specified in allowed subscriptions",
 			},
 		},
+		{
+			name: "NAT IP configuration with invalid allocation method",
+			lb: infrav1.LoadBalancerSpec{
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+				PrivateLinks: []infrav1.PrivateLink{
+					{
+						NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
+							{
+								Subnet:           "subnet-a",
+								AllocationMethod: "NotStaticNorDynamic",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations[0].allocationMethod",
+				Detail:   "allocation method must be \"Dynamic\" or \"Static\"",
+				BadValue: "NotStaticNorDynamic",
+			},
+		},
+		{
+			name: "NAT IP configuration with static allocation and unspecified IP address",
+			lb: infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{{Name: "test-ip"}},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+				},
+				PrivateLinks: []infrav1.PrivateLink{
+					{
+						Name:                    "test-pl",
+						LBFrontendIPConfigNames: []string{"test-ip"},
+						NATIPConfigurations: []infrav1.PrivateLinkNATIPConfiguration{
+							{
+								Subnet:           "subnet-a",
+								AllocationMethod: "Static",
+							},
+						},
+					},
+				},
+			},
+			subnets: infrav1.Subnets{
+				{
+					SubnetClassSpec: infrav1.SubnetClassSpec{
+						Name:       "subnet-a",
+						CIDRBlocks: []string{"10.0.0.0/8"},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.privateLinks[0].natIPConfigurations[0].privateIPAddress",
+				Detail:   "test-pl IP address isn't a valid IPv4 or IPv6 address",
+				BadValue: "",
+			},
+		},
 	}
 
 	for _, test := range testcases {
