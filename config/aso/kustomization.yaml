@@ -2,7 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-  - https://github.com/Azure/azure-service-operator/releases/download/v2.19.0/azureserviceoperator_v2.19.0.yaml
+  # The ASO version here is managed by `make generate-aso-crds`
+  - https://github.com/stolostron/azure-service-operator/releases/download/v2.18.0-hcpclusters.1/azureserviceoperator_v2.18.0-hcpclusters.1.yaml
+  - crds.yaml
   - settings.yaml
 patches:
   - path: patches/migrate_stored_versions.yaml
@@ -18,12 +20,26 @@ patches:
       metadata:
         name: azureserviceoperator-system
   - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: quay.io/capz/azureserviceoperator:v2.18.0-hcpclusters.1
+      - op: replace
+        path: /spec/replicas
+        value: 1
       - op: test
         path: /spec/template/spec/containers/0/args/6
         value: --crd-pattern=
-      - op: replace # CAPZ lets ASO install and manage its own CRDs; users can extend the set via ADDITIONAL_ASO_CRDS (';'-delimited). The ADDITIONAL_ASO_CRDS default duplicates a base pattern so that, when the variable is unset, the value still parses as a non-empty list of fully-matching patterns (ASO rejects empty/whitespace pattern entries).
+      - op: replace # Users can specify additional ASO CRDs. CRDs should be appended with ';'
         path: /spec/template/spec/containers/0/args/6
-        value: --crd-pattern=containerservice.azure.com/FleetsMember;containerservice.azure.com/MaintenanceConfiguration;containerservice.azure.com/ManagedCluster;containerservice.azure.com/ManagedClustersAgentPool;kubernetesconfiguration.azure.com/Extension;network.azure.com/BastionHost;network.azure.com/NatGateway;network.azure.com/PrivateEndpoint;network.azure.com/VirtualNetwork;network.azure.com/VirtualNetworksSubnet;resources.azure.com/ResourceGroup;${ADDITIONAL_ASO_CRDS:=resources.azure.com/ResourceGroup}
+        value: --crd-pattern=${ADDITIONAL_ASO_CRDS:= }
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe
+        value:
+          httpGet:
+            path: /healthz
+            port: 8081
+          periodSeconds: 10
+          failureThreshold: 12
     target:
       group: apps
       kind: Deployment
@@ -33,13 +49,7 @@ patches:
       # manages. The migrate-aso-crd-stored-versions init container deletes
       # CRDs that have stale entries in status.storedVersions which the new
       # bundle no longer lists in spec.versions; the new ASO controller then
-      # re-creates them from its bundled definitions. Without this verb the
-      # init container's CRD delete is denied. The upstream ASO
-      # azureserviceoperator-crd-manager-role grants
-      # [create get list patch update watch] on customresourcedefinitions
-      # cluster-wide; we add delete as a separate rule scoped via resourceNames
-      # to just the CAPZ-managed CRDs, so a compromised ASO pod can't delete
-      # arbitrary CRDs in the cluster.
+      # re-creates them from its bundled definitions.
       - op: test
         path: /rules/0/resources/0
         value: customresourcedefinitions
@@ -62,6 +72,13 @@ patches:
             - virtualnetworks.network.azure.com
             - virtualnetworkssubnets.network.azure.com
             - resourcegroups.resources.azure.com
+            - networksecuritygroups.network.azure.com
+            - roleassignments.authorization.azure.com
+            - userassignedidentities.managedidentity.azure.com
+            - vaults.keyvault.azure.com
+            - hcpopenshiftclusters.redhatopenshift.azure.com
+            - hcpopenshiftclustersnodepools.redhatopenshift.azure.com
+            - hcpopenshiftclustersexternalauths.redhatopenshift.azure.com
           verbs:
             - delete
     target:

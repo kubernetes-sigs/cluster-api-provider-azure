@@ -24,13 +24,18 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
+	asoauthorizationv1api20220401 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
 	asocontainerservicev1api20250301 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250301"
 	asocontainerservicev1api20250801 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asocontainerservicev1api20251002preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
+	asokeyvaultv1 "github.com/Azure/azure-service-operator/v2/api/keyvault/v1api20230701"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
+	asomanagedidentityv1api20230131 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
+	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +61,9 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	cplanev1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/asomigration"
@@ -78,16 +85,23 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
+	_ = cplanev1beta2exp.AddToScheme(scheme)
+	_ = infrav1beta2exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
+	_ = asoauthorizationv1api20220401.AddToScheme(scheme)
 	_ = asocontainerservicev1api20250801.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
 	_ = asocontainerservicev1api20250301.AddToScheme(scheme)
 	_ = asocontainerservicev1api20251002preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240901.AddToScheme(scheme)
+	_ = asokeyvaultv1.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
+	_ = asomanagedidentityv1api20230131.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1api2026.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -398,6 +412,38 @@ func main() {
 	}
 }
 
+func newWorkloadClusterCache(ctx context.Context, mgr manager.Manager) clustercache.ClusterCache {
+	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
+		HTTPClient: mgr.GetHTTPClient(),
+		Cache: &client.CacheOptions{
+			Reader: mgr.GetCache(),
+		},
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create secret caching client")
+		os.Exit(1)
+	}
+	workloadClusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+		SecretClient: secretCachingClient,
+		Cache:        clustercache.CacheOptions{},
+		Client: clustercache.ClientOptions{
+			UserAgent: remote.DefaultClusterAPIUserAgent("azure-controller"),
+			Cache: clustercache.ClientCacheOptions{
+				DisableFor: []client.Object{
+					&corev1.ConfigMap{},
+					&corev1.Secret{},
+				},
+			},
+		},
+		WatchFilterValue: watchFilterValue,
+	}, controller.Options{})
+	if err != nil {
+		setupLog.Error(err, "unable to create cluster cache")
+		os.Exit(1)
+	}
+	return workloadClusterCache
+}
+
 func registerControllers(ctx context.Context, mgr manager.Manager) {
 	credCache := azure.NewCredentialCache()
 
@@ -572,6 +618,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 	}
 
+	var workloadClusterCache clustercache.ClusterCache
 	if feature.Gates.Enabled(feature.ASOAPI) {
 		if err := (&controllers.AzureASOManagedClusterReconciler{
 			Client:           mgr.GetClient(),
@@ -590,41 +637,14 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		// The AzureASOManagedMachinePool controller reads the nodes in clusters to set provider IDs.
-		secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
-			HTTPClient: mgr.GetHTTPClient(),
-			Cache: &client.CacheOptions{
-				Reader: mgr.GetCache(),
-			},
-		})
-		if err != nil {
-			setupLog.Error(err, "unable to create secret caching client")
-			os.Exit(1)
-		}
-		clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
-			SecretClient: secretCachingClient,
-			Cache:        clustercache.CacheOptions{},
-			Client: clustercache.ClientOptions{
-				UserAgent: remote.DefaultClusterAPIUserAgent("azure-controller"),
-				Cache: clustercache.ClientCacheOptions{
-					DisableFor: []client.Object{
-						// Don't cache ConfigMaps or Secrets.
-						&corev1.ConfigMap{},
-						&corev1.Secret{},
-					},
-				},
-			},
-			WatchFilterValue: watchFilterValue,
-		}, controller.Options{})
-		if err != nil {
-			setupLog.Error(err, "unable to create cluster cache")
-			os.Exit(1)
+		if workloadClusterCache == nil {
+			workloadClusterCache = newWorkloadClusterCache(ctx, mgr)
 		}
 
 		if err := (&controllers.AzureASOManagedMachinePoolReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-			Tracker:          clusterCache,
+			Tracker:          workloadClusterCache,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureASOManagedMachinePool")
 			os.Exit(1)
@@ -642,6 +662,62 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AgentPool")
 			os.Exit(1)
+		}
+	}
+
+	if feature.Gates.Enabled(feature.ARO) {
+		if err := (&infrav1controllersexp.AROClusterReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AROCluster")
+			os.Exit(1)
+		}
+
+		if err := (&infrav1beta2exp.AROCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROCluster")
+			os.Exit(1)
+		}
+
+		aroControlPlaneCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build aroControlPlaneCache ReconcileCache")
+		}
+
+		if err := (&infrav1controllersexp.AROControlPlaneReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+			CredentialCache:  credCache,
+			Timeouts:         timeouts,
+		}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: aroControlPlaneCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if err := cplanev1beta2exp.SetupAROControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if workloadClusterCache == nil {
+				workloadClusterCache = newWorkloadClusterCache(ctx, mgr)
+			}
+			if err := infrav1controllersexp.NewAROMachinePoolReconciler(
+				mgr.GetClient(),
+				mgr.GetEventRecorderFor("aromachinepoolmachine-reconciler"),
+				timeouts,
+				watchFilterValue,
+				workloadClusterCache,
+			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: aroControlPlaneCache}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
+				os.Exit(1)
+			}
+
+			if err := infrav1beta2exp.SetupAROMachinePoolWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AROMachinePool")
+				os.Exit(1)
+			}
 		}
 	}
 }

@@ -1,0 +1,369 @@
+# CodeRabbit configuration for prodsec-skills
+# Enforces Red Hat Product Security concerns during code review.
+# Skills source: module/skills/*/SKILL.md (129 skills, 4 categories)
+#
+# Schema: https://coderabbit.ai/integrations/schema.v2.json
+# Validate: comment "@coderabbitai configuration" on any PR
+#
+#
+language: "en-US"
+tone_instructions: "Security-focused. State risk severity and impact."
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+
+  path_filters:
+    - "!vendor/**"
+    - "!node_modules/**"
+    - "!dist/**"
+    - "!*.min.js"
+    # yarn.lock excluded: high churn, low signal — package.json changes are
+    # reviewed by the supply-chain block. Other dependency locks (go.sum,
+    # package-lock.json, Cargo.lock) are deliberately kept so the supply-chain
+    # path_instructions block fires on them.
+    - "!yarn.lock"
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "release/.*"
+
+  path_instructions:
+
+    # ── Injection & input validation ─────────────────────────────
+    # Skills: input-validation-injection, web-application-security
+    - path: "**/*.{py,js,ts,go,rs,java,rb,php,kt,swift,cs}"
+      instructions: |
+        Injection prevention (prodsec-skills):
+        - SQL: parameterized queries only; no string concatenation
+        - Command: no shell=True, os.system, or backtick exec with user input
+        - LDAP/XPath: escape special characters in filters
+        - Path traversal: canonicalize paths, reject ../
+        - Deserialization: no pickle/yaml.load()/eval on untrusted data
+        - Prototype pollution: no recursive merge of untrusted objects
+        - Validate at trust boundaries with allow-lists, not deny-lists
+        - Normalize Unicode and anchor regexes (^$); watch for ReDoS
+
+    # ── Web & frontend security ──────────────────────────────────
+    - path: "**/*.{html,jsx,tsx,vue,svelte}"
+      instructions: |
+        Web security (prodsec-skills):
+        - No dangerouslySetInnerHTML or v-html with user data
+        - CSP: no unsafe-inline, no unsafe-eval
+        - CSRF tokens on state-changing requests
+        - Cookies: Secure, HttpOnly, SameSite=Strict
+        - No document.write, eval, new Function with user input
+        - GraphQL: depth/complexity limits, disable introspection in prod
+        - File uploads: validate by content magic, cap size, server-generate names
+        - XML: disable external entities (XXE), reject DTDs from untrusted sources
+
+    # ── Cryptography ─────────────────────────────────────────────
+    - path: "**/*{crypt,cipher,sign,hash,tls,ssl,cert,key,token}*"
+      instructions: |
+        Cryptographic security (prodsec-skills):
+        - Banned: MD5, SHA1, DES, RC4, 3DES, Blowfish, ECB mode
+        - Symmetric: AES-256-GCM or ChaCha20-Poly1305
+        - Passwords: Argon2id (not bcrypt/scrypt for new code)
+        - Signing: Ed25519 or ECDSA P-256+
+        - Key exchange: X25519 or ECDH P-256+
+        - Constant-time comparison for all secret/token data
+        - Zeroize key material after use (no garbage-collector reliance)
+        - No custom crypto; use vetted libraries only
+        - Post-quantum: flag if protecting long-lived secrets
+
+    # ── Container & image hardening ──────────────────────────────
+    - path: "**/{Dockerfile,Containerfile}*"
+      instructions: |
+        Container security (prodsec-skills):
+        - Base image: UBI minimal or distroless from catalog.redhat.com
+        - Red Hat images: use floating tags (Red Hat manages updates);
+          non-RH images: pin by digest
+        - Multi-stage builds; no build tools in final image
+        - USER non-root; never run as root
+        - COPY specific files, not entire context
+        - No secrets in ENV, ARG, or COPY
+        - Read-only rootfs where possible
+        - No package manager cache in final layer
+        - HEALTHCHECK defined
+
+    # ── Kubernetes & OpenShift ───────────────────────────────────
+    - path: "**/*.{yaml,yml}"
+      instructions: |
+        If this is a Kubernetes/OpenShift manifest or Helm template:
+        - securityContext: runAsNonRoot, readOnlyRootFilesystem,
+          allowPrivilegeEscalation: false
+        - Drop ALL capabilities, add only what is required
+        - Resource limits (cpu, memory) on every container
+        - No hostPID, hostNetwork, hostIPC, privileged: true
+        - NetworkPolicy defined for the namespace
+        - OpenShift: SCC must be restricted or custom-scoped
+        - Liveness + readiness probes defined
+        - automountServiceAccountToken: false unless needed
+        - RBAC: least privilege; no cluster-admin for workloads
+        - Helm: no .Values interpolation in shell commands
+
+    # ── MCP server security ──────────────────────────────────────
+    - path: "**/{mcp,tool_server,toolserver}/**/*"
+      instructions: |
+        MCP server review (prodsec-skills):
+        - OAuth 2.1 resource server: validate tokens per RFC 9068
+        - Enforce scope-based access per tool; no default-allow
+        - RBAC: per-tool permissions mapped to token scopes/roles
+        - Sanitize all tool inputs against declared schemas
+        - Reject path traversal in file-accessing tools
+        - No credential forwarding to downstream services
+        - Tool injection: validate registry integrity, reject dynamic
+          tool loading from untrusted sources
+        - Container isolation: unprivileged, read-only rootfs
+        - Audit log all tool invocations with caller identity
+        - Rate limiting per client/scope
+        - Reject API keys; require IdP-issued tokens
+
+    # ── MCP client ───────────────────────────────────────────────
+    - path: "**/{mcp_client,mcp-client}/**/*"
+      instructions: |
+        MCP client review (prodsec-skills):
+        - OAuth client metadata: register with minimal scopes
+        - Dynamic registration: validate server response, store
+          client_id/secret securely
+        - Protected resource metadata: discover before token request
+        - Consent: prompt user before granting tool access
+        - Discovery: validate .well-known endpoints over HTTPS only
+
+    # ── Inference engine & model serving ─────────────────────────
+    - path: "**/{inference,model,serving,predict}/**/*"
+      instructions: |
+        Inference engine review (prodsec-skills):
+        - Process isolation: container or microVM per model
+        - JWT/OIDC on all inference endpoints; no unauthenticated access
+        - Model provenance: verify signatures before loading
+        - Scan models for embedded payloads (pickle, arbitrary code)
+        - Token lifecycle: short-lived, secure storage, revocation
+        - No direct filesystem access from inference process
+        - Resource limits to prevent DoS via large inputs
+
+    # ── Agent security ───────────────────────────────────────────
+    - path: "**/{agent,agents,agentic}/**/*"
+      instructions: |
+        Agent security (prodsec-skills):
+        - Unique, verifiable identity per agent instance
+        - Agent-to-agent auth: SPIFFE/mTLS, not shared secrets
+        - Agent-to-MCP auth: OAuth 2.1 client credentials flow
+        - No ambient authority; agents present credentials per call
+        - Audit trail for all inter-agent communication
+
+    # ── LLM interaction ──────────────────────────────────────────
+    - path: "**/{llm,prompt,chat,completion}/**/*"
+      instructions: |
+        LLM security (prodsec-skills):
+        - Prompt injection: separate system/user content; never
+          interpolate untrusted input into system prompts
+        - Output filtering: validate LLM output before execution
+        - File protection: restrict file access to declared paths
+        - Third-party models: evaluate trust, scan artifacts
+        - Guardrails: bidirectional filtering on prompts and responses
+
+    # ── Supply chain & dependencies ──────────────────────────────
+    - path: "**/{requirements*.txt,Pipfile*,pyproject.toml,package*.json,go.mod,go.sum,Cargo.toml,Cargo.lock,Gemfile*,pom.xml,build.gradle*}"
+      instructions: |
+        Supply chain security (prodsec-skills):
+        - New deps: justify need, check license compatibility
+        - Pin exact versions; verify hashes where supported
+        - Flag known CVEs (cross-ref osv.dev)
+        - No pre-release or yanked versions in production
+        - SBOM: ensure build produces provenance attestations
+        - Signing: artifacts signed with Sigstore/cosign
+
+    # ── CI/CD & GitHub Actions ───────────────────────────────────
+    - path: ".github/workflows/**/*"
+      instructions: |
+        CI/CD security (prodsec-skills):
+        - Pin actions by full SHA, not tag
+        - No secrets in logs; mask sensitive outputs
+        - Least privilege: minimize GITHUB_TOKEN permissions
+        - No pull_request_target with checkout of PR head
+        - SAST/SCA steps in pipeline
+        - Sign artifacts with Sigstore/cosign
+        - Agentic CI actions: audit for prompt injection via
+          issue/PR title/body flowing into LLM prompts
+
+    # ── IDE & AI tool configuration (supply chain risk) ─────────
+    - path: "**/{.claude,.vscode}/**/*"
+      instructions: |
+        HIGH RISK — IDE and AI tool configuration (prodsec-skills):
+        These directories can be supply chain attack vectors.
+        Review every change with a security and malware lens.
+        Flag the following for close scrutiny:
+        - .claude: hook commands, MCP server definitions, or
+          permissive tool-use policies in settings.json
+        - .claude: any scripts or binaries (e.g., .mjs, .sh)
+        - .vscode: tasks.json or launch.json entries that execute
+          code on folder open, build, or save
+        - .vscode: settings.json entries that auto-run formatters,
+          linters, or extensions with broad permissions
+        - Any change that grants broad filesystem or network access
+        - Obfuscated content or suspiciously large files
+        - Changes without a clear, legitimate purpose
+
+    # ── Authentication & OAuth ───────────────────────────────────
+    - path: "**/{auth,oauth,oidc,login,session,saml}/**/*"
+      instructions: |
+        Authentication review (prodsec-skills):
+        - OAuth 2.1: PKCE required; no implicit grant
+        - JWT: verify signature, issuer, audience, expiry, nbf
+        - Sessions: secure cookie flags, regenerate ID on login
+        - Passwords: Argon2id; never plaintext or weak hashes
+        - Rate limit login attempts; account lockout policy
+        - MFA: support and encourage; never bypass silently
+        - Service-to-service: SPIFFE/mTLS, not shared secrets
+        - Avoid API keys; prefer IdP-issued short-lived tokens
+
+    # ── API gateway & rate limiting ──────────────────────────────
+    - path: "**/{gateway,proxy,ingress,route}/**/*"
+      instructions: |
+        API gateway review (prodsec-skills):
+        - Auth enforcement at gateway, not just downstream
+        - Rate limiting per client/endpoint; fail closed
+        - Request validation: size limits, content-type checks
+        - No internal-only routes exposed externally
+        - TLS termination with strong cipher suites
+
+    # ── Go ───────────────────────────────────────────────────────
+    - path: "**/*.go"
+      instructions: |
+        Go security (prodsec-skills):
+        - Never ignore error returns
+        - database/sql with placeholders; no fmt.Sprintf in queries
+        - Use stdlib crypto/* and golang.org/x/crypto (Go team maintained);
+          avoid third-party crypto libraries
+        - Integer overflow: bounds-check user-supplied sizes
+        - context.Context for cancellation and timeouts
+
+    # ── C/C++ ────────────────────────────────────────────────────
+    - path: "**/*.{c,cpp,cc,h,hpp}"
+      instructions: |
+        C/C++ security (prodsec-skills):
+        - Banned: gets, sprintf, strcpy, strcat, strtok
+        - Use strlcpy, snprintf, bounded APIs
+        - Compile: -fstack-protector-strong -fPIE -pie
+          -D_FORTIFY_SOURCE=2 -Wformat-security
+        - Nullify pointers after free; no use-after-free
+        - Integer overflow: check arithmetic on untrusted sizes
+
+    # ── Database & external data ─────────────────────────────────
+    - path: "**/{db,database,redis,cache,storage}/**/*"
+      instructions: |
+        Data store security (prodsec-skills):
+        - Auth: no default credentials; use IAM or IdP tokens
+        - Encryption: TLS in transit, encryption at rest
+        - Least privilege: app user has minimal grants
+        - Redis/ElastiCache: AUTH required, no KEYS in prod,
+          rename dangerous commands (FLUSHALL, CONFIG)
+        - Connection strings: no embedded credentials
+
+    # ── Messaging ────────────────────────────────────────────────
+    - path: "**/{kafka,amq,mqtt,messaging,broker}/**/*"
+      instructions: |
+        Messaging security (prodsec-skills):
+        - Kafka/AMQ: TLS, SASL auth, per-topic ACLs
+        - MQTT: auth required, topic ACLs, payload encryption
+        - No anonymous access in production
+
+    # ── Model registry ───────────────────────────────────────────
+    - path: "**/{model_registry,model-registry,registry}/**/*"
+      instructions: |
+        Model registry review (prodsec-skills):
+        - Admin interface: auth + RBAC, no public exposure
+        - Model scanning: check for malicious payloads before publish
+        - Model signing: verify signatures on pull
+        - Audit logging: who uploaded/downloaded/deleted what
+        - Secure storage: encrypted at rest, access-controlled
+
+  # ── Security scanners ────────────────────────────────────────
+  tools:
+    golangci-lint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    checkov:
+      enabled: true
+    hadolint:
+      enabled: true
+    trivy:
+      enabled: true
+    osvScanner:
+      enabled: true
+    actionlint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+
+  # ── Pre-merge checks (hard gates) ───────────────────────────
+  pre_merge_checks:
+    description:
+      mode: "warning"
+    custom_checks:
+      - name: "no-hardcoded-secrets"
+        instructions: |
+          Flag hardcoded secrets: API keys, tokens, passwords, private
+          keys, credentials. Also flag base64 strings >32 chars in config,
+          URLs with embedded credentials, variables named api_key/secret/
+          token/password assigned string literals.
+        mode: "error"
+
+      - name: "no-weak-crypto"
+        instructions: |
+          Flag MD5, SHA1, DES, RC4, 3DES, Blowfish, ECB mode usage.
+          Flag custom crypto implementations. Flag non-constant-time
+          comparison of secrets or tokens.
+        mode: "error"
+
+      - name: "no-injection-vectors"
+        instructions: |
+          Flag SQL string concatenation, shell=True with user input,
+          eval/exec on untrusted data, pickle.loads on untrusted input,
+          yaml.load without SafeLoader, os.system with variables,
+          dangerouslySetInnerHTML with user data.
+        mode: "error"
+
+      - name: "container-privileges"
+        instructions: |
+          Flag privileged: true, hostPID, hostNetwork, hostIPC,
+          SYS_ADMIN capability, running as root without justification,
+          allowPrivilegeEscalation: true in container/K8s manifests.
+        mode: "error"
+
+      - name: "no-sensitive-data-in-logs"
+        instructions: |
+          Flag logging that may expose passwords, tokens, API keys,
+          PII (email, SSN, credit card), session IDs, internal
+          hostnames, or customer data.
+        mode: "error"
+
+      - name: "ai-attribution"
+        instructions: |
+          If AI tools were used (mentioned in PR or commits), verify
+          Red Hat attribution: Assisted-by or Generated-by trailers.
+          Flag use of Co-Authored-By for AI tools.
+        mode: "warning"
+
+# ── Knowledge base ───────────────────────────────────────────
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "**/REDHAT.md"
+
+  issues:
+    scope: "auto"
+  pull_requests:
+    scope: "auto"

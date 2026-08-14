@@ -1,0 +1,38 @@
+FROM registry.access.redhat.com/ubi9/go-toolset:9.8-1786023237@sha256:5d26ff5606bd6590930e7cfc202b510e3fe2c7a7a1720860f444ab49c45128cb AS toolchain
+
+# Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
+ARG goproxy=https://proxy.golang.org
+ENV GOPROXY=$goproxy
+
+FROM toolchain AS builder
+
+USER 0
+WORKDIR /workspace
+
+ENV GOFLAGS="-buildvcs=false"
+
+ARG MCE_VERSION=dev
+ARG GIT_COMMIT=unknown
+
+COPY ./ ./
+
+# Cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN  --mount=type=cache,target=/root/.local/share/golang \
+     --mount=type=cache,target=/go/pkg/mod \
+     go mod download
+
+# Build
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.local/share/golang \
+    SHORT_COMMIT=$(echo "${GIT_COMMIT}" | cut -c1-7) && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=${ARCH} \
+    go build -ldflags "-X 'sigs.k8s.io/cluster-api-provider-azure/version.gitVersion=${MCE_VERSION}-${SHORT_COMMIT}'" \
+    -o ./manager .
+
+# Copy the aso-controller into a thin image
+FROM registry.access.redhat.com/ubi9/ubi:9.8-1786339177@sha256:9d99826a5299a54fa92e9b47d74e6cd72efb04cb57eb8fe748ed93e08ebb6184
+COPY --from=builder /workspace/manager /manager
+USER 65532:65532
+ENTRYPOINT ["/manager"]

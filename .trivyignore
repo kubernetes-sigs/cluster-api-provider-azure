@@ -1,0 +1,6 @@
+# GO-2026-5932: golang.org/x/crypto/openpgp is unmaintained and unsafe by design.
+# This is a transitive dependency with UNKNOWN severity and no fix available.
+# It causes false-positive failures in the weekly security scan because Trivy
+# exits non-zero on UNKNOWN-severity advisories even when the severity filter
+# is set to CRITICAL,HIGH,MEDIUM,LOW.
+GO-2026-5932
