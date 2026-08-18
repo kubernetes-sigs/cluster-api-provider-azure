@@ -1539,6 +1539,37 @@ spec:
 
 			By("PASSED!")
 		})
+
+		It("Creates a Kueue-admitted RayJob and verifies it enqueues successfully and runs to completion", func() {
+			clusterName = getClusterName(clusterNamePrefix, "kueue-rayjob")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-kuberay"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			KueueRayJobSpec(ctx, func() KubeRayJobSpecInput {
+				return KubeRayJobSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					SkipCleanup:           skipCleanup,
+				}
+			})
+
+			By("PASSED!")
+		})
 	})
 
 	// KubeRay tests on a self-managed VM-based cluster.
