@@ -182,7 +182,7 @@ CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 ASO_CRDS_PATH := $(MANIFEST_ROOT)/aso/crds.yaml
-ASO_VERSION := v2.18.0-hcpclusters.1
+ASO_VERSION := v2.19.0-hcpclusters.1
 ASO_WORKSPACE := stolostron
 ASO_CRDS := resourcegroups.resources.azure.com natgateways.network.azure.com managedclusters.containerservice.azure.com managedclustersagentpools.containerservice.azure.com bastionhosts.network.azure.com virtualnetworks.network.azure.com virtualnetworkssubnets.network.azure.com privateendpoints.network.azure.com fleetsmembers.containerservice.azure.com extensions.kubernetesconfiguration.azure.com maintenanceconfigurations.containerservice.azure.com userassignedidentities.managedidentity.azure.com roleassignments.authorization.azure.com networksecuritygroups.network.azure.com vaults.keyvault.azure.com hcpopenshiftclusters.redhatopenshift.azure.com hcpopenshiftclustersnodepools.redhatopenshift.azure.com hcpopenshiftclustersexternalauths.redhatopenshift.azure.com
 
