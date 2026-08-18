@@ -83,7 +83,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 		var existingResource any
 		if existing, err := s.Creator.Get(ctx, spec); err != nil && !azure.ResourceNotFound(err) {
 			errWrapped := errors.Wrapf(err, "failed to get existing resource %s/%s (service: %s)", rgName, resourceName, serviceName)
-			return nil, azure.WithTransientError(errWrapped, getRetryAfterFromError(err))
+			return nil, azure.WithTransientError(errWrapped, GetRetryAfterFromError(err))
 		} else if err == nil {
 			existingResource = existing
 			log.V(2).Info("successfully got existing resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
@@ -181,9 +181,9 @@ func requeueTime(timeouts azure.AsyncReconciler) time.Duration {
 	return timeouts.DefaultedReconcilerRequeue()
 }
 
-// getRetryAfterFromError returns the time.Duration from the http.Response in the azcore.ResponseError.
+// GetRetryAfterFromError returns the time.Duration from the http.Response in the azcore.ResponseError.
 // If there is no Response object, or if there is no meaningful Retry-After header data, it returns a default.
-func getRetryAfterFromError(err error) time.Duration {
+func GetRetryAfterFromError(err error) time.Duration {
 	// In case we aren't able to introspect Retry-After from the error type, we'll return this default
 	ret := reconciler.DefaultReconcilerRequeue
 	var responseError *azcore.ResponseError

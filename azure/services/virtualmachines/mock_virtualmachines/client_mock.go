@@ -104,3 +104,18 @@ func (mr *MockClientMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1)
 }
+
+// ReapplyAsync mocks base method.
+func (m *MockClient) ReapplyAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (*runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReapplyAsync", ctx, spec, resumeToken)
+	ret0, _ := ret[0].(*runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReapplyAsync indicates an expected call of ReapplyAsync.
+func (mr *MockClientMockRecorder) ReapplyAsync(ctx, spec, resumeToken any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReapplyAsync", reflect.TypeOf((*MockClient)(nil).ReapplyAsync), ctx, spec, resumeToken)
+}
