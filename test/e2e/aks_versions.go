@@ -30,7 +30,63 @@ import (
 	"golang.org/x/mod/semver"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/internal/kubeversion"
 )
+
+// GetAKSKubernetesVersionWithCommunityGalleryImage gets a Kubernetes version supported by both AKS and a community gallery image in the configured region.
+func GetAKSKubernetesVersionWithCommunityGalleryImage(ctx context.Context, e2eConfig *clusterctl.E2EConfig, versionVar, image string) (string, error) {
+	requestedVersion := e2eConfig.MustGetVariable(versionVar)
+	location := e2eConfig.MustGetVariable(AzureLocation)
+	subscriptionID := getSubscriptionID(Default)
+
+	aksVersions, err := getStableAKSKubernetesVersions(ctx, subscriptionID, location)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to list stable AKS Kubernetes versions in location %q", location)
+	}
+	galleryVersionMap, err := listVersionsInCommunityGallery(ctx, location, azure.DefaultPublicGalleryName, image)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to list community gallery image %q versions in location %q", image, location)
+	}
+	galleryVersions := make([]string, 0, len(galleryVersionMap))
+	for version := range galleryVersionMap {
+		galleryVersions = append(galleryVersions, version)
+	}
+
+	version, err := kubeversion.Select(requestedVersion, kubeversion.Common(aksVersions, galleryVersions))
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to resolve Kubernetes version %q for AKS and community gallery image %q in location %q", requestedVersion, image, location)
+	}
+	Byf("Resolved %s (set to %s) to %s using AKS and community gallery image %q in location %q", versionVar, requestedVersion, version, image, location)
+	return version, nil
+}
+
+func getStableAKSKubernetesVersions(ctx context.Context, subscriptionID, location string) ([]string, error) {
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a default credential")
+	}
+	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a ContainerServices client")
+	}
+	result, err := managedClustersClient.ListKubernetesVersions(ctx, location, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list Orchestrators")
+	}
+
+	var versions []string
+	for _, minor := range result.KubernetesVersionListResult.Values {
+		if minor == nil || ptr.Deref(minor.IsPreview, false) {
+			continue
+		}
+		for patch := range minor.PatchVersions {
+			versions = append(versions, patch)
+		}
+	}
+	return versions, nil
+}
 
 // GetAKSKubernetesVersion gets the kubernetes version for AKS clusters as specified by the environment variable defined by versionVar.
 func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig, versionVar string) (string, error) {
@@ -76,7 +132,7 @@ func GetWorkingAKSKubernetesVersion(ctx context.Context, subscriptionID, locatio
 	var latestStableVersionDesired bool
 	// We're not doing much input validation here,
 	// we assume that if the prefix is 'stable-' that the remainder of the string is in the format <Major>.<Minor>
-	if isStableVersion, _ := validateStableReleaseString(version); isStableVersion {
+	if isStableVersion, _ := kubeversion.ValidateStableReleaseString(version); isStableVersion {
 		latestStableVersionDesired = true
 		// Form a fully valid semver version @ the initial patch release (".0")
 		version = fmt.Sprintf("%s.0", version[7:])
@@ -133,40 +189,13 @@ func GetNextLatestStableAKSKubernetesVersion(ctx context.Context, subscriptionID
 }
 
 func getLatestStableAKSKubernetesVersionOffset(ctx context.Context, subscriptionID, location string, offset int) (string, error) {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	versions, err := getStableAKSKubernetesVersions(ctx, subscriptionID, location)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create a default credential")
+		return "", err
 	}
-	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, cred, nil)
+	version, err := kubeversion.LatestStable(versions, offset)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create a ContainerServices client")
+		return "", errors.Wrapf(err, "failed to find a stable AKS Kubernetes version in location %q", location)
 	}
-	result, err := managedClustersClient.ListKubernetesVersions(ctx, location, nil)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to list Orchestrators")
-	}
-
-	var orchestratorversions []string
-	var foundWorkingVersion bool
-	var version string
-	var maxVersion string
-
-	for _, minor := range result.KubernetesVersionListResult.Values {
-		for patch := range minor.PatchVersions {
-			// semver comparisons require a "v" prefix
-			if patch[:1] != "v" && !ptr.Deref(minor.IsPreview, false) {
-				version = "v" + patch
-			}
-			orchestratorversions = append(orchestratorversions, version)
-		}
-	}
-	semver.Sort(orchestratorversions)
-	maxVersion = orchestratorversions[len(orchestratorversions)-1-offset]
-	if semver.IsValid(maxVersion) {
-		foundWorkingVersion = true
-	}
-	if !foundWorkingVersion {
-		return "", errors.New("latest stable AKS version not found")
-	}
-	return maxVersion, nil
+	return version, nil
 }
