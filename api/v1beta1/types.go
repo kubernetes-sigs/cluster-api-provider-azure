@@ -398,6 +398,16 @@ const (
 	Public = LBType("Public")
 )
 
+// IPVersion defines an IP version.
+type IPVersion string
+
+const (
+	// IPv4 is the value for IPv4 address version.
+	IPv4 = IPVersion("IPv4")
+	// IPv6 is the value for IPv6 address version.
+	IPv6 = IPVersion("IPv6")
+)
+
 // FrontendIP defines a load balancer frontend IP configuration.
 type FrontendIP struct {
 	// +kubebuilder:validation:MinLength=1

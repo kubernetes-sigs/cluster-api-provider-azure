@@ -1467,6 +1467,32 @@ func TestValidateAPIServerLB(t *testing.T) {
 			cpCIDRS: []string{"10.1.0.0/24"},
 			wantErr: false,
 		},
+		{
+			name: "internal LB with IPv6 frontend",
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							PrivateIPAddress: "10.0.0.4",
+							IPVersion:        infrav1.IPv6,
+						},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Internal,
+					SKU:  infrav1.SKUStandard,
+				},
+				Name: "my-private-lb",
+			},
+			cpCIDRS: []string{"10.0.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].ipVersion",
+				Detail: "Internal Load Balancers do not support IPv6 frontend IPs",
+			},
+		},
 	}
 
 	for _, test := range testcases {
@@ -1484,6 +1510,111 @@ func TestValidateAPIServerLB(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateIPv6FrontendRequiresIPv6Subnet(t *testing.T) {
+	testcases := []struct {
+		name        string
+		lb          *infrav1.LoadBalancerSpec
+		subnet      infrav1.SubnetSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "IPv6 frontend with IPv6 subnet is valid",
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							IPVersion: infrav1.IPv6,
+						},
+						PublicIP: &infrav1.PublicIPSpec{Name: "my-ipv6-pip"},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+			},
+			subnet: infrav1.SubnetSpec{
+				SubnetClassSpec: infrav1.SubnetClassSpec{
+					CIDRBlocks: []string{"10.0.0.0/24", "fd00::/64"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "IPv6 frontend without IPv6 subnet is invalid",
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name: "ip-1",
+						FrontendIPClass: infrav1.FrontendIPClass{
+							IPVersion: infrav1.IPv6,
+						},
+						PublicIP: &infrav1.PublicIPSpec{Name: "my-ipv6-pip"},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+			},
+			subnet: infrav1.SubnetSpec{
+				SubnetClassSpec: infrav1.SubnetClassSpec{
+					CIDRBlocks: []string{"10.0.0.0/24"},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "lb.frontendIPConfigs[0].ipVersion",
+				BadValue: "IPv6",
+				Detail:   "IPv6 frontend IPs require the control plane subnet to have IPv6 CIDR blocks",
+			},
+		},
+		{
+			name: "IPv4 frontend without IPv6 subnet is valid",
+			lb: &infrav1.LoadBalancerSpec{
+				FrontendIPs: []infrav1.FrontendIP{
+					{
+						Name:     "ip-1",
+						PublicIP: &infrav1.PublicIPSpec{Name: "my-pip"},
+					},
+				},
+				LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+					Type: infrav1.Public,
+					SKU:  infrav1.SKUStandard,
+				},
+			},
+			subnet: infrav1.SubnetSpec{
+				SubnetClassSpec: infrav1.SubnetClassSpec{
+					CIDRBlocks: []string{"10.0.0.0/24"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "nil LB is valid",
+			lb:      nil,
+			subnet:  infrav1.SubnetSpec{},
+			wantErr: false,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewWithT(t)
+			err := validateIPv6FrontendRequiresIPv6Subnet(test.lb, test.subnet, field.NewPath("lb"))
+			if test.wantErr {
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
+			} else {
+				g.Expect(err).To(BeEmpty())
+			}
+		})
+	}
+}
+
 func TestPrivateDNSZoneName(t *testing.T) {
 	testcases := []struct {
 		name        string

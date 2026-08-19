@@ -164,8 +164,8 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					Name:             ip.PublicIP.Name,
 					ResourceGroup:    s.ResourceGroup(),
 					ClusterName:      s.ClusterName(),
-					DNSName:          "",    // Set to default value
-					IsIPv6:           false, // Set to default value
+					DNSName:          "", // Set to default value
+					IsIPv6:           ip.IPVersion == infrav1.IPv6,
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
 					FailureDomains:   failureDomains,
@@ -181,7 +181,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 					Name:             s.APIServerPublicIP().Name,
 					ResourceGroup:    s.ResourceGroup(),
 					DNSName:          s.APIServerPublicIP().DNSName,
-					IsIPv6:           false, // Currently azure requires an IPv4 lb rule to enable IPv6
+					IsIPv6:           len(s.APIServerLB().FrontendIPs) > 0 && s.APIServerLB().FrontendIPs[0].IPVersion == infrav1.IPv6,
 					ClusterName:      s.ClusterName(),
 					Location:         s.Location(),
 					ExtendedLocation: s.ExtendedLocation(),
@@ -202,8 +202,8 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				Name:             ip.PublicIP.Name,
 				ResourceGroup:    s.ResourceGroup(),
 				ClusterName:      s.ClusterName(),
-				DNSName:          "",    // Set to default value
-				IsIPv6:           false, // Set to default value
+				DNSName:          "", // Set to default value
+				IsIPv6:           ip.IPVersion == infrav1.IPv6,
 				Location:         s.Location(),
 				ExtendedLocation: s.ExtendedLocation(),
 				FailureDomains:   failureDomains,
@@ -270,6 +270,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			Type:                  s.APIServerLB().Type,
 			SKU:                   s.APIServerLB().SKU,
 			Role:                  infrav1.APIServerRole,
+			IPv6Enabled:           s.IsIPv6Enabled(),
 			BackendPoolName:       s.APIServerLB().BackendPool.Name,
 			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
 			AdditionalTags:        s.AdditionalTags(),
@@ -355,6 +356,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			Type:                 s.NodeOutboundLB().Type,
 			SKU:                  s.NodeOutboundLB().SKU,
 			BackendPoolName:      s.NodeOutboundLB().BackendPool.Name,
+			IPv6Enabled:          s.IsIPv6Enabled(),
 			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.NodeOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
@@ -377,6 +379,7 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 			Type:                 s.ControlPlaneOutboundLB().Type,
 			SKU:                  s.ControlPlaneOutboundLB().SKU,
 			BackendPoolName:      s.ControlPlaneOutboundLB().BackendPool.Name,
+			IPv6Enabled:          s.IsIPv6Enabled(),
 			IdleTimeoutInMinutes: s.ControlPlaneOutboundLB().IdleTimeoutInMinutes,
 			Role:                 infrav1.ControlPlaneOutboundRole,
 			AdditionalTags:       s.AdditionalTags(),
