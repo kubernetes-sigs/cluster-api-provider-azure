@@ -28,6 +28,10 @@ jobs:
           - upstream: release-1.22
             target: backplane-2.17
           - upstream: release-1.23
+            target: release-1.23
+          - upstream: release-1.26
+            target: release-1.26
+          - upstream: main
             target: main
     defaults:
       run:

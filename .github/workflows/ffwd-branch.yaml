@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TARGET_BRANCHES: backplane-5.0 backplane-5.1
+      TARGET_BRANCHES: backplane-5.1
 
     steps:
       - name: Checkout repo
