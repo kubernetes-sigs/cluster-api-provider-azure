@@ -241,7 +241,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 
 	log.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
-	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil {
+	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil { //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}

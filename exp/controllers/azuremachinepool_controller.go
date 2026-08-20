@@ -267,7 +267,7 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 	log.Info("Reconciling AzureMachinePool")
 
 	// If the AzureMachine is in an error state, return early.
-	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil {
+	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil { //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 		log.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}

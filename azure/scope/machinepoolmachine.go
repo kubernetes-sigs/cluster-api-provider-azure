@@ -272,12 +272,12 @@ func (s *MachinePoolMachineScope) IsReady() bool {
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
 func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
-	s.AzureMachinePoolMachine.Status.FailureMessage = ptr.To(v.Error())
+	s.AzureMachinePoolMachine.Status.FailureMessage = ptr.To(v.Error()) //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // SetFailureReason sets the AzureMachinePoolMachine status failure reason.
 func (s *MachinePoolMachineScope) SetFailureReason(v string) {
-	s.AzureMachinePoolMachine.Status.FailureReason = &v
+	s.AzureMachinePoolMachine.Status.FailureReason = &v //nolint:staticcheck // will be removed when failureReason/failureMessage are dropped
 }
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.FakeProviderID.
