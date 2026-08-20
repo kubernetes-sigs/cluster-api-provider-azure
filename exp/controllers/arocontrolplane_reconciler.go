@@ -22,8 +22,7 @@ import (
 	"strings"
 	"time"
 
-	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
-	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
+	asoredhatopenshiftv1hub "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview/storage"
 	asoconditions "github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -301,8 +300,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 			continue
 		}
 
-		if (u.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			u.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if u.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			u.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
 			// Check if etcd.dataEncryption.customerManaged.kms is configured
 			etcdPath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms"}
@@ -439,8 +437,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 	// Check if ExternalAuth is defined in original resources (before filtering)
 	hasExternalAuthInSpec := false
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == hcpOpenShiftClustersExternalAuthKind {
 			hasExternalAuthInSpec = true
 			break
@@ -483,8 +480,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 	// 3. Control plane initialization requires HcpOpenShiftCluster API URL
 	var hcpClusterName string
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
 			hcpClusterName = resource.GetName()
 			break
@@ -495,73 +491,44 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 		return errors.New("no HcpOpenShiftCluster found in resources")
 	}
 
-	// Get the HcpOpenShiftCluster to extract status (try both API versions)
+	// Get the HcpOpenShiftCluster to extract status
 	var statusID *string
 	var consoleURL *string
 	var apiURL *string
 	var version *string
 	var statusConditions []asoconditions.Condition
 
-	// Try v1api20251223preview first
-	hcpClusterV1 := &asoredhatopenshiftv1.HcpOpenShiftCluster{}
+	hcpCluster := &asoredhatopenshiftv1hub.HcpOpenShiftCluster{}
 	err = s.kubeclient.Get(ctx, client.ObjectKey{
 		Namespace: s.scope.ControlPlane.Namespace,
 		Name:      hcpClusterName,
-	}, hcpClusterV1)
+	}, hcpCluster)
 
 	if err == nil {
-		// Found v1api20251223preview version
-		statusID = hcpClusterV1.Status.Id
-		statusConditions = hcpClusterV1.Status.Conditions
-		if hcpClusterV1.Status.Properties != nil {
-			if hcpClusterV1.Status.Properties.Console != nil {
-				consoleURL = hcpClusterV1.Status.Properties.Console.Url
+		statusID = hcpCluster.Status.Id
+		statusConditions = hcpCluster.Status.Conditions
+		if hcpCluster.Status.Properties != nil {
+			if hcpCluster.Status.Properties.Console != nil {
+				consoleURL = hcpCluster.Status.Properties.Console.Url
 			}
-			if hcpClusterV1.Status.Properties.Api != nil {
-				apiURL = hcpClusterV1.Status.Properties.Api.Url
+			if hcpCluster.Status.Properties.Api != nil {
+				apiURL = hcpCluster.Status.Properties.Api.Url
 			}
-			if hcpClusterV1.Status.Properties.Version != nil {
-				version = hcpClusterV1.Status.Properties.Version.Id
+			if hcpCluster.Status.Properties.Version != nil {
+				version = hcpCluster.Status.Properties.Version.Id
 			}
 		}
 	} else if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) || isSchemeError(err) {
-		// Not found or API version not served, try v1api20260630preview
-		hcpClusterV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftCluster{}
-		err = s.kubeclient.Get(ctx, client.ObjectKey{
-			Namespace: s.scope.ControlPlane.Namespace,
-			Name:      hcpClusterName,
-		}, hcpClusterV2)
-
-		if err == nil {
-			// Found v1api20260630preview version
-			statusID = hcpClusterV2.Status.Id
-			statusConditions = hcpClusterV2.Status.Conditions
-			if hcpClusterV2.Status.Properties != nil {
-				if hcpClusterV2.Status.Properties.Console != nil {
-					consoleURL = hcpClusterV2.Status.Properties.Console.Url
-				}
-				if hcpClusterV2.Status.Properties.Api != nil {
-					apiURL = hcpClusterV2.Status.Properties.Api.Url
-				}
-				if hcpClusterV2.Status.Properties.Version != nil {
-					version = hcpClusterV2.Status.Properties.Version.Id
-				}
-			}
-		} else if apierrors.IsNotFound(err) || isSchemeError(err) {
-			// Not found in either version
-			conditions.Set(s.scope.ControlPlane, metav1.Condition{
-				Type:    cplane.HcpClusterReadyCondition,
-				Status:  metav1.ConditionFalse,
-				Reason:  "HcpOpenShiftClusterNotFound",
-				Message: fmt.Sprintf("HcpOpenShiftCluster %s does not exist yet", hcpClusterName),
-			})
-			log.V(4).Info("HcpOpenShiftCluster not found yet, skipping status extraction", "name", hcpClusterName)
-			return nil
-		} else {
-			return errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20260630preview)")
-		}
+		conditions.Set(s.scope.ControlPlane, metav1.Condition{
+			Type:    cplane.HcpClusterReadyCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  "HcpOpenShiftClusterNotFound",
+			Message: fmt.Sprintf("HcpOpenShiftCluster %s does not exist yet", hcpClusterName),
+		})
+		log.V(4).Info("HcpOpenShiftCluster not found yet, skipping status extraction", "name", hcpClusterName)
+		return nil
 	} else {
-		return errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20251223preview)")
+		return errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20260630preview)")
 	}
 
 	// Extract status information from HcpOpenShiftCluster
@@ -632,8 +599,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 	// Check if any resource is an ExternalAuth
 	hasExternalAuth := false
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == hcpOpenShiftClustersExternalAuthKind {
 			hasExternalAuth = true
 			break
@@ -660,8 +626,7 @@ func (s *aroControlPlaneService) setExternalAuthCondition(ctx context.Context, r
 	// Find HcpOpenShiftClustersExternalAuth resource
 	var externalAuthName string
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == hcpOpenShiftClustersExternalAuthKind {
 			externalAuthName = resource.GetName()
 			break
@@ -673,34 +638,19 @@ func (s *aroControlPlaneService) setExternalAuthCondition(ctx context.Context, r
 		return
 	}
 
-	// Get the HcpOpenShiftClustersExternalAuth to check status (try both API versions)
+	// Get the HcpOpenShiftClustersExternalAuth to check status
 	var externalAuthAnnotations map[string]string
 	var externalAuthConditions []asoconditions.Condition
 
-	// Try v1api20251223preview first
-	externalAuthV1 := &asoredhatopenshiftv1.HcpOpenShiftClustersExternalAuth{}
+	externalAuth := &asoredhatopenshiftv1hub.HcpOpenShiftClustersExternalAuth{}
 	err := s.kubeclient.Get(ctx, client.ObjectKey{
 		Namespace: s.scope.ControlPlane.Namespace,
 		Name:      externalAuthName,
-	}, externalAuthV1)
+	}, externalAuth)
 
 	if err == nil {
-		// Found v1api20251223preview version
-		externalAuthAnnotations = externalAuthV1.GetAnnotations()
-		externalAuthConditions = externalAuthV1.Status.Conditions
-	} else if client.IgnoreNotFound(err) == nil {
-		// Not found, try v1api20260630preview
-		externalAuthV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftClustersExternalAuth{}
-		err = s.kubeclient.Get(ctx, client.ObjectKey{
-			Namespace: s.scope.ControlPlane.Namespace,
-			Name:      externalAuthName,
-		}, externalAuthV2)
-
-		if err == nil {
-			// Found v1api20260630preview version
-			externalAuthAnnotations = externalAuthV2.GetAnnotations()
-			externalAuthConditions = externalAuthV2.Status.Conditions
-		}
+		externalAuthAnnotations = externalAuth.GetAnnotations()
+		externalAuthConditions = externalAuth.Status.Conditions
 	}
 
 	if err != nil {
@@ -963,52 +913,27 @@ func (s *aroControlPlaneService) filterExternalAuthUntilNodePoolReady(ctx contex
 	_, log, done := tele.StartSpanWithLogger(ctx, "controllers.aroControlPlaneService.filterExternalAuthUntilNodePoolReady")
 	defer done()
 
-	// Check if any HcpOpenShiftClustersNodePool is ready (check both API versions)
+	// Check if any HcpOpenShiftClustersNodePool is ready
 	hasReadyNodePool := false
 
-	// Check v1api20251223preview node pools
-	nodePoolListV1 := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePoolList{}
-	if err := s.kubeclient.List(ctx, nodePoolListV1, client.InNamespace(s.scope.Namespace())); err != nil {
-		if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
-			return nil, false, fmt.Errorf("failed to list HcpOpenShiftClustersNodePool resources (v1api20251223preview): %w", err)
+	nodePoolList := &asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePoolList{}
+	if err := s.kubeclient.List(ctx, nodePoolList, client.InNamespace(s.scope.Namespace())); err != nil {
+		// Ignore NotFound, NoMatch, and scheme registration errors (when types not in scheme)
+		if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {
+			return nil, false, fmt.Errorf("failed to list HcpOpenShiftClustersNodePool resources (v1api20260630preview): %w", err)
 		}
 	} else {
-		log.V(4).Info("Checking node pool readiness (v1api20251223preview)", "nodePoolCount", len(nodePoolListV1.Items))
-		for _, nodePool := range nodePoolListV1.Items {
+		log.V(4).Info("Checking node pool readiness (v1api20260630preview)", "nodePoolCount", len(nodePoolList.Items))
+		for _, nodePool := range nodePoolList.Items {
 			for _, condition := range nodePool.Status.Conditions {
 				if condition.Type == asoconditions.ConditionTypeReady && condition.Status == metav1.ConditionTrue {
 					hasReadyNodePool = true
-					log.V(4).Info("Found ready node pool (v1api20251223preview)", "name", nodePool.Name)
+					log.V(4).Info("Found ready node pool (v1api20260630preview)", "name", nodePool.Name)
 					break
 				}
 			}
 			if hasReadyNodePool {
 				break
-			}
-		}
-	}
-
-	// Check v1api20260630preview node pools if not already found
-	if !hasReadyNodePool {
-		nodePoolListV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftClustersNodePoolList{}
-		if err := s.kubeclient.List(ctx, nodePoolListV2, client.InNamespace(s.scope.Namespace())); err != nil {
-			// Ignore NotFound, NoMatch, and scheme registration errors (when types not in scheme)
-			if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {
-				return nil, false, fmt.Errorf("failed to list HcpOpenShiftClustersNodePool resources (v1api20260630preview): %w", err)
-			}
-		} else {
-			log.V(4).Info("Checking node pool readiness (v1api20260630preview)", "nodePoolCount", len(nodePoolListV2.Items))
-			for _, nodePool := range nodePoolListV2.Items {
-				for _, condition := range nodePool.Status.Conditions {
-					if condition.Type == asoconditions.ConditionTypeReady && condition.Status == metav1.ConditionTrue {
-						hasReadyNodePool = true
-						log.V(4).Info("Found ready node pool (v1api20260630preview)", "name", nodePool.Name)
-						break
-					}
-				}
-				if hasReadyNodePool {
-					break
-				}
 			}
 		}
 	}
@@ -1025,8 +950,7 @@ func (s *aroControlPlaneService) filterExternalAuthUntilNodePoolReady(ctx contex
 	filtered := make([]*unstructured.Unstructured, 0, len(resources))
 	filteredCount := 0
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == hcpOpenShiftClustersExternalAuthKind {
 			// Check if this ExternalAuth resource already exists in the cluster
 			existsInCluster := s.externalAuthExists(ctx, resource.GetName())
@@ -1059,30 +983,14 @@ func (s *aroControlPlaneService) filterExternalAuthUntilNodePoolReady(ctx contex
 // - If exists: keep it (don't delete working resources due to transient node pool failures).
 // - If doesn't exist: filter it out (prevent initial creation without ready node pool).
 func (s *aroControlPlaneService) externalAuthExists(ctx context.Context, name string) bool {
-	// Try v1api20251223preview first
-	externalAuthV1 := &asoredhatopenshiftv1.HcpOpenShiftClustersExternalAuth{}
+	externalAuth := &asoredhatopenshiftv1hub.HcpOpenShiftClustersExternalAuth{}
 	err := s.kubeclient.Get(ctx, client.ObjectKey{
 		Namespace: s.scope.ControlPlane.Namespace,
 		Name:      name,
-	}, externalAuthV1)
+	}, externalAuth)
 
 	if err == nil {
-		// Found v1api20251223preview version
 		return true
-	}
-
-	// Not found or error, try v1api20260630preview
-	if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) || isSchemeError(err) {
-		externalAuthV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftClustersExternalAuth{}
-		err = s.kubeclient.Get(ctx, client.ObjectKey{
-			Namespace: s.scope.ControlPlane.Namespace,
-			Name:      name,
-		}, externalAuthV2)
-
-		if err == nil {
-			// Found v1api20260630preview version
-			return true
-		}
 	}
 
 	// Resource doesn't exist (or error accessing it - treat as not exists)

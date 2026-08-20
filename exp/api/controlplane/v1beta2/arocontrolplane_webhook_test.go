@@ -63,7 +63,7 @@ func TestAROControlPlaneWebhook_ValidateCreate_ResourcesRequired(t *testing.T) {
 					Resources: []runtime.RawExtension{
 						{
 							Raw: []byte(`{
-								"apiVersion": "redhatopenshift.azure.com/v1api20251223preview",
+								"apiVersion": "redhatopenshift.azure.com/v1api20260630preview",
 								"kind": "HcpOpenShiftCluster",
 								"metadata": {"name": "test-cluster"}
 							}`),

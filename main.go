@@ -34,8 +34,8 @@ import (
 	asomanagedidentityv1api20230131 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
-	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
 	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
+	asoredhatopenshiftv1hub "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview/storage"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -100,8 +100,8 @@ func init() {
 	_ = asokeyvaultv1.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
 	_ = asomanagedidentityv1api20230131.AddToScheme(scheme)
-	_ = asoredhatopenshiftv1.AddToScheme(scheme)
 	_ = asoredhatopenshiftv1api2026.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1hub.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 

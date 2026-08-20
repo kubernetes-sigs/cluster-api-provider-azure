@@ -21,8 +21,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
-	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
+	asoredhatopenshiftv1hub "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -94,23 +93,23 @@ func TestProviderIDListSync_AzureNameMatchesK8sName(t *testing.T) {
 		Build()
 
 	// Create HcpOpenShiftClustersNodePool with azureName matching k8s name
-	nodePool := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{
+	nodePool := &asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HcpOpenShiftClustersNodePool",
-			APIVersion: asoredhatopenshiftv1.GroupVersion.String(),
+			APIVersion: asoredhatopenshiftv1hub.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodePoolName,
 			Namespace: namespace,
 		},
-		Spec: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_Spec{
+		Spec: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_Spec{
 			AzureName: azureName,
 			Owner: &genruntime.KnownResourceReference{
 				Name: clusterName,
 			},
 		},
-		Status: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_STATUS{
-			Properties: &asoredhatopenshiftv1.NodePoolProperties_STATUS{
+		Status: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_STATUS{
+			Properties: &asoredhatopenshiftv1hub.NodePoolProperties_STATUS{
 				Replicas: ptr.To(2),
 			},
 		},
@@ -130,7 +129,7 @@ func TestProviderIDListSync_AzureNameMatchesK8sName(t *testing.T) {
 	_ = infrav2exp.AddToScheme(mgmtScheme)
 	_ = cplane.AddToScheme(mgmtScheme)
 	_ = clusterv1.AddToScheme(mgmtScheme)
-	_ = asoredhatopenshiftv1.AddToScheme(mgmtScheme)
+	_ = asoredhatopenshiftv1hub.AddToScheme(mgmtScheme)
 
 	mgmtClient := fake.NewClientBuilder().
 		WithScheme(mgmtScheme).
@@ -228,23 +227,23 @@ func TestProviderIDListSync_AzureNameDiffersFromK8sName(t *testing.T) {
 		Build()
 
 	// Create HcpOpenShiftClustersNodePool with azureName different from k8s name
-	nodePool := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{
+	nodePool := &asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HcpOpenShiftClustersNodePool",
-			APIVersion: asoredhatopenshiftv1.GroupVersion.String(),
+			APIVersion: asoredhatopenshiftv1hub.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodePoolName,
 			Namespace: namespace,
 		},
-		Spec: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_Spec{
+		Spec: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_Spec{
 			AzureName: azureName, // Different from metadata.name!
 			Owner: &genruntime.KnownResourceReference{
 				Name: clusterName,
 			},
 		},
-		Status: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_STATUS{
-			Properties: &asoredhatopenshiftv1.NodePoolProperties_STATUS{
+		Status: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_STATUS{
+			Properties: &asoredhatopenshiftv1hub.NodePoolProperties_STATUS{
 				Replicas: ptr.To(2),
 			},
 		},
@@ -264,7 +263,7 @@ func TestProviderIDListSync_AzureNameDiffersFromK8sName(t *testing.T) {
 	_ = infrav2exp.AddToScheme(mgmtScheme)
 	_ = cplane.AddToScheme(mgmtScheme)
 	_ = clusterv1.AddToScheme(mgmtScheme)
-	_ = asoredhatopenshiftv1.AddToScheme(mgmtScheme)
+	_ = asoredhatopenshiftv1hub.AddToScheme(mgmtScheme)
 
 	mgmtClient := fake.NewClientBuilder().
 		WithScheme(mgmtScheme).
@@ -356,37 +355,37 @@ func TestProviderIDListSync_BaseDomainPrefixDiffersFromCAPIName(t *testing.T) {
 		WithObjects(&nodes[0]).
 		Build()
 
-	nodePool := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{
+	nodePool := &asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HcpOpenShiftClustersNodePool",
-			APIVersion: asoredhatopenshiftv1.GroupVersion.String(),
+			APIVersion: asoredhatopenshiftv1hub.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodePoolName,
 			Namespace: namespace,
 		},
-		Spec: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_Spec{
+		Spec: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_Spec{
 			AzureName: azureName,
 			Owner: &genruntime.KnownResourceReference{
 				Name: clusterName,
 			},
 		},
-		Status: asoredhatopenshiftv1.HcpOpenShiftClustersNodePool_STATUS{
-			Properties: &asoredhatopenshiftv1.NodePoolProperties_STATUS{
+		Status: asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool_STATUS{
+			Properties: &asoredhatopenshiftv1hub.NodePoolProperties_STATUS{
 				Replicas: ptr.To(1),
 			},
 		},
 	}
 
 	// HcpOpenShiftCluster on the management cluster with baseDomainPrefix in status
-	hcpCluster := &asoredhatopenshiftv1.HcpOpenShiftCluster{
+	hcpCluster := &asoredhatopenshiftv1hub.HcpOpenShiftCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,
 		},
-		Status: asoredhatopenshiftv1.HcpOpenShiftCluster_STATUS{
-			Properties: &asoredhatopenshiftv1.HcpOpenShiftClusterProperties_STATUS{
-				Dns: &asoredhatopenshiftv1.DnsProfile_STATUS{
+		Status: asoredhatopenshiftv1hub.HcpOpenShiftCluster_STATUS{
+			Properties: &asoredhatopenshiftv1hub.HcpOpenShiftClusterProperties_STATUS{
+				Dns: &asoredhatopenshiftv1hub.DnsProfile_STATUS{
 					BaseDomainPrefix: ptr.To(baseDomainPrefix),
 				},
 			},
@@ -405,7 +404,7 @@ func TestProviderIDListSync_BaseDomainPrefixDiffersFromCAPIName(t *testing.T) {
 	_ = infrav2exp.AddToScheme(mgmtScheme)
 	_ = cplane.AddToScheme(mgmtScheme)
 	_ = clusterv1.AddToScheme(mgmtScheme)
-	_ = asoredhatopenshiftv1.AddToScheme(mgmtScheme)
+	_ = asoredhatopenshiftv1hub.AddToScheme(mgmtScheme)
 
 	mgmtClient := fake.NewClientBuilder().
 		WithScheme(mgmtScheme).
@@ -449,158 +448,9 @@ func TestProviderIDListSync_BaseDomainPrefixDiffersFromCAPIName(t *testing.T) {
 	g.Expect(aroMachinePool.Spec.ProviderIDList).To(ContainElement(nodes[0].Spec.ProviderID))
 }
 
-// TestProviderIDListSync_BaseDomainPrefixV1api20251223preview tests the fallback
-// branch of getBaseDomainPrefix that reads from the v1api20260630preview
-// HcpOpenShiftCluster when the v1api20251223preview version is not present.
-func TestProviderIDListSync_BaseDomainPrefixV1api20251223preview(t *testing.T) {
-	g := NewWithT(t)
-	ctx := t.Context()
-
-	const (
-		clusterName       = "ethos800-dev-va7"
-		namespace         = "ethos800-dev-va7"
-		nodePoolName      = "ethos800-dev-va7-watsonxcomp-1"
-		azureName         = "watsonxcomp1"
-		baseDomainPrefix  = "g5l7q3a3q1a0c4b"
-		subscriptionID    = "00000000-0000-0000-0000-000000000000"
-		resourceGroupName = "ethos_800_dev_va7"
-	)
-
-	nodes := []corev1.Node{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: baseDomainPrefix + "-" + azureName + "-xyzab-12345",
-				Labels: map[string]string{
-					"hypershift.openshift.io/nodePool": baseDomainPrefix + "-" + azureName,
-				},
-			},
-			Spec: corev1.NodeSpec{
-				ProviderID: "azure:///subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroupName + "-managed/providers/Microsoft.Compute/virtualMachines/" + baseDomainPrefix + "-" + azureName + "-xyzab-12345",
-			},
-		},
-	}
-
-	managedClusterScheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(managedClusterScheme)
-	managedClusterClient := fake.NewClientBuilder().
-		WithScheme(managedClusterScheme).
-		WithObjects(&nodes[0]).
-		Build()
-
-	// Use v1api20260630preview node pool
-	nodePoolV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftClustersNodePool{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "HcpOpenShiftClustersNodePool",
-			APIVersion: asoredhatopenshiftv1api2026.GroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nodePoolName,
-			Namespace: namespace,
-		},
-		Spec: asoredhatopenshiftv1api2026.HcpOpenShiftClustersNodePool_Spec{
-			AzureName: azureName,
-			Owner: &genruntime.KnownResourceReference{
-				Name: clusterName,
-			},
-		},
-		Status: asoredhatopenshiftv1api2026.HcpOpenShiftClustersNodePool_STATUS{
-			Properties: &asoredhatopenshiftv1api2026.NodePoolProperties_STATUS{
-				Replicas: ptr.To(1),
-			},
-		},
-	}
-
-	// Use v1api20260630preview HcpOpenShiftCluster (NOT v1api20251223preview)
-	hcpClusterV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: namespace,
-		},
-		Status: asoredhatopenshiftv1api2026.HcpOpenShiftCluster_STATUS{
-			Properties: &asoredhatopenshiftv1api2026.HcpOpenShiftClusterProperties_STATUS{
-				Dns: &asoredhatopenshiftv1api2026.DnsProfile_STATUS{
-					BaseDomainPrefix: ptr.To(baseDomainPrefix),
-				},
-			},
-		},
-	}
-
-	// Marshal the v2 node pool as a RawExtension for the AROMachinePool spec
-	nodePoolJSON, err := json.Marshal(nodePoolV2)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	aroMachinePool := &infrav2exp.AROMachinePool{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nodePoolName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: clusterName,
-			},
-		},
-		Spec: infrav2exp.AROMachinePoolSpec{
-			Resources: []runtime.RawExtension{
-				{
-					Raw:    nodePoolJSON,
-					Object: nodePoolV2,
-				},
-			},
-		},
-	}
-	machinePool := createTestMachinePool(namespace, nodePoolName, clusterName)
-	cluster := createTestCluster(namespace, clusterName)
-	aroControlPlane := createTestAROControlPlane(namespace, clusterName)
-	aroCluster := createTestAROCluster(namespace, clusterName)
-	aroClusterIdentity := createTestAROClusterIdentity(namespace)
-
-	// Only register v1api20260630preview — v1api20251223preview is NOT in the scheme
-	mgmtScheme := runtime.NewScheme()
-	_ = infrav1.AddToScheme(mgmtScheme)
-	_ = infrav2exp.AddToScheme(mgmtScheme)
-	_ = cplane.AddToScheme(mgmtScheme)
-	_ = clusterv1.AddToScheme(mgmtScheme)
-	_ = asoredhatopenshiftv1api2026.AddToScheme(mgmtScheme)
-
-	mgmtClient := fake.NewClientBuilder().
-		WithScheme(mgmtScheme).
-		WithObjects(aroMachinePool, machinePool, cluster, aroControlPlane, aroCluster, aroClusterIdentity, nodePoolV2, hcpClusterV2).
-		WithStatusSubresource(aroMachinePool).
-		Build()
-
-	mpScope, err := scope.NewAROMachinePoolScope(ctx, scope.AROMachinePoolScopeParams{
-		Client:         mgmtClient,
-		Cluster:        cluster,
-		ControlPlane:   aroControlPlane,
-		MachinePool:    machinePool,
-		AROMachinePool: aroMachinePool,
-	})
-	g.Expect(err).NotTo(HaveOccurred())
-
-	tracker := &FakeClusterTracker{
-		getClientFunc: func(ctx context.Context, name types.NamespacedName) (client.Client, error) {
-			return managedClusterClient, nil
-		},
-	}
-
-	reconcilerService := &aroMachinePoolService{
-		scope:      mpScope,
-		kubeclient: mgmtClient,
-		tracker:    tracker,
-		cluster:    cluster,
-		newResourceReconciler: func(machinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
-			return basecontrollers.NewResourceReconciler(mgmtClient, resources, machinePool)
-		},
-	}
-
-	err = reconcilerService.Reconcile(ctx)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	g.Expect(aroMachinePool.Spec.ProviderIDList).To(HaveLen(1))
-	g.Expect(aroMachinePool.Spec.ProviderIDList).To(ContainElement(nodes[0].Spec.ProviderID))
-}
-
 // Helper functions to create test objects
 
-func createTestAROMachinePool(namespace, name, clusterName string, nodePool *asoredhatopenshiftv1.HcpOpenShiftClustersNodePool) *infrav2exp.AROMachinePool {
+func createTestAROMachinePool(namespace, name, clusterName string, nodePool *asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool) *infrav2exp.AROMachinePool {
 	// Marshal nodePool to JSON for runtime.RawExtension
 	nodePoolJSON, err := json.Marshal(nodePool)
 	if err != nil {

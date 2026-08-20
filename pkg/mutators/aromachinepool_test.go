@@ -21,7 +21,7 @@ import (
 	"errors"
 	"testing"
 
-	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
+	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,7 +194,7 @@ func TestReconcileAROAutoscaling(t *testing.T) {
 
 			// Create HcpOpenShiftClustersNodePool with autoscaling config
 			nodePool := &unstructured.Unstructured{}
-			nodePool.SetGroupVersionKind(asoredhatopenshiftv1.GroupVersion.WithKind("HcpOpenShiftClustersNodePool"))
+			nodePool.SetGroupVersionKind(asoredhatopenshiftv1api2026.GroupVersion.WithKind("HcpOpenShiftClustersNodePool"))
 
 			if test.autoScaling != nil {
 				err := unstructured.SetNestedMap(nodePool.UnstructuredContent(), test.autoScaling, "spec", "properties", "autoScaling")
@@ -233,7 +233,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 						{
 							Raw: mustMarshalJSON(&unstructured.Unstructured{
 								Object: map[string]interface{}{
-									"apiVersion": "redhatopenshift.azure.com/v1api20251223preview",
+									"apiVersion": "redhatopenshift.azure.com/v1api20260630preview",
 									"kind":       "HcpOpenShiftClustersNodePool",
 									"metadata": map[string]interface{}{
 										"name": "test-nodepool",
@@ -265,7 +265,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 						{
 							Raw: mustMarshalJSON(&unstructured.Unstructured{
 								Object: map[string]interface{}{
-									"apiVersion": "redhatopenshift.azure.com/v1api20251223preview",
+									"apiVersion": "redhatopenshift.azure.com/v1api20260630preview",
 									"kind":       "HcpOpenShiftClustersNodePool",
 									"metadata": map[string]interface{}{
 										"name": "test-nodepool",
@@ -376,7 +376,7 @@ func TestReconcileAROAutoscaling_WithDifferentAutoScalingConfigs(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			nodePool := &unstructured.Unstructured{}
-			nodePool.SetGroupVersionKind(asoredhatopenshiftv1.GroupVersion.WithKind("HcpOpenShiftClustersNodePool"))
+			nodePool.SetGroupVersionKind(asoredhatopenshiftv1api2026.GroupVersion.WithKind("HcpOpenShiftClustersNodePool"))
 
 			if test.autoScalingField != nil {
 				if asMap, ok := test.autoScalingField.(map[string]interface{}); ok {

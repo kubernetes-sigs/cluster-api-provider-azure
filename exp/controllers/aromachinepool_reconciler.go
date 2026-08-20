@@ -22,8 +22,7 @@ import (
 	"slices"
 	"time"
 
-	asoredhatopenshiftv1 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20251223preview"
-	asoredhatopenshiftv1api2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview"
+	asoredhatopenshiftv1hub "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v1api20260630preview/storage"
 	asoconditions "github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -133,8 +132,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 	// Find HcpOpenShiftClustersNodePool to extract status information
 	var nodePoolName string
 	for _, resource := range resources {
-		if (resource.GroupVersionKind().Group == asoredhatopenshiftv1.GroupVersion.Group ||
-			resource.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group) &&
+		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
 			resource.GroupVersionKind().Kind == "HcpOpenShiftClustersNodePool" {
 			nodePoolName = resource.GetName()
 			break
@@ -145,7 +143,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		return errors.New("no HcpOpenShiftClustersNodePool found in resources")
 	}
 
-	// Get the HcpOpenShiftClustersNodePool to extract status (try both API versions)
+	// Get the HcpOpenShiftClustersNodePool to extract status
 	var statusID *string
 	var version *string
 	var provisioningState string
@@ -153,64 +151,34 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 	var statusConditions []asoconditions.Condition
 	var azureName string
 
-	// Try v1api20251223preview first
-	nodePoolV1 := &asoredhatopenshiftv1.HcpOpenShiftClustersNodePool{}
+	nodePool := &asoredhatopenshiftv1hub.HcpOpenShiftClustersNodePool{}
 	err = s.kubeclient.Get(ctx, client.ObjectKey{
 		Namespace: s.scope.InfraMachinePool.Namespace,
 		Name:      nodePoolName,
-	}, nodePoolV1)
+	}, nodePool)
 
 	if err == nil {
-		// Found v1api20251223preview version
-		statusID = nodePoolV1.Status.Id
-		statusConditions = nodePoolV1.Status.Conditions
-		azureName = nodePoolV1.Spec.AzureName
-		if nodePoolV1.Status.Properties != nil {
-			if nodePoolV1.Status.Properties.Version != nil {
-				version = nodePoolV1.Status.Properties.Version.Id
+		statusID = nodePool.Status.Id
+		statusConditions = nodePool.Status.Conditions
+		azureName = nodePool.Spec.AzureName
+		if nodePool.Status.Properties != nil {
+			if nodePool.Status.Properties.Version != nil {
+				version = nodePool.Status.Properties.Version.Id
 			}
-			if nodePoolV1.Status.Properties.ProvisioningState != nil {
-				provisioningState = string(*nodePoolV1.Status.Properties.ProvisioningState)
+			if nodePool.Status.Properties.ProvisioningState != nil {
+				provisioningState = string(*nodePool.Status.Properties.ProvisioningState)
 			}
-			replicas = nodePoolV1.Status.Properties.Replicas
+			replicas = nodePool.Status.Properties.Replicas
 		}
 	} else if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) || isSchemeError(err) {
-		// Not found, API version not served, or scheme error - try v1api20260630preview
-		nodePoolV2 := &asoredhatopenshiftv1api2026.HcpOpenShiftClustersNodePool{}
-		err = s.kubeclient.Get(ctx, client.ObjectKey{
-			Namespace: s.scope.InfraMachinePool.Namespace,
-			Name:      nodePoolName,
-		}, nodePoolV2)
-
-		if err == nil {
-			// Found v1api20260630preview version
-			statusID = nodePoolV2.Status.Id
-			statusConditions = nodePoolV2.Status.Conditions
-			azureName = nodePoolV2.Spec.AzureName
-			if nodePoolV2.Status.Properties != nil {
-				if nodePoolV2.Status.Properties.Version != nil {
-					version = nodePoolV2.Status.Properties.Version.Id
-				}
-				if nodePoolV2.Status.Properties.ProvisioningState != nil {
-					provisioningState = string(*nodePoolV2.Status.Properties.ProvisioningState)
-				}
-				replicas = nodePoolV2.Status.Properties.Replicas
-			}
-		} else {
-			// v1api20260630preview also failed
-			if apierrors.IsNotFound(err) || isSchemeError(err) {
-				// NodePool doesn't exist yet - set a condition and continue
-				conditions.Set(s.scope.InfraMachinePool, metav1.Condition{
-					Type:    infrav1exp.NodePoolReadyCondition,
-					Status:  metav1.ConditionFalse,
-					Reason:  "NodePoolNotFound",
-					Message: "HcpOpenShiftClustersNodePool resource not found",
-				})
-				return nil
-			}
-			// For other errors (including NoMatch when neither API version is available), return the error
-			return errors.Wrap(err, "failed to get HcpOpenShiftNodePool")
-		}
+		// NodePool doesn't exist yet - set a condition and continue
+		conditions.Set(s.scope.InfraMachinePool, metav1.Condition{
+			Type:    infrav1exp.NodePoolReadyCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  "NodePoolNotFound",
+			Message: "HcpOpenShiftClustersNodePool resource not found",
+		})
+		return nil
 	} else {
 		return errors.Wrap(err, "failed to get HcpOpenShiftNodePool")
 	}
@@ -470,20 +438,10 @@ func (s *aroMachinePoolService) getHcpClusterName() string {
 func (s *aroMachinePoolService) getBaseDomainPrefix(ctx context.Context) (string, error) {
 	name := client.ObjectKey{Namespace: s.scope.InfraMachinePool.Namespace, Name: s.getHcpClusterName()}
 
-	v1 := &asoredhatopenshiftv1.HcpOpenShiftCluster{}
-	if err := s.kubeclient.Get(ctx, name, v1); err == nil {
-		if v1.Status.Properties != nil && v1.Status.Properties.Dns != nil && v1.Status.Properties.Dns.BaseDomainPrefix != nil {
-			return *v1.Status.Properties.Dns.BaseDomainPrefix, nil
-		}
-		return "", nil
-	} else if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {
-		return "", errors.Wrap(err, "failed to get HcpOpenShiftCluster (v1api20251223preview)")
-	}
-
-	v2 := &asoredhatopenshiftv1api2026.HcpOpenShiftCluster{}
-	if err := s.kubeclient.Get(ctx, name, v2); err == nil {
-		if v2.Status.Properties != nil && v2.Status.Properties.Dns != nil && v2.Status.Properties.Dns.BaseDomainPrefix != nil {
-			return *v2.Status.Properties.Dns.BaseDomainPrefix, nil
+	hcpCluster := &asoredhatopenshiftv1hub.HcpOpenShiftCluster{}
+	if err := s.kubeclient.Get(ctx, name, hcpCluster); err == nil {
+		if hcpCluster.Status.Properties != nil && hcpCluster.Status.Properties.Dns != nil && hcpCluster.Status.Properties.Dns.BaseDomainPrefix != nil {
+			return *hcpCluster.Status.Properties.Dns.BaseDomainPrefix, nil
 		}
 		return "", nil
 	} else if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) && !isSchemeError(err) {

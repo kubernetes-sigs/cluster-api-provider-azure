@@ -65,7 +65,7 @@ func TestAROMachinePoolWebhook_ValidateCreate(t *testing.T) {
 				Spec: AROMachinePoolSpec{
 					Resources: []runtime.RawExtension{
 						{
-							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20251223preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test"}}`),
+							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20260630preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test"}}`),
 						},
 					},
 				},
@@ -132,7 +132,7 @@ func TestAROMachinePoolWebhook_ValidateCreate(t *testing.T) {
 				Spec: AROMachinePoolSpec{
 					Resources: []runtime.RawExtension{
 						{
-							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20251223preview","metadata":{"name":"test"}}`),
+							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20260630preview","metadata":{"name":"test"}}`),
 						},
 					},
 				},
@@ -150,7 +150,7 @@ func TestAROMachinePoolWebhook_ValidateCreate(t *testing.T) {
 				Spec: AROMachinePoolSpec{
 					Resources: []runtime.RawExtension{
 						{
-							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20251223preview","kind":"HcpOpenShiftClustersNodePool","metadata":{}}`),
+							Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20260630preview","kind":"HcpOpenShiftClustersNodePool","metadata":{}}`),
 						},
 					},
 				},
@@ -196,7 +196,7 @@ func TestAROMachinePoolWebhook_ValidateUpdate(t *testing.T) {
 		Spec: AROMachinePoolSpec{
 			Resources: []runtime.RawExtension{
 				{
-					Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20251223preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test"}}`),
+					Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20260630preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test"}}`),
 				},
 			},
 		},
@@ -210,7 +210,7 @@ func TestAROMachinePoolWebhook_ValidateUpdate(t *testing.T) {
 		Spec: AROMachinePoolSpec{
 			Resources: []runtime.RawExtension{
 				{
-					Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20251223preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test-updated"}}`),
+					Raw: []byte(`{"apiVersion":"redhatopenshift.azure.com/v1api20260630preview","kind":"HcpOpenShiftClustersNodePool","metadata":{"name":"test-updated"}}`),
 				},
 			},
 		},
@@ -241,7 +241,7 @@ func TestAROMachinePoolValidateResources(t *testing.T) {
 			resources: []runtime.RawExtension{
 				{
 					Raw: []byte(`{
-						"apiVersion": "redhatopenshift.azure.com/v1api20251223preview",
+						"apiVersion": "redhatopenshift.azure.com/v1api20260630preview",
 						"kind": "HcpOpenShiftClustersNodePool",
 						"metadata": {"name": "test-pool"}
 					}`),
@@ -274,7 +274,7 @@ func TestAROMachinePoolValidateResources(t *testing.T) {
 			resources: []runtime.RawExtension{
 				{
 					Raw: []byte(`{
-						"apiVersion": "redhatopenshift.azure.com/v1api20251223preview",
+						"apiVersion": "redhatopenshift.azure.com/v1api20260630preview",
 						"kind": "HcpOpenShiftClustersNodePool"
 					}`),
 				},

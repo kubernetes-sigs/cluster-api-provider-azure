@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -562,16 +561,9 @@ func (s *AROControlPlaneScope) GetKeyVaultResourceID() string {
 
 		if unstructuredResource.GroupVersionKind().Group == aroHCPGroupName &&
 			unstructuredResource.GroupVersionKind().Kind == hcpOpenShiftClusterKindName {
-			apiVersion := unstructuredResource.GetAPIVersion()
-			var vaultNamePath []string
-			switch {
-			case strings.HasSuffix(apiVersion, "/v1api20260630preview") || strings.HasSuffix(apiVersion, "/v1api20251223preview"):
-				vaultNamePath = []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "vaultName"}
-			default:
-				// Unknown API version — use latest known path, but log for observability
-				ctrl.Log.V(2).Info("unknown HcpOpenShiftCluster API version for vault name extraction, using latest known path", "apiVersion", apiVersion)
-				vaultNamePath = []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "vaultName"}
-			}
+			// The vault name path is identical across every ARO-HCP API version, so it can be
+			// read directly from the (version-agnostic) unstructured resource.
+			vaultNamePath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "vaultName"}
 			name, found, err := unstructured.NestedString(
 				unstructuredResource.UnstructuredContent(),
 				vaultNamePath...,
