@@ -553,9 +553,17 @@ spec:
       options:
         - name: edns0
         - name: trust-ad
+    # Only set kubernetesServiceEndpoint once both parts of the control plane
+    # endpoint are populated. If rendered before infrastructure is ready, the
+    # host/port resolve to empty or "<no value>" and get baked into the
+    # kubernetes-services-endpoint ConfigMap, crash-looping the tigera-operator
+    # with "KUBERNETES_SERVICE_HOST ... must be defined". Omitting the block lets
+    # the operator use in-cluster config.
+    {{- if and .Cluster.spec.controlPlaneEndpoint.host .Cluster.spec.controlPlaneEndpoint.port }}
     kubernetesServiceEndpoint:
       host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
       port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
+    {{- end }}
     # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
     # when it continuously gets scheduled onto an out-of-date Node that is being
     # deleted. Tolerate only the NoSchedule taints that are expected.
