@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -428,8 +429,8 @@ func (r *AROClusterReconciler) reconcileDelete(ctx context.Context, aroCluster *
 
 		// Wait for all resources to be deleted before removing finalizer
 		if len(aroCluster.Status.Resources) > 0 {
-			log.V(4).Info("waiting for resources to be deleted", "remainingResources", len(aroCluster.Status.Resources))
-			return ctrl.Result{}, nil
+			log.Info("waiting for resources to be deleted", "remainingResources", len(aroCluster.Status.Resources))
+			return ctrl.Result{RequeueAfter: 15 * time.Second}, nil
 		}
 	}
 

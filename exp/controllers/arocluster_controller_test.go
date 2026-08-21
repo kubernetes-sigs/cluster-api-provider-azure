@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav2 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 )
@@ -482,7 +484,19 @@ func TestAROClusterReconciler_reconcileDelete(t *testing.T) {
 		expectedResult ctrl.Result
 	}{
 		{
-			name: "arocluster with finalizer",
+			name: "arocluster with finalizer and no remaining resources",
+			aroCluster: &infrav2.AROCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              testAROClusterName,
+					Namespace:         testNamespace,
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
+					Finalizers:        []string{infrav2.AROClusterFinalizer},
+				},
+			},
+			expectedResult: ctrl.Result{},
+		},
+		{
+			name: "arocluster with no spec resources removes finalizer",
 			aroCluster: &infrav2.AROCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              testAROClusterName,
@@ -511,6 +525,9 @@ func TestAROClusterReconciler_reconcileDelete(t *testing.T) {
 			reconciler := &AROClusterReconciler{
 				Client:           fakeClient,
 				WatchFilterValue: "",
+				newResourceReconciler: func(aroCluster *infrav2.AROCluster, resources []*unstructured.Unstructured) *controllers.ResourceReconciler {
+					return controllers.NewResourceReconciler(fakeClient, resources, aroCluster)
+				},
 			}
 
 			result, err := reconciler.reconcileDelete(t.Context(), tc.aroCluster)
@@ -528,6 +545,71 @@ func TestAROClusterReconciler_reconcileDelete(t *testing.T) {
 			g.Expect(updatedAROCluster.Status.Ready).To(BeFalse())
 		})
 	}
+}
+
+func TestAROClusterReconciler_reconcileDeleteRequeuesWhenResourcesRemain(t *testing.T) {
+	g := NewWithT(t)
+
+	aroClusterUID := types.UID("test-uid")
+	now := metav1.Now()
+	aroCluster := &infrav2.AROCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              testAROClusterName,
+			Namespace:         testNamespace,
+			UID:               aroClusterUID,
+			DeletionTimestamp: &now,
+			Finalizers:        []string{infrav2.AROClusterFinalizer},
+			Annotations: map[string]string{
+				"sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds": "ConfigMap.v1.",
+			},
+		},
+		Spec: infrav2.AROClusterSpec{
+			Resources: []runtime.RawExtension{
+				{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"test-cm"}}`)},
+			},
+		},
+	}
+
+	// ConfigMap with a finalizer so it survives Delete in the fake client.
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "test-cm",
+			Namespace:  testNamespace,
+			Finalizers: []string{"test/block-delete"},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: infrav2.GroupVersion.String(),
+					Kind:       "AROCluster",
+					Name:       testAROClusterName,
+					UID:        aroClusterUID,
+					Controller: func() *bool { b := true; return &b }(),
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	_ = infrav2.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(aroCluster, cm).
+		WithStatusSubresource(&infrav2.AROCluster{}).
+		Build()
+
+	reconciler := &AROClusterReconciler{
+		Client:           fakeClient,
+		WatchFilterValue: "",
+		newResourceReconciler: func(ac *infrav2.AROCluster, resources []*unstructured.Unstructured) *controllers.ResourceReconciler {
+			return controllers.NewResourceReconciler(fakeClient, resources, ac)
+		},
+	}
+
+	result, err := reconciler.reconcileDelete(t.Context(), aroCluster)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.RequeueAfter).To(Equal(15 * time.Second))
 }
 
 func TestMatchesAROControlPlaneAPIGroup(t *testing.T) {
