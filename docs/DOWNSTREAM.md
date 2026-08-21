@@ -42,9 +42,15 @@ Konflux build/pipeline configuration.
 
 | Downstream branch | Tracks upstream | Ships in |
 |-------------------|-----------------|----------|
-| `main` | `release-1.23` | MCE dev / next |
+| `main` | `main` | MCE 5.1 dev; PRs also trigger the `mce-51` Konflux build |
+| `backplane-5.1` | `main` (via `main` sync) | MCE 5.1 |
+| `backplane-5.0` | `release-1.26` (via `release-1.26` sync) | MCE 5.0 |
 | `backplane-2.17` | `release-1.22` | MCE 2.17 |
 | `backplane-2.11` | `release-1.22` | MCE 2.11 |
+
+Intermediate sync branches (`release-1.23`, `release-1.26`) exist solely to
+receive upstream syncs and are merged into the corresponding shipping branches
+— they are not development targets.
 
 The authoritative matrix is the `strategy.matrix` in
 [`upstream-sync.yml`](../.github/workflows/upstream-sync.yml) — consult it there
@@ -61,7 +67,8 @@ rather than trusting this table if they disagree.
   them create recurring merge conflicts. Put downstream-specific context here
   instead.
 - **PR target.** Open PRs against the appropriate downstream branch
-  (`main` / `backplane-2.17` / `backplane-2.11`), not against upstream.
+  (`main` / `backplane-5.1` / `backplane-5.0` / `backplane-2.17` / `backplane-2.11`),
+  not against upstream.
 
 ## Start here
 
