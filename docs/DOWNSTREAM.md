@@ -43,14 +43,18 @@ Konflux build/pipeline configuration.
 | Downstream branch | Tracks upstream | Ships in |
 |-------------------|-----------------|----------|
 | `main` | `main` | MCE 5.1 dev; PRs also trigger the `mce-51` Konflux build |
-| `backplane-5.1` | `main` (via `main` sync) | MCE 5.1 |
-| `backplane-5.0` | `release-1.26` (via `release-1.26` sync) | MCE 5.0 |
+| `backplane-5.1` | `main` (fast-forwarded from `main`) | MCE 5.1 |
+| `backplane-5.0` | `release-1.26` (fast-forwarded from `release-1.26`) | MCE 5.0 |
 | `backplane-2.17` | `release-1.22` | MCE 2.17 |
 | `backplane-2.11` | `release-1.22` | MCE 2.11 |
 
-Intermediate sync branches (`release-1.23`, `release-1.26`) exist solely to
-receive upstream syncs and are merged into the corresponding shipping branches
-— they are not development targets.
+Sync-only branches receive upstream syncs but are not development targets:
+
+- `release-1.26` is fast-forwarded into `backplane-5.0` (the MCE 5.0 shipping
+  branch) by [`ffwd-branch.yaml`](../.github/workflows/ffwd-branch.yaml) on push.
+- `release-1.23` is synced from upstream to feed a downstream ACM build whose
+  pipeline is defined outside this repo; it has no in-repo Konflux pipeline or
+  shipping branch here.
 
 The authoritative matrix is the `strategy.matrix` in
 [`upstream-sync.yml`](../.github/workflows/upstream-sync.yml) — consult it there
