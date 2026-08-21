@@ -936,6 +936,102 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	// Provisions an AKS cluster using Azure CNI with a pod subnet (dynamic IP allocation):
+	// nodes draw from one subnet and pods from another, so pods get VNet-routable IPs. It then
+	// installs self-hosted Karpenter and verifies pods on a Karpenter-provisioned node also get
+	// pod subnet IPs, which is the regression this guards.
+	//
+	// Tagged [Karpenter] so it stays out of the required [Managed Kubernetes] AKS suite and out
+	// of the generic [OPTIONAL] job, following the same pattern as [KubeRay] and [MultiKueue]:
+	// its own tag, its own on-demand presubmit. It needs a Karpenter build with Azure CNI pod
+	// subnet support, which is not released yet. The chart is the stock upstream one, since the
+	// change carries no chart or CRD edits; only the controller image differs, so the image
+	// variables are left unset in the e2e config and the spec skips rather than pulling an
+	// unpinned image. To run it:
+	//
+	//   # a build of Azure/karpenter-provider-azure#1855, from any registry that allows
+	//   # anonymous pulls. Pre-release only; the released image has no pod subnet support yet.
+	//   export KARPENTER_IMAGE_REPOSITORY=<registry>/karpenter
+	//   export KARPENTER_IMAGE_TAG=<tag>
+	//   export ADDITIONAL_ASO_CRDS="managedidentity.azure.com/UserAssignedIdentity;managedidentity.azure.com/FederatedIdentityCredential;authorization.azure.com/RoleAssignment"
+	//
+	// ADDITIONAL_ASO_CRDS is not set in the config either, so other e2e jobs don't widen ASO's
+	// watch set. Once pod subnet support ships, drop the image overrides entirely and let the
+	// released chart pull its own matching image.
+	//
+	// The flavor creates RoleAssignments, so the identity ASO runs as needs
+	// Microsoft.Authorization/roleAssignments/write. The kind management cluster used by CI and
+	// by default grants its identity "Role Based Access Control Administrator"
+	// (scripts/kind-with-registry.sh). MGMT_CLUSTER_TYPE=aks grants only Contributor, which does
+	// not include it.
+	Context("Creating an AKS cluster with an Azure CNI pod subnet [Karpenter]", func() {
+		It("with pods on a Karpenter-provisioned node getting IPs from the pod subnet", func() {
+			karpenterChartRef := e2eConfig.GetVariableOrEmpty("KARPENTER_CHART_OCI_REF")
+			karpenterImageRepository := e2eConfig.GetVariableOrEmpty("KARPENTER_IMAGE_REPOSITORY")
+			karpenterImageTag := e2eConfig.GetVariableOrEmpty("KARPENTER_IMAGE_TAG")
+			// Checked before provisioning so an unconfigured run skips instead of paying for a
+			// cluster and then failing.
+			if karpenterChartRef == "" || karpenterImageRepository == "" || karpenterImageTag == "" {
+				Skip("KARPENTER_CHART_OCI_REF, KARPENTER_IMAGE_REPOSITORY and KARPENTER_IMAGE_TAG must be set to a Karpenter build with Azure CNI pod subnet support")
+			}
+
+			// Must contain aksClusterNameSuffix so cleanup selects wait-delete-cluster-aks.
+			clusterName = getClusterName(clusterNamePrefix, "aks-podsubnet")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Provision the network first and wait for it to exist in Azure. AKS rejects a
+			// ManagedCluster whose subnets are not there yet, and that rejection is not retried
+			// for a full ASO sync period, so losing the race costs more than the test waits.
+			By("Provisioning the virtual network and its node and pod subnets", func() {
+				CreatePodSubnetNetwork(ctx, PodSubnetNetworkInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					VNetCIDR:              e2eConfig.MustGetVariable("AKS_POD_SUBNET_VNET_CIDR"),
+					NodeSubnetCIDR:        e2eConfig.MustGetVariable("AKS_NODE_SUBNET_CIDR"),
+					PodSubnetCIDR:         e2eConfig.MustGetVariable("AKS_POD_SUBNET_CIDR"),
+					WaitIntervals:         e2eConfig.GetIntervals(specName, "wait-cluster"),
+				})
+			})
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-pod-subnet"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(1),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Verifying Karpenter-provisioned nodes give pods IPs from the pod subnet", func() {
+				AKSPodSubnetKarpenterSpec(ctx, func() AKSPodSubnetKarpenterSpecInput {
+					return AKSPodSubnetKarpenterSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						// The aks-aso-pod-subnet flavor names the resource group after the cluster.
+						ResourceGroup:   clusterName,
+						NodeSubnetCIDR:  e2eConfig.MustGetVariable("AKS_NODE_SUBNET_CIDR"),
+						PodSubnetCIDR:   e2eConfig.MustGetVariable("AKS_POD_SUBNET_CIDR"),
+						ChartRef:        karpenterChartRef,
+						ChartVersion:    e2eConfig.GetVariableOrEmpty("KARPENTER_CHART_VERSION"),
+						ImageRepository: karpenterImageRepository,
+						ImageTag:        karpenterImageTag,
+						WaitIntervals:   e2eConfig.GetIntervals(specName, "wait-karpenter-node"),
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
 	// ci-e2e.sh and Prow CI skip this test by default. To include this test, set `GINKGO_SKIP=""`.
 	// This spec expects a user-assigned identity named "cloud-provider-user-identity" in a "capz-ci"
 	// resource group. Override these defaults by setting the USER_IDENTITY and CI_RG environment variables.

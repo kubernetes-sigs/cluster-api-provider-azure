@@ -236,6 +236,8 @@ providers:
         targetName: "cluster-template-aks-aso.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso-kuberay.yaml"
         targetName: "cluster-template-aks-aso-kuberay.yaml"
+      - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-aso-pod-subnet.yaml"
+        targetName: "cluster-template-aks-aso-pod-subnet.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
         targetName: "cluster-template-custom-vnet.yaml"
       - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-dual-stack.yaml"
@@ -340,6 +342,20 @@ variables:
   CI_RG: "${CI_RG:-capz-ci}"
   USER_IDENTITY: "${USER_IDENTITY:-cloud-provider-user-identity}"
   EXP_APISERVER_ILB: "true"
+  # Azure CNI pod subnet scenario. Nodes and pods draw from separate subnets of the
+  # same VNet; the VNet is sized so the default AKS service CIDR (10.0.0.0/16) stays
+  # outside it. These must agree with the aks-aso-pod-subnet flavor's defaults.
+  AKS_POD_SUBNET_VNET_CIDR: "${AKS_POD_SUBNET_VNET_CIDR:-10.240.0.0/12}"
+  AKS_NODE_SUBNET_CIDR: "${AKS_NODE_SUBNET_CIDR:-10.240.0.0/16}"
+  AKS_POD_SUBNET_CIDR: "${AKS_POD_SUBNET_CIDR:-10.241.0.0/16}"
+  # Self-hosted Karpenter build under test. The chart is the stock upstream one and is safe to
+  # default; only the controller image is overridden, since Azure CNI pod subnet support is not
+  # released yet. The image variables are left empty on purpose so the scenario skips unless a
+  # build is explicitly pinned. Keep the chart version in step with the image's source commit.
+  KARPENTER_CHART_OCI_REF: "${KARPENTER_CHART_OCI_REF:-oci://mcr.microsoft.com/aks/karpenter/karpenter}"
+  KARPENTER_CHART_VERSION: "${KARPENTER_CHART_VERSION:-1.10.2}"
+  KARPENTER_IMAGE_REPOSITORY: "${KARPENTER_IMAGE_REPOSITORY:-}"
+  KARPENTER_IMAGE_TAG: "${KARPENTER_IMAGE_TAG:-}"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
@@ -367,6 +383,7 @@ intervals:
   default/wait-nsg-update: ["20m", "10s"]
   default/wait-autoscale: ["10m", "10s"]
   default/wait-resource-versions-become-stable: ["10m", "15s"]
+  default/wait-karpenter-node: ["15m", "10s"]
   default/wait-resource-versions-remain-stable: ["5m", "5s"]
   kuberay-cluster/wait-deployment: ["15m", "10s"]
   kuberay-cluster/wait-raycluster-ready: ["10m", "10s"]

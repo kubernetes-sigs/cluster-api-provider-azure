@@ -34,9 +34,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	asoauthorizationv1 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
 	asocontainerservicev1mc "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
+	asomanagedidentityv1 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
+	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -80,6 +83,11 @@ func initScheme() *runtime.Scheme {
 	Expect(asocontainerservicev1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1preview.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1mc.AddToScheme(scheme)).To(Succeed())
+	// Used by the Azure CNI pod subnet spec to provision the cluster's network and Karpenter's
+	// workload identity.
+	Expect(asonetworkv1.AddToScheme(scheme)).To(Succeed())
+	Expect(asomanagedidentityv1.AddToScheme(scheme)).To(Succeed())
+	Expect(asoauthorizationv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
