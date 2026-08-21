@@ -43,7 +43,7 @@ Konflux build/pipeline configuration.
 | Downstream branch | Tracks upstream | Ships in |
 |-------------------|-----------------|----------|
 | `main` | `main` | MCE 5.1 dev; PRs also trigger the `mce-51` Konflux build |
-| `backplane-5.1` | `main` (fast-forwarded from `main`) | MCE 5.1 |
+| `backplane-5.1` | `main` (fast-forwarded from `main` by [`ffwd-branch.yaml`](../.github/workflows/ffwd-branch.yaml)) | MCE 5.1 |
 | `backplane-5.0` | `release-1.26` (fast-forwarded from `release-1.26`) | MCE 5.0 |
 | `backplane-2.17` | `release-1.22` | MCE 2.17 |
 | `backplane-2.11` | `release-1.22` | MCE 2.11 |
