@@ -80,19 +80,19 @@ func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *aso
 	privateLink.Spec.EnableProxyProtocol = s.EnableProxyProtocol
 
 	privateLink.Spec.IpConfigurations = make([]asonetworkv1.PrivateLinkServiceIpConfiguration, len(s.NATIPConfiguration))
-	for i, natIpConfiguration := range s.NATIPConfiguration {
+	for i, natIPConfiguration := range s.NATIPConfiguration {
 		privateLink.Spec.IpConfigurations[i] = asonetworkv1.PrivateLinkServiceIpConfiguration{
-			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIpConfiguration.Subnet, i+1)),
+			Name: ptr.To(fmt.Sprintf("%s-natipconfig-%d", natIPConfiguration.Subnet, i+1)),
 			Subnet: &asonetworkv1.Subnet_PrivateLinkService_SubResourceEmbedded{
 				Reference: &genruntime.ResourceReference{
-					ARMID: azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIpConfiguration.Subnet),
+					ARMID: azure.SubnetID(s.SubscriptionID, s.VNetResourceGroup, s.VNet, natIPConfiguration.Subnet),
 				},
 			},
-			PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod(natIpConfiguration.AllocationMethod)),
+			PrivateIPAllocationMethod: ptr.To(asonetworkv1.IPAllocationMethod(natIPConfiguration.AllocationMethod)),
 		}
 
 		if *privateLink.Spec.IpConfigurations[i].PrivateIPAllocationMethod == asonetworkv1.IPAllocationMethod_Static {
-			privateLink.Spec.IpConfigurations[i].PrivateIPAddress = ptr.To(natIpConfiguration.PrivateIPAddress)
+			privateLink.Spec.IpConfigurations[i].PrivateIPAddress = ptr.To(natIPConfiguration.PrivateIPAddress)
 		}
 	}
 	privateLink.Spec.IpConfigurations[0].Primary = ptr.To(true)
