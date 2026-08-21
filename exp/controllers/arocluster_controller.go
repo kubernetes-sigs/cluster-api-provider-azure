@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infra "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -362,7 +363,7 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 		conditions.Set(aroCluster, metav1.Condition{
 			Type:   string(infrav1.NetworkInfrastructureReadyCondition),
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: scope.ProvisioningStateSucceeded,
 		})
 	} else {
 		if !aroCluster.Spec.ControlPlaneEndpoint.IsZero() {

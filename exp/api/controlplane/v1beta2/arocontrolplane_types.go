@@ -224,5 +224,5 @@ func (c *AROControlPlane) SetResourceStatuses(r []infrav1.ResourceStatus) {
 }
 
 func init() {
-	SchemeBuilder.Register(&AROControlPlane{}, &AROControlPlaneList{})
+	objectTypes = append(objectTypes, &AROControlPlane{}, &AROControlPlaneList{})
 }

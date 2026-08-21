@@ -49,6 +49,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+var provisioningStateSucceeded = scope.ProvisioningStateSucceeded
+
 // AROMachinePoolReconciler reconciles an AROMachinePool object.
 type AROMachinePoolReconciler struct {
 	client.Client
@@ -345,7 +347,7 @@ func (ampr *AROMachinePoolReconciler) reconcileNormal(ctx context.Context, scope
 	conditions.Set(scope.InfraMachinePool, metav1.Condition{
 		Type:   string(infrav1.AgentPoolsReadyCondition),
 		Status: metav1.ConditionTrue,
-		Reason: "Succeeded",
+		Reason: provisioningStateSucceeded,
 	})
 	return reconcile.Result{}, nil
 }

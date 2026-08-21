@@ -34,7 +34,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const serviceName = "keyvault"
+const (
+	serviceName   = "keyvault"
+	vaultASOGroup = "keyvault.azure.com"
+	vaultASOKind  = "Vault"
+)
 
 // KeyVaultScope defines the scope interface for a key vault service.
 type KeyVaultScope interface {
@@ -343,9 +347,9 @@ func (s *Service) getVaultResourceGroupFromStatus(ctx context.Context, vaultK8sN
 	// Query the specific Vault using its K8s name, namespace, and API version
 	vault := &unstructured.Unstructured{}
 	vault.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "keyvault.azure.com",
+		Group:   vaultASOGroup,
 		Version: vaultAPIVersion,
-		Kind:    "Vault",
+		Kind:    vaultASOKind,
 	})
 
 	err := kubeclient.Get(ctx, client.ObjectKey{
@@ -423,8 +427,8 @@ func (s *Service) getVaultK8sInfo(ctx context.Context, scope KeyVaultScope, azur
 			continue
 		}
 
-		if resource.GroupVersionKind().Group == "keyvault.azure.com" &&
-			resource.GroupVersionKind().Kind == "Vault" {
+		if resource.GroupVersionKind().Group == vaultASOGroup &&
+			resource.GroupVersionKind().Kind == vaultASOKind {
 			// Get spec.azureName, fallback to K8s object name if not set
 			vaultAzureName, found, _ := unstructured.NestedString(
 				resource.UnstructuredContent(),
@@ -494,8 +498,8 @@ func (s *Service) isVaultReadyInAROCluster(ctx context.Context, scope KeyVaultSc
 
 	// Check if the vault is in the AROCluster's status resources using K8s object name
 	for _, resource := range aroCluster.Status.Resources {
-		if resource.Resource.Group == "keyvault.azure.com" &&
-			resource.Resource.Kind == "Vault" &&
+		if resource.Resource.Group == vaultASOGroup &&
+			resource.Resource.Kind == vaultASOKind &&
 			resource.Resource.Name == vaultK8sName {
 			// Found the vault in status, check if it's ready
 			if resource.Ready {

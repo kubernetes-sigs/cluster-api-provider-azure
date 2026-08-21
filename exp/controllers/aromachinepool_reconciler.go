@@ -133,7 +133,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 	var nodePoolName string
 	for _, resource := range resources {
 		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
-			resource.GroupVersionKind().Kind == "HcpOpenShiftClustersNodePool" {
+			resource.GroupVersionKind().Kind == scope.HcpNodePoolKindName {
 			nodePoolName = resource.GetName()
 			break
 		}
@@ -166,7 +166,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 				version = nodePool.Status.Properties.Version.Id
 			}
 			if nodePool.Status.Properties.ProvisioningState != nil {
-				provisioningState = string(*nodePool.Status.Properties.ProvisioningState)
+				provisioningState = *nodePool.Status.Properties.ProvisioningState
 			}
 			replicas = nodePool.Status.Properties.Replicas
 		}
@@ -281,7 +281,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		conditions.Set(s.scope.InfraMachinePool, metav1.Condition{
 			Type:   infrav1exp.NodePoolReadyCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: scope.ProvisioningStateSucceeded,
 		})
 	} else {
 		// Extract error details from HcpOpenShiftClustersNodePool's Ready condition
@@ -318,7 +318,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		conditions.Set(s.scope.InfraMachinePool, metav1.Condition{
 			Type:   infrav1exp.AROMachinePoolReadyCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: scope.ProvisioningStateSucceeded,
 		})
 	} else {
 		// Extract error details from NodePoolReady condition to propagate to top-level condition
@@ -459,6 +459,6 @@ func expectedNodeLabels(nodePoolName string) map[string]string {
 		nodePoolName = nodePoolName[:validation.LabelValueMaxLength]
 	}
 	return map[string]string{
-		"hypershift.openshift.io/nodePool": nodePoolName,
+		scope.HypershiftNodePoolLabelKey: nodePoolName,
 	}
 }

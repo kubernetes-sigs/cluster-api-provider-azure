@@ -138,7 +138,7 @@ func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluste
 	capiCIDR := cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
 
 	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural serviceCidrs field.
-	svcCIDRPath := []string{"spec", "networkProfile", "serviceCidr"}
+	svcCIDRPath := []string{"spec", fieldNetworkProfile, fieldServiceCidr}
 	userSvcCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), svcCIDRPath...)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, m
 	capiCIDR := cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
 
 	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural podCidrs field.
-	podCIDRPath := []string{"spec", "networkProfile", "podCidr"}
+	podCIDRPath := []string{"spec", fieldNetworkProfile, fieldPodCidr}
 	userPodCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), podCIDRPath...)
 	if err != nil {
 		return err
@@ -397,7 +397,7 @@ func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluste
 		return nil
 	}
 
-	_, hasAdminCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "adminCredentials")
+	_, hasAdminCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", fieldAdminCreds)
 	if err != nil {
 		return err
 	}
@@ -406,16 +406,16 @@ func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluste
 	}
 
 	secrets := map[string]any{
-		"adminCredentials": map[string]any{
-			"name": cluster.Name + "-" + string(secret.Kubeconfig),
-			"key":  secret.KubeconfigDataName,
+		fieldAdminCreds: map[string]any{
+			"name":   cluster.Name + "-" + string(secret.Kubeconfig),
+			fieldKey: secret.KubeconfigDataName,
 		},
 	}
 
 	setCreds := mutation{
 		location: managedClusterPath + ".spec.operatorSpec.secrets",
 		val:      secrets,
-		reason:   "because no userCredentials or adminCredentials are defined",
+		reason:   noCredsReason,
 	}
 	logMutation(log, setCreds)
 	return unstructured.SetNestedMap(managedCluster.UnstructuredContent(), secrets, "spec", "operatorSpec", "secrets")

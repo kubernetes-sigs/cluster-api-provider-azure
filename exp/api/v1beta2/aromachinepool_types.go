@@ -175,5 +175,5 @@ func (c *AROMachinePool) SetConditions(conditions []metav1.Condition) {
 }
 
 func init() {
-	SchemeBuilder.Register(&AROMachinePool{}, &AROMachinePoolList{})
+	objectTypes = append(objectTypes, &AROMachinePool{}, &AROMachinePoolList{})
 }

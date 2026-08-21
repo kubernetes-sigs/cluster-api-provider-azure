@@ -132,5 +132,5 @@ type AROClusterList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&AROCluster{}, &AROClusterList{})
+	objectTypes = append(objectTypes, &AROCluster{}, &AROClusterList{})
 }

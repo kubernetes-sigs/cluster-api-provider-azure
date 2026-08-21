@@ -151,7 +151,7 @@ func (s *AROMachinePoolScope) UpdatePutStatus(condition string, service string, 
 		conditions.Set(s.InfraMachinePool, metav1.Condition{
 			Type:   condition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: ProvisioningStateSucceeded,
 		})
 	case azure.IsOperationNotDoneError(err):
 		reason := infrav1.CreatingReason
@@ -181,7 +181,7 @@ func (s *AROMachinePoolScope) UpdatePatchStatus(condition string, service string
 		conditions.Set(s.InfraMachinePool, metav1.Condition{
 			Type:   condition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: ProvisioningStateSucceeded,
 		})
 	case azure.IsOperationNotDoneError(err):
 		conditions.Set(s.InfraMachinePool, metav1.Condition{

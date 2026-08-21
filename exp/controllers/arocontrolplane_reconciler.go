@@ -301,7 +301,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 		}
 
 		if u.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
-			u.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
+			u.GroupVersionKind().Kind == scope.HcpClusterKindName {
 			// Check if etcd.dataEncryption.customerManaged.kms is configured
 			etcdPath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms"}
 			if _, hasKMS, _ := unstructured.NestedFieldNoCopy(u.UnstructuredContent(), etcdPath...); hasKMS {
@@ -481,7 +481,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 	var hcpClusterName string
 	for _, resource := range resources {
 		if resource.GroupVersionKind().Group == asoredhatopenshiftv1hub.GroupVersion.Group &&
-			resource.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
+			resource.GroupVersionKind().Kind == scope.HcpClusterKindName {
 			hcpClusterName = resource.GetName()
 			break
 		}
@@ -566,7 +566,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 		conditions.Set(s.scope.ControlPlane, metav1.Condition{
 			Type:   cplane.HcpClusterReadyCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: scope.ProvisioningStateSucceeded,
 		})
 	} else {
 		// Extract error details from HcpOpenShiftCluster's Ready condition
@@ -705,7 +705,7 @@ func (s *aroControlPlaneService) setExternalAuthCondition(ctx context.Context, r
 		conditions.Set(s.scope.ControlPlane, metav1.Condition{
 			Type:   cplane.ExternalAuthReadyCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Succeeded",
+			Reason: scope.ProvisioningStateSucceeded,
 		})
 	} else {
 		// Extract error details from ExternalAuth's Ready condition
@@ -806,14 +806,14 @@ func (s *aroControlPlaneService) getKubeconfigFromASOSecret(ctx context.Context)
 func (s *aroControlPlaneService) setInfrastructureConditions(_ context.Context) {
 	// Map resource kinds to condition types
 	kindToCondition := map[string]clusterv1beta1.ConditionType{
-		"ResourceGroup":         infrav1.ResourceGroupReadyCondition,
-		"VirtualNetwork":        infrav1.VNetReadyCondition,
-		"NetworkSecurityGroup":  infrav1.SecurityGroupsReadyCondition,
-		"VirtualNetworksSubnet": infrav1.SubnetsReadyCondition,
-		"Vault":                 "VaultReady", // Custom condition for Key Vault
-		"UserAssignedIdentity":  "UserAssignedIdentitiesReady",
-		"RoleAssignment":        infrav1.RoleAssignmentReadyCondition,
-		"HcpOpenShiftCluster":   clusterv1beta1.ConditionType(cplane.HcpClusterReadyCondition),
+		"ResourceGroup":          infrav1.ResourceGroupReadyCondition,
+		"VirtualNetwork":         infrav1.VNetReadyCondition,
+		"NetworkSecurityGroup":   infrav1.SecurityGroupsReadyCondition,
+		"VirtualNetworksSubnet":  infrav1.SubnetsReadyCondition,
+		"Vault":                  "VaultReady", // Custom condition for Key Vault
+		"UserAssignedIdentity":   "UserAssignedIdentitiesReady",
+		"RoleAssignment":         infrav1.RoleAssignmentReadyCondition,
+		scope.HcpClusterKindName: clusterv1beta1.ConditionType(cplane.HcpClusterReadyCondition),
 	}
 
 	// Group resources by kind and check if all resources of each kind are ready
@@ -845,7 +845,7 @@ func (s *aroControlPlaneService) setInfrastructureConditions(_ context.Context) 
 			conditions.Set(s.scope.ControlPlane, metav1.Condition{
 				Type:   string(condType),
 				Status: metav1.ConditionTrue,
-				Reason: "Succeeded",
+				Reason: scope.ProvisioningStateSucceeded,
 			})
 		} else {
 			conditions.Set(s.scope.ControlPlane, metav1.Condition{

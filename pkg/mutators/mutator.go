@@ -32,6 +32,17 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const (
+	fieldNetworkProfile = "networkProfile"
+	fieldServiceCidr    = "serviceCidr"
+	fieldPodCidr        = "podCidr"
+	fieldAdminCreds     = "adminCredentials"
+	fieldKey            = "key"
+	fieldProperties     = "properties"
+	fieldMetadata       = "metadata"
+	noCredsReason       = "because no userCredentials or adminCredentials are defined"
+)
+
 // ResourcesMutator mutates in-place a slice of ASO resources to be reconciled. These mutations make only the
 // changes strictly necessary for CAPZ resources to play nice with Cluster API. Any mutations should be logged
 // and mutations that conflict with user-defined values should be rejected by returning Incompatible.
@@ -92,7 +103,7 @@ func Pause(ctx context.Context, resources []*unstructured.Unstructured) error {
 
 	for i, resource := range resources {
 		resourcePath := "spec.resources[" + strconv.Itoa(i) + "]"
-		policyPath := []string{"metadata", "annotations", annotations.ReconcilePolicy}
+		policyPath := []string{fieldMetadata, "annotations", annotations.ReconcilePolicy}
 		capiPolicy := string(annotations.ReconcilePolicySkip)
 		userPolicy, userDefined := resource.GetAnnotations()[annotations.ReconcilePolicy]
 

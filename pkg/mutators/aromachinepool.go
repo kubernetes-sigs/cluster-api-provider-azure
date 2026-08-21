@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -49,7 +50,7 @@ func SetHcpOpenShiftNodePoolDefaults(_ client.Client, _ *infrav1exp.AROMachinePo
 		var nodePoolPath string
 		for i, u := range us {
 			if u.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group &&
-				u.GroupVersionKind().Kind == "HcpOpenShiftClustersNodePool" {
+				u.GroupVersionKind().Kind == scope.HcpNodePoolKindName {
 				nodePool = u
 				nodePoolPath = fmt.Sprintf("spec.resources[%d]", i)
 				break

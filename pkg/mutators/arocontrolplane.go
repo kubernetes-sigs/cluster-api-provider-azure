@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	controlv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -92,7 +93,7 @@ func setAROClusterServiceCIDR(ctx context.Context, cluster *clusterv1beta1.Clust
 	capiCIDR := cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
 
 	// AROCluster.v1api20210501.containerservice.azure.com does not contain the plural serviceCidrs field.
-	svcCIDRPath := []string{"spec", "networkProfile", "serviceCidr"}
+	svcCIDRPath := []string{"spec", fieldNetworkProfile, fieldServiceCidr}
 	userSvcCIDR, found, err := unstructured.NestedString(aroCluster.UnstructuredContent(), svcCIDRPath...)
 	if err != nil {
 		return err
@@ -125,7 +126,7 @@ func setAROClusterPodCIDR(ctx context.Context, cluster *clusterv1beta1.Cluster, 
 	capiCIDR := cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
 
 	// AROCluster.v1api20210501.containerservice.azure.com does not contain the plural podCidrs field.
-	podCIDRPath := []string{"spec", "networkProfile", "podCidr"}
+	podCIDRPath := []string{"spec", fieldNetworkProfile, fieldPodCidr}
 	userPodCIDR, found, err := unstructured.NestedString(aroCluster.UnstructuredContent(), podCIDRPath...)
 	if err != nil {
 		return err
@@ -160,7 +161,7 @@ func setAROClusterCredentials(ctx context.Context, cluster *clusterv1beta1.Clust
 		return nil
 	}
 
-	_, hasAdminCreds, err := unstructured.NestedMap(aroCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "adminCredentials")
+	_, hasAdminCreds, err := unstructured.NestedMap(aroCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", fieldAdminCreds)
 	if err != nil {
 		return err
 	}
@@ -169,16 +170,16 @@ func setAROClusterCredentials(ctx context.Context, cluster *clusterv1beta1.Clust
 	}
 
 	secrets := map[string]interface{}{
-		"adminCredentials": map[string]interface{}{
-			"name": cluster.Name + "-" + string(secret.Kubeconfig),
-			"key":  secret.KubeconfigDataName,
+		fieldAdminCreds: map[string]interface{}{
+			"name":   cluster.Name + "-" + string(secret.Kubeconfig),
+			fieldKey: secret.KubeconfigDataName,
 		},
 	}
 
 	setCreds := mutation{
 		location: aroClusterPath + ".spec.operatorSpec.secrets",
 		val:      secrets,
-		reason:   "because no userCredentials or adminCredentials are defined",
+		reason:   noCredsReason,
 	}
 	logMutation(log, setCreds)
 	return unstructured.SetNestedMap(aroCluster.UnstructuredContent(), secrets, "spec", "operatorSpec", "secrets")
@@ -202,7 +203,7 @@ func SetHcpOpenShiftClusterDefaults(_ client.Client, _ *controlv1.AROControlPlan
 		var hcpClusterName string
 		for i, u := range us {
 			if u.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group &&
-				u.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
+				u.GroupVersionKind().Kind == scope.HcpClusterKindName {
 				hcpCluster = u
 				hcpClusterName = u.GetName()
 				hcpClusterPath = fmt.Sprintf("spec.resources[%d]", i)
@@ -244,7 +245,7 @@ func SetHcpOpenShiftClusterEncryptionKey(vaultInfoProvider VaultInfoProvider) Re
 		var hcpClusterPath string
 		for i, u := range us {
 			if u.GroupVersionKind().Group == asoredhatopenshiftv1api2026.GroupVersion.Group &&
-				u.GroupVersionKind().Kind == "HcpOpenShiftCluster" {
+				u.GroupVersionKind().Kind == scope.HcpClusterKindName {
 				hcpCluster = u
 				hcpClusterPath = fmt.Sprintf("spec.resources[%d]", i)
 				break
@@ -256,7 +257,7 @@ func SetHcpOpenShiftClusterEncryptionKey(vaultInfoProvider VaultInfoProvider) Re
 		}
 
 		// Check if ETCD encryption with KMS is configured
-		etcdPath := []string{"spec", "properties", "etcd", "dataEncryption"}
+		etcdPath := []string{"spec", fieldProperties, "etcd", "dataEncryption"}
 		etcdEncryption, hasEtcdEncryption, err := unstructured.NestedMap(hcpCluster.UnstructuredContent(), etcdPath...)
 		if err != nil {
 			return err
@@ -289,7 +290,7 @@ func SetHcpOpenShiftClusterEncryptionKey(vaultInfoProvider VaultInfoProvider) Re
 		}
 
 		// Check if activeKey.version is already set
-		activeKeyVersionPath := []string{"spec", "properties", "etcd", "dataEncryption", "customerManaged", "kms", "activeKey", "version"}
+		activeKeyVersionPath := []string{"spec", fieldProperties, "etcd", "dataEncryption", "customerManaged", "kms", "activeKey", "version"}
 		existingVersion, versionExists, err := unstructured.NestedString(hcpCluster.UnstructuredContent(), activeKeyVersionPath...)
 		if err != nil {
 			return err
@@ -334,7 +335,7 @@ func setHcpOpenShiftClusterCredentials(_ context.Context, cluster *clusterv1.Clu
 		return nil
 	}
 
-	_, hasAdminCreds, err := unstructured.NestedMap(hcpCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "adminCredentials")
+	_, hasAdminCreds, err := unstructured.NestedMap(hcpCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", fieldAdminCreds)
 	if err != nil {
 		return err
 	}
@@ -344,16 +345,16 @@ func setHcpOpenShiftClusterCredentials(_ context.Context, cluster *clusterv1.Clu
 
 	// Set default admin credentials
 	secrets := map[string]interface{}{
-		"adminCredentials": map[string]interface{}{
-			"name": cluster.Name + "-" + string(secret.Kubeconfig),
-			"key":  secret.KubeconfigDataName,
+		fieldAdminCreds: map[string]interface{}{
+			"name":   cluster.Name + "-" + string(secret.Kubeconfig),
+			fieldKey: secret.KubeconfigDataName,
 		},
 	}
 
 	setCreds := mutation{
 		location: hcpClusterPath + ".spec.operatorSpec.secrets",
 		val:      secrets,
-		reason:   "because no userCredentials or adminCredentials are defined",
+		reason:   noCredsReason,
 	}
 	logMutation(log, setCreds)
 	return unstructured.SetNestedMap(hcpCluster.UnstructuredContent(), secrets, "spec", "operatorSpec", "secrets")
