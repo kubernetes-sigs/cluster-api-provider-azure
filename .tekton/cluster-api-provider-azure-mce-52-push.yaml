@@ -4,17 +4,17 @@ metadata:
   annotations:
     build.appstudio.openshift.io/repo: https://github.com/stolostron/cluster-api-provider-azure?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
-    build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
-    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && ( target_branch == "backplane-5.0" || target_branch == "release-1.26" )
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+      == "backplane-5.2"
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: release-mce-50
-    appstudio.openshift.io/component: cluster-api-provider-azure-mce-50
+    appstudio.openshift.io/application: release-mce-52
+    appstudio.openshift.io/component: cluster-api-provider-azure-mce-52
     pipelines.appstudio.openshift.io/type: build
-  name: cluster-api-provider-azure-mce-50-on-pull-request
+  name: cluster-api-provider-azure-mce-52-on-push
   namespace: crt-redhat-acm-tenant
 spec:
   params:
@@ -23,15 +23,17 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/cluster-api-provider-azure-mce-50:on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/cluster-api-provider-azure-mce-52:{{revision}}
   - name: additional-tags
     value:
-    - 5.0.0-pr-{{pull_request_number}}
-  - name: image-expires-after
-    value: 5d
+    - 5.1.0-latest
+    - 5.1-dev
   - name: build-platforms
     value:
     - linux/x86_64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x
   - name: dockerfile
     value: stolostron/Dockerfile.stolostron
   - name: path-context
@@ -42,9 +44,12 @@ spec:
     value: "true"
   - name: prefetch-input
     value: '[{"type": "gomod", "path": "."}]'
-  - name: build-args
-    value:
-    - GIT_COMMIT={{revision}}
+  - name: send-slack-notification
+    value: true
+  - name: konflux-application-name
+    value: release-mce-52
+  - name: slack-member-id
+    value: C07JR0ARW1E # capi-squad channel-id.
   pipelineRef:
     resolver: git
     params:
@@ -55,7 +60,7 @@ spec:
       - name: pathInRepo
         value: pipelines/common_mce_2.11.yaml
   taskRunTemplate:
-    serviceAccountName: build-pipeline-cluster-api-provider-azure-mce-50
+    serviceAccountName: build-pipeline-cluster-api-provider-azure-mce-52
   workspaces:
   - name: git-auth
     secret:

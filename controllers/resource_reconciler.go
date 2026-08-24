@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,9 +52,10 @@ const (
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
 type ResourceReconciler struct {
 	client.Client
-	resources []*unstructured.Unstructured
-	owner     resourceStatusObject
-	watcher   watcher
+	resources     []*unstructured.Unstructured
+	owner         resourceStatusObject
+	watcher       watcher
+	childrenFirst bool
 }
 
 type watcher interface {
@@ -76,6 +78,14 @@ func NewResourceReconciler(c client.Client, resources []*unstructured.Unstructur
 		opt(r)
 	}
 	return r
+}
+
+// WithChildrenFirst configures the ResourceReconciler to delete child resources
+// before their parents, using ASO owner references to determine the hierarchy.
+func WithChildrenFirst() func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.childrenFirst = true
+	}
 }
 
 // WithWatcher sets the watcher for the ResourceReconciler.
@@ -200,7 +210,24 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 		})
 	}
 
+	var deferred sets.Set[types.UID]
+	if r.childrenFirst {
+		deferred = deferShallowerResources(toBeDeletedResources)
+	}
 	for _, obj := range toBeDeletedResources {
+		if deferred.Has(obj.UID) {
+			gvk := obj.GroupVersionKind()
+			newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
+				Resource: infrav1.StatusResource{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+					Name:    obj.Name,
+				},
+				Ready: false,
+			})
+			continue
+		}
 		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
 			return fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
@@ -378,6 +405,57 @@ func statusResource(resource *unstructured.Unstructured) infrav1.StatusResource 
 		Kind:    gvk.Kind,
 		Name:    resource.GetName(),
 	}
+}
+
+// deferShallowerResources returns the set of UIDs that should NOT be deleted
+// this cycle. It computes the depth of each resource (hops to root via
+// non-controller owner references) and only allows the deepest level to
+// proceed. This ensures leaf resources (e.g. Subnet) are deleted before
+// shallower ones (e.g. NSG), respecting implicit Azure-level dependencies.
+func deferShallowerResources(resources []*metav1.PartialObjectMetadata) sets.Set[types.UID] {
+	pending := make(map[types.UID]*metav1.PartialObjectMetadata, len(resources))
+	for _, obj := range resources {
+		pending[obj.UID] = obj
+	}
+
+	depth := make(map[types.UID]int, len(resources))
+	var computeDepth func(types.UID) int
+	computeDepth = func(uid types.UID) int {
+		if d, ok := depth[uid]; ok {
+			return d
+		}
+		depth[uid] = 0 // guard against cycles
+		obj := pending[uid]
+		maxParentDepth := -1
+		for i := range obj.OwnerReferences {
+			ref := &obj.OwnerReferences[i]
+			if ref.Controller != nil && *ref.Controller {
+				continue
+			}
+			if _, inSet := pending[ref.UID]; inSet {
+				if pd := computeDepth(ref.UID); pd > maxParentDepth {
+					maxParentDepth = pd
+				}
+			}
+		}
+		depth[uid] = maxParentDepth + 1
+		return depth[uid]
+	}
+
+	maxDepth := 0
+	for uid := range pending {
+		if d := computeDepth(uid); d > maxDepth {
+			maxDepth = d
+		}
+	}
+
+	deferred := sets.New[types.UID]()
+	for uid, d := range depth {
+		if d < maxDepth {
+			deferred.Insert(uid)
+		}
+	}
+	return deferred
 }
 
 func metadataRefersToResource(metadata *metav1.PartialObjectMetadata) func(*unstructured.Unstructured) bool {

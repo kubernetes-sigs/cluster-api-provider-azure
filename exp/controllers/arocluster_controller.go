@@ -121,7 +121,7 @@ func (r *AROClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	}
 
 	r.newResourceReconciler = func(aroCluster *infra.AROCluster, resources []*unstructured.Unstructured) *controllers.ResourceReconciler {
-		return controllers.NewResourceReconciler(r.Client, resources, aroCluster, controllers.WithWatcher(externalTracker))
+		return controllers.NewResourceReconciler(r.Client, resources, aroCluster, controllers.WithWatcher(externalTracker), controllers.WithChildrenFirst())
 	}
 
 	return nil
