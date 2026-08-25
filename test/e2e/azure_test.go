@@ -947,16 +947,13 @@ var _ = Describe("Workload cluster creation", func() {
 	// MGMT_CLUSTER_TYPE=aks does not.
 	Context("Creating an AKS cluster with an Azure CNI pod subnet [Karpenter]", func() {
 		It("with pods on Karpenter-provisioned nodes getting IPs from their nodeclass's pod subnet", func() {
-			karpenterChartRef := e2eConfig.GetVariableOrEmpty("KARPENTER_CHART_OCI_REF")
-			karpenterChartVersion := e2eConfig.GetVariableOrEmpty("KARPENTER_CHART_VERSION")
-			karpenterImageRepository := e2eConfig.GetVariableOrEmpty("KARPENTER_IMAGE_REPOSITORY")
-			karpenterImageTag := e2eConfig.GetVariableOrEmpty("KARPENTER_IMAGE_TAG")
-			// Checked before provisioning so an unconfigured run skips instead of paying for a
-			// cluster and then failing. The chart version is required alongside the ref because an
-			// unset version resolves to the registry's latest, which may not match the image.
-			if karpenterChartRef == "" || karpenterChartVersion == "" || karpenterImageRepository == "" || karpenterImageTag == "" {
-				Skip("KARPENTER_CHART_OCI_REF, KARPENTER_CHART_VERSION, KARPENTER_IMAGE_REPOSITORY and KARPENTER_IMAGE_TAG must be set to a Karpenter build with Azure CNI pod subnet support")
-			}
+			// TEMPORARY: hardcoded so this runs before the test-infra job is updated. The merged
+			// job pins KARPENTER_IMAGE_TAG to a build that predates the per-nodeclass podSubnetID
+			// field, and env vars win over the e2e config. Revert this hunk before merging.
+			karpenterChartRef := "oci://ghcr.io/willie-yao/charts/karpenter"
+			karpenterChartVersion := "1.10.2-pr1855.59feca3"
+			karpenterImageRepository := "ghcr.io/willie-yao/karpenter"
+			karpenterImageTag := "pr1855-59feca3"
 
 			// Must contain aksClusterNameSuffix so cleanup selects wait-delete-cluster-aks.
 			clusterName = getClusterName(clusterNamePrefix, "aks-podsubnet")
