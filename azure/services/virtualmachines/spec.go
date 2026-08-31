@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // VMSpec defines the specification for a Virtual Machine.
@@ -80,36 +79,17 @@ func (s *VMSpec) OwnerResourceName() string {
 }
 
 // Parameters returns the parameters for the virtual machine.
-func (s *VMSpec) Parameters(ctx context.Context, existing any) (params any, err error) {
-	_, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.VMSpec.Parameters")
-	defer done()
-
+func (s *VMSpec) Parameters(_ context.Context, existing any) (params any, err error) {
 	if existing != nil {
-		existingVM, ok := existing.(armcompute.VirtualMachine)
-		if !ok {
+		if _, ok := existing.(armcompute.VirtualMachine); !ok {
 			return nil, errors.Errorf("%T is not an armcompute.VirtualMachine", existing)
 		}
-
-		// If the VM already exists, return nil parameters and nil error to skip the create or update of the already existing VM.
-		// If the VM is in Failed provisioning state, we will try to build the parameters of the existing VM as the provisioning failed does not necessarily mean the VM is in a bad state.
-		// When a VM fails to provision, associated NICs may be left attached to load balancers in a failed state, and rebuilding will trigger cleanup and retry.
-		// Reference: https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/vm-stuck-in-failed-state
-		if existingVM.Properties != nil && existingVM.Properties.ProvisioningState != nil {
-			if *existingVM.Properties.ProvisioningState != "Failed" {
-				// VM exists and is not in Failed state, return nil for both parameters and error
-				log.V(4).Info("existing VM is not in Failed provisioning state, returning nil parameters and nil error", "ProvisioningState", *existingVM.Properties.ProvisioningState)
-				return nil, nil
-			}
-			log.V(4).Info("existing VM is in Failed provisioning state, rebuilding parameters to retry", "ProvisioningState", *existingVM.Properties.ProvisioningState)
-		} else {
-			// If Properties or ProvisioningState is nil, VM exists but state is unknown - return nil to avoid recreation
-			log.V(4).Info("existing VM has nil Properties or ProvisioningState, returning nil parameters and nil error")
-			return nil, nil
-		}
+		// vm already exists
+		return nil, nil
 	}
 
 	// VM got deleted outside of capz, do not recreate it as Machines are immutable.
-	if s.ProviderID != "" && existing == nil {
+	if s.ProviderID != "" {
 		return nil, azure.VMDeletedError{ProviderID: s.ProviderID}
 	}
 

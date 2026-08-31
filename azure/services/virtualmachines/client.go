@@ -42,6 +42,7 @@ type (
 		Get(context.Context, azure.ResourceSpecGetter) (any, error)
 		CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters any) (result any, poller *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], err error)
 		DeleteAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], err error)
+		ReapplyAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse], err error)
 	}
 )
 
@@ -126,6 +127,34 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, spec azure.ResourceSpecG
 	_, err = poller.PollUntilDone(ctx, pollOpts)
 	if err != nil {
 		// if an error occurs, return the Poller.
+		// this means the long-running operation didn't finish in the specified timeout.
+		return poller, err
+	}
+
+	// if the operation completed, return a nil poller.
+	return nil, err
+}
+
+// ReapplyAsync reapplies a virtual machine's state asynchronously.
+// It sends a POST request to Azure to reapply the VM, which is useful for recovering from failed provisioning states.
+// If accepted without error, the func will return a Poller which can be used to track the ongoing progress of the operation.
+func (ac *AzureClient) ReapplyAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string) (poller *runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse], err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.AzureClient.Reapply")
+	defer done()
+
+	opts := &armcompute.VirtualMachinesClientBeginReapplyOptions{ResumeToken: resumeToken}
+	poller, err = ac.virtualmachines.BeginReapply(ctx, spec.ResourceGroupName(), spec.ResourceName(), opts)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, ac.apiCallTimeout)
+	defer cancel()
+
+	pollOpts := &runtime.PollUntilDoneOptions{Frequency: async.DefaultPollerFrequency}
+	_, err = poller.PollUntilDone(ctx, pollOpts)
+	if err != nil {
+		// if an error occurs, return the poller.
 		// this means the long-running operation didn't finish in the specified timeout.
 		return poller, err
 	}
