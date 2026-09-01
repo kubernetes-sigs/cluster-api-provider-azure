@@ -84,7 +84,6 @@ const (
 	capiImagePublisher                = "cncf-upstream"
 	capiOfferName                     = "capi"
 	capiWindowsOfferName              = "capi-windows"
-	capiCommunityGallery              = "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
 	aksClusterNameSuffix              = "aks"
 	defaultNamespace                  = "default"
 	AzureCNIv1Manifest                = "AZURE_CNI_V1_MANIFEST_PATH"
