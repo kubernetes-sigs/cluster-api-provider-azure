@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package privateendpoints
+package privatelinks
 
 import (
 	"context"
@@ -29,25 +29,25 @@ import (
 )
 
 // ServiceName is the name of this service.
-const ServiceName = "privateendpoints"
+const ServiceName = "privatelinks"
 
-// PrivateEndpointScope defines the scope interface for a private endpoint.
-type PrivateEndpointScope interface {
+// PrivateLinkScope defines the scope interface for a private link.
+type PrivateLinkScope interface {
 	aso.Scope
-	PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateEndpoint]
+	PrivateLinkSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1.PrivateLinkService]
 }
 
 // New creates a new service.
-func New(scope PrivateEndpointScope) *aso.Service[*asonetworkv1.PrivateEndpoint, PrivateEndpointScope] {
-	svc := aso.NewService[*asonetworkv1.PrivateEndpoint, PrivateEndpointScope](ServiceName, scope)
+func New(scope PrivateLinkScope) *aso.Service[*asonetworkv1.PrivateLinkService, PrivateLinkScope] {
+	svc := aso.NewService[*asonetworkv1.PrivateLinkService, PrivateLinkScope](ServiceName, scope)
 	svc.ListFunc = list
-	svc.ConditionType = infrav1.PrivateEndpointsReadyCondition
-	svc.Specs = scope.PrivateEndpointSpecs()
+	svc.ConditionType = infrav1.PrivateLinksReadyCondition
+	svc.Specs = scope.PrivateLinkSpecs()
 	return svc
 }
 
-func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asonetworkv1.PrivateEndpoint, error) {
-	list := &asonetworkv1.PrivateEndpointList{}
+func list(ctx context.Context, client client.Client, opts ...client.ListOption) ([]*asonetworkv1.PrivateLinkService, error) {
+	list := new(asonetworkv1.PrivateLinkServiceList)
 	err := client.List(ctx, list, opts...)
 	return slice.ToPtrs(list.Items), err
 }

@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
@@ -96,6 +97,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 			vnetPeeringsSvc,
 			loadbalancersSvc,
 			privateDNSSvc,
+			privatelinks.New(scope),
 			privateendpoints.New(scope),
 			bastionhosts.New(scope),
 		},
