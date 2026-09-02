@@ -29,7 +29,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -59,6 +58,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/internal/kubeversion"
 )
 
 const (
@@ -743,14 +743,6 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
-// validateStableReleaseString validates the string format that declares "get be the latest stable release for this <Major>.<Minor>"
-// it should be called wherever we process a stable version string expression like "stable-1.22"
-func validateStableReleaseString(stableVersion string) (isStable bool, matches []string) {
-	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
-	matches = stableReleaseFormat.FindStringSubmatch(stableVersion)
-	return len(matches) > 0, matches
-}
-
 // resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
 // Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
 func resolveCIVersion(label string) (string, error) {
@@ -831,7 +823,7 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	ctx := context.TODO()
-	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
+	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName)
 
 	var versions semver.Versions
 
@@ -840,7 +832,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	windowsRequired := testWindows == "true"
 
 	if windowsRequired {
-		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2019-containerd")
+		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultWindowsGalleryImageName)
 		for k, v := range linuxVersions {
 			if _, ok := windowsVersions[k]; ok {
 				versions = append(versions, v)
@@ -885,35 +877,50 @@ func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
 	Logf("Resolved %s (set to %s) to %s", varName, oldVersion, v)
 }
 
-func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageVersionsClient {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+	versions, err := listVersionsInCommunityGallery(ctx, location, galleryName, image)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(getSubscriptionID(Default), cred, nil)
-	Expect(err).NotTo(HaveOccurred())
-
-	return communityGalleryImageVersionsClient
+	return versions
 }
 
-func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+func listVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) (map[string]semver.Version, error) {
 	Logf("Getting versions for image %q in community gallery %q in location %q", image, galleryName, location)
 	versions := make(map[string]semver.Version)
 
-	client := newCommunityGalleryImageVersionsClient()
-	pager := client.NewListPager(location, galleryName, image, nil)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a default credential")
+	}
+	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(getSubscriptionID(Default), cred, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a community gallery image versions client")
+	}
+
+	pager := communityGalleryImageVersionsClient.NewListPager(location, galleryName, image, nil)
 	for pager.More() {
 		resp, err := pager.NextPage(ctx)
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list versions for image %q in community gallery %q in location %q", image, galleryName, location)
+		}
 		for _, version := range resp.Value {
-			versions[*version.Name] = semver.MustParse(*version.Name)
+			if version == nil || version.Name == nil {
+				continue
+			}
+			parsedVersion, err := semver.Parse(*version.Name)
+			if err != nil {
+				Logf("Ignoring version %q for image %q in community gallery %q in location %q: %v", *version.Name, image, galleryName, location, err)
+				continue
+			}
+			versions[*version.Name] = parsedVersion
 		}
 	}
 
-	return versions
+	return versions, nil
 }
 
 // getLatestVersionForMinor gets the latest available patch version in the provided list of sku versions that corresponds to the provided k8s version.
 func getLatestVersionForMinor(version string, versions semver.Versions, imagesSource string) string {
-	isStable, match := validateStableReleaseString(version)
+	isStable, match := kubeversion.ValidateStableReleaseString(version)
 	if isStable {
 		// if the version is in the format "stable-1.21", we find the latest 1.21.x version.
 		major, err := strconv.ParseUint(match[1], 10, 64)
