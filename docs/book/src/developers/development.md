@@ -34,6 +34,7 @@
     - [Distributed Tracing](#distributed-tracing)
     - [Metrics](#metrics)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
+    - [Reducing cyclomatic complexity](#reducing-cyclomatic-complexity)
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
     - [Mocks](#mocks)
@@ -496,6 +497,33 @@ make lint-fix # Runs a suite of quick scripts to fix lint errors
 make verify # Runs a suite of verifying binaries
 make test # Runs tests on the Go code
 ```
+
+#### Reducing cyclomatic complexity
+
+`make lint` includes checks for cyclomatic complexity. If a function grows too many branches
+(`if`/`else`, `switch`, loops, error checks), the linter will flag it rather than let it become
+hard to read, test, or modify safely.
+
+If you hit a complexity failure, prefer the [extract method][extract-method] refactor: split the
+function into small, single-purpose private helper methods, each handling one piece of
+configuration or validation, and have the original function call them in sequence. This keeps
+the overall flow readable as a short list of steps while each helper stays simple enough to
+reason about (and test) on its own.
+
+`ManagedClusterSpec.Parameters()` in `azure/services/managedclusters/spec.go` is a worked example
+of this pattern ([#5984][pr-5984]): a single 340-line method with a cyclomatic complexity of 55
+was split into the top-level orchestrating method plus ~20 helpers such as
+`configureNetworkProfile`, `configureIdentity`, and `configureSecurityProfile`, each named for the
+one thing it configures. The refactor was purely mechanical - no behavior changed, and the
+existing unit tests kept passing throughout - which is generally true of this kind of split: if a
+change to reduce complexity also changes behavior, that's a sign the extraction cut in the wrong
+place.
+
+Avoid papering over a genuine complexity problem with `//nolint:gocyclo`; use it only as a
+temporary marker while a refactor is in progress, not as a permanent suppression.
+
+[extract-method]: https://refactoring.com/catalog/extractFunction.html
+[pr-5984]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/5984
 
 #### Executing unit tests
 
