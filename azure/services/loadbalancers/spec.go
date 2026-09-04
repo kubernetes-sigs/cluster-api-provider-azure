@@ -44,6 +44,7 @@ type LBSpec struct {
 	VNetResourceGroup     string
 	SubnetName            string
 	BackendPoolName       string
+	IPv6Enabled           bool
 	FrontendIPConfigs     []infrav1.FrontendIP
 	APIServerPort         int32
 	APIServerFrontendPort int32
@@ -220,19 +221,62 @@ func getOutboundRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource) []*a
 	if lbSpec.Type == infrav1.Internal {
 		return []*armnetwork.OutboundRule{}
 	}
-	return []*armnetwork.OutboundRule{
-		{
+
+	if !lbSpec.IPv6Enabled {
+		return []*armnetwork.OutboundRule{
+			{
+				Name: ptr.To(outboundNAT),
+				Properties: &armnetwork.OutboundRulePropertiesFormat{
+					Protocol:                 ptr.To(armnetwork.LoadBalancerOutboundRuleProtocolAll),
+					IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
+					FrontendIPConfigurations: frontendIDs,
+					BackendAddressPool: &armnetwork.SubResource{
+						ID: ptr.To(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
+					},
+				},
+			},
+		}
+	}
+
+	var ipv4FrontendIDs, ipv6FrontendIDs []*armnetwork.SubResource
+	for i, ipConfig := range lbSpec.FrontendIPConfigs {
+		if i < len(frontendIDs) {
+			if ipConfig.IPVersion == infrav1.IPv6 {
+				ipv6FrontendIDs = append(ipv6FrontendIDs, frontendIDs[i])
+			} else {
+				ipv4FrontendIDs = append(ipv4FrontendIDs, frontendIDs[i])
+			}
+		}
+	}
+
+	var rules []*armnetwork.OutboundRule
+	if len(ipv4FrontendIDs) > 0 {
+		rules = append(rules, &armnetwork.OutboundRule{
 			Name: ptr.To(outboundNAT),
 			Properties: &armnetwork.OutboundRulePropertiesFormat{
 				Protocol:                 ptr.To(armnetwork.LoadBalancerOutboundRuleProtocolAll),
 				IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
-				FrontendIPConfigurations: frontendIDs,
+				FrontendIPConfigurations: ipv4FrontendIDs,
 				BackendAddressPool: &armnetwork.SubResource{
 					ID: ptr.To(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName)),
 				},
 			},
-		},
+		})
 	}
+	if len(ipv6FrontendIDs) > 0 {
+		rules = append(rules, &armnetwork.OutboundRule{
+			Name: ptr.To(outboundNAT + "IPv6"),
+			Properties: &armnetwork.OutboundRulePropertiesFormat{
+				Protocol:                 ptr.To(armnetwork.LoadBalancerOutboundRuleProtocolAll),
+				IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
+				FrontendIPConfigurations: ipv6FrontendIDs,
+				BackendAddressPool: &armnetwork.SubResource{
+					ID: ptr.To(azure.AddressPoolID(lbSpec.SubscriptionID, lbSpec.ResourceGroup, lbSpec.Name, lbSpec.BackendPoolName+"-IPv6")),
+				},
+			},
+		})
+	}
+	return rules
 }
 
 func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource) []*armnetwork.LoadBalancingRule {
@@ -293,11 +337,17 @@ func getLoadBalancingRules(lbSpec LBSpec, frontendIDs []*armnetwork.SubResource)
 }
 
 func getBackendAddressPools(lbSpec LBSpec) []*armnetwork.BackendAddressPool {
-	return []*armnetwork.BackendAddressPool{
+	pools := []*armnetwork.BackendAddressPool{
 		{
 			Name: ptr.To(lbSpec.BackendPoolName),
 		},
 	}
+	if lbSpec.IPv6Enabled {
+		pools = append(pools, &armnetwork.BackendAddressPool{
+			Name: ptr.To(lbSpec.BackendPoolName + "-IPv6"),
+		})
+	}
+	return pools
 }
 
 func getProbes(lbSpec LBSpec) []*armnetwork.Probe {
