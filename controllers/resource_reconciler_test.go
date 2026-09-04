@@ -717,6 +717,94 @@ func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []meta
 	}
 }
 
+func TestDeferShallowerResources(t *testing.T) {
+	boolPtr := func(b bool) *bool { return &b }
+
+	rg := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{UID: "rg-uid", Name: "rg"},
+	}
+	vnet := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "vnet-uid",
+			Name: "vnet",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "rg-uid"},
+			},
+		},
+	}
+	nsg := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "nsg-uid",
+			Name: "nsg",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "rg-uid"},
+			},
+		},
+	}
+	subnet := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "subnet-uid",
+			Name: "subnet",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "vnet-uid"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name             string
+		resources        []*metav1.PartialObjectMetadata
+		expectedDeferred []string
+	}{
+		{
+			name:             "all levels present: only deepest (subnet) proceeds",
+			resources:        []*metav1.PartialObjectMetadata{rg, vnet, nsg, subnet},
+			expectedDeferred: []string{"rg", "vnet", "nsg"},
+		},
+		{
+			name:             "without subnet: nsg and vnet are deepest, rg deferred",
+			resources:        []*metav1.PartialObjectMetadata{rg, vnet, nsg},
+			expectedDeferred: []string{"rg"},
+		},
+		{
+			name:             "only roots: nothing deferred",
+			resources:        []*metav1.PartialObjectMetadata{rg},
+			expectedDeferred: []string{},
+		},
+		{
+			name:             "siblings only (no hierarchy): nothing deferred",
+			resources:        []*metav1.PartialObjectMetadata{vnet, nsg},
+			expectedDeferred: []string{},
+		},
+		{
+			name:             "empty input: nothing deferred",
+			resources:        nil,
+			expectedDeferred: []string{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			deferred := deferShallowerResources(tc.resources)
+			var deferredNames []string
+			for _, r := range tc.resources {
+				if deferred.Has(r.UID) {
+					deferredNames = append(deferredNames, r.Name)
+				}
+			}
+			if len(tc.expectedDeferred) == 0 {
+				g.Expect(deferredNames).To(BeEmpty())
+			} else {
+				g.Expect(deferredNames).To(ConsistOf(tc.expectedDeferred))
+			}
+		})
+	}
+}
+
 var rgTypeMeta = metav1.TypeMeta{
 	APIVersion: asoresourcesv1.GroupVersion.Identifier(),
 	Kind:       "ResourceGroup",
