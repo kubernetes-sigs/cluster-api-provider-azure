@@ -41,8 +41,8 @@ const (
 	kubeRayOperatorHelmChartName   = "kuberay-operator"
 	kubeRayOperatorHelmReleaseName = "kuberay-operator"
 	kubeRayOperatorNamespace       = "default"
-	kubeRayVersion                 = "1.6.1"
-	rayVersion                     = "2.55.1"
+	kubeRayVersion                 = "1.6.2"
+	rayVersion                     = "2.56.0"
 	rayImage                       = "rayproject/ray:" + rayVersion
 	objectStoreMemory              = "200000000" // ~200MB, prevents Ray from consuming all of /dev/shm
 )
@@ -262,7 +262,7 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 		"--timeout", "5m0s",
 	}
 	helmArgs = append(helmArgs, extraArgs...)
-	installCmd := exec.CommandContext(ctx, "helm", helmArgs...) //nolint:gosec
+	installCmd := exec.CommandContext(ctx, "helm", helmArgs...)
 	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
 	output, err = installCmd.CombinedOutput()
 	Logf("helm install output: %s", string(output))

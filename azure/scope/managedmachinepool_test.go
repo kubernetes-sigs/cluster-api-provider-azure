@@ -763,6 +763,22 @@ func TestManagedMachinePoolScope_EnablePreviewFeatures(t *testing.T) {
 	}
 }
 
+func TestManagedMachinePoolScope_SetAgentPoolReady(t *testing.T) {
+	g := NewWithT(t)
+	scope := &ManagedMachinePoolScope{
+		InfraMachinePool: &infrav1.AzureManagedMachinePool{},
+	}
+
+	scope.SetAgentPoolReady(false)
+	g.Expect(scope.InfraMachinePool.Status.Initialization.Provisioned).To(BeNil())
+
+	scope.SetAgentPoolReady(true)
+	g.Expect(ptr.Deref(scope.InfraMachinePool.Status.Initialization.Provisioned, false)).To(BeTrue())
+
+	scope.SetAgentPoolReady(false)
+	g.Expect(ptr.Deref(scope.InfraMachinePool.Status.Initialization.Provisioned, false)).To(BeTrue())
+}
+
 func Test_getManagedMachinePoolVersion(t *testing.T) {
 	cases := []struct {
 		name                string

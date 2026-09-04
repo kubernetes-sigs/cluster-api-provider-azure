@@ -19,6 +19,7 @@ package scope
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
 	asonetworkv1 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
@@ -40,6 +41,67 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 )
+
+func TestManagedControlPlaneScope_AvailabilityStatusFilter(t *testing.T) {
+	tests := []struct {
+		name       string
+		reason     string
+		createdAgo time.Duration
+		wantStatus metav1.ConditionStatus
+		wantReason string
+	}{
+		{
+			name:       "suppresses degraded status during startup",
+			reason:     "Degraded",
+			createdAgo: time.Minute,
+			wantStatus: metav1.ConditionTrue,
+			wantReason: string(infrav1.AzureResourceAvailableCondition),
+		},
+		{
+			name:       "suppresses unknown status during startup",
+			reason:     "Unknown",
+			createdAgo: time.Minute,
+			wantStatus: metav1.ConditionTrue,
+			wantReason: string(infrav1.AzureResourceAvailableCondition),
+		},
+		{
+			name:       "preserves unavailable status during startup",
+			reason:     "Unavailable",
+			createdAgo: time.Minute,
+			wantStatus: metav1.ConditionFalse,
+			wantReason: "Unavailable",
+		},
+		{
+			name:       "preserves degraded status after startup",
+			reason:     "Degraded",
+			createdAgo: resourceHealthWarningInitialGracePeriod + time.Minute,
+			wantStatus: metav1.ConditionFalse,
+			wantReason: "Degraded",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scope := &ManagedControlPlaneScope{
+				ControlPlane: &infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						CreationTimestamp: metav1.NewTime(time.Now().Add(-tt.createdAgo)),
+					},
+				},
+			}
+			condition := &metav1.Condition{
+				Type:   string(infrav1.AzureResourceAvailableCondition),
+				Status: metav1.ConditionFalse,
+				Reason: tt.reason,
+			}
+
+			got := scope.AvailabilityStatusFilter(condition)
+			g := NewWithT(t)
+			g.Expect(got.Status).To(Equal(tt.wantStatus))
+			g.Expect(got.Reason).To(Equal(tt.wantReason))
+		})
+	}
+}
 
 func TestNewManagedControlPlaneScope(t *testing.T) {
 	g := NewWithT(t)

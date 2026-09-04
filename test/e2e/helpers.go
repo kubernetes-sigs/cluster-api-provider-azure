@@ -29,7 +29,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -59,6 +58,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/internal/kubeversion"
 )
 
 const (
@@ -118,16 +118,56 @@ func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAv
 func GetWaitForDeploymentsAvailableInput(ctx context.Context, clusterProxy framework.ClusterProxy, name, namespace string, specName string) WaitForDeploymentsAvailableInput {
 	Expect(clusterProxy).NotTo(BeNil())
 	cl := clusterProxy.GetClient()
+	clientset := clusterProxy.GetClientSet()
 	var d = &appsv1.Deployment{}
 	Eventually(func() error {
 		return cl.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, d)
-	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(Succeed())
-	clientset := clusterProxy.GetClientSet()
+	}, e2eConfig.GetIntervals(specName, "wait-deployment")...).Should(Succeed(), func() string {
+		return describeDeploymentsInNamespace(ctx, clientset, namespace, name)
+	})
 	return WaitForDeploymentsAvailableInput{
 		Deployment: d,
 		Clientset:  clientset,
 		Getter:     cl,
 	}
+}
+
+// describeDeploymentsInNamespace returns a string summarizing the deployments and pods that do exist
+// in the given namespace, to help debug why an expected deployment never showed up (e.g. when its
+// Helm chart install via CAAPH failed).
+func describeDeploymentsInNamespace(ctx context.Context, clientset *kubernetes.Clientset, namespace, name string) string {
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Deployment %s/%s never appeared", namespace, name))
+	if clientset == nil {
+		b.WriteString("\nclientset is nil, so skipping output of namespace state")
+		return b.String()
+	}
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		b.WriteString(fmt.Sprintf("\nfailed to list deployments in namespace %s: %s\n", namespace, err.Error()))
+	} else {
+		b.WriteString(fmt.Sprintf("\nDeployments currently in namespace %s: %d\n", namespace, len(deployments.Items)))
+		for i := range deployments.Items {
+			dep := &deployments.Items[i]
+			b.WriteString(fmt.Sprintf("  %s: replicas=%d ready=%d available=%d\n", dep.Name, dep.Status.Replicas, dep.Status.ReadyReplicas, dep.Status.AvailableReplicas))
+		}
+	}
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		b.WriteString(fmt.Sprintf("failed to list pods in namespace %s: %s\n", namespace, err.Error()))
+	} else {
+		b.WriteString(fmt.Sprintf("Pods currently in namespace %s: %d\n", namespace, len(pods.Items)))
+		for i := range pods.Items {
+			pod := &pods.Items[i]
+			b.WriteString(fmt.Sprintf("  %s: phase=%s\n", pod.Name, pod.Status.Phase))
+			for _, cs := range pod.Status.ContainerStatuses {
+				if w := cs.State.Waiting; w != nil {
+					b.WriteString(fmt.Sprintf("    container %s waiting: reason=%q message=%q\n", cs.Name, w.Reason, w.Message))
+				}
+			}
+		}
+	}
+	return b.String()
 }
 
 // DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
@@ -138,6 +178,105 @@ func DescribeFailedDeployment(ctx context.Context, input WaitForDeploymentsAvail
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nDeployment:\n%s\n", prettyPrint(input.Deployment)))
 	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
+	b.WriteString(describeDeploymentPods(ctx, input.Clientset, input.Deployment))
+	b.WriteString(describeEnvFromConfigMaps(ctx, input.Clientset, input.Deployment))
+	return b.String()
+}
+
+// describeEnvFromConfigMaps returns a string summarizing the keys of any ConfigMaps referenced via
+// envFrom by the deployment's containers. This surfaces misconfigured env sources such as the
+// tigera-operator "kubernetes-services-endpoint" ConfigMap being populated with "<no value>" when
+// the Helm chart is rendered before the cluster controlPlaneEndpoint is set.
+//
+// To avoid leaking private configuration or mistakenly stored credentials into test failure output,
+// only each key's state is reported ("empty", "<no value>" or "set") and never the actual value.
+// Secret envFrom sources are not inspected at all.
+func describeEnvFromConfigMaps(ctx context.Context, clientset *kubernetes.Clientset, deployment *appsv1.Deployment) string {
+	b := strings.Builder{}
+	if clientset == nil {
+		return b.String()
+	}
+	namespace := deployment.GetNamespace()
+	seen := map[string]bool{}
+	containers := append([]corev1.Container{}, deployment.Spec.Template.Spec.InitContainers...)
+	containers = append(containers, deployment.Spec.Template.Spec.Containers...)
+	for _, c := range containers {
+		for _, ef := range c.EnvFrom {
+			if ef.ConfigMapRef == nil || seen[ef.ConfigMapRef.Name] {
+				continue
+			}
+			seen[ef.ConfigMapRef.Name] = true
+			name := ef.ConfigMapRef.Name
+			cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+			if err != nil {
+				b.WriteString(fmt.Sprintf("\nenvFrom ConfigMap %s/%s: failed to get: %s\n", namespace, name, err.Error()))
+				continue
+			}
+			b.WriteString(fmt.Sprintf("\nenvFrom ConfigMap %s/%s keys:\n", namespace, name))
+			for k, v := range cm.Data {
+				b.WriteString(fmt.Sprintf("  %s: %s\n", k, envValueState(v)))
+			}
+		}
+	}
+	return b.String()
+}
+
+// envValueState reports the state of an env value without exposing the value itself, so that private
+// configuration or credentials are not copied into test failure output. It distinguishes the
+// "<no value>" placeholder (baked in by a Helm render before its templated source was populated) and
+// empty values from any other set value.
+func envValueState(v string) string {
+	switch v {
+	case "":
+		return "empty"
+	case "<no value>":
+		return "<no value>"
+	default:
+		return "set"
+	}
+}
+
+// describeDeploymentPods returns a string summarizing the pods owned by the given deployment,
+// including their phase, container statuses (e.g. ImagePullBackOff, CrashLoopBackOff) and related
+// events. This helps debug why a deployment never becomes available.
+func describeDeploymentPods(ctx context.Context, clientset *kubernetes.Clientset, deployment *appsv1.Deployment) string {
+	b := strings.Builder{}
+	if clientset == nil {
+		b.WriteString("clientset is nil, so skipping output of deployment pods")
+		return b.String()
+	}
+	namespace := deployment.GetNamespace()
+	selector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
+	if err != nil {
+		b.WriteString(fmt.Sprintf("\nfailed to build pod selector for deployment %s/%s: %s\n", namespace, deployment.GetName(), err.Error()))
+		return b.String()
+	}
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
+	if err != nil {
+		b.WriteString(fmt.Sprintf("\nfailed to list pods for deployment %s/%s: %s\n", namespace, deployment.GetName(), err.Error()))
+		return b.String()
+	}
+	b.WriteString(fmt.Sprintf("\nPods for deployment %s/%s (matching %q):\n", namespace, deployment.GetName(), selector.String()))
+	if len(pods.Items) == 0 {
+		b.WriteString("no pods found\n")
+	}
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+		b.WriteString(fmt.Sprintf("\nPod %s/%s: phase=%s node=%q\n", pod.Namespace, pod.Name, pod.Status.Phase, pod.Spec.NodeName))
+		for _, cond := range pod.Status.Conditions {
+			b.WriteString(fmt.Sprintf("  condition %s=%s reason=%q message=%q\n", cond.Type, cond.Status, cond.Reason, cond.Message))
+		}
+		for _, cs := range pod.Status.ContainerStatuses {
+			b.WriteString(fmt.Sprintf("  container %s: ready=%t restartCount=%d\n", cs.Name, cs.Ready, cs.RestartCount))
+			if w := cs.State.Waiting; w != nil {
+				b.WriteString(fmt.Sprintf("    waiting: reason=%q message=%q\n", w.Reason, w.Message))
+			}
+			if t := cs.State.Terminated; t != nil {
+				b.WriteString(fmt.Sprintf("    terminated: reason=%q exitCode=%d message=%q\n", t.Reason, t.ExitCode, t.Message))
+			}
+		}
+		b.WriteString(describeEvents(ctx, clientset, pod.Namespace, pod.Name))
+	}
 	return b.String()
 }
 
@@ -604,14 +743,6 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
-// validateStableReleaseString validates the string format that declares "get be the latest stable release for this <Major>.<Minor>"
-// it should be called wherever we process a stable version string expression like "stable-1.22"
-func validateStableReleaseString(stableVersion string) (isStable bool, matches []string) {
-	stableReleaseFormat := regexp.MustCompile(`^stable-(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
-	matches = stableReleaseFormat.FindStringSubmatch(stableVersion)
-	return len(matches) > 0, matches
-}
-
 // resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
 // Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
 func resolveCIVersion(label string) (string, error) {
@@ -692,7 +823,7 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	ctx := context.TODO()
-	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-ubun2-2404")
+	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName)
 
 	var versions semver.Versions
 
@@ -701,7 +832,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	windowsRequired := testWindows == "true"
 
 	if windowsRequired {
-		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), capiCommunityGallery, "capi-win-2022-containerd")
+		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultWindowsGalleryImageName)
 		for k, v := range linuxVersions {
 			if _, ok := windowsVersions[k]; ok {
 				versions = append(versions, v)
@@ -746,35 +877,50 @@ func resolveVariable(config *clusterctl.E2EConfig, varName, v string) {
 	Logf("Resolved %s (set to %s) to %s", varName, oldVersion, v)
 }
 
-func newCommunityGalleryImageVersionsClient() *armcompute.CommunityGalleryImageVersionsClient {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+	versions, err := listVersionsInCommunityGallery(ctx, location, galleryName, image)
 	Expect(err).NotTo(HaveOccurred())
-	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(getSubscriptionID(Default), cred, nil)
-	Expect(err).NotTo(HaveOccurred())
-
-	return communityGalleryImageVersionsClient
+	return versions
 }
 
-func getVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) map[string]semver.Version {
+func listVersionsInCommunityGallery(ctx context.Context, location, galleryName, image string) (map[string]semver.Version, error) {
 	Logf("Getting versions for image %q in community gallery %q in location %q", image, galleryName, location)
 	versions := make(map[string]semver.Version)
 
-	client := newCommunityGalleryImageVersionsClient()
-	pager := client.NewListPager(location, galleryName, image, nil)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a default credential")
+	}
+	communityGalleryImageVersionsClient, err := armcompute.NewCommunityGalleryImageVersionsClient(getSubscriptionID(Default), cred, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a community gallery image versions client")
+	}
+
+	pager := communityGalleryImageVersionsClient.NewListPager(location, galleryName, image, nil)
 	for pager.More() {
 		resp, err := pager.NextPage(ctx)
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list versions for image %q in community gallery %q in location %q", image, galleryName, location)
+		}
 		for _, version := range resp.Value {
-			versions[*version.Name] = semver.MustParse(*version.Name)
+			if version == nil || version.Name == nil {
+				continue
+			}
+			parsedVersion, err := semver.Parse(*version.Name)
+			if err != nil {
+				Logf("Ignoring version %q for image %q in community gallery %q in location %q: %v", *version.Name, image, galleryName, location, err)
+				continue
+			}
+			versions[*version.Name] = parsedVersion
 		}
 	}
 
-	return versions
+	return versions, nil
 }
 
 // getLatestVersionForMinor gets the latest available patch version in the provided list of sku versions that corresponds to the provided k8s version.
 func getLatestVersionForMinor(version string, versions semver.Versions, imagesSource string) string {
-	isStable, match := validateStableReleaseString(version)
+	isStable, match := kubeversion.ValidateStableReleaseString(version)
 	if isStable {
 		// if the version is in the format "stable-1.21", we find the latest 1.21.x version.
 		major, err := strconv.ParseUint(match[1], 10, 64)

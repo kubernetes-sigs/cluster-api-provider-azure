@@ -91,6 +91,7 @@ type (
 	}
 
 	// AzureMachinePoolMachineInitializationStatus provides observations of the AzureMachinePoolMachine initialization process.
+	// +kubebuilder:validation:MinProperties=1
 	AzureMachinePoolMachineInitializationStatus struct {
 		// provisioned is true when the infrastructure provider reports that the AzureMachinePoolMachine's infrastructure is fully provisioned.
 		// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate provisioning.

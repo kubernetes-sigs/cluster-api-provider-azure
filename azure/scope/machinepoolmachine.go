@@ -269,7 +269,8 @@ func (s *MachinePoolMachineScope) ProvisioningState() infrav1.ProvisioningState 
 // IsReady indicates the machine has successfully provisioned and has a node ref associated.
 func (s *MachinePoolMachineScope) IsReady() bool {
 	state := s.AzureMachinePoolMachine.Status.ProvisioningState
-	return ptr.Deref(s.AzureMachinePoolMachine.Status.Initialization.Provisioned, false) && state != nil && *state == infrav1.Succeeded
+	return conditions.IsTrue(s.AzureMachinePoolMachine, string(clusterv1.MachineNodeHealthyCondition)) &&
+		state != nil && *state == infrav1.Succeeded
 }
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
@@ -396,8 +397,8 @@ func (s *MachinePoolMachineScope) UpdateNodeStatus(ctx context.Context) error {
 	default:
 		// Node was found. Check if it is ready.
 		nodeReady := noderefutil.IsNodeReady(node)
-		s.AzureMachinePoolMachine.Status.Initialization.Provisioned = ptr.To(nodeReady)
 		if nodeReady {
+			s.AzureMachinePoolMachine.Status.Initialization.Provisioned = ptr.To(true)
 			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionTrue, Reason: string(clusterv1.MachineNodeHealthyCondition)})
 		} else {
 			conditions.Set(s.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeConditionsFailedReason})

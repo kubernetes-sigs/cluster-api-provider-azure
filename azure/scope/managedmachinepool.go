@@ -278,7 +278,9 @@ func (s *ManagedMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 
 // SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
 func (s *ManagedMachinePoolScope) SetAgentPoolReady(ready bool) {
-	s.InfraMachinePool.Status.Initialization.Provisioned = ptr.To(ready)
+	if ready {
+		s.InfraMachinePool.Status.Initialization.Provisioned = ptr.To(true)
+	}
 }
 
 // SetLongRunningOperationState will set the future on the AzureManagedMachinePool status to allow the resource to continue

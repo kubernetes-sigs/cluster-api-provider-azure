@@ -878,6 +878,11 @@ func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.
 	futures.Set(s.ControlPlane, future)
 }
 
+// GetLongRunningOperationStates will get the specified futures on the AzureCluster status.
+func (s *ManagedControlPlaneScope) GetLongRunningOperationStates(service, futureType string) infrav1.Futures {
+	return futures.GetByServiceAndType(s.ControlPlane, service, futureType)
+}
+
 // GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
 func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service, futureType string) *infrav1.Future {
 	return futures.Get(s.ControlPlane, name, service, futureType)
@@ -973,7 +978,8 @@ func (s *ManagedControlPlaneScope) AvailabilityStatusResourceURI() string {
 // occurs on startup for every AKS cluster.
 func (s *ManagedControlPlaneScope) AvailabilityStatusFilter(cond *metav1.Condition) *metav1.Condition {
 	if time.Since(s.ControlPlane.CreationTimestamp.Time) < resourceHealthWarningInitialGracePeriod &&
-		cond.Status == metav1.ConditionFalse {
+		cond.Status == metav1.ConditionFalse &&
+		(cond.Reason == "Degraded" || cond.Reason == "Unknown") {
 		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.AzureResourceAvailableCondition)}
 	}
 	return cond

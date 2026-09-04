@@ -56,8 +56,8 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
-          runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true
+          feature-gates: ${K8S_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true"}
+          runtime-config: resource.k8s.io/v1beta1=true,resource.k8s.io/v1beta2=true,scheduling.k8s.io/v1beta1=true
           service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:
@@ -65,7 +65,7 @@ spec:
           allocate-node-cidrs: "false"
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           v: "4"
       etcd:
         local:
@@ -75,7 +75,7 @@ spec:
       kubernetesVersion: ci/${CI_VERSION}
       scheduler:
         extraArgs:
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -208,7 +208,7 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -216,7 +216,7 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
-          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true
+          feature-gates: DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true
           image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
           image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -378,6 +378,27 @@ spec:
       echo "$${LINE_SEPARATOR}"
       CI_VERSION=${CI_VERSION}
 
+      download() {
+        local url="$${1}"
+        local output="$${2}"
+        local attempts=10
+
+        for ((attempt = 1; attempt <= attempts; attempt++)); do
+          if wget --inet4-only "$${url}" -O "$${output}"; then
+            return 0
+          fi
+
+          rm -f "$${output}"
+          if ((attempt == attempts)); then
+            echo "* failed to download $${url} after $${attempts} attempts" >&2
+            return 1
+          fi
+
+          echo "* download failed; retrying in 5 seconds ($${attempt}/$${attempts})"
+          sleep 5
+        done
+      }
+
       # Note: We assume if kubectl has the right version, everything else has as well
       if [[ $(kubectl version --client=true -o json | jq '.clientVersion.gitVersion' -r) = "$${CI_VERSION}" ]]; then
         echo "Detected Kubernetes $${CI_VERSION} via kubectl version, nothing to do"
@@ -400,7 +421,7 @@ spec:
           # Browser: https://console.cloud.google.com/storage/browser/k8s-release-dev?project=k8s-release-dev
           # e.g.: https://storage.googleapis.com/k8s-release-dev/ci/v1.21.0-beta.1.378+cf3374e43491c5/bin/linux/amd64/kubectl
           echo "* downloading binary: $${CI_URL}/$${CI_PACKAGE}"
-          wget --inet4-only "$${CI_URL}/$${CI_PACKAGE}" -O "$${CI_DIR}/$${CI_PACKAGE}"
+          download "$${CI_URL}/$${CI_PACKAGE}" "$${CI_DIR}/$${CI_PACKAGE}"
           chmod +x "$${CI_DIR}/$${CI_PACKAGE}"
           mv "$${CI_DIR}/$${CI_PACKAGE}" "/usr/bin/$${CI_PACKAGE}"
         done
@@ -413,7 +434,7 @@ spec:
         fi
         for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
           echo "* downloading package: $${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
-          wget --inet4-only "$${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}" -O "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
+          download "$${CI_URL}/$${CI_CONTAINER}.$${CONTAINER_EXT}" "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}"
           $${SUDO} ctr -n k8s.io images import "$${CI_DIR}/$${CI_CONTAINER}.$${CONTAINER_EXT}" || echo "* ignoring expected 'ctr images import' result"
           $${SUDO} ctr -n k8s.io images tag "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}-amd64:$${CI_VERSION//+/_}" "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}:$${CI_VERSION//+/_}"
           $${SUDO} ctr -n k8s.io images tag "$${IMAGE_REGISTRY_PREFIX}/$${CI_CONTAINER}-amd64:$${CI_VERSION//+/_}" "gcr.io/k8s-staging-ci-images/$${CI_CONTAINER}:$${CI_VERSION//+/_}"
@@ -448,7 +469,7 @@ spec:
     nodeRegistration:
       kubeletExtraArgs:
         cloud-provider: external
-        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true"}
+        feature-gates: ${NODE_FEATURE_GATES:-"DynamicResourceAllocation=true,DRADeviceTaints=true,DRADeviceTaintRules=true,GenericWorkload=true,DRAWorkloadResourceClaims=true"}
         image-credential-provider-bin-dir: /var/lib/kubelet/credential-provider
         image-credential-provider-config: /var/lib/kubelet/credential-provider-config.yaml
       name: '{{ ds.meta_data["local_hostname"] }}'
@@ -574,9 +595,17 @@ spec:
       options:
         - name: edns0
         - name: trust-ad
+    # Only set kubernetesServiceEndpoint once both parts of the control plane
+    # endpoint are populated. If rendered before infrastructure is ready, the
+    # host/port resolve to empty or "<no value>" and get baked into the
+    # kubernetes-services-endpoint ConfigMap, crash-looping the tigera-operator
+    # with "KUBERNETES_SERVICE_HOST ... must be defined". Omitting the block lets
+    # the operator use in-cluster config.
+    {{- if and .Cluster.spec.controlPlaneEndpoint.host .Cluster.spec.controlPlaneEndpoint.port }}
     kubernetesServiceEndpoint:
       host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
       port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
+    {{- end }}
     # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
     # when it continuously gets scheduled onto an out-of-date Node that is being
     # deleted. Tolerate only the NoSchedule taints that are expected.

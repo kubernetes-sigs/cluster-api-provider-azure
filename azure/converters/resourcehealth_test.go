@@ -64,7 +64,7 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 			},
 			expected: &metav1.Condition{
 				Status:  metav1.ConditionFalse,
-				Reason:  "ThisIsAReason",
+				Reason:  "Unavailable",
 				Message: "The Summary",
 			},
 		},
@@ -79,7 +79,7 @@ func TestAzureAvailabilityStatusToCondition(t *testing.T) {
 			},
 			expected: &metav1.Condition{
 				Status:  metav1.ConditionFalse,
-				Reason:  "TheReason",
+				Reason:  "Degraded",
 				Message: "The Summary",
 			},
 		},

@@ -256,10 +256,12 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	// ensure we refresh the token when it expires
 	result := ctrl.Result{RequeueAfter: ptr.Deref(tokenExpiresIn, 0)}
 
-	asoManagedControlPlane.Status.Initialization.Provisioned = ptr.To(!asoManagedControlPlane.Status.ControlPlaneEndpoint.IsZero())
-	// The AKS API doesn't allow us to distinguish between CAPI's definitions of "initialized" and "ready" so
-	// we treat them equivalently.
-	asoManagedControlPlane.Status.Initialization.ControlPlaneInitialized = asoManagedControlPlane.Status.Initialization.Provisioned
+	if !asoManagedControlPlane.Status.ControlPlaneEndpoint.IsZero() {
+		asoManagedControlPlane.Status.Initialization.Provisioned = ptr.To(true)
+		// The AKS API doesn't allow us to distinguish between CAPI's definitions of "initialized" and "ready" so
+		// we treat them equivalently.
+		asoManagedControlPlane.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
+	}
 
 	return result, nil
 }

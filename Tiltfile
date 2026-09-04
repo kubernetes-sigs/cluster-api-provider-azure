@@ -22,9 +22,9 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v1.13.3",
+    "capi_version": "v1.14.0",
     "caaph_version": "v0.6.2",
-    "cert_manager_version": "v1.20.2",
+    "cert_manager_version": "v1.20.3",
     "kubernetes_version": "v1.35.4",
     "aks_kubernetes_version": "v1.30.2",
     "flatcar_version": "3374.2.1",
@@ -173,7 +173,7 @@ def validate_auth():
 
 tilt_helper_dockerfile_header = """
 # Tilt image
-FROM golang:1.25 AS tilt-helper
+FROM golang:1.26.7 AS tilt-helper
 # Support live reloading with Tilt
 RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/restart.sh  && \
     wget --output-document /start.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/start.sh && \
@@ -266,7 +266,7 @@ def capz():
     # Forge the build command
     ldflags = "-extldflags \"-static\" " + str(local("hack/version.sh")).rstrip("\n")
     build_env = "CGO_ENABLED=0 GOOS=linux GOARCH={arch}".format(arch = os_arch)
-    build_cmd = "{build_env} go build -ldflags '{ldflags}' -o .tiltbuild/manager".format(
+    build_cmd = "{build_env} go build -tags=fieldsv1string -ldflags '{ldflags}' -o .tiltbuild/manager".format(
         build_env = build_env,
         ldflags = ldflags,
     )

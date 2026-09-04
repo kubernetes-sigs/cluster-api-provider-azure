@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -731,7 +732,7 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating an AKS cluster for node pool tests [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "pool")
-			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			kubernetesVersion, err := GetAKSKubernetesVersionWithCommunityGalleryImage(ctx, e2eConfig, AKSKubernetesVersion, azure.DefaultLinuxGalleryImageName)
 			Expect(err).NotTo(HaveOccurred())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(

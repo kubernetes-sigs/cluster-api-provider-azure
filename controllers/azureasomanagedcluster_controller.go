@@ -271,7 +271,9 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	}
 	asoManagedCluster.Spec.ControlPlaneEndpoint = asoManagedControlPlane.Status.ControlPlaneEndpoint
 
-	asoManagedCluster.Status.Initialization.Provisioned = ptr.To(!asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero())
+	if !asoManagedCluster.Spec.ControlPlaneEndpoint.IsZero() {
+		asoManagedCluster.Status.Initialization.Provisioned = ptr.To(true)
+	}
 
 	return ctrl.Result{}, nil
 }

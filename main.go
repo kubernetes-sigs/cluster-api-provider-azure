@@ -46,7 +46,6 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/flags"
-	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +53,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	infrav1alpha1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha1"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -81,6 +81,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1beta1.AddToScheme(scheme)
+	_ = infrav1alpha1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
 	_ = infrav1expbeta1.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
@@ -375,9 +376,6 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	// Initialize event recorder.
-	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	// Setup the context that's going to be used in controllers and for the manager.
 	ctx := ctrl.SetupSignalHandler()

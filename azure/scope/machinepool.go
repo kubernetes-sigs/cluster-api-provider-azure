@@ -329,6 +329,28 @@ func (m MachinePoolScope) DesiredReplicas() int32 {
 	return ptr.Deref[int32](m.MachinePool.Spec.Replicas, 0)
 }
 
+// RolloutInProgress reports whether the pool is over-provisioned because the VMSS was surged to replace
+// instances after a model change, rather than because the replica count was explicitly lowered.
+//
+// The scaleset service surges VMSS capacity above the desired replica count when the model changes, and
+// leaves capacity alone on a scale-down (excess instances are removed by deleting AzureMachinePoolMachines
+// instead). Both therefore present as "more instances than desired", so the desired count is compared
+// against the count last reconciled onto the VMSS: only an explicit scale-down lowers it.
+func (m *MachinePoolScope) RolloutInProgress() bool {
+	if m.vmssState == nil {
+		return false
+	}
+
+	// The replica count dropped since the last successful reconcile, so the user is scaling down and the
+	// excess machines are pre-existing instances rather than replacements.
+	if last := m.AzureMachinePool.Status.LastReconciledReplicas; last != nil && m.DesiredReplicas() < *last {
+		return false
+	}
+
+	// Otherwise instances still running an older model are ones the VMSS is in the middle of replacing.
+	return !m.vmssState.HasLatestModelAppliedToAll()
+}
+
 // MaxSurge returns the number of machines to surge, or 0 if the deployment strategy does not support surge.
 func (m MachinePoolScope) MaxSurge() (int, error) {
 	if surger, ok := m.getDeploymentStrategy().(machinepool.Surger); ok {
@@ -357,7 +379,7 @@ func (m *MachinePoolScope) updateReplicasAndProviderIDs(ctx context.Context) err
 	var readyReplicas int32
 	providerIDs := make([]string, len(machines))
 	for i, machine := range machines {
-		if ptr.Deref(machine.Status.Initialization.Provisioned, false) {
+		if conditions.IsTrue(&machine, string(clusterv1.MachineNodeHealthyCondition)) {
 			readyReplicas++
 		}
 		providerIDs[i] = machine.Spec.ProviderID
@@ -490,8 +512,18 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		return nil
 	}
 
+	// Refresh LatestModelApplied from live VMSS state to avoid stale status causing incorrect deletion decisions.
+	// The AMPM reconciler may not run between an upgrade spec change and this reconciliation, leaving the
+	// LatestModelApplied status stale (e.g. true for old-model instances that have not yet been re-reconciled).
+	for key, ampm := range existingMachinesByProviderID {
+		if vm, ok := azureMachinesByProviderID[key]; ok {
+			ampm.Status.LatestModelApplied = m.vmssState.HasLatestModelApplied(vm)
+			existingMachinesByProviderID[key] = ampm
+		}
+	}
+
 	// Select Machines to delete to lower the replica count
-	toDelete, err := deleteSelector.SelectMachinesToDelete(ctx, m.DesiredReplicas(), existingMachinesByProviderID)
+	toDelete, err := deleteSelector.SelectMachinesToDelete(ctx, m.DesiredReplicas(), existingMachinesByProviderID, m.RolloutInProgress())
 	if err != nil {
 		return errors.Wrap(err, "failed selecting AzureMachinePoolMachine(s) to delete")
 	}
@@ -503,6 +535,12 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		if err := m.DeleteMachine(ctx, ampm); err != nil {
 			return errors.Wrap(err, "failed deleting AzureMachinePoolMachine to reduce replica count")
 		}
+	}
+
+	// Record the reconciled replica count only once the pool has converged, so that a scale-down still in
+	// progress keeps comparing against the higher pre-scale-down value on subsequent reconciles.
+	if len(existingMachinesByProviderID)-len(toDelete) <= int(m.DesiredReplicas()) {
+		m.AzureMachinePool.Status.LastReconciledReplicas = ptr.To(m.DesiredReplicas())
 	}
 
 	log.V(4).Info("done reconciling AzureMachinePoolMachine(s)")
@@ -627,6 +665,10 @@ func (m *MachinePoolScope) setProvisioningStateAndConditions(v infrav1.Provision
 		m.SetNotReady()
 	case v == infrav1.Failed:
 		conditions.Set(m.AzureMachinePool, metav1.Condition{Type: string(infrav1.ScaleSetRunningCondition), Status: metav1.ConditionFalse, Reason: infrav1.ScaleSetProvisionFailedReason})
+		m.SetNotReady()
+	case v == infrav1.Canceled || v == infrav1.Deleted:
+		conditions.Set(m.AzureMachinePool, metav1.Condition{Type: string(infrav1.ScaleSetRunningCondition), Status: metav1.ConditionFalse, Reason: string(v)})
+		m.SetNotReady()
 	default:
 		conditions.Set(m.AzureMachinePool, metav1.Condition{Type: string(infrav1.ScaleSetRunningCondition), Status: metav1.ConditionFalse, Reason: string(v)})
 	}

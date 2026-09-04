@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta2"
@@ -44,6 +45,37 @@ import (
 var (
 	clusterName = "my-cluster"
 )
+
+var _ = Describe("MachinePoolMachineHasStateOrVersionChange", func() {
+	It("detects live readiness changes", func() {
+		oldMachine := &infrav1exp.AzureMachinePoolMachine{
+			Status: infrav1exp.AzureMachinePoolMachineStatus{
+				Initialization: infrav1exp.AzureMachinePoolMachineInitializationStatus{Provisioned: ptr.To(true)},
+				Conditions: []metav1.Condition{
+					{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionTrue},
+				},
+			},
+		}
+		newMachine := oldMachine.DeepCopy()
+		newMachine.Status.Conditions[0].Status = metav1.ConditionFalse
+
+		predicate := MachinePoolMachineHasStateOrVersionChange(logr.Discard())
+		Expect(predicate.Update(event.UpdateEvent{ObjectOld: oldMachine, ObjectNew: newMachine})).To(BeTrue())
+	})
+
+	It("ignores initialization-only changes", func() {
+		oldMachine := &infrav1exp.AzureMachinePoolMachine{
+			Status: infrav1exp.AzureMachinePoolMachineStatus{
+				Initialization: infrav1exp.AzureMachinePoolMachineInitializationStatus{Provisioned: ptr.To(false)},
+			},
+		}
+		newMachine := oldMachine.DeepCopy()
+		newMachine.Status.Initialization.Provisioned = ptr.To(true)
+
+		predicate := MachinePoolMachineHasStateOrVersionChange(logr.Discard())
+		Expect(predicate.Update(event.UpdateEvent{ObjectOld: oldMachine, ObjectNew: newMachine})).To(BeFalse())
+	})
+})
 
 var _ = Describe("BootstrapConfigToInfrastructureMapFunc", func() {
 	It("should map bootstrap config to machine pool", func() {

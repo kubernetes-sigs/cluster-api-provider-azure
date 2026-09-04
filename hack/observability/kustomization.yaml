@@ -6,3 +6,17 @@ resources:
 
 patches:
 - path: opentelemetry/controller-manager-patch.yaml
+# Tilt hot-reload requires a writeable filesystem
+- patch: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: azureserviceoperator-controller-manager
+      namespace: capz-system
+    spec:
+      template:
+        spec:
+          initContainers:
+            - name: migrate-aso-crd-stored-versions
+              securityContext:
+                readOnlyRootFilesystem: false

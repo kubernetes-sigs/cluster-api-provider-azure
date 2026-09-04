@@ -267,6 +267,13 @@ type (
 		// +optional
 		Replicas int32 `json:"replicas"`
 
+		// LastReconciledReplicas is the desired replica count that was most recently reconciled onto the
+		// VMSS. It is used to tell an explicit scale-down (the desired count dropped below this value)
+		// apart from a rollout, where the desired count is unchanged and the extra instances come from
+		// surge capacity. Those two states are otherwise indistinguishable from the instance list alone.
+		// +optional
+		LastReconciledReplicas *int32 `json:"lastReconciledReplicas,omitempty"`
+
 		// Instances is the VM instance status for each VM in the VMSS
 		// +optional
 		Instances []*AzureMachinePoolInstanceStatus `json:"instances,omitempty"`
@@ -299,6 +306,7 @@ type (
 	}
 
 	// AzureMachinePoolInitializationStatus provides observations of the AzureMachinePool initialization process.
+	// +kubebuilder:validation:MinProperties=1
 	AzureMachinePoolInitializationStatus struct {
 		// provisioned is true when the infrastructure provider reports that the AzureMachinePool's infrastructure is fully provisioned.
 		// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate provisioning.

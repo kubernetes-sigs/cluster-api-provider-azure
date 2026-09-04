@@ -1,0 +1,42 @@
+# Grant the CAPI Kubeadm bootstrap controller read access to CAPZ managed
+# control planes. As of CAPI v1.14, the Kubeadm bootstrap controller reads the
+# cluster's ControlPlaneRef to resolve the control plane Kubernetes version for
+# the controlPlane.version file template variable. For clusters whose control
+# plane is an AzureManagedControlPlane or AzureASOManagedControlPlane (AKS),
+# that object lives in the infrastructure.cluster.x-k8s.io group, which the
+# upstream Kubeadm bootstrap role does not cover.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeadm-bootstrap-managed-control-plane-reader-role
+rules:
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - azuremanagedcontrolplanes
+  - azureasomanagedcontrolplanes
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeadm-bootstrap-managed-control-plane-reader-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeadm-bootstrap-managed-control-plane-reader-role
+# The Group subject grants access for the default CABPK namespace. The
+# ServiceAccount subject grants access when clusterctl init uses
+# --target-namespace: clusterctl rewrites namespaced subjects to the shared
+# target namespace. In a default installation that ServiceAccount does not
+# exist in capz-system, so the Group subject remains necessary.
+subjects:
+- kind: Group
+  apiGroup: rbac.authorization.k8s.io
+  name: system:serviceaccounts:capi-kubeadm-bootstrap-system
+- kind: ServiceAccount
+  name: capi-kubeadm-bootstrap-manager
+  namespace: system

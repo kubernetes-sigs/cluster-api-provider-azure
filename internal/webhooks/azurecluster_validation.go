@@ -21,6 +21,7 @@ import (
 	"net"
 	"reflect"
 	"regexp"
+	"slices"
 
 	valid "github.com/asaskevich/govalidator/v11"
 	corev1 "k8s.io/api/core/v1"
@@ -48,6 +49,8 @@ const (
 	loadBalancerRegex = `^[-\w\._]+$`
 	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration.
 	MaxLoadBalancerOutboundIPs = 16
+	// MaxLoadBalancerPrivateLinks is the maximum number of private links attached to a Standard Loadbalancer.
+	MaxLoadBalancerPrivateLinks = 8
 	// MinLBIdleTimeoutInMinutes is the minimum number of minutes for the LB idle timeout.
 	MinLBIdleTimeoutInMinutes = 4
 	// MaxLBIdleTimeoutInMinutes is the maximum number of minutes for the LB idle timeout.
@@ -62,6 +65,7 @@ const (
 	serviceEndpointLocationRegexPattern = `^([a-z]{1,42}\d{0,5}|[*])$`
 	// described in https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules.
 	privateEndpointRegex = `^[-\w\._]+$`
+	privateLinkRegex     = `^[-\w\._]+$`
 	// resource ID Pattern.
 	resourceIDPattern = `(?i)subscriptions/(.+)/resourceGroups/(.+)/providers/(.+?)/(.+?)/(.+)`
 )
@@ -183,7 +187,7 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec infrav1.NetworkSp
 		}
 
 		cidrBlocks = controlPlaneSubnet.CIDRBlocks
-		allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
+		allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, networkSpec.Subnets, cidrBlocks, fldPath.Child("apiServerLB"))...)
 	}
 
 	var needOutboundLB bool
@@ -392,7 +396,38 @@ func validateSecurityRule(rule infrav1.SecurityRule, fldPath *field.Path) (allEr
 	return allErrs
 }
 
-func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
+func validateAPIServerLBPrivateIPUnchanged(lb, old *infrav1.LoadBalancerSpec, fldPath *field.Path) *field.Error {
+	if lb == nil || old == nil {
+		return nil
+	}
+	var oldPrivateIP string
+	for i := range old.FrontendIPs {
+		if old.FrontendIPs[i].PrivateIPAddress != "" {
+			oldPrivateIP = old.FrontendIPs[i].PrivateIPAddress
+			break
+		}
+	}
+	var newPrivateIP string
+	var newIdx int
+	for i := range lb.FrontendIPs {
+		if lb.FrontendIPs[i].PrivateIPAddress != "" {
+			newPrivateIP = lb.FrontendIPs[i].PrivateIPAddress
+			newIdx = i
+			break
+		}
+	}
+	if oldPrivateIP == "" || newPrivateIP == "" {
+		return nil
+	}
+	if oldPrivateIP != newPrivateIP {
+		return field.Forbidden(
+			fldPath.Child("frontendIPConfigs").Index(newIdx).Child("privateIP"),
+			"API Server load balancer private IP should not be modified after AzureCluster creation.")
+	}
+	return nil
+}
+
+func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancerSpec, subnets infrav1.Subnets, cidrs []string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	lbClassSpec := lb.LoadBalancerClassSpec
@@ -434,12 +469,13 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 			if err := validateInternalLBIPAddress(privateIP, cidrs, fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
 				allErrs = append(allErrs, err)
 			}
-		} else {
-			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
-			if privateIPCount > 0 {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					"Public Load Balancers cannot have a Private IP"))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
+		} else if privateIPCount > 0 {
+			// API Server LB should not have a Private IP if APIServerILB feature is disabled.
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+				"Public Load Balancers cannot have a Private IP"))
 		}
 	}
 
@@ -458,11 +494,15 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 				allErrs = append(allErrs, err)
 			}
 
-			if old != nil && len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
+			if err := validateAPIServerLBPrivateIPUnchanged(lb, old, fldPath); err != nil {
+				allErrs = append(allErrs, err)
 			}
 		}
 	}
+
+	// Validate private links to load balancer
+	allErrs = append(allErrs, validateLBPrivateLinks(lb, old, subnets, fldPath)...)
+
 	return allErrs
 }
 
@@ -513,6 +553,12 @@ func validateNodeOutboundLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalan
 			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
 	}
 
+	if len(lb.PrivateLinks) > 0 {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("privateLinks"),
+			"privateLinks are only supported on the API server load balancer",
+		))
+	}
+
 	return allErrs
 }
 
@@ -531,6 +577,12 @@ func validateControlPlaneOutboundLB(lb *infrav1.LoadBalancerSpec, apiserverLB *i
 		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
 				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+		}
+
+		if len(lb.PrivateLinks) > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("privateLinks"),
+				"privateLinks are only supported on the API server load balancer",
+			))
 		}
 	}
 
@@ -749,8 +801,182 @@ func validatePrivateEndpoints(privateEndpointSpecs []infrav1.PrivateEndpointSpec
 		}
 
 		for _, privateIP := range pe.PrivateIPAddresses {
-			if err := validatePrivateEndpointIPAddress(privateIP, subnetCIDRs, fldPath.Index(i).Child("privateIPAddresses")); err != nil {
+			if err := validateIPAddress(privateIP, subnetCIDRs, fldPath.Index(i).Child("privateIPAddresses"), pe.Name); err != nil {
 				allErrs = append(allErrs, err)
+			}
+		}
+	}
+
+	return allErrs
+}
+
+func validateLBPrivateLinks(lb *infrav1.LoadBalancerSpec, oldLb *infrav1.LoadBalancerSpec, subnets infrav1.Subnets, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if lb.Type != infrav1.Internal && len(lb.PrivateLinks) > 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("privateLinks"), lb.PrivateLinks, "private links can be added only to an internal load balancer"))
+		return allErrs
+	}
+
+	if len(lb.PrivateLinks) > MaxLoadBalancerPrivateLinks {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("privateLinks"), lb.PrivateLinks, "maximum number of private links per load balancer is 8 (Azure limit)"))
+		return allErrs
+	}
+
+	oldPrivateLinksMap := make(map[string]infrav1.PrivateLink)
+	if oldLb != nil {
+		for _, oldPrivateLink := range oldLb.PrivateLinks {
+			oldPrivateLinksMap[oldPrivateLink.Name] = oldPrivateLink
+		}
+	}
+
+	privateLinkNames := make(map[string]struct{})
+	for i, pl := range lb.PrivateLinks {
+		if err := validatePrivateLinkName(pl.Name, fldPath.Child("privateLinks").Index(i).Child("name")); err != nil {
+			allErrs = append(allErrs, err)
+		}
+		if _, ok := privateLinkNames[pl.Name]; !ok {
+			privateLinkNames[pl.Name] = struct{}{}
+		} else {
+			allErrs = append(allErrs,
+				field.Duplicate(
+					fldPath.Child("privateLinks").Index(i).Child("name"),
+					pl.Name,
+				),
+			)
+		}
+
+		// validate LB front end names that the private link is using:
+		// - LB front end names cannot be empty
+		// - LB front end names must be those that are specified in LoadBalancerSpec.FrontendIPs
+		// - private link cannot have duplicate entries for LB front end names
+		if len(pl.LBFrontendIPConfigNames) == 0 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("privateLinks").Index(i).Child("lbFrontendIPConfigNames"), pl.LBFrontendIPConfigNames, "LBFrontendIPConfigNames cannot be empty"))
+		} else {
+			lbFrontendIPNamesErrorAdded := map[string]bool{}
+			lbFrontendIPNamesCount := map[string]int{}
+			for j, lbFrontendIPName := range pl.LBFrontendIPConfigNames {
+				lbFrontendIPNameValid := false
+				for _, apiLbFrontendIP := range lb.FrontendIPs {
+					if lbFrontendIPName == apiLbFrontendIP.Name {
+						lbFrontendIPNameValid = true
+						break
+					}
+				}
+				if !lbFrontendIPNameValid {
+					if _, errorAlreadyAdded := lbFrontendIPNamesErrorAdded[lbFrontendIPName]; !errorAlreadyAdded {
+						allErrs = append(
+							allErrs,
+							field.Invalid(
+								fldPath.Child("privateLinks").Index(i).Child("lbFrontendIPConfigNames").Index(j),
+								lbFrontendIPName,
+								"LBFrontendIPConfigName must exist in the API server LoadBalancerSpec.FrontendIPs"))
+						lbFrontendIPNamesErrorAdded[lbFrontendIPName] = true
+					}
+					break
+				}
+				lbFrontendIPNamesCount[lbFrontendIPName]++
+			}
+
+			for lbFrontendIPConfigName, count := range lbFrontendIPNamesCount {
+				if count > 1 {
+					allErrs = append(
+						allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("lbFrontendIPConfigNames"),
+							pl.LBFrontendIPConfigNames,
+							fmt.Sprintf("LBFrontendIPConfigNames cannot have duplicate entries (%s has been specified %d times)", lbFrontendIPConfigName, count)))
+				}
+			}
+		}
+
+		// validate NAT IP configurations for the private link
+		// - NAT IP configurations cannot be empty
+		// - there can be maximum 8 NAT IP configurations (Azure limit)
+		// - NAT IP configuration must use valid subnet from AzureCluster.Spec.NetworkSpec
+		switch {
+		case len(pl.NATIPConfigurations) == 0:
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations"),
+					pl.NATIPConfigurations,
+					"NATIPConfigurations cannot be empty"))
+		case len(pl.NATIPConfigurations) > 8:
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations"),
+					pl.NATIPConfigurations,
+					"maximum number of NAT IP Configurations is 8 (Azure limit)"))
+		default:
+			// validate that NAT IP configurations are correct
+			for j, natIPConfig := range pl.NATIPConfigurations {
+				if natIPConfig.Subnet == "" {
+					allErrs = append(
+						allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j),
+							pl.NATIPConfigurations[j],
+							"NATIPConfiguration must specify an existing subnet name"))
+					break
+				}
+
+				if natIPConfig.AllocationMethod != infrav1.NATIPAllocationMethodDynamic &&
+					natIPConfig.AllocationMethod != infrav1.NATIPAllocationMethodStatic {
+					allErrs = append(allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("allocationMethod"),
+							natIPConfig.AllocationMethod,
+							fmt.Sprintf("allocation method must be %q or %q", infrav1.NATIPAllocationMethodDynamic, infrav1.NATIPAllocationMethodStatic),
+						))
+				}
+
+				usesValidSubnet := false
+				for _, subnet := range subnets {
+					if natIPConfig.Subnet == subnet.Name {
+						usesValidSubnet = true
+						if natIPConfig.AllocationMethod == infrav1.NATIPAllocationMethodStatic {
+							err := validateIPAddress(
+								natIPConfig.PrivateIPAddress,
+								subnet.CIDRBlocks,
+								fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("privateIPAddress"),
+								pl.Name)
+							if err != nil {
+								allErrs = append(allErrs, err)
+							}
+						}
+					}
+				}
+				if !usesValidSubnet {
+					allErrs = append(
+						allErrs,
+						field.Invalid(
+							fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations").Index(j).Child("subnet"),
+							pl.NATIPConfigurations[j].Subnet,
+							fmt.Sprintf("NATIPConfiguration must use existing subnet (subnet %s not specified in AzureCluster resource)", natIPConfig.Subnet)))
+				}
+			}
+
+			// validate that NAT IP configurations have not changed
+			if oldPrivateLink, ok := oldPrivateLinksMap[pl.Name]; ok && !reflect.DeepEqual(pl.NATIPConfigurations, oldPrivateLink.NATIPConfigurations) {
+				allErrs = append(
+					allErrs,
+					field.Invalid(
+						fldPath.Child("privateLinks").Index(i).Child("natIPConfigurations"),
+						pl.NATIPConfigurations,
+						"NATIPConfigurations cannot be modified"))
+			}
+		}
+
+		for j, id := range pl.AutoApprovedSubscriptions {
+			if !slices.Contains(pl.AllowedSubscriptions, id) {
+				allErrs = append(
+					allErrs,
+					field.Invalid(
+						fldPath.Child("privateLinks").Index(i).Child("autoApprovedSubscriptions").Index(j),
+						pl.AutoApprovedSubscriptions[j],
+						fmt.Sprintf("%s auto approved subscription must also be specified in allowed subscriptions", pl.Name)))
 			}
 		}
 	}
@@ -786,12 +1012,12 @@ func validatePrivateEndpointPrivateLinkServiceConnection(privateLinkServiceConne
 	return nil
 }
 
-// validatePrivateEndpointIPAddress validates a Private Endpoint IP Address.
-func validatePrivateEndpointIPAddress(address string, cidrs []string, fldPath *field.Path) *field.Error {
+// validateIPAddress validates a Private Endpoint or Private Link IP Address.
+func validateIPAddress(address string, cidrs []string, fldPath *field.Path, ownerName string) *field.Error {
 	ip := net.ParseIP(address)
 	if ip == nil {
 		return field.Invalid(fldPath, address,
-			"Private Endpoint IP address isn't a valid IPv4 or IPv6 address")
+			fmt.Sprintf("%s IP address isn't a valid IPv4 or IPv6 address", ownerName))
 	}
 
 	for _, cidr := range cidrs {
@@ -802,7 +1028,20 @@ func validatePrivateEndpointIPAddress(address string, cidrs []string, fldPath *f
 	}
 
 	return field.Invalid(fldPath, address,
-		fmt.Sprintf("Private Endpoint IP address needs to be in subnet range (%s)", cidrs))
+		fmt.Sprintf("%s IP address needs to be in subnet range (%s)", ownerName, cidrs))
+}
+
+// validatePrivateLinkName validates the Name of a Private Link.
+func validatePrivateLinkName(name string, fldPath *field.Path) *field.Error {
+	if name == "" {
+		return field.Invalid(fldPath, name, "name of private link cannot be empty")
+	}
+
+	if success, _ := regexp.MatchString(privateLinkRegex, name); !success {
+		return field.Invalid(fldPath, name,
+			fmt.Sprintf("name of private link doesn't match regex %s", privateLinkRegex))
+	}
+	return nil
 }
 
 // validateAzureClusterSubnetUpdate validates a ClusterSpec.NetworkSpec.Subnets for immutability.

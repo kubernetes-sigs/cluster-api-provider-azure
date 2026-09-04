@@ -494,6 +494,11 @@ func (in *AzureMachinePoolStatus) DeepCopyInto(out *AzureMachinePoolStatus) {
 		}
 	}
 	in.Initialization.DeepCopyInto(&out.Initialization)
+	if in.LastReconciledReplicas != nil {
+		in, out := &in.LastReconciledReplicas, &out.LastReconciledReplicas
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Instances != nil {
 		in, out := &in.Instances, &out.Instances
 		*out = make([]*AzureMachinePoolInstanceStatus, len(*in))

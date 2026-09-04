@@ -40,8 +40,16 @@ var (
 	fakeLBName    = "my-lb-1"
 	fakeGroupName = "my-rg"
 
-	noExistingRules   = []armnetwork.InboundNatRule{}
-	fakeExistingRules = []armnetwork.InboundNatRule{
+	noExistingRules = []armnetwork.InboundNatRule{}
+)
+
+// Each subtest builds its fixtures with the constructors below instead of
+// sharing package-level values: Service.Reconcile sets SSHFrontendPort on the
+// specs it is given, and azcore.ResponseError.Error() replaces
+// RawResponse.Body, so sharing instances races under t.Parallel().
+
+func newFakeExistingRules() []armnetwork.InboundNatRule {
+	return []armnetwork.InboundNatRule{
 		{
 			Name: ptr.To("other-machine-nat-rule"),
 			ID:   ptr.To("some-natrules-id"),
@@ -57,27 +65,34 @@ var (
 			},
 		},
 	}
+}
 
-	fakeNatSpec = InboundNatSpec{
+func newFakeNatSpec() InboundNatSpec {
+	return InboundNatSpec{
 		Name:                      "my-machine-1",
 		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
 		FrontendIPConfigurationID: ptr.To("frontend-ip-config-id-1"),
 	}
-	fakeNatSpec2 = InboundNatSpec{
+}
+
+func newFakeNatSpec2() InboundNatSpec {
+	return InboundNatSpec{
 		Name:                      "my-machine-2",
 		LoadBalancerName:          "my-lb-1",
 		ResourceGroup:             fakeGroupName,
 		FrontendIPConfigurationID: ptr.To("frontend-ip-config-id-2"),
 	}
+}
 
-	internalError = &azcore.ResponseError{
+func newInternalError() *azcore.ResponseError {
+	return &azcore.ResponseError{
 		RawResponse: &http.Response{
 			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
 			StatusCode: http.StatusInternalServerError,
 		},
 	}
-)
+}
 
 func getFakeNatSpecWithoutPort(spec InboundNatSpec) *InboundNatSpec {
 	newSpec := spec
@@ -116,6 +131,8 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
+				fakeNatSpec2 := newFakeNatSpec2()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return(fakeLBName)
@@ -134,10 +151,11 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
-				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
+				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(newFakeExistingRules(), nil)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{getFakeNatSpecWithoutPort(fakeNatSpec)})
 				gomock.InOrder(
 					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, nil),
@@ -161,6 +179,8 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
+				internalError := newInternalError()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
@@ -175,10 +195,12 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
+				internalError := newInternalError()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
 				s.APIServerLBName().AnyTimes().Return("my-lb")
-				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(fakeExistingRules, nil)
+				m.List(gomockinternal.AContext(), fakeGroupName, "my-lb").Return(newFakeExistingRules(), nil)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				gomock.InOrder(
 					r.CreateOrUpdateResource(gomockinternal.AContext(), getFakeNatSpecWithPort(fakeNatSpec, 2202), serviceName).Return(nil, internalError),
@@ -191,7 +213,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			// TODO: investigate why t.Parallel() trips the race detector here.
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
@@ -238,6 +260,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)
@@ -253,6 +276,8 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
 				m *mock_inboundnatrules.MockclientMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+				fakeNatSpec := newFakeNatSpec()
+				internalError := newInternalError()
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.InboundNatSpecs().Return([]azure.ResourceSpecGetter{&fakeNatSpec})
 				s.ResourceGroup().AnyTimes().Return(fakeGroupName)

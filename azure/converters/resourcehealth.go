@@ -17,8 +17,6 @@ limitations under the License.
 package converters
 
 import (
-	"strings"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcehealth/armresourcehealth"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -32,30 +30,13 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionFalse, Reason: "Unknown"}
 	}
 
-	state := availStatus.Properties.AvailabilityState
+	state := ptr.Deref(availStatus.Properties.AvailabilityState, armresourcehealth.AvailabilityStateValuesUnknown)
 
-	if ptr.Deref(state, "") == armresourcehealth.AvailabilityStateValuesAvailable {
+	if state == armresourcehealth.AvailabilityStateValuesAvailable {
 		return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionTrue, Reason: string(infrav1.AzureResourceAvailableCondition)}
 	}
-
-	var reason strings.Builder
-	if availStatus.Properties.ReasonType != nil {
-		// CAPI specifies Reason should be CamelCase, though the Azure API
-		// response may include spaces (e.g. "Customer Initiated")
-		words := strings.SplitSeq(*availStatus.Properties.ReasonType, " ")
-		for word := range words {
-			if word != "" {
-				reason.WriteString(strings.ToTitle(word[:1]))
-			}
-			if len(word) > 1 {
-				reason.WriteString(word[1:])
-			}
-		}
-	}
-
-	reasonStr := reason.String()
-	if reasonStr == "" {
-		reasonStr = "Unknown"
+	if state == "" {
+		state = armresourcehealth.AvailabilityStateValuesUnknown
 	}
 
 	var message string
@@ -63,5 +44,5 @@ func SDKAvailabilityStatusToCondition(availStatus armresourcehealth.Availability
 		message = *availStatus.Properties.Summary
 	}
 
-	return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionFalse, Reason: reasonStr, Message: message}
+	return &metav1.Condition{Type: string(infrav1.AzureResourceAvailableCondition), Status: metav1.ConditionFalse, Reason: string(state), Message: message}
 }

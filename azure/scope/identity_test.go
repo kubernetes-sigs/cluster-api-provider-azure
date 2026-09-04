@@ -440,7 +440,7 @@ func TestGetTokenCredential(t *testing.T) {
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
 				ctx := context.Background()
-				credsPath := "../../test/setup/credentials.json" //nolint:gosec
+				credsPath := "../../test/setup/credentials.json"
 				clientOptions := azcore.ClientOptions{
 					Cloud: cloud.Configuration{
 						ActiveDirectoryAuthorityHost: "https://login.microsoftonline.com/",

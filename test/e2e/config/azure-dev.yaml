@@ -3,17 +3,23 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.9
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.10
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.3
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.4
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.9
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.14.0
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.3
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.10
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.9
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.4
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.3
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.14.0
+    loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.10
+    loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.4
+    loadBehavior: tryLoad
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.14.0
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.2
     loadBehavior: tryLoad
@@ -31,8 +37,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.9
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/core-components.yaml
+    - name: v1.12.10
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -42,8 +48,19 @@ providers:
         new: "imagePullPolicy: IfNotPresent"
       - old: "- --leader-elect"
         new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
-    - name: v1.13.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/core-components.yaml
+    - name: v1.13.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/core-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "- --leader-elect"
+        new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
+    - name: v1.14.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -66,8 +83,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.9
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/bootstrap-components.yaml
+    - name: v1.12.10
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -75,8 +92,17 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/bootstrap-components.yaml
+    - name: v1.13.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/bootstrap-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v1.14.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -97,8 +123,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.9
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.9/control-plane-components.yaml
+    - name: v1.12.10
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -106,8 +132,17 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.3/control-plane-components.yaml
+    - name: v1.13.4
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/control-plane-components.yaml
+      type: url
+      contract: v1beta2
+      files:
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v1.14.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -119,22 +154,7 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v1.24.2 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
-      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.24.2/infrastructure-components.yaml
-      type: url
-      contract: v1beta1
-      files:
-      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.24.2/cluster-template-prow.yaml"
-        targetName: "cluster-template.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.24.2/cluster-template-prow-machine-and-machine-pool.yaml"
-        targetName: "cluster-template-machine-and-machine-pool.yaml"
-      - sourcePath: "../data/infrastructure-azure/v1.24.2/cluster-template-aks.yaml"
-        targetName: "cluster-template-aks.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
-    - name: v1.25.1 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
+    - name: v1.25.1 # latest patch of earliest minor in supported v1beta1 releases; this is used for v1beta1 old --> v1beta1 latest clusterctl upgrades test only.
       value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.25.1/infrastructure-components.yaml
       type: url
       contract: v1beta1
@@ -145,6 +165,21 @@ providers:
       - sourcePath: "../data/infrastructure-azure/v1.25.1/cluster-template-prow-machine-and-machine-pool.yaml"
         targetName: "cluster-template-machine-and-machine-pool.yaml"
       - sourcePath: "../data/infrastructure-azure/v1.25.1/cluster-template-aks.yaml"
+        targetName: "cluster-template-aks.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+    - name: v1.26.0 # latest patch of latest minor in supported v1beta1 releases; this is used for v1beta1 latest --> v1beta1 current clusterctl upgrades test only.
+      value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.26.0/infrastructure-components.yaml
+      type: url
+      contract: v1beta1
+      files:
+      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.26.0/cluster-template-prow.yaml"
+        targetName: "cluster-template.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.26.0/cluster-template-prow-machine-and-machine-pool.yaml"
+        targetName: "cluster-template-machine-and-machine-pool.yaml"
+      - sourcePath: "../data/infrastructure-azure/v1.26.0/cluster-template-aks.yaml"
         targetName: "cluster-template-aks.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
@@ -296,10 +331,10 @@ variables:
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
-  OLD_CAPI_UPGRADE_VERSION: "v1.12.9"
-  LATEST_CAPI_UPGRADE_VERSION: "v1.13.3"
-  OLD_PROVIDER_UPGRADE_VERSION: "v1.24.2"
-  LATEST_PROVIDER_UPGRADE_VERSION: "v1.25.1"
+  OLD_CAPI_UPGRADE_VERSION: "v1.12.10"
+  LATEST_CAPI_UPGRADE_VERSION: "v1.13.4"
+  OLD_PROVIDER_UPGRADE_VERSION: "v1.25.1"
+  LATEST_PROVIDER_UPGRADE_VERSION: "v1.26.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
   LATEST_CAAPH_UPGRADE_VERSION: "v0.6.2"
   CI_RG: "${CI_RG:-capz-ci}"

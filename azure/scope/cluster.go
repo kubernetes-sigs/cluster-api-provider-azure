@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -256,24 +257,25 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 	if s.ControlPlaneEnabled() {
 		frontendLB := &loadbalancers.LBSpec{
 			// API Server LB
-			Name:                 s.APIServerLB().Name,
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 s.APIServerLB().Type,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRole,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name,
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
-			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
+			Name:                  s.APIServerLB().Name,
+			ResourceGroup:         s.ResourceGroup(),
+			SubscriptionID:        s.SubscriptionID(),
+			ClusterName:           s.ClusterName(),
+			Location:              s.Location(),
+			ExtendedLocation:      s.ExtendedLocation(),
+			VNetName:              s.Vnet().Name,
+			VNetResourceGroup:     s.Vnet().ResourceGroup,
+			SubnetName:            s.ControlPlaneSubnet().Name,
+			APIServerPort:         s.APIServerPort(),
+			APIServerFrontendPort: s.APIServerFrontendPort(),
+			Type:                  s.APIServerLB().Type,
+			SKU:                   s.APIServerLB().SKU,
+			Role:                  infrav1.APIServerRole,
+			BackendPoolName:       s.APIServerLB().BackendPool.Name,
+			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:        s.AdditionalTags(),
+			AdditionalPorts:       s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:     s.APIServerLB().AvailabilityZones,
 		}
 
 		if s.APIServerLB().FrontendIPs != nil {
@@ -291,24 +293,25 @@ func (s *ClusterScope) LBSpecs() []azure.ResourceSpecGetter {
 
 	if s.APIServerLB().Type != infrav1.Internal && feature.Gates.Enabled(feature.APIServerILB) {
 		internalLB := &loadbalancers.LBSpec{
-			Name:                 s.APIServerLB().Name + "-internal",
-			ResourceGroup:        s.ResourceGroup(),
-			SubscriptionID:       s.SubscriptionID(),
-			ClusterName:          s.ClusterName(),
-			Location:             s.Location(),
-			ExtendedLocation:     s.ExtendedLocation(),
-			VNetName:             s.Vnet().Name,
-			VNetResourceGroup:    s.Vnet().ResourceGroup,
-			SubnetName:           s.ControlPlaneSubnet().Name,
-			APIServerPort:        s.APIServerPort(),
-			Type:                 infrav1.Internal,
-			SKU:                  s.APIServerLB().SKU,
-			Role:                 infrav1.APIServerRoleInternal,
-			BackendPoolName:      s.APIServerLB().BackendPool.Name + "-internal",
-			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
-			AdditionalTags:       s.AdditionalTags(),
-			AdditionalPorts:      s.AdditionalAPIServerLBPorts(),
-			AvailabilityZones:    s.APIServerLB().AvailabilityZones,
+			Name:                  s.APIServerLB().Name + "-internal",
+			ResourceGroup:         s.ResourceGroup(),
+			SubscriptionID:        s.SubscriptionID(),
+			ClusterName:           s.ClusterName(),
+			Location:              s.Location(),
+			ExtendedLocation:      s.ExtendedLocation(),
+			VNetName:              s.Vnet().Name,
+			VNetResourceGroup:     s.Vnet().ResourceGroup,
+			SubnetName:            s.ControlPlaneSubnet().Name,
+			APIServerPort:         s.APIServerPort(),
+			APIServerFrontendPort: s.APIServerFrontendPort(),
+			Type:                  infrav1.Internal,
+			SKU:                   s.APIServerLB().SKU,
+			Role:                  infrav1.APIServerRoleInternal,
+			BackendPoolName:       s.APIServerLB().BackendPool.Name + "-internal",
+			IdleTimeoutInMinutes:  s.APIServerLB().IdleTimeoutInMinutes,
+			AdditionalTags:        s.AdditionalTags(),
+			AdditionalPorts:       s.AdditionalAPIServerLBPorts(),
+			AvailabilityZones:     s.APIServerLB().AvailabilityZones,
 		}
 
 		privateIPFound := false
@@ -467,8 +470,16 @@ func (s *ClusterScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1
 		numberOfSubnets++
 	}
 
-	subnetSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet], 0, numberOfSubnets)
+	ipConfigSubnetNames := make(map[string]struct{})
+	if apiServerLB := s.AzureCluster.Spec.NetworkSpec.APIServerLB; apiServerLB != nil {
+		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {
+			for _, ipConfig := range privateLink.NATIPConfigurations {
+				ipConfigSubnetNames[ipConfig.Subnet] = struct{}{}
+			}
+		}
+	}
 
+	subnetSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20201101.VirtualNetworksSubnet], 0, numberOfSubnets)
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		subnetSpec := &subnets.SubnetSpec{
 			Name:              subnet.Name,
@@ -483,6 +494,11 @@ func (s *ClusterScope) SubnetSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1
 			NatGatewayName:    subnet.NatGateway.Name,
 			ServiceEndpoints:  subnet.ServiceEndpoints,
 		}
+		// Check if subnet is used for the private link NAT IP
+		if _, ok := ipConfigSubnetNames[subnet.Name]; ok {
+			subnetSpec.UsedForPrivateLinkNATIP = true
+		}
+
 		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
 
@@ -977,6 +993,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 		clusterv1.ConditionType(infrav1.PrivateDNSLinkReadyCondition),
 		clusterv1.ConditionType(infrav1.PrivateDNSRecordReadyCondition),
 		clusterv1.ConditionType(infrav1.PrivateEndpointsReadyCondition),
+		clusterv1.ConditionType(infrav1.PrivateLinksReadyCondition),
 	}
 
 	return s.patchHelper.Patch(
@@ -1000,6 +1017,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 			string(infrav1.PrivateDNSLinkReadyCondition),
 			string(infrav1.PrivateDNSRecordReadyCondition),
 			string(infrav1.PrivateEndpointsReadyCondition),
+			string(infrav1.PrivateLinksReadyCondition),
 		}})
 }
 
@@ -1017,12 +1035,20 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 	return tags
 }
 
-// APIServerPort returns the APIServerPort to use when creating the load balancer.
+// APIServerPort returns the port the API server binds to.
 func (s *ClusterScope) APIServerPort() int32 {
 	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
 		return s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return 6443
+}
+
+// APIServerFrontendPort returns the port used to reach the API server through the load balancer.
+func (s *ClusterScope) APIServerFrontendPort() int32 {
+	if s.AzureCluster.Spec.ControlPlaneEndpoint.Port != 0 {
+		return s.AzureCluster.Spec.ControlPlaneEndpoint.Port
+	}
+	return s.APIServerPort()
 }
 
 // APIServerHost returns the hostname used to reach the API server.
@@ -1183,6 +1209,11 @@ func (s *ClusterScope) GetLongRunningOperationState(name, service, futureType st
 	return futures.Get(s.AzureCluster, name, service, futureType)
 }
 
+// GetLongRunningOperationStates will get the specified futures on the AzureCluster status.
+func (s *ClusterScope) GetLongRunningOperationStates(service, futureType string) infrav1.Futures {
+	return futures.GetByServiceAndType(s.AzureCluster, service, futureType)
+}
+
 // DeleteLongRunningOperationState will delete the future from the AzureCluster status.
 func (s *ClusterScope) DeleteLongRunningOperationState(name, service, futureType string) {
 	futures.Delete(s.AzureCluster, name, service, futureType)
@@ -1303,7 +1334,42 @@ func (s *ClusterScope) PrivateEndpointSpecs() []azure.ASOResourceSpecGetter[*aso
 	return privateEndpointSpecs
 }
 
-func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]any {
+// PrivateLinkSpecs returns the private link specs.
+func (s *ClusterScope) PrivateLinkSpecs() []azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService] {
+	// First we get all private links to API server load balancer.
+	// Other load balancers (ControlPlaneOutboundLB and NodeOutboundLB) are outbound, so we cannot create private links
+	// for those.
+	privateLinksSpecs := make([]azure.ASOResourceSpecGetter[*asonetworkv1api20220701.PrivateLinkService], 0)
+
+	if s.AzureCluster.Spec.NetworkSpec.APIServerLB != nil {
+		for _, privateLink := range s.AzureCluster.Spec.NetworkSpec.APIServerLB.PrivateLinks {
+			privateLinkSpec := privatelinks.PrivateLinkSpec{
+				Name:                      privateLink.Name,
+				ResourceGroup:             s.ResourceGroup(),
+				SubscriptionID:            s.SubscriptionID(),
+				Location:                  s.Location(),
+				VNetResourceGroup:         s.Vnet().ResourceGroup,
+				VNet:                      s.Vnet().Name,
+				LoadBalancerName:          s.APIServerLBName(),
+				LBFrontendIPConfigNames:   privateLink.LBFrontendIPConfigNames,
+				AllowedSubscriptions:      privateLink.AllowedSubscriptions,
+				AutoApprovedSubscriptions: privateLink.AutoApprovedSubscriptions,
+				EnableProxyProtocol:       privateLink.EnableProxyProtocol,
+				ClusterName:               s.ClusterName(),
+				AdditionalTags:            s.AdditionalTags(),
+			}
+			// Set NAT IP configuration
+			for _, natIPConfiguration := range privateLink.NATIPConfigurations {
+				privateLinkSpec.NATIPConfiguration = append(privateLinkSpec.NATIPConfiguration, privatelinks.NATIPConfiguration(natIPConfiguration))
+			}
+			privateLinksSpecs = append(privateLinksSpecs, &privateLinkSpec)
+		}
+	}
+
+	return privateLinksSpecs
+}
+
+func (s *ClusterScope) getLastAppliedSecurityRules(nsgName string) map[string]interface{} {
 	// Retrieve the last applied security rules for all NSGs.
 	lastAppliedSecurityRulesAll, err := s.AnnotationJSON(azure.SecurityRuleLastAppliedAnnotation)
 	if err != nil {

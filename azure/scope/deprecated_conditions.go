@@ -34,6 +34,9 @@ func setV1Beta1ConditionsFromV1Beta2(
 	v1beta2Conditions []metav1.Condition,
 ) {
 	if len(v1beta2Conditions) == 0 {
+		if len(getter.GetV1Beta1Conditions()) > 0 {
+			setter.SetV1Beta1Conditions(nil)
+		}
 		return
 	}
 

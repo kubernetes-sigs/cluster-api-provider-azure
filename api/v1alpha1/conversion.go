@@ -32,13 +32,15 @@ func Convert_v1alpha1_AzureASOManagedClusterStatus_To_v1beta2_AzureASOManagedClu
 		provisioned := true
 		out.Initialization.Provisioned = &provisioned
 	}
-	if out.Deprecated == nil {
-		out.Deprecated = &infrav1.AzureASOManagedClusterDeprecatedStatus{}
+	if in.Ready {
+		if out.Deprecated == nil {
+			out.Deprecated = &infrav1.AzureASOManagedClusterDeprecatedStatus{}
+		}
+		if out.Deprecated.V1Beta1 == nil {
+			out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedClusterV1Beta1DeprecatedStatus{}
+		}
+		out.Deprecated.V1Beta1.Ready = true
 	}
-	if out.Deprecated.V1Beta1 == nil {
-		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedClusterV1Beta1DeprecatedStatus{}
-	}
-	out.Deprecated.V1Beta1.Ready = in.Ready
 	return nil
 }
 
@@ -66,14 +68,16 @@ func Convert_v1alpha1_AzureASOManagedControlPlaneStatus_To_v1beta2_AzureASOManag
 		initialized := true
 		out.Initialization.ControlPlaneInitialized = &initialized
 	}
-	if out.Deprecated == nil {
-		out.Deprecated = &infrav1.AzureASOManagedControlPlaneDeprecatedStatus{}
+	if in.Ready || in.Initialized {
+		if out.Deprecated == nil {
+			out.Deprecated = &infrav1.AzureASOManagedControlPlaneDeprecatedStatus{}
+		}
+		if out.Deprecated.V1Beta1 == nil {
+			out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedControlPlaneV1Beta1DeprecatedStatus{}
+		}
+		out.Deprecated.V1Beta1.Ready = in.Ready
+		out.Deprecated.V1Beta1.Initialized = in.Initialized
 	}
-	if out.Deprecated.V1Beta1 == nil {
-		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedControlPlaneV1Beta1DeprecatedStatus{}
-	}
-	out.Deprecated.V1Beta1.Ready = in.Ready
-	out.Deprecated.V1Beta1.Initialized = in.Initialized
 	return nil
 }
 
@@ -102,13 +106,15 @@ func Convert_v1alpha1_AzureASOManagedMachinePoolStatus_To_v1beta2_AzureASOManage
 		provisioned := true
 		out.Initialization.Provisioned = &provisioned
 	}
-	if out.Deprecated == nil {
-		out.Deprecated = &infrav1.AzureASOManagedMachinePoolDeprecatedStatus{}
+	if in.Ready {
+		if out.Deprecated == nil {
+			out.Deprecated = &infrav1.AzureASOManagedMachinePoolDeprecatedStatus{}
+		}
+		if out.Deprecated.V1Beta1 == nil {
+			out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedMachinePoolV1Beta1DeprecatedStatus{}
+		}
+		out.Deprecated.V1Beta1.Ready = true
 	}
-	if out.Deprecated.V1Beta1 == nil {
-		out.Deprecated.V1Beta1 = &infrav1.AzureASOManagedMachinePoolV1Beta1DeprecatedStatus{}
-	}
-	out.Deprecated.V1Beta1.Ready = in.Ready
 	return nil
 }
 

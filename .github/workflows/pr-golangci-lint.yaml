@@ -18,7 +18,7 @@ jobs:
           - ""
           - test
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v7.0.1
         with:
           persist-credentials: false
       - name: Get Go version
@@ -26,7 +26,7 @@ jobs:
         run: echo "go_version=$(make go-version)" >> $GITHUB_OUTPUT
 
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # tag=v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # tag=v7.0.0
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
 
@@ -34,7 +34,7 @@ jobs:
         if: matrix.working-directory == ''
         run: |
           make golangci-lint
-          hack/tools/bin/golangci-lint-v2.7.0 custom
+          hack/tools/bin/golangci-lint-v2.12.2 custom
 
       - name: golangci-lint (root with kube-api-linter)
         if: matrix.working-directory == ''
@@ -45,5 +45,5 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # tag=v9.3.0
         with:
           # update the version when updating golangci-lint
-          version: v2.7.0
+          version: v2.12.2
           working-directory: ${{matrix.working-directory}}

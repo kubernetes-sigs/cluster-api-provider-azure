@@ -373,6 +373,18 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 			},
 		},
 		{
+			Name: "should preserve provisioned after the node becomes not ready",
+			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1exp.AzureMachinePoolMachine) (*azure.VMSSVM, *infrav1exp.AzureMachinePoolMachine) {
+				ampm.Status.Initialization.Provisioned = ptr.To(true)
+				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(getNotReadyNode(), nil)
+				return nil, ampm
+			},
+			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
+				g.Expect(ptr.Deref(scope.AzureMachinePoolMachine.Status.Initialization.Provisioned, false)).To(BeTrue())
+				assertCondition(t, scope.AzureMachinePoolMachine, metav1.Condition{Type: string(clusterv1.MachineNodeHealthyCondition), Status: metav1.ConditionFalse, Reason: clusterv1beta1.NodeConditionsFailedReason})
+			},
+		},
+		{
 			Name: "fails fetching the node",
 			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1exp.AzureMachinePoolMachine) (*azure.VMSSVM, *infrav1exp.AzureMachinePoolMachine) {
 				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, errors.New("boom"))
@@ -458,6 +470,49 @@ func TestMachineScope_UpdateNodeStatus(t *testing.T) {
 			if c.Verify != nil {
 				c.Verify(g, s)
 			}
+		})
+	}
+}
+
+func TestMachinePoolMachineScope_IsReady(t *testing.T) {
+	tests := []struct {
+		name              string
+		nodeHealthy       metav1.ConditionStatus
+		provisioningState infrav1.ProvisioningState
+		want              bool
+	}{
+		{
+			name:              "healthy and provisioned",
+			nodeHealthy:       metav1.ConditionTrue,
+			provisioningState: infrav1.Succeeded,
+			want:              true,
+		},
+		{
+			name:              "unhealthy",
+			nodeHealthy:       metav1.ConditionFalse,
+			provisioningState: infrav1.Succeeded,
+		},
+		{
+			name:              "not provisioned",
+			nodeHealthy:       metav1.ConditionTrue,
+			provisioningState: infrav1.Creating,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scope := &MachinePoolMachineScope{
+				AzureMachinePoolMachine: &infrav1exp.AzureMachinePoolMachine{
+					Status: infrav1exp.AzureMachinePoolMachineStatus{
+						ProvisioningState: &tt.provisioningState,
+						Conditions: []metav1.Condition{
+							{Type: string(clusterv1.MachineNodeHealthyCondition), Status: tt.nodeHealthy},
+						},
+					},
+				},
+			}
+
+			NewWithT(t).Expect(scope.IsReady()).To(Equal(tt.want))
 		})
 	}
 }
