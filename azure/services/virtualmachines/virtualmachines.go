@@ -57,6 +57,7 @@ type VMScope interface {
 type Service struct {
 	Scope VMScope
 	async.Reconciler
+	client           Client
 	interfacesGetter async.Getter
 	publicIPsGetter  async.Getter
 }
@@ -77,6 +78,7 @@ func New(scope VMScope) (*Service, error) {
 	}
 	return &Service{
 		Scope:            scope,
+		client:           Client,
 		interfacesGetter: interfacesSvc,
 		publicIPsGetter:  publicIPsSvc,
 		Reconciler: async.New[armcompute.VirtualMachinesClientCreateOrUpdateResponse,
@@ -91,7 +93,7 @@ func (s *Service) Name() string {
 
 // Reconcile idempotently creates or updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.Reconcile")
 	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())
@@ -102,10 +104,42 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	result, err := s.CreateOrUpdateResource(ctx, vmSpec, serviceName)
-	s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
-	// Set the DiskReady condition here since the disk gets created with the VM.
-	s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
+	// Check if the VM exists and is in a Failed provisioning state.
+	// If so, use the Reapply operation to recover it instead of CreateOrUpdate.
+	// The Reapply operation will also clean up any orphaned NICs that are in a bad state.
+	existingResource, err := s.client.Get(ctx, vmSpec)
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to get existing VM %s/%s", vmSpec.ResourceGroupName(), vmSpec.ResourceName())
+	}
+
+	var result any
+	if err == nil && existingResource != nil {
+		vm, ok := existingResource.(armcompute.VirtualMachine)
+		if !ok {
+			return errors.Errorf("%T is not an armcompute.VirtualMachine", existingResource)
+		}
+
+		// Check if VM is in Failed provisioning state
+		if vm.Properties != nil && vm.Properties.ProvisioningState != nil && *vm.Properties.ProvisioningState == "Failed" {
+			log.V(2).Info("VM is in Failed provisioning state, using Reapply operation to recover",
+				"vm", vmSpec.ResourceName(),
+				"resourceGroup", vmSpec.ResourceGroupName())
+			result, err = s.reapplyVM(ctx, vmSpec)
+			s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
+			s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
+		} else {
+			// VM exists and is not in Failed state, use standard reconcile flow
+			result, err = s.CreateOrUpdateResource(ctx, vmSpec, serviceName)
+			s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
+			s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
+		}
+	} else {
+		// VM doesn't exist, use standard create flow
+		result, err = s.CreateOrUpdateResource(ctx, vmSpec, serviceName)
+		s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
+		s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
+	}
+
 	if err == nil && result != nil {
 		vm, ok := result.(armcompute.VirtualMachine)
 		if !ok {
@@ -136,6 +170,38 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.checkUserAssignedIdentities(spec.UserAssignedIdentities, infraVM.UserAssignedIdentities)
 	}
 	return err
+}
+
+// reapplyVM reapplies a virtual machine that is in Failed provisioning state.
+// This uses the Azure Reapply operation which is designed to recover VMs from failed states.
+// The Reapply operation will also clean up any orphaned NICs that are in a bad state.
+// Reference: https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/vm-stuck-in-failed-state
+func (s *Service) reapplyVM(ctx context.Context, spec azure.ResourceSpecGetter) (any, error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "virtualmachines.Service.reapplyVM")
+	defer done()
+
+	resourceName := spec.ResourceName()
+	rgName := spec.ResourceGroupName()
+	log.V(2).Info("reapplying VM", "resource", resourceName, "resourceGroup", rgName)
+
+	poller, err := s.client.ReapplyAsync(ctx, spec, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to reapply VM %s/%s", rgName, resourceName)
+	}
+
+	// If we get a poller back, the operation is still in progress
+	if poller != nil {
+		return nil, azure.WithTransientError(errors.Errorf("VM reapply operation in progress for %s/%s", rgName, resourceName), s.Scope.DefaultedReconcilerRequeue())
+	}
+
+	// Fetch the VM after reapply to return the updated resource
+	result, err := s.client.Get(ctx, spec)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get VM after reapply %s/%s", rgName, resourceName)
+	}
+
+	log.V(2).Info("successfully reapplied VM", "resource", resourceName, "resourceGroup", rgName)
+	return result, nil
 }
 
 // Delete deletes the virtual machine with the provided name.
