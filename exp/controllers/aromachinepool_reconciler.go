@@ -121,6 +121,7 @@ func (s *aroMachinePoolService) reconcileResources(ctx context.Context) error {
 		ctx,
 		s.scope.InfraMachinePool.Spec.Resources,
 		mutators.SetHcpOpenShiftNodePoolDefaults(s.kubeclient, s.scope.InfraMachinePool, hcpClusterName, s.scope.MachinePool),
+		mutators.SetResourceTags(s.scope.ClusterName(), s.scope.InfraMachinePool.CreationTimestamp.Time),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply mutators")

@@ -432,6 +432,7 @@ func (s *aroControlPlaneService) reconcileResources(ctx context.Context) error {
 		s.scope.ControlPlane.Spec.Resources,
 		mutators.SetHcpOpenShiftClusterDefaults(s.kubeclient, s.scope.ControlPlane, s.scope.Cluster),
 		mutators.SetHcpOpenShiftClusterEncryptionKey(s.scope),
+		mutators.SetResourceTags(s.scope.Cluster.Name, s.scope.ControlPlane.CreationTimestamp.Time),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply mutators")
