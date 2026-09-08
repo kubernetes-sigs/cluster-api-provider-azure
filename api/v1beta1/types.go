@@ -314,7 +314,9 @@ type SecurityRule struct {
 	// Name is a unique name within the network security group.
 	Name string `json:"name"`
 	// A description for this rule. Restricted to 140 chars.
-	Description string `json:"description"`
+	// +kubebuilder:validation:MaxLength=140
+	// +optional
+	Description string `json:"description,omitempty"`
 	// Protocol specifies the protocol type. "Tcp", "Udp", "Icmp", or "*".
 	// +kubebuilder:validation:Enum=Tcp;Udp;Icmp;*
 	Protocol SecurityGroupProtocol `json:"protocol"`
