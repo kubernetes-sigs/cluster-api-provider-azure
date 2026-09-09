@@ -136,15 +136,44 @@ func internalError() *azcore.ResponseError {
 }
 
 func TestReconcileVM(t *testing.T) {
+	fakeFailedVM := armcompute.VirtualMachine{
+		ID:   ptr.To("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-failed-vm"),
+		Name: ptr.To("test-vm-name"),
+		Properties: &armcompute.VirtualMachineProperties{
+			ProvisioningState: ptr.To("Failed"),
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					{
+						ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
+					},
+				},
+			},
+		},
+	}
+	fakeReappliedVM := armcompute.VirtualMachine{
+		ID:   ptr.To("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
+		Name: ptr.To("test-vm-name"),
+		Properties: &armcompute.VirtualMachineProperties{
+			ProvisioningState: ptr.To("Succeeded"),
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					{
+						ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
+					},
+				},
+			},
+		},
+	}
+
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder)
 	}{
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(nil)
 			},
@@ -152,9 +181,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -169,9 +199,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError())
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, internalError())
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, internalError())
@@ -180,9 +211,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -194,9 +226,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get public IPs",
 			expectedError: "failed to fetch VM addresses:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -204,6 +237,55 @@ func TestReconcileVM(t *testing.T) {
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(armnetwork.PublicIPAddress{}, internalError())
+			},
+		},
+		{
+			name:          "reapply vm in Failed state succeeds",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, nil)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeReappliedVM, nil)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
+				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(fakePublicIPs, nil)
+				s.SetAddresses(fakeNodeAddresses)
+				s.SetVMState(infrav1.Succeeded)
+			},
+		},
+		{
+			name:          "reapply vm in Failed state fails",
+			expectedError: "failed to reapply VM",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, internalError())
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			name:          "existing vm in Succeeded state uses normal flow",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeExistingVM, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
+				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(fakePublicIPs, nil)
+				s.SetAddresses(fakeNodeAddresses)
+				s.SetVMState(infrav1.Succeeded)
 			},
 		},
 	}
@@ -219,11 +301,13 @@ func TestReconcileVM(t *testing.T) {
 			interfaceMock := mock_async.NewMockGetter(mockCtrl)
 			publicIPMock := mock_async.NewMockGetter(mockCtrl)
 			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:            scopeMock,
+				client:           clientMock,
 				interfacesGetter: interfaceMock,
 				publicIPsGetter:  publicIPMock,
 				Reconciler:       asyncMock,
