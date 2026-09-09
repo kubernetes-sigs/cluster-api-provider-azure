@@ -58,6 +58,7 @@ setup() {
 
 main() {
     if ! can_reuse_artifacts; then
+        export GOTOOLCHAIN=local
         echo "Building Linux Azure amd64 cloud controller manager"
         make -C "${AZURE_CLOUD_PROVIDER_ROOT}" build-ccm-image-amd64 push-ccm-image-amd64
         echo "Building Linux amd64 and Windows (hpc) amd64 cloud node managers"
