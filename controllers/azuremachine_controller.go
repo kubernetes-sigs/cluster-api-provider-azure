@@ -19,10 +19,15 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -235,6 +240,116 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return amr.reconcileNormal(ctx, machineScope, clusterScope)
 }
 
+const (
+	quotaFailureGracePeriod = 1 * time.Minute
+)
+
+const (
+	azureQuotaExceededCode           = "QuotaExceeded"
+	azureOperationNotAllowedCode     = "OperationNotAllowed"
+	azureResourceQuotaExceededCode   = "ResourceQuotaExceeded"
+	azureDeploymentQuotaExceededCode = "DeploymentQuotaExceeded"
+)
+
+// quotaExceededErrorCodes contains Azure error codes that indicate quota exhaustion.
+//
+// OperationNotAllowed is ambiguous and used for various authorization/policy failures.
+// We use a best-effort heuristic: check for "quota" in the message AND HTTP 409/429 status.
+// If Azure changes error wording (e.g., "resource limit" instead of "quota"), detection may fail.
+//
+// Reference: https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/error-resource-quota
+var quotaExceededErrorCodes = []string{
+	azureQuotaExceededCode,
+	azureOperationNotAllowedCode,
+	azureResourceQuotaExceededCode,
+	azureDeploymentQuotaExceededCode,
+}
+
+// isQuotaExceededError checks if error is due to Azure quota exhaustion.
+//
+// Detection Strategy:
+// - QuotaExceeded, ResourceQuotaExceeded, DeploymentQuotaExceeded: accepted directly
+// - OperationNotAllowed: uses heuristic (message contains "quota" AND HTTP 409/429)
+//
+// Limitations:
+// - Message matching is brittle; Azure may change wording without notice
+// - HTTP status check helps but is not definitive (409 used for other conflicts)
+// - False negatives possible if Azure changes error format.
+func isQuotaExceededError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) {
+		for _, code := range quotaExceededErrorCodes {
+			if respErr.ErrorCode == code {
+				if code == azureOperationNotAllowedCode {
+					errMsg := strings.ToLower(respErr.Error())
+					hasQuotaKeyword := strings.Contains(errMsg, "quota")
+					hasQuotaStatus := respErr.StatusCode == http.StatusConflict || respErr.StatusCode == http.StatusTooManyRequests
+
+					return hasQuotaKeyword && hasQuotaStatus
+				}
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func getQuotaFailureTimestamp(obj metav1.Object) (time.Time, bool) {
+	val, ok := obj.GetAnnotations()[azure.QuotaFailureTimestampAnnotation]
+	if !ok || val == "" {
+		return time.Time{}, false
+	}
+
+	t, err := time.Parse(time.RFC3339, val)
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	return t, true
+}
+
+func setQuotaFailureTimestampIfAbsent(obj metav1.Object) {
+	if _, ok := getQuotaFailureTimestamp(obj); ok {
+		return
+	}
+
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[azure.QuotaFailureTimestampAnnotation] = time.Now().Format(time.RFC3339)
+	obj.SetAnnotations(annotations)
+}
+
+func removeQuotaFailureTimestamp(obj metav1.Object) {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		return
+	}
+
+	if _, ok := annotations[azure.QuotaFailureTimestampAnnotation]; !ok {
+		return
+	}
+
+	delete(annotations, azure.QuotaFailureTimestampAnnotation)
+	obj.SetAnnotations(annotations)
+}
+
+// isQuotaFailureGracePeriodElapsed checks if grace period has elapsed since the quota failure was first recorded.
+func isQuotaFailureGracePeriodElapsed(obj metav1.Object) bool {
+	t, ok := getQuotaFailureTimestamp(obj)
+	if !ok {
+		return false
+	}
+
+	return time.Since(t) >= quotaFailureGracePeriod
+}
+
 func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachineReconciler.reconcileNormal")
 	defer done()
@@ -312,6 +427,42 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 		}
 
+		// Check for quota errors and cleanup orphaned NIC if grace period expired
+		if isQuotaExceededError(err) {
+			graceExpired := isQuotaFailureGracePeriodElapsed(machineScope.AzureMachine)
+			if graceExpired {
+				log.Info("Grace period expired, cleaning up orphaned NIC", "error", err.Error())
+				if nicErr := ams.DeleteNetworkInterfaces(ctx); nicErr != nil {
+					log.Error(nicErr, "Failed to delete orphaned NIC during quota failure cleanup")
+					return reconcile.Result{}, nicErr
+				}
+
+				amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, infrav1.VMProvisionFailedReason,
+					"Cleaned up orphaned NIC and marked Machine as Failed due to quota exhaustion: %s", err.Error())
+				machineScope.SetFailureReason(azure.CreateError)
+				machineScope.SetFailureMessage(err)
+				machineScope.SetNotReady()
+				machineScope.SetVMState(infrav1.Failed)
+
+				removeQuotaFailureTimestamp(machineScope.AzureMachine)
+				log.Info("Machine marked as Failed due to persistent quota exhaustion")
+				return reconcile.Result{}, nil
+			}
+
+			setQuotaFailureTimestampIfAbsent(machineScope.AzureMachine)
+			log.Info("Quota failure detected, will cleanup NIC on next reconcile if still failing",
+				"gracePeriod", quotaFailureGracePeriod, "error", err.Error())
+		} else {
+			// Diagnostic logging for OperationNotAllowed errors that don't match quota heuristic
+			var respErr *azcore.ResponseError
+			if errors.As(err, &respErr) && respErr.ErrorCode == azureOperationNotAllowedCode {
+				log.V(4).Info("OperationNotAllowed error did not match quota heuristic",
+					"errorCode", respErr.ErrorCode,
+					"statusCode", respErr.StatusCode,
+					"errorMessage", respErr.Error())
+			}
+		}
+
 		// Handle transient and terminal errors
 		if errors.As(err, &reconcileError) {
 			if reconcileError.IsTerminal() {
@@ -337,6 +488,7 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 	}
 
+	removeQuotaFailureTimestamp(machineScope.AzureMachine)
 	machineScope.SetReady()
 
 	return reconcile.Result{}, nil

@@ -46,4 +46,8 @@ const (
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 	// for annotation formatting rules.
 	SecurityRuleLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-security-rules"
+
+	// QuotaFailureTimestampAnnotation tracks when a quota exhaustion failure was first observed,
+	// used by the AzureMachine controller to implement the orphaned-NIC cleanup grace period.
+	QuotaFailureTimestampAnnotation = "sigs.k8s.io/cluster-api-provider-azure-quota-failure-timestamp"
 )

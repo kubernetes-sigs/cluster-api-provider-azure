@@ -37,16 +37,23 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+// networkInterfaceDeleter deletes NIC resources for quota-failure cleanup.
+type networkInterfaceDeleter interface {
+	Delete(context.Context) error
+}
+
 // azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
 	scope *scope.MachineScope
 	// services is the list of services to be reconciled.
 	// The order of the services is important as it determines the order in which the services are reconciled.
-	services  []azure.ServiceReconciler
-	skuCache  *resourceskus.Cache
-	Reconcile func(context.Context) error
-	Pause     func(context.Context) error
-	Delete    func(context.Context) error
+	services                []azure.ServiceReconciler
+	networkInterfacesSvc    networkInterfaceDeleter
+	skuCache                *resourceskus.Cache
+	Reconcile               func(context.Context) error
+	Pause                   func(context.Context) error
+	Delete                  func(context.Context) error
+	DeleteNetworkInterfaces func(context.Context) error
 }
 
 // newAzureMachineService populates all the services based on input scope.
@@ -92,7 +99,8 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 		return nil, errors.Wrap(err, "failed creating networkinterfaces service")
 	}
 	ams := &azureMachineService{
-		scope: machineScope,
+		scope:                machineScope,
+		networkInterfacesSvc: networkInterfacesSvc,
 		services: []azure.ServiceReconciler{
 			publicIPsSvc,
 			inboundnatrulesSvc,
@@ -109,6 +117,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	ams.Reconcile = ams.reconcile
 	ams.Pause = ams.pause
 	ams.Delete = ams.delete
+	ams.DeleteNetworkInterfaces = ams.deleteNetworkInterfaces
 
 	return ams, nil
 }
@@ -165,4 +174,14 @@ func (s *azureMachineService) delete(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// deleteNetworkInterfaces deletes all NICs defined in NICSpecs().
+// Used during quota-failure cleanup when VM creation never succeeded.
+// Side effect: updates NetworkInterfaceReadyCondition via the standard delete path.
+func (s *azureMachineService) deleteNetworkInterfaces(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureMachineService.deleteNetworkInterfaces")
+	defer done()
+
+	return s.networkInterfacesSvc.Delete(ctx)
 }
