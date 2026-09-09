@@ -214,6 +214,10 @@ func (m *MachinePoolScope) ScaleSetSpec(ctx context.Context) azure.ResourceSpecG
 		ZoneBalance:                  m.AzureMachinePool.Spec.ZoneBalance,
 	}
 
+	if spec.IPv6Enabled && spec.PublicLBAddressPoolName != "" {
+		spec.PublicLBAddressPoolNameIPv6 = spec.PublicLBAddressPoolName + "-IPv6"
+	}
+
 	if m.AzureMachinePool.Spec.ZoneBalance != nil && len(m.MachinePool.Spec.FailureDomains) <= 1 {
 		log.V(4).Info("zone balance is enabled but one or less failure domains are specified, zone balance will be disabled")
 		spec.ZoneBalance = nil
