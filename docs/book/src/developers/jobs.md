@@ -31,6 +31,7 @@ To see which test jobs execute which e2e tests, you can click on the links which
   - 🟢 [pull-cluster-api-provider-azure-verify]   `make verify`
   - [pull-cluster-api-provider-azure-e2e-exp]
        * `GINKGO_FOCUS=".*AKS.*" GINKGO_SKIP="" ./scripts/ci-e2e.sh`
+       * The opt-in MultiKueue AKS stress suite can be targeted with `GINKGO_FOCUS="MultiKueue" GINKGO_SKIP="" ./scripts/ci-e2e.sh`. It provisions one manager and three worker AKS clusters by default; override `MULTIKUEUE_WORKER_CLUSTER_COUNT`, `MULTIKUEUE_STRESS_JOB_COUNT`, `MULTIKUEUE_AKS_FLAVOR`, `KUEUE_VERSION`, or `JOBSET_VERSION` as needed.
   - [pull-cluster-api-provider-azure-apidiff]  `./scripts/ci-apidiff.sh`
   - [pull-cluster-api-provider-azure-coverage]  `./scripts/ci-test-coverage`
   - [pull-cluster-api-provider-e2e-full]
