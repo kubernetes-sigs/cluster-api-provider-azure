@@ -282,6 +282,16 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
+			By("Verifying VM Reapply recovery for a worker in Failed provisioning state", func() {
+				AzureVMReapplySpec(ctx, func() AzureVMReapplySpecInput {
+					return AzureVMReapplySpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			By("PASSED!")
 		})
 	})
