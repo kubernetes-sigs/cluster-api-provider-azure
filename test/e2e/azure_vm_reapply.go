@@ -21,6 +21,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -39,7 +40,7 @@ import (
 
 const (
 	// reapplyExtensionName is the name of the deliberately-failing extension used to
-	// trigger the Azure VM "Failed" provisioning state in the e2e test.
+	// trigger the Azure VM "Failed" provisioning state.
 	reapplyExtensionName = "e2e-reapply-test-failure"
 
 	// reapplyTestTimeout is the total time allowed for the VM to recover via Reapply.
@@ -56,17 +57,17 @@ type AzureVMReapplySpecInput struct {
 	ClusterName           string
 }
 
-// AzureVMReapplySpec validates CAPZ's VM Reapply recovery mechanism.
+// AzureVMReapplySpec validates CAPZ's VM Reapply recovery mechanism end-to-end.
 //
-// Strategy:
-//  1. Find a worker AzureMachine and its backing Azure VM.
-//  2. Install a deliberately-failing Custom Script Extension on the VM.
-//     A failing extension causes the VM's top-level ProvisioningState to become "Failed".
-//  3. Once the VM is in "Failed" state, delete the failing extension so the next
-//     provisioning attempt (Reapply) will succeed.
-//  4. Wait for CAPZ's reconciler to detect the "Failed" state and invoke the Azure
-//     Reapply API automatically.
-//  5. Verify the VM's ProvisioningState returns to "Succeeded".
+// The test puts a worker VM into the Azure "Failed" provisioning state by installing
+// a Run Command extension (Microsoft.CPlat.Core/RunCommandHandlerLinux) configured
+// to exit non-zero. This handler is distinct from CustomScript so it does not
+// conflict with any extension CAPZ installs. Once the VM is Failed:
+//
+//  1. The failing extension is deleted, removing the cause of the failure.
+//  2. CAPZ's reconciler detects the "Failed" state and calls the Azure Reapply API.
+//  3. Reapply succeeds (nothing left to fail) and the VM returns to "Succeeded".
+//  4. The AzureMachine VMState is verified to reflect the recovery.
 func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySpecInput) {
 	var (
 		specName = "azure-vm-reapply"
@@ -81,7 +82,7 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	mgmtClient := input.BootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
-	By("Finding a worker AzureMachine in the cluster")
+	By("Finding a provisioned Linux worker AzureMachine in the cluster")
 	machineList := &infrav1.AzureMachineList{}
 	Expect(mgmtClient.List(ctx, machineList,
 		client.InNamespace(input.Namespace.Name),
@@ -91,14 +92,20 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	var workerMachine *infrav1.AzureMachine
 	for i := range machineList.Items {
 		machine := &machineList.Items[i]
-		if _, isControlPlane := machine.Labels[clusterv1.MachineControlPlaneLabel]; !isControlPlane {
-			if machine.Spec.ProviderID != nil && *machine.Spec.ProviderID != "" {
-				workerMachine = machine
-				break
-			}
+		if _, isControlPlane := machine.Labels[clusterv1.MachineControlPlaneLabel]; isControlPlane {
+			continue
 		}
+		if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
+			continue
+		}
+		// Only Linux workers; RunCommandHandlerLinux is a Linux-only extension.
+		if machine.Spec.OSDisk.OSType != "Linux" {
+			continue
+		}
+		workerMachine = machine
+		break
 	}
-	Expect(workerMachine).NotTo(BeNil(), "Expected at least one provisioned worker AzureMachine in the cluster")
+	Expect(workerMachine).NotTo(BeNil(), "Expected at least one provisioned Linux worker AzureMachine in the cluster")
 	Logf("Using worker AzureMachine %q for Reapply test", workerMachine.Name)
 
 	resource, err := azureutil.ParseResourceID(*workerMachine.Spec.ProviderID)
@@ -122,20 +129,30 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	Expect(err).NotTo(HaveOccurred())
 	Expect(initialVM.Properties).NotTo(BeNil())
 	Expect(initialVM.Properties.ProvisioningState).NotTo(BeNil())
-	Expect(*initialVM.Properties.ProvisioningState).To(Equal("Succeeded"), "VM must be in Succeeded state before the Reapply test")
+	Expect(*initialVM.Properties.ProvisioningState).To(Equal("Succeeded"),
+		"VM %q must be in Succeeded state before the Reapply test", vmName)
 
-	// Determine the VM's OS type to use the correct extension publisher/type.
-	Expect(initialVM.Properties.StorageProfile).NotTo(BeNil())
-	Expect(initialVM.Properties.StorageProfile.OSDisk).NotTo(BeNil())
-	Expect(initialVM.Properties.StorageProfile.OSDisk.OSType).NotTo(BeNil())
-	osType := *initialVM.Properties.StorageProfile.OSDisk.OSType
-
-	// Select the correct custom script extension for the VM's OS type.
-	extensionPublisher, extensionType, extensionVersion := "Microsoft.Azure.Extensions", "CustomScript", "2.1"
-	if osType == armcompute.OperatingSystemTypesWindows {
-		extensionPublisher, extensionType, extensionVersion = "Microsoft.Compute", "CustomScriptExtension", "1.10"
+	By("Checking existing VM extensions to avoid handler conflicts")
+	// Azure only allows one extension per handler type on a VM. We use
+	// Microsoft.CPlat.Core/RunCommandHandlerLinux, which is a different handler
+	// from Microsoft.Azure.Extensions/CustomScript that CAPZ may install.
+	// Skip if this handler is already installed to avoid a 409 Conflict.
+	const (
+		testExtPublisher = "Microsoft.CPlat.Core"
+		testExtType      = "RunCommandHandlerLinux"
+		testExtVersion   = "1.0"
+	)
+	extListResult, err := vmExtClient.List(ctx, resourceGroup, vmName, nil)
+	Expect(err).NotTo(HaveOccurred())
+	for _, ext := range extListResult.Value {
+		if ext.Properties == nil {
+			continue
+		}
+		if ptr.Deref(ext.Properties.Publisher, "") == testExtPublisher &&
+			ptr.Deref(ext.Properties.Type, "") == testExtType {
+			Skip(fmt.Sprintf("VM %q already has %s/%s installed; cannot inject failure without conflict", vmName, testExtPublisher, testExtType))
+		}
 	}
-	Logf("VM %q OS type: %s; using extension %s/%s@%s", vmName, osType, extensionPublisher, extensionType, extensionVersion)
 
 	// Ensure the test extension is cleaned up even if the test fails mid-way.
 	DeferCleanup(func(cleanCtx context.Context) {
@@ -146,19 +163,22 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 			return
 		}
 		if _, cleanErr = poller.PollUntilDone(cleanCtx, nil); cleanErr != nil {
-			Logf("Extension cleanup failed (non-fatal): %v", cleanErr)
+			Logf("Extension cleanup poll error (non-fatal): %v", cleanErr)
 		}
 	})
 
-	By("Installing a deliberately-failing VM extension to trigger Failed provisioning state")
+	By("Installing a deliberately-failing Run Command extension to trigger Failed provisioning state")
+	// RunCommandHandlerLinux runs the commandToExecute script. Exiting non-zero causes
+	// the extension to fail, which sets the VM's top-level ProvisioningState to "Failed".
+	// This is a different handler from CustomScript so it never conflicts with CAPZ's own extensions.
 	beginCreatePoller, err := vmExtClient.BeginCreateOrUpdate(ctx, resourceGroup, vmName, reapplyExtensionName,
 		armcompute.VirtualMachineExtension{
 			Location: initialVM.Location,
 			Properties: &armcompute.VirtualMachineExtensionProperties{
-				Publisher:               ptr.To(extensionPublisher),
-				Type:                    ptr.To(extensionType),
-				TypeHandlerVersion:      ptr.To(extensionVersion),
-				AutoUpgradeMinorVersion: ptr.To(true),
+				Publisher:               ptr.To(testExtPublisher),
+				Type:                    ptr.To(testExtType),
+				TypeHandlerVersion:      ptr.To(testExtVersion),
+				AutoUpgradeMinorVersion: ptr.To(false),
 				Settings: map[string]any{
 					"commandToExecute": "exit 1",
 				},
@@ -166,14 +186,14 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 		}, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	// We expect the extension installation to fail. PollUntilDone will return an error.
+	// PollUntilDone will return an error when the extension's script fails.
 	_, extensionErr := beginCreatePoller.PollUntilDone(ctx, nil)
-	Logf("Extension installation completed with error (expected): %v", extensionErr)
+	Logf("Extension installation completed with error (expected failure): %v", extensionErr)
 
 	By("Waiting for the VM to enter Failed provisioning state")
 	Eventually(func(g Gomega) string {
-		vm, err := vmClient.Get(ctx, resourceGroup, vmName, nil)
-		g.Expect(err).NotTo(HaveOccurred())
+		vm, getErr := vmClient.Get(ctx, resourceGroup, vmName, nil)
+		g.Expect(getErr).NotTo(HaveOccurred())
 		g.Expect(vm.Properties).NotTo(BeNil())
 		g.Expect(vm.Properties.ProvisioningState).NotTo(BeNil())
 		state := *vm.Properties.ProvisioningState
@@ -182,30 +202,30 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	}, 10*time.Minute, reapplyPollInterval).Should(Equal("Failed"),
 		"VM %q did not enter Failed provisioning state after failing extension installation", vmName)
 
-	By("Removing the failing extension so Reapply will succeed")
+	By("Deleting the failing extension so that Reapply will succeed")
+	// With the extension gone, the next provisioning attempt (Reapply) has nothing to fail on.
 	deletePoller, err := vmExtClient.BeginDelete(ctx, resourceGroup, vmName, reapplyExtensionName, nil)
 	Expect(err).NotTo(HaveOccurred())
 	_, err = deletePoller.PollUntilDone(ctx, nil)
-	Expect(err).NotTo(HaveOccurred(), "Failed to delete the failing extension %q from VM %q", reapplyExtensionName, vmName)
-	Logf("Failing extension %q deleted from VM %q", reapplyExtensionName, vmName)
+	Expect(err).NotTo(HaveOccurred(), "Failed to delete the test extension %q from VM %q", reapplyExtensionName, vmName)
+	Logf("Test extension %q deleted from VM %q; VM remains in Failed state", reapplyExtensionName, vmName)
 
 	By("Waiting for CAPZ to detect the Failed state and recover the VM via the Azure Reapply API")
-	// CAPZ's reconciler periodically checks the VM's provisioning state. When it sees
-	// "Failed", it calls the Azure Reapply API (VirtualMachines.BeginReapply) instead
-	// of CreateOrUpdate. After successful Reapply the VM returns to "Succeeded".
+	// CAPZ's VM reconciler checks ProvisioningState on each reconcile. When it sees
+	// "Failed" it calls VirtualMachines.BeginReapply instead of CreateOrUpdate.
+	// After successful Reapply the VM's ProvisioningState returns to "Succeeded".
 	Eventually(func(g Gomega) string {
-		vm, err := vmClient.Get(ctx, resourceGroup, vmName, nil)
-		g.Expect(err).NotTo(HaveOccurred())
+		vm, getErr := vmClient.Get(ctx, resourceGroup, vmName, nil)
+		g.Expect(getErr).NotTo(HaveOccurred())
 		g.Expect(vm.Properties).NotTo(BeNil())
 		g.Expect(vm.Properties.ProvisioningState).NotTo(BeNil())
 		state := *vm.Properties.ProvisioningState
-		Logf("VM %q provisioning state: %s (waiting for Succeeded)", vmName, state)
+		Logf("VM %q provisioning state: %s (waiting for Succeeded after CAPZ Reapply)", vmName, state)
 		return state
 	}, reapplyTestTimeout, reapplyPollInterval).Should(Equal("Succeeded"),
 		"VM %q did not recover to Succeeded state after CAPZ Reapply", vmName)
 
-	By("Verifying the AzureMachine condition reflects successful recovery")
-	// Give CAPZ a moment to update the AzureMachine status after the VM recovers.
+	By("Verifying the AzureMachine VMState reflects successful recovery")
 	Eventually(func(g Gomega) {
 		updatedMachine := &infrav1.AzureMachine{}
 		g.Expect(mgmtClient.Get(ctx, client.ObjectKey{
