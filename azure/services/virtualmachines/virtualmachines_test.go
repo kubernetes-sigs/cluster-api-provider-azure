@@ -17,12 +17,15 @@ limitations under the License.
 package virtualmachines
 
 import (
+	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
@@ -133,6 +136,28 @@ func internalError() *azcore.ResponseError {
 			StatusCode: http.StatusInternalServerError,
 		},
 	}
+}
+
+// fakeReapplyPoller creates a fake runtime.Poller for VM Reapply operations, simulating
+// an in-progress long-running operation returned by BeginReapply.
+func fakeReapplyPoller() *runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse] {
+	header := http.Header{}
+	header.Set("Location", "https://management.azure.com/fake-reapply-operation")
+	response := &http.Response{
+		Body:   io.NopCloser(strings.NewReader("")),
+		Header: header,
+		Request: &http.Request{
+			Method: http.MethodPost,
+			URL:    &url.URL{Path: "/"},
+		},
+		StatusCode: http.StatusAccepted,
+	}
+	pipeline := runtime.NewPipeline("testmodule", "v0.1.0", runtime.PipelineOptions{}, nil)
+	poller, err := runtime.NewPoller[armcompute.VirtualMachinesClientReapplyResponse](response, pipeline, nil)
+	if err != nil {
+		panic(err)
+	}
+	return poller
 }
 
 func TestReconcileVM(t *testing.T) {
@@ -246,7 +271,9 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, nil)
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeReappliedVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -265,7 +292,24 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, internalError())
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			name:          "reapply vm in Failed state times out and saves future for resume",
+			expectedError: "operation type PUT on Azure resource.*is not done",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(fakeReapplyPoller(), context.DeadlineExceeded)
+				s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue)
+				s.SetLongRunningOperationState(gomock.Any())
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
 			},

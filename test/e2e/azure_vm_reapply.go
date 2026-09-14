@@ -130,8 +130,12 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	Expect(initialVM.Properties.StorageProfile.OSDisk.OSType).NotTo(BeNil())
 	osType := *initialVM.Properties.StorageProfile.OSDisk.OSType
 
-	extensionPublisher, extensionType, extensionVersion, failCommand := failingExtensionForOS(osType)
-	Logf("VM %q OS type: %s; using extension %s/%s@%s with command %q", vmName, osType, extensionPublisher, extensionType, extensionVersion, failCommand)
+	// Select the correct custom script extension for the VM's OS type.
+	extensionPublisher, extensionType, extensionVersion := "Microsoft.Azure.Extensions", "CustomScript", "2.1"
+	if osType == armcompute.OperatingSystemTypesWindows {
+		extensionPublisher, extensionType, extensionVersion = "Microsoft.Compute", "CustomScriptExtension", "1.10"
+	}
+	Logf("VM %q OS type: %s; using extension %s/%s@%s", vmName, osType, extensionPublisher, extensionType, extensionVersion)
 
 	// Ensure the test extension is cleaned up even if the test fails mid-way.
 	DeferCleanup(func(cleanCtx context.Context) {
@@ -155,8 +159,8 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 				Type:                    ptr.To(extensionType),
 				TypeHandlerVersion:      ptr.To(extensionVersion),
 				AutoUpgradeMinorVersion: ptr.To(true),
-				Settings: map[string]interface{}{
-					"commandToExecute": failCommand,
+				Settings: map[string]any{
+					"commandToExecute": "exit 1",
 				},
 			},
 		}, nil)
@@ -213,14 +217,4 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 		g.Expect(string(*updatedMachine.Status.VMState)).To(Equal(string(infrav1.Succeeded)),
 			"AzureMachine %q VMState should be Succeeded after Reapply recovery", workerMachine.Name)
 	}, 5*time.Minute, reapplyPollInterval).Should(Succeed())
-}
-
-// failingExtensionForOS returns the publisher, type, version, and a command string for a
-// custom script extension that will always fail, depending on the VM OS type.
-func failingExtensionForOS(osType armcompute.OperatingSystemTypes) (publisher, extType, version, command string) {
-	if osType == armcompute.OperatingSystemTypesWindows {
-		return "Microsoft.Compute", "CustomScriptExtension", "1.10", "exit 1"
-	}
-	// Linux default
-	return "Microsoft.Azure.Extensions", "CustomScript", "2.1", "exit 1"
 }

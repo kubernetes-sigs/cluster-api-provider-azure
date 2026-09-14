@@ -38,8 +38,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const serviceName = "virtualmachine"
-const vmMissingUAI = "VM is missing expected user assigned identity with client ID: "
+const (
+	serviceName        = "virtualmachine"
+	reapplyServiceName = serviceName + "-reapply"
+	vmMissingUAI       = "VM is missing expected user assigned identity with client ID: "
+)
 
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
@@ -108,7 +111,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// If so, use the Reapply operation to recover it instead of CreateOrUpdate.
 	existingResource, err := s.client.Get(ctx, vmSpec)
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to get existing VM %s/%s", vmSpec.ResourceGroupName(), vmSpec.ResourceName())
+		return azure.WithTransientError(
+			errors.Wrapf(err, "failed to get existing VM %s/%s", vmSpec.ResourceGroupName(), vmSpec.ResourceName()),
+			async.GetRetryAfterFromError(err),
+		)
 	}
 
 	var result any
@@ -182,20 +188,42 @@ func (s *Service) reapplyVM(ctx context.Context, spec azure.ResourceSpecGetter) 
 	rgName := spec.ResourceGroupName()
 	log.V(2).Info("reapplying VM", "resource", resourceName, "resourceGroup", rgName)
 
-	poller, err := s.client.ReapplyAsync(ctx, spec, "")
+	// Check for an ongoing reapply operation from a previous reconcile.
+	resumeToken := ""
+	if future := s.Scope.GetLongRunningOperationState(resourceName, reapplyServiceName, infrav1.PutFuture); future != nil {
+		t, err := converters.FutureToResumeToken(*future)
+		if err != nil {
+			s.Scope.DeleteLongRunningOperationState(resourceName, reapplyServiceName, infrav1.PutFuture)
+			return nil, errors.Wrap(err, "could not decode reapply future data, resetting long-running operation state")
+		}
+		resumeToken = t
+	}
+
+	poller, err := s.client.ReapplyAsync(ctx, spec, resumeToken)
+	if poller != nil && azure.IsContextDeadlineExceededOrCanceledError(err) {
+		// The operation is still in progress; save the future so it can be resumed on the next reconcile.
+		future, futErr := converters.PollerToFuture(poller, infrav1.PutFuture, reapplyServiceName, resourceName, rgName)
+		if futErr != nil {
+			return nil, errors.Wrapf(err, "failed to reapply VM %s/%s", rgName, resourceName)
+		}
+		s.Scope.SetLongRunningOperationState(future)
+		return nil, azure.WithTransientError(azure.NewOperationNotDoneError(future), s.Scope.DefaultedReconcilerRequeue())
+	}
+
+	// The operation is done (success or terminal error); clear any saved state.
+	s.Scope.DeleteLongRunningOperationState(resourceName, reapplyServiceName, infrav1.PutFuture)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to reapply VM %s/%s", rgName, resourceName)
 	}
 
-	// If we get a poller back, the operation is still in progress
-	if poller != nil {
-		return nil, azure.WithTransientError(errors.Errorf("VM reapply operation in progress for %s/%s", rgName, resourceName), s.Scope.DefaultedReconcilerRequeue())
-	}
-
-	// Fetch the VM after reapply to return the updated resource
+	// Fetch the VM after reapply to return the updated resource.
 	result, err := s.client.Get(ctx, spec)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get VM after reapply %s/%s", rgName, resourceName)
+		return nil, azure.WithTransientError(
+			errors.Wrapf(err, "failed to get VM after reapply %s/%s", rgName, resourceName),
+			async.GetRetryAfterFromError(err),
+		)
 	}
 
 	log.V(2).Info("successfully reapplied VM", "resource", resourceName, "resourceGroup", rgName)
