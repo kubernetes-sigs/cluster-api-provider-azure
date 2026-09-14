@@ -286,7 +286,7 @@ format-tiltfile: ## Format the Tiltfile.
 	./hack/verify-starlark.sh fix
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-conversions verify-tiltfile verify-codespell ## Run "verify-boilerplate", "verify-modules", "verify-gen", "verify-shellcheck", "verify-conversions", "verify-tiltfile" "verify-codespell" rules.
+verify: verify-boilerplate verify-modules verify-gen verify-upgrade-templates verify-shellcheck verify-conversions verify-tiltfile verify-codespell ## Run "verify-boilerplate", "verify-modules", "verify-gen", "verify-upgrade-templates", "verify-shellcheck", "verify-conversions", "verify-tiltfile" "verify-codespell" rules.
 
 .PHONY: verify-boilerplate
 verify-boilerplate: ## Verify boilerplate header.
@@ -309,6 +309,10 @@ verify-generate-local: ## Verify generated files are the latest. To be run local
 	@if !(git diff --quiet HEAD); then \
 		git diff; echo "generated files are out of date, run make generate"; exit 1; \
 	fi
+
+.PHONY: verify-upgrade-templates
+verify-upgrade-templates: $(KUSTOMIZE) $(YQ) ## Verify release-specific upgrade template generation.
+	./hack/verify-upgrade-templates.sh "$(KUSTOMIZE)" "$(YQ)"
 
 
 .PHONY: verify-shellcheck
@@ -573,6 +577,11 @@ generate-e2e-templates: $(KUSTOMIZE) ## Generate Azure infrastructure templates 
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-md-taints --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-md-taints.yaml
 	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-aks --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-aks.yaml
+	$(MAKE) generate-upgrade-templates
+
+.PHONY: generate-upgrade-templates
+generate-upgrade-templates: $(KUSTOMIZE) $(YQ) ## Generate upgrade templates from the configured CAPZ release tags.
+	./hack/gen-upgrade-templates.sh "$(E2E_CONF_FILE)" "$(AZURE_TEMPLATES)/upgrade" "$(KUSTOMIZE)" "$(YQ)"
 
 .PHONY: generate-addons
 generate-addons: fetch-calico-manifests $(ENVSUBST)
