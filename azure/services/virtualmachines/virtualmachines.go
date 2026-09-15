@@ -124,11 +124,19 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Errorf("%T is not an armcompute.VirtualMachine", existingResource)
 		}
 
-		// Check if VM is in Failed provisioning state
-		if vm.Properties != nil && vm.Properties.ProvisioningState != nil && *vm.Properties.ProvisioningState == "Failed" {
-			log.V(2).Info("VM is in Failed provisioning state, using Reapply operation to recover",
+		// Enter the reapply path if the VM is in Failed provisioning state, or if a
+		// reapply long-running operation was started in a previous reconcile. The second
+		// condition handles the case where the VM has already transitioned out of "Failed"
+		// (e.g. to "Updating") mid-reapply — without it the resumed reapply would skip
+		// the status updates and the condition would never be cleared.
+		hasActiveReapplyFuture := s.Scope.GetLongRunningOperationState(vmSpec.ResourceName(), reapplyServiceName, infrav1.PutFuture) != nil
+		vmIsFailed := vm.Properties != nil && vm.Properties.ProvisioningState != nil && *vm.Properties.ProvisioningState == "Failed"
+		if vmIsFailed || hasActiveReapplyFuture {
+			log.V(2).Info("VM is in Failed provisioning state or has an active reapply operation, using Reapply operation to recover",
 				"vm", vmSpec.ResourceName(),
-				"resourceGroup", vmSpec.ResourceGroupName())
+				"resourceGroup", vmSpec.ResourceGroupName(),
+				"vmIsFailed", vmIsFailed,
+				"hasActiveReapplyFuture", hasActiveReapplyFuture)
 			result, err = s.reapplyVM(ctx, vmSpec)
 			s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
 			s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)

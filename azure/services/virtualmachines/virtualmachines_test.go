@@ -271,6 +271,9 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile (VM is Failed, no existing future)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
 				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, nil)
 				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
@@ -292,6 +295,9 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
 				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, internalError())
 				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
@@ -306,6 +312,9 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
 				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(fakeReapplyPoller(), context.DeadlineExceeded)
 				s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue)
@@ -321,6 +330,7 @@ func TestReconcileVM(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
 				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeExistingVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -330,6 +340,37 @@ func TestReconcileVM(t *testing.T) {
 				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(fakePublicIPs, nil)
 				s.SetAddresses(fakeNodeAddresses)
 				s.SetVMState(infrav1.Succeeded)
+			},
+		},
+		{
+			name:          "resume reapply when VM exited Failed state but future still exists",
+			expectedError: "could not decode reapply future data",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				// The VM transitioned out of "Failed" (e.g. to "Succeeded") mid-reapply,
+				// but the future is still stored. The reapply path must be entered so that
+				// status conditions are updated correctly. Here the stored future has corrupted
+				// data (empty Data field), so we verify the state is cleared and an error is
+				// returned — the reconciler will retry on the next loop.
+				staleFuture := &infrav1.Future{
+					Type:          infrav1.PutFuture,
+					ServiceName:   reapplyServiceName,
+					Name:          fakeVMSpec.Name,
+					ResourceGroup: fakeVMSpec.ResourceGroup,
+					// Data is intentionally empty: FutureToResumeToken returns an error,
+					// causing the state to be cleared and the error to propagate.
+				}
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeExistingVM, nil) // Succeeded, not Failed
+				// First call: hasActiveReapplyFuture check in Reconcile — future present, enter reapply path.
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(staleFuture)
+				// Second call: resume-token lookup inside reapplyVM.
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(staleFuture)
+				// FutureToResumeToken fails (empty Data) → clear the bad state, return error.
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				// reapplyVM returns early with an error; Reconcile updates status with that error.
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
 			},
 		},
 	}
