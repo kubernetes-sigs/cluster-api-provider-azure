@@ -137,10 +137,11 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	// Microsoft.CPlat.Core/RunCommandHandlerLinux, which is a different handler
 	// from Microsoft.Azure.Extensions/CustomScript that CAPZ may install.
 	// Skip if this handler is already installed to avoid a 409 Conflict.
+	// Version taken from https://github.com/Azure/run-command-handler-linux/blob/v1.18.0/misc/manifest.xml
 	const (
 		testExtPublisher = "Microsoft.CPlat.Core"
 		testExtType      = "RunCommandHandlerLinux"
-		testExtVersion   = "1.0"
+		testExtVersion   = "1.3.30"
 	)
 	extListResult, err := vmExtClient.List(ctx, resourceGroup, vmName, nil)
 	Expect(err).NotTo(HaveOccurred())
