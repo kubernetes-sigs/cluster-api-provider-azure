@@ -1,0 +1,222 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  controlPlaneRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureASOManagedControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureASOManagedCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureASOManagedControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20240901
+    kind: ManagedCluster
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}
+    spec:
+      dnsPrefix: ${CLUSTER_NAME}
+      identity:
+        type: SystemAssigned
+      location: ${AZURE_LOCATION}
+      networkProfile:
+        networkPlugin: azure
+      nodeResourceGroup: ${CLUSTER_NAME}-nodes
+      oidcIssuerProfile:
+        enabled: true
+      operatorSpec:
+        configMaps:
+          oidcIssuerProfile:
+            key: issuer
+            name: ${CLUSTER_NAME}-oidc
+      owner:
+        name: ${CLUSTER_NAME}
+      securityProfile:
+        workloadIdentity:
+          enabled: true
+      servicePrincipalProfile:
+        clientId: msi
+      sku:
+        name: Base
+        tier: Standard
+      tags:
+        buildProvenance: ${BUILD_PROVENANCE}
+        creationTimestamp: ${TIMESTAMP}
+        jobName: ${JOB_NAME}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureASOManagedCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  resources:
+  - apiVersion: resources.azure.com/v1api20200601
+    kind: ResourceGroup
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      tags:
+        buildProvenance: ${BUILD_PROVENANCE}
+        creationTimestamp: ${TIMESTAMP}
+        jobName: ${JOB_NAME}
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetwork
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-vnet
+    spec:
+      addressSpace:
+        addressPrefixes:
+        - ${AKS_POD_SUBNET_VNET_CIDR:=10.240.0.0/12}
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetworksSubnet
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-node-subnet
+    spec:
+      addressPrefix: ${AKS_NODE_SUBNET_CIDR:=10.240.0.0/16}
+      azureName: node-subnet
+      owner:
+        name: ${CLUSTER_NAME}-vnet
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetworksSubnet
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pod-subnet
+    spec:
+      addressPrefix: ${AKS_POD_SUBNET_CIDR:=10.241.0.0/16}
+      azureName: pod-subnet
+      owner:
+        name: ${CLUSTER_NAME}-vnet
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetworksSubnet
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pod-subnet-2
+    spec:
+      addressPrefix: ${AKS_POD_SUBNET_2_CIDR:=10.242.0.0/16}
+      azureName: pod-subnet-2
+      owner:
+        name: ${CLUSTER_NAME}-vnet
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureASOManagedMachinePool
+        name: ${CLUSTER_NAME}-pool0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureASOManagedMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool0
+  namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20240901
+    kind: ManagedClustersAgentPool
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pool0
+    spec:
+      azureName: pool0
+      mode: System
+      owner:
+        name: ${CLUSTER_NAME}
+      podSubnetReference:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-pod-subnet
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      vnetSubnetReference:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-node-subnet
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureASOManagedMachinePool
+        name: ${CLUSTER_NAME}-pool1
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureASOManagedMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-pool1
+  namespace: default
+spec:
+  resources:
+  - apiVersion: containerservice.azure.com/v1api20240901
+    kind: ManagedClustersAgentPool
+    metadata:
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+      name: ${CLUSTER_NAME}-pool1
+    spec:
+      azureName: pool1
+      mode: User
+      owner:
+        name: ${CLUSTER_NAME}
+      podSubnetReference:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-pod-subnet-2
+      type: VirtualMachineScaleSets
+      vmSize: ${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}
+      vnetSubnetReference:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-node-subnet
