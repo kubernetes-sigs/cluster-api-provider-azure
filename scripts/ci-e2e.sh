@@ -61,7 +61,7 @@ if [[ "$(capz::util::should_build_ccm)" == "true" ]]; then
   echo "Will use the ${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG_CNM} cloud-node-manager image for external cloud-provider-azure cluster"
 fi
 
-export GINKGO_NODES=10
+export GINKGO_NODES="${GINKGO_NODES:-10}"
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
 export AZURE_LOCATION_GPU="${AZURE_LOCATION_GPU:-$(capz::util::get_random_region_gpu)}"
