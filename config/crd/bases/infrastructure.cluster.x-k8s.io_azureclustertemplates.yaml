@@ -228,6 +228,7 @@ spec:
                                             description:
                                               description: A description for this
                                                 rule. Restricted to 140 chars.
+                                              maxLength: 140
                                               type: string
                                             destination:
                                               description: Destination is the destination
@@ -299,7 +300,6 @@ spec:
                                                 type: string
                                               type: array
                                           required:
-                                          - description
                                           - direction
                                           - name
                                           - protocol
@@ -747,6 +747,7 @@ spec:
                                           description:
                                             description: A description for this rule.
                                               Restricted to 140 chars.
+                                            maxLength: 140
                                             type: string
                                           destination:
                                             description: Destination is the destination
@@ -816,7 +817,6 @@ spec:
                                               type: string
                                             type: array
                                         required:
-                                        - description
                                         - direction
                                         - name
                                         - protocol
