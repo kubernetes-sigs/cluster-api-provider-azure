@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  type: UserAssignedMSI
+  clientID: ${AZURE_CLIENT_ID_CLOUD_PROVIDER}
+  resourceID: /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
