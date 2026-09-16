@@ -237,3 +237,47 @@ func TestAzureMachineServiceDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureMachineServiceDeleteNetworkInterfaces(t *testing.T) {
+	cases := map[string]struct {
+		expectedError string
+		expect        func(nic *mock_azure.MockServiceReconcilerMockRecorder)
+	}{
+		"network interfaces service delete succeeds": {
+			expect: func(nic *mock_azure.MockServiceReconcilerMockRecorder) {
+				nic.Delete(gomockinternal.AContext()).Return(nil)
+			},
+		},
+		"network interfaces service delete fails": {
+			expectedError: "some error happened",
+			expect: func(nic *mock_azure.MockServiceReconcilerMockRecorder) {
+				nic.Delete(gomockinternal.AContext()).Return(errors.New("some error happened"))
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			nicMock := mock_azure.NewMockServiceReconciler(mockCtrl)
+
+			tc.expect(nicMock.EXPECT())
+
+			s := &azureMachineService{
+				networkInterfacesSvc: nicMock,
+			}
+
+			err := s.deleteNetworkInterfaces(t.Context())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
