@@ -68,10 +68,16 @@ resources. Note that `clusterctl move` will not move user-managed ASO resources.
 
 ### Migrating a cluster with `clusterctl move`
 
-When you `clusterctl move` a cluster between management clusters, the ASO resources that CAPZ creates and owns
-move automatically along with the Cluster that owns them: `clusterctl` discovers every CRD present on the
-source cluster and moves the objects reachable through the Cluster's owner-reference hierarchy. CAPZ does not
-need to ship or label the ASO CRDs for this to work.
+When you `clusterctl move` a cluster between management clusters, the CAPZ objects move automatically along
+with the Cluster that owns them: `clusterctl` moves every object reachable through the Cluster's
+owner-reference hierarchy for the CRDs it recognizes. The CAPZ `AzureASOManaged*` resources (and the `Cluster`,
+`MachinePool`, and so on) are in that set. The inline ASO resources that CAPZ creates inside them (for example
+the ASO `ResourceGroup`, `ManagedCluster`, and `ManagedClustersAgentPool`) are not: their CRDs are installed
+by ASO and do not carry the `clusterctl.cluster.x-k8s.io` label, so `clusterctl` does not discover them and the
+owner-reference chain stops at the `AzureASOManaged*` resources. After a move, CAPZ on the target recreates
+the inline ASO resources from the moved `AzureASOManaged*` resources (with `reconcile-policy: skip` on
+create, which ASO adopts once it sees the resource in Azure), so the cluster converges without a second
+management cluster reconciling the same Azure resource.
 
 A few things to keep in mind:
 
@@ -86,6 +92,14 @@ A few things to keep in mind:
   during the migration.
 - **User-managed (BYO) ASO resources are not moved** (see above); you are responsible for migrating those
   yourself.
+- **The ASO credential Secret is not moved unless you label it.** The Secret named by the
+  `serviceoperator.azure.com/credential-from` annotation on inline ASO resources (for example the
+  `${ASO_CREDENTIAL_SECRET_NAME}` Secret from the `aks-aso` flavor) is not owned by the Cluster and
+  does not follow the `<cluster>-<purpose>` naming convention, so `clusterctl move` leaves it on
+  the source. Without it the moved ASO resources report `Ready=False` (reason `Failed`,
+  "credential secret not found") on the target. Either label the Secret
+  `clusterctl.cluster.x-k8s.io/move: "true"` before moving, which the `aks-aso` flavor now
+  does, or create the Secret on the target before running `move`.
 
 ## Configuration with Environment Variables
 
