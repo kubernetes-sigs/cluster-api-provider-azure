@@ -33,6 +33,15 @@ const (
 )
 
 // LabelCRDsForClusterctlUpgrade labels ASO-managed CRDs as CAPZ provider resources.
+//
+// As of CAPZ v1.29.0 the embedded ASO applies this label itself via `--crd-labels` (ASO v2.21.0+), so a
+// freshly installed management cluster needs no help here. clusterctl reads the label from the CRDs that are
+// already on the cluster when `clusterctl upgrade` runs, though, which means the label has to have been
+// applied by the *installed* CAPZ release. The e2e upgrade specs start from released CAPZ versions that
+// predate `--crd-labels`, so they still have to apply it out of band.
+//
+// This can be deleted once the oldest CAPZ version in the upgrade matrix (OLD_PROVIDER_UPGRADE_VERSION in
+// test/e2e/config/azure-dev.yaml) is v1.29.0 or newer.
 func LabelCRDsForClusterctlUpgrade(ctx context.Context, c client.Client) error {
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := c.List(ctx, crds, client.MatchingLabels{asoCRDAppLabel: asoCRDAppValue}); err != nil {
