@@ -24,8 +24,14 @@ cluster.
 
 ### Pre-upgrade workaround for ASO-managed CRDs
 
-Until CAPZ's embedded ASO applies the CAPZ provider label automatically, label the ASO-managed CRDs before
-upgrading CAPZ. Run this command against the management cluster before `clusterctl upgrade`:
+Beginning with CAPZ v1.29.0, CAPZ configures its embedded ASO with
+`--crd-labels=cluster.x-k8s.io/provider=infrastructure-azure`, so ASO applies the CAPZ provider label to every
+CRD it manages and no manual step is needed.
+
+The label has to already be present when `clusterctl upgrade` runs, which means it must have been applied by
+the CAPZ release that is *currently installed* on the management cluster. When upgrading from a CAPZ release
+older than v1.29.0, label the ASO-managed CRDs yourself first. Run this command against the management cluster
+before `clusterctl upgrade`:
 
 ```bash
 kubectl label customresourcedefinitions \
