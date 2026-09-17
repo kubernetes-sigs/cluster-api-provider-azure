@@ -3,23 +3,23 @@ managementClusterName: capz-e2e
 images:
   - name: ${MANAGER_IMAGE}
     loadBehavior: mustLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.10
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.12.11
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.4
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.13.6
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.14.0
+  - name: registry.k8s.io/cluster-api/cluster-api-controller:v1.14.2
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.10
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.12.11
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.4
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.13.6
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.14.0
+  - name: registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.14.2
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.10
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.12.11
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.4
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.13.6
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.14.0
+  - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.14.2
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.2
     loadBehavior: tryLoad
@@ -37,8 +37,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.10
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/core-components.yaml
+    - name: v1.12.11
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.11/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -48,8 +48,8 @@ providers:
         new: "imagePullPolicy: IfNotPresent"
       - old: "- --leader-elect"
         new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
-    - name: v1.13.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/core-components.yaml
+    - name: v1.13.6
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.6/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -59,8 +59,8 @@ providers:
         new: "imagePullPolicy: IfNotPresent"
       - old: "- --leader-elect"
         new: "- --leader-elect\n        - --remote-connection-grace-period=3m"
-    - name: v1.14.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/core-components.yaml
+    - name: v1.14.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/core-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -83,8 +83,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.10
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/bootstrap-components.yaml
+    - name: v1.12.11
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.11/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -92,8 +92,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/bootstrap-components.yaml
+    - name: v1.13.6
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.6/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -101,8 +101,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.14.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/bootstrap-components.yaml
+    - name: v1.14.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/bootstrap-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -123,8 +123,8 @@ providers:
           new: --metrics-addr=:8080
       files:
         - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-    - name: v1.12.10
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.10/control-plane-components.yaml
+    - name: v1.12.11
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.11/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -132,8 +132,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.13.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/control-plane-components.yaml
+    - name: v1.13.6
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.6/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -141,8 +141,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v1.14.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.0/control-plane-components.yaml
+    - name: v1.14.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/control-plane-components.yaml
       type: url
       contract: v1beta2
       files:
@@ -331,8 +331,8 @@ variables:
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   WINDOWS_CONTAINERD_URL: "${WINDOWS_CONTAINERD_URL:-}"
   AZURE_CNI_V1_MANIFEST_PATH: "${PWD}/templates/addons/azure-cni-v1.yaml"
-  OLD_CAPI_UPGRADE_VERSION: "v1.12.10"
-  LATEST_CAPI_UPGRADE_VERSION: "v1.13.4"
+  OLD_CAPI_UPGRADE_VERSION: "v1.12.11"
+  LATEST_CAPI_UPGRADE_VERSION: "v1.13.6"
   OLD_PROVIDER_UPGRADE_VERSION: "v1.26.1"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.27.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
