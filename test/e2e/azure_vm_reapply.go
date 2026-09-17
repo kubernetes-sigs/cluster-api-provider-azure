@@ -141,7 +141,6 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	const (
 		testExtPublisher = "Microsoft.CPlat.Core"
 		testExtType      = "RunCommandHandlerLinux"
-		testExtVersion   = "1.3.8"
 	)
 	extListResult, err := vmExtClient.List(ctx, resourceGroup, vmName, nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -178,7 +177,6 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 			Properties: &armcompute.VirtualMachineExtensionProperties{
 				Publisher:               ptr.To(testExtPublisher),
 				Type:                    ptr.To(testExtType),
-				TypeHandlerVersion:      ptr.To(testExtVersion),
 				AutoUpgradeMinorVersion: ptr.To(false),
 				Settings: map[string]any{
 					"commandToExecute": "exit 1",
