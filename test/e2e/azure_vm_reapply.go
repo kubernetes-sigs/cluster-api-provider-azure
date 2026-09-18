@@ -166,10 +166,10 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	}
 	Logf("Found existing CustomScript extension %q (version %s) on VM %q", existingExtName, existingExtVersion, vmName)
 
-	// DeferCleanup restores the existing extension to a known-good no-op state if
-	// the test exits before CAPZ's extension reconciler reinstalls it automatically.
+	// DeferCleanup reinstates the extension with a no-op command if the test exits
+	// before CAPZ's extension reconciler restores it automatically.
 	DeferCleanup(func(cleanCtx context.Context) {
-		Logf("DeferCleanup: restoring CustomScript extension %q on VM %q", existingExtName, vmName)
+		Logf("DeferCleanup: reinstating CustomScript extension %q on VM %q", existingExtName, vmName)
 		poller, cleanErr := vmExtClient.BeginCreateOrUpdate(cleanCtx, resourceGroup, vmName, existingExtName,
 			armcompute.VirtualMachineExtension{
 				Location: initialVM.Location,
@@ -178,24 +178,35 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 					Type:                    ptr.To("CustomScript"),
 					TypeHandlerVersion:      ptr.To(existingExtVersion),
 					AutoUpgradeMinorVersion: ptr.To(false),
-					ProtectedSettings: map[string]any{
+					Settings: map[string]any{
 						"commandToExecute": "exit 0",
 					},
 				},
 			}, nil)
 		if cleanErr != nil {
-			Logf("DeferCleanup: restore failed (non-fatal, CAPZ will reconcile): %v", cleanErr)
+			Logf("DeferCleanup: reinstate failed (non-fatal, CAPZ will reconcile): %v", cleanErr)
 			return
 		}
 		if _, cleanErr = poller.PollUntilDone(cleanCtx, nil); cleanErr != nil {
-			Logf("DeferCleanup: restore poll error (non-fatal): %v", cleanErr)
+			Logf("DeferCleanup: reinstate poll error (non-fatal): %v", cleanErr)
 		}
 	})
 
-	By("Updating the CustomScript extension to run 'exit 1' to trigger Failed provisioning state")
-	// This replaces the protected commandToExecute with a public-settings "exit 1".
-	// CustomScript v2.x uses whichever of Settings or ProtectedSettings provides
-	// commandToExecute; providing it in Settings here overrides the protected version.
+	By("Deleting the existing CustomScript extension to free the handler slot")
+	// Azure allows only one extension per handler type. Deleting the existing one
+	// frees the slot so we can install a new failing extension immediately after.
+	// Deleting an extension does not trigger VM re-provisioning — the VM stays Succeeded.
+	preDeletePoller, err := vmExtClient.BeginDelete(ctx, resourceGroup, vmName, existingExtName, nil)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = preDeletePoller.PollUntilDone(ctx, nil)
+	Expect(err).NotTo(HaveOccurred(), "Failed to delete the existing CustomScript extension from VM %q", vmName)
+	Logf("Existing CustomScript extension %q deleted from VM %q; installing failing replacement", existingExtName, vmName)
+
+	By("Installing a new CustomScript extension that exits with code 1 to trigger Failed provisioning state")
+	// Installing a NEW extension (not updating an existing one) and having it fail
+	// sets the VM's top-level ProvisioningState to "Failed". An extension UPDATE that
+	// fails leaves the VM at "Succeeded" — only an initial INSTALL failure causes the
+	// VM itself to be marked Failed.
 	failPoller, err := vmExtClient.BeginCreateOrUpdate(ctx, resourceGroup, vmName, existingExtName,
 		armcompute.VirtualMachineExtension{
 			Location: initialVM.Location,
@@ -212,7 +223,7 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	Expect(err).NotTo(HaveOccurred())
 
 	_, extensionErr := failPoller.PollUntilDone(ctx, nil)
-	Logf("Extension update completed with error (expected failure): %v", extensionErr)
+	Logf("Failing extension install completed with error (expected): %v", extensionErr)
 
 	By("Waiting for the VM to enter Failed provisioning state")
 	Eventually(func(g Gomega) string {
