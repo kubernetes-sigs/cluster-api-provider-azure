@@ -167,6 +167,10 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	testExtVersion := ptr.Deref(versions[len(versions)-1].Name, "")
 	Expect(testExtVersion).NotTo(BeEmpty(), "Could not determine extension version for %s/%s", testExtPublisher, testExtType)
 	Logf("Using extension %s/%s version %q", testExtPublisher, testExtType, testExtVersion)
+	Logf("Have the following versions")
+	for _, version := range versions {
+		Logf("extension image info: %+v", *version)
+	}
 
 	// Ensure the test extension is removed even if the test fails mid-way.
 	DeferCleanup(func(cleanCtx context.Context) {
