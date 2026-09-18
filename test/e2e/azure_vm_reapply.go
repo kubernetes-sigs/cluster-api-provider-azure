@@ -22,6 +22,8 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -164,12 +166,16 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 	Expect(err).NotTo(HaveOccurred())
 	Expect(versionsResp.VirtualMachineExtensionImageArray).NotTo(BeEmpty(), "No versions found for %s/%s in location %s", testExtPublisher, testExtType, location)
 	versions := versionsResp.VirtualMachineExtensionImageArray
-	testExtVersion := ptr.Deref(versions[len(versions)-1].Name, "")
+	catalogVersion := latestExtensionImageVersion(versions)
+	Expect(catalogVersion).NotTo(BeEmpty(), "Could not determine extension version for %s/%s", testExtPublisher, testExtType)
+	testExtVersion := extensionTypeHandlerVersion(catalogVersion)
+	Expect(testExtVersion).NotTo(BeEmpty(), "Could not determine typeHandlerVersion for catalog version %q", catalogVersion)
+	Logf("Using extension %s/%s typeHandlerVersion %q (catalog %q)", testExtPublisher, testExtType, testExtVersion, catalogVersion)
 	Expect(testExtVersion).NotTo(BeEmpty(), "Could not determine extension version for %s/%s", testExtPublisher, testExtType)
 	Logf("Using extension %s/%s version %q", testExtPublisher, testExtType, testExtVersion)
 	Logf("Have the following versions")
 	for _, version := range versions {
-		Logf("extension image info: %+v", *version)
+		Logf("extension image info: location: %s, id: %s, name: %s", ptr.Deref(version.Location, ""), ptr.Deref(version.ID, ""), ptr.Deref(version.Name, ""))
 	}
 
 	// Ensure the test extension is removed even if the test fails mid-way.
@@ -255,4 +261,61 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 		g.Expect(string(*updatedMachine.Status.VMState)).To(Equal(string(infrav1.Succeeded)),
 			"AzureMachine %q VMState should be Succeeded after Reapply recovery", workerMachine.Name)
 	}, 5*time.Minute, reapplyPollInterval).Should(Succeed())
+}
+
+func latestExtensionImageVersion(images []*armcompute.VirtualMachineExtensionImage) string {
+	var latest string
+	for _, img := range images {
+		if img == nil {
+			continue
+		}
+		name := ptr.Deref(img.Name, "")
+		if name == "" {
+			continue
+		}
+		if latest == "" || compareDotVersions(name, latest) > 0 {
+			latest = name
+		}
+	}
+	return latest
+}
+
+func extensionTypeHandlerVersion(catalogVersion string) string {
+	parts := strings.Split(catalogVersion, ".")
+	if len(parts) < 2 {
+		return catalogVersion
+	}
+	return parts[0] + "." + parts[1]
+}
+
+func compareDotVersions(a, b string) int {
+	as := parseDotInts(a)
+	bs := parseDotInts(b)
+	n := max(len(as), len(bs))
+	for i := range n {
+		var av, bv int
+		if i < len(as) {
+			av = as[i]
+		}
+		if i < len(bs) {
+			bv = bs[i]
+		}
+		if av != bv {
+			return av - bv
+		}
+	}
+	return 0
+}
+
+func parseDotInts(v string) []int {
+	parts := strings.Split(v, ".")
+	out := make([]int, 0, len(parts))
+	for _, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil {
+			return out
+		}
+		out = append(out, n)
+	}
+	return out
 }
