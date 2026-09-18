@@ -196,7 +196,7 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 				Publisher:               ptr.To(testExtPublisher),
 				Type:                    ptr.To(testExtType),
 				TypeHandlerVersion:      ptr.To(testExtVersion),
-				AutoUpgradeMinorVersion: ptr.To(false),
+				AutoUpgradeMinorVersion: ptr.To(true),
 				Settings: map[string]any{
 					"commandToExecute": "exit 1",
 				},
