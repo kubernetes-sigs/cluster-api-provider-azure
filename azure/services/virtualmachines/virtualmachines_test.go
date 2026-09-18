@@ -17,12 +17,15 @@ limitations under the License.
 package virtualmachines
 
 import (
+	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	. "github.com/onsi/gomega"
@@ -135,16 +138,67 @@ func internalError() *azcore.ResponseError {
 	}
 }
 
+// fakeReapplyPoller creates a fake runtime.Poller for VM Reapply operations, simulating
+// an in-progress long-running operation returned by BeginReapply.
+func fakeReapplyPoller() *runtime.Poller[armcompute.VirtualMachinesClientReapplyResponse] {
+	header := http.Header{}
+	header.Set("Location", "https://management.azure.com/fake-reapply-operation")
+	response := &http.Response{
+		Body:   io.NopCloser(strings.NewReader("")),
+		Header: header,
+		Request: &http.Request{
+			Method: http.MethodPost,
+			URL:    &url.URL{Path: "/"},
+		},
+		StatusCode: http.StatusAccepted,
+	}
+	pipeline := runtime.NewPipeline("testmodule", "v0.1.0", runtime.PipelineOptions{}, nil)
+	poller, err := runtime.NewPoller[armcompute.VirtualMachinesClientReapplyResponse](response, pipeline, nil)
+	if err != nil {
+		panic(err)
+	}
+	return poller
+}
+
 func TestReconcileVM(t *testing.T) {
+	fakeFailedVM := armcompute.VirtualMachine{
+		ID:   ptr.To("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-failed-vm"),
+		Name: ptr.To("test-vm-name"),
+		Properties: &armcompute.VirtualMachineProperties{
+			ProvisioningState: ptr.To("Failed"),
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					{
+						ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
+					},
+				},
+			},
+		},
+	}
+	fakeReappliedVM := armcompute.VirtualMachine{
+		ID:   ptr.To("subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm"),
+		Name: ptr.To("test-vm-name"),
+		Properties: &armcompute.VirtualMachineProperties{
+			ProvisioningState: ptr.To("Succeeded"),
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					{
+						ID: ptr.To("/subscriptions/123/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/nic-1"),
+					},
+				},
+			},
+		},
+	}
+
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder)
 	}{
 		{
 			name:          "noop if no vm spec is found",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(nil)
 			},
@@ -152,9 +206,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds",
 			expectedError: "",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -169,9 +224,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "creating vm fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(nil, internalError())
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, internalError())
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, internalError())
@@ -180,9 +236,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get network interfaces",
 			expectedError: "failed to fetch VM addresses:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -194,9 +251,10 @@ func TestReconcileVM(t *testing.T) {
 		{
 			name:          "create vm succeeds but failed to get public IPs",
 			expectedError: "failed to fetch VM addresses:.*#: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(nil, &azcore.ResponseError{StatusCode: http.StatusNotFound})
 				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
@@ -204,6 +262,115 @@ func TestReconcileVM(t *testing.T) {
 				s.SetAnnotation("cluster-api-provider-azure", "true")
 				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
 				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(armnetwork.PublicIPAddress{}, internalError())
+			},
+		},
+		{
+			name:          "reapply vm in Failed state succeeds",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile (VM is Failed, no existing future)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, nil)
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeReappliedVM, nil)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
+				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(fakePublicIPs, nil)
+				s.SetAddresses(fakeNodeAddresses)
+				s.SetVMState(infrav1.Succeeded)
+			},
+		},
+		{
+			name:          "reapply vm in Failed state fails",
+			expectedError: "failed to reapply VM",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, internalError())
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			name:          "reapply vm in Failed state times out and saves future for resume",
+			expectedError: "operation type PUT on Azure resource.*is not done",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				// First call: hasActiveReapplyFuture check in Reconcile
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				// Second call: resume token lookup inside reapplyVM
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(fakeReapplyPoller(), context.DeadlineExceeded)
+				s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue)
+				s.SetLongRunningOperationState(gomock.Any())
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			name:          "existing vm in Succeeded state uses normal flow",
+			expectedError: "",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeExistingVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), &fakeVMSpec, serviceName).Return(fakeExistingVM, nil)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, nil)
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, nil)
+				s.SetProviderID("azure://subscriptions/123/resourceGroups/my_resource_group/providers/Microsoft.Compute/virtualMachines/my-vm")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				mnic.Get(gomockinternal.AContext(), &fakeNetworkInterfaceGetterSpec).Return(fakeNetworkInterface, nil)
+				mpip.Get(gomockinternal.AContext(), &fakePublicIPSpec).Return(fakePublicIPs, nil)
+				s.SetAddresses(fakeNodeAddresses)
+				s.SetVMState(infrav1.Succeeded)
+			},
+		},
+		{
+			name:          "resume reapply when VM exited Failed state but future still exists",
+			expectedError: "could not decode reapply future data",
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				// The VM transitioned out of "Failed" (e.g. to "Succeeded") mid-reapply,
+				// but the future is still stored. The reapply path must be entered so that
+				// status conditions are updated correctly. Here the stored future has corrupted
+				// data (empty Data field), so we verify the state is cleared and an error is
+				// returned — the reconciler will retry on the next loop.
+				staleFuture := &infrav1.Future{
+					Type:          infrav1.PutFuture,
+					ServiceName:   reapplyServiceName,
+					Name:          fakeVMSpec.Name,
+					ResourceGroup: fakeVMSpec.ResourceGroup,
+					// Data is intentionally empty: FutureToResumeToken returns an error,
+					// causing the state to be cleared and the error to propagate.
+				}
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeExistingVM, nil) // Succeeded, not Failed
+				// First call: hasActiveReapplyFuture check in Reconcile — future present, enter reapply path.
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(staleFuture)
+				// Second call: resume-token lookup inside reapplyVM.
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(staleFuture)
+				// FutureToResumeToken fails (empty Data) → clear the bad state, return error.
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				// reapplyVM returns early with an error; Reconcile updates status with that error.
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
 			},
 		},
 	}
@@ -219,11 +386,13 @@ func TestReconcileVM(t *testing.T) {
 			interfaceMock := mock_async.NewMockGetter(mockCtrl)
 			publicIPMock := mock_async.NewMockGetter(mockCtrl)
 			asyncMock := mock_async.NewMockReconciler(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT())
+			tc.expect(scopeMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), asyncMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:            scopeMock,
+				client:           clientMock,
 				interfacesGetter: interfaceMock,
 				publicIPsGetter:  publicIPMock,
 				Reconciler:       asyncMock,
