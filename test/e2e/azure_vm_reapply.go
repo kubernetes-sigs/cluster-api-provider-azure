@@ -133,11 +133,10 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 		"VM %q must be in Succeeded state before the Reapply test", vmName)
 
 	By("Checking existing VM extensions to avoid handler conflicts")
-	// Azure only allows one extension per handler type on a VM. We use
-	// Microsoft.CPlat.Core/RunCommandHandlerLinux, which is a different handler
-	// from Microsoft.Azure.Extensions/CustomScript that CAPZ may install.
-	// Skip if this handler is already installed to avoid a 409 Conflict.
-	// Version taken from https://github.com/Azure/run-command-handler-linux/blob/v1.18.0/misc/manifest.xml
+	// Azure allows only one extension per handler type (publisher + type pair) on a VM.
+	// Microsoft.CPlat.Core/RunCommandHandlerLinux is a separate handler from the
+	// CustomScript extensions CAPZ installs, so it does not conflict. Skip if it is
+	// somehow already present.
 	const (
 		testExtPublisher = "Microsoft.CPlat.Core"
 		testExtType      = "RunCommandHandlerLinux"
@@ -150,33 +149,49 @@ func AzureVMReapplySpec(ctx context.Context, inputGetter func() AzureVMReapplySp
 		}
 		if ptr.Deref(ext.Properties.Publisher, "") == testExtPublisher &&
 			ptr.Deref(ext.Properties.Type, "") == testExtType {
-			Skip(fmt.Sprintf("VM %q already has %s/%s installed; cannot inject failure without conflict", vmName, testExtPublisher, testExtType))
+			Skip(fmt.Sprintf("VM %q already has %s/%s installed; skipping Reapply test to avoid handler conflict", vmName, testExtPublisher, testExtType))
 		}
 	}
 
-	// Ensure the test extension is cleaned up even if the test fails mid-way.
+	By("Resolving the latest available version of the test extension from the Azure API")
+	// We query the extension image API rather than hardcoding a version, so the test
+	// does not break when new versions are published and old ones are retired.
+	// VirtualMachineExtensionImage.Name is the version string (e.g. "1.3.30").
+	extImagesClient, err := armcompute.NewVirtualMachineExtensionImagesClient(subscriptionID, cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+	location := ptr.Deref(initialVM.Location, "")
+	versionsResp, err := extImagesClient.ListVersions(ctx, location, testExtPublisher, testExtType, nil)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(versionsResp.VirtualMachineExtensionImageArray).NotTo(BeEmpty(), "No versions found for %s/%s in location %s", testExtPublisher, testExtType, location)
+	versions := versionsResp.VirtualMachineExtensionImageArray
+	testExtVersion := ptr.Deref(versions[len(versions)-1].Name, "")
+	Expect(testExtVersion).NotTo(BeEmpty(), "Could not determine extension version for %s/%s", testExtPublisher, testExtType)
+	Logf("Using extension %s/%s version %q", testExtPublisher, testExtType, testExtVersion)
+
+	// Ensure the test extension is removed even if the test fails mid-way.
 	DeferCleanup(func(cleanCtx context.Context) {
-		Logf("Cleaning up test extension %q from VM %q (if it still exists)", reapplyExtensionName, vmName)
+		Logf("DeferCleanup: removing test extension %q from VM %q (if present)", reapplyExtensionName, vmName)
 		poller, cleanErr := vmExtClient.BeginDelete(cleanCtx, resourceGroup, vmName, reapplyExtensionName, nil)
 		if cleanErr != nil {
-			Logf("Skipping extension cleanup (extension may already be deleted): %v", cleanErr)
+			Logf("DeferCleanup: extension already absent or delete failed (non-fatal): %v", cleanErr)
 			return
 		}
 		if _, cleanErr = poller.PollUntilDone(cleanCtx, nil); cleanErr != nil {
-			Logf("Extension cleanup poll error (non-fatal): %v", cleanErr)
+			Logf("DeferCleanup: extension delete poll error (non-fatal): %v", cleanErr)
 		}
 	})
 
-	By("Installing a deliberately-failing Run Command extension to trigger Failed provisioning state")
-	// RunCommandHandlerLinux runs the commandToExecute script. Exiting non-zero causes
-	// the extension to fail, which sets the VM's top-level ProvisioningState to "Failed".
-	// This is a different handler from CustomScript so it never conflicts with CAPZ's own extensions.
+	By("Installing a deliberately-failing RunCommandHandlerLinux extension to trigger Failed provisioning state")
+	// ARM accepts the extension resource; failure occurs when the extension agent on the
+	// VM executes the script and "exit 1" returns a non-zero code. Azure then sets the
+	// VM's top-level ProvisioningState to "Failed".
 	beginCreatePoller, err := vmExtClient.BeginCreateOrUpdate(ctx, resourceGroup, vmName, reapplyExtensionName,
 		armcompute.VirtualMachineExtension{
 			Location: initialVM.Location,
 			Properties: &armcompute.VirtualMachineExtensionProperties{
 				Publisher:               ptr.To(testExtPublisher),
 				Type:                    ptr.To(testExtType),
+				TypeHandlerVersion:      ptr.To(testExtVersion),
 				AutoUpgradeMinorVersion: ptr.To(false),
 				Settings: map[string]any{
 					"commandToExecute": "exit 1",
