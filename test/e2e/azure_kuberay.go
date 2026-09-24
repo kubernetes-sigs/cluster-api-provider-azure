@@ -269,6 +269,30 @@ func InstallHelmChart(ctx context.Context, clusterProxy framework.ClusterProxy, 
 	Expect(err).NotTo(HaveOccurred(), "failed to install Helm chart: %s", string(output))
 }
 
+// InstallHelmChartOCI installs a Helm chart from an OCI registry reference onto a cluster via
+// the given ClusterProxy. OCI charts are pulled by reference and have no repository to add.
+func InstallHelmChartOCI(ctx context.Context, clusterProxy framework.ClusterProxy, namespace, chartRef, version, releaseName string, extraArgs ...string) {
+	kubeconfigPath := clusterProxy.GetKubeconfigPath()
+	By(fmt.Sprintf("Installing Helm chart %s as release %s using kubeconfig %s", chartRef, releaseName, kubeconfigPath))
+
+	helmArgs := []string{"upgrade", "--install", releaseName, chartRef,
+		"--namespace", namespace,
+		"--create-namespace",
+		"--wait",
+		"--timeout", "10m0s",
+	}
+	if version != "" {
+		helmArgs = append(helmArgs, "--version", version)
+	}
+	helmArgs = append(helmArgs, extraArgs...)
+
+	installCmd := exec.CommandContext(ctx, "helm", helmArgs...)
+	installCmd.Env = append(installCmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
+	output, err := installCmd.CombinedOutput()
+	Logf("helm install output: %s", string(output))
+	Expect(err).NotTo(HaveOccurred(), "failed to install Helm chart: %s", string(output))
+}
+
 // newDynamicClient creates a dynamic Kubernetes client from a ClusterProxy.
 func newDynamicClient(clusterProxy framework.ClusterProxy) dynamic.Interface {
 	config := clusterProxy.GetRESTConfig()
