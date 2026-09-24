@@ -244,3 +244,13 @@ func TestParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestParametersRejectsEmptyNATIPConfiguration(t *testing.T) {
+	g := NewGomegaWithT(t)
+	spec := fakePrivateLinkSpec
+	spec.NATIPConfiguration = nil
+
+	_, err := spec.Parameters(t.Context(), nil)
+
+	g.Expect(err).To(MatchError("private link apiserver-privatelink has no NAT IP configurations"))
+}

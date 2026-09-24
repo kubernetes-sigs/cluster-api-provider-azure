@@ -367,6 +367,7 @@ type LoadBalancerSpec struct {
 	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
 	// PrivateLinks to the load balancer (max 8 private links).
 	// Only supported on the API server load balancer.
+	// +kubebuilder:validation:MaxItems=8
 	// +optional
 	PrivateLinks []PrivateLink `json:"privateLinks,omitempty"`
 	// BackendPool describes the backend pool of the load balancer.
@@ -434,14 +435,18 @@ type IPTag struct {
 // PrivateLink configures an Azure private link.
 type PrivateLink struct {
 	// Name of the private link.
-	// +optional
-	Name string `json:"name,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
 
 	// NATIPConfigurations specify up to 8 NAT IP configurations for the private link.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=8
 	NATIPConfigurations []PrivateLinkNATIPConfiguration `json:"natIPConfigurations"`
 
 	// LBFrontendIPConfigNames are the names of the load balancer FrontendIP to which the private link will forward
 	// requests. The specified frontend IP configs must have the private IP set.
+	// +kubebuilder:validation:MinItems=1
 	LBFrontendIPConfigNames []string `json:"lbFrontendIPConfigNames"`
 
 	// AllowedSubscriptions is a list of subscriptions from which the private link can be accessed.

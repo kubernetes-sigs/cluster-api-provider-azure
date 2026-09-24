@@ -95,6 +95,9 @@ func (s *PrivateLinkSpec) Parameters(_ context.Context, existingPrivateLink *aso
 			privateLink.Spec.IpConfigurations[i].PrivateIPAddress = ptr.To(natIPConfiguration.PrivateIPAddress)
 		}
 	}
+	if len(privateLink.Spec.IpConfigurations) == 0 {
+		return nil, fmt.Errorf("private link %s has no NAT IP configurations", s.Name)
+	}
 	privateLink.Spec.IpConfigurations[0].Primary = ptr.To(true)
 
 	privateLink.Spec.LoadBalancerFrontendIpConfigurations = make([]asonetworkv1.FrontendIPConfiguration_PrivateLinkService_SubResourceEmbedded, len(s.LBFrontendIPConfigNames))
