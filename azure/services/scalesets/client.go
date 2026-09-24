@@ -71,6 +71,9 @@ func newVirtualMachineScaleSetVMsClient(auth azure.Authorizer) (*armcompute.Virt
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create scalesetvms client options")
 	}
+	if auth.CloudEnvironment() == azure.USSecCloudName {
+		opts.Cloud = auth.CloudConfiguration()
+	}
 	factory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armcompute client factory")
@@ -83,6 +86,9 @@ func newVirtualMachineScaleSetsClient(auth azure.Authorizer) (*armcompute.Virtua
 	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create scalesets client options")
+	}
+	if auth.CloudEnvironment() == azure.USSecCloudName {
+		opts.Cloud = auth.CloudConfiguration()
 	}
 	factory, err := armcompute.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {

@@ -46,6 +46,8 @@ const (
 	USGovernmentCloudName = "AzureUSGovernmentCloud"
 	// GermanCloudName is the name of the Azure German cloud.
 	GermanCloudName = "AzureGermanCloud"
+	// USSecCloudName is the name of the Azure US Government Secret cloud (IL6).
+	USSecCloudName = "AzureUSSecCloud"
 )
 
 const (
@@ -329,6 +331,9 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 		opts.Cloud = cloud.AzureChina
 	case USGovernmentCloudName:
 		opts.Cloud = cloud.AzureGovernment
+	case USSecCloudName:
+		// USSec cloud.Configuration is populated at runtime from the environment
+		// file. The caller must set opts.Cloud from Authorizer.CloudConfiguration().
 	case "":
 		// No cloud name provided, so leave at defaults.
 	default:

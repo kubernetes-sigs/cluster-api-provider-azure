@@ -730,11 +730,11 @@ func (m *MachineScope) GetVMImage(ctx context.Context) (*infrav1.Image, error) {
 		runtime := m.AzureMachine.Annotations["runtime"]
 		windowsServerVersion := m.AzureMachine.Annotations["windowsServerVersion"]
 		log.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName(), "runtime", runtime, "windowsServerVersion", windowsServerVersion)
-		return svc.GetDefaultWindowsImage(ctx, m.Location(), m.Machine.Spec.Version, runtime, windowsServerVersion)
+		return svc.GetDefaultWindowsImage(ctx, m.Location(), m.Machine.Spec.Version, runtime, windowsServerVersion, m.CloudEnvironment())
 	}
 
 	log.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
-	return svc.GetDefaultLinuxImage(ctx, m.Location(), m.Machine.Spec.Version)
+	return svc.GetDefaultLinuxImage(ctx, m.Location(), m.Machine.Spec.Version, m.CloudEnvironment())
 }
 
 // SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.

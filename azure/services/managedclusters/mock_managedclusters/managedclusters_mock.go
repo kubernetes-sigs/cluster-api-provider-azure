@@ -31,6 +31,7 @@ import (
 	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	cloud "github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
@@ -132,6 +133,20 @@ func (m *MockManagedClusterScope) ClientSecret() string {
 func (mr *MockManagedClusterScopeMockRecorder) ClientSecret() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockManagedClusterScope)(nil).ClientSecret))
+}
+
+// CloudConfiguration mocks base method.
+func (m *MockManagedClusterScope) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockManagedClusterScopeMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockManagedClusterScope)(nil).CloudConfiguration))
 }
 
 // CloudEnvironment mocks base method.
