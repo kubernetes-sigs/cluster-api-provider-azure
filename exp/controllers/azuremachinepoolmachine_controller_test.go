@@ -17,14 +17,17 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
@@ -32,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -107,6 +111,22 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 				}, machine)
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).Should(ContainSubstring("not found"))
+			},
+		},
+		{
+			Name: "should not error if the owner Machine is already gone when deleting",
+			Setup: func(cb *fake.ClientBuilder, reconciler *mock_azure.MockReconcilerMockRecorder) {
+				objects := getReadyMachinePoolMachineClusterObjects(false, ptr.To(infrav1.Deleting))
+				reconciler.Reconcile(gomock2.AContext()).Return(nil)
+				cb.WithObjects(objects...)
+				cb.WithInterceptorFuncs(interceptor.Funcs{
+					Delete: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+						return apierrors.NewNotFound(schema.GroupResource{Group: clusterv1.GroupVersion.Group, Resource: "machines"}, obj.GetName())
+					},
+				})
+			},
+			Verify: func(g *WithT, c client.Client, result ctrl.Result, err error) {
+				g.Expect(err).NotTo(HaveOccurred())
 			},
 		},
 		{
