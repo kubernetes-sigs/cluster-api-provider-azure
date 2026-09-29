@@ -102,7 +102,7 @@ func Pause(ctx context.Context, resources []*unstructured.Unstructured) error {
 
 	for i, resource := range resources {
 		resourcePath := "spec.resources[" + strconv.Itoa(i) + "]"
-		policyPath := []string{"metadata", "annotations", annotations.ReconcilePolicy}
+		policyPath := []string{"metadata", "annotations", annotations.ReconcilePolicy} //nolint:goconst // Match the literal unstructured JSON path.
 		capiPolicy := string(annotations.ReconcilePolicySkip)
 		userPolicy, userDefined := resource.GetAnnotations()[annotations.ReconcilePolicy]
 
