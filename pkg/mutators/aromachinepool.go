@@ -64,10 +64,44 @@ func SetHcpOpenShiftNodePoolDefaults(_ client.Client, _ *infrav1exp.AROMachinePo
 		if err := reconcileAROAutoscaling(nodePool, machinePool); err != nil {
 			return err
 		}
+		if err := reconcileAROReplicas(nodePool, machinePool, nodePoolPath, log); err != nil {
+			return err
+		}
 
 		// Set owner reference to the HcpOpenShiftCluster
 		return setNodePoolOwner(ctx, nodePool, hcpClusterName, nodePoolPath, log)
 	}
+}
+
+func reconcileAROReplicas(nodePool *unstructured.Unstructured, machinePool *clusterv1.MachinePool, nodePoolPath string, log logr.Logger) error {
+	if machinePool.Spec.Replicas == nil {
+		return nil
+	}
+
+	autoScalingConfig, found, err := unstructured.NestedMap(nodePool.UnstructuredContent(), "spec", "properties", "autoScaling")
+	if err != nil {
+		return err
+	}
+	if found && len(autoScalingConfig) > 0 {
+		return nil
+	}
+
+	currentReplicas, found, err := unstructured.NestedInt64(nodePool.UnstructuredContent(), "spec", "properties", "replicas")
+	if err != nil {
+		return err
+	}
+	if found && currentReplicas == int64(*machinePool.Spec.Replicas) {
+		return nil
+	}
+
+	replicas := int64(*machinePool.Spec.Replicas)
+	setReplicas := mutation{
+		location: nodePoolPath + ".spec.properties.replicas",
+		val:      replicas,
+		reason:   "because CAPI MachinePool replicas are the source of truth when ARO autoscaling is disabled",
+	}
+	logMutation(log, setReplicas)
+	return unstructured.SetNestedField(nodePool.UnstructuredContent(), replicas, "spec", "properties", "replicas")
 }
 
 func setNodePoolOwner(_ context.Context, nodePool *unstructured.Unstructured, hcpClusterName, nodePoolPath string, log logr.Logger) error {

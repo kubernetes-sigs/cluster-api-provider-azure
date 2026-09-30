@@ -152,7 +152,7 @@ func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 		// Override the newResourceReconciler to include the watcher
 		svc.newResourceReconciler = func(controlPlane *cplane.AROControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
 			return controllers.NewResourceReconciler(scope.Client, resources, controlPlane,
-				controllers.WithWatcher(externalTracker))
+				controllers.WithWatcher(externalTracker), controllers.WithChildrenFirst())
 		}
 		return svc, nil
 	}

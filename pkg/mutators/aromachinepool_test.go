@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -223,6 +224,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 		hcpClusterName     string
 		autoScalingConfig  map[string]interface{}
 		expectedAnnotation string
+		expectedReplicas   int64
 		expectedErr        error
 	}{
 		{
@@ -239,7 +241,9 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 										"name": "test-nodepool",
 									},
 									"spec": map[string]interface{}{
-										"properties": map[string]interface{}{},
+										"properties": map[string]interface{}{
+											"replicas": int64(1),
+										},
 									},
 								},
 							}),
@@ -252,10 +256,12 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 					Name:        "test-mp",
 					Annotations: map[string]string{},
 				},
+				Spec: clusterv1.MachinePoolSpec{Replicas: ptr.To[int32](2)},
 			},
 			hcpClusterName:     "test-cluster",
 			autoScalingConfig:  nil,
 			expectedAnnotation: "",
+			expectedReplicas:   2,
 		},
 		{
 			name: "autoscaling enabled, sets annotation",
@@ -272,6 +278,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 									},
 									"spec": map[string]interface{}{
 										"properties": map[string]interface{}{
+											"replicas": int64(1),
 											"autoScaling": map[string]interface{}{
 												"min": int64(3),
 												"max": int64(10),
@@ -289,6 +296,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 					Name:        "test-mp",
 					Annotations: map[string]string{},
 				},
+				Spec: clusterv1.MachinePoolSpec{Replicas: ptr.To[int32](2)},
 			},
 			hcpClusterName: "test-cluster",
 			autoScalingConfig: map[string]interface{}{
@@ -296,6 +304,7 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 				"max": int64(10),
 			},
 			expectedAnnotation: infrav1exp.ReplicasManagedByARO,
+			expectedReplicas:   1,
 		},
 		{
 			name: "no HcpOpenShiftClustersNodePool returns error",
@@ -319,12 +328,18 @@ func TestSetHcpOpenShiftNodePoolDefaults(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			mutator := SetHcpOpenShiftNodePoolDefaults(nil, test.aroMachinePool, test.hcpClusterName, test.machinePool)
-			_, err := ApplyMutators(ctx, test.aroMachinePool.Spec.Resources, mutator)
+			actual, err := ApplyMutators(ctx, test.aroMachinePool.Spec.Resources, mutator)
 
 			if test.expectedErr != nil {
 				g.Expect(err).To(MatchError(test.expectedErr))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+				if test.expectedReplicas > 0 {
+					replicas, found, err := unstructured.NestedInt64(actual[0].UnstructuredContent(), "spec", "properties", "replicas")
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(found).To(BeTrue())
+					g.Expect(replicas).To(Equal(test.expectedReplicas))
+				}
 
 				// Check if annotation was set correctly
 				if test.expectedAnnotation != "" {

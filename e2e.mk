@@ -20,6 +20,14 @@ test-e2e-run: generate-e2e-templates install-tools create-bootstrap ## Run e2e t
 		-e2e.skip-log-collection="$(SKIP_LOG_COLLECTION)" \
 		-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 
+.PHONY: test-e2e-aro-hcp
+test-e2e-aro-hcp: ## Run the opt-in ARO HCP lifecycle E2E test.
+	@test -n "$${AZURE_SUBSCRIPTION_ID:-}" || { echo "AZURE_SUBSCRIPTION_ID must be set" >&2; exit 1; }
+	@test -n "$${AZURE_TENANT_ID:-}" || { echo "AZURE_TENANT_ID must be set" >&2; exit 1; }
+	@test -n "$${AZURE_LOCATION:-}" || { echo "AZURE_LOCATION must be set to an ARO HCP-supported region" >&2; exit 1; }
+	@test -n "$${ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID:-}" || { echo "ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID must be set to a pre-registered Microsoft Entra application client ID" >&2; exit 1; }
+	ASO_IMAGE="$${ASO_IMAGE:-localhost:5000/capz/azure-service-operator-rhel9:upstream}" EXP_ARO=true GINKGO_FOCUS="ARO HCP E2E" GINKGO_NODES=1 SKIP_CLEANUP="$${SKIP_CLEANUP:-false}" $(MAKE) test-e2e-skip-push
+
 .PHONY: test-e2e-run-cleanup
 test-e2e-run-cleanup: ## Run e2e cleanup tasks.
 	$(MAKE) cleanup-workload-identity || true

@@ -147,7 +147,7 @@ func (ampr *AROMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr 
 		// Override the newResourceReconciler to include the watcher
 		svc.newResourceReconciler = func(machinePool *infrav2exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
 			return controllers.NewResourceReconciler(aroMachinePoolScope.Client, resources, machinePool,
-				controllers.WithWatcher(externalTracker))
+				controllers.WithWatcher(externalTracker), controllers.WithChildrenFirst())
 		}
 		return svc, nil
 	}

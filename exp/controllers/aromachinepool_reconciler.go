@@ -63,7 +63,7 @@ func newAROMachinePoolService(scope *scope.AROMachinePoolScope, cluster *cluster
 		cluster:    cluster,
 		tracker:    tracker,
 		newResourceReconciler: func(machinePool *infrav1exp.AROMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
-			return controllers.NewResourceReconciler(scope.Client, resources, machinePool)
+			return controllers.NewResourceReconciler(scope.Client, resources, machinePool, controllers.WithChildrenFirst())
 		},
 	}, nil
 }

@@ -19,10 +19,10 @@ patches:
         name: azureserviceoperator-system
   - patch: |-
       - op: test
-        path: /spec/template/spec/containers/0/args/6
+        path: /spec/template/spec/containers/0/args/9
         value: --crd-pattern=
       - op: replace # CAPZ lets ASO install and manage its own CRDs; users can extend the set via ADDITIONAL_ASO_CRDS (';'-delimited). The ADDITIONAL_ASO_CRDS default duplicates a base pattern so that, when the variable is unset, the value still parses as a non-empty list of fully-matching patterns (ASO rejects empty/whitespace pattern entries).
-        path: /spec/template/spec/containers/0/args/6
+        path: /spec/template/spec/containers/0/args/9
         value: --crd-pattern=authorization.azure.com/RoleAssignment;containerservice.azure.com/FleetsMember;containerservice.azure.com/MaintenanceConfiguration;containerservice.azure.com/ManagedCluster;containerservice.azure.com/ManagedClustersAgentPool;keyvault.azure.com/Vault;kubernetesconfiguration.azure.com/Extension;managedidentity.azure.com/UserAssignedIdentity;network.azure.com/BastionHost;network.azure.com/NatGateway;network.azure.com/NetworkSecurityGroup;network.azure.com/PrivateEndpoint;network.azure.com/PrivateLinkService;network.azure.com/VirtualNetwork;network.azure.com/VirtualNetworksSubnet;redhatopenshift.azure.com/HcpOpenShiftCluster;redhatopenshift.azure.com/HcpOpenShiftClustersExternalAuth;redhatopenshift.azure.com/HcpOpenShiftClustersNodePool;resources.azure.com/ResourceGroup;${ADDITIONAL_ASO_CRDS:=resources.azure.com/ResourceGroup}
     target:
       group: apps

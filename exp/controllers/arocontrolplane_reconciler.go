@@ -106,7 +106,7 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 		keyVaultSvc: keyVaultSvc,
 		skuCache:    skuCache,
 		newResourceReconciler: func(controlPlane *cplane.AROControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
-			return controllers.NewResourceReconciler(scope.Client, resources, controlPlane)
+			return controllers.NewResourceReconciler(scope.Client, resources, controlPlane, controllers.WithChildrenFirst())
 		},
 	}
 	acs.Reconcile = acs.reconcile
