@@ -4,8 +4,8 @@ go 1.26.0
 
 toolchain go1.26.7
 
-// These types are not yet available in upstream Azure/azure-service-operator.
-replace github.com/Azure/azure-service-operator/v2 v2.22.0 => github.com/marek-veber/azure-service-operator/v2 v2.22.0
+// Use upstream ASO main until these types are available in a release.
+replace github.com/Azure/azure-service-operator/v2 v2.22.0 => github.com/Azure/azure-service-operator/v2 v2.21.2-0.20260930033953-404970df9a5d
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1
