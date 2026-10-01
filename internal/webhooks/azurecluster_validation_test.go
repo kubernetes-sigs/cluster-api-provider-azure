@@ -1486,8 +1486,6 @@ func TestValidateAPIServerLB(t *testing.T) {
 }
 
 func TestValidatePrivateLinks(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name        string
 		lb          infrav1.LoadBalancerSpec
@@ -2396,6 +2394,7 @@ func TestValidatePrivateLinks(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			g := NewWithT(t)
 			err := validateLBPrivateLinks(&test.lb, &test.old, test.subnets, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
