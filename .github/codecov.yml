@@ -1,3 +1,7 @@
+ignore:
+  - "**/*_mock.go"
+  - "**/zz_generated*.go"
+
 coverage:
   status:
     project:

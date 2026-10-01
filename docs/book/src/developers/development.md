@@ -514,6 +514,9 @@ To generate the mocks you can run
 make generate-go
 ```
 
+Generated GoMock files (`*_mock.go`) and Kubernetes generated Go files (`zz_generated*.go`)
+are excluded from Codecov coverage in `.github/codecov.yml`. Handwritten code remains included.
+
 #### E2E Testing
 
 To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, and run:
