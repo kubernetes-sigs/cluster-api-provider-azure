@@ -67,6 +67,14 @@ type resourceStatusObject interface {
 	SetResourceStatuses([]infrav1.ResourceStatus)
 }
 
+// WithChildrenFirst configures the ResourceReconciler to delete child resources
+// before their parents, using ASO owner references to determine the hierarchy.
+func WithChildrenFirst() func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.childrenFirst = true
+	}
+}
+
 // Reconcile creates or updates the specified resources.
 func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.Reconcile")
