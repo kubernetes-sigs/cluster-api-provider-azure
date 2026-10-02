@@ -1,0 +1,1140 @@
+# Generated from cluster-api-installer/scripts/aro-hcp/gen.sh and its CAPI templates.
+# CAPZ E2E renders this template with its Azure E2E configuration and creates
+# the AzureClusterIdentity and ASO credential Secret before applying the cluster.
+# HcpOpenShiftCluster ASO API: redhatopenshift.azure.com/v20260901preview
+# (generated from ARM API 2026-09-01-preview).
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: AROControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: AROCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: AROControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  identityRef:
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+    namespace: ${NAMESPACE}
+  resources:
+  - apiVersion: redhatopenshift.azure.com/v20260901preview
+    kind: HcpOpenShiftCluster
+    metadata:
+      name: ${CLUSTER_NAME}
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: ${CLUSTER_NAME}
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        secrets:
+          adminCredentials:
+            name: ${CLUSTER_NAME}-kubeconfig
+            key: value
+      identity:
+        type: UserAssigned
+        userAssignedIdentities:
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-kms-abc123"
+        - reference:
+            armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123"
+      properties:
+        cryptoRestrictions: None
+        ingress:
+          type: Public
+        platform:
+          networkSecurityGroupReference:
+            group: network.azure.com
+            kind: NetworkSecurityGroup
+            name: ${CLUSTER_NAME}-nsg-abc123
+          operatorsAuthentication:
+            userAssignedIdentities:
+              controlPlaneOperatorsReferences:
+                cloud-controller-manager:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123"
+                cloud-network-config:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123"
+                cluster-api-azure:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123"
+                control-plane:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123"
+                disk-csi-driver:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123"
+                file-csi-driver:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123"
+                image-registry:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123"
+                ingress:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123"
+                kms:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-cp-kms-abc123"
+              dataPlaneOperatorsReferences:
+                disk-csi-driver:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-dp-disk-csi-driver-abc123"
+                file-csi-driver:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123"
+                image-registry:
+                  armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123"
+              serviceManagedIdentityReference:
+                armId: "/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourcegroups/${CLUSTER_NAME}-resgroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123"
+          managedResourceGroup: capz_node_${CLUSTER_NAME}_${CLUSTER_NAME}-resgroup_rg
+          outboundType: LoadBalancer
+          subnetReference:
+            group: network.azure.com
+            kind: VirtualNetworksSubnet
+            name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+          vnetIntegrationSubnetReference:
+            group: network.azure.com
+            kind: VirtualNetworksSubnet
+            name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-integration-subnet-abc123
+        clusterImageRegistry:
+          state: Enabled
+        etcd:
+          dataEncryption:
+            keyManagementMode: CustomerManaged
+            customerManaged:
+              encryptionType: KMS
+              kms:
+                vaultName: ${CLUSTER_NAME}-kv-abc123
+                visibility: Public
+                activeKey:
+                  name: etcd-data-kms-encryption-key
+        network:
+          hostPrefix: 23
+          networkType: OVNKubernetes
+          machineCidr: 10.0.0.0/16
+          podCidr: 10.128.0.0/14
+          serviceCidr: 172.30.0.0/16
+        version:
+          channelGroup: stable
+          id: '4.20'
+        api:
+          visibility: Public
+      tags:
+        environment: production
+        owner: sre-team
+        aro-hcp.experimental.cluster.single-replica: SingleReplica
+        aro-hcp.experimental.cluster.size-override: Minimal
+  - apiVersion: redhatopenshift.azure.com/v20260901preview
+    kind: HcpOpenShiftClustersExternalAuth
+    metadata:
+      name: ${CLUSTER_NAME}-ea
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: console-ea
+      owner:
+        name: ${CLUSTER_NAME}
+      properties:
+        issuer:
+          url: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+          audiences:
+          - ${ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID}
+        claim:
+          mappings:
+            username:
+              claim: oid
+              prefixPolicy: NoPrefix
+            groups:
+              claim: groups
+        clients:
+        - clientId: ${ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID}
+          component:
+            name: console
+            authClientNamespace: openshift-console
+          type: Confidential
+          extraScopes:
+          - openid
+          - profile
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AROMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp1
+  namespace: ${NAMESPACE}
+spec:
+  resources:
+  - apiVersion: redhatopenshift.azure.com/v20260901preview
+    kind: HcpOpenShiftClustersNodePool
+    metadata:
+      name: ${CLUSTER_NAME}-mp1
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: workerpool
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}
+      properties:
+        autoRepair: true
+        labels:
+        - key: region
+          value: ${AZURE_LOCATION}
+        platform:
+          osDisk:
+            diskStorageAccountType: Standard_LRS
+            sizeGiB: 128
+          vmSize: Standard_D4s_v3
+          subnetReference:
+            group: network.azure.com
+            kind: VirtualNetworksSubnet
+            name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+        replicas: 1
+        version:
+          channelGroup: stable
+          id: 4.20.17
+      tags:
+        environment: production
+        cost-center: engineering
+        aro-hcp.experimental.cluster.single-replica: SingleReplica
+        aro-hcp.experimental.cluster.size-override: Minimal
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp1
+  namespace: ${NAMESPACE}
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  replicas: 1
+  clusterName: ${CLUSTER_NAME}
+  template:
+    spec:
+      bootstrap:
+        dataSecretName: ${CLUSTER_NAME}-kubeconfig
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AROMachinePool
+        name: ${CLUSTER_NAME}-mp1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AROCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  resources:
+  - apiVersion: resources.azure.com/v1api20200601
+    kind: ResourceGroup
+    metadata:
+      name: ${CLUSTER_NAME}-resgroup
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      tags:
+        createdAt: '2026-09-29T15:51:43Z'
+        capi-test-user: capz-e2e
+        capi-test-env: stage
+        capi-test-run-id: ${CLUSTER_NAME}
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetwork
+    metadata:
+      name: ${CLUSTER_NAME}-vnet-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      addressSpace:
+        addressPrefixes:
+        - 10.100.0.0/15
+  - apiVersion: network.azure.com/v1api20201101
+    kind: NetworkSecurityGroup
+    metadata:
+      name: ${CLUSTER_NAME}-nsg-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetworksSubnet
+    metadata:
+      name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+      addressPrefix: 10.100.76.0/24
+      azureName: ${CLUSTER_NAME}-subnet-abc123
+      networkSecurityGroup:
+        reference:
+          name: ${CLUSTER_NAME}-nsg-abc123
+          group: network.azure.com
+          kind: NetworkSecurityGroup
+  - apiVersion: network.azure.com/v1api20201101
+    kind: VirtualNetworksSubnet
+    metadata:
+      name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-integration-subnet-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+      addressPrefix: 10.100.77.0/24
+      azureName: ${CLUSTER_NAME}-integration-subnet-abc123
+      delegations:
+      - name: Microsoft.RedHatOpenShift.hcpOpenShiftClusters
+        serviceName: Microsoft.RedHatOpenShift/hcpOpenShiftClusters
+  - apiVersion: keyvault.azure.com/v1api20230701
+    kind: Vault
+    metadata:
+      name: ${CLUSTER_NAME}-kv-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      properties:
+        createMode: createOrRecover
+        enableRbacAuthorization: true
+        enabledForDiskEncryption: false
+        enabledForTemplateDeployment: false
+        enableSoftDelete: true
+        tenantId: ${AZURE_TENANT_ID}
+        accessPolicies: []
+        sku:
+          family: A
+          name: standard
+      azureName: ${CLUSTER_NAME}-kv-abc123
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-kms-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-kms-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-kms-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-disk-csi-driver-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-disk-csi-driver-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-disk-csi-driver-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+            key: clientId
+  - apiVersion: managedidentity.azure.com/v1api20230131
+    kind: UserAssignedIdentity
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      location: ${AZURE_LOCATION}
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+      operatorSpec:
+        configMaps:
+          principalId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+            key: principalId
+          clientId:
+            name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+            key: clientId
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123-hcpclusterapiproviderroleid-subnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/88366f10-ed47-4cc0-9fab-c8a06148393e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-clusterapiazuremi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-cluster-api-azure-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-kms-abc123-keyvaultcryptouserroleid-keyvault
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-kv-abc123
+        group: keyvault.azure.com
+        kind: Vault
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-kms-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/12338af0-0e69-4776-bea7-57ae8d297424
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-kmsmi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-kms-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123-hcpcontrolplaneoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/fc0c873f-45e9-4d0d-a7d1-585aab30c6ed
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123-hcpcontrolplaneoperatorroleid-nsg
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-nsg-abc123
+        group: network.azure.com
+        kind: NetworkSecurityGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/fc0c873f-45e9-4d0d-a7d1-585aab30c6ed
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-controlplanemi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-control-plane-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123-cloudcontrollermanagerroleid-subnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/a1f96423-95ce-4224-ab27-4e3dc72facd4
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123-cloudcontrollermanagerroleid-nsg
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-nsg-abc123
+        group: network.azure.com
+        kind: NetworkSecurityGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/a1f96423-95ce-4224-ab27-4e3dc72facd4
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-cloudcontrollermanagermi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-cloud-controller-manager-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123-ingressoperatorroleid-subnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123-${CLUSTER_NAME}-subnet-abc123
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/0336e1d3-7a87-462b-b6db-342b63f7802c
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-ingressmi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-ingress-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-diskcsidrivermi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-disk-csi-driver-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123-filestorageoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/0d7aedc0-15fd-4a67-a412-efad370c947e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123-filestorageoperatorroleid-nsg
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-nsg-abc123
+        group: network.azure.com
+        kind: NetworkSecurityGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/0d7aedc0-15fd-4a67-a412-efad370c947e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-filecsidrivermi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-file-csi-driver-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-imageregistrymi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123-imageregistryoperatorroleid-resourcegroup
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+        group: resources.azure.com
+        kind: ResourceGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/8b32b316-c2f5-4ddf-b05b-83dacd2d08b5
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123-imageregistryoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-image-registry-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/8b32b316-c2f5-4ddf-b05b-83dacd2d08b5
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123-networkoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/be7a6435-15ae-4171-8f30-4a343eff9e8f
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-readerroleid-cloudnetworkconfigmi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-cp-cloud-network-config-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-federatedcredentialsroleid-dpdiskcsidrivermi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-dp-disk-csi-driver-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/ef318e2a-8334-4a05-9e4a-295a196c6a6e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-federatedcredentialsroleid-dpfilecsidrivermi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/ef318e2a-8334-4a05-9e4a-295a196c6a6e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123-filestorageoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/0d7aedc0-15fd-4a67-a412-efad370c947e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123-filestorageoperatorroleid-nsg
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-nsg-abc123
+        group: network.azure.com
+        kind: NetworkSecurityGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-file-csi-driver-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/0d7aedc0-15fd-4a67-a412-efad370c947e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-federatedcredentialsroleid-dpimageregistrymi
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+        group: managedidentity.azure.com
+        kind: UserAssignedIdentity
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/ef318e2a-8334-4a05-9e4a-295a196c6a6e
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123-imageregistryoperatorroleid-resourcegroup
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-resgroup
+        group: resources.azure.com
+        kind: ResourceGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/8b32b316-c2f5-4ddf-b05b-83dacd2d08b5
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123-imageregistryoperatorroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-dp-image-registry-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/8b32b316-c2f5-4ddf-b05b-83dacd2d08b5
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-hcpservicemanagedidentityroleid-vnet
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-vnet-abc123
+        group: network.azure.com
+        kind: VirtualNetwork
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/c0ff367d-66d8-445e-917c-583feb0ef0d4
+  - apiVersion: authorization.azure.com/v1api20220401
+    kind: RoleAssignment
+    metadata:
+      name: capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123-hcpservicemanagedidentityroleid-nsg
+      namespace: ${NAMESPACE}
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      owner:
+        name: ${CLUSTER_NAME}-nsg-abc123
+        group: network.azure.com
+        kind: NetworkSecurityGroup
+      principalIdFromConfig:
+        name: identity-map-capz-e2e-${CLUSTER_NAME}-service-managed-identity-abc123
+        key: principalId
+      principalType: ServicePrincipal
+      roleDefinitionReference:
+        armId: /subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleDefinitions/c0ff367d-66d8-445e-917c-583feb0ef0d4
