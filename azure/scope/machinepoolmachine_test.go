@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -496,6 +497,132 @@ func getNotReadyNode() *corev1.Node {
 				},
 			},
 		},
+	}
+}
+
+func TestMachinePoolMachineScope_hasLatestModelApplied(t *testing.T) {
+	galleryID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/1.0.0"
+
+	cases := []struct {
+		name          string
+		instanceImage infrav1.Image
+		specImage     *infrav1.Image
+		expected      bool
+	}{
+		{
+			name: "spec uses raw ID matching compute gallery, instance has plan - should match",
+			specImage: &infrav1.Image{
+				ID: ptr.To(galleryID),
+			},
+			instanceImage: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "1.0.0",
+					SubscriptionID: ptr.To("sub"),
+					ResourceGroup:  ptr.To("rg"),
+					Plan: &infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "product",
+						SKU:       "sku",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "spec uses raw ID matching compute gallery, instance has no plan - should match",
+			specImage: &infrav1.Image{
+				ID: ptr.To(galleryID),
+			},
+			instanceImage: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "1.0.0",
+					SubscriptionID: ptr.To("sub"),
+					ResourceGroup:  ptr.To("rg"),
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "spec uses raw ID matching compute gallery, instance has different version - should not match",
+			specImage: &infrav1.Image{
+				ID: ptr.To(galleryID),
+			},
+			instanceImage: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "2.0.0",
+					SubscriptionID: ptr.To("sub"),
+					ResourceGroup:  ptr.To("rg"),
+					Plan: &infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "product",
+						SKU:       "sku",
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "spec uses structured ComputeGallery with plan - should match",
+			specImage: &infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "1.0.0",
+					SubscriptionID: ptr.To("sub"),
+					ResourceGroup:  ptr.To("rg"),
+					Plan: &infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "product",
+						SKU:       "sku",
+					},
+				},
+			},
+			instanceImage: infrav1.Image{
+				ComputeGallery: &infrav1.AzureComputeGalleryImage{
+					Gallery:        "gallery",
+					Name:           "image",
+					Version:        "1.0.0",
+					SubscriptionID: ptr.To("sub"),
+					ResourceGroup:  ptr.To("rg"),
+					Plan: &infrav1.ImagePlan{
+						Publisher: "publisher",
+						Offer:     "product",
+						SKU:       "sku",
+					},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			g := NewWithT(t)
+			s := &MachinePoolMachineScope{
+				instance: &azure.VMSSVM{
+					Image: c.instanceImage,
+				},
+				MachinePoolScope: &MachinePoolScope{
+					AzureMachinePool: &infrav1exp.AzureMachinePool{
+						Spec: infrav1exp.AzureMachinePoolSpec{
+							Template: infrav1exp.AzureMachinePoolMachineTemplate{
+								Image: c.specImage,
+							},
+						},
+					},
+				},
+			}
+
+			result, err := s.hasLatestModelApplied(t.Context())
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(result).To(Equal(c.expected))
+		})
 	}
 }
 
