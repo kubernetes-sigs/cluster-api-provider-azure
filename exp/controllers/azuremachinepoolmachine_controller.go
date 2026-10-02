@@ -297,7 +297,7 @@ func (ampmr *AzureMachinePoolMachineController) reconcileNormal(ctx context.Cont
 		ampmr.Recorder.Eventf(machineScope.AzureMachinePoolMachine, corev1.EventTypeWarning, "FailedVMState", "Azure scale set VM is in failed state")
 	case infrav1.Deleting:
 		log.V(4).Info("deleting machine because state is Deleting", "machine", machineScope.Name())
-		if err := ampmr.Client.Delete(ctx, machineScope.Machine); err != nil {
+		if err := ampmr.Client.Delete(ctx, machineScope.Machine); err != nil && !apierrors.IsNotFound(err) {
 			return reconcile.Result{}, errors.Wrap(err, "machine failed to be deleted when deleting")
 		}
 	}
