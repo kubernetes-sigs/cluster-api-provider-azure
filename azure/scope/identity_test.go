@@ -520,6 +520,16 @@ func TestParseCloudType(t *testing.T) {
 			input:    "PUBLIC", // Test case for uppercased input
 			expected: cloud.AzurePublic,
 		},
+		{
+			name:     "when the input is usgovernmentsecret, expect empty config (populated from file)",
+			input:    "usgovernmentsecret",
+			expected: cloud.Configuration{},
+		},
+		{
+			name:     "when the input is USSEC, expect empty config (populated from file)",
+			input:    "USSEC",
+			expected: cloud.Configuration{},
+		},
 	}
 
 	for _, tt := range tests {

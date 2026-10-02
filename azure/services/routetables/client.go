@@ -41,6 +41,9 @@ func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClien
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create routetables client options")
 	}
+	if auth.CloudEnvironment() == azure.USSecCloudName {
+		opts.Cloud = auth.CloudConfiguration()
+	}
 	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armnetwork client factory")

@@ -277,6 +277,14 @@ func parseCloudType(cloudType string) cloud.Configuration {
 		return cloud.AzureChina
 	case "USGOVERNMENT":
 		return cloud.AzureGovernment
+	case "USGOVERNMENTSECRET", "USSEC":
+		env, err := loadCloudEnvironmentFromFile()
+		if err != nil {
+			return cloud.Configuration{}
+		}
+		return cloud.Configuration{
+			ActiveDirectoryAuthorityHost: env.ActiveDirectoryEndpoint,
+		}
 	default:
 		return cloud.AzurePublic
 	}

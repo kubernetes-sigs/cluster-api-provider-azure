@@ -169,7 +169,7 @@ spec:
               userAssignedIdentityCredentialsCloudType:
                 description: |-
                   UserAssignedIdentityCredentialsCloudType is used with UserAssignedIdentityCredentialsPath to specify the Cloud
-                  type. Can only be one of the following values: public, china, or usgovernment
+                  type. Can only be one of the following values: public, china, usgovernment, or usgovernmentsecret
                   If a value is not specified, defaults to public
                 type: string
               userAssignedIdentityCredentialsPath:

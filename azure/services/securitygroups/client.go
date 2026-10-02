@@ -43,6 +43,9 @@ func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClien
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create securitygroups client options")
 	}
+	if auth.CloudEnvironment() == azure.USSecCloudName {
+		opts.Cloud = auth.CloudConfiguration()
+	}
 	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armnetwork client factory")
@@ -87,6 +90,9 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	clientOpts, err := azure.ARMClientOptions(ac.auth.CloudEnvironment(), extraPolicies...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create securitygroups client options")
+	}
+	if ac.auth.CloudEnvironment() == azure.USSecCloudName {
+		clientOpts.Cloud = ac.auth.CloudConfiguration()
 	}
 	factory, err := armnetwork.NewClientFactory(ac.auth.SubscriptionID(), ac.auth.Token(), clientOpts)
 	if err != nil {
