@@ -500,9 +500,7 @@ make test # Runs tests on the Go code
 
 #### Reducing cyclomatic complexity
 
-`make lint` includes checks for cyclomatic complexity. If a function grows too many branches
-(`if`/`else`, `switch`, loops, error checks), the linter will flag it rather than let it become
-hard to read, test, or modify safely.
+`make lint` does not currently enforce a cyclomatic complexity limit, but keeping functions small still matters. A function with many branches (`if`/`else`, `switch`, loops, error checks) becomes hard to read, test, and modify safely, so watch for this during development and review.
 
 If you hit a complexity failure, prefer the [extract method][extract-method] refactor: split the
 function into small, single-purpose private helper methods, each handling one piece of
