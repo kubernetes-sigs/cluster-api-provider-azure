@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 namespace: capz-system
 resources:
-  - https://github.com/Azure/azure-service-operator/releases/download/v2.19.0/azureserviceoperator_v2.19.0.yaml
+  - https://github.com/Azure/azure-service-operator/releases/download/v2.20.0/azureserviceoperator_v2.20.0.yaml
   - settings.yaml
 patches:
   - path: patches/migrate_stored_versions.yaml
@@ -23,7 +23,7 @@ patches:
         value: --crd-pattern=
       - op: replace # CAPZ lets ASO install and manage its own CRDs; users can extend the set via ADDITIONAL_ASO_CRDS (';'-delimited). The ADDITIONAL_ASO_CRDS default duplicates a base pattern so that, when the variable is unset, the value still parses as a non-empty list of fully-matching patterns (ASO rejects empty/whitespace pattern entries).
         path: /spec/template/spec/containers/0/args/6
-        value: --crd-pattern=containerservice.azure.com/FleetsMember;containerservice.azure.com/MaintenanceConfiguration;containerservice.azure.com/ManagedCluster;containerservice.azure.com/ManagedClustersAgentPool;kubernetesconfiguration.azure.com/Extension;network.azure.com/BastionHost;network.azure.com/NatGateway;network.azure.com/PrivateEndpoint;network.azure.com/VirtualNetwork;network.azure.com/VirtualNetworksSubnet;resources.azure.com/ResourceGroup;${ADDITIONAL_ASO_CRDS:=resources.azure.com/ResourceGroup}
+        value: --crd-pattern=containerservice.azure.com/FleetsMember;containerservice.azure.com/MaintenanceConfiguration;containerservice.azure.com/ManagedCluster;containerservice.azure.com/ManagedClustersAgentPool;kubernetesconfiguration.azure.com/Extension;network.azure.com/BastionHost;network.azure.com/NatGateway;network.azure.com/PrivateEndpoint;network.azure.com/PrivateLinkService;network.azure.com/VirtualNetwork;network.azure.com/VirtualNetworksSubnet;resources.azure.com/ResourceGroup;${ADDITIONAL_ASO_CRDS:=resources.azure.com/ResourceGroup}
     target:
       group: apps
       kind: Deployment

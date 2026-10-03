@@ -1,0 +1,7 @@
+# CAPI's workload cluster name is too long for the AKS node resource group name.
+- op: test
+  path: /spec/resources/0/kind
+  value: ManagedCluster
+- op: add
+  path: /spec/resources/0/spec/azureName
+  value: ${CLUSTER_NAME/clusterctl-upgrade-workload-/capz-upgrade-}
