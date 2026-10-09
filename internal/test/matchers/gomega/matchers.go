@@ -126,7 +126,7 @@ func (l *logEntryMatcher) validate(actual any) []error {
 	}
 
 	if l.level != nil && *l.level != logEntry.Level {
-		errs = append(errs, fmt.Errorf("actual log level %q didn't match expected %q", logEntry.Level, *l.level))
+		errs = append(errs, fmt.Errorf("actual log level %d didn't match expected %d", logEntry.Level, *l.level))
 	}
 
 	return errs
