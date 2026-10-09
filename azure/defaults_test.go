@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -62,6 +63,11 @@ func TestARMClientOptions(t *testing.T) {
 			expectedCloud: cloud.AzureGovernment,
 		},
 		{
+			name:          "should accept Azure US Government Secret cloud",
+			cloudName:     USSecCloudName,
+			expectedCloud: cloud.Configuration{},
+		},
+		{
 			name:        "should return error if cloudName is unrecognized",
 			cloudName:   "AzureUnrecognizedCloud",
 			expectError: true,
@@ -81,6 +87,79 @@ func TestARMClientOptions(t *testing.T) {
 			g.Expect(opts.Cloud).To(Equal(tc.expectedCloud))
 			g.Expect(opts.Retry.MaxRetries).To(BeNumerically("==", -1))
 			g.Expect(opts.PerCallPolicies).To(HaveLen(2))
+		})
+	}
+}
+
+// TestARMClientOptionsForAuth tests that ARMClientOptionsForAuth applies the
+// cloud configuration resolved by the Authorizer, in particular that air-gapped
+// USSec (IL6) clients target the endpoint and audience discovered at runtime
+// instead of public Azure.
+func TestARMClientOptionsForAuth(t *testing.T) {
+	ussecConfig := cloud.Configuration{
+		ActiveDirectoryAuthorityHost: "https://login.example.com/",
+		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+			cloud.ResourceManager: {
+				Audience: "https://management.example.com/",
+				Endpoint: "https://management.example.com/",
+			},
+		},
+	}
+	tests := []struct {
+		name          string
+		cloudName     string
+		cloudConfig   cloud.Configuration
+		nilAuthorizer bool
+		expectedCloud cloud.Configuration
+		expectError   bool
+	}{
+		{
+			name:          "nil authorizer returns an error",
+			nilAuthorizer: true,
+			expectError:   true,
+		},
+		{
+			name:          "public cloud uses the SDK built-in configuration",
+			cloudName:     PublicCloudName,
+			cloudConfig:   ussecConfig,
+			expectedCloud: cloud.AzurePublic,
+		},
+		{
+			name:          "USSec cloud uses the Authorizer's resolved configuration",
+			cloudName:     USSecCloudName,
+			cloudConfig:   ussecConfig,
+			expectedCloud: ussecConfig,
+		},
+		{
+			name:        "unrecognized cloud returns an error",
+			cloudName:   "AzureUnrecognizedCloud",
+			expectError: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			var authorizer *mock_azure.MockAuthorizer
+			if !tc.nilAuthorizer {
+				authorizer = mock_azure.NewMockAuthorizer(mockCtrl)
+				authorizer.EXPECT().CloudEnvironment().Return(tc.cloudName).AnyTimes()
+				authorizer.EXPECT().CloudConfiguration().Return(tc.cloudConfig).AnyTimes()
+			}
+			var opts *arm.ClientOptions
+			var err error
+			if tc.nilAuthorizer {
+				opts, err = ARMClientOptionsForAuth(nil)
+			} else {
+				opts, err = ARMClientOptionsForAuth(authorizer)
+			}
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(opts.Cloud).To(Equal(tc.expectedCloud))
 		})
 	}
 }

@@ -120,6 +120,9 @@ func (s *azureClusterService) reconcile(ctx context.Context) error {
 	}
 	if s.scope.ControlPlaneEnabled() {
 		apiinternal.SetDefaultAzureClusterBackendPoolName(s.scope.AzureCluster)
+		if err := s.scope.ValidateAPIServerDNSName(); err != nil {
+			return err
+		}
 		s.scope.SetDNSName()
 		s.scope.SetControlPlaneSecurityRules()
 	}

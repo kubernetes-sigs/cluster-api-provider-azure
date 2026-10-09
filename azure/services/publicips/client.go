@@ -37,11 +37,10 @@ type AzureClient struct {
 
 // NewClient creates a new public IP client from an authorizer.
 func NewClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*AzureClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptionsForAuth(auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create publicips client options")
 	}
-
 	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create publicips client factory")

@@ -954,6 +954,25 @@ func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 	return ipName, fqdn
 }
 
+// ValidateAPIServerDNSName ensures CAPZ can generate a usable API Server public
+// DNS name before one is generated via GenerateFQDN/GenerateLegacyFQDN.
+//
+// The DNS name is built from the resource manager VM DNS suffix. For air-gapped
+// clouds such as USSec (IL6) that suffix is discovered at runtime from the
+// environment file; when it is missing, GenerateFQDN would produce an unusable
+// hostname (e.g. one with a trailing dot and no domain), so return an error
+// instead of silently generating it. Clusters with a private API server do not
+// need a public DNS name and are therefore exempt.
+func (s *ClusterScope) ValidateAPIServerDNSName() error {
+	if !s.ControlPlaneEnabled() || s.IsAPIServerPrivate() {
+		return nil
+	}
+	if s.AzureClients.ResourceManagerVMDNSSuffix == "" {
+		return errors.Errorf("cannot generate API Server DNS name: resource manager VM DNS suffix is not set for cloud environment %q", s.CloudEnvironment())
+	}
+	return nil
+}
+
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
 func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 	return client.MatchingLabels(map[string]string{
