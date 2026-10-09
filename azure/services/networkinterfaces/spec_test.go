@@ -162,6 +162,28 @@ var (
 		ClusterName:           "my-cluster",
 	}
 
+	fakeIpv6ControlPlaneNICSpec = NICSpec{
+		Name:                        "my-net-interface",
+		ResourceGroup:               "my-rg",
+		Location:                    "fake-location",
+		SubscriptionID:              "123",
+		MachineName:                 "azure-test1",
+		SubnetName:                  "my-subnet",
+		VNetName:                    "my-vnet",
+		VNetResourceGroup:           "my-rg",
+		IPv6Enabled:                 true,
+		PublicLBName:                "my-public-lb",
+		PublicLBAddressPoolName:     "my-public-lb-backendPool",
+		PublicLBAddressPoolNameIPv6: "my-public-lb-backendPool-IPv6",
+		PublicLBNATRuleName:         "azure-test1",
+		InternalLBName:              "my-internal-lb",
+		InternalLBAddressPoolName:   "my-internal-lb-backendPool",
+		AcceleratedNetworking:       nil,
+		SKU:                         &fakeSku,
+		EnableIPForwarding:          true,
+		ClusterName:                 "my-cluster",
+	}
+
 	fakeControlPlaneCustomDNSSettingsNICSpec = NICSpec{
 		Name:                      "my-net-interface",
 		ResourceGroup:             "my-rg",
@@ -475,6 +497,28 @@ func TestParameters(t *testing.T) {
 						},
 					},
 				}))
+			},
+			expectedError: "",
+		},
+		{
+			name:     "get parameters for network interface ipv6 with backend pools",
+			spec:     &fakeIpv6ControlPlaneNICSpec,
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.Interface{}))
+				nic := result.(armnetwork.Interface)
+				g.Expect(nic.Properties.IPConfigurations).To(HaveLen(2))
+
+				primaryIP := nic.Properties.IPConfigurations[0]
+				g.Expect(*primaryIP.Name).To(Equal("pipConfig"))
+				g.Expect(primaryIP.Properties.LoadBalancerBackendAddressPools).To(HaveLen(2))
+
+				ipv6Config := nic.Properties.IPConfigurations[1]
+				g.Expect(*ipv6Config.Name).To(Equal("ipConfigv6"))
+				g.Expect(*ipv6Config.Properties.PrivateIPAddressVersion).To(Equal(armnetwork.IPVersionIPv6))
+				g.Expect(ipv6Config.Properties.LoadBalancerBackendAddressPools).To(HaveLen(1))
+				g.Expect(*ipv6Config.Properties.LoadBalancerBackendAddressPools[0].ID).To(
+					Equal("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/my-public-lb-backendPool-IPv6"))
 			},
 			expectedError: "",
 		},

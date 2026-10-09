@@ -141,6 +141,32 @@ Note that `dns` is the FQDN associated to your public IP address (look for "DNS 
 
 When you BYO api server IP, CAPZ does not manage its lifecycle, ie. the IP will not get deleted as part of cluster deletion.
 
+### Frontend IP Version
+
+By default, frontend IPs are IPv4. You can configure individual frontend IPs to use IPv6 by setting the `ipVersion` field to `"IPv6"`.
+
+For a public load balancer with an IPv6 frontend:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: my-cluster
+  namespace: default
+spec:
+  location: eastus
+  networkSpec:
+    apiServerLB:
+      type: Public
+      frontendIPs:
+        - name: lb-public-ip-frontend-ipv6
+          ipVersion: IPv6
+          publicIP:
+            name: my-public-ipv6
+```
+
+Note that IPv6 frontend IPs are only supported on public load balancers. Internal load balancers always use IPv4.
+
 ### Load Balancer SKU
 
 At this time, CAPZ only supports Azure Standard Load Balancers. See [SKU comparison](https://learn.microsoft.com/azure/load-balancer/skus#skus) for more information on Azure Load Balancers SKUs.

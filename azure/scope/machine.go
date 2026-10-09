@@ -318,6 +318,10 @@ func (m *MachineScope) BuildNICSpec(nicName string, infrav1NetworkInterface infr
 			spec.PublicLBName = m.OutboundLBName(m.Role())
 			spec.PublicLBAddressPoolName = m.OutboundPoolName(m.Role())
 		}
+
+		if spec.IPv6Enabled && spec.PublicLBAddressPoolName != "" {
+			spec.PublicLBAddressPoolNameIPv6 = spec.PublicLBAddressPoolName + "-IPv6"
+		}
 	}
 
 	return spec

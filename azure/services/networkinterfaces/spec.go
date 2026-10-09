@@ -33,30 +33,31 @@ import (
 
 // NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
-	Name                      string
-	ResourceGroup             string
-	Location                  string
-	ExtendedLocation          *infrav1.ExtendedLocationSpec
-	SubscriptionID            string
-	MachineName               string
-	SubnetName                string
-	VNetName                  string
-	VNetResourceGroup         string
-	StaticIPAddress           string
-	PublicLBName              string
-	PublicLBAddressPoolName   string
-	PublicLBNATRuleName       string
-	InternalLBName            string
-	InternalLBAddressPoolName string
-	PublicIPName              string
-	AcceleratedNetworking     *bool
-	IPv6Enabled               bool
-	EnableIPForwarding        bool
-	SKU                       *resourceskus.SKU
-	DNSServers                []string
-	AdditionalTags            infrav1.Tags
-	ClusterName               string
-	IPConfigs                 []IPConfig
+	Name                        string
+	ResourceGroup               string
+	Location                    string
+	ExtendedLocation            *infrav1.ExtendedLocationSpec
+	SubscriptionID              string
+	MachineName                 string
+	SubnetName                  string
+	VNetName                    string
+	VNetResourceGroup           string
+	StaticIPAddress             string
+	PublicLBName                string
+	PublicLBAddressPoolName     string
+	PublicLBAddressPoolNameIPv6 string
+	PublicLBNATRuleName         string
+	InternalLBName              string
+	InternalLBAddressPoolName   string
+	PublicIPName                string
+	AcceleratedNetworking       *bool
+	IPv6Enabled                 bool
+	EnableIPForwarding          bool
+	SKU                         *resourceskus.SKU
+	DNSServers                  []string
+	AdditionalTags              infrav1.Tags
+	ClusterName                 string
+	IPConfigs                   []IPConfig
 }
 
 // IPConfig defines the specification for an IP address configuration.
@@ -118,10 +119,10 @@ func (s *NICSpec) Parameters(ctx context.Context, existing any) (parameters any,
 		primaryIPConfig.PrivateIPAddress = ptr.To(s.StaticIPAddress)
 	}
 
-	backendAddressPools := []*armnetwork.BackendAddressPool{}
+	var publicLBBackendAddressPools []*armnetwork.BackendAddressPool
 	if s.PublicLBName != "" {
 		if s.PublicLBAddressPoolName != "" {
-			backendAddressPools = append(backendAddressPools,
+			publicLBBackendAddressPools = append(publicLBBackendAddressPools,
 				&armnetwork.BackendAddressPool{
 					ID: ptr.To(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBAddressPoolName)),
 				})
@@ -134,6 +135,7 @@ func (s *NICSpec) Parameters(ctx context.Context, existing any) (parameters any,
 			}
 		}
 	}
+	backendAddressPools := append([]*armnetwork.BackendAddressPool{}, publicLBBackendAddressPools...)
 	if s.InternalLBName != "" && s.InternalLBAddressPoolName != "" {
 		backendAddressPools = append(backendAddressPools,
 			&armnetwork.BackendAddressPool{
@@ -204,12 +206,20 @@ func (s *NICSpec) Parameters(ctx context.Context, existing any) (parameters any,
 		ipConfigurations = append(ipConfigurations, config)
 	}
 	if s.IPv6Enabled {
+		var publicLBBackendAddressPoolsIPv6 []*armnetwork.BackendAddressPool
+		if s.PublicLBName != "" && s.PublicLBAddressPoolNameIPv6 != "" {
+			publicLBBackendAddressPoolsIPv6 = append(publicLBBackendAddressPoolsIPv6,
+				&armnetwork.BackendAddressPool{
+					ID: ptr.To(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBAddressPoolNameIPv6)),
+				})
+		}
 		ipv6Config := &armnetwork.InterfaceIPConfiguration{
 			Name: ptr.To("ipConfigv6"),
 			Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-				PrivateIPAddressVersion: ptr.To(armnetwork.IPVersionIPv6),
-				Primary:                 ptr.To(false),
-				Subnet:                  &armnetwork.Subnet{ID: subnet.ID},
+				PrivateIPAddressVersion:         ptr.To(armnetwork.IPVersionIPv6),
+				Primary:                         ptr.To(false),
+				Subnet:                          &armnetwork.Subnet{ID: subnet.ID},
+				LoadBalancerBackendAddressPools: publicLBBackendAddressPoolsIPv6,
 			},
 		}
 

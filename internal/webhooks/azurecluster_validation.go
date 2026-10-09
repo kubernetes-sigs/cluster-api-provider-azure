@@ -180,28 +180,41 @@ func validateNetworkSpec(controlPlaneEnabled bool, networkSpec infrav1.NetworkSp
 	}
 
 	var cidrBlocks []string
+	var controlPlaneSubnet infrav1.SubnetSpec
 	if controlPlaneEnabled {
-		controlPlaneSubnet, err := networkSpec.GetControlPlaneSubnet()
+		var err error
+		controlPlaneSubnet, err = networkSpec.GetControlPlaneSubnet()
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
 		}
 
 		cidrBlocks = controlPlaneSubnet.CIDRBlocks
 		allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, networkSpec.Subnets, cidrBlocks, fldPath.Child("apiServerLB"))...)
+		allErrs = append(allErrs, validateIPv6FrontendRequiresIPv6Subnet(networkSpec.APIServerLB, controlPlaneSubnet, fldPath.Child("apiServerLB"))...)
 	}
 
-	var needOutboundLB bool
+	var hasIPv6NodeSubnet bool
 	for _, subnet := range networkSpec.Subnets {
 		if (subnet.Role == infrav1.SubnetNode || subnet.Role == infrav1.SubnetCluster) && subnet.IsIPv6Enabled() {
-			needOutboundLB = true
+			hasIPv6NodeSubnet = true
 			break
 		}
 	}
-	if needOutboundLB {
+	if hasIPv6NodeSubnet {
 		allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
+	}
+	if networkSpec.NodeOutboundLB != nil && !hasIPv6NodeSubnet {
+		for i, frontendIP := range networkSpec.NodeOutboundLB.FrontendIPs {
+			if frontendIP.IPVersion == infrav1.IPv6 {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("nodeOutboundLB", "frontendIPConfigs").Index(i).Child("ipVersion"),
+					frontendIP.IPVersion,
+					"IPv6 frontend IPs require at least one node subnet to have IPv6 CIDR blocks"))
+			}
+		}
 	}
 	if controlPlaneEnabled {
 		allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
+		allErrs = append(allErrs, validateIPv6FrontendRequiresIPv6Subnet(networkSpec.ControlPlaneOutboundLB, controlPlaneSubnet, fldPath.Child("controlPlaneOutboundLB"))...)
 	}
 	var lbType = infrav1.Internal
 	if networkSpec.APIServerLB != nil {
@@ -481,6 +494,12 @@ func validateAPIServerLB(lb *infrav1.LoadBalancerSpec, old *infrav1.LoadBalancer
 
 	// internal LB should not have a public IP.
 	if lb.Type == infrav1.Internal {
+		for i, frontendIP := range lb.FrontendIPs {
+			if frontendIP.IPVersion == infrav1.IPv6 {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(i).Child("ipVersion"),
+					"Internal Load Balancers do not support IPv6 frontend IPs"))
+			}
+		}
 		if publicIPCount != 0 {
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
 				"Internal Load Balancers cannot have a Public IP"))
@@ -586,6 +605,21 @@ func validateControlPlaneOutboundLB(lb *infrav1.LoadBalancerSpec, apiserverLB *i
 		}
 	}
 
+	return allErrs
+}
+
+func validateIPv6FrontendRequiresIPv6Subnet(lb *infrav1.LoadBalancerSpec, subnet infrav1.SubnetSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if lb == nil {
+		return allErrs
+	}
+	for i, frontendIP := range lb.FrontendIPs {
+		if frontendIP.IPVersion == infrav1.IPv6 && !subnet.IsIPv6Enabled() {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs").Index(i).Child("ipVersion"),
+				frontendIP.IPVersion,
+				"IPv6 frontend IPs require the control plane subnet to have IPv6 CIDR blocks"))
+		}
+	}
 	return allErrs
 }
 

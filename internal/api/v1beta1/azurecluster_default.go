@@ -442,6 +442,9 @@ func setDefaultAzureClusterControlPlaneOutboundLBBackendPoolName(c *infrav1.Azur
 // setDefaultAzureClusterOutboundLBFrontendIPs sets the frontend IPs for the given load balancer.
 // The name of the frontend IP is generated using generatePublicIPName function.
 func setDefaultAzureClusterOutboundLBFrontendIPs(c *infrav1.AzureCluster, lb *infrav1.LoadBalancerSpec, generatePublicIPName func(string) string) {
+	if len(lb.FrontendIPs) == int(*lb.FrontendIPsCount) {
+		return
+	}
 	switch *lb.FrontendIPsCount {
 	case 0:
 		lb.FrontendIPs = []infrav1.FrontendIP{}
