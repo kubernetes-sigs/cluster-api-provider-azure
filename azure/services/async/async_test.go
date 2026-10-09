@@ -43,11 +43,12 @@ import (
 
 func TestServiceCreateOrUpdateResource(t *testing.T) {
 	testcases := []struct {
-		name           string
-		serviceName    string
-		expectedError  string
-		expectedResult any
-		expect         func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
+		name            string
+		serviceName     string
+		expectedError   string
+		expectedResult  any
+		expectTransient *bool
+		expect          func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
 			name:          "invalid future",
@@ -102,6 +103,37 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					r.ResourceGroupName().Return(resourceGroupName),
 					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
 					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), errors.New("foo")),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+				)
+			},
+		},
+		{
+			name:            "operation failed with InternalExecutionError",
+			serviceName:     serviceName,
+			expectedError:   "InternalExecutionError",
+			expectTransient: boolPtr(true),
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusOK), internalExecutionError()),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
+				)
+			},
+		},
+		{
+			name:            "operation failed with non-retryable Azure error",
+			serviceName:     serviceName,
+			expectedError:   "InvalidParameter",
+			expectTransient: boolPtr(false),
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), invalidParameterError()),
 					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
 				)
 			},
@@ -194,17 +226,28 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					g.Expect(result).To(BeNil())
 				}
 			}
+			if tc.expectTransient != nil {
+				var reconcileErr azure.ReconcileError
+				asReconcile := errors.As(err, &reconcileErr)
+				if *tc.expectTransient {
+					g.Expect(asReconcile).To(BeTrue())
+					g.Expect(reconcileErr.IsTransient()).To(BeTrue())
+				} else {
+					g.Expect(asReconcile && reconcileErr.IsTransient()).To(BeFalse())
+				}
+			}
 		})
 	}
 }
 
 func TestServiceDeleteResource(t *testing.T) {
 	testcases := []struct {
-		name           string
-		serviceName    string
-		expectedError  string
-		expectedResult any
-		expect         func(g *GomegaWithT, s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder)
+		name            string
+		serviceName     string
+		expectedError   string
+		expectedResult  any
+		expectTransient *bool
+		expect          func(g *GomegaWithT, s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
 			name:          "invalid future",
@@ -262,6 +305,37 @@ func TestServiceDeleteResource(t *testing.T) {
 				)
 			},
 		},
+		{
+			name:            "operation fails with InternalExecutionError",
+			serviceName:     serviceName,
+			expectedError:   "InternalExecutionError",
+			expectTransient: boolPtr(true),
+			expect: func(g *GomegaWithT, s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture).Return(validDeleteFuture),
+					d.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), gomock.Any()).Return(fakePoller[MockDeleter](g, http.StatusOK), internalExecutionError()),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture),
+					s.DefaultedReconcilerRequeue().Return(reconciler.DefaultReconcilerRequeue),
+				)
+			},
+		},
+		{
+			name:            "operation fails with non-retryable Azure error",
+			serviceName:     serviceName,
+			expectedError:   "InvalidParameter",
+			expectTransient: boolPtr(false),
+			expect: func(g *GomegaWithT, s *mock_async.MockFutureScopeMockRecorder, d *mock_async.MockDeleterMockRecorder[MockDeleter], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture).Return(validDeleteFuture),
+					d.DeleteAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), gomock.Any()).Return(fakePoller[MockDeleter](g, http.StatusAccepted), invalidParameterError()),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.DeleteFuture),
+				)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -284,6 +358,16 @@ func TestServiceDeleteResource(t *testing.T) {
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+			if tc.expectTransient != nil {
+				var reconcileErr azure.ReconcileError
+				asReconcile := errors.As(err, &reconcileErr)
+				if *tc.expectTransient {
+					g.Expect(asReconcile).To(BeTrue())
+					g.Expect(reconcileErr.IsTransient()).To(BeTrue())
+				} else {
+					g.Expect(asReconcile && reconcileErr.IsTransient()).To(BeFalse())
+				}
 			}
 		})
 	}
@@ -344,6 +428,40 @@ func fakePoller[T any](g *GomegaWithT, statusCode int) *runtime.Poller[T] {
 	poller, err := runtime.NewPoller[T](response, pipeline, nil)
 	g.Expect(err).NotTo(HaveOccurred())
 	return poller
+}
+
+func internalExecutionError() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		ErrorCode:  internalExecutionErrorCode,
+		StatusCode: http.StatusOK,
+		RawResponse: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`{"status":"Failed","error":{"code":"InternalExecutionError","message":"An internal execution error occurred. Please retry later."}}`)),
+			Request: &http.Request{
+				Method: http.MethodPut,
+				URL:    &url.URL{Path: "/"},
+			},
+		},
+	}
+}
+
+func invalidParameterError() *azcore.ResponseError {
+	return &azcore.ResponseError{
+		ErrorCode:  "InvalidParameter",
+		StatusCode: http.StatusBadRequest,
+		RawResponse: &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       io.NopCloser(strings.NewReader(`{"error":{"code":"InvalidParameter","message":"The value of parameter is invalid."}}`)),
+			Request: &http.Request{
+				Method: http.MethodPut,
+				URL:    &url.URL{Path: "/"},
+			},
+		},
+	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
 
 type MockCreator struct{}

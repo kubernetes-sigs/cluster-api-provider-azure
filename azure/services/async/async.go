@@ -35,6 +35,8 @@ import (
 const (
 	// DefaultPollerFrequency is how often a poller should check for completion, in seconds.
 	DefaultPollerFrequency = 1 * time.Second
+
+	internalExecutionErrorCode = "InternalExecutionError"
 )
 
 // Service handles asynchronous creation and deletion of resources. It implements the Reconciler interface.
@@ -123,7 +125,7 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	if err != nil {
-		return nil, errWrapped
+		return nil, finishedOperationError(err, errWrapped, s.Scope)
 	}
 
 	log.V(2).Info("successfully created or updated resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
@@ -167,11 +169,20 @@ func (s *Service[C, D]) DeleteResource(ctx context.Context, spec azure.ResourceS
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+		errWrapped := errors.Wrapf(err, "failed to delete resource %s/%s (service: %s)", rgName, resourceName, serviceName)
+		return finishedOperationError(err, errWrapped, s.Scope)
 	}
 
 	log.V(2).Info("successfully deleted resource", "service", serviceName, "resource", resourceName, "resourceGroup", rgName)
 	return nil
+}
+
+func finishedOperationError(err, errWrapped error, timeouts azure.AsyncReconciler) error {
+	var responseError *azcore.ResponseError
+	if errors.As(err, &responseError) && responseError.ErrorCode == internalExecutionErrorCode {
+		return azure.WithTransientError(errWrapped, requeueTime(timeouts))
+	}
+	return errWrapped
 }
 
 // requeueTime returns the time to wait before requeuing a reconciliation.
