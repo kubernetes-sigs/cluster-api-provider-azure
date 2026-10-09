@@ -51,7 +51,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 )
 
 type (
@@ -75,7 +77,9 @@ func initScheme() *runtime.Scheme {
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(infrav2.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1exp.AddToScheme(scheme)).To(Succeed())
+	Expect(cplane.AddToScheme(scheme)).To(Succeed())
 	Expect(asoresourcesv1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1.AddToScheme(scheme)).To(Succeed())
 	Expect(asocontainerservicev1preview.AddToScheme(scheme)).To(Succeed())

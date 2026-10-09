@@ -326,6 +326,7 @@ variables:
   CLUSTER_IDENTITY_NAME: "${CLUSTER_IDENTITY_NAME:-cluster-identity-ci}"
   ASO_CREDENTIAL_SECRET_NAME: "${ASO_CREDENTIAL_SECRET_NAME:-aso-credentials}"
   ASO_CREDENTIAL_SECRET_MODE: "${ASO_CREDENTIAL_SECRET_MODE:-workloadidentity}"
+  ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID: "${ARO_HCP_E2E_EXTERNAL_AUTH_CLIENT_ID:-}"
   NODE_DRAIN_TIMEOUT: "60s"
   CI_VERSION: ""
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
@@ -343,10 +344,14 @@ variables:
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
+  default/wait-aro-hcp-aso-rollout: ["10m", "10s"]
   default/wait-cluster: ["20m", "10s"]
   default/wait-private-cluster: ["30m", "10s"]
   default/wait-control-plane: ["20m", "10s"]
   default/wait-control-plane-long: ["40m", "10s"]
+  default/wait-aro-hcp-cluster: ["90m", "15s"]
+  default/wait-aro-hcp-machines: ["45m", "15s"]
+  default/wait-aro-hcp-delete: ["45m", "15s"]
   default/wait-control-plane-ha: ["60m", "10s"]
   default/wait-control-plane-upgrade: ["15m", "10s"]
   default/wait-machine-deployment-upgrade: ["10m", "10s"]

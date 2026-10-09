@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/aso/mock_aso"
@@ -565,8 +564,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel:     clusterName,
-					infrav1.OwnedByClusterLabelKey: clusterName, //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+					clusterv1.ClusterNameLabel:   clusterName,
+					legacyOwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
