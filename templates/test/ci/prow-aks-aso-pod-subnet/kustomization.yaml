@@ -1,0 +1,187 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../../../flavors/aks-aso
+
+patches:
+# Nodes and pods draw from separate subnets of the same VNet, sized so the default AKS
+# service CIDR (10.0.0.0/16) stays outside it.
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ResourceGroup
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: network.azure.com/v1api20201101
+        kind: VirtualNetwork
+        metadata:
+          name: ${CLUSTER_NAME}-vnet
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          owner:
+            name: ${CLUSTER_NAME}
+          location: ${AZURE_LOCATION}
+          addressSpace:
+            addressPrefixes:
+            - ${AKS_POD_SUBNET_VNET_CIDR:=10.240.0.0/12}
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: network.azure.com/v1api20201101
+        kind: VirtualNetworksSubnet
+        metadata:
+          name: ${CLUSTER_NAME}-node-subnet
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: node-subnet
+          owner:
+            name: ${CLUSTER_NAME}-vnet
+          # Singular addressPrefix avoids SubscriptionNotRegisteredForFeature for
+          # Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
+          addressPrefix: ${AKS_NODE_SUBNET_CIDR:=10.240.0.0/16}
+    # The pod subnet needs no delegation; AKS assigns pod IPs from it directly.
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: network.azure.com/v1api20201101
+        kind: VirtualNetworksSubnet
+        metadata:
+          name: ${CLUSTER_NAME}-pod-subnet
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: pod-subnet
+          owner:
+            name: ${CLUSTER_NAME}-vnet
+          addressPrefix: ${AKS_POD_SUBNET_CIDR:=10.241.0.0/16}
+    # A second pod subnet, so a Karpenter nodeclass can override the cluster default. DNC only
+    # serves a pod subnet that is attached to an agent pool, so pool1 below is bound to this one.
+    - op: add
+      path: /spec/resources/-
+      value:
+        apiVersion: network.azure.com/v1api20201101
+        kind: VirtualNetworksSubnet
+        metadata:
+          name: ${CLUSTER_NAME}-pod-subnet-2
+          annotations:
+            serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+        spec:
+          azureName: pod-subnet-2
+          owner:
+            name: ${CLUSTER_NAME}-vnet
+          addressPrefix: ${AKS_POD_SUBNET_2_CIDR:=10.242.0.0/16}
+  target:
+    kind: AzureASOManagedCluster
+# Workload identity for self-hosted Karpenter, plus a pinned node resource group so the spec
+# can scope role assignments to it without reading back the name AKS would generate.
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedCluster
+    - op: add
+      path: /spec/resources/0/spec/nodeResourceGroup
+      value: ${CLUSTER_NAME}-nodes
+    - op: add
+      path: /spec/resources/0/spec/oidcIssuerProfile
+      value:
+        enabled: true
+    - op: add
+      path: /spec/resources/0/spec/securityProfile
+      value:
+        workloadIdentity:
+          enabled: true
+    - op: add
+      path: /spec/resources/0/spec/operatorSpec
+      value:
+        configMaps:
+          oidcIssuerProfile:
+            name: ${CLUSTER_NAME}-oidc
+            key: issuer
+  target:
+    kind: AzureASOManagedControlPlane
+# AKS requires all agent pools to set a pod subnet or none to, so both pools get one. They point
+# at different subnets to keep both attached to a pool, which is what DNC needs before it will
+# serve pod IPs from a subnet. Omitting podIpAllocationMode selects dynamic allocation.
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedClustersAgentPool
+    - op: add
+      path: /spec/resources/0/spec/vnetSubnetReference
+      value:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-node-subnet
+    - op: add
+      path: /spec/resources/0/spec/podSubnetReference
+      value:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-pod-subnet
+  target:
+    kind: AzureASOManagedMachinePool
+    name: .*pool0$
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedClustersAgentPool
+    - op: add
+      path: /spec/resources/0/spec/vnetSubnetReference
+      value:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-node-subnet
+    - op: add
+      path: /spec/resources/0/spec/podSubnetReference
+      value:
+        group: network.azure.com
+        kind: VirtualNetworksSubnet
+        name: ${CLUSTER_NAME}-pod-subnet-2
+  target:
+    kind: AzureASOManagedMachinePool
+    name: .*pool1$
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ResourceGroup
+    - op: replace
+      path: /spec/resources/0/spec/tags
+      value:
+        jobName: ${JOB_NAME}
+        creationTimestamp: ${TIMESTAMP}
+        buildProvenance: ${BUILD_PROVENANCE}
+  target:
+    kind: AzureASOManagedCluster
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedCluster
+    - op: replace
+      path: /spec/resources/0/spec/tags
+      value:
+        jobName: ${JOB_NAME}
+        creationTimestamp: ${TIMESTAMP}
+        buildProvenance: ${BUILD_PROVENANCE}
+    - op: replace
+      path: /spec/resources/0/spec/sku
+      value:
+        name: Base
+        tier: Standard
+  target:
+    kind: AzureASOManagedControlPlane
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedClustersAgentPool
+    - op: replace
+      path: /spec/resources/0/spec/vmSize
+      value: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
+  target:
+    kind: AzureASOManagedMachinePool
+
+sortOptions:
+  order: fifo
