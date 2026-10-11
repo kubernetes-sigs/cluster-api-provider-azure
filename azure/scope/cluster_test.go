@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privateendpoints"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatelinks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
@@ -4626,6 +4627,21 @@ func TestPrivateDNSSpec(t *testing.T) {
 			expectPrivateDNSSpec: true,
 		},
 		{
+			name:        "Internal LB without frontend IPs",
+			clusterName: "private-no-frontend-ips",
+			azureClusterNetworkSpec: infrav1.NetworkSpec{
+				NetworkClassSpec: infrav1.NetworkClassSpec{
+					PrivateDNSZoneName: "fake-privateDNSZoneName",
+				},
+				APIServerLB: &infrav1.LoadBalancerSpec{
+					LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+						Type: infrav1.Internal,
+					},
+				},
+			},
+			expectPrivateDNSSpec: true,
+		},
+		{
 			name:        "PrivateDNSZone set to PrivateDNSZoneModeNone",
 			clusterName: "private-none",
 			azureClusterNetworkSpec: infrav1.NetworkSpec{
@@ -4685,4 +4701,53 @@ func TestPrivateDNSSpec(t *testing.T) {
 			g.Expect(zoneSpec != nil).Should(Equal(tc.expectPrivateDNSSpec))
 		})
 	}
+}
+
+func TestPrivateDNSSpecWithoutFrontendIPs(t *testing.T) {
+	g := NewWithT(t)
+
+	clusterScope := &ClusterScope{
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-cluster",
+				Namespace: "default",
+			},
+		},
+		AzureCluster: &infrav1.AzureCluster{
+			Spec: infrav1.AzureClusterSpec{
+				ResourceGroup: "my-rg",
+				NetworkSpec: infrav1.NetworkSpec{
+					NetworkClassSpec: infrav1.NetworkClassSpec{
+						PrivateDNSZoneName:          "example.com",
+						PrivateDNSZoneResourceGroup: "dns-rg",
+					},
+					Vnet: infrav1.VnetSpec{
+						ResourceGroup: "my-rg",
+						Name:          "my-vnet",
+					},
+					APIServerLB: &infrav1.LoadBalancerSpec{
+						LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+							Type: infrav1.Internal,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	zoneSpec, links, records := clusterScope.PrivateDNSSpec()
+	g.Expect(zoneSpec).To(Equal(privatedns.ZoneSpec{
+		Name:           "example.com",
+		ResourceGroup:  "dns-rg",
+		ClusterName:    "my-cluster",
+		AdditionalTags: infrav1.Tags{},
+	}))
+	g.Expect(links).To(HaveLen(1))
+	g.Expect(links[0].ResourceGroupName()).To(Equal("dns-rg"))
+	g.Expect(links[0].OwnerResourceName()).To(Equal("example.com"))
+	g.Expect(records).To(ConsistOf(privatedns.RecordSpec{
+		Record:        infrav1.AddressRecord{Hostname: azure.PrivateAPIServerHostname},
+		ZoneName:      "example.com",
+		ResourceGroup: "dns-rg",
+	}))
 }
