@@ -37,9 +37,13 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     subnets:
-    - name: control-plane-subnet
+    - cidrBlocks:
+      - 10.0.0.0/24
+      name: control-plane-subnet
       role: control-plane
-    - name: node-subnet
+    - cidrBlocks:
+      - 10.0.1.0/24
+      name: node-subnet
       role: node
     vnet:
       cidrBlocks:

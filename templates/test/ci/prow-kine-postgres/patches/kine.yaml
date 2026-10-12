@@ -4,6 +4,15 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+      cidrBlocks:
+      - 10.0.0.0/24
+    - name: node-subnet
+      role: node
+      cidrBlocks:
+      - 10.0.1.0/24
     vnet:
       cidrBlocks:
       - 10.0.0.0/16

@@ -625,7 +625,8 @@ against the same datastore. The datastore itself remains single-instance.
 The wrapper provisions a fresh `<cluster-name>-kine` resource group containing
 the VM, its disk, VNet, NSG, and an outbound-only NAT gateway/public IP. There is
 no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`;
-the workload VNet uses `10.0.0.0/16`. CAPZ creates the bidirectional peering.
+the workload VNet uses `10.0.0.0/16`, with explicit control-plane `10.0.0.0/24`
+and node `10.0.1.0/24` subnets. CAPZ creates the bidirectional peering.
 Only the control-plane subnet `10.0.0.0/24` can reach Kine's TCP port 2379.
 Avoid overlapping addresses if using a peered management cluster.
 PostgreSQL uses Unix-socket peer authentication, not a network-facing password.

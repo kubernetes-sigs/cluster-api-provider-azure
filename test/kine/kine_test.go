@@ -23,6 +23,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,6 +74,11 @@ func TestFlavor(t *testing.T) {
 			} `yaml:"metadata"`
 			Spec struct {
 				NetworkSpec struct {
+					Subnets []struct {
+						Name  string   `yaml:"name"`
+						Role  string   `yaml:"role"`
+						CIDRs []string `yaml:"cidrBlocks"`
+					} `yaml:"subnets"`
 					Vnet struct {
 						CIDRs    []string `yaml:"cidrBlocks"`
 						Peerings []struct {
@@ -148,6 +154,34 @@ func TestFlavor(t *testing.T) {
 				len(vnet.Peerings) != 1 || vnet.Peerings[0].ResourceGroup != "${KINE_RESOURCE_GROUP}" ||
 				vnet.Peerings[0].Name != "kine-vnet" {
 				t.Fatalf("unexpected datastore peering: %+v", vnet)
+			}
+			vnetPrefix := netip.MustParsePrefix(vnet.CIDRs[0])
+			fixturePrefix := netip.MustParsePrefix("10.250.0.0/24")
+			if vnetPrefix.Overlaps(fixturePrefix) {
+				t.Fatal("workload and datastore VNets must not overlap")
+			}
+			expectedSubnets := map[string]string{"control-plane": "10.0.0.0/24", "node": "10.0.1.0/24"}
+			subnets := object.Spec.NetworkSpec.Subnets
+			if len(subnets) != len(expectedSubnets) {
+				t.Fatalf("expected control-plane and node subnets: %+v", subnets)
+			}
+			var subnetPrefixes []netip.Prefix
+			for _, subnet := range subnets {
+				want, ok := expectedSubnets[subnet.Role]
+				if !ok || subnet.Name != subnet.Role+"-subnet" || len(subnet.CIDRs) != 1 || subnet.CIDRs[0] != want {
+					t.Fatalf("unexpected subnet configuration: %+v", subnet)
+				}
+				delete(expectedSubnets, subnet.Role)
+				prefix := netip.MustParsePrefix(subnet.CIDRs[0])
+				if prefix.Bits() < vnetPrefix.Bits() || !vnetPrefix.Contains(prefix.Addr()) {
+					t.Fatalf("subnet %s is outside workload VNet %s", prefix, vnetPrefix)
+				}
+				for _, other := range subnetPrefixes {
+					if prefix.Overlaps(other) {
+						t.Fatalf("subnets %s and %s overlap", prefix, other)
+					}
+				}
+				subnetPrefixes = append(subnetPrefixes, prefix)
 			}
 		case "AzureMachineTemplate":
 			if object.Metadata.Name == "${CLUSTER_NAME}-control-plane" {
