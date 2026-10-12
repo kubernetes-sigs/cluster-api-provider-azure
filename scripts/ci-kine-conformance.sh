@@ -148,7 +148,6 @@ capz::kine::main() {
     command -v "${tool}" >/dev/null || { echo "Required tool not found: ${tool}" >&2; return 1; }
   done
   : "${AZURE_SUBSCRIPTION_ID:?Set the Azure subscription used by CAPZ and az CLI}"
-  : "${AZURE_LOCATION:?Set an explicit Azure region for this experiment}"
   if [[ "${CONFORMANCE_FLAVOR:-kine-postgres}" != kine-postgres ]]; then
     echo "This wrapper requires CONFORMANCE_FLAVOR=kine-postgres." >&2
     return 1
@@ -175,6 +174,11 @@ capz::kine::main() {
   export CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT="${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
   repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
   cd "${repo_root}"
+  # shellcheck source=hack/util.sh
+  source "${repo_root}/hack/util.sh"
+  AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
+  export AZURE_LOCATION
+  echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
   umask 077
   artifact_dir="${ARTIFACTS:-${repo_root}/_artifacts}/kine-${CLUSTER_NAME}"
   mkdir -p "${artifact_dir}"

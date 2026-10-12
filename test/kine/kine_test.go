@@ -401,6 +401,65 @@ capz::kine::cleanup "$KINE_TEST_INITIAL_EXIT"
 	}
 }
 
+func TestRegionSelection(t *testing.T) {
+	for _, state := range []string{"unset", "empty", "explicit"} {
+		t.Run(state, func(t *testing.T) {
+			dir := t.TempDir()
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
+source ./scripts/ci-kine-conformance.sh
+export AZURE_SUBSCRIPTION_ID=test-subscription
+export ARTIFACTS="$KINE_TEST_DIR" TMPDIR="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
+export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
+export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
+case "$KINE_TEST_LOCATION_STATE" in
+  unset) unset AZURE_LOCATION ;;
+  empty) export AZURE_LOCATION= ;;
+  explicit) export AZURE_LOCATION=test-region ;;
+esac
+az() {
+  if [[ "$*" != "group exists"* ]]; then
+    echo "Unexpected Azure mutation in an offline test" >&2
+    return 99
+  fi
+  printf 'azure=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
+  echo false
+}
+ssh-keygen() { :; }
+capz::kine::certificates() { :; }
+capz::kine::provision() {
+  printf 'fixture=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
+}
+bash() {
+  if [[ "$1" != "$repo_root/scripts/ci-conformance.sh" ]]; then
+    echo "Unexpected subprocess in an offline test" >&2
+    return 99
+  fi
+  command bash -c 'printf "workload=%s\n" "${AZURE_LOCATION:?}"' >> "$KINE_TEST_DIR/regions"
+}
+capz::kine::main
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_LOCATION_STATE="+state)
+			if output, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("run wrapper: %v\n%s", err, output)
+			}
+			lines := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "regions")))), "\n")
+			if len(lines) != 4 {
+				t.Fatalf("expected two Azure checks, fixture provisioning, and workload invocation: %v", lines)
+			}
+			region := strings.TrimPrefix(lines[0], "azure=")
+			if region == "" || (state == "explicit" && region != "test-region") {
+				t.Fatalf("unexpected region for %s input: %q", state, region)
+			}
+			for i, prefix := range []string{"azure=", "azure=", "fixture=", "workload="} {
+				if lines[i] != prefix+region {
+					t.Fatalf("region must be selected before Azure calls and shared with the workload: %v", lines)
+				}
+			}
+		})
+	}
+}
+
 func TestRejectUnsupportedRuns(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

@@ -603,11 +603,16 @@ Azure permissions. No roles are granted automatically by this wrapper.
 
 ```bash
 export AZURE_SUBSCRIPTION_ID=<subscription-id>
-export AZURE_LOCATION=westus2
+# Optional: override automatic selection from CAPZ's standard CI region pool.
+# export AZURE_LOCATION=westus2
 # Also configure the usual CAPZ credentials and management-cluster prerequisites.
 export KUBERNETES_VERSION=v1.35.4
 make test-conformance-kine
 ```
+
+If `AZURE_LOCATION` is unset or empty, the wrapper selects and exports a region
+before provisioning the datastore. The workload cluster uses that same region;
+an explicitly supplied `AZURE_LOCATION` is preserved.
 
 This command **creates billable resources and runs the full Kubernetes conformance
 suite**. It is an experimental configuration, not a claim that this combination
