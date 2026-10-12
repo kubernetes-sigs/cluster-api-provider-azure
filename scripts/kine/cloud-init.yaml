@@ -59,12 +59,49 @@ write_files:
     export ETCDCTL_CACERT=/etc/kine/ca.crt
     export ETCDCTL_CERT=/etc/kine/client.crt
     export ETCDCTL_KEY=/etc/kine/client.key
-    systemctl is-active --quiet kine
+    echo "Checking etcdctl version:"
+    etcdctl version
+    echo "Checking Kine service state:"
+    if systemctl is-active kine; then
+      service_status=0
+    else
+      service_status=$?
+    fi
+    echo "Kine service check exit status: ${service_status}"
+    if [[ "${service_status}" != 0 ]]; then
+      exit "${service_status}"
+    fi
     key="/capz-kine-smoke/$(cat /proc/sys/kernel/random/uuid)"
     # Match Kubernetes' create transaction, not arbitrary etcd transactions.
-    printf 'mod("%s") = "0"\n\nput %s ready\n\n\n' "$key" "$key" |
-      etcdctl --command-timeout=15s txn | grep -qx SUCCESS
-    test "$(etcdctl --command-timeout=15s get "$key" --print-value-only)" = ready
+    echo "Creating Kine smoke-test key: ${key}"
+    if transaction_output=$(printf 'mod("%s") = "0"\n\nput %s ready\n\n\n' "$key" "$key" |
+      etcdctl --command-timeout=15s txn); then
+      transaction_status=0
+    else
+      transaction_status=$?
+    fi
+    printf 'Kine transaction exit status: %s\n%s\n' "${transaction_status}" "${transaction_output}"
+    if [[ "${transaction_status}" != 0 ]]; then
+      exit "${transaction_status}"
+    fi
+    if ! grep -qx SUCCESS <<< "${transaction_output}"; then
+      echo "Kine transaction did not report SUCCESS." >&2
+      exit 1
+    fi
+    echo "Reading Kine smoke-test key: ${key}"
+    if read_output=$(etcdctl --command-timeout=15s get "$key" --print-value-only); then
+      read_status=0
+    else
+      read_status=$?
+    fi
+    printf 'Kine read exit status: %s\nValue: <%s>\n' "${read_status}" "${read_output}"
+    if [[ "${read_status}" != 0 ]]; then
+      exit "${read_status}"
+    fi
+    if [[ "${read_output}" != ready ]]; then
+      echo "Kine smoke-test value does not match expected value <ready>." >&2
+      exit 1
+    fi
     echo KINE_READY
 - path: /opt/install-kine.sh
   permissions: "0700"

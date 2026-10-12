@@ -642,7 +642,10 @@ unredacted. The existing log redactor also removes the direct base64 client key.
 Before creating the workload cluster, the wrapper waits for cloud-init and
 executes a Kubernetes-shaped gRPC create transaction followed by a read over mTLS.
 It checks a success marker because Azure Run Command can return HTTP success
-even if the guest script failed. Kubeadm ignores only `ExternalEtcdVersion`:
+even if the guest script failed. The smoke check logs the `etcdctl` version,
+service state, transaction/read exit statuses, and synthetic key/value results
+before asserting success; it does not log credential contents.
+Kubeadm ignores only `ExternalEtcdVersion`:
 standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
 readiness and conformance still exercise the actual storage path. The flavor
 removes the unused local-etcd configuration and control-plane etcd data disk.
@@ -650,6 +653,8 @@ removes the unused local-etcd configuration and control-plane etcd data disk.
 The wrapper reuses `scripts/ci-conformance.sh` and its normal workload cleanup.
 Datastore logs and resource names are written under
 `$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
+`datastore-logs.json` includes the Kine service journal, the tail of cloud-init
+output, and `cloud-init status --long` with its exit code.
 It then deletes the fixture resource group **only after the workload resource
 group is gone and the fixture ownership tag matches this invocation**.
 An Azure query/deletion failure is an error, not evidence that resources are gone.

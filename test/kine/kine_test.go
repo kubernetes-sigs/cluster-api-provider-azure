@@ -263,6 +263,100 @@ capz::kine::certificates
 	}
 }
 
+func TestReadinessDiagnostics(t *testing.T) {
+	var config struct {
+		Files []struct {
+			Path    string `yaml:"path"`
+			Content string `yaml:"content"`
+		} `yaml:"write_files"`
+	}
+	if err := yaml.Unmarshal(readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "cloud-init.yaml")), &config); err != nil {
+		t.Fatal(err)
+	}
+	var check string
+	for _, file := range config.Files {
+		if file.Path == "/usr/local/bin/check-kine" {
+			check = file.Content
+		}
+	}
+	if check == "" {
+		t.Fatal("missing Kine readiness script")
+	}
+	for _, tc := range []struct {
+		name     string
+		wantExit int
+		want     []string
+	}{
+		{"success", 0, []string{"etcdctl version: test", "active", "Kine transaction exit status: 0\nSUCCESS\n\nOK", "Kine read exit status: 0\nValue: <ready>"}},
+		{"inactive", 3, []string{"inactive", "Kine service check exit status: 3"}},
+		{"transaction-error", 7, []string{"transaction RPC failed", "Kine transaction exit status: 7"}},
+		{"transaction-rejected", 1, []string{"Kine transaction exit status: 0\nFAILURE", "Kine transaction did not report SUCCESS."}},
+		{"read-error", 8, []string{"read RPC failed", "Kine read exit status: 8"}},
+		{"read-mismatch", 1, []string{"Kine read exit status: 0\nValue: <wrong>", "does not match expected value <ready>"}},
+		{"read-warning", 0, []string{"read warning", "Kine read exit status: 0\nValue: <ready>"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), "bash", "-s")
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_CHECK_CASE="+tc.name)
+			cmd.Stdin = strings.NewReader(`
+systemctl() {
+  if [[ "$KINE_TEST_CHECK_CASE" == inactive ]]; then echo inactive; return 3; fi
+  echo active
+}
+cat() {
+  [[ "$*" == /proc/sys/kernel/random/uuid ]] || return 99
+  echo offline-smoke-key
+}
+etcdctl() {
+  if [[ "$*" == version ]]; then echo "etcdctl version: test"; return; fi
+  case "$2" in
+    txn)
+      command cat > /dev/null
+      if [[ "$KINE_TEST_CHECK_CASE" == transaction-error ]]; then
+        echo "transaction RPC failed" >&2
+        return 7
+      fi
+      if [[ "$KINE_TEST_CHECK_CASE" == transaction-rejected ]]; then
+        echo FAILURE
+      else
+        printf 'SUCCESS\n\nOK\n'
+      fi ;;
+    get)
+      [[ "$3" == /capz-kine-smoke/offline-smoke-key ]] || return 99
+      if [[ "$KINE_TEST_CHECK_CASE" == read-error ]]; then
+        echo "read RPC failed" >&2
+        return 8
+      fi
+      if [[ "$KINE_TEST_CHECK_CASE" == read-warning ]]; then echo "read warning" >&2; fi
+      if [[ "$KINE_TEST_CHECK_CASE" == read-mismatch ]]; then echo wrong; else echo ready; fi ;;
+    *) return 99 ;;
+  esac
+}
+` + check)
+			output, err := cmd.CombinedOutput()
+			exitCode := 0
+			if err != nil {
+				var exitError *exec.ExitError
+				if !errors.As(err, &exitError) {
+					t.Fatal(err)
+				}
+				exitCode = exitError.ExitCode()
+			}
+			if exitCode != tc.wantExit {
+				t.Fatalf("exit=%d, want %d\n%s", exitCode, tc.wantExit, output)
+			}
+			for _, want := range tc.want {
+				if !bytes.Contains(output, []byte(want)) {
+					t.Errorf("missing diagnostic %q\n%s", want, output)
+				}
+			}
+			if ready := bytes.Contains(output, []byte("\nKINE_READY\n")); ready != (tc.wantExit == 0) {
+				t.Fatalf("unexpected readiness marker: %s", output)
+			}
+		})
+	}
+}
+
 func TestProvisionReadiness(t *testing.T) {
 	for _, ready := range []bool{true, false} {
 		t.Run(map[bool]string{true: "ready", false: "guest-command-failed"}[ready], func(t *testing.T) {
@@ -322,6 +416,7 @@ func TestCleanupOwnership(t *testing.T) {
 		deleted  bool
 	}{
 		{"successful-run", "false", "test-run", "false", "0", 0, true},
+		{"collect-diagnostics", "false", "test-run", "false", "7", 7, true},
 		{"failed-run", "false", "test-run", "false", "7", 7, true},
 		{"live-workload", "true", "test-run", "false", "0", 1, false},
 		{"unknown-workload", "error", "test-run", "false", "0", 1, false},
@@ -349,9 +444,12 @@ workload_exists=$KINE_TEST_WORKLOAD_EXISTS
 fixture_owner=$KINE_TEST_FIXTURE_OWNER
 SKIP_CLEANUP=$KINE_TEST_SKIP_CLEANUP
 test_name=$KINE_TEST_NAME
+if [[ "$test_name" == collect-diagnostics ]]; then vm_created=true; fi
 capz::kine::az() {
   printf '%s\n' "$*" >> "$artifact_dir/commands"
   case "$1 $2" in
+    "vm run-command")
+      echo '{"value":[{"message":"cloud-init status: error"}]}' ;;
     "group exists")
       [[ "$workload_exists" != error ]] || return 1
       echo "$workload_exists" ;;
@@ -393,6 +491,16 @@ capz::kine::cleanup "$KINE_TEST_INITIAL_EXIT"
 			}
 			if deleted := bytes.Contains(commands, []byte("group delete")); deleted != tc.deleted {
 				t.Fatalf("fixture deleted=%t, want %t\n%s", deleted, tc.deleted, output)
+			}
+			if tc.name == "collect-diagnostics" {
+				for _, expected := range []string{"journalctl --no-pager -u kine", "cloud-init status --long", "cloud-init status exit code:"} {
+					if !bytes.Contains(commands, []byte(expected)) {
+						t.Errorf("missing VM diagnostic command %q", expected)
+					}
+				}
+				if !bytes.Contains(readFile(t, filepath.Join(dir, "datastore-logs.json")), []byte("cloud-init status: error")) {
+					t.Error("missing cloud-init diagnostic artifact")
+				}
 			}
 			if _, err := os.Stat(state); !errors.Is(err, os.ErrNotExist) {
 				t.Fatal("temporary private credentials were not removed")

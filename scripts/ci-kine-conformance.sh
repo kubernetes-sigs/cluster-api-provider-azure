@@ -108,7 +108,7 @@ capz::kine::cleanup() {
   if [[ "${vm_created}" == true ]]; then
     if ! capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
       --command-id RunShellScript --scripts \
-      'journalctl --no-pager -u kine -n 60; tail -n 30 /var/log/cloud-init-output.log' \
+      'journalctl --no-pager -u kine -n 60; tail -n 60 /var/log/cloud-init-output.log; cloud-init status --long; printf "cloud-init status exit code: %s\n" "$?"' \
       --output json > "${artifact_dir}/datastore-logs.json"; then
       echo "Failed to collect Kine VM logs." >&2
       result=1
