@@ -9,6 +9,10 @@ CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 
 ##@ Conformance testing:
 
+.PHONY: test-conformance-kine
+test-conformance-kine: ## Provision an experimental Kine/PostgreSQL Azure VM and run Kubernetes conformance.
+	bash ./scripts/ci-kine-conformance.sh
+
 .PHONY: test-conformance
 test-conformance: ## Run conformance test on workload cluster.
 ifeq ($(MANAGER_IMAGE),)

@@ -585,6 +585,91 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 | `REGISTRY`                | Your Registry                                                            |
 | `TEST_K8S`                | `true`                                                                   |
 
+##### Experimental Kine/PostgreSQL conformance
+
+`make test-conformance-kine` wraps the existing conformance runner with an
+experimental external datastore fixture. It creates a dedicated Ubuntu 24.04
+AMD64 Azure VM running **Kine v0.17.2** and **PostgreSQL 16**, then selects the
+`kine-postgres` test flavor. It does not change other flavors or use AKS.
+Kine's downloaded binary is checked against a pinned SHA-256 checksum.
+Ubuntu image and PostgreSQL package patches follow the Ubuntu repositories.
+
+Complete the normal conformance prerequisites above, and install/authenticate
+the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, and `jq`.
+The Azure CLI and CAPZ identities must have permissions in the same subscription
+to create/delete resource groups, VMs and networks, and create VNet peerings in
+both resource groups. The workload cloud-provider identity also needs its usual
+Azure permissions. No roles are granted automatically by this wrapper.
+
+```bash
+export AZURE_SUBSCRIPTION_ID=<subscription-id>
+export AZURE_LOCATION=westus2
+# Also configure the usual CAPZ credentials and management-cluster prerequisites.
+export KUBERNETES_VERSION=v1.35.4
+make test-conformance-kine
+```
+
+This command **creates billable resources and runs the full Kubernetes conformance
+suite**. It is an experimental configuration, not a claim that this combination
+has passed conformance. Released Linux/IPv4 Kubernetes images are supported;
+Windows, IPv6/dual-stack, and CI/PR Kubernetes artifact builds are not wired into
+this flavor. The default is one control-plane node and two workers; set
+`CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT=3` to exercise multiple API servers
+against the same datastore. The datastore itself remains single-instance.
+
+The wrapper provisions a fresh `<cluster-name>-kine` resource group containing
+the VM, its disk, VNet, NSG, and an outbound-only NAT gateway/public IP. There is
+no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`;
+the workload VNet uses `10.0.0.0/16`. CAPZ creates the bidirectional peering.
+Only the control-plane subnet `10.0.0.0/24` can reach Kine's TCP port 2379.
+Avoid overlapping addresses if using a peered management cluster.
+PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
+
+Seven-day test certificates provide mTLS between API servers and Kine.
+The CA signing key is never sent to the VM or management cluster. The VM gets
+server credentials and a client credential for its smoke check; CABPK gets the CA
+certificate and API-server client credentials via the standard external-etcd
+Secrets. Private temporary inputs are deleted when the wrapper exits.
+Azure VM custom data contains test credentials, and normal E2E artifacts can
+contain kubeconfigs/bootstrap data: restrict access and do not publish them
+unredacted. The existing log redactor also removes the direct base64 client key.
+
+Before creating the workload cluster, the wrapper waits for cloud-init and
+executes a Kubernetes-shaped gRPC create transaction followed by a read over mTLS.
+It checks a success marker because Azure Run Command can return HTTP success
+even if the guest script failed. Kubeadm ignores only `ExternalEtcdVersion`:
+standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
+readiness and conformance still exercise the actual storage path. The flavor
+removes the unused local-etcd configuration and control-plane etcd data disk.
+
+The wrapper reuses `scripts/ci-conformance.sh` and its normal workload cleanup.
+Datastore logs and resource names are written under
+`$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
+It then deletes the fixture resource group **only after the workload resource
+group is gone and the fixture ownership tag matches this invocation**.
+An Azure query/deletion failure is an error, not evidence that resources are gone.
+If workload cleanup fails or `SKIP_CLEANUP=true`, the fixture is retained to avoid
+destroying a surviving cluster's state. Retained resources continue to incur costs.
+For manual cleanup, delete the workload through CAPI first, then delete the exact
+fixture resource group listed in `resources.txt`:
+
+```bash
+az group delete --subscription <subscription-id> --name <cluster-name>-kine --yes
+```
+
+`CLUSTER_NAME` may be set to a fresh name (2-40 lowercase characters); existing
+workload or fixture groups are rejected. `KINE_VM_SIZE` defaults to
+`Standard_D2s_v5` and must remain an AMD64 size. Each run has its own database;
+there is no state migration, database HA, upgrade/failover testing, or performance
+claim in this scaffold. Those are separate experiments from conformance.
+
+Local checks do not provision Azure resources:
+
+```bash
+bash hack/gen-flavors.sh
+go test ./test/kine -count=1
+```
+
 #### Running custom test suites on CAPZ clusters
 
 To run a custom test suite on a CAPZ cluster locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
