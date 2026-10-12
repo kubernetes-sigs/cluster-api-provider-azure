@@ -52,8 +52,9 @@ func readFile(t *testing.T, name string) []byte {
 
 func TestFlavor(t *testing.T) {
 	root := repoRoot(t)
-	cmd := exec.CommandContext(t.Context(), filepath.Join(root, "hack", "tools", "bin", "kustomize"), "build",
-		"--load-restrictor", "LoadRestrictionsNone", filepath.Join(root, "templates", "test", "ci", "prow-kine-postgres"))
+	cmd := exec.CommandContext(t.Context(), "./hack/tools/bin/kustomize", "build",
+		"--load-restrictor", "LoadRestrictionsNone", "./templates/test/ci/prow-kine-postgres")
+	cmd.Dir = root
 	rendered, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("build flavor: %v\n%s", err, rendered)
@@ -180,12 +181,14 @@ func TestFlavor(t *testing.T) {
 func TestCertificatesAndCloudInit(t *testing.T) {
 	root, state := repoRoot(t), t.TempDir()
 	cmd := exec.CommandContext(t.Context(), "bash", "-c", `
-source "$1/scripts/ci-kine-conformance.sh"
-repo_root=$1
-state_dir=$2
+source ./scripts/ci-kine-conformance.sh
+repo_root=$PWD
+state_dir=$KINE_TEST_DIR
 umask 077
 capz::kine::certificates
-`, "test", root, state)
+`)
+	cmd.Dir = root
+	cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+state)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generate credentials: %v\n%s", err, output)
 	}
@@ -269,14 +272,14 @@ func TestProvisionReadiness(t *testing.T) {
 				message = "cloud-init failed"
 			}
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
-source "$1/scripts/ci-kine-conformance.sh"
-state_dir=$2
-artifact_dir=$2
+source ./scripts/ci-kine-conformance.sh
+state_dir=$KINE_TEST_DIR
+artifact_dir=$KINE_TEST_DIR
 KINE_RESOURCE_GROUP=test-kine
 AZURE_SUBSCRIPTION_ID=test-subscription
 AZURE_LOCATION=test-region
 run_id=test-run
-message=$3
+message=$KINE_TEST_MESSAGE
 az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
   if [[ "$*" == "vm run-command invoke"* ]]; then
@@ -284,7 +287,9 @@ az() {
   fi
 }
 capz::kine::provision
-`, "test", repoRoot(t), dir, message)
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_MESSAGE="+message)
 			output, err := cmd.CombinedOutput()
 			if (err == nil) != ready {
 				t.Fatalf("readiness=%t: %v\n%s", ready, err, output)
@@ -332,18 +337,18 @@ func TestCleanupOwnership(t *testing.T) {
 				t.Fatal(err)
 			}
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
-source "$1/scripts/ci-kine-conformance.sh"
-state_dir=$2/private
-artifact_dir=$2
+source ./scripts/ci-kine-conformance.sh
+state_dir="${KINE_TEST_DIR}/private"
+artifact_dir=$KINE_TEST_DIR
 fixture_started=true
 vm_created=false
 CLUSTER_NAME=test-workload
 KINE_RESOURCE_GROUP=test-kine
 run_id=test-run
-workload_exists=$3
-fixture_owner=$4
-SKIP_CLEANUP=$5
-test_name=$7
+workload_exists=$KINE_TEST_WORKLOAD_EXISTS
+fixture_owner=$KINE_TEST_FIXTURE_OWNER
+SKIP_CLEANUP=$KINE_TEST_SKIP_CLEANUP
+test_name=$KINE_TEST_NAME
 capz::kine::az() {
   printf '%s\n' "$*" >> "$artifact_dir/commands"
   case "$1 $2" in
@@ -359,8 +364,17 @@ capz::kine::az() {
     *) return 1 ;;
   esac
 }
-capz::kine::cleanup "$6"
-`, "test", repoRoot(t), dir, tc.exists, tc.owner, tc.skip, tc.initial, tc.name)
+capz::kine::cleanup "$KINE_TEST_INITIAL_EXIT"
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(),
+				"KINE_TEST_DIR="+dir,
+				"KINE_TEST_WORKLOAD_EXISTS="+tc.exists,
+				"KINE_TEST_FIXTURE_OWNER="+tc.owner,
+				"KINE_TEST_SKIP_CLEANUP="+tc.skip,
+				"KINE_TEST_INITIAL_EXIT="+tc.initial,
+				"KINE_TEST_NAME="+tc.name,
+			)
 			output, err := cmd.CombinedOutput()
 			exitCode := 0
 			if err != nil {
@@ -402,12 +416,12 @@ func TestRejectUnsupportedRuns(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
-source "$1/scripts/ci-kine-conformance.sh"
+source ./scripts/ci-kine-conformance.sh
 export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
-export ARTIFACTS=$2 CLUSTER_NAME=capz-kine-unit-test
+export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
-export "$3"
+export "$KINE_TEST_SETTING"
 az() {
   if [[ "$*" == "group exists"* ]]; then echo true; else
     echo "Unexpected Azure mutation in an offline test" >&2
@@ -415,7 +429,9 @@ az() {
   fi
 }
 capz::kine::main
-`, "test", repoRoot(t), t.TempDir(), tc.setting)
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+t.TempDir(), "KINE_TEST_SETTING="+tc.setting)
 			output, err := cmd.CombinedOutput()
 			if err == nil || !bytes.Contains(output, []byte(tc.message)) {
 				t.Fatalf("expected rejection %q: %v\n%s", tc.message, err, output)
