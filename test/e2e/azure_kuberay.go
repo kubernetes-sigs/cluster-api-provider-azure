@@ -67,8 +67,8 @@ type KubeRayClusterSpecInput struct {
 	SkipCleanup           bool
 }
 
-// KubeRayClusterSpec implements a test that verifies the KubeRay operator can be installed
-// on a workload cluster and a RayCluster can be created and become ready.
+// KubeRayClusterSpec verifies that an installed KubeRay operator can reconcile
+// a RayCluster on a workload cluster and make it ready.
 // This corresponds to the "Test RayCluster and GCS E2E" case from the KubeRay buildkite CI.
 func KubeRayClusterSpec(ctx context.Context, inputGetter func() KubeRayClusterSpecInput) {
 	var (
@@ -86,9 +86,6 @@ func KubeRayClusterSpec(ctx context.Context, inputGetter func() KubeRayClusterSp
 	Expect(clusterProxy).NotTo(BeNil())
 	clientset := clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
-
-	By("installing the KubeRay operator via Helm")
-	InstallKubeRayOperator(ctx, clusterProxy, specName)
 
 	By("creating a RayCluster")
 	dynamicClient := newDynamicClient(clusterProxy)
@@ -158,8 +155,8 @@ type KubeRayJobSpecInput struct {
 	SkipCleanup           bool
 }
 
-// KubeRayJobSpec implements a test that verifies the KubeRay operator can be installed
-// on a workload cluster and a RayJob can be created and completed successfully.
+// KubeRayJobSpec verifies that an installed KubeRay operator can reconcile
+// a RayJob on a workload cluster and complete it successfully.
 // This corresponds to the "Test RayJob E2E" case from the KubeRay buildkite CI.
 func KubeRayJobSpec(ctx context.Context, inputGetter func() KubeRayJobSpecInput) {
 	var (
@@ -177,9 +174,6 @@ func KubeRayJobSpec(ctx context.Context, inputGetter func() KubeRayJobSpecInput)
 	Expect(clusterProxy).NotTo(BeNil())
 	clientset := clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
-
-	By("installing the KubeRay operator via Helm")
-	InstallKubeRayOperator(ctx, clusterProxy, specName)
 
 	By("creating a RayJob")
 	dynamicClient := newDynamicClient(clusterProxy)
@@ -306,7 +300,7 @@ func newRayJobUnstructured(name, namespace string) *unstructured.Unstructured {
 			"spec": map[string]interface{}{
 				"entrypoint":               "python -c \"import ray; ray.init(); print(ray.cluster_resources()); ray.shutdown()\"",
 				"shutdownAfterJobFinishes": true,
-				"ttlSecondsAfterFinished":  600,
+				"ttlSecondsAfterFinished":  int64(600),
 				"submitterPodTemplate": map[string]interface{}{
 					"spec": map[string]interface{}{
 						"restartPolicy": "Never",
