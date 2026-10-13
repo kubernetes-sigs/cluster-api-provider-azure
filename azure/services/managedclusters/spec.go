@@ -24,8 +24,8 @@ import (
 	"sort"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -350,12 +350,12 @@ const (
 )
 
 // buildAutoScalerProfile builds the AutoScalerProfile for the ManagedClusterProperties.
-func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *asocontainerservicev1hub.ManagedClusterProperties_AutoScalerProfile {
+func buildAutoScalerProfile(autoScalerProfile *AutoScalerProfile) *asocontainerservicev1hub.ManagedClusterPropertiesAutoScalerProfile {
 	if autoScalerProfile == nil {
 		return nil
 	}
 
-	mcAutoScalerProfile := &asocontainerservicev1hub.ManagedClusterProperties_AutoScalerProfile{
+	mcAutoScalerProfile := &asocontainerservicev1hub.ManagedClusterPropertiesAutoScalerProfile{
 		BalanceSimilarNodeGroups:      autoScalerProfile.BalanceSimilarNodeGroups,
 		MaxEmptyBulkDelete:            autoScalerProfile.MaxEmptyBulkDelete,
 		MaxGracefulTerminationSec:     autoScalerProfile.MaxGracefulTerminationSec,
@@ -942,15 +942,15 @@ func (s *ManagedClusterSpec) GetLoadBalancerProfile() (loadBalancerProfile *asoc
 		IdleTimeoutInMinutes:   s.LoadBalancerProfile.IdleTimeoutInMinutes,
 	}
 	if s.LoadBalancerProfile.ManagedOutboundIPs != nil {
-		loadBalancerProfile.ManagedOutboundIPs = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfile_ManagedOutboundIPs{Count: s.LoadBalancerProfile.ManagedOutboundIPs}
+		loadBalancerProfile.ManagedOutboundIPs = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfileManagedOutboundIPs{Count: s.LoadBalancerProfile.ManagedOutboundIPs}
 	}
 	if len(s.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
-		loadBalancerProfile.OutboundIPPrefixes = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfile_OutboundIPPrefixes{
+		loadBalancerProfile.OutboundIPPrefixes = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfileOutboundIPPrefixes{
 			PublicIPPrefixes: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPPrefixes),
 		}
 	}
 	if len(s.LoadBalancerProfile.OutboundIPs) > 0 {
-		loadBalancerProfile.OutboundIPs = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfile_OutboundIPs{
+		loadBalancerProfile.OutboundIPs = &asocontainerservicev1hub.ManagedClusterLoadBalancerProfileOutboundIPs{
 			PublicIPs: convertToResourceReferences(s.LoadBalancerProfile.OutboundIPs),
 		}
 	}

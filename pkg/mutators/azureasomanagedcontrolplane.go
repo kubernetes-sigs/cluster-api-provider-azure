@@ -31,7 +31,7 @@ import (
 	// then updated to the user-defined value. If the field is immutable, this
 	// update will fail. The linter should catch if there are missing fields,
 	// but verify that check is actually working.
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -138,7 +138,7 @@ func setManagedClusterServiceCIDR(ctx context.Context, cluster *clusterv1.Cluste
 	capiCIDR := cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
 
 	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural serviceCidrs field.
-	svcCIDRPath := []string{"spec", "networkProfile", "serviceCidr"}
+	svcCIDRPath := []string{"spec", fieldNetworkProfile, fieldServiceCidr}
 	userSvcCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), svcCIDRPath...)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func setManagedClusterPodCIDR(ctx context.Context, cluster *clusterv1.Cluster, m
 	capiCIDR := cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
 
 	// ManagedCluster.v1api20210501.containerservice.azure.com does not contain the plural podCidrs field.
-	podCIDRPath := []string{"spec", "networkProfile", "podCidr"}
+	podCIDRPath := []string{"spec", fieldNetworkProfile, fieldPodCidr}
 	userPodCIDR, found, err := unstructured.NestedString(managedCluster.UnstructuredContent(), podCIDRPath...)
 	if err != nil {
 		return err
@@ -324,6 +324,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 		}
 
 		profile := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+			ArtifactStreamingProfile:          hubPool.Spec.ArtifactStreamingProfile,
 			AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
 			CapacityReservationGroupReference: hubPool.Spec.CapacityReservationGroupReference,
 			Count:                             hubPool.Spec.Count,
@@ -340,6 +341,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			KubeletConfig:                     hubPool.Spec.KubeletConfig,
 			KubeletDiskType:                   hubPool.Spec.KubeletDiskType,
 			LinuxOSConfig:                     hubPool.Spec.LinuxOSConfig,
+			LocalDNSProfile:                   hubPool.Spec.LocalDNSProfile,
 			MaxCount:                          hubPool.Spec.MaxCount,
 			MessageOfTheDay:                   hubPool.Spec.MessageOfTheDay,
 			MaxPods:                           hubPool.Spec.MaxPods,
@@ -347,6 +349,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			Mode:                              hubPool.Spec.Mode,
 			Name:                              azure.AliasOrNil[string](&hubPool.Spec.AzureName),
 			NetworkProfile:                    hubPool.Spec.NetworkProfile,
+			NodeImageVersion:                  hubPool.Spec.NodeImageVersion,
 			NodeLabels:                        hubPool.Spec.NodeLabels,
 			NodePublicIPPrefixReference:       hubPool.Spec.NodePublicIPPrefixReference,
 			NodeTaints:                        hubPool.Spec.NodeTaints,
@@ -397,7 +400,7 @@ func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluste
 		return nil
 	}
 
-	_, hasAdminCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", "adminCredentials")
+	_, hasAdminCreds, err := unstructured.NestedMap(managedCluster.UnstructuredContent(), "spec", "operatorSpec", "secrets", fieldAdminCreds)
 	if err != nil {
 		return err
 	}
@@ -406,16 +409,16 @@ func setManagedClusterCredentials(ctx context.Context, cluster *clusterv1.Cluste
 	}
 
 	secrets := map[string]any{
-		"adminCredentials": map[string]any{
-			"name": cluster.Name + "-" + string(secret.Kubeconfig),
-			"key":  secret.KubeconfigDataName,
+		fieldAdminCreds: map[string]any{
+			"name":   cluster.Name + "-" + string(secret.Kubeconfig),
+			fieldKey: secret.KubeconfigDataName,
 		},
 	}
 
 	setCreds := mutation{
 		location: managedClusterPath + ".spec.operatorSpec.secrets",
 		val:      secrets,
-		reason:   "because no userCredentials or adminCredentials are defined",
+		reason:   noCredsReason,
 	}
 	logMutation(log, setCreds)
 	return unstructured.SetNestedMap(managedCluster.UnstructuredContent(), secrets, "spec", "operatorSpec", "secrets")
