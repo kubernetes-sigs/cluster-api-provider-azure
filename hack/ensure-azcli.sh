@@ -20,11 +20,18 @@ set -o pipefail
 
 if [[ -z "$(command -v az)" ]]; then
   echo "installing Azure CLI"
-  apt-get update && apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg
+  apt-get update || exit 1
+  apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg || exit 1
   curl --retry 3 -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
   AZ_REPO=$(lsb_release -cs)
+  if [[ "${AZ_REPO}" == "trixie" ]]; then
+    # Microsoft's Azure CLI repository does not publish a trixie suite.
+    AZ_REPO=bookworm
+  fi
   echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ ${AZ_REPO} main" | tee /etc/apt/sources.list.d/azure-cli.list
-  apt-get update && apt-get install -y azure-cli
+  apt-get update || exit 1
+  apt-get install -y azure-cli || exit 1
+  az --version > /dev/null || exit 1
 
   if [[ -n "${AZURE_FEDERATED_TOKEN_FILE:-}" ]]; then
     echo "Logging in with federated token"
