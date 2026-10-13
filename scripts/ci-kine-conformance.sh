@@ -61,7 +61,8 @@ capz::kine::certificates() {
 capz::kine::provision() {
   fixture_started=true
   capz::kine::az group create --name "${KINE_RESOURCE_GROUP}" --location "${AZURE_LOCATION}" \
-    --tags "capz-kine-run=${run_id}" --output none
+    --tags "capz-kine-run=${run_id}" "creationTimestamp=${TIMESTAMP}" \
+    "jobName=${JOB_NAME}" "buildProvenance=${BUILD_PROVENANCE}" --output none
   capz::kine::az network vnet create --resource-group "${KINE_RESOURCE_GROUP}" \
     --name kine-vnet --address-prefixes 10.250.0.0/24 \
     --subnet-name datastore --subnet-prefixes 10.250.0.0/24 --output none
@@ -174,6 +175,8 @@ capz::kine::main() {
   export CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT="${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
   repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
   cd "${repo_root}"
+  # shellcheck source=hack/ensure-tags.sh
+  source "${repo_root}/hack/ensure-tags.sh"
   # shellcheck source=hack/util.sh
   source "${repo_root}/hack/util.sh"
   AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"

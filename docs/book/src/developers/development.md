@@ -651,7 +651,6 @@ standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
 readiness and conformance still exercise the actual storage path. The flavor
 removes the unused local-etcd configuration and control-plane etcd data disk.
 
-The wrapper reuses `scripts/ci-conformance.sh` and its normal workload cleanup.
 Datastore logs and resource names are written under
 `$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
 `datastore-logs.json` includes the Kine service journal, the tail of cloud-init

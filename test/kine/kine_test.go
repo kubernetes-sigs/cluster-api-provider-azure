@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -406,6 +407,9 @@ artifact_dir=$KINE_TEST_DIR
 KINE_RESOURCE_GROUP=test-kine
 AZURE_SUBSCRIPTION_ID=test-subscription
 AZURE_LOCATION=test-region
+TIMESTAMP=2026-01-01T00:00:00Z
+JOB_NAME=test-kine-job
+BUILD_PROVENANCE=https://github.com/test/repo/pull/123/commits/test-head
 run_id=test-run
 message=$KINE_TEST_MESSAGE
 az() {
@@ -423,6 +427,17 @@ capz::kine::provision
 				t.Fatalf("readiness=%t: %v\n%s", ready, err, output)
 			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
+			groupCreate := strings.SplitN(commands, "\n", 2)[0]
+			for _, tag := range []string{
+				"capz-kine-run=test-run",
+				"creationTimestamp=2026-01-01T00:00:00Z",
+				"jobName=test-kine-job",
+				"buildProvenance=https://github.com/test/repo/pull/123/commits/test-head",
+			} {
+				if !strings.HasPrefix(groupCreate, "group create ") || !strings.Contains(groupCreate, tag) {
+					t.Errorf("missing resource-group tag %q: %s", tag, groupCreate)
+				}
+			}
 			for _, expected := range []string{
 				"--source-address-prefixes 10.0.0.0/24",
 				"--destination-port-ranges 2379",
@@ -538,6 +553,70 @@ capz::kine::cleanup "$KINE_TEST_INITIAL_EXIT"
 			}
 			if _, err := os.Stat(state); !errors.Is(err, os.ErrNotExist) {
 				t.Fatal("temporary private credentials were not removed")
+			}
+		})
+	}
+}
+
+func TestCITagInitialization(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		job        string
+		provenance string
+	}{
+		{"local", "cluster-api-provider-azure-e2e", "canary"},
+		{"prow", "test-kine-job", "https://github.com/test/repo/pull/123/commits/test-head"},
+		{"overrides", "custom-job", "canary"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
+source ./scripts/ci-kine-conformance.sh
+export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
+export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
+export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
+export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
+unset TIMESTAMP JOB_NAME BUILD_PROVENANCE REPO_OWNER REPO_NAME PULL_BASE_SHA PULL_NUMBER PULL_PULL_SHA
+case "$KINE_TEST_TAG_CASE" in
+  prow)
+    export JOB_NAME=test-kine-job REPO_OWNER=test REPO_NAME=repo
+    export PULL_BASE_SHA=test-base PULL_NUMBER=123 PULL_PULL_SHA=test-head ;;
+  overrides)
+    export TIMESTAMP=2026-01-01T00:00:00Z JOB_NAME=custom-job ;;
+esac
+az() {
+  if [[ "$*" != "group exists"* ]]; then
+    echo "Unexpected Azure mutation in an offline test" >&2
+    return 99
+  fi
+  command bash -c 'printf "%s\n" "${TIMESTAMP:?}" "${JOB_NAME:?}" "${BUILD_PROVENANCE:?}"' > "$KINE_TEST_DIR/tags"
+  echo true
+}
+capz::kine::main
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_TAG_CASE="+tc.name)
+			output, err := cmd.CombinedOutput()
+			if err == nil || !bytes.Contains(output, []byte("Refusing to reuse resource group")) {
+				t.Fatalf("expected to stop before provisioning: %v\n%s", err, output)
+			}
+			tags := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "tags")))), "\n")
+			if len(tags) != 3 {
+				t.Fatalf("expected exported timestamp, job name, and provenance: %v", tags)
+			}
+			timestamp, err := time.Parse(time.RFC3339, tags[0])
+			if err != nil {
+				t.Fatalf("invalid creation timestamp: %v", err)
+			}
+			if tc.name == "overrides" {
+				if tags[0] != "2026-01-01T00:00:00Z" {
+					t.Fatalf("timestamp override was not preserved: %s", tags[0])
+				}
+			} else if age := time.Since(timestamp); age < -time.Minute || age > time.Minute {
+				t.Fatalf("default timestamp must reflect this run: %s", tags[0])
+			}
+			if tags[1] != tc.job || tags[2] != tc.provenance {
+				t.Fatalf("unexpected CI tags: %v", tags)
 			}
 		})
 	}
