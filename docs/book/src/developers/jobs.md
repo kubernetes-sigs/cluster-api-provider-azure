@@ -91,6 +91,13 @@ Azure Kubernetes clusters (`ci-version`). Each scenario provisions an isolated
 cluster and installs the pinned OSS KubeRay Helm chart once before exercising
 the API contract, RayCluster readiness, or RayJob completion.
 
+The shared Ray head spec pins `runtime-env-agent-port` to `52366`, distinct from
+the dashboard agent's `52365`. Ray 2.56 starts Ray Client before the raylet
+registers with GCS; discovering an automatically assigned agent port can exceed
+the client's 30-second startup timeout and crash a slowly starting head. The
+explicit port avoids that dependency without disabling Ray Client or relaxing
+the workload readiness checks.
+
 The `[KubeRayAPI]` scenario checks the `ray.io/v1` resources shipped by the pinned
 chart: RayCluster, RayJob, RayService, and RayCronJob. It verifies discovery
 (kind, namespace scope, and CRUD verbs), served CRD schemas and baseline field

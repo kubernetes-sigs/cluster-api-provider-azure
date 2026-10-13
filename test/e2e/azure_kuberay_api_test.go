@@ -23,6 +23,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -30,6 +31,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -37,6 +39,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
+
+func TestKubeRayHeadRuntimeEnvAgentPort(t *testing.T) {
+	contracts := append([]kubeRayAPIContract{
+		{fixture: newRayClusterUnstructured("raycluster-e2e", "default"), clusterPath: "spec"},
+		{fixture: newRayJobUnstructured("rayjob-e2e", "default"), clusterPath: "spec.rayClusterSpec"},
+	}, kubeRayAPIContracts("kuberay-api")...)
+
+	for _, contract := range contracts {
+		t.Run(contract.fixture.GetName(), func(t *testing.T) {
+			g := NewWithT(t)
+			path := append(strings.Split(contract.clusterPath, "."), "headGroupSpec", "rayStartParams", "runtime-env-agent-port")
+			port, found, err := unstructured.NestedString(contract.fixture.Object, path...)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(found).To(BeTrue(), "the head must use a fixed runtime-env agent port")
+			g.Expect(port).To(Equal("52366"), "Ray Client must not depend on raylet registration to discover the agent port")
+		})
+	}
+}
 
 func TestKubeRayFields(t *testing.T) {
 	for _, tt := range []struct {

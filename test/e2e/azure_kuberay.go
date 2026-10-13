@@ -336,6 +336,8 @@ func rayClusterSpec() map[string]interface{} {
 			"rayStartParams": map[string]interface{}{
 				"dashboard-host":      "0.0.0.0",
 				"object-store-memory": objectStoreMemory,
+				// Avoid Ray Client's discovery timeout while the raylet is still starting.
+				"runtime-env-agent-port": "52366",
 			},
 			"template": map[string]interface{}{
 				"spec": map[string]interface{}{
