@@ -272,6 +272,13 @@ capz::kine::certificates
 	}
 	certificates := 0
 	for _, file := range config.Files {
+		if file.Path == "/opt/configure-kine-storage.sh" {
+			decoded, err := base64.StdEncoding.DecodeString(file.Content)
+			if err != nil || !bytes.Equal(decoded, readFile(t, filepath.Join(root, "scripts", "kine", "configure-performance-storage.sh"))) {
+				t.Fatal("conformance must initialize the same high-I/O storage as performance runs")
+			}
+			continue
+		}
 		if file.Encoding == "b64" {
 			certificates++
 			decoded, err := base64.StdEncoding.DecodeString(file.Content)
@@ -412,11 +419,15 @@ JOB_NAME=test-kine-job
 BUILD_PROVENANCE=https://github.com/test/repo/pull/123/commits/test-head
 run_id=test-run
 message=$KINE_TEST_MESSAGE
+unset KINE_VM_SIZE KINE_ZONE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+capz::kine::performance_defaults
 az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
-  if [[ "$*" == "vm run-command invoke"* ]]; then
-    printf '{"value":[{"message":"%s"}]}\n' "$message"
-  fi
+  case "$1 $2" in
+    "vm show") echo '{"controller":"NVMe","dataDisks":[{"lun":0,"caching":"None"}]}' ;;
+    "disk show") echo '{"sku":"UltraSSD_LRS","iops":400000,"mbps":10000}' ;;
+    "vm run-command") printf '{"value":[{"message":"%s"}]}\n' "$message" ;;
+  esac
 }
 capz::kine::provision
 `)
@@ -445,6 +456,11 @@ capz::kine::provision
 				"--private-ip-address 10.250.0.4",
 				"--nics kine-nic",
 				"--subscription test-subscription --only-show-errors",
+				"--size Standard_E112ibs_v5",
+				"--sku UltraSSD_LRS",
+				"--disk-controller-type NVMe",
+				"--disk-iops-read-write 400000",
+				"--disk-mbps-read-write 10000",
 			} {
 				if !strings.Contains(commands, expected) {
 					t.Errorf("missing provisioning invariant: %s", expected)
@@ -577,6 +593,7 @@ export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 unset TIMESTAMP JOB_NAME BUILD_PROVENANCE REPO_OWNER REPO_NAME PULL_BASE_SHA PULL_NUMBER PULL_PULL_SHA
+capz::kine::performance_preflight() { :; }
 case "$KINE_TEST_TAG_CASE" in
   prow)
     export JOB_NAME=test-kine-job REPO_OWNER=test REPO_NAME=repo
@@ -623,7 +640,7 @@ capz::kine::main
 }
 
 func TestRegionSelection(t *testing.T) {
-	for _, state := range []string{"unset", "empty", "explicit"} {
+	for _, state := range []string{"unset", "empty", "explicit", "performance"} {
 		t.Run(state, func(t *testing.T) {
 			dir := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -632,11 +649,19 @@ export AZURE_SUBSCRIPTION_ID=test-subscription
 export ARTIFACTS="$KINE_TEST_DIR" TMPDIR="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
+unset KINE_PROFILE KINE_PREFLIGHT_ONLY KINE_ZONE KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE
 case "$KINE_TEST_LOCATION_STATE" in
   unset) unset AZURE_LOCATION ;;
-  empty) export AZURE_LOCATION= ;;
-  explicit) export AZURE_LOCATION=test-region ;;
+  empty) export AZURE_LOCATION= KINE_ZONE= ;;
+  explicit) export AZURE_LOCATION=test-region KINE_ZONE=3 ;;
+  performance)
+    unset AZURE_LOCATION
+    export KINE_PROFILE=performance CONFORMANCE_FLAVOR=kine-postgres-performance ;;
 esac
+capz::kine::performance_preflight() {
+  printf 'preflight=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
+}
 az() {
   if [[ "$*" != "group exists"* ]]; then
     echo "Unexpected Azure mutation in an offline test" >&2
@@ -651,11 +676,17 @@ capz::kine::provision() {
   printf 'fixture=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
 }
 bash() {
+  if [[ "$1" == "$repo_root/scripts/kine/run-clusterloader.sh" ]]; then
+    [[ "$KINE_TEST_LOCATION_STATE" == performance && "$2" == --prepare-only ]] || return 99
+    printf 'prepare=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
+    return 0
+  fi
   if [[ "$1" != "$repo_root/scripts/ci-conformance.sh" ]]; then
     echo "Unexpected subprocess in an offline test" >&2
     return 99
   fi
   command bash -c 'printf "workload=%s\n" "${AZURE_LOCATION:?}"' >> "$KINE_TEST_DIR/regions"
+  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3"' > "$KINE_TEST_DIR/settings"
 }
 capz::kine::main
 `)
@@ -665,17 +696,32 @@ capz::kine::main
 				t.Fatalf("run wrapper: %v\n%s", err, output)
 			}
 			lines := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "regions")))), "\n")
-			if len(lines) != 4 {
-				t.Fatalf("expected two Azure checks, fixture provisioning, and workload invocation: %v", lines)
+			prefixes := []string{"preflight="}
+			if state == "performance" {
+				prefixes = append(prefixes, "prepare=")
 			}
-			region := strings.TrimPrefix(lines[0], "azure=")
-			if region == "" || (state == "explicit" && region != "test-region") {
-				t.Fatalf("unexpected region for %s input: %q", state, region)
+			prefixes = append(prefixes, "azure=", "azure=", "fixture=", "workload=")
+			if len(lines) != len(prefixes) {
+				t.Fatalf("unexpected preflight/provision/workload sequence: %v", lines)
 			}
-			for i, prefix := range []string{"azure=", "azure=", "fixture=", "workload="} {
+			region, zone, flavor := "westus2", "1", "kine-postgres"
+			zones := []string{"true", "false", "false"}
+			if state == "explicit" {
+				region, zone = "test-region", "3"
+				zones = []string{"false", "false", "true"}
+			}
+			if state == "performance" {
+				flavor = "kine-postgres-performance"
+			}
+			for i, prefix := range prefixes {
 				if lines[i] != prefix+region {
 					t.Fatalf("region must be selected before Azure calls and shared with the workload: %v", lines)
 				}
+			}
+			settings := string(readFile(t, filepath.Join(dir, "settings")))
+			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\nStandard_D32s_v5\nStandard_D16s_v5\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n"
+			if settings != want {
+				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}
 		})
 	}
@@ -702,6 +748,7 @@ export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 export "$KINE_TEST_SETTING"
+capz::kine::performance_preflight() { :; }
 az() {
   if [[ "$*" == "group exists"* ]]; then echo true; else
     echo "Unexpected Azure mutation in an offline test" >&2

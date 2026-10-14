@@ -9,6 +9,13 @@ CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 
 ##@ Conformance testing:
 
+.PHONY: test-performance-kine preflight-performance-kine
+test-performance-kine: ## Provision the high-I/O Kine fixture and run ClusterLoader2 (billable).
+	bash ./scripts/ci-kine-performance.sh
+
+preflight-performance-kine: ## Check high-I/O VM quota/capabilities without provisioning.
+	bash ./scripts/ci-kine-performance.sh --preflight-only
+
 .PHONY: test-conformance-kine
 test-conformance-kine: ## Provision an experimental Kine/PostgreSQL Azure VM and run Kubernetes conformance.
 	bash ./scripts/ci-kine-conformance.sh

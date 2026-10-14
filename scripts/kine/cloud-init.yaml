@@ -6,6 +6,10 @@ packages:
 - postgresql-16
 - etcd-client
 write_files:
+- path: /opt/configure-kine-storage.sh
+  permissions: "0700"
+  encoding: b64
+  content: __STORAGE_SCRIPT__
 - path: /etc/kine/ca.crt
   permissions: "0644"
   encoding: b64
@@ -113,6 +117,7 @@ write_files:
       -o /usr/local/bin/kine
     echo '7c41cf189ecf21660bda78f1d35cc0d188c103d1809933523a8c7dde2cc58c1e  /usr/local/bin/kine' | sha256sum --check
     chmod 0755 /usr/local/bin/kine
+    /opt/configure-kine-storage.sh
     useradd --system --home-dir /var/lib/kine --create-home --shell /usr/sbin/nologin kine
     chown kine:kine /etc/kine/server.key
     systemctl start postgresql

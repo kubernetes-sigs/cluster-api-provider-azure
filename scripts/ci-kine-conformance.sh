@@ -19,6 +19,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# shellcheck source=scripts/kine/performance.sh
+source "$(dirname "${BASH_SOURCE[0]}")/kine/performance.sh"
+
 capz::kine::az() {
   az "$@" --subscription "${AZURE_SUBSCRIPTION_ID}" --only-show-errors
 }
@@ -47,7 +50,8 @@ capz::kine::certificates() {
   KINE_CLIENT_CERT_B64=$(base64 < "${state_dir}/client.crt" | tr -d '\n')
   KINE_CLIENT_KEY_B64=$(base64 < "${state_dir}/client.key" | tr -d '\n')
   export KINE_CA_CERT_B64 KINE_CLIENT_CERT_B64 KINE_CLIENT_KEY_B64
-  local server_cert server_key
+  local server_cert server_key storage_script
+  storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
   server_cert=$(base64 < "${state_dir}/server.crt" | tr -d '\n')
   server_key=$(base64 < "${state_dir}/server.key" | tr -d '\n')
   sed -e "s|__CA_CERT__|${KINE_CA_CERT_B64}|g" \
@@ -55,6 +59,7 @@ capz::kine::certificates() {
     -e "s|__SERVER_KEY__|${server_key}|g" \
     -e "s|__CLIENT_CERT__|${KINE_CLIENT_CERT_B64}|g" \
     -e "s|__CLIENT_KEY__|${KINE_CLIENT_KEY_B64}|g" \
+    -e "s|__STORAGE_SCRIPT__|${storage_script}|g" \
     "${repo_root}/scripts/kine/cloud-init.yaml" > "${state_dir}/cloud-init.yaml"
 }
 
@@ -83,15 +88,34 @@ capz::kine::provision() {
     --name kine-nat --public-ip-addresses kine-egress --output none
   capz::kine::az network vnet subnet update --resource-group "${KINE_RESOURCE_GROUP}" \
     --vnet-name kine-vnet --name datastore --nat-gateway kine-nat --output none
+  capz::kine::az disk create --resource-group "${KINE_RESOURCE_GROUP}" --name kine-data \
+    --location "${AZURE_LOCATION}" --zone "${KINE_ZONE}" --sku UltraSSD_LRS \
+    --size-gb "${KINE_DISK_SIZE_GB}" --disk-iops-read-write "${KINE_DISK_IOPS}" \
+    --disk-mbps-read-write "${KINE_DISK_MBPS}" --output none
   capz::kine::az network nic create --resource-group "${KINE_RESOURCE_GROUP}" \
     --name kine-nic --vnet-name kine-vnet --subnet datastore \
-    --private-ip-address 10.250.0.4 --network-security-group kine-nsg --output none
+    --private-ip-address 10.250.0.4 --network-security-group kine-nsg --accelerated-networking true --output none
   capz::kine::az vm create --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
-    --nics kine-nic --image Canonical:ubuntu-24_04-lts:server:latest \
-    --size "${KINE_VM_SIZE:-Standard_D2s_v5}" --admin-username azureuser \
+    --nics kine-nic --image "${KINE_VM_IMAGE:-Canonical:ubuntu-24_04-lts:server:latest}" \
+    --size "${KINE_VM_SIZE}" --admin-username azureuser \
     --ssh-key-values "${state_dir}/ssh.pub" --custom-data "${state_dir}/cloud-init.yaml" \
-    --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --output none
+    --os-disk-size-gb 64 --storage-sku Premium_LRS \
+    --zone "${KINE_ZONE}" --disk-controller-type NVMe --ultra-ssd-enabled true \
+    --attach-data-disks kine-data --data-disk-caching None --output none
   vm_created=true
+  capz::kine::az vm show --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
+    --query '{size:hardwareProfile.vmSize,zone:zones,image:storageProfile.imageReference,controller:storageProfile.diskControllerType,dataDisks:storageProfile.dataDisks}' \
+    --output json > "${artifact_dir}/vm-configuration.json"
+  capz::kine::az disk show --resource-group "${KINE_RESOURCE_GROUP}" --name kine-data \
+    --query '{sku:sku.name,zone:zones,size:diskSizeGb,iops:diskIopsReadWrite,mbps:diskMBpsReadWrite}' \
+    --output json > "${artifact_dir}/disk-configuration.json"
+  jq -e --argjson iops "${KINE_DISK_IOPS}" --argjson mbps "${KINE_DISK_MBPS}" \
+    '.sku == "UltraSSD_LRS" and .iops == $iops and .mbps == $mbps' \
+    "${artifact_dir}/disk-configuration.json" >/dev/null ||
+    { echo "Provisioned disk does not match requested performance." >&2; return 1; }
+  jq -e '.controller == "NVMe" and (.dataDisks | length) == 1 and .dataDisks[0].lun == 0 and .dataDisks[0].caching == "None"' \
+    "${artifact_dir}/vm-configuration.json" >/dev/null ||
+    { echo "Expected an NVMe VM with one uncached data disk at LUN 0." >&2; return 1; }
   capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
     --command-id RunShellScript --scripts \
     'set -eu; timeout 1200 cloud-init status --wait; /usr/local/bin/check-kine' \
@@ -144,13 +168,20 @@ capz::kine::cleanup() {
 }
 
 capz::kine::main() {
+  repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+  local flavor=kine-postgres
+  case "${KINE_PROFILE:-conformance}" in
+    conformance) ;;
+    performance) flavor=kine-postgres-performance ;;
+    *) echo "Unknown KINE_PROFILE: ${KINE_PROFILE}" >&2; return 1 ;;
+  esac
   local tool
   for tool in az openssl ssh-keygen jq; do
     command -v "${tool}" >/dev/null || { echo "Required tool not found: ${tool}" >&2; return 1; }
   done
   : "${AZURE_SUBSCRIPTION_ID:?Set the Azure subscription used by CAPZ and az CLI}"
-  if [[ "${CONFORMANCE_FLAVOR:-kine-postgres}" != kine-postgres ]]; then
-    echo "This wrapper requires CONFORMANCE_FLAVOR=kine-postgres." >&2
+  if [[ "${CONFORMANCE_FLAVOR:-${flavor}}" != "${flavor}" ]]; then
+    echo "This wrapper requires CONFORMANCE_FLAVOR=${flavor}." >&2
     return 1
   fi
   if [[ "${WINDOWS:-false}" != false || "${IP_FAMILY:-ipv4}" != ipv4 ||
@@ -171,20 +202,22 @@ capz::kine::main() {
     return 1
   fi
   export KINE_RESOURCE_GROUP="${CLUSTER_NAME}-kine"
-  export CONFORMANCE_FLAVOR=kine-postgres
-  export CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT="${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
-  repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+  export CONFORMANCE_FLAVOR="${flavor}"
+  capz::kine::performance_defaults
   cd "${repo_root}"
   # shellcheck source=hack/ensure-tags.sh
   source "${repo_root}/hack/ensure-tags.sh"
-  # shellcheck source=hack/util.sh
-  source "${repo_root}/hack/util.sh"
-  AZURE_LOCATION="${AZURE_LOCATION:-$(capz::util::get_random_region)}"
-  export AZURE_LOCATION
-  echo "Using AZURE_LOCATION: ${AZURE_LOCATION}"
+  echo "Using AZURE_LOCATION: ${AZURE_LOCATION}, KINE_ZONE: ${KINE_ZONE}"
   umask 077
   artifact_dir="${ARTIFACTS:-${repo_root}/_artifacts}/kine-${CLUSTER_NAME}"
   mkdir -p "${artifact_dir}"
+  capz::kine::performance_preflight
+  if [[ "${KINE_PREFLIGHT_ONLY:-false}" == true ]]; then
+    return 0
+  fi
+  if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
+    bash "${repo_root}/scripts/kine/run-clusterloader.sh" --prepare-only
+  fi
   local group exists
   for group in "${CLUSTER_NAME}" "${KINE_RESOURCE_GROUP}"; do
     exists=$(capz::kine::az group exists --name "${group}" --output tsv)

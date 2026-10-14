@@ -6,6 +6,7 @@ resources:
 - secrets.yaml
 patches:
 - path: patches/kine.yaml
+- path: patches/performance.yaml
 
 sortOptions:
   order: fifo
