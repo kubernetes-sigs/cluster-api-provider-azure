@@ -200,7 +200,7 @@ capz::kine::main
 }
 
 func TestPerformanceProvision(t *testing.T) {
-	for _, mismatch := range []string{"none", "disk", "controller"} {
+	for _, mismatch := range []string{"none", "disk", "disk-throughput", "disk-sku", "null-iops", "disk-api-error", "controller"} {
 		t.Run(mismatch, func(t *testing.T) {
 			dir := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -222,9 +222,15 @@ az() {
       [[ "$KINE_TEST_MISMATCH" != controller ]] || controller=SCSI
       printf '{"controller":"%s","dataDisks":[{"lun":0,"caching":"None"}]}\n' "$controller" ;;
     "disk show")
-      iops=400000
-      [[ "$KINE_TEST_MISMATCH" != disk ]] || iops=100
-      printf '{"sku":"UltraSSD_LRS","iops":%s,"mbps":10000}\n' "$iops" ;;
+      sku=UltraSSD_LRS iops=400000 mbps=10000
+      case "$KINE_TEST_MISMATCH" in
+        disk) iops=100 ;;
+        disk-throughput) mbps=100 ;;
+        disk-sku) sku=Premium_LRS ;;
+        null-iops) iops=null ;;
+        disk-api-error) echo "Azure disk lookup failed" >&2; return 17 ;;
+      esac
+      printf '{"sku":{"name":"%s"},"zones":["1"],"diskSizeGB":512,"diskIOPSReadWrite":%s,"diskMBpsReadWrite":%s}\n' "$sku" "$iops" "$mbps" ;;
     "vm run-command") echo '{"value":[{"message":"KINE_READY"}]}' ;;
   esac
 }
@@ -236,7 +242,31 @@ capz::kine::provision
 			if (err == nil) != (mismatch == "none") {
 				t.Fatalf("unexpected provision result: %v\n%s", err, output)
 			}
+			observed, diskMismatch := map[string]string{
+				"disk":            `{"sku":"UltraSSD_LRS","iops":100,"mbps":10000}`,
+				"disk-throughput": `{"sku":"UltraSSD_LRS","iops":400000,"mbps":100}`,
+				"disk-sku":        `{"sku":"Premium_LRS","iops":400000,"mbps":10000}`,
+				"null-iops":       `{"sku":"UltraSSD_LRS","iops":null,"mbps":10000}`,
+			}[mismatch]
+			if diskMismatch && (!bytes.Contains(output, []byte("Expected: sku=UltraSSD_LRS, iops=400000, mbps=10000")) ||
+				!bytes.Contains(output, []byte("Observed: "+observed))) {
+				t.Fatalf("disk mismatch must report expected and observed settings: %s", output)
+			}
+			if mismatch == "none" {
+				var disk struct {
+					Size int `json:"size"`
+				}
+				if err := json.Unmarshal(readFile(t, filepath.Join(dir, "disk-configuration.json")), &disk); err != nil {
+					t.Fatal(err)
+				}
+				if disk.Size != 512 {
+					t.Fatalf("must project diskSizeGB from the Azure response: %+v", disk)
+				}
+			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
+			if mismatch != "none" && strings.Contains(commands, "vm run-command") {
+				t.Fatalf("must stop before guest readiness when provisioning validation fails: %s", commands)
+			}
 			for _, required := range []string{
 				"--sku UltraSSD_LRS", "--disk-iops-read-write 400000", "--disk-mbps-read-write 10000",
 				"--disk-controller-type NVMe", "--ultra-ssd-enabled true", "--attach-data-disks kine-data",

@@ -107,12 +107,18 @@ capz::kine::provision() {
     --query '{size:hardwareProfile.vmSize,zone:zones,image:storageProfile.imageReference,controller:storageProfile.diskControllerType,dataDisks:storageProfile.dataDisks}' \
     --output json > "${artifact_dir}/vm-configuration.json"
   capz::kine::az disk show --resource-group "${KINE_RESOURCE_GROUP}" --name kine-data \
-    --query '{sku:sku.name,zone:zones,size:diskSizeGb,iops:diskIopsReadWrite,mbps:diskMBpsReadWrite}' \
-    --output json > "${artifact_dir}/disk-configuration.json"
-  jq -e --argjson iops "${KINE_DISK_IOPS}" --argjson mbps "${KINE_DISK_MBPS}" \
+    --output json |
+    jq '{sku:.sku.name,zone:.zones,size:.diskSizeGB,iops:.diskIOPSReadWrite,mbps:.diskMBpsReadWrite}' \
+      > "${artifact_dir}/disk-configuration.json"
+  if ! jq -e --argjson iops "${KINE_DISK_IOPS}" --argjson mbps "${KINE_DISK_MBPS}" \
     '.sku == "UltraSSD_LRS" and .iops == $iops and .mbps == $mbps' \
-    "${artifact_dir}/disk-configuration.json" >/dev/null ||
-    { echo "Provisioned disk does not match requested performance." >&2; return 1; }
+    "${artifact_dir}/disk-configuration.json" >/dev/null; then
+    echo "Provisioned disk does not match requested performance." >&2
+    echo "Expected: sku=UltraSSD_LRS, iops=${KINE_DISK_IOPS}, mbps=${KINE_DISK_MBPS}" >&2
+    printf 'Observed: ' >&2
+    jq -c '{sku, iops, mbps}' "${artifact_dir}/disk-configuration.json" >&2
+    return 1
+  fi
   jq -e '.controller == "NVMe" and (.dataDisks | length) == 1 and .dataDisks[0].lun == 0 and .dataDisks[0].caching == "None"' \
     "${artifact_dir}/vm-configuration.json" >/dev/null ||
     { echo "Expected an NVMe VM with one uncached data disk at LUN 0." >&2; return 1; }

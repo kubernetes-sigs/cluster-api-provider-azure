@@ -758,6 +758,7 @@ not infer NVMe-specific aggregate performance limits from incomplete SKU metadat
 verify these against the current Azure size documentation when overriding SKUs.
 Requested and provisioned settings are archived, and the run rejects a non-NVMe
 VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
+and throughput. Disk validation failures log the expected and observed SKU, IOPS,
 and throughput. The resolved Ubuntu image version is frozen within each run;
 image/package patch versions can still differ between runs.
 

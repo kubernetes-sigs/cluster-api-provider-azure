@@ -425,7 +425,7 @@ az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
   case "$1 $2" in
     "vm show") echo '{"controller":"NVMe","dataDisks":[{"lun":0,"caching":"None"}]}' ;;
-    "disk show") echo '{"sku":"UltraSSD_LRS","iops":400000,"mbps":10000}' ;;
+    "disk show") echo '{"sku":{"name":"UltraSSD_LRS"},"zones":["2"],"diskSizeGB":512,"diskIOPSReadWrite":400000,"diskMBpsReadWrite":10000}' ;;
     "vm run-command") printf '{"value":[{"message":"%s"}]}\n' "$message" ;;
   esac
 }
