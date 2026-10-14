@@ -16,7 +16,7 @@
 
 capz::kine::performance_defaults() {
   export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
-  export KINE_ZONE="${KINE_ZONE:-1}"
+  export KINE_ZONE="${KINE_ZONE:-2}"
   [[ "${KINE_ZONE}" =~ ^[123]$ ]] || { echo "KINE_ZONE must be 1, 2, or 3." >&2; return 1; }
   export KINE_ZONE_1=false KINE_ZONE_2=false KINE_ZONE_3=false
   case "${KINE_ZONE}" in

@@ -23,9 +23,10 @@ def available($name; $required):
   [$quota[0][] | select((.name.value | ascii_downcase) == ($name | ascii_downcase))]
   | require(length == 1; "No quota entry for \($name)")
   | .[0]
-  | require((.limit - .currentValue) >= $required;
-            "Insufficient \($name) vCPU quota: need \($required), available \(.limit - .currentValue)")
-  | {quota: $name, required: $required, available: (.limit - .currentValue)};
+  | ((.limit | tonumber) - (.currentValue | tonumber)) as $remaining
+  | require($remaining >= $required;
+            "Insufficient \($name) vCPU quota: need \($required), available \($remaining)")
+  | {quota: $name, required: $required, available: $remaining};
 
 sku($datastore) as $db
 | $db

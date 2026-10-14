@@ -611,13 +611,13 @@ Azure permissions. No roles are granted automatically by this wrapper.
 export AZURE_SUBSCRIPTION_ID=<subscription-id>
 # Optional: override the fixed high-I/O placement defaults.
 # export AZURE_LOCATION=westus2
-# export KINE_ZONE=1
+# export KINE_ZONE=2
 # Also configure the usual CAPZ credentials and management-cluster prerequisites.
 export KUBERNETES_VERSION=v1.35.4
 make test-conformance-kine
 ```
 
-Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `1`.
+Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
 The datastore, control plane, and workers share that placement; explicit
 overrides are preserved. The wrapper checks VM capabilities and combined
 vCPU quota before creating resources. Unsupported placement or insufficient
@@ -715,7 +715,7 @@ This is a **large, billable, single-datastore experiment**, not an HA configurat
 | `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
 | Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D32s_v5` |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
-| Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=1`; explicit overrides preserved |
+| Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
 
 The default footprint needs **176 additional regional vCPUs**: 112 in the
 datastore VM family and 64 in the Dsv5 family. Changing the machine counts changes
@@ -728,7 +728,7 @@ and Azure CLI login are still required:
 
 ```bash
 export AZURE_SUBSCRIPTION_ID=<subscription-id>
-# Optional: override westus2 / zone 1.
+# Optional: override westus2 / zone 2.
 # export AZURE_LOCATION=<region-with-required-skus>
 # export KINE_ZONE=<1-or-2-or-3>
 make preflight-performance-kine

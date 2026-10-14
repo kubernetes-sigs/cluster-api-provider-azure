@@ -704,8 +704,8 @@ capz::kine::main
 			if len(lines) != len(prefixes) {
 				t.Fatalf("unexpected preflight/provision/workload sequence: %v", lines)
 			}
-			region, zone, flavor := "westus2", "1", "kine-postgres"
-			zones := []string{"true", "false", "false"}
+			region, zone, flavor := "westus2", "2", "kine-postgres"
+			zones := []string{"false", "true", "false"}
 			if state == "explicit" {
 				region, zone = "test-region", "3"
 				zones = []string{"false", "false", "true"}

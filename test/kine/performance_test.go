@@ -34,12 +34,13 @@ func TestPerformancePreflight(t *testing.T) {
 		"success", "conformance-success", "conformance-quota", "family-quota", "regional-quota", "missing-quota", "restricted-zone",
 		"missing-zone", "no-ultra", "no-nvme", "wrong-architecture", "no-acceleration",
 		"invalid-disk", "invalid-zone", "wrong-image", "azure-error",
+		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
-			location := "test-region"
+			location, advertisedZone := "test-region", "1"
 			if tc == "conformance-success" {
-				location = "westus2"
+				location, advertisedZone = "westus2", "2"
 			}
 			var skus []map[string]any
 			for _, machine := range []struct{ size, family, cpu string }{
@@ -62,7 +63,7 @@ func TestPerformancePreflight(t *testing.T) {
 				for name, value := range capabilities {
 					caps = append(caps, map[string]string{"name": name, "value": value})
 				}
-				zone, ultra := "1", "True"
+				zone, ultra := advertisedZone, "True"
 				if tc == "missing-zone" {
 					zone = "2"
 				}
@@ -101,6 +102,20 @@ func TestPerformancePreflight(t *testing.T) {
 				quota = strings.Replace(quota, `"limit":176`, `"limit":175`, 1)
 			case "missing-quota":
 				quota = `[]`
+			case "string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota":
+				quota = `[{"name":{"value":"standardEIBSv5Family"},"limit":"120","currentValue":"8"},
+{"name":{"value":"standardDSv5Family"},"limit":"72","currentValue":"8"},
+{"name":{"value":"cores"},"limit":"184","currentValue":"8"}]`
+				switch tc {
+				case "mixed-quota":
+					quota = strings.NewReplacer(`"limit":"120"`, `"limit":120`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
+				case "string-family-quota":
+					quota = strings.Replace(quota, `"limit":"72"`, `"limit":"71"`, 1)
+				case "string-regional-quota":
+					quota = strings.Replace(quota, `"limit":"184"`, `"limit":"183"`, 1)
+				case "invalid-quota":
+					quota = strings.Replace(quota, `"limit":"120"`, `"limit":"invalid"`, 1)
+				}
 			}
 			if err := os.WriteFile(filepath.Join(dir, "quota-input.json"), []byte(quota), 0o600); err != nil {
 				t.Fatal(err)
@@ -143,14 +158,34 @@ capz::kine::main
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc)
 			output, err := cmd.CombinedOutput()
-			success := tc == "success" || tc == "conformance-success"
+			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota"
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
-			if (tc == "family-quota" || tc == "conformance-quota") && !bytes.Contains(output, []byte("need 64, available 63")) {
+			if (tc == "family-quota" || tc == "conformance-quota" || tc == "string-family-quota") && !bytes.Contains(output, []byte("need 64, available 63")) {
 				t.Fatalf("must aggregate control-plane and worker family quota: %s", output)
 			}
+			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 176, available 175")) {
+				t.Fatalf("must aggregate regional quota: %s", output)
+			}
 			if success {
+				var plan struct {
+					Quota []struct {
+						Required  int `json:"required"`
+						Available int `json:"available"`
+					} `json:"quota"`
+				}
+				if err := json.Unmarshal(readFile(t, filepath.Join(dir, "kine-capz-perf-test", "capacity-plan.json")), &plan); err != nil {
+					t.Fatalf("capacity plan must contain numeric quota values: %v", err)
+				}
+				if len(plan.Quota) != 3 {
+					t.Fatalf("expected two family quotas and regional quota: %+v", plan.Quota)
+				}
+				for _, quota := range plan.Quota {
+					if quota.Available != quota.Required {
+						t.Fatalf("expected exactly enough available quota: %+v", quota)
+					}
+				}
 				settings := readFile(t, filepath.Join(dir, "kine-capz-perf-test", "performance-settings.txt"))
 				if !bytes.Contains(settings, []byte("Canonical:ubuntu-24_04-lts:server:24.04.20261001")) ||
 					!bytes.Contains(settings, []byte("disk-iops=400000")) {
