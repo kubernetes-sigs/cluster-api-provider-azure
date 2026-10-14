@@ -42,4 +42,4 @@ metadata:
 spec:
   template:
     spec:
-      failureDomain: "${KINE_ZONE}"
+      failureDomain: ${KINE_ZONE_YAML}

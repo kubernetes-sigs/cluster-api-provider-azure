@@ -622,6 +622,8 @@ The datastore, control plane, and workers share that placement; explicit
 overrides are preserved. The wrapper checks VM capabilities and combined
 vCPU quota before creating resources. Unsupported placement or insufficient
 quota fails the job without silently selecting cheaper infrastructure.
+The wrapper derives `KINE_ZONE_YAML` from `KINE_ZONE` so worker failure domains
+remain strings after template generation and variable substitution.
 
 This command **creates billable resources and runs the full Kubernetes conformance
 suite**. It is an experimental configuration, not a claim that this combination

@@ -686,7 +686,7 @@ bash() {
     return 99
   fi
   command bash -c 'printf "workload=%s\n" "${AZURE_LOCATION:?}"' >> "$KINE_TEST_DIR/regions"
-  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3"' > "$KINE_TEST_DIR/settings"
+  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3" "$KINE_ZONE_YAML"' > "$KINE_TEST_DIR/settings"
 }
 capz::kine::main
 `)
@@ -719,7 +719,7 @@ capz::kine::main
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\nStandard_D32s_v5\nStandard_D16s_v5\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n"
+			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\nStandard_D32s_v5\nStandard_D16s_v5\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}

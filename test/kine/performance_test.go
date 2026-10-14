@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +29,7 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func TestPerformancePreflight(t *testing.T) {
@@ -281,6 +284,65 @@ capz::kine::provision
 	}
 }
 
+func TestPerformanceFailureDomain(t *testing.T) {
+	root := repoRoot(t)
+	for _, zone := range []string{"1", "2", "3"} {
+		t.Run(zone, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
+source ./scripts/kine/performance.sh
+unset KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
+capz::kine::performance_defaults
+printf '%s' "$KINE_ZONE_YAML"
+`)
+			cmd.Dir = root
+			cmd.Env = append(cmd.Environ(), "KINE_ZONE="+zone)
+			zoneYAML, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("derive YAML zone: %v\n%s", err, zoneYAML)
+			}
+			for _, flavor := range []string{"kine-postgres", "kine-postgres-performance"} {
+				t.Run(flavor, func(t *testing.T) {
+					template := readFile(t, filepath.Join(root, "templates", "test", "ci", "cluster-template-prow-"+flavor+".yaml"))
+					rendered := strings.NewReplacer("${KINE_ZONE}", zone, "${KINE_ZONE_YAML}", string(zoneYAML)).Replace(string(template))
+					decoder := yamlutil.NewYAMLOrJSONDecoder(strings.NewReader(rendered), 4096)
+					found := 0
+					for {
+						var raw json.RawMessage
+						var object struct {
+							Kind string `json:"kind"`
+							Spec struct {
+								Template struct {
+									Spec struct {
+										FailureDomain string `json:"failureDomain"`
+									} `json:"spec"`
+								} `json:"template"`
+							} `json:"spec"`
+						}
+						if err := decoder.Decode(&raw); errors.Is(err, io.EOF) {
+							break
+						} else if err != nil {
+							t.Fatalf("decode substituted template through Kubernetes YAML/JSON conversion: %v", err)
+						}
+						if err := json.Unmarshal(raw, &object); err != nil {
+							t.Fatalf("decode Kubernetes JSON into typed fields: %v", err)
+						}
+						if object.Kind == "MachineDeployment" {
+							found++
+							if object.Spec.Template.Spec.FailureDomain != zone {
+								t.Fatalf("expected string failureDomain %q, got %q", zone, object.Spec.Template.Spec.FailureDomain)
+							}
+						}
+					}
+					if found != 1 {
+						t.Fatalf("expected one MachineDeployment, got %d", found)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestPerformanceFlavorAndStorage(t *testing.T) {
 	root, state := repoRoot(t), t.TempDir()
 	cmd := exec.CommandContext(t.Context(), "./hack/tools/bin/kustomize", "build",
@@ -298,7 +360,7 @@ func TestPerformanceFlavorAndStorage(t *testing.T) {
 	}
 	for _, expected := range []string{
 		"controlPlane: ${KINE_ZONE_1}", "controlPlane: ${KINE_ZONE_2}", "controlPlane: ${KINE_ZONE_3}",
-		"failureDomain: ${KINE_ZONE}", "acceleratedNetworking: true", "storageAccountType: Premium_LRS",
+		"failureDomain: ${KINE_ZONE_YAML}", "acceleratedNetworking: true", "storageAccountType: Premium_LRS",
 		"https://10.250.0.4:2379",
 	} {
 		if !bytes.Contains(rendered, []byte(expected)) {
