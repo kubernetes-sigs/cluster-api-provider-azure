@@ -439,7 +439,13 @@ func (s *MachinePoolMachineScope) hasLatestModelApplied(ctx context.Context) (bo
 
 		// this means the ID was a compute gallery image ID
 		if newImage.ComputeGallery != nil {
-			return reflect.DeepEqual(s.instance.Image, newImage), nil
+			// The desired image from the spec has no plan metadata (the user
+			// cannot express it via image.ID), but the observed instance image
+			// may carry plan data populated by the SDK converter. Strip the
+			// plan from the observed copy so the comparison stays correct.
+			instanceImageCopy := s.instance.Image
+			instanceImageCopy.ComputeGallery.Plan = nil
+			return reflect.DeepEqual(instanceImageCopy, newImage), nil
 		}
 	}
 
