@@ -54,7 +54,7 @@ linters:
     goconst:
       # goconst now counts occurrences package-wide. Ignore common strings that
       # are intentionally not constants to avoid noise from this newer behavior.
-      ignore-string-values: '^(1\.0|true|1\.28\.12|cncf-upstream|containerd|Cluster|vmss|azure\.json|AzureManagedMachinePool|MachinePool|test-cluster|custom-vnet|my-vnet|spec|name)$'
+      ignore-string-values: '^(1\.0|true|1\.28\.12|cncf-upstream|containerd|Cluster|vmss|azure\.json|AzureManagedMachinePool|MachinePool|test-cluster|custom-vnet|my-vnet|spec|name|networkProfile|serviceCidr|podCidr|adminCredentials|key|metadata|properties|because no userCredentials or adminCredentials are defined)$'
     exhaustruct:
       include:
         # Hub ASO agent pools should be fully defined to prevent unnecessary updates
