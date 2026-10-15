@@ -97,6 +97,15 @@ func TestRecordSpec_Parameters(t *testing.T) {
 				}))
 			},
 		},
+		{
+			name: "private dns record without an IP address",
+			spec: RecordSpec{
+				Record:        infrav1.AddressRecord{Hostname: "privatednsHostname"},
+				ZoneName:      "my-zone",
+				ResourceGroup: "my-rg",
+			},
+			expectedError: "record privatednsHostname in private DNS zone my-zone has no IP address",
+		},
 	}
 
 	for _, tc := range testcases {
