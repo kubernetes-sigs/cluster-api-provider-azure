@@ -29,6 +29,7 @@ import (
 	reflect "reflect"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	cloud "github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	gomock "go.uber.org/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
@@ -126,6 +127,20 @@ func (m *MockResourceHealthScope) ClientSecret() string {
 func (mr *MockResourceHealthScopeMockRecorder) ClientSecret() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockResourceHealthScope)(nil).ClientSecret))
+}
+
+// CloudConfiguration mocks base method.
+func (m *MockResourceHealthScope) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockResourceHealthScopeMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockResourceHealthScope)(nil).CloudConfiguration))
 }
 
 // CloudEnvironment mocks base method.
