@@ -808,8 +808,24 @@ first pass does not enforce a custom throughput/error budget.
 
 Prometheus is explicitly enabled on workers with ephemeral storage, scrapes API
 servers and kubelets, and is torn down after the workload. The adapted measurements
-do not require an etcd server or etcd-only metrics. Results and workload settings
-are placed in the E2E artifact directory's `clusterloader2` subdirectory.
+do not require an etcd server or etcd-only metrics. An additional ServiceMonitor
+collects only the write/watch generators' cAdvisor CPU and memory metrics from
+`test-*` namespaces, which the upstream monitor excludes. Other benchmark Pods
+remain excluded, and system-container metrics are not duplicated.
+
+The `LoadGeneratorCPU`, `LoadGeneratorCPUThrottling`, and `LoadGeneratorMemory`
+reports contain average and maximum CPU usage (cores), percentage of CFS periods
+throttled, and memory working set (MiB), respectively, grouped by namespace, Pod,
+and container. CPU throttling is time denied by a CPU quota, not API-server request
+throttling; the period percentage is not a percentage of CPU time lost.
+Idle intervals with zero CFS periods produce a zero throttling ratio. Each query
+requires samples, so a completely missing metric fails the measurement instead of
+producing an empty success report. These measurements do not impose resource-use
+thresholds or guarantee samples from every replica.
+
+Results and workload settings are placed in the E2E artifact directory's
+`clusterloader2` subdirectory. Generator request latency, client-side errors,
+restarts/OOMs, and watch reconnects or lag are not yet measured by these reports.
 Full PostgreSQL/Kine time-series telemetry, raw-disk calibration, direct datastore
 benchmarks, automated rate sweeps, and an equivalent etcd baseline remain separate
 follow-ups; this profile alone must not be reported as an established backend ceiling.

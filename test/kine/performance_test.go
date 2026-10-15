@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -415,5 +416,184 @@ capz::kine::certificates
 	}
 	if !found {
 		t.Fatal("missing performance storage initializer")
+	}
+}
+
+func TestClusterLoaderGeneratorMonitor(t *testing.T) {
+	root := repoRoot(t)
+	var monitor struct {
+		APIVersion string `yaml:"apiVersion"`
+		Kind       string `yaml:"kind"`
+		Metadata   struct {
+			Name      string `yaml:"name"`
+			Namespace string `yaml:"namespace"`
+		} `yaml:"metadata"`
+		Spec struct {
+			Selector struct {
+				MatchLabels map[string]string `yaml:"matchLabels"`
+			} `yaml:"selector"`
+			NamespaceSelector struct {
+				MatchNames []string `yaml:"matchNames"`
+			} `yaml:"namespaceSelector"`
+			Endpoints []struct {
+				Port              string `yaml:"port"`
+				Scheme            string `yaml:"scheme"`
+				Path              string `yaml:"path"`
+				Interval          string `yaml:"interval"`
+				HonorLabels       bool   `yaml:"honorLabels"`
+				BearerTokenSecret struct {
+					Name string `yaml:"name"`
+					Key  string `yaml:"key"`
+				} `yaml:"bearerTokenSecret"`
+				Relabelings []struct {
+					TargetLabel string `yaml:"targetLabel"`
+					Replacement string `yaml:"replacement"`
+				} `yaml:"relabelings"`
+				MetricRelabelings []struct {
+					SourceLabels []string `yaml:"sourceLabels"`
+					Regex        string   `yaml:"regex"`
+					Action       string   `yaml:"action"`
+				} `yaml:"metricRelabelings"`
+			} `yaml:"endpoints"`
+		} `yaml:"spec"`
+	}
+	data := readFile(t, filepath.Join(root, "scripts", "kine", "clusterloader", "prometheus", "generators.yaml"))
+	if err := yaml.Unmarshal(data, &monitor); err != nil {
+		t.Fatal(err)
+	}
+	if monitor.APIVersion != "monitoring.coreos.com/v1" || monitor.Kind != "ServiceMonitor" ||
+		monitor.Metadata.Name != "kine-load-generators" || monitor.Metadata.Namespace != "monitoring" {
+		t.Fatalf("unexpected generator monitor identity: %+v", monitor.Metadata)
+	}
+	if monitor.Spec.Selector.MatchLabels["k8s-app"] != "kubelet" ||
+		strings.Join(monitor.Spec.NamespaceSelector.MatchNames, ",") != "kube-system" || len(monitor.Spec.Endpoints) != 1 {
+		t.Fatal("generator monitor must select only the existing kubelet service")
+	}
+	endpoint := monitor.Spec.Endpoints[0]
+	if endpoint.Port != "https-metrics" || endpoint.Scheme != "https" || endpoint.Path != "/metrics/cadvisor" ||
+		endpoint.Interval != "30s" || !endpoint.HonorLabels ||
+		endpoint.BearerTokenSecret.Name != "prometheus-token" || endpoint.BearerTokenSecret.Key != "token" {
+		t.Fatal("generator monitor must use authenticated cAdvisor scraping and preserve workload labels")
+	}
+	if len(endpoint.MetricRelabelings) != 2 {
+		t.Fatal("expected namespace/container and metric allowlists")
+	}
+	if len(endpoint.Relabelings) != 1 || endpoint.Relabelings[0].TargetLabel != "job" ||
+		endpoint.Relabelings[0].Replacement != "kine-load-generators" {
+		t.Fatal("generator scrape targets must be distinguishable from the upstream kubelet targets")
+	}
+	var filters []*regexp.Regexp
+	for _, rule := range endpoint.MetricRelabelings {
+		if rule.Action != "keep" {
+			t.Fatalf("expected keep allowlist, got %q", rule.Action)
+		}
+		filter, err := regexp.Compile("^(" + rule.Regex + ")$")
+		if err != nil {
+			t.Fatal(err)
+		}
+		filters = append(filters, filter)
+	}
+	for _, tc := range []struct {
+		namespace, container, metric string
+		keep                         bool
+	}{
+		{"test-run-1", "write-generator", "container_cpu_usage_seconds_total", true},
+		{"test-run-1", "watch-generator", "container_cpu_usage_seconds_total", true},
+		{"test-run-1", "write-generator", "container_cpu_cfs_periods_total", true},
+		{"test-run-1", "watch-generator", "container_cpu_cfs_throttled_periods_total", true},
+		{"test-run-1", "write-generator", "container_memory_working_set_bytes", true},
+		{"test-run-1", "watch-generator", "container_memory_working_set_bytes", true},
+		{"test-run-1", "nginx", "container_cpu_usage_seconds_total", false},
+		{"test-run-1", "POD", "container_cpu_usage_seconds_total", false},
+		{"test-run-1", "", "container_cpu_usage_seconds_total", false},
+		{"kube-system", "kube-apiserver", "container_cpu_usage_seconds_total", false},
+		{"monitoring", "prometheus", "container_memory_working_set_bytes", false},
+		{"other-test-run-1", "write-generator", "container_cpu_usage_seconds_total", false},
+		{"test-run-1", "write-generator", "container_network_receive_bytes_total", false},
+	} {
+		labels := map[string]string{"namespace": tc.namespace, "container": tc.container, "__name__": tc.metric}
+		keep := true
+		for i, rule := range endpoint.MetricRelabelings {
+			var values []string
+			for _, label := range rule.SourceLabels {
+				value, ok := labels[label]
+				if !ok {
+					t.Fatalf("unexpected relabel source %q", label)
+				}
+				values = append(values, value)
+			}
+			keep = keep && filters[i].MatchString(strings.Join(values, ";"))
+		}
+		if keep != tc.keep {
+			t.Errorf("unexpected scrape decision for %+v: keep=%t", tc, keep)
+		}
+	}
+	runner := readFile(t, filepath.Join(root, "scripts", "kine", "run-clusterloader.sh"))
+	if !bytes.Contains(runner, []byte(`--prometheus-additional-monitors-path="${repo_root}/scripts/kine/clusterloader/prometheus"`)) {
+		t.Fatal("CL2 runner must install the generator monitor")
+	}
+}
+
+func TestClusterLoaderGeneratorMeasurements(t *testing.T) {
+	data := readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "clusterloader", "measurements.yaml"))
+	for _, action := range []string{"start", "gather"} {
+		t.Run(action, func(t *testing.T) {
+			var config struct {
+				Steps []struct {
+					Measurements []struct {
+						Identifier string `yaml:"Identifier"`
+						Method     string `yaml:"Method"`
+						Params     struct {
+							Action           string   `yaml:"action"`
+							EnableViolations bool     `yaml:"enableViolations"`
+							MetricName       string   `yaml:"metricName"`
+							MetricVersion    string   `yaml:"metricVersion"`
+							Unit             string   `yaml:"unit"`
+							Dimensions       []string `yaml:"dimensions"`
+							Queries          []struct {
+								Query          string   `yaml:"query"`
+								Aggregations   []string `yaml:"aggregations"`
+								RequireSamples bool     `yaml:"requireSamples"`
+							} `yaml:"queries"`
+						} `yaml:"Params"`
+					} `yaml:"measurements"`
+				} `yaml:"steps"`
+			}
+			if err := yaml.Unmarshal([]byte(strings.ReplaceAll(string(data), "{{.action}}", action)), &config); err != nil {
+				t.Fatal(err)
+			}
+			expected := map[string]string{
+				"LoadGeneratorCPU":           "cores",
+				"LoadGeneratorCPUThrottling": "percent",
+				"LoadGeneratorMemory":        "MiB",
+			}
+			for _, step := range config.Steps {
+				for _, m := range step.Measurements {
+					if !strings.HasPrefix(m.Identifier, "LoadGenerator") {
+						continue
+					}
+					unit, ok := expected[m.Identifier]
+					if !ok {
+						t.Fatalf("unexpected or duplicate generator measurement %q", m.Identifier)
+					}
+					p := m.Params
+					if m.Method != "GenericPrometheusQuery" || p.Action != action || p.MetricName != m.Identifier ||
+						p.MetricVersion != "v1" || p.Unit != unit || !p.EnableViolations ||
+						strings.Join(p.Dimensions, ",") != "namespace,pod,container" || len(p.Queries) != 1 {
+						t.Fatalf("invalid generator measurement %q: %+v", m.Identifier, p)
+					}
+					q := p.Queries[0]
+					if !q.RequireSamples || strings.Join(q.Aggregations, ",") != "Avg,Max" ||
+						!strings.Contains(q.Query, `namespace=~"test-.*",container=~"(write|watch)-generator"`) ||
+						strings.Contains(q.Query, "or vector(0)") {
+						t.Fatalf("generator query must be scoped and reject missing data: %+v", q)
+					}
+					delete(expected, m.Identifier)
+				}
+			}
+			if len(expected) != 0 {
+				t.Fatalf("missing generator measurements: %v", expected)
+			}
+		})
 	}
 }

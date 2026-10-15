@@ -61,3 +61,45 @@ steps:
       queries:
       - query: sum by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[1m]))
         aggregations: [Avg, Max]
+  - Identifier: LoadGeneratorCPU
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorCPU
+      metricVersion: v1
+      unit: cores
+      dimensions: [namespace, pod, container]
+      queries:
+      - query: sum by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m]))
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: LoadGeneratorCPUThrottling
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorCPUThrottling
+      metricVersion: v1
+      unit: percent
+      dimensions: [namespace, pod, container]
+      queries:
+      # Idle containers have zero CFS periods; keep that ratio finite without filling missing series.
+      - query: >-
+          100 * sum by (namespace,pod,container) (rate(container_cpu_cfs_throttled_periods_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m]))
+          / clamp_min(sum by (namespace,pod,container) (rate(container_cpu_cfs_periods_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m])), 1e-9)
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: LoadGeneratorMemory
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorMemory
+      metricVersion: v1
+      unit: MiB
+      dimensions: [namespace, pod, container]
+      queries:
+      - query: sum by (namespace,pod,container) (container_memory_working_set_bytes{namespace=~"test-.*",container=~"(write|watch)-generator"}) / 1048576
+        aggregations: [Avg, Max]
+        requireSamples: true

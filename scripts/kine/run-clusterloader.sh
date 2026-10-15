@@ -69,4 +69,5 @@ exec "${cache}/clusterloader2" --provider=skeleton --kubeconfig="${KUBECONFIG}" 
   --enable-prometheus-server=true --tear-down-prometheus-server=true \
   --prometheus-scrape-apiserver-only=true --prometheus-apiserver-scrape-port=6443 \
   --prometheus-scrape-etcd=false --prometheus-scrape-kube-proxy=false \
+  --prometheus-additional-monitors-path="${repo_root}/scripts/kine/clusterloader/prometheus" \
   --prometheus-scrape-kubelets=true "${args[@]}"
