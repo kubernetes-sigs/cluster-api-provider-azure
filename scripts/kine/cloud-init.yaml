@@ -1,0 +1,141 @@
+#cloud-config
+package_update: true
+packages:
+- ca-certificates
+- curl
+- postgresql-16
+- etcd-client
+write_files:
+- path: /opt/kine-connections.sh
+  permissions: "0700"
+  encoding: b64
+  content: __CONNECTIONS_SCRIPT__
+- path: /etc/kine/connections.env
+  permissions: "0644"
+  content: |
+    KINE_POSTGRES_MAX_CONNECTIONS=__POSTGRES_MAX_CONNECTIONS__
+    KINE_DATASTORE_MAX_OPEN_CONNECTIONS=__KINE_MAX_OPEN_CONNECTIONS__
+    KINE_DATASTORE_MAX_IDLE_CONNECTIONS=__KINE_MAX_IDLE_CONNECTIONS__
+- path: /opt/configure-kine-storage.sh
+  permissions: "0700"
+  encoding: b64
+  content: __STORAGE_SCRIPT__
+- path: /etc/kine/ca.crt
+  permissions: "0644"
+  encoding: b64
+  content: __CA_CERT__
+- path: /etc/kine/server.crt
+  permissions: "0644"
+  encoding: b64
+  content: __SERVER_CERT__
+- path: /etc/kine/server.key
+  permissions: "0600"
+  encoding: b64
+  content: __SERVER_KEY__
+- path: /etc/kine/client.crt
+  permissions: "0600"
+  encoding: b64
+  content: __CLIENT_CERT__
+- path: /etc/kine/client.key
+  permissions: "0600"
+  encoding: b64
+  content: __CLIENT_KEY__
+- path: /etc/systemd/system/kine.service
+  permissions: "0644"
+  content: |
+    [Unit]
+    Description=Kine Kubernetes datastore (experimental)
+    Requires=postgresql.service
+    After=network-online.target postgresql.service
+    Wants=network-online.target
+
+    [Service]
+    User=kine
+    Group=kine
+    Environment="KINE_ENDPOINT=postgres://kine@/kine?host=/var/run/postgresql&sslmode=disable"
+    EnvironmentFile=/etc/kine/connections.env
+    ExecStart=/usr/local/bin/kine --listen-address=0.0.0.0:2379 --server-cert-file=/etc/kine/server.crt --server-key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --metrics-bind-address=127.0.0.1:8080
+    Restart=on-failure
+    RestartSec=5
+    NoNewPrivileges=true
+    ProtectSystem=strict
+    ProtectHome=true
+    PrivateTmp=true
+
+    [Install]
+    WantedBy=multi-user.target
+- path: /usr/local/bin/check-kine
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export ETCDCTL_API=3
+    export ETCDCTL_ENDPOINTS=https://127.0.0.1:2379
+    export ETCDCTL_CACERT=/etc/kine/ca.crt
+    export ETCDCTL_CERT=/etc/kine/client.crt
+    export ETCDCTL_KEY=/etc/kine/client.key
+    echo "Checking etcdctl version:"
+    etcdctl version
+    echo "Checking Kine service state:"
+    if systemctl is-active kine; then
+      service_status=0
+    else
+      service_status=$?
+    fi
+    echo "Kine service check exit status: ${service_status}"
+    if [[ "${service_status}" != 0 ]]; then
+      exit "${service_status}"
+    fi
+    key="/capz-kine-smoke/$(cat /proc/sys/kernel/random/uuid)"
+    # Match Kubernetes' create transaction, not arbitrary etcd transactions.
+    echo "Creating Kine smoke-test key: ${key}"
+    if transaction_output=$(printf 'mod("%s") = "0"\n\nput %s ready\n\n\n' "$key" "$key" |
+      etcdctl --command-timeout=15s txn); then
+      transaction_status=0
+    else
+      transaction_status=$?
+    fi
+    printf 'Kine transaction exit status: %s\n%s\n' "${transaction_status}" "${transaction_output}"
+    if [[ "${transaction_status}" != 0 ]]; then
+      exit "${transaction_status}"
+    fi
+    if ! grep -qx SUCCESS <<< "${transaction_output}"; then
+      echo "Kine transaction did not report SUCCESS." >&2
+      exit 1
+    fi
+    echo "Reading Kine smoke-test key: ${key}"
+    if read_output=$(etcdctl --command-timeout=15s get "$key" --print-value-only); then
+      read_status=0
+    else
+      read_status=$?
+    fi
+    printf 'Kine read exit status: %s\nValue: <%s>\n' "${read_status}" "${read_output}"
+    if [[ "${read_status}" != 0 ]]; then
+      exit "${read_status}"
+    fi
+    if [[ "${read_output}" != ready ]]; then
+      echo "Kine smoke-test value does not match expected value <ready>." >&2
+      exit 1
+    fi
+    echo KINE_READY
+- path: /opt/install-kine.sh
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    curl --fail --show-error --silent --location --retry 5 \
+      https://github.com/k3s-io/kine/releases/download/v0.17.2/kine-amd64 \
+      -o /usr/local/bin/kine
+    echo '7c41cf189ecf21660bda78f1d35cc0d188c103d1809933523a8c7dde2cc58c1e  /usr/local/bin/kine' | sha256sum --check
+    chmod 0755 /usr/local/bin/kine
+    /opt/configure-kine-storage.sh
+    useradd --system --home-dir /var/lib/kine --create-home --shell /usr/sbin/nologin kine
+    chown kine:kine /etc/kine/server.key
+    systemctl start postgresql
+    runuser -u postgres -- createuser kine
+    runuser -u postgres -- createdb --owner=kine kine
+    systemctl daemon-reload
+    systemctl enable --now kine
+    /usr/local/bin/check-kine
+runcmd:
+- [bash, /opt/install-kine.sh]

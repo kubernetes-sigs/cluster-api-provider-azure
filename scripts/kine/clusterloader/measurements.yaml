@@ -1,0 +1,121 @@
+# Copyright 2026 The Kubernetes Authors.
+# SPDX-License-Identifier: Apache-2.0
+
+steps:
+- name: "{{.action}} API measurements"
+  measurements:
+  - Identifier: APIResponsiveness
+    Method: APIResponsivenessPrometheus
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      useSimpleLatencyQuery: true
+  - Identifier: SuccessfulPodPatches
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      metricName: SuccessfulPodPatches
+      metricVersion: v1
+      unit: reqps
+      queries:
+      - query: sum(rate(apiserver_request_total{resource="pods",verb="PATCH",code=~"2.."}[1m]))
+        aggregations: [Min, Avg, Max]
+  - Identifier: PodPatchErrors
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      metricName: PodPatchErrors
+      metricVersion: v1
+      unit: reqps
+      queries:
+      - query: sum(rate(apiserver_request_total{resource="pods",verb="PATCH",code!~"2.."}[1m])) or vector(0)
+        aggregations: [Avg, Max]
+  - Identifier: PodPatchP99
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      metricName: PodPatchP99
+      metricVersion: v1
+      unit: s
+      queries:
+      - query: histogram_quantile(0.99, sum by (le) (rate(apiserver_request_duration_seconds_bucket{resource="pods",verb="PATCH"}[1m])))
+        aggregations: [Avg, Max]
+  # CL2 enforces thresholds on instant queries, not the aggregated rates above.
+  - Identifier: PodPatchErrorCount
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: PodPatchErrorCount
+      metricVersion: v1
+      unit: requests
+      queries:
+      - name: Count
+        query: >-
+          sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH",code!~"2.."}[%v]))
+          or (0 * sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH"}[%v])))
+        threshold: 0
+        requireSamples: true
+  - Identifier: ActiveWatches
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      metricName: ActiveWatches
+      metricVersion: v1
+      unit: watches
+      queries:
+      - query: sum(apiserver_longrunning_requests{verb="WATCH",resource="pods"})
+        aggregations: [Min, Avg, Max]
+  - Identifier: ContainerCPU
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      metricName: ContainerCPU
+      metricVersion: v1
+      unit: cores
+      dimensions: [namespace, pod, container]
+      queries:
+      - query: sum by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[1m]))
+        aggregations: [Avg, Max]
+  - Identifier: LoadGeneratorCPU
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorCPU
+      metricVersion: v1
+      unit: cores
+      dimensions: [namespace, pod, container]
+      queries:
+      - query: sum by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m]))
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: LoadGeneratorCPUThrottling
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorCPUThrottling
+      metricVersion: v1
+      unit: percent
+      dimensions: [namespace, pod, container]
+      queries:
+      # Idle containers have zero CFS periods; keep that ratio finite without filling missing series.
+      - query: >-
+          100 * sum by (namespace,pod,container) (rate(container_cpu_cfs_throttled_periods_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m]))
+          / clamp_min(sum by (namespace,pod,container) (rate(container_cpu_cfs_periods_total{namespace=~"test-.*",container=~"(write|watch)-generator"}[1m])), 1e-9)
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: LoadGeneratorMemory
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: LoadGeneratorMemory
+      metricVersion: v1
+      unit: MiB
+      dimensions: [namespace, pod, container]
+      queries:
+      - query: sum by (namespace,pod,container) (container_memory_working_set_bytes{namespace=~"test-.*",container=~"(write|watch)-generator"}) / 1048576
+        aggregations: [Avg, Max]
+        requireSamples: true

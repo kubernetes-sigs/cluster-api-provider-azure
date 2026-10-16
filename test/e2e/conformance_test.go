@@ -23,6 +23,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -159,6 +161,21 @@ var _ = Describe("Conformance Tests", func() {
 		stopwatch.Record("cluster creation")
 
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
+
+		if flavor == "kine-postgres-performance" {
+			By("Running ClusterLoader2 performance measurements, not Kubernetes conformance")
+			stopwatch.Reset()
+			command := exec.CommandContext(ctx, "bash", "../../scripts/kine/run-clusterloader.sh")
+			command.Env = append(command.Environ(),
+				"KUBECONFIG="+workloadProxy.GetKubeconfigPath(),
+				"CL2_REPORT_DIR="+filepath.Join(artifactFolder, "clusterloader2"),
+			)
+			command.Stdout = GinkgoWriter
+			command.Stderr = GinkgoWriter
+			Expect(command.Run()).To(Succeed(), "ClusterLoader2 failed")
+			stopwatch.Record("ClusterLoader2 write/watch workload")
+			return
+		}
 
 		if isWindows(kubetestConfigFilePath) {
 			// Windows requires a taint on control nodes since not all conformance tests have ability to run

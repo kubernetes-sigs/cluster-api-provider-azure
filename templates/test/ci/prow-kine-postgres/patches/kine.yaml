@@ -1,0 +1,62 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+      cidrBlocks:
+      - 10.0.0.0/24
+    - name: node-subnet
+      role: node
+      cidrBlocks:
+      - 10.0.1.0/24
+    vnet:
+      cidrBlocks:
+      - 10.0.0.0/16
+      peerings:
+      - resourceGroup: ${KINE_RESOURCE_GROUP}
+        remoteVnetName: kine-vnet
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      etcd:
+        local: null
+        external:
+          endpoints:
+          - https://10.250.0.4:2379
+          caFile: /etc/kubernetes/pki/etcd/ca.crt
+          certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+          keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
+    initConfiguration:
+      nodeRegistration:
+        ignorePreflightErrors:
+        - ExternalEtcdVersion
+    joinConfiguration:
+      nodeRegistration:
+        ignorePreflightErrors:
+        - ExternalEtcdVersion
+    diskSetup:
+      partitions: null
+      filesystems:
+      - label: ephemeral0
+        filesystem: ext4
+        device: ephemeral0.1
+        replaceFS: ntfs
+    mounts: null
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      dataDisks: null

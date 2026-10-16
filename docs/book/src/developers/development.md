@@ -585,7 +585,289 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 | `REGISTRY`                | Your Registry                                                            |
 | `TEST_K8S`                | `true`                                                                   |
 
+##### Experimental Kine/PostgreSQL conformance
+
+`make test-conformance-kine` wraps the existing conformance runner with an
+experimental external datastore fixture. It creates a dedicated Ubuntu 24.04
+AMD64 Azure VM running **Kine v0.17.2** and **PostgreSQL 16**, then selects the
+`kine-postgres` test flavor. It does not change other flavors or use AKS.
+All Kine/PostgreSQL runs, including the existing
+`pull-cluster-api-provider-azure-conformance-kine-postgres` Prow job, use the
+shared high-I/O infrastructure described below: E112ibs_v5 datastore VM,
+dedicated NVMe Ultra Disk, and larger control-plane/worker VMs.
+The Prow job still runs the complete conformance suite, not ClusterLoader2;
+no test-infra configuration change is needed.
+Kine's downloaded binary is checked against a pinned SHA-256 checksum.
+Ubuntu image and PostgreSQL package patches follow the Ubuntu repositories.
+
+Complete the normal conformance prerequisites above, and install/authenticate
+the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, and `jq`.
+The Azure CLI and CAPZ identities must have permissions in the same subscription
+to create/delete resource groups, VMs and networks, and create VNet peerings in
+both resource groups. The workload cloud-provider identity also needs its usual
+Azure permissions. No roles are granted automatically by this wrapper.
+
+```bash
+export AZURE_SUBSCRIPTION_ID=<subscription-id>
+# Optional: override the fixed high-I/O placement defaults.
+# export AZURE_LOCATION=westus2
+# export KINE_ZONE=2
+# Also configure the usual CAPZ credentials and management-cluster prerequisites.
+export KUBERNETES_VERSION=v1.35.4
+make test-conformance-kine
+```
+
+Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
+The datastore, control plane, and workers share that placement; explicit
+overrides are preserved. The wrapper checks VM capabilities and combined
+vCPU quota before creating resources. Unsupported placement or insufficient
+quota fails the job without silently selecting cheaper infrastructure.
+The wrapper derives `KINE_ZONE_YAML` from `KINE_ZONE` so worker failure domains
+remain strings after template generation and variable substitution.
+
+This command **creates billable resources and runs the full Kubernetes conformance
+suite**. It is an experimental configuration, not a claim that this combination
+has passed conformance. Released Linux/IPv4 Kubernetes images are supported;
+Windows, IPv6/dual-stack, and CI/PR Kubernetes artifact builds are not wired into
+this flavor. The default is one control-plane node and two workers; set
+`CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT=3` to exercise multiple API servers
+against the same datastore. The datastore itself remains single-instance.
+
+The wrapper provisions a fresh `<cluster-name>-kine` resource group containing
+the VM, its OS/data disks, VNet, NSG, and an outbound-only NAT gateway/public IP. There is
+no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`;
+the workload VNet uses `10.0.0.0/16`, with explicit control-plane `10.0.0.0/24`
+and node `10.0.1.0/24` subnets. CAPZ creates the bidirectional peering.
+Only the control-plane subnet `10.0.0.0/24` can reach Kine's TCP port 2379.
+Avoid overlapping addresses if using a peered management cluster.
+PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
+
+Seven-day test certificates provide mTLS between API servers and Kine.
+The CA signing key is never sent to the VM or management cluster. The VM gets
+server credentials and a client credential for its smoke check; CABPK gets the CA
+certificate and API-server client credentials via the standard external-etcd
+Secrets. Private temporary inputs are deleted when the wrapper exits.
+Azure VM custom data contains test credentials, and normal E2E artifacts can
+contain kubeconfigs/bootstrap data: restrict access and do not publish them
+unredacted. The existing log redactor also removes the direct base64 client key.
+
+Before creating the workload cluster, the wrapper waits for cloud-init and
+executes a Kubernetes-shaped gRPC create transaction followed by a read over mTLS.
+It checks a success marker because Azure Run Command can return HTTP success
+even if the guest script failed. The smoke check logs the `etcdctl` version,
+service state, transaction/read exit statuses, and synthetic key/value results
+before asserting success; it does not log credential contents.
+Kubeadm ignores only `ExternalEtcdVersion`:
+standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
+readiness and conformance still exercise the actual storage path. The flavor
+removes the unused local-etcd configuration and control-plane etcd data disk.
+
+Datastore logs and resource names are written under
+`$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
+`datastore-logs.json` includes the Kine service journal, the tail of cloud-init
+output, and `cloud-init status --long` with its exit code.
+It then deletes the fixture resource group **only after the workload resource
+group is gone and the fixture ownership tag matches this invocation**.
+An Azure query/deletion failure is an error, not evidence that resources are gone.
+If workload cleanup fails or `SKIP_CLEANUP=true`, the fixture is retained to avoid
+destroying a surviving cluster's state. Retained resources continue to incur costs.
+For manual cleanup, delete the workload through CAPI first, then delete the exact
+fixture resource group listed in `resources.txt`:
+
+```bash
+az group delete --subscription <subscription-id> --name <cluster-name>-kine --yes
+```
+
+`CLUSTER_NAME` may be set to a fresh name (2-40 lowercase characters); existing
+workload or fixture groups are rejected. `KINE_VM_SIZE` defaults to
+`Standard_E112ibs_v5` and must remain an AMD64 NVMe/Ultra-capable size.
+Both conformance and performance keep PostgreSQL data/WAL on the dedicated
+512-GiB Ultra Disk, provisioned for 400,000 IOPS and 10,000 MB/s by default.
+Each run has its own database;
+there is no state migration, database HA, upgrade/failover testing, or performance
+claim in this scaffold. Those are separate experiments from conformance.
+
+Local checks do not provision Azure resources:
+
+```bash
+bash hack/gen-flavors.sh
+go test ./test/kine -count=1
+```
+
 #### Running custom test suites on CAPZ clusters
+
+##### Shared high-I/O Kine/PostgreSQL infrastructure and performance workload
+
+`make test-conformance-kine` and `make test-performance-kine` use identical
+high-I/O infrastructure and preflight checks. The latter runs ClusterLoader2's
+Pod write/watch workload **instead of conformance**, reusing the same harness
+for management/workload lifecycle and cleanup. `KINE_PROFILE` selects only the
+workload (`conformance` by default, or `performance`); it does not select a
+different storage tier. The two test flavors inherit the same infrastructure
+template. A green performance run is not a conformance result or proof that a
+maximum throughput was reached.
+
+This is a **large, billable, single-datastore experiment**, not an HA configuration:
+
+| Setting | Default |
+| --- | --- |
+| Datastore VM (`KINE_VM_SIZE`) | `Standard_E112ibs_v5`: 112 vCPU, 672 GiB |
+| Datastore controller | NVMe, accelerated networking, Gen2 Ubuntu 24.04 |
+| Data disk | One uncached Ultra Disk, containing both PostgreSQL data and WAL |
+| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
+| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D32s_v5` |
+| Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
+| Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
+| PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
+| Kine maximum open connections (`KINE_DATASTORE_MAX_OPEN_CONNECTIONS`) | PostgreSQL limit minus 64 (`960` by default) |
+| Kine maximum idle connections (`KINE_DATASTORE_MAX_IDLE_CONNECTIONS`) | The smaller of `128` and the maximum open connections |
+
+The limits' numeric format and relationships are validated before provisioning,
+and the limits are written to one environment file used by both PostgreSQL
+initialization and the Kine service. Overrides must be positive integers; an
+unlimited Kine pool is rejected. Idle connections count toward the open-connection
+limit, not in addition to it. At least 64 PostgreSQL connection slots must
+remain outside Kine's pool budget, including PostgreSQL's reserved slots and
+headroom for administration, health checks, and monitoring. The guest verifies
+the effective PostgreSQL limit and that non-reserved slots exceed Kine's pool cap.
+Requested limits are recorded in `performance-settings.txt`.
+These are aggressive experimental defaults for the large datastore VM, not an
+assertion that more concurrent connections always improve throughput.
+
+The default footprint needs **176 additional regional vCPUs**: 112 in the
+datastore VM family and 64 in the Dsv5 family. Changing the machine counts changes
+these requirements. This excludes any separately provisioned management cluster.
+The control plane and workers are pinned to the selected datastore zone, so these
+results do not model cross-zone HA latency.
+
+For either workload, start with the read-only preflight; normal CAPZ credentials
+and Azure CLI login are still required:
+
+```bash
+export AZURE_SUBSCRIPTION_ID=<subscription-id>
+# Optional: override westus2 / zone 2.
+# export AZURE_LOCATION=<region-with-required-skus>
+# export KINE_ZONE=<1-or-2-or-3>
+make preflight-performance-kine
+```
+
+This checks advertised VM/zone availability, subscription restrictions, x64,
+accelerated networking, datastore NVMe/Ultra support, Gen2/NVMe image support,
+and available regional and VM-family vCPU quota. Family requirements are summed
+across all roles. Missing capability/quota information is an error.
+It writes the capacity plan and requested settings under
+`$ARTIFACTS/kine-<cluster-name>` without creating Azure resources.
+Passing preflight does **not** reserve hardware or validate every Azure quota
+(including managed-disk/network quotas); Azure allocation can still fail.
+
+If quota is insufficient, deliberately reduce **both** the SKU and disk settings;
+there is no automatic downgrade. For example, an E32bs_v5 experiment could use:
+
+```bash
+export KINE_VM_SIZE=Standard_E32bs_v5
+export KINE_DISK_IOPS=170000
+export KINE_DISK_MBPS=4500
+make preflight-performance-kine
+```
+
+The effective storage ceiling is bounded by both the VM and disk. Preflight does
+not infer NVMe-specific aggregate performance limits from incomplete SKU metadata;
+verify these against the current Azure size documentation when overriding SKUs.
+Requested and provisioned settings are archived, and the run rejects a non-NVMe
+VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
+and throughput. Disk validation failures log the expected and observed SKU, IOPS,
+and throughput. The resolved Ubuntu image version is frozen within each run;
+image/package patch versions can still differ between runs.
+
+After reviewing the capacity plan and cost, select the workload:
+
+```bash
+make test-conformance-kine
+# Or run the performance workload on the same infrastructure:
+make test-performance-kine
+```
+
+PostgreSQL is moved off the OS disk onto the dedicated data disk before Kine
+starts. Initialization refuses a missing/non-NVMe disk, existing disk signatures,
+or an already mounted disk; it never falls back to the OS disk. PostgreSQL's
+systemd unit requires the mount on subsequent boots. Starting tuning uses 25%
+of RAM for shared buffers, a 75% effective-cache estimate, 32-GiB max WAL,
+15-minute checkpoints, WAL compression, and lower autovacuum/analyze scale
+factors. These are starting settings, not a demonstrated optimum.
+`fsync`, `synchronous_commit`, and `full_page_writes` remain enabled.
+
+For performance runs only, ClusterLoader2 is downloaded from a fixed perf-tests revision with a checked
+archive SHA-256 and built with Go **before** Azure resources are created. The
+conformance entry point does not download, build, or invoke ClusterLoader2. The
+workload uses upstream templates/generators with CAPZ-specific measurements and
+larger writer CPU limits. Target Pods remain unscheduled; this measures API
+mutations and watch fan-out, not Pod startup. Creation and deletion surround a
+sustained patch phase; continuous create/delete churn is not yet included.
+
+| Workload variable | Default |
+| --- | --- |
+| `CL2_PODS_BENCHMARK_POD_COUNT` | `10000` |
+| `CL2_PODS_WRITE_REPLICAS` | `10` |
+| `CL2_PODS_PATCH_QPS` | `100` per writer (1,000 aggregate offered QPS) |
+| `CL2_PODS_WATCH_REPLICAS` | `10` |
+| `CL2_PODS_WATCHES_PER_REPLICA` | `1` |
+| `CL2_PODS_BENCHMARK_DURATION` | `60m` |
+
+Increase QPS between runs while keeping population and watch count fixed, then
+vary those separately. Use achieved successful throughput, PATCH p99 latency,
+errors, and generator/API-server CPU to interpret saturation. The upstream
+generator can accumulate in-flight requests under overload; its offered QPS is
+not proof of sustainable throughput. Check Pod restarts and resource saturation.
+The upstream API responsiveness measurement enforces its latency criteria.
+`PodPatchErrorCount` also fails the load phase if Prometheus observes any non-2xx
+PATCH response for the main Pod resource during the measurement window. It uses
+the full-window counter increase, not the rolling-rate average; Pod subresources
+such as `/status` are excluded. A missing request metric fails rather than being
+treated as zero errors. This is a cluster-wide API metric, not a per-generator
+client error count. The profile does not yet enforce an achieved-throughput floor.
+
+Prometheus is explicitly enabled on workers with ephemeral storage, scrapes API
+servers and kubelets, and is torn down after the workload. The adapted measurements
+do not require an etcd server or etcd-only metrics. An additional ServiceMonitor
+collects only the write/watch generators' cAdvisor CPU and memory metrics from
+`test-*` namespaces, which the upstream monitor excludes. Other benchmark Pods
+remain excluded, and system-container metrics are not duplicated.
+
+The `LoadGeneratorCPU`, `LoadGeneratorCPUThrottling`, and `LoadGeneratorMemory`
+reports contain average and maximum CPU usage (cores), percentage of CFS periods
+throttled, and memory working set (MiB), respectively, grouped by namespace, Pod,
+and container. CPU throttling is time denied by a CPU quota, not API-server request
+throttling; the period percentage is not a percentage of CPU time lost.
+Idle intervals with zero CFS periods produce a zero throttling ratio. Each query
+requires samples, so a completely missing metric fails the measurement instead of
+producing an empty success report. These measurements do not impose resource-use
+thresholds or guarantee samples from every replica.
+
+Results and workload settings are placed in the E2E artifact directory's
+`clusterloader2` subdirectory. Generator request latency, client-side errors,
+restarts/OOMs, and watch reconnects or lag are not yet measured by these reports.
+Full PostgreSQL/Kine time-series telemetry, raw-disk calibration, direct datastore
+benchmarks, automated rate sweeps, and an equivalent etcd baseline remain separate
+follow-ups; this profile alone must not be reported as an established backend ceiling.
+
+To prepare the pinned tool without Azure, or run it against an existing disposable
+cluster:
+
+```bash
+bash scripts/kine/run-clusterloader.sh --prepare-only
+KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh --dry-run
+KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh
+```
+
+Only the last command mutates the existing cluster. It creates test resources and
+a `monitoring` stack: do not use a production cluster or an existing monitoring
+namespace. Upstream CL2's `--dry-run` still requires a reachable cluster and
+intentionally exits nonzero after dumping the compiled test configuration.
+Treat artifact kubeconfigs/bootstrap data as credentials. The fixture's
+ownership checks and retain-on-workload-cleanup-failure behavior still apply;
+retained Ultra disks and large VMs continue to incur costs.
+
+##### Other custom suites
 
 To run a custom test suite on a CAPZ cluster locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
 
