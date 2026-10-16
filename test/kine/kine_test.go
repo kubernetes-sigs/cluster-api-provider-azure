@@ -219,6 +219,7 @@ func TestCertificatesAndCloudInit(t *testing.T) {
 source ./scripts/ci-kine-conformance.sh
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 umask 077
 capz::kine::certificates
 `)
@@ -271,12 +272,17 @@ capz::kine::certificates
 		t.Fatal("unexpanded cloud-init credentials")
 	}
 	certificates := 0
+	scripts := map[string]string{
+		"/opt/configure-kine-storage.sh": "configure-performance-storage.sh",
+		"/opt/kine-connections.sh":       "connections.sh",
+	}
 	for _, file := range config.Files {
-		if file.Path == "/opt/configure-kine-storage.sh" {
+		if script, ok := scripts[file.Path]; ok {
 			decoded, err := base64.StdEncoding.DecodeString(file.Content)
-			if err != nil || !bytes.Equal(decoded, readFile(t, filepath.Join(root, "scripts", "kine", "configure-performance-storage.sh"))) {
-				t.Fatal("conformance must initialize the same high-I/O storage as performance runs")
+			if err != nil || !bytes.Equal(decoded, readFile(t, filepath.Join(root, "scripts", "kine", script))) {
+				t.Fatalf("conformance must use the shared storage and connection scripts: %s", file.Path)
 			}
+			delete(scripts, file.Path)
 			continue
 		}
 		if file.Encoding == "b64" {
@@ -302,6 +308,9 @@ capz::kine::certificates
 	}
 	if certificates != 5 {
 		t.Fatalf("expected five credential files, got %d", certificates)
+	}
+	if len(scripts) != 0 {
+		t.Fatalf("missing shared scripts: %v", scripts)
 	}
 }
 
@@ -420,6 +429,7 @@ BUILD_PROVENANCE=https://github.com/test/repo/pull/123/commits/test-head
 run_id=test-run
 message=$KINE_TEST_MESSAGE
 unset KINE_VM_SIZE KINE_ZONE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
 az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
@@ -650,6 +660,7 @@ export ARTIFACTS="$KINE_TEST_DIR" TMPDIR="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 unset KINE_PROFILE KINE_PREFLIGHT_ONLY KINE_ZONE KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE
 case "$KINE_TEST_LOCATION_STATE" in
   unset) unset AZURE_LOCATION ;;

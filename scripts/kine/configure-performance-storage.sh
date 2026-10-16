@@ -15,6 +15,13 @@
 # limitations under the License.
 
 set -euo pipefail
+# shellcheck source=scripts/kine/connections.sh
+source /opt/kine-connections.sh
+# shellcheck source=/dev/null
+source /etc/kine/connections.env
+: "${KINE_POSTGRES_MAX_CONNECTIONS:?}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS:?}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS:?}"
+capz::kine::connection_defaults
+
 device=/dev/disk/azure/data/by-lun/0
 mount=/var/lib/kine-postgresql
 for ((attempt=0; attempt<60; attempt++)); do
@@ -47,7 +54,7 @@ cat > /etc/postgresql/16/main/conf.d/99-kine-performance.conf <<EOF
 data_directory = '${mount}/16/main'
 shared_buffers = '$((memory_mb / 4))MB'
 effective_cache_size = '$((memory_mb * 3 / 4))MB'
-max_connections = 200
+max_connections = ${KINE_POSTGRES_MAX_CONNECTIONS}
 max_wal_size = '32GB'
 checkpoint_timeout = '15min'
 checkpoint_completion_target = 0.9
@@ -74,6 +81,7 @@ After=postgresql@16-main.service
 EOF
 systemctl daemon-reload
 systemctl start postgresql@16-main
+capz::kine::verify_postgres_connections
 actual_data=$(runuser -u postgres -- psql -v ON_ERROR_STOP=1 -Atc 'SHOW data_directory')
 [[ "${actual_data}" == "${mount}/16/main" ]] ||
   { echo "PostgreSQL is not using the dedicated data disk." >&2; exit 1; }
@@ -81,4 +89,4 @@ durable=$(runuser -u postgres -- psql -v ON_ERROR_STOP=1 -Atc \
   "SELECT current_setting('fsync') = 'on' AND current_setting('synchronous_commit') = 'on' AND current_setting('full_page_writes') = 'on'")
 [[ "${durable}" == t ]] || { echo "PostgreSQL durability settings are not enabled." >&2; exit 1; }
 runuser -u postgres -- psql -v ON_ERROR_STOP=1 -Atc \
-  "SELECT name, setting FROM pg_settings WHERE name IN ('data_directory','shared_buffers','fsync','synchronous_commit','full_page_writes');"
+  "SELECT name, setting FROM pg_settings WHERE name IN ('data_directory','shared_buffers','max_connections','superuser_reserved_connections','reserved_connections','fsync','synchronous_commit','full_page_writes');"

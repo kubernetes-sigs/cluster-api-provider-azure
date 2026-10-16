@@ -39,6 +39,7 @@ func TestPerformancePreflight(t *testing.T) {
 		"missing-zone", "no-ultra", "no-nvme", "wrong-architecture", "no-acceleration",
 		"invalid-disk", "invalid-zone", "wrong-image", "azure-error",
 		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
+		"connection-overrides", "invalid-connection-budget",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
@@ -131,10 +132,14 @@ export AZURE_LOCATION=test-region AZURE_SUBSCRIPTION_ID=test-subscription KINE_Z
 export CLUSTER_NAME=capz-perf-test ARTIFACTS="$KINE_TEST_DIR"
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS= KUBERNETES_VERSION=v1.35.4
 unset CONFORMANCE_FLAVOR KINE_VM_SIZE KINE_VM_IMAGE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
 case "$KINE_TEST_CASE" in
   invalid-disk) export KINE_DISK_IOPS=400001 ;;
   invalid-zone) export KINE_ZONE=4 ;;
+  connection-overrides)
+    export KINE_POSTGRES_MAX_CONNECTIONS=512 KINE_DATASTORE_MAX_OPEN_CONNECTIONS=256 KINE_DATASTORE_MAX_IDLE_CONNECTIONS=64 ;;
+  invalid-connection-budget) export KINE_DATASTORE_MAX_OPEN_CONNECTIONS=1024 ;;
   conformance-success)
     unset KINE_PROFILE AZURE_LOCATION KINE_ZONE
     export CONFORMANCE_FLAVOR=kine-postgres ;;
@@ -162,7 +167,7 @@ capz::kine::main
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc)
 			output, err := cmd.CombinedOutput()
-			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota"
+			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" || tc == "connection-overrides"
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
@@ -195,6 +200,21 @@ capz::kine::main
 					!bytes.Contains(settings, []byte("disk-iops=400000")) {
 					t.Fatalf("missing pinned image or disk settings: %s", settings)
 				}
+				connections := "postgres-max-connections=1024\nkine-max-open-connections=960\nkine-max-idle-connections=128\n"
+				if tc == "connection-overrides" {
+					connections = "postgres-max-connections=512\nkine-max-open-connections=256\nkine-max-idle-connections=64\n"
+				}
+				if !bytes.Contains(settings, []byte(connections)) {
+					t.Fatalf("missing effective connection budget: %s", settings)
+				}
+			}
+			if tc == "invalid-connection-budget" {
+				if !bytes.Contains(output, []byte("at least 64 PostgreSQL connections")) {
+					t.Fatalf("expected connection budget diagnostic: %s", output)
+				}
+				if _, err := os.Stat(filepath.Join(dir, "commands")); !errors.Is(err, os.ErrNotExist) {
+					t.Fatal("invalid connection budgets must fail before Azure calls")
+				}
 			}
 			if bytes.Contains(output, []byte("Unexpected Azure mutation")) {
 				t.Fatalf("preflight attempted to mutate Azure: %s", output)
@@ -212,6 +232,7 @@ source ./scripts/ci-kine-conformance.sh
 source ./scripts/kine/performance.sh
 export AZURE_LOCATION=test-region KINE_ZONE=1 KINE_PROFILE=performance
 unset KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
 artifact_dir=$KINE_TEST_DIR
 state_dir=$KINE_TEST_DIR
@@ -292,6 +313,7 @@ func TestPerformanceFailureDomain(t *testing.T) {
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
 source ./scripts/kine/performance.sh
 unset KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
 capz::kine::performance_defaults
 printf '%s' "$KINE_ZONE_YAML"
@@ -373,6 +395,7 @@ source ./scripts/ci-kine-conformance.sh
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
 KINE_PROFILE=performance
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 umask 077
 capz::kine::certificates
 `)
@@ -534,65 +557,112 @@ func TestClusterLoaderGeneratorMonitor(t *testing.T) {
 	}
 }
 
-func TestClusterLoaderGeneratorMeasurements(t *testing.T) {
+type clusterLoaderMeasurement struct {
+	Identifier string `yaml:"Identifier"`
+	Method     string `yaml:"Method"`
+	Params     struct {
+		Action           string   `yaml:"action"`
+		EnableViolations bool     `yaml:"enableViolations"`
+		MetricName       string   `yaml:"metricName"`
+		MetricVersion    string   `yaml:"metricVersion"`
+		Unit             string   `yaml:"unit"`
+		Dimensions       []string `yaml:"dimensions"`
+		Queries          []struct {
+			Name           string   `yaml:"name"`
+			Query          string   `yaml:"query"`
+			Aggregations   []string `yaml:"aggregations"`
+			RequireSamples bool     `yaml:"requireSamples"`
+			Threshold      *float64 `yaml:"threshold"`
+			LowerBound     bool     `yaml:"lowerBound"`
+		} `yaml:"queries"`
+	} `yaml:"Params"`
+}
+
+func clusterLoaderMeasurements(t *testing.T, action string) []clusterLoaderMeasurement {
+	t.Helper()
 	data := readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "clusterloader", "measurements.yaml"))
+	var config struct {
+		Steps []struct {
+			Measurements []clusterLoaderMeasurement `yaml:"measurements"`
+		} `yaml:"steps"`
+	}
+	if err := yaml.Unmarshal([]byte(strings.ReplaceAll(string(data), "{{.action}}", action)), &config); err != nil {
+		t.Fatal(err)
+	}
+	var measurements []clusterLoaderMeasurement
+	for _, step := range config.Steps {
+		measurements = append(measurements, step.Measurements...)
+	}
+	return measurements
+}
+
+func TestClusterLoaderGeneratorMeasurements(t *testing.T) {
 	for _, action := range []string{"start", "gather"} {
 		t.Run(action, func(t *testing.T) {
-			var config struct {
-				Steps []struct {
-					Measurements []struct {
-						Identifier string `yaml:"Identifier"`
-						Method     string `yaml:"Method"`
-						Params     struct {
-							Action           string   `yaml:"action"`
-							EnableViolations bool     `yaml:"enableViolations"`
-							MetricName       string   `yaml:"metricName"`
-							MetricVersion    string   `yaml:"metricVersion"`
-							Unit             string   `yaml:"unit"`
-							Dimensions       []string `yaml:"dimensions"`
-							Queries          []struct {
-								Query          string   `yaml:"query"`
-								Aggregations   []string `yaml:"aggregations"`
-								RequireSamples bool     `yaml:"requireSamples"`
-							} `yaml:"queries"`
-						} `yaml:"Params"`
-					} `yaml:"measurements"`
-				} `yaml:"steps"`
-			}
-			if err := yaml.Unmarshal([]byte(strings.ReplaceAll(string(data), "{{.action}}", action)), &config); err != nil {
-				t.Fatal(err)
-			}
 			expected := map[string]string{
 				"LoadGeneratorCPU":           "cores",
 				"LoadGeneratorCPUThrottling": "percent",
 				"LoadGeneratorMemory":        "MiB",
 			}
-			for _, step := range config.Steps {
-				for _, m := range step.Measurements {
-					if !strings.HasPrefix(m.Identifier, "LoadGenerator") {
-						continue
-					}
-					unit, ok := expected[m.Identifier]
-					if !ok {
-						t.Fatalf("unexpected or duplicate generator measurement %q", m.Identifier)
-					}
-					p := m.Params
-					if m.Method != "GenericPrometheusQuery" || p.Action != action || p.MetricName != m.Identifier ||
-						p.MetricVersion != "v1" || p.Unit != unit || !p.EnableViolations ||
-						strings.Join(p.Dimensions, ",") != "namespace,pod,container" || len(p.Queries) != 1 {
-						t.Fatalf("invalid generator measurement %q: %+v", m.Identifier, p)
-					}
-					q := p.Queries[0]
-					if !q.RequireSamples || strings.Join(q.Aggregations, ",") != "Avg,Max" ||
-						!strings.Contains(q.Query, `namespace=~"test-.*",container=~"(write|watch)-generator"`) ||
-						strings.Contains(q.Query, "or vector(0)") {
-						t.Fatalf("generator query must be scoped and reject missing data: %+v", q)
-					}
-					delete(expected, m.Identifier)
+			for _, m := range clusterLoaderMeasurements(t, action) {
+				if !strings.HasPrefix(m.Identifier, "LoadGenerator") {
+					continue
 				}
+				unit, ok := expected[m.Identifier]
+				if !ok {
+					t.Fatalf("unexpected or duplicate generator measurement %q", m.Identifier)
+				}
+				p := m.Params
+				if m.Method != "GenericPrometheusQuery" || p.Action != action || p.MetricName != m.Identifier ||
+					p.MetricVersion != "v1" || p.Unit != unit || !p.EnableViolations ||
+					strings.Join(p.Dimensions, ",") != "namespace,pod,container" || len(p.Queries) != 1 {
+					t.Fatalf("invalid generator measurement %q: %+v", m.Identifier, p)
+				}
+				q := p.Queries[0]
+				if !q.RequireSamples || strings.Join(q.Aggregations, ",") != "Avg,Max" ||
+					!strings.Contains(q.Query, `namespace=~"test-.*",container=~"(write|watch)-generator"`) ||
+					strings.Contains(q.Query, "or vector(0)") {
+					t.Fatalf("generator query must be scoped and reject missing data: %+v", q)
+				}
+				delete(expected, m.Identifier)
 			}
 			if len(expected) != 0 {
 				t.Fatalf("missing generator measurements: %v", expected)
+			}
+		})
+	}
+}
+
+func TestClusterLoaderPatchErrorGate(t *testing.T) {
+	for _, action := range []string{"start", "gather"} {
+		t.Run(action, func(t *testing.T) {
+			found := 0
+			for _, m := range clusterLoaderMeasurements(t, action) {
+				if m.Identifier != "PodPatchErrorCount" {
+					continue
+				}
+				found++
+				p := m.Params
+				if m.Method != "GenericPrometheusQuery" || p.Action != action || !p.EnableViolations ||
+					p.MetricName != m.Identifier || p.MetricVersion != "v1" || p.Unit != "requests" || len(p.Queries) != 1 {
+					t.Fatalf("invalid PATCH error gate: %+v", m)
+				}
+				q := p.Queries[0]
+				if q.Name != "Count" || q.Threshold == nil || *q.Threshold != 0 || q.LowerBound ||
+					!q.RequireSamples || len(q.Aggregations) != 0 {
+					t.Fatalf("PATCH error gate must enforce a zero upper bound on an instant query and require samples: %+v", q)
+				}
+				for _, required := range []string{
+					`sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH",code!~"2.."}[%v]))`,
+					`or (0 * sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH"}[%v])))`,
+				} {
+					if !strings.Contains(q.Query, required) {
+						t.Fatalf("PATCH error gate must use the measured window and preserve missing data: %s", q.Query)
+					}
+				}
+			}
+			if found != 1 {
+				t.Fatalf("expected one PATCH error gate, got %d", found)
 			}
 		})
 	}

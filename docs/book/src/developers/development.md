@@ -718,6 +718,21 @@ This is a **large, billable, single-datastore experiment**, not an HA configurat
 | Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D32s_v5` |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
 | Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
+| PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
+| Kine maximum open connections (`KINE_DATASTORE_MAX_OPEN_CONNECTIONS`) | PostgreSQL limit minus 64 (`960` by default) |
+| Kine maximum idle connections (`KINE_DATASTORE_MAX_IDLE_CONNECTIONS`) | The smaller of `128` and the maximum open connections |
+
+The limits' numeric format and relationships are validated before provisioning,
+and the limits are written to one environment file used by both PostgreSQL
+initialization and the Kine service. Overrides must be positive integers; an
+unlimited Kine pool is rejected. Idle connections count toward the open-connection
+limit, not in addition to it. At least 64 PostgreSQL connection slots must
+remain outside Kine's pool budget, including PostgreSQL's reserved slots and
+headroom for administration, health checks, and monitoring. The guest verifies
+the effective PostgreSQL limit and that non-reserved slots exceed Kine's pool cap.
+Requested limits are recorded in `performance-settings.txt`.
+These are aggressive experimental defaults for the large datastore VM, not an
+assertion that more concurrent connections always improve throughput.
 
 The default footprint needs **176 additional regional vCPUs**: 112 in the
 datastore VM family and 64 in the Dsv5 family. Changing the machine counts changes
@@ -803,8 +818,13 @@ vary those separately. Use achieved successful throughput, PATCH p99 latency,
 errors, and generator/API-server CPU to interpret saturation. The upstream
 generator can accumulate in-flight requests under overload; its offered QPS is
 not proof of sustainable throughput. Check Pod restarts and resource saturation.
-The upstream API responsiveness measurement enforces its latency criteria; this
-first pass does not enforce a custom throughput/error budget.
+The upstream API responsiveness measurement enforces its latency criteria.
+`PodPatchErrorCount` also fails the load phase if Prometheus observes any non-2xx
+PATCH response for the main Pod resource during the measurement window. It uses
+the full-window counter increase, not the rolling-rate average; Pod subresources
+such as `/status` are excluded. A missing request metric fails rather than being
+treated as zero errors. This is a cluster-wide API metric, not a per-generator
+client error count. The profile does not yet enforce an achieved-throughput floor.
 
 Prometheus is explicitly enabled on workers with ephemeral storage, scrapes API
 servers and kubelets, and is torn down after the workload. The adapted measurements

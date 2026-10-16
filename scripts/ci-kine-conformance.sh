@@ -27,6 +27,7 @@ capz::kine::az() {
 }
 
 capz::kine::certificates() {
+  capz::kine::connection_defaults
   printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' \
     'extendedKeyUsage=serverAuth' 'subjectAltName=IP:10.250.0.4,IP:127.0.0.1' > "${state_dir}/server.ext"
   printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
@@ -50,8 +51,9 @@ capz::kine::certificates() {
   KINE_CLIENT_CERT_B64=$(base64 < "${state_dir}/client.crt" | tr -d '\n')
   KINE_CLIENT_KEY_B64=$(base64 < "${state_dir}/client.key" | tr -d '\n')
   export KINE_CA_CERT_B64 KINE_CLIENT_CERT_B64 KINE_CLIENT_KEY_B64
-  local server_cert server_key storage_script
+  local server_cert server_key storage_script connections_script
   storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
+  connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
   server_cert=$(base64 < "${state_dir}/server.crt" | tr -d '\n')
   server_key=$(base64 < "${state_dir}/server.key" | tr -d '\n')
   sed -e "s|__CA_CERT__|${KINE_CA_CERT_B64}|g" \
@@ -60,6 +62,10 @@ capz::kine::certificates() {
     -e "s|__CLIENT_CERT__|${KINE_CLIENT_CERT_B64}|g" \
     -e "s|__CLIENT_KEY__|${KINE_CLIENT_KEY_B64}|g" \
     -e "s|__STORAGE_SCRIPT__|${storage_script}|g" \
+    -e "s|__CONNECTIONS_SCRIPT__|${connections_script}|g" \
+    -e "s|__POSTGRES_MAX_CONNECTIONS__|${KINE_POSTGRES_MAX_CONNECTIONS}|g" \
+    -e "s|__KINE_MAX_OPEN_CONNECTIONS__|${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}|g" \
+    -e "s|__KINE_MAX_IDLE_CONNECTIONS__|${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}|g" \
     "${repo_root}/scripts/kine/cloud-init.yaml" > "${state_dir}/cloud-init.yaml"
 }
 

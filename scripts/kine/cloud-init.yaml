@@ -6,6 +6,16 @@ packages:
 - postgresql-16
 - etcd-client
 write_files:
+- path: /opt/kine-connections.sh
+  permissions: "0700"
+  encoding: b64
+  content: __CONNECTIONS_SCRIPT__
+- path: /etc/kine/connections.env
+  permissions: "0644"
+  content: |
+    KINE_POSTGRES_MAX_CONNECTIONS=__POSTGRES_MAX_CONNECTIONS__
+    KINE_DATASTORE_MAX_OPEN_CONNECTIONS=__KINE_MAX_OPEN_CONNECTIONS__
+    KINE_DATASTORE_MAX_IDLE_CONNECTIONS=__KINE_MAX_IDLE_CONNECTIONS__
 - path: /opt/configure-kine-storage.sh
   permissions: "0700"
   encoding: b64
@@ -43,6 +53,7 @@ write_files:
     User=kine
     Group=kine
     Environment="KINE_ENDPOINT=postgres://kine@/kine?host=/var/run/postgresql&sslmode=disable"
+    EnvironmentFile=/etc/kine/connections.env
     ExecStart=/usr/local/bin/kine --listen-address=0.0.0.0:2379 --server-cert-file=/etc/kine/server.crt --server-key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --metrics-bind-address=127.0.0.1:8080
     Restart=on-failure
     RestartSec=5

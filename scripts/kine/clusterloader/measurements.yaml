@@ -40,6 +40,22 @@ steps:
       queries:
       - query: histogram_quantile(0.99, sum by (le) (rate(apiserver_request_duration_seconds_bucket{resource="pods",verb="PATCH"}[1m])))
         aggregations: [Avg, Max]
+  # CL2 enforces thresholds on instant queries, not the aggregated rates above.
+  - Identifier: PodPatchErrorCount
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: PodPatchErrorCount
+      metricVersion: v1
+      unit: requests
+      queries:
+      - name: Count
+        query: >-
+          sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH",code!~"2.."}[%v]))
+          or (0 * sum(increase(apiserver_request_total{resource="pods",subresource="",verb="PATCH"}[%v])))
+        threshold: 0
+        requireSamples: true
   - Identifier: ActiveWatches
     Method: GenericPrometheusQuery
     Params:
