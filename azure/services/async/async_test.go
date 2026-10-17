@@ -43,11 +43,12 @@ import (
 
 func TestServiceCreateOrUpdateResource(t *testing.T) {
 	testcases := []struct {
-		name           string
-		serviceName    string
-		expectedError  string
-		expectedResult any
-		expect         func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
+		name            string
+		serviceName     string
+		expectedError   string
+		expectedResult  any
+		expectTransient bool
+		expect          func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder)
 	}{
 		{
 			name:          "invalid future",
@@ -78,9 +79,10 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			},
 		},
 		{
-			name:          "operation in progress",
-			serviceName:   serviceName,
-			expectedError: "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
+			name:            "operation in progress",
+			serviceName:     serviceName,
+			expectedError:   "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
+			expectTransient: true,
 			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
@@ -93,9 +95,13 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			},
 		},
 		{
-			name:          "operation failed",
+			name:          "operation failed with a non-retryable error",
 			serviceName:   serviceName,
 			expectedError: "failed to create or update resource mock-resourcegroup/mock-resource (service: mock-service): foo",
+			// A plain, non-retryable error is returned unwrapped (not classified
+			// transient); UpdatePutStatus reports it as a VM provisioning failure,
+			// though controller-runtime may still retry the returned error with backoff.
+			expectTransient: false,
 			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
@@ -107,9 +113,60 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			},
 		},
 		{
-			name:          "get returns resource not found error",
+			name:          "operation failed with a non-retryable status code",
 			serviceName:   serviceName,
-			expectedError: "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
+			expectedError: "failed to create or update resource mock-resourcegroup/mock-resource (service: mock-service)",
+			// A 400 is not in the retryable set, so it is returned unwrapped (not
+			// classified transient).
+			expectTransient: false,
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), &azcore.ResponseError{StatusCode: http.StatusBadRequest}),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+				)
+			},
+		},
+		{
+			name:          "operation failed with a throttling error is transient",
+			serviceName:   serviceName,
+			expectedError: "failed to create or update resource mock-resourcegroup/mock-resource (service: mock-service)",
+			// A 429 that outlived the SDK's own retries is wrapped as transient so
+			// it is requeued rather than reported as a terminal provisioning failure.
+			expectTransient: true,
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), &azcore.ResponseError{StatusCode: http.StatusTooManyRequests}),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+				)
+			},
+		},
+		{
+			name:          "operation timed out before a poller is available is transient",
+			serviceName:   serviceName,
+			expectedError: "failed to create or update resource mock-resourcegroup/mock-resource (service: mock-service): context deadline exceeded. Object will be requeued after 15s",
+			// A timeout with no poller cannot be resumed, so it is retried as transient.
+			expectTransient: true,
+			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
+				gomock.InOrder(
+					r.ResourceName().Return(resourceName),
+					r.ResourceGroupName().Return(resourceGroupName),
+					s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+					c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, nil, context.DeadlineExceeded),
+					s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+				)
+			},
+		},
+		{
+			name:            "get returns resource not found error",
+			serviceName:     serviceName,
+			expectedError:   "operation type PUT on Azure resource mock-resourcegroup/mock-resource is not done. Object will be requeued after 15s",
+			expectTransient: true,
 			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
@@ -124,9 +181,10 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 			},
 		},
 		{
-			name:          "get returns unexpected error",
-			serviceName:   serviceName,
-			expectedError: "failed to get existing resource mock-resourcegroup/mock-resource (service: mock-service): foo. Object will be requeued after 15s",
+			name:            "get returns unexpected error",
+			serviceName:     serviceName,
+			expectedError:   "failed to get existing resource mock-resourcegroup/mock-resource (service: mock-service): foo. Object will be requeued after 15s",
+			expectTransient: true,
 			expect: func(g *WithT, s *mock_async.MockFutureScopeMockRecorder, c *mock_async.MockCreatorMockRecorder[MockCreator], r *mock_azure.MockResourceSpecGetterMockRecorder) {
 				gomock.InOrder(
 					r.ResourceName().Return(resourceName),
@@ -194,8 +252,19 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 					g.Expect(result).To(BeNil())
 				}
 			}
+			g.Expect(isTransientReconcileError(err)).To(Equal(tc.expectTransient))
 		})
 	}
+}
+
+// isTransientReconcileError reports whether err is (or wraps) a transient
+// azure.ReconcileError. The controller requeues such errors with an Azure-aware
+// RequeueAfter. An error that is not classified this way (e.g. a plain wrapped
+// ResponseError) is still returned to controller-runtime and may be retried with
+// backoff; this helper only detects the explicit transient marker.
+func isTransientReconcileError(err error) bool {
+	var reconcileErr azure.ReconcileError
+	return errors.As(err, &reconcileErr) && reconcileErr.IsTransient()
 }
 
 func TestServiceDeleteResource(t *testing.T) {
