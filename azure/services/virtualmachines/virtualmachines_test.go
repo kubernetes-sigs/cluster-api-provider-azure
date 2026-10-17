@@ -19,6 +19,7 @@ package virtualmachines
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -36,6 +37,7 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
@@ -194,6 +196,10 @@ func TestReconcileVM(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
+		// wantTransient, when non-nil, asserts whether the returned error is (or
+		// wraps) a transient azure.ReconcileError. It is checked directly against
+		// the error type rather than the error message.
+		wantTransient *bool
 		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder)
 	}{
 		{
@@ -290,8 +296,11 @@ func TestReconcileVM(t *testing.T) {
 			},
 		},
 		{
-			name:          "reapply vm in Failed state fails",
+			// A 500 from ReapplyAsync is retryable, so reapplyVM classifies it as a
+			// transient azure.ReconcileError instead of a VM provisioning failure.
+			name:          "reapply vm fails with a retryable server error is transient",
 			expectedError: "failed to reapply VM",
+			wantTransient: ptr.To(true),
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.VMSpec().Return(&fakeVMSpec)
@@ -301,6 +310,59 @@ func TestReconcileVM(t *testing.T) {
 				// Second call: resume token lookup inside reapplyVM
 				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, internalError())
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			// A 429 that outlived the SDK's retries is retryable: classified transient.
+			name:          "reapply vm fails with throttling is transient",
+			expectedError: "failed to reapply VM",
+			wantTransient: ptr.To(true),
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, &azcore.ResponseError{StatusCode: http.StatusTooManyRequests})
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			// A timeout with no poller cannot be resumed, so it is classified transient.
+			name:          "reapply vm times out before a poller is available is transient",
+			expectedError: "failed to reapply VM.*context deadline exceeded",
+			wantTransient: ptr.To(true),
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, context.DeadlineExceeded)
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			// A 400 is not in the retryable set, so reapplyVM does not classify it as a
+			// transient ReconcileError. It is returned unclassified and reported as a VM
+			// provisioning failure; controller-runtime may still retry it with backoff.
+			name:          "reapply vm fails with a non-retryable error is not transient",
+			expectedError: "failed to reapply VM",
+			wantTransient: ptr.To(false),
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, &azcore.ResponseError{StatusCode: http.StatusBadRequest})
 				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
@@ -461,11 +523,24 @@ func TestReconcileVM(t *testing.T) {
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
+				if tc.wantTransient != nil {
+					g.Expect(isTransientReconcileError(err)).To(Equal(*tc.wantTransient))
+				}
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
+}
+
+// isTransientReconcileError reports whether err is (or wraps) a transient
+// azure.ReconcileError. The controller requeues such errors with an Azure-aware
+// RequeueAfter. An error that is not classified this way (e.g. a plain wrapped
+// ResponseError) is still returned to controller-runtime and may be retried with
+// backoff; this helper only detects the explicit transient marker.
+func isTransientReconcileError(err error) bool {
+	var reconcileErr azure.ReconcileError
+	return errors.As(err, &reconcileErr) && reconcileErr.IsTransient()
 }
 
 func TestDeleteVM(t *testing.T) {
