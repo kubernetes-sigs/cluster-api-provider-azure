@@ -650,7 +650,7 @@ capz::kine::main
 }
 
 func TestRegionSelection(t *testing.T) {
-	for _, state := range []string{"unset", "empty", "explicit", "performance"} {
+	for _, state := range []string{"unset", "empty", "explicit", "performance", "machine-overrides"} {
 		t.Run(state, func(t *testing.T) {
 			dir := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -666,6 +666,9 @@ case "$KINE_TEST_LOCATION_STATE" in
   unset) unset AZURE_LOCATION ;;
   empty) export AZURE_LOCATION= KINE_ZONE= ;;
   explicit) export AZURE_LOCATION=test-region KINE_ZONE=3 ;;
+  machine-overrides)
+    unset AZURE_LOCATION
+    export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 AZURE_NODE_MACHINE_TYPE=Standard_D8s_v5 ;;
   performance)
     unset AZURE_LOCATION
     export KINE_PROFILE=performance CONFORMANCE_FLAVOR=kine-postgres-performance ;;
@@ -724,13 +727,17 @@ capz::kine::main
 			if state == "performance" {
 				flavor = "kine-postgres-performance"
 			}
+			controlPlane, worker := "Standard_D64s_v6", "Standard_D16s_v5"
+			if state == "machine-overrides" {
+				controlPlane, worker = "Standard_D16s_v5", "Standard_D8s_v5"
+			}
 			for i, prefix := range prefixes {
 				if lines[i] != prefix+region {
 					t.Fatalf("region must be selected before Azure calls and shared with the workload: %v", lines)
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\nStandard_D32s_v5\nStandard_D16s_v5\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n"
+			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}

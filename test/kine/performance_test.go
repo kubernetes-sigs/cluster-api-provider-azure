@@ -40,6 +40,7 @@ func TestPerformancePreflight(t *testing.T) {
 		"invalid-disk", "invalid-zone", "wrong-image", "azure-error",
 		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
 		"connection-overrides", "invalid-connection-budget",
+		"worker-quota", "shared-family", "shared-family-quota",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
@@ -50,7 +51,7 @@ func TestPerformancePreflight(t *testing.T) {
 			var skus []map[string]any
 			for _, machine := range []struct{ size, family, cpu string }{
 				{"Standard_E112ibs_v5", "standardEIBSv5Family", "112"},
-				{"Standard_D32s_v5", "standardDSv5Family", "32"},
+				{"Standard_D64s_v6", "StandardDsv6Family", "64"},
 				{"Standard_D16s_v5", "standardDSv5Family", "16"},
 			} {
 				capabilities := map[string]string{
@@ -98,26 +99,35 @@ func TestPerformancePreflight(t *testing.T) {
 				t.Fatal(err)
 			}
 			quota := `[{"name":{"value":"standardEIBSv5Family"},"limit":112,"currentValue":0},
-{"name":{"value":"standardDSv5Family"},"limit":64,"currentValue":0},
-{"name":{"value":"cores"},"limit":176,"currentValue":0}]`
+{"name":{"value":"StandardDsv6Family"},"limit":64,"currentValue":0},
+{"name":{"value":"standardDSv5Family"},"limit":32,"currentValue":0},
+{"name":{"value":"cores"},"limit":208,"currentValue":0}]`
 			switch tc {
 			case "family-quota", "conformance-quota":
 				quota = strings.Replace(quota, `"limit":64`, `"limit":63`, 1)
+			case "worker-quota":
+				quota = strings.Replace(quota, `"limit":32`, `"limit":31`, 1)
+			case "shared-family", "shared-family-quota":
+				quota = strings.NewReplacer(`"limit":32`, `"limit":48`, `"limit":208`, `"limit":160`).Replace(quota)
+				if tc == "shared-family-quota" {
+					quota = strings.Replace(quota, `"limit":48`, `"limit":47`, 1)
+				}
 			case "regional-quota":
-				quota = strings.Replace(quota, `"limit":176`, `"limit":175`, 1)
+				quota = strings.Replace(quota, `"limit":208`, `"limit":207`, 1)
 			case "missing-quota":
 				quota = `[]`
 			case "string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota":
 				quota = `[{"name":{"value":"standardEIBSv5Family"},"limit":"120","currentValue":"8"},
-{"name":{"value":"standardDSv5Family"},"limit":"72","currentValue":"8"},
-{"name":{"value":"cores"},"limit":"184","currentValue":"8"}]`
+{"name":{"value":"StandardDsv6Family"},"limit":"72","currentValue":"8"},
+{"name":{"value":"standardDSv5Family"},"limit":"40","currentValue":"8"},
+{"name":{"value":"cores"},"limit":"216","currentValue":"8"}]`
 				switch tc {
 				case "mixed-quota":
 					quota = strings.NewReplacer(`"limit":"120"`, `"limit":120`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
 				case "string-family-quota":
 					quota = strings.Replace(quota, `"limit":"72"`, `"limit":"71"`, 1)
 				case "string-regional-quota":
-					quota = strings.Replace(quota, `"limit":"184"`, `"limit":"183"`, 1)
+					quota = strings.Replace(quota, `"limit":"216"`, `"limit":"215"`, 1)
 				case "invalid-quota":
 					quota = strings.Replace(quota, `"limit":"120"`, `"limit":"invalid"`, 1)
 				}
@@ -137,6 +147,7 @@ unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTR
 case "$KINE_TEST_CASE" in
   invalid-disk) export KINE_DISK_IOPS=400001 ;;
   invalid-zone) export KINE_ZONE=4 ;;
+  shared-family|shared-family-quota) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 ;;
   connection-overrides)
     export KINE_POSTGRES_MAX_CONNECTIONS=512 KINE_DATASTORE_MAX_OPEN_CONNECTIONS=256 KINE_DATASTORE_MAX_IDLE_CONNECTIONS=64 ;;
   invalid-connection-budget) export KINE_DATASTORE_MAX_OPEN_CONNECTIONS=1024 ;;
@@ -167,33 +178,53 @@ capz::kine::main
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc)
 			output, err := cmd.CombinedOutput()
-			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" || tc == "connection-overrides"
+			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" || tc == "connection-overrides" || tc == "shared-family"
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
-			if (tc == "family-quota" || tc == "conformance-quota" || tc == "string-family-quota") && !bytes.Contains(output, []byte("need 64, available 63")) {
-				t.Fatalf("must aggregate control-plane and worker family quota: %s", output)
+			if (tc == "family-quota" || tc == "conformance-quota" || tc == "string-family-quota") &&
+				!bytes.Contains(output, []byte("Insufficient StandardDsv6Family vCPU quota: need 64, available 63")) {
+				t.Fatalf("must check control-plane Dsv6 quota independently of worker quota: %s", output)
 			}
-			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 176, available 175")) {
+			if tc == "worker-quota" && !bytes.Contains(output, []byte("Insufficient standardDSv5Family vCPU quota: need 32, available 31")) {
+				t.Fatalf("must check worker Dsv5 quota independently of control-plane quota: %s", output)
+			}
+			if tc == "shared-family-quota" && !bytes.Contains(output, []byte("need 48, available 47")) {
+				t.Fatalf("must aggregate control-plane and worker quota when using the same family: %s", output)
+			}
+			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 208, available 207")) {
 				t.Fatalf("must aggregate regional quota: %s", output)
 			}
 			if success {
 				var plan struct {
 					Quota []struct {
-						Required  int `json:"required"`
-						Available int `json:"available"`
+						Name      string `json:"quota"`
+						Required  int    `json:"required"`
+						Available int    `json:"available"`
 					} `json:"quota"`
 				}
 				if err := json.Unmarshal(readFile(t, filepath.Join(dir, "kine-capz-perf-test", "capacity-plan.json")), &plan); err != nil {
 					t.Fatalf("capacity plan must contain numeric quota values: %v", err)
 				}
-				if len(plan.Quota) != 3 {
-					t.Fatalf("expected two family quotas and regional quota: %+v", plan.Quota)
+				wantQuotas := map[string]int{
+					"standardEIBSv5Family": 112,
+					"StandardDsv6Family":   64,
+					"standardDSv5Family":   32,
+					"cores":                208,
+				}
+				if tc == "shared-family" {
+					delete(wantQuotas, "StandardDsv6Family")
+					wantQuotas["standardDSv5Family"] = 48
+					wantQuotas["cores"] = 160
+				}
+				if len(plan.Quota) != len(wantQuotas) {
+					t.Fatalf("expected %d quotas: %+v", len(wantQuotas), plan.Quota)
 				}
 				for _, quota := range plan.Quota {
-					if quota.Available != quota.Required {
-						t.Fatalf("expected exactly enough available quota: %+v", quota)
+					if required, ok := wantQuotas[quota.Name]; !ok || quota.Required != required || quota.Available != required {
+						t.Fatalf("unexpected quota plan: %+v", quota)
 					}
+					delete(wantQuotas, quota.Name)
 				}
 				settings := readFile(t, filepath.Join(dir, "kine-capz-perf-test", "performance-settings.txt"))
 				if !bytes.Contains(settings, []byte("Canonical:ubuntu-24_04-lts:server:24.04.20261001")) ||

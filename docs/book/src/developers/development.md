@@ -715,7 +715,7 @@ This is a **large, billable, single-datastore experiment**, not an HA configurat
 | Datastore controller | NVMe, accelerated networking, Gen2 Ubuntu 24.04 |
 | Data disk | One uncached Ultra Disk, containing both PostgreSQL data and WAL |
 | `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
-| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D32s_v5` |
+| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D64s_v6`: 64 vCPU, 256 GiB |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
 | Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
 | PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
@@ -734,8 +734,9 @@ Requested limits are recorded in `performance-settings.txt`.
 These are aggressive experimental defaults for the large datastore VM, not an
 assertion that more concurrent connections always improve throughput.
 
-The default footprint needs **176 additional regional vCPUs**: 112 in the
-datastore VM family and 64 in the Dsv5 family. Changing the machine counts changes
+The default footprint needs **208 additional regional vCPUs**: 112 in the
+datastore VM family, 64 in the Dsv6 family, and 32 in the Dsv5 worker family.
+Changing the machine counts changes
 these requirements. This excludes any separately provisioned management cluster.
 The control plane and workers are pinned to the selected datastore zone, so these
 results do not model cross-zone HA latency.
