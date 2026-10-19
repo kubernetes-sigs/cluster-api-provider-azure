@@ -54,15 +54,15 @@ func TestPerformancePreflight(t *testing.T) {
 			var skus []map[string]any
 			for _, machine := range []struct{ size, family, cpu string }{
 				{"Standard_E112ibs_v5", "standardEIBSv5Family", "112"},
-				{"Standard_D64s_v6", "StandardDsv6Family", "64"},
+				{"Standard_D64as_v5", "standardDASv5Family", "64"},
 				{"Standard_D16s_v5", "standardDSv5Family", "16"},
 			} {
 				capabilities := map[string]string{
 					"vCPUs": machine.cpu, "CpuArchitectureType": "x64", "AcceleratedNetworkingEnabled": "True", "DiskControllerTypes": "SCSI,NVMe",
 					"HyperVGenerations": "V1,V2",
 				}
-				if machine.size == "Standard_D64s_v6" {
-					capabilities["HyperVGenerations"] = "V2"
+				if machine.size == "Standard_D64as_v5" {
+					delete(capabilities, "DiskControllerTypes")
 					switch tc {
 					case "control-plane-no-gen2":
 						capabilities["HyperVGenerations"] = "V1"
@@ -112,7 +112,7 @@ func TestPerformancePreflight(t *testing.T) {
 				t.Fatal(err)
 			}
 			quota := `[{"name":{"value":"standardEIBSv5Family"},"limit":112,"currentValue":0},
-{"name":{"value":"StandardDsv6Family"},"limit":64,"currentValue":0},
+{"name":{"value":"standardDASv5Family"},"limit":64,"currentValue":0},
 {"name":{"value":"standardDSv5Family"},"limit":32,"currentValue":0},
 {"name":{"value":"cores"},"limit":208,"currentValue":0}]`
 			switch tc {
@@ -131,7 +131,7 @@ func TestPerformancePreflight(t *testing.T) {
 				quota = `[]`
 			case "string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota":
 				quota = `[{"name":{"value":"standardEIBSv5Family"},"limit":"120","currentValue":"8"},
-{"name":{"value":"StandardDsv6Family"},"limit":"72","currentValue":"8"},
+{"name":{"value":"standardDASv5Family"},"limit":"72","currentValue":"8"},
 {"name":{"value":"standardDSv5Family"},"limit":"40","currentValue":"8"},
 {"name":{"value":"cores"},"limit":"216","currentValue":"8"}]`
 				switch tc {
@@ -226,8 +226,8 @@ capz::kine::main
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
 			if (tc == "family-quota" || tc == "conformance-quota" || tc == "string-family-quota") &&
-				!bytes.Contains(output, []byte("Insufficient StandardDsv6Family vCPU quota: need 64, available 63")) {
-				t.Fatalf("must check control-plane Dsv6 quota independently of worker quota: %s", output)
+				!bytes.Contains(output, []byte("Insufficient standardDASv5Family vCPU quota: need 64, available 63")) {
+				t.Fatalf("must check control-plane Dasv5 quota independently of worker quota: %s", output)
 			}
 			if tc == "worker-quota" && !bytes.Contains(output, []byte("Insufficient standardDSv5Family vCPU quota: need 32, available 31")) {
 				t.Fatalf("must check worker Dsv5 quota independently of control-plane quota: %s", output)
@@ -239,7 +239,7 @@ capz::kine::main
 				t.Fatalf("must aggregate regional quota: %s", output)
 			}
 			if (tc == "control-plane-no-gen2" || tc == "control-plane-missing-generation") &&
-				!bytes.Contains(output, []byte("Control-plane SKU Standard_D64s_v6 must support Gen2")) {
+				!bytes.Contains(output, []byte("Control-plane SKU Standard_D64as_v5 must support Gen2")) {
 				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
 			}
 			if (tc == "control-plane-gen1" || tc == "control-plane-arm" || tc == "control-plane-missing-properties") &&
@@ -268,12 +268,12 @@ capz::kine::main
 				}
 				wantQuotas := map[string]int{
 					"standardEIBSv5Family": 112,
-					"StandardDsv6Family":   64,
+					"standardDASv5Family":  64,
 					"standardDSv5Family":   32,
 					"cores":                208,
 				}
 				if tc == "shared-family" {
-					delete(wantQuotas, "StandardDsv6Family")
+					delete(wantQuotas, "standardDASv5Family")
 					wantQuotas["standardDSv5Family"] = 48
 					wantQuotas["cores"] = 160
 				}

@@ -748,7 +748,7 @@ capz::kine::main
 			if state == "performance" {
 				flavor = "kine-postgres-performance"
 			}
-			controlPlane, worker := "Standard_D64s_v6", "Standard_D16s_v5"
+			controlPlane, worker := "Standard_D64as_v5", "Standard_D16s_v5"
 			if state == "machine-overrides" {
 				controlPlane, worker = "Standard_D16s_v5", "Standard_D8s_v5"
 			}
