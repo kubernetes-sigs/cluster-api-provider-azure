@@ -43,6 +43,7 @@ func TestPerformancePreflight(t *testing.T) {
 		"worker-quota", "shared-family", "shared-family-quota",
 		"control-plane-gen1", "control-plane-arm", "control-plane-missing-version", "control-plane-wrong-version",
 		"control-plane-no-gen2", "control-plane-missing-generation", "kubernetes-override",
+		"control-plane-definition-error", "control-plane-missing-properties",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
@@ -184,21 +185,33 @@ az() {
       else
         echo '{"name":"24.04.20261001","architecture":"x64","hyperVGeneration":"V2","features":[{"name":"DiskControllerTypes","value":"SCSI,NVMe"}]}'
       fi ;;
-    "sig image-definition show-community")
-      generation=V2 architecture=x64
-      case "$KINE_TEST_CASE" in
-        control-plane-gen1) generation=V1 ;;
-        control-plane-arm) architecture=Arm64 ;;
-      esac
-      printf '{"hyperVGeneration":"%s","architecture":"%s"}\n' "$generation" "$architecture" ;;
-    "sig image-version show-community")
-      if [[ "$KINE_TEST_CASE" == control-plane-missing-version ]]; then
-        echo "Control-plane image version unavailable in this region" >&2
-        return 17
-      fi
-      version=$KINE_CONTROL_PLANE_IMAGE_VERSION
-      [[ "$KINE_TEST_CASE" != control-plane-wrong-version ]] || version=1.35.3
-      printf '{"name":"%s"}\n' "$version" ;;
+    "rest --method get")
+      local image_url="https://management.azure.com/subscriptions/test-subscription/providers/Microsoft.Compute/locations/${AZURE_LOCATION}/communityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/images/capi-azurelinux-4-gen2"
+      [[ "$4" == --url ]] || { echo "Missing gallery REST URL" >&2; return 99; }
+      case "$5" in
+        "${image_url}?api-version=2024-03-03")
+          generation=V2 architecture=x64
+          case "$KINE_TEST_CASE" in
+            control-plane-gen1) generation=V1 ;;
+            control-plane-arm) architecture=Arm64 ;;
+            control-plane-definition-error)
+              echo "Control-plane image definition lookup failed" >&2
+              return 17 ;;
+            control-plane-missing-properties)
+              echo '{"name":"capi-azurelinux-4-gen2"}'
+              return ;;
+          esac
+          printf '{"name":"capi-azurelinux-4-gen2","properties":{"hyperVGeneration":"%s","architecture":"%s"}}\n' "$generation" "$architecture" ;;
+        "${image_url}/versions/${KINE_CONTROL_PLANE_IMAGE_VERSION}?api-version=2024-03-03")
+          if [[ "$KINE_TEST_CASE" == control-plane-missing-version ]]; then
+            echo "Control-plane image version unavailable in this region" >&2
+            return 17
+          fi
+          version=$KINE_CONTROL_PLANE_IMAGE_VERSION
+          [[ "$KINE_TEST_CASE" != control-plane-wrong-version ]] || version=1.35.3
+          printf '{"name":"%s","location":"%s","properties":{"storageProfile":{"osDiskImage":{"diskSizeGB":20}}}}\n' "$version" "$AZURE_LOCATION" ;;
+        *) echo "Unexpected gallery REST URL or API version: $5" >&2; return 99 ;;
+      esac ;;
     *) echo "Unexpected Azure mutation in preflight" >&2; return 99 ;;
   esac
 }
@@ -229,9 +242,12 @@ capz::kine::main
 				!bytes.Contains(output, []byte("Control-plane SKU Standard_D64s_v6 must support Gen2")) {
 				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
 			}
-			if (tc == "control-plane-gen1" || tc == "control-plane-arm") &&
+			if (tc == "control-plane-gen1" || tc == "control-plane-arm" || tc == "control-plane-missing-properties") &&
 				!bytes.Contains(output, []byte("Control-plane community image must support x64/Gen2")) {
 				t.Fatalf("must reject incompatible control-plane images: %s", output)
+			}
+			if tc == "control-plane-definition-error" && !bytes.Contains(output, []byte("Control-plane image definition lookup failed")) {
+				t.Fatalf("must propagate a failed image definition lookup: %s", output)
 			}
 			if tc == "control-plane-wrong-version" && !bytes.Contains(output, []byte("Control-plane community image version does not match v1.35.5")) {
 				t.Fatalf("must reject an image version different from the Kubernetes version: %s", output)
@@ -291,8 +307,12 @@ capz::kine::main
 					t.Fatalf("must archive the Kubernetes-matched control-plane image reference: %s", settings)
 				}
 				commands := readFile(t, filepath.Join(dir, "commands"))
-				if !bytes.Contains(commands, []byte("--gallery-image-definition capi-azurelinux-4-gen2 --gallery-image-version "+imageVersion)) {
-					t.Fatalf("must check the requested control-plane image version before provisioning: %s", commands)
+				imageURL := "https://management.azure.com/subscriptions/test-subscription/providers/Microsoft.Compute/locations/" + location +
+					"/communityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/images/capi-azurelinux-4-gen2"
+				for _, url := range []string{imageURL + "?api-version=2024-03-03", imageURL + "/versions/" + imageVersion + "?api-version=2024-03-03"} {
+					if !bytes.Contains(commands, []byte("rest --method get --url "+url+" --output json --subscription test-subscription --only-show-errors\n")) {
+						t.Fatalf("must use the pinned REST API for both gallery lookups: %s", commands)
+					}
 				}
 			}
 			if tc == "invalid-connection-budget" {

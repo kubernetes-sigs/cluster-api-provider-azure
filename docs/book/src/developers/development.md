@@ -769,6 +769,8 @@ control-plane SKU Gen2 support, and the control-plane community image's x64/Gen2
 metadata and requested version availability in the region. It also checks
 available regional and VM-family vCPU quota. Family requirements are summed
 across all roles. Missing capability/quota information is an error.
+Community-gallery lookups use `az rest` with API version `2024-03-03` explicitly
+pinned, avoiding unsupported API versions selected by newer Azure CLI releases.
 It writes the capacity plan and requested settings under
 `$ARTIFACTS/kine-<cluster-name>` without creating Azure resources.
 Passing preflight does **not** reserve hardware or validate every Azure quota
