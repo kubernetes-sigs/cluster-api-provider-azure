@@ -202,11 +202,17 @@ capz::kine::main() {
     echo "The Kine scaffold supports Linux/IPv4 and released Kubernetes images only." >&2
     return 1
   fi
-  export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.35.4}"
-  if [[ ! "${KUBERNETES_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Pin KUBERNETES_VERSION to a release such as v1.35.4." >&2
+  export KINE_KUBERNETES_VERSION="${KINE_KUBERNETES_VERSION:-v1.35.5}"
+  if [[ ! "${KINE_KUBERNETES_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Pin KINE_KUBERNETES_VERSION to a release such as v1.35.5." >&2
     return 1
   fi
+  if [[ -n "${KUBERNETES_VERSION:-}" && "${KUBERNETES_VERSION}" != "${KINE_KUBERNETES_VERSION}" ]]; then
+    echo "Kine overrides KUBERNETES_VERSION=${KUBERNETES_VERSION} with KINE_KUBERNETES_VERSION=${KINE_KUBERNETES_VERSION}."
+  fi
+  export KUBERNETES_VERSION="${KINE_KUBERNETES_VERSION}"
+  export KINE_CONTROL_PLANE_IMAGE_VERSION="${KUBERNETES_VERSION#v}"
+  echo "Using Kine Kubernetes version: ${KUBERNETES_VERSION}; Azure Linux Gen2 control-plane image version: ${KINE_CONTROL_PLANE_IMAGE_VERSION}"
   run_id=$(openssl rand -hex 8)
   export CLUSTER_NAME="${CLUSTER_NAME:-capz-kine-${run_id}}"
   if [[ ! "${CLUSTER_NAME}" =~ ^[a-z][a-z0-9-]{0,38}[a-z0-9]$ ]]; then

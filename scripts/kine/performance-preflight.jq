@@ -35,9 +35,12 @@ sku($datastore) as $db
     any(.zoneDetails[]?; any(.name[]?; . == $zone) and
       any(.capabilities[]?; .name == "UltraSSDAvailable" and .value == "True")));
     "Ultra Disk is not advertised for datastore SKU in zone \($zone)")
+| (sku($controlPlane)
+   | require(((capability("HyperVGenerations") // "") | split(",") | index("V2")) != null;
+             "Control-plane SKU \($controlPlane) must support Gen2")) as $cp
 | [
     {role: "datastore", sku: $db, count: 1},
-    {role: "control-plane", sku: sku($controlPlane), count: $controlPlanes},
+    {role: "control-plane", sku: $cp, count: $controlPlanes},
     {role: "worker", sku: sku($worker), count: $workers}
   ]
 | map(. + {family: .sku.family, cpus: ((.sku | capability("vCPUs") | tonumber) * .count)}) as $plan

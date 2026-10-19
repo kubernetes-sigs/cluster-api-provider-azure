@@ -117,6 +117,13 @@ func TestFlavor(t *testing.T) {
 				Template struct {
 					Spec struct {
 						DataDisks []any `yaml:"dataDisks"`
+						Image     *struct {
+							ComputeGallery struct {
+								Gallery string `yaml:"gallery"`
+								Name    string `yaml:"name"`
+								Version string `yaml:"version"`
+							} `yaml:"computeGallery"`
+						} `yaml:"image"`
 					} `yaml:"spec"`
 				} `yaml:"template"`
 			} `yaml:"spec"`
@@ -190,6 +197,14 @@ func TestFlavor(t *testing.T) {
 				if len(object.Spec.Template.Spec.DataDisks) != 0 {
 					t.Fatal("control plane must not allocate an unused etcd data disk")
 				}
+				image := object.Spec.Template.Spec.Image
+				if image == nil || image.ComputeGallery.Gallery != "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019" ||
+					image.ComputeGallery.Name != "capi-azurelinux-4-gen2" ||
+					image.ComputeGallery.Version != "${KINE_CONTROL_PLANE_IMAGE_VERSION}" {
+					t.Fatalf("control plane must use the Kubernetes-matched Azure Linux Gen2 community image: %+v", image)
+				}
+			} else if object.Metadata.Name == "${CLUSTER_NAME}-md-0" && object.Spec.Template.Spec.Image != nil {
+				t.Fatal("workers must retain the default Ubuntu reference image")
 			}
 		case "Secret":
 			switch object.Metadata.Name {
@@ -602,6 +617,7 @@ export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
 export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
+unset KINE_KUBERNETES_VERSION
 unset TIMESTAMP JOB_NAME BUILD_PROVENANCE REPO_OWNER REPO_NAME PULL_BASE_SHA PULL_NUMBER PULL_PULL_SHA
 capz::kine::performance_preflight() { :; }
 case "$KINE_TEST_TAG_CASE" in
@@ -650,7 +666,7 @@ capz::kine::main
 }
 
 func TestRegionSelection(t *testing.T) {
-	for _, state := range []string{"unset", "empty", "explicit", "performance", "machine-overrides"} {
+	for _, state := range []string{"unset", "empty", "explicit", "performance", "machine-overrides", "kubernetes-override"} {
 		t.Run(state, func(t *testing.T) {
 			dir := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -660,6 +676,7 @@ export ARTIFACTS="$KINE_TEST_DIR" TMPDIR="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 unset KINE_PROFILE KINE_PREFLIGHT_ONLY KINE_ZONE KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_KUBERNETES_VERSION KINE_CONTROL_PLANE_IMAGE_VERSION
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE
 case "$KINE_TEST_LOCATION_STATE" in
@@ -669,6 +686,9 @@ case "$KINE_TEST_LOCATION_STATE" in
   machine-overrides)
     unset AZURE_LOCATION
     export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 AZURE_NODE_MACHINE_TYPE=Standard_D8s_v5 ;;
+  kubernetes-override)
+    unset AZURE_LOCATION
+    export KINE_KUBERNETES_VERSION=v1.35.3 ;;
   performance)
     unset AZURE_LOCATION
     export KINE_PROFILE=performance CONFORMANCE_FLAVOR=kine-postgres-performance ;;
@@ -700,13 +720,14 @@ bash() {
     return 99
   fi
   command bash -c 'printf "workload=%s\n" "${AZURE_LOCATION:?}"' >> "$KINE_TEST_DIR/regions"
-  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3" "$KINE_ZONE_YAML"' > "$KINE_TEST_DIR/settings"
+  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3" "$KINE_ZONE_YAML" "$KUBERNETES_VERSION" "$KINE_CONTROL_PLANE_IMAGE_VERSION"' > "$KINE_TEST_DIR/settings"
 }
 capz::kine::main
 `)
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_LOCATION_STATE="+state)
-			if output, err := cmd.CombinedOutput(); err != nil {
+			output, err := cmd.CombinedOutput()
+			if err != nil {
 				t.Fatalf("run wrapper: %v\n%s", err, output)
 			}
 			lines := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "regions")))), "\n")
@@ -731,13 +752,20 @@ capz::kine::main
 			if state == "machine-overrides" {
 				controlPlane, worker = "Standard_D16s_v5", "Standard_D8s_v5"
 			}
+			version := "v1.35.5"
+			if state == "kubernetes-override" {
+				version = "v1.35.3"
+			}
+			if !bytes.Contains(output, []byte("Kine overrides KUBERNETES_VERSION=v1.35.4 with KINE_KUBERNETES_VERSION="+version)) {
+				t.Fatalf("must explicitly log the effective Kubernetes version instead of the Prow pin: %s", output)
+			}
 			for i, prefix := range prefixes {
 				if lines[i] != prefix+region {
 					t.Fatalf("region must be selected before Azure calls and shared with the workload: %v", lines)
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n"
+			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}
@@ -754,7 +782,7 @@ func TestRejectUnsupportedRuns(t *testing.T) {
 		{"windows", "WINDOWS=true", "supports Linux/IPv4"},
 		{"ipv6", "IP_FAMILY=ipv6", "supports Linux/IPv4"},
 		{"ci-artifacts", "E2E_ARGS=-kubetest.use-ci-artifacts", "supports Linux/IPv4"},
-		{"unpinned", "KUBERNETES_VERSION=stable-1.35", "Pin KUBERNETES_VERSION"},
+		{"unpinned", "KINE_KUBERNETES_VERSION=stable-1.35", "Pin KINE_KUBERNETES_VERSION"},
 		{"wrong-flavor", "CONFORMANCE_FLAVOR=other", "requires CONFORMANCE_FLAVOR"},
 		{"existing-group", "KUBERNETES_VERSION=v1.35.4", "Refusing to reuse resource group"},
 	} {
@@ -765,6 +793,7 @@ export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
 export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
+unset KINE_KUBERNETES_VERSION
 export "$KINE_TEST_SETTING"
 capz::kine::performance_preflight() { :; }
 az() {

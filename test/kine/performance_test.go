@@ -41,6 +41,8 @@ func TestPerformancePreflight(t *testing.T) {
 		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
 		"connection-overrides", "invalid-connection-budget",
 		"worker-quota", "shared-family", "shared-family-quota",
+		"control-plane-gen1", "control-plane-arm", "control-plane-missing-version", "control-plane-wrong-version",
+		"control-plane-no-gen2", "control-plane-missing-generation", "kubernetes-override",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
@@ -56,6 +58,16 @@ func TestPerformancePreflight(t *testing.T) {
 			} {
 				capabilities := map[string]string{
 					"vCPUs": machine.cpu, "CpuArchitectureType": "x64", "AcceleratedNetworkingEnabled": "True", "DiskControllerTypes": "SCSI,NVMe",
+					"HyperVGenerations": "V1,V2",
+				}
+				if machine.size == "Standard_D64s_v6" {
+					capabilities["HyperVGenerations"] = "V2"
+					switch tc {
+					case "control-plane-no-gen2":
+						capabilities["HyperVGenerations"] = "V1"
+					case "control-plane-missing-generation":
+						delete(capabilities, "HyperVGenerations")
+					}
 				}
 				switch tc {
 				case "no-nvme":
@@ -142,12 +154,14 @@ export AZURE_LOCATION=test-region AZURE_SUBSCRIPTION_ID=test-subscription KINE_Z
 export CLUSTER_NAME=capz-perf-test ARTIFACTS="$KINE_TEST_DIR"
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS= KUBERNETES_VERSION=v1.35.4
 unset CONFORMANCE_FLAVOR KINE_VM_SIZE KINE_VM_IMAGE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
+unset KINE_KUBERNETES_VERSION KINE_CONTROL_PLANE_IMAGE_VERSION
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
 case "$KINE_TEST_CASE" in
   invalid-disk) export KINE_DISK_IOPS=400001 ;;
   invalid-zone) export KINE_ZONE=4 ;;
   shared-family|shared-family-quota) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 ;;
+  kubernetes-override) export KINE_KUBERNETES_VERSION=v1.35.3 ;;
   connection-overrides)
     export KINE_POSTGRES_MAX_CONNECTIONS=512 KINE_DATASTORE_MAX_OPEN_CONNECTIONS=256 KINE_DATASTORE_MAX_IDLE_CONNECTIONS=64 ;;
   invalid-connection-budget) export KINE_DATASTORE_MAX_OPEN_CONNECTIONS=1024 ;;
@@ -170,6 +184,21 @@ az() {
       else
         echo '{"name":"24.04.20261001","architecture":"x64","hyperVGeneration":"V2","features":[{"name":"DiskControllerTypes","value":"SCSI,NVMe"}]}'
       fi ;;
+    "sig image-definition show-community")
+      generation=V2 architecture=x64
+      case "$KINE_TEST_CASE" in
+        control-plane-gen1) generation=V1 ;;
+        control-plane-arm) architecture=Arm64 ;;
+      esac
+      printf '{"hyperVGeneration":"%s","architecture":"%s"}\n' "$generation" "$architecture" ;;
+    "sig image-version show-community")
+      if [[ "$KINE_TEST_CASE" == control-plane-missing-version ]]; then
+        echo "Control-plane image version unavailable in this region" >&2
+        return 17
+      fi
+      version=$KINE_CONTROL_PLANE_IMAGE_VERSION
+      [[ "$KINE_TEST_CASE" != control-plane-wrong-version ]] || version=1.35.3
+      printf '{"name":"%s"}\n' "$version" ;;
     *) echo "Unexpected Azure mutation in preflight" >&2; return 99 ;;
   esac
 }
@@ -178,7 +207,8 @@ capz::kine::main
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc)
 			output, err := cmd.CombinedOutput()
-			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" || tc == "connection-overrides" || tc == "shared-family"
+			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" ||
+				tc == "connection-overrides" || tc == "shared-family" || tc == "kubernetes-override"
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
@@ -194,6 +224,20 @@ capz::kine::main
 			}
 			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 208, available 207")) {
 				t.Fatalf("must aggregate regional quota: %s", output)
+			}
+			if (tc == "control-plane-no-gen2" || tc == "control-plane-missing-generation") &&
+				!bytes.Contains(output, []byte("Control-plane SKU Standard_D64s_v6 must support Gen2")) {
+				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
+			}
+			if (tc == "control-plane-gen1" || tc == "control-plane-arm") &&
+				!bytes.Contains(output, []byte("Control-plane community image must support x64/Gen2")) {
+				t.Fatalf("must reject incompatible control-plane images: %s", output)
+			}
+			if tc == "control-plane-wrong-version" && !bytes.Contains(output, []byte("Control-plane community image version does not match v1.35.5")) {
+				t.Fatalf("must reject an image version different from the Kubernetes version: %s", output)
+			}
+			if tc == "control-plane-missing-version" && !bytes.Contains(output, []byte("Control-plane image version unavailable in this region")) {
+				t.Fatalf("must propagate a missing regional control-plane image error: %s", output)
 			}
 			if success {
 				var plan struct {
@@ -237,6 +281,18 @@ capz::kine::main
 				}
 				if !bytes.Contains(settings, []byte(connections)) {
 					t.Fatalf("missing effective connection budget: %s", settings)
+				}
+				version, imageVersion := "v1.35.5", "1.35.5"
+				if tc == "kubernetes-override" {
+					version, imageVersion = "v1.35.3", "1.35.3"
+				}
+				if !bytes.Contains(settings, []byte("kubernetes-version="+version+"\n")) ||
+					!bytes.Contains(settings, []byte("control-plane-image=/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-azurelinux-4-gen2/Versions/"+imageVersion+"\n")) {
+					t.Fatalf("must archive the Kubernetes-matched control-plane image reference: %s", settings)
+				}
+				commands := readFile(t, filepath.Join(dir, "commands"))
+				if !bytes.Contains(commands, []byte("--gallery-image-definition capi-azurelinux-4-gen2 --gallery-image-version "+imageVersion)) {
+					t.Fatalf("must check the requested control-plane image version before provisioning: %s", commands)
 				}
 			}
 			if tc == "invalid-connection-budget" {

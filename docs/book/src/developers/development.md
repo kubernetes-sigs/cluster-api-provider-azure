@@ -613,9 +613,19 @@ export AZURE_SUBSCRIPTION_ID=<subscription-id>
 # export AZURE_LOCATION=westus2
 # export KINE_ZONE=2
 # Also configure the usual CAPZ credentials and management-cluster prerequisites.
-export KUBERNETES_VERSION=v1.35.4
+export KINE_KUBERNETES_VERSION=v1.35.5
 make test-conformance-kine
 ```
+
+Both Kine workloads use `KINE_KUBERNETES_VERSION` (default `v1.35.5`) for the
+cluster and, when running conformance, the matching upstream conformance image.
+This Kine-specific setting takes precedence over the generic
+`KUBERNETES_VERSION`, including the older version pinned in the existing Prow
+jobs; the wrapper logs overrides and the effective version explicitly. To test
+another released version, set `KINE_KUBERNETES_VERSION` to one published in the
+`capi-azurelinux-4-gen2` community image family. The control plane uses that
+Kubernetes-ready Azure Linux 4 Gen2 image; workers retain CAPZ's default Ubuntu
+image for the same Kubernetes version. The Kine/PostgreSQL VM remains Ubuntu.
 
 Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
 The datastore, control plane, and workers share that placement; explicit
@@ -716,6 +726,7 @@ This is a **large, billable, single-datastore experiment**, not an HA configurat
 | Data disk | One uncached Ultra Disk, containing both PostgreSQL data and WAL |
 | `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
 | Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D64s_v6`: 64 vCPU, 256 GiB |
+| Control-plane image | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
 | Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
 | PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
@@ -753,8 +764,10 @@ make preflight-performance-kine
 ```
 
 This checks advertised VM/zone availability, subscription restrictions, x64,
-accelerated networking, datastore NVMe/Ultra support, Gen2/NVMe image support,
-and available regional and VM-family vCPU quota. Family requirements are summed
+accelerated networking, datastore NVMe/Ultra and Gen2/NVMe image support,
+control-plane SKU Gen2 support, and the control-plane community image's x64/Gen2
+metadata and requested version availability in the region. It also checks
+available regional and VM-family vCPU quota. Family requirements are summed
 across all roles. Missing capability/quota information is an error.
 It writes the capacity plan and requested settings under
 `$ARTIFACTS/kine-<cluster-name>` without creating Azure resources.
@@ -778,7 +791,9 @@ Requested and provisioned settings are archived, and the run rejects a non-NVMe
 VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
 and throughput. Disk validation failures log the expected and observed SKU, IOPS,
 and throughput. The resolved Ubuntu image version is frozen within each run;
-image/package patch versions can still differ between runs.
+image/package patch versions can still differ between runs. The control-plane
+community image is pinned to the effective Kubernetes version; its metadata,
+version response, and selected reference are also archived by preflight.
 
 After reviewing the capacity plan and cost, select the workload:
 
