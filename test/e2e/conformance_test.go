@@ -21,6 +21,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -172,7 +173,9 @@ var _ = Describe("Conformance Tests", func() {
 			)
 			command.Stdout = GinkgoWriter
 			command.Stderr = GinkgoWriter
-			Expect(command.Run()).To(Succeed(), "ClusterLoader2 failed")
+			runErr := command.Run()
+			snapshotErr := verifyPrometheusSnapshot(filepath.Join(artifactFolder, "clusterloader2"))
+			Expect(errors.Join(runErr, snapshotErr)).To(Succeed(), "ClusterLoader2 workload or Prometheus snapshot collection failed")
 			stopwatch.Record("ClusterLoader2 write/watch workload")
 			return
 		}

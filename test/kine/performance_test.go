@@ -414,6 +414,25 @@ capz::kine::provision
 				}
 			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
+			metricsRules := 0
+			for _, line := range strings.Split(commands, "\n") {
+				if !strings.Contains(line, "--name allow-kine-metrics") {
+					continue
+				}
+				metricsRules++
+				for _, required := range []string{
+					"--priority 110", "--direction Inbound", "--access Allow", "--protocol Tcp",
+					"--source-address-prefixes 10.0.1.0/24", "--destination-address-prefixes 10.250.0.4/32",
+					"--destination-port-ranges 8080",
+				} {
+					if !strings.Contains(line, required) {
+						t.Errorf("metrics ingress must remain narrowly scoped: missing %s", required)
+					}
+				}
+			}
+			if metricsRules != 1 {
+				t.Fatalf("expected one private metrics ingress rule, got %d", metricsRules)
+			}
 			if mismatch != "none" && strings.Contains(commands, "vm run-command") {
 				t.Fatalf("must stop before guest readiness when provisioning validation fails: %s", commands)
 			}
@@ -540,6 +559,13 @@ capz::kine::certificates
 	}
 	found := false
 	for _, file := range config.Files {
+		if file.Path == "/etc/systemd/system/kine.service" {
+			if !strings.Contains(file.Content, "--metrics-bind-address=10.250.0.4:8080") ||
+				strings.Contains(file.Content, "--metrics-ignore-tls-config") ||
+				!strings.Contains(file.Content, "--server-cert-file=/etc/kine/server.crt") {
+				t.Fatal("performance metrics must use the private address and existing server TLS")
+			}
+		}
 		if file.Path != "/opt/configure-kine-storage.sh" {
 			continue
 		}

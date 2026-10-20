@@ -27,6 +27,10 @@ esac
 [[ $# -le 1 ]] || { echo "Unexpected arguments." >&2; exit 1; }
 mkdir -p "${cache}/source" "${cache}/workload" "${report}"
 report=$(cd "${report}" && pwd)
+if [[ -z "${1:-}" ]]; then
+  # An earlier local run's snapshot must not satisfy this run's artifact checks.
+  rm -f "${report}/prometheus_snapshot.tar.gz"
+fi
 if [[ ! -f "${cache}/source.tar.gz" ]]; then
   curl --fail --show-error --silent --location --retry 3 \
     "https://codeload.github.com/kubernetes/perf-tests/tar.gz/${revision}" -o "${cache}/source.tar.gz"
@@ -43,6 +47,8 @@ cp "${repo_root}/scripts/kine/clusterloader/writer.yaml" "${cache}/workload/modu
 [[ "${1:-}" != --prepare-only ]] || exit 0
 
 : "${KUBECONFIG:?Set the workload cluster kubeconfig}"
+: "${KINE_CA_CERT_B64:?Set the public Kine CA certificate for the private metrics endpoint}"
+export CL2_KINE_CA_CERT_B64="${KINE_CA_CERT_B64}"
 [[ -f "${KUBECONFIG}" ]] || { echo "Workload kubeconfig does not exist." >&2; exit 1; }
 KUBECONFIG=$(cd "$(dirname "${KUBECONFIG}")" && printf '%s/%s' "$PWD" "$(basename "${KUBECONFIG}")")
 export KUBECONFIG
@@ -67,6 +73,7 @@ exec "${cache}/clusterloader2" --provider=skeleton --kubeconfig="${KUBECONFIG}" 
   --testconfig="${cache}/workload/config.yaml" --report-dir="${report}" --port=0 \
   --enable-exec-service=false \
   --enable-prometheus-server=true --tear-down-prometheus-server=true \
+  --experimental-prometheus-snapshot-to-report-dir=true \
   --prometheus-scrape-apiserver-only=true --prometheus-apiserver-scrape-port=6443 \
   --prometheus-scrape-etcd=false --prometheus-scrape-kube-proxy=false \
   --prometheus-additional-monitors-path="${repo_root}/scripts/kine/clusterloader/prometheus" \

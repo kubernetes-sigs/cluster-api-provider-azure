@@ -234,6 +234,7 @@ func TestCertificatesAndCloudInit(t *testing.T) {
 source ./scripts/ci-kine-conformance.sh
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
+export KINE_PROFILE=conformance
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 umask 077
 capz::kine::certificates
@@ -292,6 +293,10 @@ capz::kine::certificates
 		"/opt/kine-connections.sh":       "connections.sh",
 	}
 	for _, file := range config.Files {
+		if file.Path == "/etc/systemd/system/kine.service" &&
+			!strings.Contains(file.Content, "--metrics-bind-address=127.0.0.1:8080") {
+			t.Fatal("conformance must keep Kine metrics bound to loopback")
+		}
 		if script, ok := scripts[file.Path]; ok {
 			decoded, err := base64.StdEncoding.DecodeString(file.Content)
 			if err != nil || !bytes.Equal(decoded, readFile(t, filepath.Join(root, "scripts", "kine", script))) {
@@ -443,6 +448,7 @@ JOB_NAME=test-kine-job
 BUILD_PROVENANCE=https://github.com/test/repo/pull/123/commits/test-head
 run_id=test-run
 message=$KINE_TEST_MESSAGE
+unset KINE_PROFILE
 unset KINE_VM_SIZE KINE_ZONE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
@@ -463,6 +469,9 @@ capz::kine::provision
 				t.Fatalf("readiness=%t: %v\n%s", ready, err, output)
 			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
+			if strings.Contains(commands, "--name allow-kine-metrics") {
+				t.Fatal("conformance must not enable network access to Kine metrics")
+			}
 			groupCreate := strings.SplitN(commands, "\n", 2)[0]
 			for _, tag := range []string{
 				"capz-kine-run=test-run",

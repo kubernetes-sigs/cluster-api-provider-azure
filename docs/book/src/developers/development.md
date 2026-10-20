@@ -660,6 +660,13 @@ no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`
 the workload VNet uses `10.0.0.0/16`, with explicit control-plane `10.0.0.0/24`
 and node `10.0.1.0/24` subnets. CAPZ creates the bidirectional peering.
 Only the control-plane subnet `10.0.0.0/24` can reach Kine's TCP port 2379.
+Performance runs additionally allow the worker subnet `10.0.1.0/24` to scrape
+`https://10.250.0.4:8080/metrics`. This is a private, server-authenticated TLS
+endpoint: Prometheus verifies Kine's certificate using the fixture's public CA.
+The metrics endpoint does not require a client certificate, so the dedicated NSG
+rule is its client-access boundary. No public listener or new private-key
+distribution is added. Conformance runs keep metrics on loopback and do not add
+the metrics ingress rule.
 Avoid overlapping addresses if using a peered management cluster.
 PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
 
@@ -862,7 +869,7 @@ treated as zero errors. This is a cluster-wide API metric, not a per-generator
 client error count. The profile does not yet enforce an achieved-throughput floor.
 
 Prometheus is explicitly enabled on workers with ephemeral storage, scrapes API
-servers and kubelets, and is torn down after the workload. The adapted measurements
+servers, kubelets, and Kine, and is torn down after the workload. The adapted measurements
 do not require an etcd server or etcd-only metrics. An additional ServiceMonitor
 collects only the write/watch generators' cAdvisor CPU and memory metrics from
 `test-*` namespaces, which the upstream monitor excludes. Other benchmark Pods
@@ -878,18 +885,50 @@ requires samples, so a completely missing metric fails the measurement instead o
 producing an empty success report. These measurements do not impose resource-use
 thresholds or guarantee samples from every replica.
 
+Kine diagnostics use the metrics exported by the pinned Kine binary; no Kine
+source changes or tuning changes are required:
+
+| Report | Values |
+| --- | --- |
+| `PodPatchResponses` | Successful and failing Pod PATCH rates grouped by HTTP status code, excluding subresources |
+| `KineCPU`, `KineMemory`, `KineGoroutines` | Process CPU cores, RSS/allocated heap/in-use heap in MiB, and goroutine count |
+| `KineGCCollections`, `KineGCPauseTime` | GC collections/sec and accumulated GC pause seconds/sec, not total GC CPU consumption |
+| `KinePoolConnections` | Open, in-use, idle, and maximum open connections in Kine's SQL pool |
+| `KinePoolWaitRate`, `KinePoolWaitTime` | Pool waits/sec and accumulated wait seconds/sec; concurrent waiters can accumulate more than one second per second |
+| `KineSQLRequests`, `KineSQLLatencyP99` | SQL operation rates and rolling p99 instrumented durations, grouped by operation name and error code |
+| `KineCompactions`, `KineInsertConflicts` | Measurement-window compaction counts by result and insert-conflict counts by retry classification |
+
+Rates, gauges, and rolling SQL p99s report their average and maximum over the
+measurement window. SQL timings cover Kine's instrumented SQL calls, not complete
+row consumption or end-to-end watch delivery. Idle SQL histogram series are
+excluded rather than reporting NaN quantiles. Event counters that have never been
+used report zero only while the Kine scrape is healthy. Required metrics with no
+samples fail the measurement. `KineScrapeAvailability` also fails if an observed
+scrape was down during the measured window. These are observability gates, not
+new performance thresholds.
+
 Results and workload settings are placed in the E2E artifact directory's
-`clusterloader2` subdirectory. Generator request latency, client-side errors,
-restarts/OOMs, and watch reconnects or lag are not yet measured by these reports.
-Full PostgreSQL/Kine time-series telemetry, raw-disk calibration, direct datastore
-benchmarks, automated rate sweeps, and an equivalent etcd baseline remain separate
-follow-ups; this profile alone must not be reported as an established backend ceiling.
+`clusterloader2` subdirectory. CL2 saves `prometheus_snapshot.tar.gz` before
+tearing down Prometheus, including after normal benchmark failures, so the full
+scraped time series can be examined after Azure resources have been deleted.
+The CAPZ E2E test rejects a missing, empty, or corrupt snapshot; an earlier local
+run's snapshot is removed before a new live run. Abrupt process termination or
+loss of the workload API can still prevent export.
+
+The pinned Kine version does not export its internal polling revision, so these
+reports do not directly measure database-to-Kine-to-apiserver revision lag.
+PostgreSQL server/host metrics, generator client errors and latency, restarts/OOMs,
+and watch reconnects or lag remain separate follow-ups, as do raw-disk calibration,
+direct datastore benchmarks, automated rate sweeps, and an equivalent etcd baseline.
+This profile alone must not be reported as an established backend ceiling.
 
 To prepare the pinned tool without Azure, or run it against an existing disposable
 cluster:
 
 ```bash
 bash scripts/kine/run-clusterloader.sh --prepare-only
+# For an existing Kine fixture, supply its public CA (never a private key).
+export KINE_CA_CERT_B64="$(base64 < /absolute/path/to/kine-ca.crt | tr -d '\n')"
 KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh --dry-run
 KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh
 ```
@@ -898,6 +937,8 @@ Only the last command mutates the existing cluster. It creates test resources an
 a `monitoring` stack: do not use a production cluster or an existing monitoring
 namespace. Upstream CL2's `--dry-run` still requires a reachable cluster and
 intentionally exits nonzero after dumping the compiled test configuration.
+Live runs require the fixture's private TLS metrics endpoint to be reachable from
+worker Pods. The normal CAPZ Kine wrapper supplies the CA and network rule automatically.
 Treat artifact kubeconfigs/bootstrap data as credentials. The fixture's
 ownership checks and retain-on-workload-cleanup-failure behavior still apply;
 retained Ultra disks and large VMs continue to incur costs.

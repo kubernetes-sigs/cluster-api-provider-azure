@@ -54,7 +54,7 @@ write_files:
     Group=kine
     Environment="KINE_ENDPOINT=postgres://kine@/kine?host=/var/run/postgresql&sslmode=disable"
     EnvironmentFile=/etc/kine/connections.env
-    ExecStart=/usr/local/bin/kine --listen-address=0.0.0.0:2379 --server-cert-file=/etc/kine/server.crt --server-key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --metrics-bind-address=127.0.0.1:8080
+    ExecStart=/usr/local/bin/kine --listen-address=0.0.0.0:2379 --server-cert-file=/etc/kine/server.crt --server-key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --metrics-bind-address=__METRICS_BIND_ADDRESS__:8080
     Restart=on-failure
     RestartSec=5
     NoNewPrivileges=true

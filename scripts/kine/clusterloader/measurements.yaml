@@ -40,6 +40,19 @@ steps:
       queries:
       - query: histogram_quantile(0.99, sum by (le) (rate(apiserver_request_duration_seconds_bucket{resource="pods",verb="PATCH"}[1m])))
         aggregations: [Avg, Max]
+  - Identifier: PodPatchResponses
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: PodPatchResponses
+      metricVersion: v1
+      unit: reqps
+      dimensions: [code]
+      queries:
+      - query: sum by (code) (rate(apiserver_request_total{resource="pods",subresource="",verb="PATCH"}[1m]))
+        aggregations: [Avg, Max]
+        requireSamples: true
   # CL2 enforces thresholds on instant queries, not the aggregated rates above.
   - Identifier: PodPatchErrorCount
     Method: GenericPrometheusQuery
@@ -118,4 +131,196 @@ steps:
       queries:
       - query: sum by (namespace,pod,container) (container_memory_working_set_bytes{namespace=~"test-.*",container=~"(write|watch)-generator"}) / 1048576
         aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineScrapeAvailability
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineScrapeAvailability
+      metricVersion: v1
+      unit: up
+      queries:
+      - name: Minimum
+        query: min(min_over_time(up{job="kine"}[%v]))
+        threshold: 1
+        lowerBound: true
+        requireSamples: true
+  - Identifier: KineCPU
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineCPU
+      metricVersion: v1
+      unit: cores
+      queries:
+      - query: rate(process_cpu_seconds_total{job="kine"}[1m])
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineMemory
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineMemory
+      metricVersion: v1
+      unit: MiB
+      queries:
+      - name: RSS
+        query: process_resident_memory_bytes{job="kine"} / 1048576
+        aggregations: [Avg, Max]
+        requireSamples: true
+      - name: HeapAllocated
+        query: go_memstats_heap_alloc_bytes{job="kine"} / 1048576
+        aggregations: [Avg, Max]
+        requireSamples: true
+      - name: HeapInUse
+        query: go_memstats_heap_inuse_bytes{job="kine"} / 1048576
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineGoroutines
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineGoroutines
+      metricVersion: v1
+      unit: goroutines
+      queries:
+      - query: go_goroutines{job="kine"}
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineGCCollections
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineGCCollections
+      metricVersion: v1
+      unit: collections/s
+      queries:
+      - query: rate(go_gc_duration_seconds_count{job="kine"}[1m])
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineGCPauseTime
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineGCPauseTime
+      metricVersion: v1
+      unit: s/s
+      queries:
+      - query: rate(go_gc_duration_seconds_sum{job="kine"}[1m])
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KinePoolConnections
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KinePoolConnections
+      metricVersion: v1
+      unit: connections
+      queries:
+      - name: Open
+        query: go_sql_open_connections{job="kine",db_name="kine"}
+        aggregations: [Avg, Max]
+        requireSamples: true
+      - name: InUse
+        query: go_sql_in_use_connections{job="kine",db_name="kine"}
+        aggregations: [Avg, Max]
+        requireSamples: true
+      - name: Idle
+        query: go_sql_idle_connections{job="kine",db_name="kine"}
+        aggregations: [Avg, Max]
+        requireSamples: true
+      - name: Limit
+        query: go_sql_max_open_connections{job="kine",db_name="kine"}
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KinePoolWaitRate
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KinePoolWaitRate
+      metricVersion: v1
+      unit: waits/s
+      queries:
+      - query: rate(go_sql_wait_count_total{job="kine",db_name="kine"}[1m])
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KinePoolWaitTime
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KinePoolWaitTime
+      metricVersion: v1
+      unit: s/s
+      queries:
+      - query: rate(go_sql_wait_duration_seconds_total{job="kine",db_name="kine"}[1m])
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineSQLRequests
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineSQLRequests
+      metricVersion: v1
+      unit: ops/s
+      dimensions: [name, error_code]
+      queries:
+      - query: sum by (name,error_code) (rate(kine_sql_total{job="kine"}[1m]))
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineSQLLatencyP99
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineSQLLatencyP99
+      metricVersion: v1
+      unit: s
+      dimensions: [name, error_code]
+      queries:
+      # Exclude idle histogram series whose quantiles would be NaN.
+      - query: >-
+          histogram_quantile(0.99, sum by (name,error_code,le) (rate(kine_sql_time_seconds_bucket{job="kine"}[1m])))
+          and on (name,error_code) (sum by (name,error_code) (rate(kine_sql_time_seconds_count{job="kine"}[1m])) > 0)
+        aggregations: [Avg, Max]
+        requireSamples: true
+  - Identifier: KineCompactions
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineCompactions
+      metricVersion: v1
+      unit: operations
+      queries:
+      # Event counters are absent until first use; synthesize zero only for a healthy scrape.
+      - name: Success
+        query: sum(increase(kine_compact_total{job="kine",result="success"}[%v])) or (0 * max(up{job="kine"} == 1))
+        requireSamples: true
+      - name: Error
+        query: sum(increase(kine_compact_total{job="kine",result="error"}[%v])) or (0 * max(up{job="kine"} == 1))
+        requireSamples: true
+  - Identifier: KineInsertConflicts
+    Method: GenericPrometheusQuery
+    Params:
+      action: {{.action}}
+      enableViolations: true
+      metricName: KineInsertConflicts
+      metricVersion: v1
+      unit: conflicts
+      queries:
+      - name: Retriable
+        query: sum(increase(kine_insert_errors_total{job="kine",retriable="true"}[%v])) or (0 * max(up{job="kine"} == 1))
+        requireSamples: true
+      - name: NonRetriable
+        query: sum(increase(kine_insert_errors_total{job="kine",retriable="false"}[%v])) or (0 * max(up{job="kine"} == 1))
         requireSamples: true

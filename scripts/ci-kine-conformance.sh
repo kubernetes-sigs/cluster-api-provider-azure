@@ -51,7 +51,10 @@ capz::kine::certificates() {
   KINE_CLIENT_CERT_B64=$(base64 < "${state_dir}/client.crt" | tr -d '\n')
   KINE_CLIENT_KEY_B64=$(base64 < "${state_dir}/client.key" | tr -d '\n')
   export KINE_CA_CERT_B64 KINE_CLIENT_CERT_B64 KINE_CLIENT_KEY_B64
-  local server_cert server_key storage_script connections_script
+  local server_cert server_key storage_script connections_script metrics_address=127.0.0.1
+  if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
+    metrics_address=10.250.0.4
+  fi
   storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
   connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
   server_cert=$(base64 < "${state_dir}/server.crt" | tr -d '\n')
@@ -66,6 +69,7 @@ capz::kine::certificates() {
     -e "s|__POSTGRES_MAX_CONNECTIONS__|${KINE_POSTGRES_MAX_CONNECTIONS}|g" \
     -e "s|__KINE_MAX_OPEN_CONNECTIONS__|${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}|g" \
     -e "s|__KINE_MAX_IDLE_CONNECTIONS__|${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}|g" \
+    -e "s|__METRICS_BIND_ADDRESS__|${metrics_address}|g" \
     "${repo_root}/scripts/kine/cloud-init.yaml" > "${state_dir}/cloud-init.yaml"
 }
 
@@ -82,6 +86,12 @@ capz::kine::provision() {
     --nsg-name kine-nsg --name allow-control-plane --priority 100 --direction Inbound \
     --access Allow --protocol Tcp --source-address-prefixes 10.0.0.0/24 \
     --source-port-ranges '*' --destination-address-prefixes '*' --destination-port-ranges 2379 --output none
+  if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
+    capz::kine::az network nsg rule create --resource-group "${KINE_RESOURCE_GROUP}" \
+      --nsg-name kine-nsg --name allow-kine-metrics --priority 110 --direction Inbound \
+      --access Allow --protocol Tcp --source-address-prefixes 10.0.1.0/24 \
+      --source-port-ranges '*' --destination-address-prefixes 10.250.0.4/32 --destination-port-ranges 8080 --output none
+  fi
   capz::kine::az network nsg rule create --resource-group "${KINE_RESOURCE_GROUP}" \
     --nsg-name kine-nsg --name deny-other-inbound --priority 200 --direction Inbound \
     --access Deny --protocol '*' --source-address-prefixes '*' --source-port-ranges '*' \
