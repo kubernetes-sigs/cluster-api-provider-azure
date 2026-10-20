@@ -2,9 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-- ../prow
+- ../prow-azl3
+- ../prow/mhc-kubeadmcontrolplane.yaml
+- ../prow/mhc.yaml
 - secrets.yaml
 patches:
+- path: ../patches/azuremachinetemplate-vmextension.yaml
+- path: ../patches/azuremachinetemplate-monitoring.yaml
 - path: patches/kine.yaml
 - path: patches/performance.yaml
 

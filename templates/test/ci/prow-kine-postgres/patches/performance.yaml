@@ -23,7 +23,7 @@ spec:
         computeGallery:
           gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
           name: capi-azurelinux-4-gen2
-          version: ${KINE_CONTROL_PLANE_IMAGE_VERSION}
+          version: ${KINE_NODE_IMAGE_VERSION}
       osDisk:
         managedDisk:
           storageAccountType: Premium_LRS
@@ -36,6 +36,11 @@ spec:
   template:
     spec:
       acceleratedNetworking: true
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
       osDisk:
         managedDisk:
           storageAccountType: Premium_LRS

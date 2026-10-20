@@ -623,9 +623,20 @@ This Kine-specific setting takes precedence over the generic
 `KUBERNETES_VERSION`, including the older version pinned in the existing Prow
 jobs; the wrapper logs overrides and the effective version explicitly. To test
 another released version, set `KINE_KUBERNETES_VERSION` to one published in the
-`capi-azurelinux-4-gen2` community image family. The control plane uses that
-Kubernetes-ready Azure Linux 4 Gen2 image; workers retain CAPZ's default Ubuntu
-image for the same Kubernetes version. The Kine/PostgreSQL VM remains Ubuntu.
+`capi-azurelinux-4-gen2` community image family. Both the control plane and workers
+use that Kubernetes-ready Azure Linux 4 Gen2 image for the same Kubernetes
+version. The separate Kine/PostgreSQL VM remains Ubuntu.
+
+The Kine flavors inherit `prow-azl3`, including its shared Azure Linux bootstrap
+component and cloud-controller-manager CA trust paths. The Kine overlay changes
+the workload node images to Azure Linux 4 Gen2 and supplies its node subnet CIDRs
+through `AZURE_LINUX_NODE_CIDRS`; it does not maintain a separate bootstrap script.
+The shared script uses the appropriate certificate packages for Azure Linux 3
+or 4 and configures firewalld when installed, otherwise the Azure Linux 3 iptables
+persistence mechanism. It allows Azure platform probes and control-plane API
+access, plus node, Pod, and Service traffic required by kubelet and Calico.
+It does not flush firewall rules or disable the firewall. The existing Kine
+machine-health checks, monitoring tags, and worker extension are preserved.
 
 Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
 The datastore, control plane, and workers share that placement; explicit
@@ -726,8 +737,8 @@ This is a **large, billable, single-datastore experiment**, not an HA configurat
 | Data disk | One uncached Ultra Disk, containing both PostgreSQL data and WAL |
 | `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
 | Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D64as_v5`: 64 vCPU, 256 GiB |
-| Control-plane image | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
-| Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5`, hosting the selected test workload |
+| Workload node image (both roles) | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
+| Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5` Azure Linux nodes, hosting the selected test workload |
 | Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
 | PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
 | Kine maximum open connections (`KINE_DATASTORE_MAX_OPEN_CONNECTIONS`) | PostgreSQL limit minus 64 (`960` by default) |
@@ -752,9 +763,10 @@ these requirements. This excludes any separately provisioned management cluster.
 The control plane and workers are pinned to the selected datastore zone, so these
 results do not model cross-zone HA latency.
 
-The published Azure Linux Gen2 control-plane image does not advertise NVMe
-support. The control-plane SKU must support SCSI; Gen2 support alone is not
-sufficient for an NVMe-only SKU such as Dsv6.
+The published Azure Linux Gen2 node image does not advertise NVMe support.
+Both workload node SKUs must support SCSI; Gen2 support alone is not sufficient
+for an NVMe-only SKU such as Dsv6. Preflight rejects explicitly incompatible
+disk-controller capabilities.
 
 For either workload, start with the read-only preflight; normal CAPZ credentials
 and Azure CLI login are still required:
@@ -769,7 +781,7 @@ make preflight-performance-kine
 
 This checks advertised VM/zone availability, subscription restrictions, x64,
 accelerated networking, datastore NVMe/Ultra and Gen2/NVMe image support,
-control-plane SKU Gen2 support, and the control-plane community image's x64/Gen2
+workload node SKU Gen2 support, and the shared node community image's x64/Gen2
 metadata and requested version availability in the region. It also checks
 available regional and VM-family vCPU quota. Family requirements are summed
 across all roles. Missing capability/quota information is an error.
@@ -797,9 +809,10 @@ Requested and provisioned settings are archived, and the run rejects a non-NVMe
 VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
 and throughput. Disk validation failures log the expected and observed SKU, IOPS,
 and throughput. The resolved Ubuntu image version is frozen within each run;
-image/package patch versions can still differ between runs. The control-plane
+image/package patch versions can still differ between runs. The workload node
 community image is pinned to the effective Kubernetes version; its metadata,
-version response, and selected reference are also archived by preflight.
+version response, and selected reference are also archived by preflight as
+`node-image.json`, `node-image-version.json`, and the `node-image` setting.
 
 After reviewing the capacity plan and cost, select the workload:
 

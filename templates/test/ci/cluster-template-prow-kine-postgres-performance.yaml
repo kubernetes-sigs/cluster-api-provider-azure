@@ -94,6 +94,62 @@ spec:
         label: ephemeral0
         replaceFS: ntfs
     files:
+    - content: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        role="$$1"
+        shift
+        case "$${role}" in
+          control-plane|worker) ;;
+          *) echo "Expected control-plane or worker role." >&2; exit 1 ;;
+        esac
+        [[ "$$#" -gt 0 ]] || { echo "Node subnet CIDRs are required." >&2; exit 1; }
+
+        # shellcheck source=/dev/null
+        source /etc/os-release
+        case "$${VERSION_ID}" in
+          3.*) tdnf install -y ca-certificates ca-certificates-legacy ;;
+          4.*) dnf install -y ca-certificates firewalld ;;
+          *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
+        esac
+        update-ca-trust
+
+        if command -v firewall-cmd >/dev/null 2>&1; then
+          systemctl enable --now firewalld
+          # Node, Pod, and Service traffic includes kubelet and Calico traffic.
+          for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+            firewall-cmd --permanent --zone=trusted --add-source="$${cidr}"
+          done
+          firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="168.63.129.16" accept'
+          if [[ "$${role}" == control-plane ]]; then
+            firewall-cmd --permanent --add-port=6443/tcp
+          fi
+          firewall-cmd --reload
+        else
+          allow_iptables() {
+            iptables -w -C "$$@" 2>/dev/null || iptables -w -I "$$@"
+          }
+          allow_iptables INPUT -i lo -j ACCEPT
+          allow_iptables OUTPUT -o lo -j ACCEPT
+          allow_iptables INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          allow_iptables OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          allow_iptables INPUT -s 168.63.129.16 -j ACCEPT
+          allow_iptables OUTPUT -d 168.63.129.16 -j ACCEPT
+          for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+            allow_iptables INPUT -s "$${cidr}" -j ACCEPT
+            allow_iptables OUTPUT -d "$${cidr}" -j ACCEPT
+            allow_iptables FORWARD -s "$${cidr}" -j ACCEPT
+            allow_iptables FORWARD -d "$${cidr}" -j ACCEPT
+          done
+          if [[ "$${role}" == control-plane ]]; then
+            allow_iptables INPUT -p tcp --dport 6443 -j ACCEPT
+            allow_iptables OUTPUT -p tcp --dport 2379 -j ACCEPT
+          fi
+          iptables-save > /etc/systemd/scripts/ip4save
+        fi
+      owner: root:root
+      path: /opt/azure-linux-setup.sh
+      permissions: "0744"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -116,7 +172,9 @@ spec:
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     postKubeadmCommands: []
-    preKubeadmCommands: []
+    preKubeadmCommands:
+    - bash /opt/azure-linux-setup.sh control-plane ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
+      10.1.0.0/24}
     verbosity: 10
   machineTemplate:
     infrastructureRef:
@@ -142,7 +200,7 @@ spec:
         computeGallery:
           gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
           name: capi-azurelinux-4-gen2
-          version: ${KINE_CONTROL_PLANE_IMAGE_VERSION}
+          version: ${KINE_NODE_IMAGE_VERSION}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -192,6 +250,11 @@ spec:
       additionalTags:
         monitoring: virtualmachine
       identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -220,6 +283,62 @@ spec:
   template:
     spec:
       files:
+      - content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          role="$$1"
+          shift
+          case "$${role}" in
+            control-plane|worker) ;;
+            *) echo "Expected control-plane or worker role." >&2; exit 1 ;;
+          esac
+          [[ "$$#" -gt 0 ]] || { echo "Node subnet CIDRs are required." >&2; exit 1; }
+
+          # shellcheck source=/dev/null
+          source /etc/os-release
+          case "$${VERSION_ID}" in
+            3.*) tdnf install -y ca-certificates ca-certificates-legacy ;;
+            4.*) dnf install -y ca-certificates firewalld ;;
+            *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
+          esac
+          update-ca-trust
+
+          if command -v firewall-cmd >/dev/null 2>&1; then
+            systemctl enable --now firewalld
+            # Node, Pod, and Service traffic includes kubelet and Calico traffic.
+            for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+              firewall-cmd --permanent --zone=trusted --add-source="$${cidr}"
+            done
+            firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="168.63.129.16" accept'
+            if [[ "$${role}" == control-plane ]]; then
+              firewall-cmd --permanent --add-port=6443/tcp
+            fi
+            firewall-cmd --reload
+          else
+            allow_iptables() {
+              iptables -w -C "$$@" 2>/dev/null || iptables -w -I "$$@"
+            }
+            allow_iptables INPUT -i lo -j ACCEPT
+            allow_iptables OUTPUT -o lo -j ACCEPT
+            allow_iptables INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            allow_iptables OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            allow_iptables INPUT -s 168.63.129.16 -j ACCEPT
+            allow_iptables OUTPUT -d 168.63.129.16 -j ACCEPT
+            for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+              allow_iptables INPUT -s "$${cidr}" -j ACCEPT
+              allow_iptables OUTPUT -d "$${cidr}" -j ACCEPT
+              allow_iptables FORWARD -s "$${cidr}" -j ACCEPT
+              allow_iptables FORWARD -d "$${cidr}" -j ACCEPT
+            done
+            if [[ "$${role}" == control-plane ]]; then
+              allow_iptables INPUT -p tcp --dport 6443 -j ACCEPT
+              allow_iptables OUTPUT -p tcp --dport 2379 -j ACCEPT
+            fi
+            iptables-save > /etc/systemd/scripts/ip4save
+          fi
+        owner: root:root
+        path: /opt/azure-linux-setup.sh
+        permissions: "0744"
       - contentFrom:
           secret:
             key: worker-node-azure.json
@@ -232,42 +351,9 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/control-plane: ""
-  unhealthyConditions:
-  - status: Unknown
-    timeout: 300s
-    type: Ready
-  - status: "False"
-    timeout: 300s
-    type: Ready
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ${CLUSTER_NAME}-mhc-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  selector:
-    matchLabels:
-      nodepool: pool1
-  unhealthyConditions:
-  - status: "True"
-    timeout: 30s
-    type: E2ENodeUnhealthy
+      preKubeadmCommands:
+      - bash /opt/azure-linux-setup.sh worker ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
+        10.1.0.0/24}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -412,6 +498,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
+      caCertDir: "/etc/pki/tls/certs"
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
       logVerbosity: 4
 ---
@@ -431,6 +518,7 @@ spec:
     infra:
       clusterName: {{ .Cluster.metadata.name }}
     cloudControllerManager:
+      caCertDir: "/etc/pki/tls/certs"
       cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
       cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
       clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
@@ -444,6 +532,41 @@ spec:
       imageName: "${CNM_IMAGE_NAME:-""}"
       imageRepository: "${IMAGE_REGISTRY:-""}"
       imageTag: "${IMAGE_TAG_CNM:-""}"
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+  unhealthyConditions:
+  - status: Unknown
+    timeout: 300s
+    type: Ready
+  - status: "False"
+    timeout: 300s
+    type: Ready
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
 ---
 apiVersion: v1
 data:

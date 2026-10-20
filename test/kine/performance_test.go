@@ -44,6 +44,7 @@ func TestPerformancePreflight(t *testing.T) {
 		"control-plane-gen1", "control-plane-arm", "control-plane-missing-version", "control-plane-wrong-version",
 		"control-plane-no-gen2", "control-plane-missing-generation", "kubernetes-override",
 		"control-plane-definition-error", "control-plane-missing-properties",
+		"worker-no-gen2", "worker-nvme-only", "control-plane-nvme-only",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			dir := t.TempDir()
@@ -68,6 +69,16 @@ func TestPerformancePreflight(t *testing.T) {
 						capabilities["HyperVGenerations"] = "V1"
 					case "control-plane-missing-generation":
 						delete(capabilities, "HyperVGenerations")
+					case "control-plane-nvme-only":
+						capabilities["DiskControllerTypes"] = "NVMe"
+					}
+				}
+				if machine.size == "Standard_D16s_v5" {
+					switch tc {
+					case "worker-no-gen2":
+						capabilities["HyperVGenerations"] = "V1"
+					case "worker-nvme-only":
+						capabilities["DiskControllerTypes"] = "NVMe"
 					}
 				}
 				switch tc {
@@ -155,7 +166,7 @@ export AZURE_LOCATION=test-region AZURE_SUBSCRIPTION_ID=test-subscription KINE_Z
 export CLUSTER_NAME=capz-perf-test ARTIFACTS="$KINE_TEST_DIR"
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS= KUBERNETES_VERSION=v1.35.4
 unset CONFORMANCE_FLAVOR KINE_VM_SIZE KINE_VM_IMAGE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
-unset KINE_KUBERNETES_VERSION KINE_CONTROL_PLANE_IMAGE_VERSION
+unset KINE_KUBERNETES_VERSION KINE_NODE_IMAGE_VERSION
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
 case "$KINE_TEST_CASE" in
@@ -202,12 +213,12 @@ az() {
               return ;;
           esac
           printf '{"name":"capi-azurelinux-4-gen2","properties":{"hyperVGeneration":"%s","architecture":"%s"}}\n' "$generation" "$architecture" ;;
-        "${image_url}/versions/${KINE_CONTROL_PLANE_IMAGE_VERSION}?api-version=2024-03-03")
+        "${image_url}/versions/${KINE_NODE_IMAGE_VERSION}?api-version=2024-03-03")
           if [[ "$KINE_TEST_CASE" == control-plane-missing-version ]]; then
             echo "Control-plane image version unavailable in this region" >&2
             return 17
           fi
-          version=$KINE_CONTROL_PLANE_IMAGE_VERSION
+          version=$KINE_NODE_IMAGE_VERSION
           [[ "$KINE_TEST_CASE" != control-plane-wrong-version ]] || version=1.35.3
           printf '{"name":"%s","location":"%s","properties":{"storageProfile":{"osDiskImage":{"diskSizeGB":20}}}}\n' "$version" "$AZURE_LOCATION" ;;
         *) echo "Unexpected gallery REST URL or API version: $5" >&2; return 99 ;;
@@ -243,13 +254,20 @@ capz::kine::main
 				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
 			}
 			if (tc == "control-plane-gen1" || tc == "control-plane-arm" || tc == "control-plane-missing-properties") &&
-				!bytes.Contains(output, []byte("Control-plane community image must support x64/Gen2")) {
+				!bytes.Contains(output, []byte("Node community image must support x64/Gen2")) {
 				t.Fatalf("must reject incompatible control-plane images: %s", output)
+			}
+			if tc == "worker-no-gen2" && !bytes.Contains(output, []byte("Worker SKU Standard_D16s_v5 must support Gen2")) {
+				t.Fatalf("must validate the Gen2 worker image compatibility: %s", output)
+			}
+			if (tc == "worker-nvme-only" || tc == "control-plane-nvme-only") &&
+				!bytes.Contains(output, []byte("is incompatible with the SCSI Azure Linux image")) {
+				t.Fatalf("must reject NVMe-only node SKUs with this image: %s", output)
 			}
 			if tc == "control-plane-definition-error" && !bytes.Contains(output, []byte("Control-plane image definition lookup failed")) {
 				t.Fatalf("must propagate a failed image definition lookup: %s", output)
 			}
-			if tc == "control-plane-wrong-version" && !bytes.Contains(output, []byte("Control-plane community image version does not match v1.35.5")) {
+			if tc == "control-plane-wrong-version" && !bytes.Contains(output, []byte("Node community image version does not match v1.35.5")) {
 				t.Fatalf("must reject an image version different from the Kubernetes version: %s", output)
 			}
 			if tc == "control-plane-missing-version" && !bytes.Contains(output, []byte("Control-plane image version unavailable in this region")) {
@@ -303,8 +321,8 @@ capz::kine::main
 					version, imageVersion = "v1.35.3", "1.35.3"
 				}
 				if !bytes.Contains(settings, []byte("kubernetes-version="+version+"\n")) ||
-					!bytes.Contains(settings, []byte("control-plane-image=/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-azurelinux-4-gen2/Versions/"+imageVersion+"\n")) {
-					t.Fatalf("must archive the Kubernetes-matched control-plane image reference: %s", settings)
+					!bytes.Contains(settings, []byte("node-image=/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-azurelinux-4-gen2/Versions/"+imageVersion+"\n")) {
+					t.Fatalf("must archive the Kubernetes-matched node image reference: %s", settings)
 				}
 				commands := readFile(t, filepath.Join(dir, "commands"))
 				imageURL := "https://management.azure.com/subscriptions/test-subscription/providers/Microsoft.Compute/locations/" + location +

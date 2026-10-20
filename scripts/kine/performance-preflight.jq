@@ -19,6 +19,14 @@ def sku($name):
       "SKU \($name) is restricted for this subscription/location/zone")
   | require(capability("CpuArchitectureType") == "x64"; "SKU \($name) must be x64")
   | require(capability("AcceleratedNetworkingEnabled") == "True"; "SKU \($name) must support accelerated networking");
+def node_sku($name; $role):
+  sku($name)
+  | require(((capability("HyperVGenerations") // "") | split(",") | index("V2")) != null;
+            "\($role) SKU \($name) must support Gen2")
+  # Legacy SCSI-capable SKUs omit DiskControllerTypes; reject explicitly incompatible controllers.
+  | require(capability("DiskControllerTypes") == null or
+      ((capability("DiskControllerTypes") | split(",") | map(gsub(" "; "")) | index("SCSI")) != null);
+      "\($role) SKU \($name) is incompatible with the SCSI Azure Linux image");
 def available($name; $required):
   [$quota[0][] | select((.name.value | ascii_downcase) == ($name | ascii_downcase))]
   | require(length == 1; "No quota entry for \($name)")
@@ -35,13 +43,10 @@ sku($datastore) as $db
     any(.zoneDetails[]?; any(.name[]?; . == $zone) and
       any(.capabilities[]?; .name == "UltraSSDAvailable" and .value == "True")));
     "Ultra Disk is not advertised for datastore SKU in zone \($zone)")
-| (sku($controlPlane)
-   | require(((capability("HyperVGenerations") // "") | split(",") | index("V2")) != null;
-             "Control-plane SKU \($controlPlane) must support Gen2")) as $cp
 | [
     {role: "datastore", sku: $db, count: 1},
-    {role: "control-plane", sku: $cp, count: $controlPlanes},
-    {role: "worker", sku: sku($worker), count: $workers}
+    {role: "control-plane", sku: node_sku($controlPlane; "Control-plane"), count: $controlPlanes},
+    {role: "worker", sku: node_sku($worker; "Worker"), count: $workers}
   ]
 | map(. + {family: .sku.family, cpus: ((.sku | capability("vCPUs") | tonumber) * .count)}) as $plan
 | {

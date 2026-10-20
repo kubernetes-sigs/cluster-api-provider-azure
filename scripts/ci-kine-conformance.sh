@@ -211,8 +211,8 @@ capz::kine::main() {
     echo "Kine overrides KUBERNETES_VERSION=${KUBERNETES_VERSION} with KINE_KUBERNETES_VERSION=${KINE_KUBERNETES_VERSION}."
   fi
   export KUBERNETES_VERSION="${KINE_KUBERNETES_VERSION}"
-  export KINE_CONTROL_PLANE_IMAGE_VERSION="${KUBERNETES_VERSION#v}"
-  echo "Using Kine Kubernetes version: ${KUBERNETES_VERSION}; Azure Linux Gen2 control-plane image version: ${KINE_CONTROL_PLANE_IMAGE_VERSION}"
+  export KINE_NODE_IMAGE_VERSION="${KUBERNETES_VERSION#v}"
+  echo "Using Kine Kubernetes version: ${KUBERNETES_VERSION}; Azure Linux Gen2 node image version: ${KINE_NODE_IMAGE_VERSION}"
   run_id=$(openssl rand -hex 8)
   export CLUSTER_NAME="${CLUSTER_NAME:-capz-kine-${run_id}}"
   if [[ ! "${CLUSTER_NAME}" =~ ^[a-z][a-z0-9-]{0,38}[a-z0-9]$ ]]; then

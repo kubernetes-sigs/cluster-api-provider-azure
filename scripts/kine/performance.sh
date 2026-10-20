@@ -36,6 +36,8 @@ capz::kine::performance_defaults() {
   export KINE_DISK_MBPS="${KINE_DISK_MBPS:-10000}"
   export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-Standard_D64as_v5}"
   export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-Standard_D16s_v5}"
+  # Match the subnets explicitly set by the Kine template overlay.
+  export AZURE_LINUX_NODE_CIDRS="10.0.0.0/24 10.0.1.0/24"
   export CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT="${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
   export CONFORMANCE_WORKER_MACHINE_COUNT="${CONFORMANCE_WORKER_MACHINE_COUNT:-2}"
   local value
@@ -78,30 +80,30 @@ capz::kine::performance_preflight() {
   version=$(jq -er '.name | if test("^[0-9]+\\.[0-9]+\\.[0-9]+$") then . else error("Invalid datastore image version") end' "${artifact_dir}/image.json")
   KINE_VM_IMAGE="${image%:*}:${version}"
   export KINE_VM_IMAGE
-  local gallery=ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019 control_plane_image=capi-azurelinux-4-gen2
+  local gallery=ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019 node_image=capi-azurelinux-4-gen2
   # Pin the REST API: Azure CLI 2.91 selects an unsupported community-gallery API version.
   local gallery_api_version=2024-03-03
-  local gallery_image_url="https://management.azure.com/subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Compute/locations/${AZURE_LOCATION}/communityGalleries/${gallery}/images/${control_plane_image}"
+  local gallery_image_url="https://management.azure.com/subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Compute/locations/${AZURE_LOCATION}/communityGalleries/${gallery}/images/${node_image}"
   capz::kine::az rest --method get \
     --url "${gallery_image_url}?api-version=${gallery_api_version}" \
-    --output json > "${artifact_dir}/control-plane-image.json"
+    --output json > "${artifact_dir}/node-image.json"
   jq -e '.properties.architecture == "x64" and .properties.hyperVGeneration == "V2"' \
-    "${artifact_dir}/control-plane-image.json" >/dev/null ||
-    { echo "Control-plane community image must support x64/Gen2." >&2; return 1; }
+    "${artifact_dir}/node-image.json" >/dev/null ||
+    { echo "Node community image must support x64/Gen2." >&2; return 1; }
   capz::kine::az rest --method get \
-    --url "${gallery_image_url}/versions/${KINE_CONTROL_PLANE_IMAGE_VERSION}?api-version=${gallery_api_version}" \
-    --output json > "${artifact_dir}/control-plane-image-version.json"
-  jq -e --arg version "${KINE_CONTROL_PLANE_IMAGE_VERSION}" '.name == $version' \
-    "${artifact_dir}/control-plane-image-version.json" >/dev/null ||
-    { echo "Control-plane community image version does not match ${KUBERNETES_VERSION}." >&2; return 1; }
+    --url "${gallery_image_url}/versions/${KINE_NODE_IMAGE_VERSION}?api-version=${gallery_api_version}" \
+    --output json > "${artifact_dir}/node-image-version.json"
+  jq -e --arg version "${KINE_NODE_IMAGE_VERSION}" '.name == $version' \
+    "${artifact_dir}/node-image-version.json" >/dev/null ||
+    { echo "Node community image version does not match ${KUBERNETES_VERSION}." >&2; return 1; }
   printf 'location=%s\nzone=%s\nimage=%s\ndisk-size-gib=%s\ndisk-iops=%s\ndisk-mbps=%s\n' \
     "${AZURE_LOCATION}" "${KINE_ZONE}" "${KINE_VM_IMAGE}" "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}" \
     > "${artifact_dir}/performance-settings.txt"
   printf 'postgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
     "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}" \
     >> "${artifact_dir}/performance-settings.txt"
-  printf 'kubernetes-version=%s\ncontrol-plane-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
-    "${KUBERNETES_VERSION}" "${gallery}" "${control_plane_image}" "${KINE_CONTROL_PLANE_IMAGE_VERSION}" \
+  printf 'kubernetes-version=%s\nnode-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
+    "${KUBERNETES_VERSION}" "${gallery}" "${node_image}" "${KINE_NODE_IMAGE_VERSION}" \
     >> "${artifact_dir}/performance-settings.txt"
   echo "VM quota/capability preflight passed; allocation capacity and disk quotas are not reserved."
 }

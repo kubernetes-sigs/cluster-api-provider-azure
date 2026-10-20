@@ -197,14 +197,14 @@ func TestFlavor(t *testing.T) {
 				if len(object.Spec.Template.Spec.DataDisks) != 0 {
 					t.Fatal("control plane must not allocate an unused etcd data disk")
 				}
+			}
+			if object.Metadata.Name == "${CLUSTER_NAME}-control-plane" || object.Metadata.Name == "${CLUSTER_NAME}-md-0" {
 				image := object.Spec.Template.Spec.Image
 				if image == nil || image.ComputeGallery.Gallery != "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019" ||
 					image.ComputeGallery.Name != "capi-azurelinux-4-gen2" ||
-					image.ComputeGallery.Version != "${KINE_CONTROL_PLANE_IMAGE_VERSION}" {
-					t.Fatalf("control plane must use the Kubernetes-matched Azure Linux Gen2 community image: %+v", image)
+					image.ComputeGallery.Version != "${KINE_NODE_IMAGE_VERSION}" {
+					t.Fatalf("both node roles must use the Kubernetes-matched Azure Linux Gen2 community image: %+v", image)
 				}
-			} else if object.Metadata.Name == "${CLUSTER_NAME}-md-0" && object.Spec.Template.Spec.Image != nil {
-				t.Fatal("workers must retain the default Ubuntu reference image")
 			}
 		case "Secret":
 			switch object.Metadata.Name {
@@ -676,7 +676,7 @@ export ARTIFACTS="$KINE_TEST_DIR" TMPDIR="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 unset KINE_PROFILE KINE_PREFLIGHT_ONLY KINE_ZONE KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
-unset KINE_KUBERNETES_VERSION KINE_CONTROL_PLANE_IMAGE_VERSION
+unset KINE_KUBERNETES_VERSION KINE_NODE_IMAGE_VERSION
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE
 case "$KINE_TEST_LOCATION_STATE" in
@@ -720,7 +720,7 @@ bash() {
     return 99
   fi
   command bash -c 'printf "workload=%s\n" "${AZURE_LOCATION:?}"' >> "$KINE_TEST_DIR/regions"
-  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3" "$KINE_ZONE_YAML" "$KUBERNETES_VERSION" "$KINE_CONTROL_PLANE_IMAGE_VERSION"' > "$KINE_TEST_DIR/settings"
+  command bash -c 'printf "%s\n" "$KINE_VM_SIZE" "$KINE_DISK_IOPS" "$KINE_DISK_MBPS" "$KINE_ZONE" "$AZURE_CONTROL_PLANE_MACHINE_TYPE" "$AZURE_NODE_MACHINE_TYPE" "$CONFORMANCE_FLAVOR" "$KINE_ZONE_1" "$KINE_ZONE_2" "$KINE_ZONE_3" "$KINE_ZONE_YAML" "$KUBERNETES_VERSION" "$KINE_NODE_IMAGE_VERSION" "$AZURE_LINUX_NODE_CIDRS"' > "$KINE_TEST_DIR/settings"
 }
 capz::kine::main
 `)
@@ -765,7 +765,7 @@ capz::kine::main
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n"
+			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n10.0.0.0/24 10.0.1.0/24\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}
