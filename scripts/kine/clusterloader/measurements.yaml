@@ -2,6 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 steps:
+{{if eq .action "start"}}
+- name: Record profiling measurement start
+  measurements:
+  - Identifier: ProfilingStart
+    Method: Exec
+    Params:
+      command: ["touch", "${CL2_REPORT_DIR}/profiling-start"]
+      timeout: 10s
+{{end}}
 - name: "{{.action}} API measurements"
   measurements:
   - Identifier: APIResponsiveness

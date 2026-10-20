@@ -27,9 +27,10 @@ esac
 [[ $# -le 1 ]] || { echo "Unexpected arguments." >&2; exit 1; }
 mkdir -p "${cache}/source" "${cache}/workload" "${report}"
 report=$(cd "${report}" && pwd)
+export CL2_REPORT_DIR="${report}"
 if [[ -z "${1:-}" ]]; then
   # An earlier local run's snapshot must not satisfy this run's artifact checks.
-  rm -f "${report}/prometheus_snapshot.tar.gz"
+  rm -f "${report}/prometheus_snapshot.tar.gz" "${report}/profiling-start"
 fi
 if [[ ! -f "${cache}/source.tar.gz" ]]; then
   curl --fail --show-error --silent --location --retry 3 \

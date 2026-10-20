@@ -54,6 +54,7 @@ write_files:
     Group=kine
     Environment="KINE_ENDPOINT=postgres://kine@/kine?host=/var/run/postgresql&sslmode=disable"
     EnvironmentFile=/etc/kine/connections.env
+    Environment="KINE_METRICS_ENABLE_PROFILING=__METRICS_PROFILING__"
     ExecStart=/usr/local/bin/kine --listen-address=0.0.0.0:2379 --server-cert-file=/etc/kine/server.crt --server-key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --metrics-bind-address=__METRICS_BIND_ADDRESS__:8080
     Restart=on-failure
     RestartSec=5
@@ -64,6 +65,24 @@ write_files:
 
     [Install]
     WantedBy=multi-user.target
+- path: /usr/local/bin/collect-kine-compactions
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Retain the entire compaction timeline, not SQL payloads or only the journal tail.
+    encoded=$(journalctl --quiet --no-pager --boot --unit kine --output short-iso-precise |
+      awk '{
+        gsub(/\033\[[0-9;]*m/, "")
+        if ($0 ~ /^[^ ]+ [^ ]+ kine\[[0-9]+\]: (INFO|ERRO)\[[^]]+\] (COMPACT compacted from|Compact failed:|Post-compact operations failed:)/) print
+      }' |
+      gzip -c | base64 | tr -d '\n')
+    # Azure Run Command returns only a small stdout tail. Never accept silent truncation.
+    if (( ${#encoded} > 3000 )); then
+      echo "Compressed compaction history exceeds the Run Command output budget." >&2
+      exit 1
+    fi
+    printf 'KINE_COMPACTIONS_BEGIN\n%s\nKINE_COMPACTIONS_END\n' "${encoded}"
 - path: /usr/local/bin/check-kine
   permissions: "0700"
   content: |

@@ -294,8 +294,9 @@ capz::kine::certificates
 	}
 	for _, file := range config.Files {
 		if file.Path == "/etc/systemd/system/kine.service" &&
-			!strings.Contains(file.Content, "--metrics-bind-address=127.0.0.1:8080") {
-			t.Fatal("conformance must keep Kine metrics bound to loopback")
+			(!strings.Contains(file.Content, "--metrics-bind-address=127.0.0.1:8080") ||
+				!strings.Contains(file.Content, `Environment="KINE_METRICS_ENABLE_PROFILING=false"`)) {
+			t.Fatal("conformance must keep metrics on loopback and profiling disabled")
 		}
 		if script, ok := scripts[file.Path]; ok {
 			decoded, err := base64.StdEncoding.DecodeString(file.Content)
@@ -536,6 +537,7 @@ state_dir="${KINE_TEST_DIR}/private"
 artifact_dir=$KINE_TEST_DIR
 fixture_started=true
 vm_created=false
+unset KINE_PROFILE
 CLUSTER_NAME=test-workload
 KINE_RESOURCE_GROUP=test-kine
 run_id=test-run

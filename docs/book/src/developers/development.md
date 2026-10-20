@@ -601,7 +601,7 @@ Kine's downloaded binary is checked against a pinned SHA-256 checksum.
 Ubuntu image and PostgreSQL package patches follow the Ubuntu repositories.
 
 Complete the normal conformance prerequisites above, and install/authenticate
-the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, and `jq`.
+the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, `jq`, and `gzip`.
 The Azure CLI and CAPZ identities must have permissions in the same subscription
 to create/delete resource groups, VMs and networks, and create VNet peerings in
 both resource groups. The workload cloud-provider identity also needs its usual
@@ -667,6 +667,10 @@ The metrics endpoint does not require a client certificate, so the dedicated NSG
 rule is its client-access boundary. No public listener or new private-key
 distribution is added. Conformance runs keep metrics on loopback and do not add
 the metrics ingress rule.
+
+Performance runs also enable Kine's Go profiling handlers on that same private TLS
+listener. Treat access to that port as diagnostic access, not just access to
+numeric metrics. Conformance leaves profiling disabled.
 Avoid overlapping addresses if using a peered management cluster.
 PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
 
@@ -915,6 +919,38 @@ The CAPZ E2E test rejects a missing, empty, or corrupt snapshot; an earlier loca
 run's snapshot is removed before a new live run. Abrupt process termination or
 loss of the workload API can still prevent export.
 
+The CAPZ performance E2E path creates a small, non-root profiling helper on a
+worker before CL2 starts. Its dedicated service account receives only additional
+GET permission for the API server's CPU, heap, and goroutine profiling URLs.
+API-server profiles are fetched from each control-plane node's private address
+with that token and the cluster CA; Kine profiles use its public CA. No anonymous
+debug access or administrator kubeconfig is installed in the helper.
+
+A CL2 measurement-start marker schedules captures at **4 and 7 minutes after the
+measurement window begins**, not after VM creation or Prometheus setup. Each
+point collects 30-second CPU profiles, allocation-sampled heap profiles without
+forcing GC, and goroutine stack dumps from Kine and every API server. Requests
+are bounded, targets are captured concurrently, and successful files are retained
+even if another capture or the benchmark fails. Profiling adds some diagnostic
+overhead but does not change the offered load, benchmark duration, or tuning.
+The benchmark must run long enough to reach both capture points.
+
+Files live in `clusterloader2/profiles-*/minute-04/` and `minute-07/`. The adjacent
+`captures.json` records the measurement-start time, scheduled/actual request times,
+target identities, file sizes, and errors. CPU and heap responses must parse as
+the requested pprof type; missing, malformed, oversized, or incomplete captures
+fail the E2E job explicitly. These are Go profiles, not raw process-memory dumps;
+they can still expose function names and internal addresses. The helper namespace
+and its namespace-owned RBAC resources are removed during cleanup.
+
+The datastore artifact directory also receives `compaction.log`: all Kine
+compaction summaries and errors from the current boot, rather than only the last
+60 journal lines. Each successful summary includes revisions, transaction count,
+and elapsed time. The collector excludes SQL payloads and uses compression plus
+framing to detect Azure Run Command's output truncation. Collection fails instead
+of silently accepting a truncated timeline if the compressed response exceeds its
+output budget. Existing short datastore diagnostics are retained separately.
+
 The pinned Kine version does not export its internal polling revision, so these
 reports do not directly measure database-to-Kine-to-apiserver revision lag.
 PostgreSQL server/host metrics, generator client errors and latency, restarts/OOMs,
@@ -939,6 +975,8 @@ namespace. Upstream CL2's `--dry-run` still requires a reachable cluster and
 intentionally exits nonzero after dumping the compiled test configuration.
 Live runs require the fixture's private TLS metrics endpoint to be reachable from
 worker Pods. The normal CAPZ Kine wrapper supplies the CA and network rule automatically.
+Timed profiling is orchestrated by the CAPZ E2E path; invoking the standalone CL2
+runner does not create or schedule the profiling helper.
 Treat artifact kubeconfigs/bootstrap data as credentials. The fixture's
 ownership checks and retain-on-workload-cleanup-failure behavior still apply;
 retained Ultra disks and large VMs continue to incur costs.

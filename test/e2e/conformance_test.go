@@ -21,10 +21,8 @@ package e2e
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -166,16 +164,8 @@ var _ = Describe("Conformance Tests", func() {
 		if flavor == "kine-postgres-performance" {
 			By("Running ClusterLoader2 performance measurements, not Kubernetes conformance")
 			stopwatch.Reset()
-			command := exec.CommandContext(ctx, "bash", "../../scripts/kine/run-clusterloader.sh")
-			command.Env = append(command.Environ(),
-				"KUBECONFIG="+workloadProxy.GetKubeconfigPath(),
-				"CL2_REPORT_DIR="+filepath.Join(artifactFolder, "clusterloader2"),
-			)
-			command.Stdout = GinkgoWriter
-			command.Stderr = GinkgoWriter
-			runErr := command.Run()
-			snapshotErr := verifyPrometheusSnapshot(filepath.Join(artifactFolder, "clusterloader2"))
-			Expect(errors.Join(runErr, snapshotErr)).To(Succeed(), "ClusterLoader2 workload or Prometheus snapshot collection failed")
+			Expect(runKinePerformance(ctx, workloadProxy, filepath.Join(artifactFolder, "clusterloader2"))).
+				To(Succeed(), "ClusterLoader2 workload or diagnostic collection failed")
 			stopwatch.Record("ClusterLoader2 write/watch workload")
 			return
 		}

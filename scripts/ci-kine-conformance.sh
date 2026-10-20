@@ -51,9 +51,10 @@ capz::kine::certificates() {
   KINE_CLIENT_CERT_B64=$(base64 < "${state_dir}/client.crt" | tr -d '\n')
   KINE_CLIENT_KEY_B64=$(base64 < "${state_dir}/client.key" | tr -d '\n')
   export KINE_CA_CERT_B64 KINE_CLIENT_CERT_B64 KINE_CLIENT_KEY_B64
-  local server_cert server_key storage_script connections_script metrics_address=127.0.0.1
+  local server_cert server_key storage_script connections_script metrics_address=127.0.0.1 profiling=false
   if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
     metrics_address=10.250.0.4
+    profiling=true
   fi
   storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
   connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
@@ -70,6 +71,7 @@ capz::kine::certificates() {
     -e "s|__KINE_MAX_OPEN_CONNECTIONS__|${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}|g" \
     -e "s|__KINE_MAX_IDLE_CONNECTIONS__|${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}|g" \
     -e "s|__METRICS_BIND_ADDRESS__|${metrics_address}|g" \
+    -e "s|__METRICS_PROFILING__|${profiling}|g" \
     "${repo_root}/scripts/kine/cloud-init.yaml" > "${state_dir}/cloud-init.yaml"
 }
 
@@ -149,6 +151,27 @@ capz::kine::provision() {
   fi
 }
 
+capz::kine::collect_compactions() {
+  if ! capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
+    --command-id RunShellScript --scripts /usr/local/bin/collect-kine-compactions \
+    --output json > "${artifact_dir}/compaction-command.json"; then
+    echo "Failed to collect Kine compaction history." >&2
+    return 1
+  fi
+  local encoded
+  encoded=$(jq -er '[.value[]?.message |
+    capture("(?m)^KINE_COMPACTIONS_BEGIN\\n(?<data>[A-Za-z0-9+/=]+)\\nKINE_COMPACTIONS_END$").data] |
+    if length == 1 then .[0] else error("Missing or truncated compaction history") end' \
+    "${artifact_dir}/compaction-command.json") ||
+    { echo "Kine compaction history is incomplete; see compaction-command.json." >&2; return 1; }
+  if ! printf '%s' "${encoded}" | openssl base64 -d -A | gzip -dc > "${artifact_dir}/compaction.log.tmp"; then
+    rm -f "${artifact_dir}/compaction.log.tmp"
+    echo "Kine compaction history could not be decoded completely." >&2
+    return 1
+  fi
+  mv "${artifact_dir}/compaction.log.tmp" "${artifact_dir}/compaction.log"
+}
+
 capz::kine::cleanup() {
   local result=$1 exists owner
   trap - EXIT
@@ -158,6 +181,9 @@ capz::kine::cleanup() {
       'journalctl --no-pager -u kine -n 60; tail -n 60 /var/log/cloud-init-output.log; cloud-init status --long; printf "cloud-init status exit code: %s\n" "$?"' \
       --output json > "${artifact_dir}/datastore-logs.json"; then
       echo "Failed to collect Kine VM logs." >&2
+      result=1
+    fi
+    if [[ "${KINE_PROFILE:-conformance}" == performance ]] && ! capz::kine::collect_compactions; then
       result=1
     fi
   fi
@@ -198,7 +224,7 @@ capz::kine::main() {
     *) echo "Unknown KINE_PROFILE: ${KINE_PROFILE}" >&2; return 1 ;;
   esac
   local tool
-  for tool in az openssl ssh-keygen jq; do
+  for tool in az openssl ssh-keygen jq gzip; do
     command -v "${tool}" >/dev/null || { echo "Required tool not found: ${tool}" >&2; return 1; }
   done
   : "${AZURE_SUBSCRIPTION_ID:?Set the Azure subscription used by CAPZ and az CLI}"

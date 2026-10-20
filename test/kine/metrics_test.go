@@ -203,6 +203,26 @@ func TestKineMetricsRequireData(t *testing.T) {
 	}
 }
 
+func TestKineProfilingStartMarker(t *testing.T) {
+	for _, action := range []string{"start", "gather"} {
+		measurements := clusterLoaderMeasurements(t, action)
+		count := 0
+		for i, m := range measurements {
+			if m.Identifier != "ProfilingStart" {
+				continue
+			}
+			count++
+			if action != "start" || i != 0 || m.Method != "Exec" || m.Params.Timeout != "10s" ||
+				strings.Join(m.Params.Command, " ") != "touch ${CL2_REPORT_DIR}/profiling-start" {
+				t.Fatal("profiling must be anchored once, before measurements start, not during setup or gather")
+			}
+		}
+		if (count == 1) != (action == "start") {
+			t.Fatalf("unexpected profiling marker count for %s: %d", action, count)
+		}
+	}
+}
+
 func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 	root := repoRoot(t)
 	script := readFile(t, filepath.Join(root, "scripts", "kine", "run-clusterloader.sh"))
@@ -258,6 +278,10 @@ exit "$KINE_TEST_EXIT"
 			if err := os.WriteFile(snapshot, []byte("stale snapshot"), 0o600); err != nil {
 				t.Fatal(err)
 			}
+			marker := filepath.Join(report, "profiling-start")
+			if err := os.WriteFile(marker, nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
 			kubeconfig := filepath.Join(dir, "kubeconfig")
 			if err := os.WriteFile(kubeconfig, nil, 0o600); err != nil {
 				t.Fatal(err)
@@ -309,6 +333,13 @@ exec bash ./scripts/kine/run-clusterloader.sh "${args[@]}"
 			}
 			if !live && statErr != nil {
 				t.Fatal("prepare-only and dry-run must not delete earlier snapshots")
+			}
+			_, markerErr := os.Stat(marker)
+			if live && !errors.Is(markerErr, os.ErrNotExist) {
+				t.Fatal("live runs must remove the old profiling clock")
+			}
+			if !live && markerErr != nil {
+				t.Fatal("prepare-only and dry-run must not change the profiling clock")
 			}
 		})
 	}

@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"text/template"
 
 	"gopkg.in/yaml.v3"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
@@ -562,8 +563,9 @@ capz::kine::certificates
 		if file.Path == "/etc/systemd/system/kine.service" {
 			if !strings.Contains(file.Content, "--metrics-bind-address=10.250.0.4:8080") ||
 				strings.Contains(file.Content, "--metrics-ignore-tls-config") ||
-				!strings.Contains(file.Content, "--server-cert-file=/etc/kine/server.crt") {
-				t.Fatal("performance metrics must use the private address and existing server TLS")
+				!strings.Contains(file.Content, "--server-cert-file=/etc/kine/server.crt") ||
+				!strings.Contains(file.Content, `Environment="KINE_METRICS_ENABLE_PROFILING=true"`) {
+				t.Fatal("performance metrics/profiling must use the private address and existing server TLS")
 			}
 		}
 		if file.Path != "/opt/configure-kine-storage.sh" {
@@ -718,6 +720,8 @@ type clusterLoaderMeasurement struct {
 		MetricVersion    string   `yaml:"metricVersion"`
 		Unit             string   `yaml:"unit"`
 		Dimensions       []string `yaml:"dimensions"`
+		Command          []string `yaml:"command"`
+		Timeout          string   `yaml:"timeout"`
 		Queries          []struct {
 			Name           string   `yaml:"name"`
 			Query          string   `yaml:"query"`
@@ -737,7 +741,15 @@ func clusterLoaderMeasurements(t *testing.T, action string) []clusterLoaderMeasu
 			Measurements []clusterLoaderMeasurement `yaml:"measurements"`
 		} `yaml:"steps"`
 	}
-	if err := yaml.Unmarshal([]byte(strings.ReplaceAll(string(data), "{{.action}}", action)), &config); err != nil {
+	tmpl, err := template.New("measurements").Parse(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rendered bytes.Buffer
+	if err := tmpl.Execute(&rendered, map[string]string{"action": action}); err != nil {
+		t.Fatal(err)
+	}
+	if err := yaml.Unmarshal(rendered.Bytes(), &config); err != nil {
 		t.Fatal(err)
 	}
 	var measurements []clusterLoaderMeasurement
