@@ -66,6 +66,7 @@ func TestAzureLinuxBootstrapInheritance(t *testing.T) {
 	var sharedScript string
 	for _, flavor := range []string{"prow-azl3", "prow-ci-version-azl3", "prow-kine-postgres", "prow-kine-postgres-performance"} {
 		t.Run(flavor, func(t *testing.T) {
+			// #nosec G204 -- Template arguments come from the fixed flavor list above.
 			cmd := exec.CommandContext(t.Context(), "./hack/tools/bin/kustomize", "build",
 				"--load-restrictor", "LoadRestrictionsNone", filepath.Join("templates", "test", "ci", flavor))
 			cmd.Dir = root
@@ -158,6 +159,7 @@ func TestAzureLinuxBootstrapInheritance(t *testing.T) {
 					t.Fatal(err)
 				}
 				caller := strings.Replace(command, "/opt/azure-linux-setup.sh", `"$KINE_TEST_SETUP_SCRIPT"`, 1)
+				// #nosec G204 -- The command is matched exactly above; the substituted fixture path is quoted.
 				cmd = exec.CommandContext(t.Context(), "sh", "-c", caller+"\necho KUBEADM_STARTED\n")
 				cmd.Env = append(cmd.Environ(), "KINE_TEST_SETUP_SCRIPT="+failedSetup)
 				output, err := cmd.CombinedOutput()

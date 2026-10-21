@@ -804,6 +804,7 @@ func TestRejectUnsupportedRuns(t *testing.T) {
 		{"ipv6", "IP_FAMILY=ipv6", "supports Linux/IPv4"},
 		{"ci-artifacts", "E2E_ARGS=-kubetest.use-ci-artifacts", "supports Linux/IPv4"},
 		{"unpinned", "KINE_KUBERNETES_VERSION=stable-1.35", "Pin KINE_KUBERNETES_VERSION"},
+		{"invalid-profiling", "KINE_COLLECT_PROFILES=invalid", "KINE_COLLECT_PROFILES must be true or false"},
 		{"wrong-flavor", "CONFORMANCE_FLAVOR=other", "requires CONFORMANCE_FLAVOR"},
 		{"existing-group", "KUBERNETES_VERSION=v1.35.4", "Refusing to reuse resource group"},
 	} {
@@ -814,7 +815,7 @@ export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
 export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
-unset KINE_KUBERNETES_VERSION
+unset KINE_KUBERNETES_VERSION KINE_COLLECT_PROFILES
 export "$KINE_TEST_SETTING"
 capz::kine::performance_preflight() { :; }
 az() {

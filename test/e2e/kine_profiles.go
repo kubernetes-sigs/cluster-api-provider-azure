@@ -100,21 +100,29 @@ type kineProfiler struct {
 }
 
 func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, reportDir string) (retErr error) {
-	ca, err := base64.StdEncoding.DecodeString(os.Getenv("KINE_CA_CERT_B64"))
-	if err != nil {
-		return fmt.Errorf("decode public Kine profiling CA: %w", err)
+	collectProfiles := os.Getenv("KINE_COLLECT_PROFILES")
+	if collectProfiles != "" && collectProfiles != "false" && collectProfiles != "true" {
+		return errors.New("invalid KINE_COLLECT_PROFILES: must be true or false")
 	}
-	if len(ca) == 0 {
-		return errors.New("profiling requires KINE_CA_CERT_B64")
+	Logf("Kine timed pprof collection enabled: %t", collectProfiles == "true")
+	var profiler *kineProfiler
+	if collectProfiles == "true" {
+		ca, err := base64.StdEncoding.DecodeString(os.Getenv("KINE_CA_CERT_B64"))
+		if err != nil {
+			return fmt.Errorf("decode public Kine profiling CA: %w", err)
+		}
+		if len(ca) == 0 {
+			return errors.New("profiling requires KINE_CA_CERT_B64")
+		}
+		profiler, err = startKineProfiler(ctx, workload.GetClientSet(), workload.GetRESTConfig(), reportDir, ca)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			profiler.stop()
+			retErr = errors.Join(retErr, profiler.cleanup())
+		}()
 	}
-	profiler, err := startKineProfiler(ctx, workload.GetClientSet(), workload.GetRESTConfig(), reportDir, ca)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		profiler.stop()
-		retErr = errors.Join(retErr, profiler.cleanup())
-	}()
 
 	command := exec.CommandContext(ctx, "bash", "../../scripts/kine/run-clusterloader.sh")
 	command.Env = append(command.Environ(),
@@ -124,9 +132,13 @@ func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, re
 	command.Stdout = ginkgo.GinkgoWriter
 	command.Stderr = ginkgo.GinkgoWriter
 	runErr := command.Run()
-	profiler.stop()
+	var profileErr error
+	if profiler != nil {
+		profiler.stop()
+		profileErr = profiler.err
+	}
 	snapshotErr := verifyPrometheusSnapshot(reportDir)
-	return errors.Join(runErr, profiler.err, snapshotErr)
+	return errors.Join(runErr, profileErr, snapshotErr)
 }
 
 func startKineProfiler(ctx context.Context, client kubernetes.Interface, config *rest.Config, reportDir string, ca []byte) (_ *kineProfiler, retErr error) {

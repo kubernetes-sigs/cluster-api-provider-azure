@@ -930,9 +930,23 @@ The CAPZ E2E test rejects a missing, empty, or corrupt snapshot; an earlier loca
 run's snapshot is removed before a new live run. Abrupt process termination or
 loss of the workload API can still prevent export.
 
-The CAPZ performance E2E path creates a small, non-root profiling helper on a
-worker before CL2 starts. Its dedicated service account receives only additional
-GET permission for the API server's CPU, heap, and goroutine profiling URLs.
+Timed pprof collection is **disabled by default** to avoid perturbing the
+performance workload. Prometheus scraping, snapshot retention, the PATCH error
+gate, and compaction-history collection remain enabled. To opt in, set
+`KINE_COLLECT_PROFILES=true` before provisioning:
+
+```bash
+KINE_COLLECT_PROFILES=true make test-performance-kine
+```
+
+The setting accepts only `true` or `false`, applies to the performance workload,
+and is recorded as `collect-profiles` in `performance-settings.txt`. When disabled,
+no profiling helper or profiling RBAC is created and Kine's pprof endpoints stay
+disabled; its private TLS metrics endpoint remains available.
+
+When enabled, the CAPZ performance E2E path creates a small, non-root profiling
+helper on a worker before CL2 starts. Its dedicated service account receives only
+additional GET permission for the API server's CPU, heap, and goroutine profiling URLs.
 API-server profiles are fetched from each control-plane node's private address
 with that token and the cluster CA; Kine profiles use its public CA. No anonymous
 debug access or administrator kubeconfig is installed in the helper.

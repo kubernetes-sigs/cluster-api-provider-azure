@@ -40,7 +40,7 @@ func TestPerformancePreflight(t *testing.T) {
 		"missing-zone", "no-ultra", "no-nvme", "wrong-architecture", "no-acceleration",
 		"invalid-disk", "invalid-zone", "wrong-image", "azure-error",
 		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
-		"connection-overrides", "invalid-connection-budget",
+		"connection-overrides", "invalid-connection-budget", "profiling-enabled",
 		"worker-quota", "shared-family", "shared-family-quota",
 		"control-plane-gen1", "control-plane-arm", "control-plane-missing-version", "control-plane-wrong-version",
 		"control-plane-no-gen2", "control-plane-missing-generation", "kubernetes-override",
@@ -167,7 +167,7 @@ export AZURE_LOCATION=test-region AZURE_SUBSCRIPTION_ID=test-subscription KINE_Z
 export CLUSTER_NAME=capz-perf-test ARTIFACTS="$KINE_TEST_DIR"
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS= KUBERNETES_VERSION=v1.35.4
 unset CONFORMANCE_FLAVOR KINE_VM_SIZE KINE_VM_IMAGE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
-unset KINE_KUBERNETES_VERSION KINE_NODE_IMAGE_VERSION
+unset KINE_KUBERNETES_VERSION KINE_NODE_IMAGE_VERSION KINE_COLLECT_PROFILES
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT CONFORMANCE_WORKER_MACHINE_COUNT
 case "$KINE_TEST_CASE" in
@@ -175,6 +175,7 @@ case "$KINE_TEST_CASE" in
   invalid-zone) export KINE_ZONE=4 ;;
   shared-family|shared-family-quota) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 ;;
   kubernetes-override) export KINE_KUBERNETES_VERSION=v1.35.3 ;;
+  profiling-enabled) export KINE_COLLECT_PROFILES=true ;;
   connection-overrides)
     export KINE_POSTGRES_MAX_CONNECTIONS=512 KINE_DATASTORE_MAX_OPEN_CONNECTIONS=256 KINE_DATASTORE_MAX_IDLE_CONNECTIONS=64 ;;
   invalid-connection-budget) export KINE_DATASTORE_MAX_OPEN_CONNECTIONS=1024 ;;
@@ -233,7 +234,7 @@ capz::kine::main
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc)
 			output, err := cmd.CombinedOutput()
 			success := tc == "success" || tc == "conformance-success" || tc == "string-quota" || tc == "mixed-quota" ||
-				tc == "connection-overrides" || tc == "shared-family" || tc == "kubernetes-override"
+				tc == "connection-overrides" || tc == "shared-family" || tc == "kubernetes-override" || tc == "profiling-enabled"
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
@@ -316,6 +317,13 @@ capz::kine::main
 				}
 				if !bytes.Contains(settings, []byte(connections)) {
 					t.Fatalf("missing effective connection budget: %s", settings)
+				}
+				profiles := "false"
+				if tc == "profiling-enabled" {
+					profiles = "true"
+				}
+				if !bytes.Contains(settings, []byte("collect-profiles="+profiles+"\n")) {
+					t.Fatalf("missing profiling opt-in setting: %s", settings)
 				}
 				version, imageVersion := "v1.35.5", "1.35.5"
 				if tc == "kubernetes-override" {
@@ -540,6 +548,7 @@ source ./scripts/ci-kine-conformance.sh
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
 KINE_PROFILE=performance
+unset KINE_COLLECT_PROFILES
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 umask 077
 capz::kine::certificates
@@ -564,8 +573,8 @@ capz::kine::certificates
 			if !strings.Contains(file.Content, "--metrics-bind-address=10.250.0.4:8080") ||
 				strings.Contains(file.Content, "--metrics-ignore-tls-config") ||
 				!strings.Contains(file.Content, "--server-cert-file=/etc/kine/server.crt") ||
-				!strings.Contains(file.Content, `Environment="KINE_METRICS_ENABLE_PROFILING=true"`) {
-				t.Fatal("performance metrics/profiling must use the private address and existing server TLS")
+				!strings.Contains(file.Content, `Environment="KINE_METRICS_ENABLE_PROFILING=false"`) {
+				t.Fatal("performance metrics must retain private TLS while profiling defaults off")
 			}
 		}
 		if file.Path != "/opt/configure-kine-storage.sh" {
@@ -592,6 +601,51 @@ capz::kine::certificates
 	}
 	if !found {
 		t.Fatal("missing performance storage initializer")
+	}
+}
+
+func TestKineProfilingOptIn(t *testing.T) {
+	for _, profile := range []string{"performance", "conformance"} {
+		t.Run(profile, func(t *testing.T) {
+			dir := t.TempDir()
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
+source ./scripts/ci-kine-conformance.sh
+repo_root=$PWD
+state_dir=$KINE_TEST_DIR
+KINE_COLLECT_PROFILES=true
+unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
+umask 077
+capz::kine::certificates
+`)
+			cmd.Dir = repoRoot(t)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_PROFILE="+profile)
+			if output, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("render profiling configuration: %v\n%s", err, output)
+			}
+			var config struct {
+				Files []struct {
+					Path    string `yaml:"path"`
+					Content string `yaml:"content"`
+				} `yaml:"write_files"`
+			}
+			if err := yaml.Unmarshal(readFile(t, filepath.Join(dir, "cloud-init.yaml")), &config); err != nil {
+				t.Fatal(err)
+			}
+			for _, file := range config.Files {
+				if file.Path != "/etc/systemd/system/kine.service" {
+					continue
+				}
+				want := `Environment="KINE_METRICS_ENABLE_PROFILING=false"`
+				if profile == "performance" {
+					want = `Environment="KINE_METRICS_ENABLE_PROFILING=true"`
+				}
+				if !strings.Contains(file.Content, want) {
+					t.Fatalf("profiling opt-in must apply only to the performance workload: %s", want)
+				}
+				return
+			}
+			t.Fatal("missing Kine service configuration")
+		})
 	}
 }
 

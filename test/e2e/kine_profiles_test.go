@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -36,7 +37,74 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/cluster-api/test/framework"
 )
+
+type kinePerformanceTestProxy struct {
+	framework.ClusterProxy
+}
+
+func (kinePerformanceTestProxy) GetKubeconfigPath() string {
+	return "test.kubeconfig"
+}
+
+func TestRunKinePerformanceProfiling(t *testing.T) {
+	for _, tc := range []struct {
+		name, profiles, runnerExit string
+		snapshot, wantRunner       bool
+		wantErrors                 []string
+	}{
+		{"default-disabled", "", "0", true, true, nil},
+		{"explicit-disabled", "false", "0", true, true, nil},
+		{"missing-snapshot", "false", "0", false, true, []string{"open Prometheus snapshot"}},
+		{"runner-failure", "false", "17", true, true, []string{"exit status 17"}},
+		{"both-failures", "false", "17", false, true, []string{"exit status 17", "open Prometheus snapshot"}},
+		{"enabled-validates-ca", "true", "0", true, false, []string{"decode public Kine profiling CA"}},
+		{"invalid-setting", "invalid", "0", true, false, []string{"invalid KINE_COLLECT_PROFILES"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bin, report := t.TempDir(), t.TempDir()
+			input := filepath.Join(t.TempDir(), "snapshot.tar.gz")
+			if err := os.WriteFile(input, testPrometheusSnapshot(t, true), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			// #nosec G306 -- This owner-only executable is a temporary CL2 runner stub.
+			if err := os.WriteFile(filepath.Join(bin, "bash"), []byte(`#!/bin/sh
+set -eu
+printf '%s\n' "$1" "$KUBECONFIG" > "$CL2_REPORT_DIR/runner-started"
+if [ "$KINE_TEST_SNAPSHOT" = true ]; then
+  cp "$KINE_TEST_ARCHIVE" "$CL2_REPORT_DIR/prometheus_snapshot.tar.gz"
+fi
+exit "$KINE_TEST_EXIT_CODE"
+`), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("KINE_COLLECT_PROFILES", tc.profiles)
+			t.Setenv("KINE_CA_CERT_B64", "invalid-base64")
+			t.Setenv("KINE_TEST_ARCHIVE", input)
+			t.Setenv("KINE_TEST_SNAPSHOT", fmt.Sprint(tc.snapshot))
+			t.Setenv("KINE_TEST_EXIT_CODE", tc.runnerExit)
+			err := runKinePerformance(t.Context(), kinePerformanceTestProxy{}, report)
+			if (err == nil) != (len(tc.wantErrors) == 0) {
+				t.Fatalf("unexpected performance result: %v", err)
+			}
+			for _, message := range tc.wantErrors {
+				if !strings.Contains(err.Error(), message) {
+					t.Fatalf("missing error %q: %v", message, err)
+				}
+			}
+			marker, markerErr := os.ReadFile(filepath.Join(report, "runner-started"))
+			if tc.wantRunner {
+				if markerErr != nil || string(marker) != "../../scripts/kine/run-clusterloader.sh\ntest.kubeconfig\n" {
+					t.Fatalf("CL2 must still run with the workload kubeconfig: %q, %v", marker, markerErr)
+				}
+			} else if !errors.Is(markerErr, os.ErrNotExist) {
+				t.Fatalf("invalid profiling settings must fail before running CL2: %v", markerErr)
+			}
+		})
+	}
+}
 
 func testKineProfile(t *testing.T, kind string) []byte {
 	t.Helper()

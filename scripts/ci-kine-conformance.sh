@@ -54,7 +54,7 @@ capz::kine::certificates() {
   local server_cert server_key storage_script connections_script metrics_address=127.0.0.1 profiling=false
   if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
     metrics_address=10.250.0.4
-    profiling=true
+    profiling="${KINE_COLLECT_PROFILES:-false}"
   fi
   storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
   connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
@@ -222,6 +222,11 @@ capz::kine::main() {
     conformance) ;;
     performance) flavor=kine-postgres-performance ;;
     *) echo "Unknown KINE_PROFILE: ${KINE_PROFILE}" >&2; return 1 ;;
+  esac
+  export KINE_COLLECT_PROFILES="${KINE_COLLECT_PROFILES:-false}"
+  case "${KINE_COLLECT_PROFILES}" in
+    true|false) ;;
+    *) echo "KINE_COLLECT_PROFILES must be true or false." >&2; return 1 ;;
   esac
   local tool
   for tool in az openssl ssh-keygen jq gzip; do

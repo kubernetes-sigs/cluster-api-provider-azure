@@ -96,14 +96,14 @@ capz::kine::performance_preflight() {
   jq -e --arg version "${KINE_NODE_IMAGE_VERSION}" '.name == $version' \
     "${artifact_dir}/node-image-version.json" >/dev/null ||
     { echo "Node community image version does not match ${KUBERNETES_VERSION}." >&2; return 1; }
-  printf 'location=%s\nzone=%s\nimage=%s\ndisk-size-gib=%s\ndisk-iops=%s\ndisk-mbps=%s\n' \
-    "${AZURE_LOCATION}" "${KINE_ZONE}" "${KINE_VM_IMAGE}" "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}" \
-    > "${artifact_dir}/performance-settings.txt"
-  printf 'postgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
-    "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}" \
-    >> "${artifact_dir}/performance-settings.txt"
-  printf 'kubernetes-version=%s\nnode-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
-    "${KUBERNETES_VERSION}" "${gallery}" "${node_image}" "${KINE_NODE_IMAGE_VERSION}" \
-    >> "${artifact_dir}/performance-settings.txt"
+  {
+    printf 'location=%s\nzone=%s\nimage=%s\ndisk-size-gib=%s\ndisk-iops=%s\ndisk-mbps=%s\n' \
+      "${AZURE_LOCATION}" "${KINE_ZONE}" "${KINE_VM_IMAGE}" "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}"
+    printf 'postgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
+      "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}"
+    printf 'kubernetes-version=%s\nnode-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
+      "${KUBERNETES_VERSION}" "${gallery}" "${node_image}" "${KINE_NODE_IMAGE_VERSION}"
+    printf 'collect-profiles=%s\n' "${KINE_COLLECT_PROFILES:-false}"
+  } > "${artifact_dir}/performance-settings.txt"
   echo "VM quota/capability preflight passed; allocation capacity and disk quotas are not reserved."
 }

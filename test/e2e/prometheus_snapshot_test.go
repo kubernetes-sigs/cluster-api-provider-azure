@@ -28,29 +28,31 @@ import (
 	"testing"
 )
 
-func TestVerifyPrometheusSnapshot(t *testing.T) {
-	makeArchive := func(withData bool) []byte {
-		var buf bytes.Buffer
-		compressed := gzip.NewWriter(&buf)
-		archive := tar.NewWriter(compressed)
-		if withData {
-			data := []byte("sample TSDB data")
-			if err := archive.WriteHeader(&tar.Header{Name: "snapshot/block/index", Mode: 0o600, Size: int64(len(data))}); err != nil {
-				t.Fatal(err)
-			}
-			if _, err := archive.Write(data); err != nil {
-				t.Fatal(err)
-			}
-		}
-		if err := archive.Close(); err != nil {
+func testPrometheusSnapshot(t *testing.T, withData bool) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	compressed := gzip.NewWriter(&buf)
+	archive := tar.NewWriter(compressed)
+	if withData {
+		data := []byte("sample TSDB data")
+		if err := archive.WriteHeader(&tar.Header{Name: "snapshot/block/index", Mode: 0o600, Size: int64(len(data))}); err != nil {
 			t.Fatal(err)
 		}
-		if err := compressed.Close(); err != nil {
+		if _, err := archive.Write(data); err != nil {
 			t.Fatal(err)
 		}
-		return buf.Bytes()
 	}
-	valid := makeArchive(true)
+	if err := archive.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := compressed.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestVerifyPrometheusSnapshot(t *testing.T) {
+	valid := testPrometheusSnapshot(t, true)
 	for _, tc := range []struct {
 		name string
 		data []byte
@@ -61,7 +63,7 @@ func TestVerifyPrometheusSnapshot(t *testing.T) {
 		{"empty", []byte{}, false},
 		{"corrupt", []byte("not a snapshot"), false},
 		{"truncated", valid[:len(valid)-8], false},
-		{"no-data", makeArchive(false), false},
+		{"no-data", testPrometheusSnapshot(t, false), false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
