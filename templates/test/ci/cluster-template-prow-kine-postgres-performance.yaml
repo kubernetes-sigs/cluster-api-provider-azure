@@ -72,6 +72,7 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
+          feature-gates: ConcurrentWatchObjectDecode=true
           service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
         timeoutForControlPlane: 20m
       controllerManager:

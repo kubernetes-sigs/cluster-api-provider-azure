@@ -739,6 +739,12 @@ different storage tier. The two test flavors inherit the same infrastructure
 template. A green performance run is not a conformance result or proof that a
 maximum throughput was reached.
 
+Both Kine flavors enable `ConcurrentWatchObjectDecode=true` on kube-apiserver
+to evaluate concurrent watch-object decoding instead of the default serial path.
+This beta feature preserves event order but does not parallelize watch-cache
+updates. API request-concurrency limits, APF queue limits, and the other feature
+gates remain unchanged.
+
 This is a **large, billable, single-datastore experiment**, not an HA configuration:
 
 | Setting | Default |

@@ -27,6 +27,9 @@ metadata:
 spec:
   kubeadmConfigSpec:
     clusterConfiguration:
+      apiServer:
+        extraArgs:
+          feature-gates: ConcurrentWatchObjectDecode=true
       etcd:
         local: null
         external:

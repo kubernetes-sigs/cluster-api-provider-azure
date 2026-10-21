@@ -90,6 +90,9 @@ func TestFlavor(t *testing.T) {
 				} `yaml:"networkSpec"`
 				KubeadmConfigSpec struct {
 					ClusterConfiguration struct {
+						APIServer struct {
+							Args map[string]string `yaml:"extraArgs"`
+						} `yaml:"apiServer"`
 						Etcd struct {
 							Local    any `yaml:"local"`
 							External struct {
@@ -138,6 +141,13 @@ func TestFlavor(t *testing.T) {
 		case "KubeadmControlPlane":
 			found["control-plane"] = true
 			config := object.Spec.KubeadmConfigSpec
+			apiServerArgs := config.ClusterConfiguration.APIServer.Args
+			if apiServerArgs["feature-gates"] != "ConcurrentWatchObjectDecode=true" {
+				t.Fatalf("expected concurrent watch object decoding on the Kine API server: %+v", apiServerArgs)
+			}
+			if apiServerArgs["service-account-issuer"] != "${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}" {
+				t.Fatal("preserve the inherited API-server service-account issuer")
+			}
 			etcd := config.ClusterConfiguration.Etcd
 			if etcd.Local != nil || len(etcd.External.Endpoints) != 1 || etcd.External.Endpoints[0] != "https://10.250.0.4:2379" {
 				t.Fatalf("expected only the external Kine endpoint: %+v", etcd)
