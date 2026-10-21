@@ -9,4 +9,4 @@
 - op: add
   path: /spec/template/spec/preKubeadmCommands/0
   value:
-    bash /opt/azure-linux-setup.sh worker ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24 10.1.0.0/24}
+    bash /opt/azure-linux-setup.sh worker ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24 10.1.0.0/24} || exit 1

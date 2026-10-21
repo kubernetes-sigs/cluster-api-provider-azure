@@ -637,6 +637,11 @@ persistence mechanism. It allows Azure platform probes and control-plane API
 access, plus node, Pod, and Service traffic required by kubelet and Calico.
 It does not flush firewall rules or disable the firewall. The existing Kine
 machine-health checks, monitoring tags, and worker extension are preserved.
+Prerequisites already present in the node image are checked locally with RPM,
+without accessing package repositories. When installation is needed, the script
+makes at most three attempts, clearing repository metadata and waiting five
+seconds between retries. Both control-plane and worker bootstrap stop before
+`kubeadm` if package installation, metadata cleanup, or firewall setup fails.
 
 Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
 The datastore, control plane, and workers share that placement; explicit

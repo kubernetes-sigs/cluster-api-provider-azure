@@ -149,9 +149,20 @@ func TestAzureLinuxBootstrapInheritance(t *testing.T) {
 					t.Fatalf("%s has no pre-kubeadm setup", role)
 				}
 				command := bootstrap.PreKubeadmCommands[0]
-				want := "bash /opt/azure-linux-setup.sh " + role + " " + expectedCIDRs
+				want := "bash /opt/azure-linux-setup.sh " + role + " " + expectedCIDRs + " || exit 1"
 				if command != want {
 					t.Fatalf("bootstrap must run first with matching node subnets: got %q, want %q", command, want)
+				}
+				failedSetup := filepath.Join(t.TempDir(), "failed-setup.sh")
+				if err := os.WriteFile(failedSetup, []byte("echo SETUP_FAILED >&2\nexit 42\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				caller := strings.Replace(command, "/opt/azure-linux-setup.sh", `"$KINE_TEST_SETUP_SCRIPT"`, 1)
+				cmd = exec.CommandContext(t.Context(), "sh", "-c", caller+"\necho KUBEADM_STARTED\n")
+				cmd.Env = append(cmd.Environ(), "KINE_TEST_SETUP_SCRIPT="+failedSetup)
+				output, err := cmd.CombinedOutput()
+				if err == nil || !bytes.Contains(output, []byte("SETUP_FAILED")) || bytes.Contains(output, []byte("KUBEADM_STARTED")) {
+					t.Fatalf("%s must stop bootstrap on setup failure even without parent errexit: %v\n%s", role, err, output)
 				}
 			}
 			if !roles["control-plane"] || !roles["worker"] || cloudProviders != 2 {
@@ -182,15 +193,19 @@ func TestAzureLinuxBootstrapFirewall(t *testing.T) {
 	}
 	script := processAzureLinuxTemplate(t, []byte(file.Content), "")
 	for _, tc := range []struct {
-		name, version, backend, role, fail string
+		name, version, backend, role, packages, fail string
 	}{
-		{"gen2-control-plane", "4.0", "firewalld", "control-plane", ""},
-		{"gen2-worker", "4.0", "firewalld", "worker", ""},
-		{"legacy-control-plane", "3.0", "iptables", "control-plane", ""},
-		{"legacy-worker", "3.0", "iptables", "worker", ""},
-		{"firewall-error", "4.0", "firewalld", "control-plane", "firewall"},
-		{"package-error", "4.0", "firewalld", "control-plane", "packages"},
-		{"legacy-rule-error", "3.0", "iptables", "worker", "iptables"},
+		{"gen2-control-plane", "4.0", "firewalld", "control-plane", "missing", ""},
+		{"gen2-worker", "4.0", "firewalld", "worker", "missing", ""},
+		{"legacy-control-plane", "3.0", "iptables", "control-plane", "missing", ""},
+		{"legacy-worker", "3.0", "iptables", "worker", "missing", ""},
+		{"installed-prerequisites", "4.0", "firewalld", "worker", "installed", ""},
+		{"package-recovery", "4.0", "firewalld", "worker", "retry", ""},
+		{"legacy-package-recovery", "3.0", "iptables", "worker", "retry", ""},
+		{"firewall-error", "4.0", "firewalld", "control-plane", "installed", "firewall"},
+		{"package-error", "4.0", "firewalld", "control-plane", "missing", "packages"},
+		{"metadata-error", "4.0", "firewalld", "worker", "missing", "metadata"},
+		{"legacy-rule-error", "3.0", "iptables", "worker", "missing", "iptables"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -215,8 +230,20 @@ command() {
   fi
   builtin command "$@"
 }
-tdnf() { record tdnf "$@"; [[ "$KINE_TEST_FAIL" != packages ]]; }
-dnf() { record dnf "$@"; [[ "$KINE_TEST_FAIL" != packages ]]; }
+rpm() { record rpm "$@"; [[ "$KINE_TEST_PACKAGES" == installed ]]; }
+install_attempts=0
+package_operation() {
+  if [[ "$1" == clean ]]; then
+    [[ "$KINE_TEST_FAIL" != metadata ]]
+    return
+  fi
+  install_attempts=$((install_attempts + 1))
+  [[ "$KINE_TEST_FAIL" != packages && "$KINE_TEST_FAIL" != metadata ]] || return 1
+  [[ "$KINE_TEST_PACKAGES" != retry || "$install_attempts" -ge 3 ]]
+}
+tdnf() { record tdnf "$@"; package_operation "$@"; }
+dnf() { record dnf "$@"; package_operation "$@"; }
+sleep() { record sleep "$@"; }
 update-ca-trust() { record update-ca-trust "$@"; }
 systemctl() { record systemctl "$@"; }
 firewall-cmd() { record firewall-cmd "$@"; [[ "$KINE_TEST_FAIL" != firewall ]]; }
@@ -231,10 +258,37 @@ echo SETUP_COMPLETE
 			cmd.Dir = repoRoot(t)
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_SCRIPT="+scriptPath,
 				"KINE_TEST_OS="+tc.version, "KINE_TEST_BACKEND="+tc.backend,
-				"KINE_TEST_ROLE="+tc.role, "KINE_TEST_FAIL="+tc.fail)
+				"KINE_TEST_ROLE="+tc.role, "KINE_TEST_PACKAGES="+tc.packages, "KINE_TEST_FAIL="+tc.fail)
 			output, err := cmd.CombinedOutput()
 			if (err == nil) != (tc.fail == "") {
 				t.Fatalf("unexpected bootstrap result: %v\n%s", err, output)
+			}
+			commands := string(readFile(t, filepath.Join(dir, "commands")))
+			manager, packages := "dnf", "ca-certificates firewalld"
+			if tc.version == "3.0" {
+				manager, packages = "tdnf", "ca-certificates ca-certificates-legacy"
+			}
+			if !strings.Contains(commands, "rpm -q "+packages+"\n") {
+				t.Fatal("check installed prerequisites before accessing package repositories")
+			}
+			wantInstalls, wantCleans, wantSleeps := 1, 0, 0
+			switch {
+			case tc.packages == "installed":
+				wantInstalls = 0
+			case tc.packages == "retry" || tc.fail == "packages":
+				wantInstalls, wantCleans, wantSleeps = 3, 2, 2
+			case tc.fail == "metadata":
+				wantInstalls, wantCleans = 1, 1
+			}
+			if strings.Count(commands, manager+" install -y "+packages+"\n") != wantInstalls ||
+				strings.Count(commands, manager+" clean metadata\n") != wantCleans ||
+				strings.Count(commands, "sleep 5\n") != wantSleeps {
+				t.Fatalf("unexpected package retry sequence:\n%s", commands)
+			}
+			if tc.fail == "packages" || tc.fail == "metadata" {
+				if strings.Contains(commands, "update-ca-trust") || strings.Contains(commands, "systemctl") {
+					t.Fatal("package failure must stop setup before certificate and firewall configuration")
+				}
 			}
 			if tc.fail != "" {
 				if bytes.Contains(output, []byte("SETUP_COMPLETE")) {
@@ -242,13 +296,11 @@ echo SETUP_COMPLETE
 				}
 				return
 			}
-			commands := string(readFile(t, filepath.Join(dir, "commands")))
 			if !strings.Contains(commands, "update-ca-trust\n") {
 				t.Fatal("bootstrap must update the native CA trust store")
 			}
 			if tc.backend == "firewalld" {
 				for _, expected := range []string{
-					"dnf install -y ca-certificates firewalld",
 					"systemctl enable --now firewalld",
 					`firewall-cmd --permanent --add-rich-rule=rule family="ipv4" source address="168.63.129.16" accept`,
 					"firewall-cmd --reload",

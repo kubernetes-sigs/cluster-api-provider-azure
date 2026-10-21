@@ -103,10 +103,29 @@ spec:
         # shellcheck source=/dev/null
         source /etc/os-release
         case "$${VERSION_ID}" in
-          3.*) tdnf install -y ca-certificates ca-certificates-legacy ;;
-          4.*) dnf install -y ca-certificates firewalld ;;
+          3.*) package_manager=tdnf; packages=(ca-certificates ca-certificates-legacy) ;;
+          4.*) package_manager=dnf; packages=(ca-certificates firewalld) ;;
           *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
         esac
+        if rpm -q "$${packages[@]}" >/dev/null; then
+          echo "Azure Linux prerequisites are already installed."
+        else
+          for attempt in 1 2 3; do
+            if "$${package_manager}" install -y "$${packages[@]}"; then
+              break
+            fi
+            if [[ "$${attempt}" == 3 ]]; then
+              echo "Failed to install Azure Linux prerequisites after 3 attempts." >&2
+              exit 1
+            fi
+            echo "Azure Linux prerequisite installation failed (attempt $${attempt}/3); clearing repository metadata before retrying." >&2
+            if ! "$${package_manager}" clean metadata; then
+              echo "Failed to clear Azure Linux repository metadata." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+        fi
         update-ca-trust
 
         if command -v firewall-cmd >/dev/null 2>&1; then
@@ -266,7 +285,7 @@ spec:
     postKubeadmCommands: []
     preKubeadmCommands:
     - bash /opt/azure-linux-setup.sh control-plane ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
-      10.1.0.0/24}
+      10.1.0.0/24} || exit 1
     - bash -c /tmp/oot-cred-provider.sh
     - bash -c /tmp/kubeadm-bootstrap.sh
     verbosity: 5
@@ -388,10 +407,29 @@ spec:
           # shellcheck source=/dev/null
           source /etc/os-release
           case "$${VERSION_ID}" in
-            3.*) tdnf install -y ca-certificates ca-certificates-legacy ;;
-            4.*) dnf install -y ca-certificates firewalld ;;
+            3.*) package_manager=tdnf; packages=(ca-certificates ca-certificates-legacy) ;;
+            4.*) package_manager=dnf; packages=(ca-certificates firewalld) ;;
             *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
           esac
+          if rpm -q "$${packages[@]}" >/dev/null; then
+            echo "Azure Linux prerequisites are already installed."
+          else
+            for attempt in 1 2 3; do
+              if "$${package_manager}" install -y "$${packages[@]}"; then
+                break
+              fi
+              if [[ "$${attempt}" == 3 ]]; then
+                echo "Failed to install Azure Linux prerequisites after 3 attempts." >&2
+                exit 1
+              fi
+              echo "Azure Linux prerequisite installation failed (attempt $${attempt}/3); clearing repository metadata before retrying." >&2
+              if ! "$${package_manager}" clean metadata; then
+                echo "Failed to clear Azure Linux repository metadata." >&2
+                exit 1
+              fi
+              sleep 5
+            done
+          fi
           update-ca-trust
 
           if command -v firewall-cmd >/dev/null 2>&1; then
@@ -540,7 +578,7 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash /opt/azure-linux-setup.sh worker ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
-        10.1.0.0/24}
+        10.1.0.0/24} || exit 1
       - bash -c /tmp/oot-cred-provider.sh
       - bash -c /tmp/kubeadm-bootstrap.sh
       verbosity: 5
