@@ -23,51 +23,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
 )
-
-func verifyPrometheusSnapshot(reportDir string) error {
-	file, err := os.OpenInRoot(reportDir, "prometheus_snapshot.tar.gz")
-	if err != nil {
-		return fmt.Errorf("open Prometheus snapshot: %w", err)
-	}
-	defer file.Close()
-	reader, err := gzip.NewReader(file)
-	if err != nil {
-		return fmt.Errorf("read Prometheus snapshot: %w", err)
-	}
-	defer reader.Close()
-	archive := tar.NewReader(reader)
-	hasData := false
-	for {
-		header, err := archive.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("invalid Prometheus snapshot archive: %w", err)
-		}
-		if header.Typeflag == tar.TypeReg && header.Size > 0 {
-			hasData = true
-		}
-	}
-	// Allow tar block padding, but require a valid gzip trailer and bounded trailing data.
-	if _, err := io.CopyN(io.Discard, reader, 1<<20); !errors.Is(err, io.EOF) {
-		if err == nil {
-			return errors.New("Prometheus snapshot has excessive data after the tar archive")
-		}
-		return fmt.Errorf("incomplete Prometheus snapshot: %w", err)
-	}
-	if !hasData {
-		return errors.New("Prometheus snapshot contains no data files")
-	}
-	return nil
-}
 
 func TestVerifyPrometheusSnapshot(t *testing.T) {
 	makeArchive := func(withData bool) []byte {
