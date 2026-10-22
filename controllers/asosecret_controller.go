@@ -238,7 +238,7 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				Namespace: cluster.GetNamespace(),
 			},
 		}
-		if err := asos.Delete(ctx, existing); client.IgnoreNotFound(err) != nil {
+		if err := asos.Delete(ctx, existing); err != nil && !apierrors.IsNotFound(err) {
 			return reconcile.Result{}, errors.Wrap(err, "failed to delete unused ASO secret")
 		}
 		return ctrl.Result{}, nil
