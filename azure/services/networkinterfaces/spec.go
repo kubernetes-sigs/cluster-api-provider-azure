@@ -156,6 +156,10 @@ func (s *NICSpec) Parameters(ctx context.Context, existing any) (parameters any,
 
 		accelNet := s.SKU.HasCapability(resourceskus.AcceleratedNetworking)
 		s.AcceleratedNetworking = &accelNet
+	} else if *s.AcceleratedNetworking && s.SKU != nil && !s.SKU.HasCapability(resourceskus.AcceleratedNetworking) {
+		// Accelerated networking was explicitly requested but the VM size does not advertise support for it.
+		// Azure may reject the network interface, so tell the user why.
+		log.Error(nil, "accelerated networking is enabled but the VM size does not support it", "nic", s.Name, "machine", s.MachineName)
 	}
 
 	dnsSettings := armnetwork.InterfaceDNSSettings{}
