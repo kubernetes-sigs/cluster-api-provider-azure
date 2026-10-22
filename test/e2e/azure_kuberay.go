@@ -45,7 +45,43 @@ const (
 	rayVersion                     = "2.56.0"
 	rayImage                       = "rayproject/ray:" + rayVersion
 	objectStoreMemory              = "200000000" // ~200MB, prevents Ray from consuming all of /dev/shm
+	kueueVersion                   = "0.19.1"
+	kueueNamespace                 = "kueue-system"
+	kueueRayJobName                = "kueue-rayjob-e2e"
+	kueueLocalQueueName            = "user-queue"
+	kueueClusterQueueName          = "cluster-queue"
 )
+
+const kueueResourcesYAML = `
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: default-flavor
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: cluster-queue
+spec:
+  namespaceSelector: {}
+  resourceGroups:
+  - coveredResources: [cpu, memory]
+    flavors:
+    - name: default-flavor
+      resources:
+      - name: cpu
+        nominalQuota: "4"
+      - name: memory
+        nominalQuota: 8Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: user-queue
+  namespace: default
+spec:
+  clusterQueue: cluster-queue
+`
 
 var rayClusterGVR = schema.GroupVersionResource{
 	Group:    "ray.io",
@@ -57,6 +93,12 @@ var rayJobGVR = schema.GroupVersionResource{
 	Group:    "ray.io",
 	Version:  "v1",
 	Resource: "rayjobs",
+}
+
+var kueueWorkloadGVR = schema.GroupVersionResource{
+	Group:    "kueue.x-k8s.io",
+	Version:  "v1beta2",
+	Resource: "workloads",
 }
 
 // KubeRayClusterSpecInput is the input for KubeRayClusterSpec.
@@ -215,6 +257,74 @@ func KubeRayJobSpec(ctx context.Context, inputGetter func() KubeRayJobSpecInput)
 	}
 }
 
+// KueueRayJobSpec verifies that a RayJob is enqueued, admitted, and runs to completion.
+func KueueRayJobSpec(ctx context.Context, inputGetter func() KubeRayJobSpecInput) {
+	const specName = "kueue-rayjob"
+
+	input := inputGetter()
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+
+	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
+	Expect(clusterProxy).NotTo(BeNil())
+	clientset := clusterProxy.GetClientSet()
+	Expect(clientset).NotTo(BeNil())
+
+	InstallKubeRayOperator(ctx, clusterProxy, specName)
+	installKueue(ctx, clusterProxy, specName)
+
+	By("creating Kueue queues")
+	Expect(clusterProxy.CreateOrUpdate(ctx, []byte(kueueResourcesYAML))).To(Succeed())
+
+	dynamicClient := newDynamicClient(clusterProxy)
+	rayJob := newRayJobUnstructured(kueueRayJobName, corev1.NamespaceDefault)
+	rayJob.SetLabels(map[string]string{"kueue.x-k8s.io/queue-name": kueueLocalQueueName})
+	Expect(unstructured.SetNestedField(rayJob.Object, true, "spec", "suspend")).To(Succeed())
+	Expect(unstructured.SetNestedField(rayJob.Object,
+		`python -c "import ray; ray.init(); assert ray.get(ray.remote(lambda: 42).remote()) == 42"`,
+		"spec", "entrypoint")).To(Succeed())
+	Expect(unstructured.SetNestedField(rayJob.Object, "0",
+		"spec", "rayClusterSpec", "headGroupSpec", "rayStartParams", "num-cpus")).To(Succeed())
+
+	By("creating a Kueue-managed RayJob")
+	_, err := dynamicClient.Resource(rayJobGVR).Namespace(corev1.NamespaceDefault).Create(ctx, rayJob, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("waiting for Kueue to enqueue and admit the RayJob")
+	Eventually(func() bool {
+		workload := findKueueWorkload(ctx, dynamicClient, kueueRayJobName)
+		if workload == nil {
+			return false
+		}
+		localQueue, _, _ := unstructured.NestedString(workload.Object, "spec", "queueName")
+		clusterQueue, _, _ := unstructured.NestedString(workload.Object, "status", "admission", "clusterQueue")
+		return localQueue == kueueLocalQueueName && clusterQueue == kueueClusterQueueName
+	}, e2eConfig.GetIntervals(specName, "wait-workload-admitted")...).Should(BeTrue(), func() string {
+		workload := findKueueWorkload(ctx, dynamicClient, kueueRayJobName)
+		if workload == nil {
+			return "Kueue Workload not found"
+		}
+		return fmt.Sprintf("Kueue Workload status: %v", workload.Object["status"])
+	})
+
+	By("waiting for the RayJob to succeed")
+	Eventually(func() string {
+		rayJob, err := dynamicClient.Resource(rayJobGVR).Namespace(corev1.NamespaceDefault).Get(ctx, kueueRayJobName, metav1.GetOptions{})
+		if err != nil {
+			return ""
+		}
+		status, _, _ := unstructured.NestedString(rayJob.Object, "status", "jobStatus")
+		return status
+	}, e2eConfig.GetIntervals(specName, "wait-rayjob-complete")...).Should(Equal("SUCCEEDED"), func() string {
+		return describeRayJobStatus(ctx, dynamicClient, kueueRayJobName, corev1.NamespaceDefault, clientset)
+	})
+
+	if !input.SkipCleanup {
+		Expect(dynamicClient.Resource(rayJobGVR).Namespace(corev1.NamespaceDefault).Delete(ctx, kueueRayJobName, metav1.DeleteOptions{})).To(Succeed())
+	}
+}
+
 // InstallKubeRayOperator installs the KubeRay operator Helm chart onto the workload cluster
 // and waits for the operator deployment to become available.
 func InstallKubeRayOperator(ctx context.Context, clusterProxy framework.ClusterProxy, specName string) {
@@ -230,6 +340,24 @@ func InstallKubeRayOperator(ctx context.Context, clusterProxy framework.ClusterP
 
 	By("waiting for the KubeRay operator deployment to become available")
 	waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, kubeRayOperatorHelmReleaseName, kubeRayOperatorNamespace, specName)
+	WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+}
+
+func installKueue(ctx context.Context, clusterProxy framework.ClusterProxy, specName string) {
+	kubeconfigPath := clusterProxy.GetKubeconfigPath()
+	cmd := exec.CommandContext(ctx, "helm", "install", "kueue", "oci://registry.k8s.io/kueue/charts/kueue",
+		"--version", kueueVersion,
+		"--namespace", kueueNamespace,
+		"--create-namespace",
+		"--wait",
+		"--timeout", "5m0s",
+	)
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigPath))
+	output, err := cmd.CombinedOutput()
+	Logf("helm install kueue output: %s", string(output))
+	Expect(err).NotTo(HaveOccurred(), "failed to install Kueue: %s", string(output))
+
+	waitInput := GetWaitForDeploymentsAvailableInput(ctx, clusterProxy, "kueue-controller-manager", kueueNamespace, specName)
 	WaitForDeploymentsAvailable(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 }
 
@@ -411,6 +539,21 @@ func rayClusterSpec() map[string]interface{} {
 			},
 		},
 	}
+}
+
+func findKueueWorkload(ctx context.Context, dynamicClient dynamic.Interface, rayJobName string) *unstructured.Unstructured {
+	workloads, err := dynamicClient.Resource(kueueWorkloadGVR).Namespace(corev1.NamespaceDefault).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	for i := range workloads.Items {
+		for _, owner := range workloads.Items[i].GetOwnerReferences() {
+			if owner.Kind == "RayJob" && owner.Name == rayJobName {
+				return &workloads.Items[i]
+			}
+		}
+	}
+	return nil
 }
 
 // describeKubeRayOperatorLogs returns the logs of the KubeRay operator pod for debug output.
