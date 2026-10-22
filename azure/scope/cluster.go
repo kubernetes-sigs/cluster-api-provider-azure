@@ -630,11 +630,17 @@ func (s *ClusterScope) PrivateDNSSpec() (zoneSpec azure.ResourceSpecGetter, link
 			}
 		}
 
+		// The API server LB may have no frontend IPs yet when a partially provisioned cluster is deleted.
+		// The zone and links are still needed for deletion; RecordSpec rejects the empty IP on create.
+		var apiServerPrivateIP string
+		if len(s.APIServerLB().FrontendIPs) > 0 {
+			apiServerPrivateIP = s.APIServerPrivateIP()
+		}
 		records := make([]azure.ResourceSpecGetter, 1)
 		records[0] = privatedns.RecordSpec{
 			Record: infrav1.AddressRecord{
 				Hostname: azure.PrivateAPIServerHostname,
-				IP:       s.APIServerPrivateIP(),
+				IP:       apiServerPrivateIP,
 			},
 			ZoneName:      s.GetPrivateDNSZoneName(),
 			ResourceGroup: resourceGroup,
