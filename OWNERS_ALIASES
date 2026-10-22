@@ -15,9 +15,9 @@ aliases:
     - sbueringer
     - vincepri
   cluster-api-azure-maintainers:
+    - bryan-cox
     - jackfrancis
     - mboersma
     - nojnhuh
     - willie-yao
-  cluster-api-azure-reviewers:
-    - bryan-cox
+  cluster-api-azure-reviewers: []
