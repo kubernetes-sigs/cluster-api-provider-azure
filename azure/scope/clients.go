@@ -123,7 +123,7 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 
 	c.authType = credentialsProvider.Type()
 
-	tokenCredential, err := credentialsProvider.GetTokenCredential(ctx, c.ResourceManagerEndpoint, c.activeDirectoryEndpoint, c.tokenAudience)
+	tokenCredential, err := credentialsProvider.GetTokenCredential(ctx, c.ResourceManagerEndpoint, c.activeDirectoryEndpoint, c.tokenAudience, c.subscriptionID)
 	if err != nil {
 		return err
 	}

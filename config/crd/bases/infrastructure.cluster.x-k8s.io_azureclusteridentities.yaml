@@ -127,8 +127,8 @@ spec:
                 type: string
               clientID:
                 description: |-
-                  ClientID is the service principal client ID.
-                  Both User Assigned MSI and SP can use this field.
+                  ClientID is the service principal or user-assigned MSI client ID.
+                  Required for all types except AzureCLI (enforced by webhook).
                 type: string
               clientSecret:
                 description: ClientSecret is a secret reference which should contain
@@ -157,7 +157,7 @@ spec:
               type:
                 description: |-
                   Type is the type of Azure Identity used.
-                  ServicePrincipal, ServicePrincipalCertificate, UserAssignedMSI, ManualServicePrincipal, UserAssignedIdentityCredential, or WorkloadIdentity.
+                  ServicePrincipal, ServicePrincipalCertificate, UserAssignedMSI, ManualServicePrincipal, UserAssignedIdentityCredential, WorkloadIdentity, or AzureCLI.
                 enum:
                 - ServicePrincipal
                 - UserAssignedMSI
@@ -165,6 +165,7 @@ spec:
                 - ServicePrincipalCertificate
                 - WorkloadIdentity
                 - UserAssignedIdentityCredential
+                - AzureCLI
                 type: string
               userAssignedIdentityCredentialsCloudType:
                 description: |-
@@ -179,7 +180,6 @@ spec:
                   See the msi-dataplane for more details on UserAssignedIdentityCredentials - https://github.com/Azure/msi-dataplane/blob/main/pkg/dataplane/internal/client/models.go#L125
                 type: string
             required:
-            - clientID
             - tenantID
             - type
             type: object

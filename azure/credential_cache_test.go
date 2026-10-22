@@ -24,6 +24,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 )
@@ -98,4 +99,38 @@ func TestGetOrStoreRace(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestGetOrStoreAzureCLI(t *testing.T) {
+	g := NewGomegaWithT(t)
+	cache := NewCredentialCache()
+
+	first, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{TenantID: "tenant-a"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(first).NotTo(BeNil())
+
+	second, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{TenantID: "tenant-a"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(second).To(BeIdenticalTo(first))
+
+	other, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{TenantID: "tenant-b"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(other).NotTo(BeIdenticalTo(first))
+
+	empty, err := cache.GetOrStoreAzureCLI(nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(empty).NotTo(BeIdenticalTo(first))
+
+	withSub, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{Subscription: "sub-a"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(withSub).NotTo(BeIdenticalTo(first))
+	g.Expect(withSub).NotTo(BeIdenticalTo(empty))
+
+	withSubAgain, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{Subscription: "sub-a"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(withSubAgain).To(BeIdenticalTo(withSub))
+
+	otherSub, err := cache.GetOrStoreAzureCLI(&azidentity.AzureCLICredentialOptions{Subscription: "sub-b"})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(otherSub).NotTo(BeIdenticalTo(withSub))
 }

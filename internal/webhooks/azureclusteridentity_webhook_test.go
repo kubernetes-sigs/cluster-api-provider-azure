@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -44,6 +45,16 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with service principal and no client id",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					TenantID: fakeTenantID,
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name: "azureclusteridentity with service principal and resource id",
@@ -79,6 +90,51 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with azure cli",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with azure cli and client secret",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "azure-cli-secret",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity with azure cli and cert path",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+					CertPath: "/tmp/cert.pem",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity with azure cli and user assigned identity credentials path",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:                                infrav1.AzureCLI,
+					TenantID:                            fakeTenantID,
+					UserAssignedIdentityCredentialsPath: "/tmp/uai.json",
+				},
+			},
+			wantErr: true,
 		},
 	}
 
@@ -156,6 +212,41 @@ func TestAzureClusterIdentity_ValidateUpdate(t *testing.T) {
 					ClientID:   "diff-fake-Client-ID",
 					TenantID:   fakeTenantID,
 					ResourceID: fakeResourceID,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity azure cli with no change",
+			oldClusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity azure cli adding client secret",
+			oldClusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "azure-cli-secret",
+					},
 				},
 			},
 			wantErr: true,

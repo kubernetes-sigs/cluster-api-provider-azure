@@ -206,6 +206,46 @@ func TestASOSecretReconcile(t *testing.T) {
 				}
 			}),
 		},
+		"should reconcile normally for AzureCluster with an IdentityRef of type AzureCLI": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+				}),
+				defaultCluster,
+			},
+		},
+		"should delete leftover ASO secret when AzureCluster IdentityRef is AzureCLI": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+				}),
+				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+					s.Data = map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("123"),
+						"AZURE_TENANT_ID":       []byte("fooTenant"),
+						"AZURE_CLIENT_ID":       []byte("fooClient"),
+						"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
+					}
+				}),
+				defaultCluster,
+			},
+		},
 		"should reconcile normally for AzureCluster with an IdentityRef of type UserAssignedMSI": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
