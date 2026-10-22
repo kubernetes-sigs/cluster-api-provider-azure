@@ -194,6 +194,15 @@ func TestHasClientSecret(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "azure cli",
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type: infrav1.AzureCLI,
+				},
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -459,6 +468,75 @@ func TestGetTokenCredential(t *testing.T) {
 				}), gomock.Any())
 			},
 		},
+		{
+			name: "azure cli",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreAzureCLI(gomock.Cond(func(opts *azidentity.AzureCLICredentialOptions) bool {
+					return opts != nil && opts.TenantID == fakeTenantID && opts.Subscription == ""
+				}))
+			},
+		},
+		{
+			name: "azure cli prefers cluster subscription over tenant",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "sub-123",
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.AzureCLI,
+					TenantID: fakeTenantID,
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreAzureCLI(gomock.Cond(func(opts *azidentity.AzureCLICredentialOptions) bool {
+					return opts != nil && opts.Subscription == "sub-123" && opts.TenantID == ""
+				}))
+			},
+		},
+		{
+			name: "azure cli without tenant id",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type: infrav1.AzureCLI,
+				},
+			},
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreAzureCLI(gomock.Cond(func(opts *azidentity.AzureCLICredentialOptions) bool {
+					return opts != nil && opts.TenantID == "" && opts.Subscription == ""
+				}))
+			},
+		},
 	}
 
 	scheme := runtime.NewScheme()
@@ -483,10 +561,19 @@ func TestGetTokenCredential(t *testing.T) {
 
 			provider, err := NewAzureCredentialsProvider(t.Context(), cache, fakeClient, tt.cluster.Spec.IdentityRef, "")
 			g.Expect(err).NotTo(HaveOccurred())
-			_, err = provider.GetTokenCredential(t.Context(), "", tt.ActiveDirectoryAuthorityHost, "")
+			_, err = provider.GetTokenCredential(t.Context(), "", tt.ActiveDirectoryAuthorityHost, "", tt.cluster.Spec.SubscriptionID)
 			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
+}
+
+func TestAzureCLICredentialOptions(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(azureCLICredentialOptions("sub", "tenant").Subscription).To(Equal("sub"))
+	g.Expect(azureCLICredentialOptions("sub", "tenant").TenantID).To(BeEmpty())
+	g.Expect(azureCLICredentialOptions("", "tenant").TenantID).To(Equal("tenant"))
+	g.Expect(azureCLICredentialOptions("", "").TenantID).To(BeEmpty())
+	g.Expect(azureCLICredentialOptions("", "").Subscription).To(BeEmpty())
 }
 
 func TestParseCloudType(t *testing.T) {

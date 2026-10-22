@@ -2330,6 +2330,21 @@ func (m *MockCredentialCache) EXPECT() *MockCredentialCacheMockRecorder {
 	return m.recorder
 }
 
+// GetOrStoreAzureCLI mocks base method.
+func (m *MockCredentialCache) GetOrStoreAzureCLI(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreAzureCLI", opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreAzureCLI indicates an expected call of GetOrStoreAzureCLI.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreAzureCLI(opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreAzureCLI", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreAzureCLI), opts)
+}
+
 // GetOrStoreClientCert mocks base method.
 func (m *MockCredentialCache) GetOrStoreClientCert(tenantID, clientID string, cert, certPassword []byte, opts *azidentity.ClientCertificateCredentialOptions) (azcore.TokenCredential, error) {
 	m.ctrl.T.Helper()

@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -181,6 +182,68 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		g.Expect(created.Spec).To(Equal(asoresourcesv1.ResourceGroup_Spec{
 			Location: ptr.To("location"),
 		}))
+	})
+
+	t.Run("azure cli identity omits per-resource secret annotation", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		sch := runtime.NewScheme()
+		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+		g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+		identity := &infrav1.AzureClusterIdentity{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "azure-cli-identity",
+				Namespace: "namespace",
+			},
+			Spec: infrav1.AzureClusterIdentitySpec{
+				Type:     infrav1.AzureCLI,
+				TenantID: "tenant",
+			},
+		}
+		owner := &infrav1.AzureCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "namespace",
+			},
+			Spec: infrav1.AzureClusterSpec{
+				AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+					IdentityRef: &corev1.ObjectReference{
+						Name:      identity.Name,
+						Namespace: identity.Namespace,
+					},
+				},
+			},
+		}
+		c := fakeclient.NewClientBuilder().
+			WithScheme(sch).
+			WithObjects(identity, owner).
+			Build()
+		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
+
+		mockCtrl := gomock.NewController(t)
+		specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
+		specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "name",
+			},
+		})
+		specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Nil()).Return(&asoresourcesv1.ResourceGroup{
+			Spec: asoresourcesv1.ResourceGroup_Spec{
+				Location: ptr.To("location"),
+			},
+		}, nil)
+
+		ctx := t.Context()
+		_, err := s.CreateOrUpdateResource(ctx, specMock, "service")
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(azure.IsOperationNotDoneError(err)).To(BeTrue())
+
+		created := &asoresourcesv1.ResourceGroup{}
+		g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, created)).To(Succeed())
+		g.Expect(created.Annotations).To(Equal(map[string]string{
+			asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
+		}))
+		g.Expect(created.Annotations).NotTo(HaveKey(asoannotations.PerResourceSecret))
 	})
 
 	t.Run("resource is not ready in non-terminal state", func(t *testing.T) {
@@ -1412,6 +1475,359 @@ func TestPauseResource(t *testing.T) {
 			if test.verify != nil {
 				test.verify(g, ctrlClient, test.resource)
 			}
+		})
+	}
+}
+
+func TestClusterIdentityKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		owner         client.Object
+		wantName      string
+		wantNamespace string
+		wantOK        bool
+	}{
+		{
+			name: "azurecluster with identity ref namespace",
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "cluster-ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "id-ns"},
+					},
+				},
+			},
+			wantName:      "id",
+			wantNamespace: "id-ns",
+			wantOK:        true,
+		},
+		{
+			name: "azurecluster identity ref namespace defaults to owner",
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "cluster-ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id"},
+					},
+				},
+			},
+			wantName:      "id",
+			wantNamespace: "cluster-ns",
+			wantOK:        true,
+		},
+		{
+			name:  "azurecluster without identity ref",
+			owner: &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Namespace: "cluster-ns"}},
+		},
+		{
+			name: "azuremanagedcontrolplane with identity ref",
+			owner: &infrav1.AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "cluster-ns"},
+				Spec: infrav1.AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "id-ns"},
+					},
+				},
+			},
+			wantName:      "id",
+			wantNamespace: "id-ns",
+			wantOK:        true,
+		},
+		{
+			name: "azuremanagedcontrolplane without identity ref",
+			owner: &infrav1.AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "cluster-ns"},
+			},
+		},
+		{
+			name:  "other owner",
+			owner: newOwner(),
+		},
+		{
+			name: "azuremanagedmachinepool has no identity ref",
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "cluster-ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			name, namespace, ok := clusterIdentityKey(tt.owner)
+			g.Expect(name).To(Equal(tt.wantName))
+			g.Expect(namespace).To(Equal(tt.wantNamespace))
+			g.Expect(ok).To(Equal(tt.wantOK))
+		})
+	}
+}
+
+func TestCreateOrUpdateResource_RemovesStalePerResourceSecretAnnotation(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cliIdentity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "namespace"},
+		Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.AzureCLI},
+	}
+	owner := &infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "namespace"},
+		Spec: infrav1.AzureClusterSpec{
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "namespace"},
+			},
+		},
+	}
+
+	sch := runtime.NewScheme()
+	g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+	g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+	c := fakeclient.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(cliIdentity).
+		Build()
+	s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
+
+	ownerGVK, err := apiutil.GVKForObject(owner, sch)
+	g.Expect(err).NotTo(HaveOccurred())
+	ownerRef := metav1.OwnerReference{
+		APIVersion:         ownerGVK.GroupVersion().String(),
+		Kind:               ownerGVK.Kind,
+		Name:               owner.GetName(),
+		Controller:         ptr.To(true),
+		BlockOwnerDeletion: ptr.To(true),
+	}
+
+	mockCtrl := gomock.NewController(t)
+	specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
+	specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "name",
+		},
+	})
+	specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+		return group, nil
+	})
+	specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+	ctx := t.Context()
+	// This resource was reconciled previously when the identity was a type
+	// that uses a per-resource secret (e.g. ServicePrincipal). It still
+	// carries that stale annotation.
+	g.Expect(c.Create(ctx, &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "name",
+			Namespace:       "namespace",
+			OwnerReferences: []metav1.OwnerReference{ownerRef},
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: clusterName,
+			},
+			Annotations: map[string]string{
+				asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+				asoannotations.PerResourceSecret: "cluster-aso-secret",
+			},
+		},
+		Status: asoresourcesv1.ResourceGroup_STATUS{
+			Conditions: []conditions.Condition{
+				{
+					Type:     conditions.ConditionTypeReady,
+					Status:   metav1.ConditionTrue,
+					Severity: conditions.ConditionSeverityNone,
+				},
+			},
+		},
+	})).To(Succeed())
+
+	// The update is applied but begins asynchronously, so a transient
+	// "not done" error is expected even though the annotation is fixed up.
+	_, err = s.CreateOrUpdateResource(ctx, specMock, "service")
+	g.Expect(err).To(HaveOccurred())
+
+	updated := &asoresourcesv1.ResourceGroup{}
+	g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+	g.Expect(updated.Annotations).NotTo(HaveKey(asoannotations.PerResourceSecret))
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
+}
+
+func TestUsePerResourceSecret(t *testing.T) {
+	identity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "ns"},
+		Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.ServicePrincipal},
+	}
+	cliIdentity := identity.DeepCopy()
+	cliIdentity.Spec.Type = infrav1.AzureCLI
+
+	tests := []struct {
+		name    string
+		objects []client.Object
+		owner   client.Object
+		want    bool
+	}{
+		{
+			name:  "no identity ref uses per-resource secret",
+			owner: &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Namespace: "ns"}},
+			want:  true,
+		},
+		{
+			name: "missing identity uses per-resource secret",
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "service principal uses per-resource secret",
+			objects: []client.Object{identity},
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "azure cli omits per-resource secret",
+			objects: []client.Object{cliIdentity},
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name:    "azuremanagedcontrolplane azure cli omits per-resource secret",
+			objects: []client.Object{cliIdentity},
+			owner: &infrav1.AzureManagedControlPlane{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureManagedControlPlaneSpec{
+					AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+						IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "azuremanagedmachinepool azure cli omits per-resource secret",
+			objects: []client.Object{
+				cliIdentity,
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: "ns"},
+					Spec: clusterv1.ClusterSpec{
+						ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: infrav1.GroupVersion.Group,
+							Kind:     infrav1.AzureManagedControlPlaneKind,
+							Name:     "cp",
+						},
+					},
+				},
+				&infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{Name: "cp", Namespace: "ns"},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+						},
+					},
+				},
+			},
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool",
+					Namespace: "ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "azuremanagedmachinepool without cluster label uses per-resource secret",
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{Name: "pool", Namespace: "ns"},
+			},
+			want: true,
+		},
+		{
+			name: "azuremanagedmachinepool with missing cluster uses per-resource secret",
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool",
+					Namespace: "ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "azuremanagedmachinepool with cluster but no control plane ref uses per-resource secret",
+			objects: []client.Object{
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: "ns"},
+				},
+			},
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool",
+					Namespace: "ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "azuremanagedmachinepool service principal uses per-resource secret",
+			objects: []client.Object{
+				identity,
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: "ns"},
+					Spec: clusterv1.ClusterSpec{
+						ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: infrav1.GroupVersion.Group,
+							Kind:     infrav1.AzureManagedControlPlaneKind,
+							Name:     "cp",
+						},
+					},
+				},
+				&infrav1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{Name: "cp", Namespace: "ns"},
+					Spec: infrav1.AzureManagedControlPlaneSpec{
+						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
+							IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+						},
+					},
+				},
+			},
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool",
+					Namespace: "ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			sch := runtime.NewScheme()
+			g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+			g.Expect(clusterv1.AddToScheme(sch)).To(Succeed())
+			c := fakeclient.NewClientBuilder().WithScheme(sch).WithObjects(tt.objects...).Build()
+			s := New[*asoresourcesv1.ResourceGroup](c, clusterName, tt.owner).(*reconciler[*asoresourcesv1.ResourceGroup])
+			g.Expect(s.usePerResourceSecret(t.Context())).To(Equal(tt.want))
 		})
 	}
 }

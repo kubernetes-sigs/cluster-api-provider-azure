@@ -244,6 +244,31 @@ spec:
     - <cluster-namespace>
 ```
 
+## Azure CLI
+
+<aside class="note warning">
+<h1> Warning </h1>
+CAPZ authenticates by running <code class="hjls">az</code> as the OS user of the controller process. There is no separate client ID or secret. Every cluster in <code class="hjls">allowedNamespaces</code> uses that same Azure login. An empty <code class="hjls">allowedNamespaces</code> object allows every namespace.
+</aside>
+
+Use this when the CAPZ controller host already has an `az login` session. `clientID` is unused. `tenantID` is required on the identity, but CAPZ does not pass it to `az account get-access-token` when a subscription is set (Azure CLI rejects `--tenant` and `--subscription` together). The subscription is `AzureCluster.spec.subscriptionID` or `AzureManagedControlPlane.spec.subscriptionID`. If that field is empty, CAPZ uses `AZURE_SUBSCRIPTION_ID`. If both are set, the spec value wins.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: example-identity
+  namespace: default
+spec:
+  type: AzureCLI
+  tenantID: <azure-tenant-id>
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
+
+This authenticates only CAPZ. It does not log ASO in with `az`. Configure ASO separately; a default ASO install uses environment or managed identity. CAPZ does not create a per-cluster ASO Secret for this type, and it deletes a leftover Secret when `identityRef` points at an AzureCLI identity. It removes `serviceoperator.azure.com/credential-from` only after that identity is read.
+
 ## Azure Host Identity
 
 The identity assigned to the Azure host which in the control plane provides the identity to Azure Cloud Provider, and can be used on all nodes to provide access to Azure services during cloud-init, etc.
