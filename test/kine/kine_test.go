@@ -244,7 +244,7 @@ func TestCertificatesAndCloudInit(t *testing.T) {
 source ./scripts/ci-kine-conformance.sh
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
-export KINE_PROFILE=conformance
+export KINE_PROFILE=conformance KINE_BACKEND=kine-postgres
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 umask 077
 capz::kine::certificates
@@ -265,6 +265,7 @@ capz::kine::certificates
 	}{
 		{"server", "10.250.0.4", x509.ExtKeyUsageServerAuth},
 		{"server", "127.0.0.1", x509.ExtKeyUsageServerAuth},
+		{"server", "localhost", x509.ExtKeyUsageServerAuth},
 		{"client", "", x509.ExtKeyUsageClientAuth},
 	} {
 		block, _ := pem.Decode(readFile(t, filepath.Join(state, tc.name+".crt")))
@@ -301,6 +302,8 @@ capz::kine::certificates
 	scripts := map[string]string{
 		"/opt/configure-kine-storage.sh": "configure-performance-storage.sh",
 		"/opt/kine-connections.sh":       "connections.sh",
+		"/opt/mount-datastore-disk.sh":   "mount-datastore-disk.sh",
+		"/usr/local/bin/check-datastore": "check-datastore.sh",
 	}
 	for _, file := range config.Files {
 		if file.Path == "/etc/systemd/system/kine.service" &&
@@ -346,24 +349,7 @@ capz::kine::certificates
 }
 
 func TestReadinessDiagnostics(t *testing.T) {
-	var config struct {
-		Files []struct {
-			Path    string `yaml:"path"`
-			Content string `yaml:"content"`
-		} `yaml:"write_files"`
-	}
-	if err := yaml.Unmarshal(readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "cloud-init.yaml")), &config); err != nil {
-		t.Fatal(err)
-	}
-	var check string
-	for _, file := range config.Files {
-		if file.Path == "/usr/local/bin/check-kine" {
-			check = file.Content
-		}
-	}
-	if check == "" {
-		t.Fatal("missing Kine readiness script")
-	}
+	check := string(readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "check-datastore.sh")))
 	for _, tc := range []struct {
 		name     string
 		wantExit int
@@ -378,7 +364,7 @@ func TestReadinessDiagnostics(t *testing.T) {
 		{"read-warning", 0, []string{"read warning", "Kine read exit status: 0\nValue: <ready>"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd := exec.CommandContext(t.Context(), "bash", "-s")
+			cmd := exec.CommandContext(t.Context(), "bash", "-s", "--", "kine-postgres")
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_CHECK_CASE="+tc.name)
 			cmd.Stdin = strings.NewReader(`
 systemctl() {
@@ -440,11 +426,18 @@ etcdctl() {
 }
 
 func TestProvisionReadiness(t *testing.T) {
-	for _, ready := range []bool{true, false} {
-		t.Run(map[bool]string{true: "ready", false: "guest-command-failed"}[ready], func(t *testing.T) {
+	for _, tc := range []struct {
+		backend string
+		ready   bool
+	}{
+		{"kine-postgres", true}, {"kine-postgres", false}, {"etcd", true}, {"etcd", false},
+	} {
+		t.Run(tc.backend+"/"+map[bool]string{true: "ready", false: "guest-command-failed"}[tc.ready], func(t *testing.T) {
 			dir := t.TempDir()
 			message := "KINE_READY"
-			if !ready {
+			if tc.backend == "etcd" && tc.ready {
+				message = "ETCD_READY"
+			} else if tc.backend == "kine-postgres" && !tc.ready {
 				message = "cloud-init failed"
 			}
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -459,7 +452,9 @@ JOB_NAME=test-kine-job
 BUILD_PROVENANCE=https://github.com/test/repo/pull/123/commits/test-head
 run_id=test-run
 message=$KINE_TEST_MESSAGE
-unset KINE_PROFILE
+KINE_BACKEND=$KINE_TEST_BACKEND
+KINE_PROFILE=conformance
+if [[ "$KINE_BACKEND" == etcd ]]; then KINE_PROFILE=performance; fi
 unset KINE_VM_SIZE KINE_ZONE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
@@ -474,14 +469,17 @@ az() {
 capz::kine::provision
 `)
 			cmd.Dir = repoRoot(t)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_MESSAGE="+message)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_MESSAGE="+message, "KINE_TEST_BACKEND="+tc.backend)
 			output, err := cmd.CombinedOutput()
-			if (err == nil) != ready {
-				t.Fatalf("readiness=%t: %v\n%s", ready, err, output)
+			if (err == nil) != tc.ready {
+				t.Fatalf("readiness=%t: %v\n%s", tc.ready, err, output)
 			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
-			if strings.Contains(commands, "--name allow-kine-metrics") {
-				t.Fatal("conformance must not enable network access to Kine metrics")
+			if strings.Contains(commands, "--name allow-kine-metrics") != (tc.backend == "etcd") {
+				t.Fatal("only the performance control should enable metrics ingress")
+			}
+			if !strings.Contains(commands, "/usr/local/bin/check-datastore "+tc.backend) {
+				t.Fatal("readiness must exercise the selected backend")
 			}
 			groupCreate := strings.SplitN(commands, "\n", 2)[0]
 			for _, tag := range []string{
@@ -805,6 +803,8 @@ func TestRejectUnsupportedRuns(t *testing.T) {
 		{"ci-artifacts", "E2E_ARGS=-kubetest.use-ci-artifacts", "supports Linux/IPv4"},
 		{"unpinned", "KINE_KUBERNETES_VERSION=stable-1.35", "Pin KINE_KUBERNETES_VERSION"},
 		{"invalid-profiling", "KINE_COLLECT_PROFILES=invalid", "KINE_COLLECT_PROFILES must be true or false"},
+		{"invalid-backend", "KINE_BACKEND=invalid", "KINE_BACKEND must be etcd or kine-postgres"},
+		{"etcd-conformance", "KINE_BACKEND=etcd", "supported only with KINE_PROFILE=performance"},
 		{"wrong-flavor", "CONFORMANCE_FLAVOR=other", "requires CONFORMANCE_FLAVOR"},
 		{"existing-group", "KUBERNETES_VERSION=v1.35.4", "Refusing to reuse resource group"},
 	} {
@@ -815,7 +815,7 @@ export AZURE_SUBSCRIPTION_ID=test-subscription AZURE_LOCATION=test-region
 export ARTIFACTS="$KINE_TEST_DIR" CLUSTER_NAME=capz-kine-unit-test
 export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
-unset KINE_KUBERNETES_VERSION KINE_COLLECT_PROFILES
+unset KINE_KUBERNETES_VERSION KINE_COLLECT_PROFILES KINE_BACKEND KINE_PROFILE
 export "$KINE_TEST_SETTING"
 capz::kine::performance_preflight() { :; }
 az() {

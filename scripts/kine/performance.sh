@@ -16,9 +16,14 @@
 
 # shellcheck source=scripts/kine/connections.sh
 source "$(dirname "${BASH_SOURCE[0]}")/connections.sh"
+# shellcheck source=scripts/kine/backend.sh
+source "$(dirname "${BASH_SOURCE[0]}")/backend.sh"
 
 capz::kine::performance_defaults() {
-  capz::kine::connection_defaults
+  capz::kine::backend_defaults
+  if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+    capz::kine::connection_defaults
+  fi
   export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
   export KINE_ZONE="${KINE_ZONE:-2}"
   [[ "${KINE_ZONE}" =~ ^[123]$ ]] || { echo "KINE_ZONE must be 1, 2, or 3." >&2; return 1; }
@@ -97,10 +102,16 @@ capz::kine::performance_preflight() {
     "${artifact_dir}/node-image-version.json" >/dev/null ||
     { echo "Node community image version does not match ${KUBERNETES_VERSION}." >&2; return 1; }
   {
+    printf 'datastore-backend=%s\ndatastore-version=%s\n' "${KINE_BACKEND}" "${KINE_DATASTORE_VERSION}"
     printf 'location=%s\nzone=%s\nimage=%s\ndisk-size-gib=%s\ndisk-iops=%s\ndisk-mbps=%s\n' \
       "${AZURE_LOCATION}" "${KINE_ZONE}" "${KINE_VM_IMAGE}" "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}"
-    printf 'postgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
-      "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}"
+    if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+      printf 'postgres-version=16\npostgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
+        "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}"
+    else
+      printf 'etcd-members=1\netcd-quota-backend-bytes=%s\netcd-fsync=true\netcd-auto-compaction=disabled\netcd-metrics-proxy=nginx\n' \
+        "${KINE_ETCD_QUOTA_BYTES}"
+    fi
     printf 'kubernetes-version=%s\nnode-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
       "${KUBERNETES_VERSION}" "${gallery}" "${node_image}" "${KINE_NODE_IMAGE_VERSION}"
     printf 'collect-profiles=%s\n' "${KINE_COLLECT_PROFILES:-false}"

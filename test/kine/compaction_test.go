@@ -183,6 +183,7 @@ source ./scripts/ci-kine-conformance.sh
 artifact_dir=$KINE_TEST_DIR
 state_dir="$KINE_TEST_DIR/private"
 KINE_RESOURCE_GROUP=test-kine
+KINE_BACKEND=kine-postgres
 fixture_started=false
 vm_created=true
 capz::kine::az() { echo '{"value":[]}'; }

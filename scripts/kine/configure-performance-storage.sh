@@ -22,30 +22,8 @@ source /etc/kine/connections.env
 : "${KINE_POSTGRES_MAX_CONNECTIONS:?}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS:?}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS:?}"
 capz::kine::connection_defaults
 
-device=/dev/disk/azure/data/by-lun/0
-mount=/var/lib/kine-postgresql
-for ((attempt=0; attempt<60; attempt++)); do
-  [[ -b "${device}" ]] && break
-  sleep 2
-done
-[[ -b "${device}" ]] || { echo "Azure data disk LUN 0 is missing; refusing OS-disk fallback." >&2; exit 1; }
-[[ "$(lsblk -dn -o TRAN "${device}")" == nvme ]] ||
-  { echo "Data disk LUN 0 is not NVMe." >&2; exit 1; }
-if lsblk -nr -o MOUNTPOINT "${device}" | grep -q '[^[:space:]]'; then
-  echo "Refusing to initialize an already mounted disk." >&2
-  exit 1
-fi
-if [[ -n "$(wipefs --noheadings --output TYPE "${device}")" ]]; then
-  echo "Refusing to format a disk with existing signatures." >&2
-  exit 1
-fi
-mkfs.ext4 -F "${device}"
-install -d "${mount}"
-uuid=$(blkid -s UUID -o value "${device}")
-[[ -n "${uuid}" ]] || { echo "Formatted disk has no UUID." >&2; exit 1; }
-printf 'UUID=%s %s ext4 defaults,noatime 0 2\n' "${uuid}" "${mount}" >> /etc/fstab
-mount "${mount}"
-mountpoint -q "${mount}"
+# shellcheck source=scripts/kine/mount-datastore-disk.sh
+source /opt/mount-datastore-disk.sh
 systemctl stop postgresql
 install -d -o postgres -g postgres "${mount}/16"
 cp -a /var/lib/postgresql/16/main "${mount}/16/main"

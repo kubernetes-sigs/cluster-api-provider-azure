@@ -5,7 +5,7 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kine-metrics-ca
+  name: "{{.CL2_DATASTORE_JOB}}-metrics-ca"
   namespace: monitoring
 type: Opaque
 data:
@@ -14,10 +14,10 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kine-metrics
+  name: "{{.CL2_DATASTORE_JOB}}-metrics"
   namespace: monitoring
   labels:
-    k8s-app: kine
+    k8s-app: "{{.CL2_DATASTORE_JOB}}"
 spec:
   ports:
   - name: https-metrics
@@ -27,7 +27,7 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: kine-metrics
+  name: "{{.CL2_DATASTORE_JOB}}-metrics"
   namespace: monitoring
 subsets:
 - addresses:
@@ -39,7 +39,7 @@ subsets:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: kine-metrics
+  name: "{{.CL2_DATASTORE_JOB}}-metrics"
   namespace: monitoring
 spec:
   jobLabel: k8s-app
@@ -53,11 +53,11 @@ spec:
       serverName: 10.250.0.4
       ca:
         secret:
-          name: kine-metrics-ca
+          name: "{{.CL2_DATASTORE_JOB}}-metrics-ca"
           key: ca.crt
   selector:
     matchLabels:
-      k8s-app: kine
+      k8s-app: "{{.CL2_DATASTORE_JOB}}"
   namespaceSelector:
     matchNames:
     - monitoring

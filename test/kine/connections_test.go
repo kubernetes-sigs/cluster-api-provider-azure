@@ -85,6 +85,7 @@ func TestConnectionBudgetCloudInit(t *testing.T) {
 			state := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
 source ./scripts/ci-kine-conformance.sh
+export KINE_PROFILE=conformance KINE_BACKEND=kine-postgres
 repo_root=$PWD
 state_dir=$KINE_TEST_DIR
 umask 077

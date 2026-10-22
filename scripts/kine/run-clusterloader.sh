@@ -16,6 +16,15 @@
 
 set -euo pipefail
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+# shellcheck source=scripts/kine/backend.sh
+source "${repo_root}/scripts/kine/backend.sh"
+if [[ "${KINE_PROFILE:-performance}" != performance ]]; then
+  echo "The CL2 runner requires KINE_PROFILE=performance." >&2
+  exit 1
+fi
+export KINE_PROFILE=performance
+capz::kine::backend_defaults
+export CL2_DATASTORE_JOB="${KINE_METRICS_JOB}"
 revision=08213f28be4c7672547ce47829d13f1f45cafa3a
 checksum=750b1efa023a6255a5d384eba141ba6638ad7635851d463b8a12c272477d7dcb
 cache="${repo_root}/_artifacts/perf-tests/${revision}"
@@ -43,7 +52,9 @@ if [[ ! -x "${cache}/clusterloader2" ]]; then
 fi
 cp -R "${cache}/source/clusterloader2/testing/write-throughput/." "${cache}/workload/"
 # Replace etcd-specific/newer-version metrics with the Kubernetes 1.35 API metrics used by this fixture.
-cp "${repo_root}/scripts/kine/clusterloader/measurements.yaml" "${cache}/workload/modules/measurements.yaml"
+sed -e "s/__DATASTORE_PREFIX__/${KINE_METRICS_PREFIX}/g" -e "s/__DATASTORE_JOB__/${KINE_METRICS_JOB}/g" \
+  "${repo_root}/scripts/kine/clusterloader/measurements.yaml" > "${cache}/workload/modules/measurements.yaml"
+cat "${repo_root}/scripts/kine/clusterloader/measurements-${KINE_BACKEND}.yaml" >> "${cache}/workload/modules/measurements.yaml"
 cp "${repo_root}/scripts/kine/clusterloader/writer.yaml" "${cache}/workload/modules/writer/deployment.yaml"
 [[ "${1:-}" != --prepare-only ]] || exit 0
 
@@ -63,6 +74,7 @@ export CL2_PROMETHEUS_PVC_ENABLED=false
 export CL2_PROMETHEUS_TOLERATE_MASTER=false
 {
   printf 'perf-tests-revision=%s\n' "${revision}"
+  printf 'datastore-backend=%s\ndatastore-version=%s\n' "${KINE_BACKEND}" "${KINE_DATASTORE_VERSION}"
   printf 'pods=%s\nwriters=%s\nqps-per-writer=%s\nwatchers=%s\nwatches-per-watcher=%s\nduration=%s\n' \
     "${CL2_PODS_BENCHMARK_POD_COUNT}" "${CL2_PODS_WRITE_REPLICAS}" "${CL2_PODS_PATCH_QPS}" \
     "${CL2_PODS_WATCH_REPLICAS}" "${CL2_PODS_WATCHES_PER_REPLICA}" "${CL2_PODS_BENCHMARK_DURATION}"

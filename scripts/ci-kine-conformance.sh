@@ -27,9 +27,9 @@ capz::kine::az() {
 }
 
 capz::kine::certificates() {
-  capz::kine::connection_defaults
+  capz::kine::backend_defaults
   printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' \
-    'extendedKeyUsage=serverAuth' 'subjectAltName=IP:10.250.0.4,IP:127.0.0.1' > "${state_dir}/server.ext"
+    'extendedKeyUsage=serverAuth' 'subjectAltName=IP:10.250.0.4,IP:127.0.0.1,DNS:localhost' > "${state_dir}/server.ext"
   printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
     'extendedKeyUsage=clientAuth' > "${state_dir}/client.ext"
   openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 7 \
@@ -51,31 +51,52 @@ capz::kine::certificates() {
   KINE_CLIENT_CERT_B64=$(base64 < "${state_dir}/client.crt" | tr -d '\n')
   KINE_CLIENT_KEY_B64=$(base64 < "${state_dir}/client.key" | tr -d '\n')
   export KINE_CA_CERT_B64 KINE_CLIENT_CERT_B64 KINE_CLIENT_KEY_B64
-  local server_cert server_key storage_script connections_script metrics_address=127.0.0.1 profiling=false
+  local server_cert server_key disk_script check_script metrics_address=127.0.0.1 profiling=false
   if [[ "${KINE_PROFILE:-conformance}" == performance ]]; then
     metrics_address=10.250.0.4
     profiling="${KINE_COLLECT_PROFILES:-false}"
   fi
-  storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
-  connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
+  disk_script=$(base64 < "${repo_root}/scripts/kine/mount-datastore-disk.sh" | tr -d '\n')
+  check_script=$(base64 < "${repo_root}/scripts/kine/check-datastore.sh" | tr -d '\n')
   server_cert=$(base64 < "${state_dir}/server.crt" | tr -d '\n')
   server_key=$(base64 < "${state_dir}/server.key" | tr -d '\n')
-  sed -e "s|__CA_CERT__|${KINE_CA_CERT_B64}|g" \
-    -e "s|__SERVER_CERT__|${server_cert}|g" \
-    -e "s|__SERVER_KEY__|${server_key}|g" \
-    -e "s|__CLIENT_CERT__|${KINE_CLIENT_CERT_B64}|g" \
-    -e "s|__CLIENT_KEY__|${KINE_CLIENT_KEY_B64}|g" \
-    -e "s|__STORAGE_SCRIPT__|${storage_script}|g" \
-    -e "s|__CONNECTIONS_SCRIPT__|${connections_script}|g" \
-    -e "s|__POSTGRES_MAX_CONNECTIONS__|${KINE_POSTGRES_MAX_CONNECTIONS}|g" \
-    -e "s|__KINE_MAX_OPEN_CONNECTIONS__|${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}|g" \
-    -e "s|__KINE_MAX_IDLE_CONNECTIONS__|${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}|g" \
-    -e "s|__METRICS_BIND_ADDRESS__|${metrics_address}|g" \
-    -e "s|__METRICS_PROFILING__|${profiling}|g" \
-    "${repo_root}/scripts/kine/cloud-init.yaml" > "${state_dir}/cloud-init.yaml"
+  local template="${repo_root}/scripts/kine/cloud-init.yaml"
+  local -a replacements=(
+    -e "s|__CA_CERT__|${KINE_CA_CERT_B64}|g"
+    -e "s|__SERVER_CERT__|${server_cert}|g"
+    -e "s|__SERVER_KEY__|${server_key}|g"
+    -e "s|__CLIENT_CERT__|${KINE_CLIENT_CERT_B64}|g"
+    -e "s|__CLIENT_KEY__|${KINE_CLIENT_KEY_B64}|g"
+    -e "s|__DISK_SCRIPT__|${disk_script}|g"
+    -e "s|__CHECK_SCRIPT__|${check_script}|g"
+    -e "s|__METRICS_BIND_ADDRESS__|${metrics_address}|g"
+    -e "s|__METRICS_PROFILING__|${profiling}|g"
+  )
+  if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+    capz::kine::connection_defaults
+    local storage_script connections_script
+    storage_script=$(base64 < "${repo_root}/scripts/kine/configure-performance-storage.sh" | tr -d '\n')
+    connections_script=$(base64 < "${repo_root}/scripts/kine/connections.sh" | tr -d '\n')
+    replacements+=(
+      -e "s|__STORAGE_SCRIPT__|${storage_script}|g"
+      -e "s|__CONNECTIONS_SCRIPT__|${connections_script}|g"
+      -e "s|__POSTGRES_MAX_CONNECTIONS__|${KINE_POSTGRES_MAX_CONNECTIONS}|g"
+      -e "s|__KINE_MAX_OPEN_CONNECTIONS__|${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}|g"
+      -e "s|__KINE_MAX_IDLE_CONNECTIONS__|${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}|g"
+    )
+  else
+    template="${repo_root}/scripts/kine/cloud-init-etcd.yaml"
+    replacements+=(
+      -e "s|__ETCD_VERSION__|${KINE_DATASTORE_VERSION}|g"
+      -e "s|__ETCD_SHA256__|${KINE_ETCD_SHA256}|g"
+      -e "s|__ETCD_QUOTA_BYTES__|${KINE_ETCD_QUOTA_BYTES}|g"
+    )
+  fi
+  sed "${replacements[@]}" "${template}" > "${state_dir}/cloud-init.yaml"
 }
 
 capz::kine::provision() {
+  capz::kine::backend_defaults
   fixture_started=true
   capz::kine::az group create --name "${KINE_RESOURCE_GROUP}" --location "${AZURE_LOCATION}" \
     --tags "capz-kine-run=${run_id}" "creationTimestamp=${TIMESTAMP}" \
@@ -142,20 +163,25 @@ capz::kine::provision() {
     { echo "Expected an NVMe VM with one uncached data disk at LUN 0." >&2; return 1; }
   capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
     --command-id RunShellScript --scripts \
-    'set -eu; timeout 1200 cloud-init status --wait; /usr/local/bin/check-kine' \
+    "set -eu; timeout 1200 cloud-init status --wait; /usr/local/bin/check-datastore ${KINE_BACKEND}" \
     --output json > "${artifact_dir}/readiness.json"
   # Run Command can return HTTP success even when the guest script failed.
-  if ! jq -r '.value[].message' "${artifact_dir}/readiness.json" | grep -qx KINE_READY; then
-    echo "Kine gRPC readiness failed; see ${artifact_dir}/readiness.json." >&2
+  local marker=KINE_READY
+  if [[ "${KINE_BACKEND}" == etcd ]]; then marker=ETCD_READY; fi
+  if ! jq -r '.value[].message' "${artifact_dir}/readiness.json" | grep -qx "${marker}"; then
+    echo "${KINE_BACKEND} gRPC readiness failed; see ${artifact_dir}/readiness.json." >&2
     return 1
   fi
 }
 
 capz::kine::collect_compactions() {
+  capz::kine::backend_defaults
+  local collector=/usr/local/bin/collect-kine-compactions
+  if [[ "${KINE_BACKEND}" == etcd ]]; then collector=/usr/local/bin/collect-etcd-compactions; fi
   if ! capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
-    --command-id RunShellScript --scripts /usr/local/bin/collect-kine-compactions \
+    --command-id RunShellScript --scripts "${collector}" \
     --output json > "${artifact_dir}/compaction-command.json"; then
-    echo "Failed to collect Kine compaction history." >&2
+    echo "Failed to collect ${KINE_BACKEND} compaction history." >&2
     return 1
   fi
   local encoded
@@ -163,10 +189,10 @@ capz::kine::collect_compactions() {
     capture("(?m)^KINE_COMPACTIONS_BEGIN\\n(?<data>[A-Za-z0-9+/=]+)\\nKINE_COMPACTIONS_END$").data] |
     if length == 1 then .[0] else error("Missing or truncated compaction history") end' \
     "${artifact_dir}/compaction-command.json") ||
-    { echo "Kine compaction history is incomplete; see compaction-command.json." >&2; return 1; }
+    { echo "${KINE_BACKEND} compaction history is incomplete; see compaction-command.json." >&2; return 1; }
   if ! printf '%s' "${encoded}" | openssl base64 -d -A | gzip -dc > "${artifact_dir}/compaction.log.tmp"; then
     rm -f "${artifact_dir}/compaction.log.tmp"
-    echo "Kine compaction history could not be decoded completely." >&2
+    echo "${KINE_BACKEND} compaction history could not be decoded completely." >&2
     return 1
   fi
   mv "${artifact_dir}/compaction.log.tmp" "${artifact_dir}/compaction.log"
@@ -175,12 +201,23 @@ capz::kine::collect_compactions() {
 capz::kine::cleanup() {
   local result=$1 exists owner
   trap - EXIT
+  capz::kine::backend_defaults
   if [[ "${vm_created}" == true ]]; then
+    local logs='journalctl --no-pager -u kine -n 60; tail -n 60 /var/log/cloud-init-output.log; cloud-init status --long; printf "cloud-init status exit code: %s\n" "$?"'
+    if [[ "${KINE_BACKEND}" == etcd ]]; then
+      logs='journalctl --no-pager -u etcd -u etcd-metrics -n 60; tail -n 60 /var/log/cloud-init-output.log; cloud-init status --long; printf "cloud-init status exit code: %s\n" "$?"'
+      if ! capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
+        --command-id RunShellScript --scripts /usr/local/bin/collect-etcd-status \
+        --output json > "${artifact_dir}/etcd-status.json" ||
+        ! jq -r '.value[]?.message' "${artifact_dir}/etcd-status.json" | grep -qx ETCD_STATUS_OK; then
+        echo "Failed to collect healthy etcd endpoint status; see etcd-status.json." >&2
+        result=1
+      fi
+    fi
     if ! capz::kine::az vm run-command invoke --resource-group "${KINE_RESOURCE_GROUP}" --name kine \
-      --command-id RunShellScript --scripts \
-      'journalctl --no-pager -u kine -n 60; tail -n 60 /var/log/cloud-init-output.log; cloud-init status --long; printf "cloud-init status exit code: %s\n" "$?"' \
+      --command-id RunShellScript --scripts "${logs}" \
       --output json > "${artifact_dir}/datastore-logs.json"; then
-      echo "Failed to collect Kine VM logs." >&2
+      echo "Failed to collect ${KINE_BACKEND} VM logs." >&2
       result=1
     fi
     if [[ "${KINE_PROFILE:-conformance}" == performance ]] && ! capz::kine::collect_compactions; then
@@ -223,6 +260,7 @@ capz::kine::main() {
     performance) flavor=kine-postgres-performance ;;
     *) echo "Unknown KINE_PROFILE: ${KINE_PROFILE}" >&2; return 1 ;;
   esac
+  capz::kine::backend_defaults
   export KINE_COLLECT_PROFILES="${KINE_COLLECT_PROFILES:-false}"
   case "${KINE_COLLECT_PROFILES}" in
     true|false) ;;
@@ -295,7 +333,10 @@ capz::kine::main() {
   capz::kine::certificates
   printf 'subscription=%s\nworkload-resource-group=%s\ndatastore-resource-group=%s\n' \
     "${AZURE_SUBSCRIPTION_ID}" "${CLUSTER_NAME}" "${KINE_RESOURCE_GROUP}" > "${artifact_dir}/resources.txt"
-  echo "Provisioning Kine v0.17.2 / PostgreSQL 16 in ${KINE_RESOURCE_GROUP}."
+  echo "Provisioning ${KINE_BACKEND} ${KINE_DATASTORE_VERSION} in ${KINE_RESOURCE_GROUP}."
+  if [[ "${KINE_BACKEND}" == etcd ]]; then
+    echo "Single-member etcd control: fsync enabled, experimental 32 GiB quota, API-server-managed compaction."
+  fi
   capz::kine::provision
   bash "${repo_root}/scripts/ci-conformance.sh"
 }

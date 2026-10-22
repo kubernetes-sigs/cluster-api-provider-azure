@@ -50,17 +50,19 @@ func (kinePerformanceTestProxy) GetKubeconfigPath() string {
 
 func TestRunKinePerformanceProfiling(t *testing.T) {
 	for _, tc := range []struct {
-		name, profiles, runnerExit string
-		snapshot, wantRunner       bool
-		wantErrors                 []string
+		name, backend, profiles, runnerExit string
+		snapshot, wantRunner                bool
+		wantErrors                          []string
 	}{
-		{"default-disabled", "", "0", true, true, nil},
-		{"explicit-disabled", "false", "0", true, true, nil},
-		{"missing-snapshot", "false", "0", false, true, []string{"open Prometheus snapshot"}},
-		{"runner-failure", "false", "17", true, true, []string{"exit status 17"}},
-		{"both-failures", "false", "17", false, true, []string{"exit status 17", "open Prometheus snapshot"}},
-		{"enabled-validates-ca", "true", "0", true, false, []string{"decode public Kine profiling CA"}},
-		{"invalid-setting", "invalid", "0", true, false, []string{"invalid KINE_COLLECT_PROFILES"}},
+		{"default-disabled", "", "", "0", true, true, nil},
+		{"explicit-disabled", "etcd", "false", "0", true, true, nil},
+		{"kine-postgres", "kine-postgres", "false", "0", true, true, nil},
+		{"missing-snapshot", "", "false", "0", false, true, []string{"open Prometheus snapshot"}},
+		{"runner-failure", "", "false", "17", true, true, []string{"exit status 17"}},
+		{"both-failures", "", "false", "17", false, true, []string{"exit status 17", "open Prometheus snapshot"}},
+		{"enabled-validates-ca", "", "true", "0", true, false, []string{"decode public Kine profiling CA"}},
+		{"invalid-setting", "", "invalid", "0", true, false, []string{"invalid KINE_COLLECT_PROFILES"}},
+		{"invalid-backend", "other", "false", "0", true, false, []string{"invalid KINE_BACKEND"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bin, report := t.TempDir(), t.TempDir()
@@ -71,7 +73,7 @@ func TestRunKinePerformanceProfiling(t *testing.T) {
 			// #nosec G306 -- This owner-only executable is a temporary CL2 runner stub.
 			if err := os.WriteFile(filepath.Join(bin, "bash"), []byte(`#!/bin/sh
 set -eu
-printf '%s\n' "$1" "$KUBECONFIG" > "$CL2_REPORT_DIR/runner-started"
+printf '%s\n' "$1" "$KUBECONFIG" "$KINE_BACKEND" > "$CL2_REPORT_DIR/runner-started"
 if [ "$KINE_TEST_SNAPSHOT" = true ]; then
   cp "$KINE_TEST_ARCHIVE" "$CL2_REPORT_DIR/prometheus_snapshot.tar.gz"
 fi
@@ -81,6 +83,7 @@ exit "$KINE_TEST_EXIT_CODE"
 			}
 			t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			t.Setenv("KINE_COLLECT_PROFILES", tc.profiles)
+			t.Setenv("KINE_BACKEND", tc.backend)
 			t.Setenv("KINE_CA_CERT_B64", "invalid-base64")
 			t.Setenv("KINE_TEST_ARCHIVE", input)
 			t.Setenv("KINE_TEST_SNAPSHOT", fmt.Sprint(tc.snapshot))
@@ -96,7 +99,11 @@ exit "$KINE_TEST_EXIT_CODE"
 			}
 			marker, markerErr := os.ReadFile(filepath.Join(report, "runner-started"))
 			if tc.wantRunner {
-				if markerErr != nil || string(marker) != "../../scripts/kine/run-clusterloader.sh\ntest.kubeconfig\n" {
+				backend := tc.backend
+				if backend == "" {
+					backend = "etcd"
+				}
+				if markerErr != nil || string(marker) != "../../scripts/kine/run-clusterloader.sh\ntest.kubeconfig\n"+backend+"\n" {
 					t.Fatalf("CL2 must still run with the workload kubeconfig: %q, %v", marker, markerErr)
 				}
 			} else if !errors.Is(markerErr, os.ErrNotExist) {
@@ -191,20 +198,27 @@ func TestKineProfileTargets(t *testing.T) {
 			}},
 		}
 	}
-	targets, err := kineProfileTargets([]corev1.Node{makeNode("cp-1", "10.0.0.4"), makeNode("cp-2", "10.0.0.5")})
+	targets, err := kineProfileTargets([]corev1.Node{makeNode("cp-1", "10.0.0.4"), makeNode("cp-2", "10.0.0.5")}, "kine-postgres")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(targets) != 3 || targets[1].URL != "https://10.0.0.4:6443" || targets[2].URL != "https://10.0.0.5:6443" {
+	if len(targets) != 3 || targets[0].Name != "kine" || targets[1].URL != "https://10.0.0.4:6443" || targets[2].URL != "https://10.0.0.5:6443" {
 		t.Fatalf("must profile each API server directly rather than sampling a load balancer: %+v", targets)
 	}
 	for _, address := range []string{"203.0.113.2", "10.0.1.4", "not-an-address"} {
-		if _, err := kineProfileTargets([]corev1.Node{makeNode("cp", address)}); err == nil {
+		if _, err := kineProfileTargets([]corev1.Node{makeNode("cp", address)}, "kine-postgres"); err == nil {
 			t.Fatalf("must not send the profiling token outside the control-plane subnet: %s", address)
 		}
 	}
-	if _, err := kineProfileTargets(nil); err == nil {
+	if _, err := kineProfileTargets(nil, "kine-postgres"); err == nil {
 		t.Fatal("missing control-plane nodes must be reported")
+	}
+	targets, err = kineProfileTargets([]corev1.Node{makeNode("cp", "10.0.0.4")}, "etcd")
+	if err != nil || targets[0].Name != "etcd" || targets[0].Component != "etcd" || targets[0].URL != "https://10.250.0.4:8080" {
+		t.Fatalf("etcd profiles must use the private allowlisted TLS endpoint: %+v, %v", targets, err)
+	}
+	if _, err := kineProfileTargets([]corev1.Node{makeNode("cp", "10.0.0.4")}, "other"); err == nil {
+		t.Fatal("unknown backends must not produce profiling targets")
 	}
 }
 

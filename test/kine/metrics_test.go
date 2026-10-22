@@ -35,14 +35,23 @@ import (
 )
 
 func TestKineMetricsMonitor(t *testing.T) {
-	data := readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "clusterloader", "prometheus", "kine.yaml"))
+	for _, job := range []string{"kine", "etcd"} {
+		t.Run(job, func(t *testing.T) {
+			testDatastoreMetricsMonitor(t, job)
+		})
+	}
+}
+
+func testDatastoreMetricsMonitor(t *testing.T, job string) {
+	t.Helper()
+	data := readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "clusterloader", "prometheus", "datastore.yaml"))
 	tmpl, err := template.New("metrics").Option("missingkey=error").Parse(string(data))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ca := []byte("public CA certificate")
 	var rendered bytes.Buffer
-	if err := tmpl.Execute(&rendered, map[string]string{"CL2_KINE_CA_CERT_B64": base64.StdEncoding.EncodeToString(ca)}); err != nil {
+	if err := tmpl.Execute(&rendered, map[string]string{"CL2_KINE_CA_CERT_B64": base64.StdEncoding.EncodeToString(ca), "CL2_DATASTORE_JOB": job}); err != nil {
 		t.Fatal(err)
 	}
 	decoder := yamlutil.NewYAMLOrJSONDecoder(&rendered, 4096)
@@ -74,7 +83,7 @@ func TestKineMetricsMonitor(t *testing.T) {
 			if err := json.Unmarshal(raw, &secret); err != nil {
 				t.Fatal(err)
 			}
-			if secret.Name != "kine-metrics-ca" || len(secret.Data) != 1 || !bytes.Equal(secret.Data["ca.crt"], ca) {
+			if secret.Name != job+"-metrics-ca" || len(secret.Data) != 1 || !bytes.Equal(secret.Data["ca.crt"], ca) {
 				t.Fatal("metrics scraping must distribute only the public CA certificate")
 			}
 		case "Service":
@@ -82,7 +91,7 @@ func TestKineMetricsMonitor(t *testing.T) {
 			if err := json.Unmarshal(raw, &service); err != nil {
 				t.Fatal(err)
 			}
-			if service.Name != "kine-metrics" || service.Labels["k8s-app"] != "kine" ||
+			if service.Name != job+"-metrics" || service.Labels["k8s-app"] != job ||
 				len(service.Spec.Selector) != 0 || len(service.Spec.Ports) != 1 ||
 				service.Spec.Ports[0].Name != "https-metrics" || service.Spec.Ports[0].Port != 8080 ||
 				len(service.Spec.ExternalIPs) != 0 || service.Spec.Type == corev1.ServiceTypeLoadBalancer {
@@ -103,8 +112,8 @@ func TestKineMetricsMonitor(t *testing.T) {
 			if err := json.Unmarshal(raw, &endpoints); err != nil {
 				t.Fatal(err)
 			}
-			if object.Metadata.Name != "kine-metrics" || len(endpoints.Subsets) != 1 {
-				t.Fatal("expected one private Kine endpoint")
+			if object.Metadata.Name != job+"-metrics" || len(endpoints.Subsets) != 1 {
+				t.Fatal("expected one private datastore endpoint")
 			}
 			subset := endpoints.Subsets[0]
 			if len(subset.Addresses) != 1 || subset.Addresses[0].IP != "10.250.0.4" ||
@@ -138,15 +147,15 @@ func TestKineMetricsMonitor(t *testing.T) {
 			if err := json.Unmarshal(raw, &monitor); err != nil {
 				t.Fatal(err)
 			}
-			if monitor.Spec.JobLabel != "k8s-app" || monitor.Spec.Selector.MatchLabels["k8s-app"] != "kine" ||
+			if monitor.Spec.JobLabel != "k8s-app" || monitor.Spec.Selector.MatchLabels["k8s-app"] != job ||
 				len(monitor.Spec.Endpoints) != 1 {
-				t.Fatal("monitor must assign the kine job label to exactly one scrape endpoint")
+				t.Fatal("monitor must assign the selected datastore job label to exactly one scrape endpoint")
 			}
 			endpoint := monitor.Spec.Endpoints[0]
 			if endpoint.Port != "https-metrics" || endpoint.Scheme != "https" || endpoint.Path != "/metrics" ||
 				endpoint.TLSConfig.ServerName != "10.250.0.4" || endpoint.TLSConfig.InsecureSkipVerify ||
-				endpoint.TLSConfig.CA.Secret.Name != "kine-metrics-ca" || endpoint.TLSConfig.CA.Secret.Key != "ca.crt" {
-				t.Fatal("Kine scraping must verify both the certificate authority and server identity")
+				endpoint.TLSConfig.CA.Secret.Name != job+"-metrics-ca" || endpoint.TLSConfig.CA.Secret.Key != "ca.crt" {
+				t.Fatal("datastore scraping must verify both the certificate authority and server identity")
 			}
 		default:
 			t.Fatalf("unexpected metrics resource: %s", object.Kind)
@@ -231,14 +240,15 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 		t.Fatal("missing pinned CL2 revision")
 	}
 	for _, tc := range []struct {
-		name, mode, ca, exitCode string
+		name, mode, ca, exitCode, backend string
 	}{
-		{"live", "", "public-ca", "0"},
-		{"empty-argument", "empty", "public-ca", "0"},
-		{"load-failure", "", "public-ca", "17"},
-		{"missing-ca", "", "", "0"},
-		{"dry-run", "--dry-run", "public-ca", "0"},
-		{"prepare-only", "--prepare-only", "", "0"},
+		{"live", "", "public-ca", "0", ""},
+		{"kine-postgres", "", "public-ca", "0", "kine-postgres"},
+		{"empty-argument", "empty", "public-ca", "0", ""},
+		{"load-failure", "", "public-ca", "17", ""},
+		{"missing-ca", "", "", "0", ""},
+		{"dry-run", "--dry-run", "public-ca", "0", ""},
+		{"prepare-only", "--prepare-only", "", "0", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -250,10 +260,13 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 				}
 			}
 			files := map[string][]byte{
-				filepath.Join("scripts", "kine", "run-clusterloader.sh"):                        script,
-				filepath.Join("scripts", "kine", "clusterloader", "measurements.yaml"):          []byte("measurements"),
-				filepath.Join("scripts", "kine", "clusterloader", "writer.yaml"):                []byte("writer"),
-				filepath.Join("_artifacts", "perf-tests", string(revision[1]), "source.tar.gz"): []byte("mock archive"),
+				filepath.Join("scripts", "kine", "run-clusterloader.sh"):                             script,
+				filepath.Join("scripts", "kine", "backend.sh"):                                       readFile(t, filepath.Join(root, "scripts", "kine", "backend.sh")),
+				filepath.Join("scripts", "kine", "clusterloader", "measurements.yaml"):               []byte("__DATASTORE_PREFIX__ runtime job=__DATASTORE_JOB__\n"),
+				filepath.Join("scripts", "kine", "clusterloader", "measurements-etcd.yaml"):          []byte("etcd measurements\n"),
+				filepath.Join("scripts", "kine", "clusterloader", "measurements-kine-postgres.yaml"): []byte("kine measurements\n"),
+				filepath.Join("scripts", "kine", "clusterloader", "writer.yaml"):                     []byte("writer"),
+				filepath.Join("_artifacts", "perf-tests", string(revision[1]), "source.tar.gz"):      []byte("mock archive"),
 			}
 			for name, content := range files {
 				path := filepath.Join(dir, name)
@@ -268,6 +281,7 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 set -euo pipefail
 printf '%s\n' "$@" > "$KINE_TEST_DIR/args"
 printf '%s' "$CL2_KINE_CA_CERT_B64" > "$KINE_TEST_DIR/ca"
+printf '%s' "$CL2_DATASTORE_JOB" > "$KINE_TEST_DIR/backend-job"
 exit "$KINE_TEST_EXIT"
 `
 			binaryPath := filepath.Join(cache, "clusterloader2")
@@ -302,7 +316,8 @@ exec bash ./scripts/kine/run-clusterloader.sh "${args[@]}"
 			cmd.Dir = dir
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_MODE="+tc.mode,
 				"KINE_TEST_EXIT="+tc.exitCode, "KINE_TEST_BINARY="+binaryPath,
-				"KINE_CA_CERT_B64="+tc.ca, "KUBECONFIG="+kubeconfig, "CL2_REPORT_DIR="+report)
+				"KINE_CA_CERT_B64="+tc.ca, "KUBECONFIG="+kubeconfig, "CL2_REPORT_DIR="+report,
+				"KINE_PROFILE=performance", "KINE_BACKEND="+tc.backend)
 			output, err := cmd.CombinedOutput()
 			if tc.name == "missing-ca" {
 				if err == nil || !bytes.Contains(output, []byte("KINE_CA_CERT_B64")) {
@@ -324,6 +339,18 @@ exec bash ./scripts/kine/run-clusterloader.sh "${args[@]}"
 				}
 				if string(readFile(t, filepath.Join(dir, "ca"))) != tc.ca {
 					t.Fatal("runner must forward the public CA into CL2 template variables")
+				}
+				job, prefix, backend, version := "etcd", "Etcd", "etcd", "v3.6.6"
+				if tc.backend == "kine-postgres" {
+					job, prefix, backend, version = "kine", "Kine", "kine-postgres", "v0.17.2"
+				}
+				if string(readFile(t, filepath.Join(dir, "backend-job"))) != job ||
+					string(readFile(t, filepath.Join(cache, "workload", "modules", "measurements.yaml"))) != prefix+" runtime job="+job+"\n"+job+" measurements\n" {
+					t.Fatal("runner must select only the chosen backend's measurement set")
+				}
+				settings := string(readFile(t, filepath.Join(report, "settings.txt")))
+				if !strings.Contains(settings, "datastore-backend="+backend+"\ndatastore-version="+version+"\n") {
+					t.Fatal("runner must archive the actual backend and pinned version")
 				}
 			}
 			_, statErr := os.Stat(snapshot)

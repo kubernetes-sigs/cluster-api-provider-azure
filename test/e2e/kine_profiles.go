@@ -100,6 +100,14 @@ type kineProfiler struct {
 }
 
 func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, reportDir string) (retErr error) {
+	backend := os.Getenv("KINE_BACKEND")
+	if backend == "" {
+		backend = "etcd"
+	}
+	if backend != "etcd" && backend != "kine-postgres" {
+		return errors.New("invalid KINE_BACKEND: must be etcd or kine-postgres")
+	}
+	Logf("Performance datastore backend: %s", backend)
 	collectProfiles := os.Getenv("KINE_COLLECT_PROFILES")
 	if collectProfiles != "" && collectProfiles != "false" && collectProfiles != "true" {
 		return errors.New("invalid KINE_COLLECT_PROFILES: must be true or false")
@@ -114,7 +122,7 @@ func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, re
 		if len(ca) == 0 {
 			return errors.New("profiling requires KINE_CA_CERT_B64")
 		}
-		profiler, err = startKineProfiler(ctx, workload.GetClientSet(), workload.GetRESTConfig(), reportDir, ca)
+		profiler, err = startKineProfiler(ctx, workload.GetClientSet(), workload.GetRESTConfig(), reportDir, ca, backend)
 		if err != nil {
 			return err
 		}
@@ -128,6 +136,7 @@ func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, re
 	command.Env = append(command.Environ(),
 		"KUBECONFIG="+workload.GetKubeconfigPath(),
 		"CL2_REPORT_DIR="+reportDir,
+		"KINE_BACKEND="+backend,
 	)
 	command.Stdout = ginkgo.GinkgoWriter
 	command.Stderr = ginkgo.GinkgoWriter
@@ -141,7 +150,7 @@ func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, re
 	return errors.Join(runErr, profileErr, snapshotErr)
 }
 
-func startKineProfiler(ctx context.Context, client kubernetes.Interface, config *rest.Config, reportDir string, ca []byte) (_ *kineProfiler, retErr error) {
+func startKineProfiler(ctx context.Context, client kubernetes.Interface, config *rest.Config, reportDir string, ca []byte, backend string) (_ *kineProfiler, retErr error) {
 	if err := os.MkdirAll(reportDir, 0o750); err != nil {
 		return nil, err
 	}
@@ -159,7 +168,7 @@ func startKineProfiler(ctx context.Context, client kubernetes.Interface, config 
 	if err != nil {
 		return nil, fmt.Errorf("discover API servers for profiling: %w", err)
 	}
-	targets, err := kineProfileTargets(nodes.Items)
+	targets, err := kineProfileTargets(nodes.Items, backend)
 	if err != nil {
 		return nil, err
 	}
@@ -279,11 +288,20 @@ func createKineProfilerResources(ctx context.Context, client kubernetes.Interfac
 	return nil
 }
 
-func kineProfileTargets(nodes []corev1.Node) ([]kineProfileTarget, error) {
+func kineProfileTargets(nodes []corev1.Node, backend string) ([]kineProfileTarget, error) {
+	component := ""
+	switch backend {
+	case "kine-postgres":
+		component = "kine"
+	case "etcd":
+		component = "etcd"
+	default:
+		return nil, fmt.Errorf("unsupported profiling backend %q", backend)
+	}
 	if len(nodes) == 0 {
 		return nil, errors.New("no control-plane nodes available for profiling")
 	}
-	targets := []kineProfileTarget{{Name: "kine", Component: "kine", URL: "https://10.250.0.4:8080"}}
+	targets := []kineProfileTarget{{Name: component, Component: component, URL: "https://10.250.0.4:8080"}}
 	subnet := netip.MustParsePrefix("10.0.0.0/24")
 	for _, node := range nodes {
 		address := ""
@@ -338,7 +356,7 @@ case "$1" in
     printf 'Authorization: Bearer %s\n' "$token" |
       curl --fail --silent --show-error --max-time 75 --header @- \
         --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt "$2" ;;
-  kine)
+  kine|etcd)
     exec curl --fail --silent --show-error --max-time 75 --cacert /kine-ca/ca.crt "$2" ;;
   *) echo "Unsupported profiling target" >&2; exit 1 ;;
 esac`

@@ -1,0 +1,187 @@
+#cloud-config
+package_update: true
+packages:
+- ca-certificates
+- curl
+- jq
+- nginx
+write_files:
+- path: /opt/mount-datastore-disk.sh
+  permissions: "0700"
+  encoding: b64
+  content: __DISK_SCRIPT__
+- path: /usr/local/bin/check-datastore
+  permissions: "0700"
+  encoding: b64
+  content: __CHECK_SCRIPT__
+- path: /etc/kine/ca.crt
+  permissions: "0644"
+  encoding: b64
+  content: __CA_CERT__
+- path: /etc/kine/server.crt
+  permissions: "0644"
+  encoding: b64
+  content: __SERVER_CERT__
+- path: /etc/kine/server.key
+  permissions: "0600"
+  encoding: b64
+  content: __SERVER_KEY__
+- path: /etc/kine/client.crt
+  permissions: "0600"
+  encoding: b64
+  content: __CLIENT_CERT__
+- path: /etc/kine/client.key
+  permissions: "0600"
+  encoding: b64
+  content: __CLIENT_KEY__
+- path: /etc/systemd/system/etcd.service
+  permissions: "0644"
+  content: |
+    [Unit]
+    Description=Single-member external etcd performance control
+    After=network-online.target
+    Wants=network-online.target
+    RequiresMountsFor=/var/lib/kine-postgresql
+
+    [Service]
+    User=etcd
+    Group=etcd
+    ExecStartPre=/usr/bin/mountpoint -q /var/lib/kine-postgresql
+    ExecStart=/usr/local/bin/etcd --name=capz-etcd --data-dir=/var/lib/kine-postgresql/etcd --listen-client-urls=https://0.0.0.0:2379 --advertise-client-urls=https://10.250.0.4:2379 --listen-peer-urls=http://127.0.0.1:2380 --initial-advertise-peer-urls=http://127.0.0.1:2380 --initial-cluster=capz-etcd=http://127.0.0.1:2380 --initial-cluster-token=capz-etcd-control --initial-cluster-state=new --cert-file=/etc/kine/server.crt --key-file=/etc/kine/server.key --trusted-ca-file=/etc/kine/ca.crt --client-cert-auth=true --listen-metrics-urls=http://127.0.0.1:2381 --enable-grpc-gateway=false --enable-pprof=__METRICS_PROFILING__ --quota-backend-bytes=__ETCD_QUOTA_BYTES__ --unsafe-no-fsync=false --auto-compaction-retention=0 --logger=zap --log-outputs=stderr
+    Restart=on-failure
+    RestartSec=5
+    NoNewPrivileges=true
+    ProtectSystem=strict
+    ProtectHome=true
+    PrivateTmp=true
+    ReadWritePaths=/var/lib/kine-postgresql/etcd
+
+    [Install]
+    WantedBy=multi-user.target
+- path: /etc/kine/etcd-metrics-nginx.conf
+  permissions: "0644"
+  content: |
+    user www-data;
+    worker_processes 1;
+    pid /run/etcd-metrics/nginx.pid;
+    error_log stderr warn;
+    events { worker_connections 128; }
+    http {
+      access_log off;
+      server {
+        listen __METRICS_BIND_ADDRESS__:8080 ssl;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_certificate /etc/kine/server.crt;
+        ssl_certificate_key /etc/kine/server.key;
+        client_max_body_size 1k;
+        proxy_buffering off;
+        proxy_read_timeout 75s;
+        proxy_ssl_verify on;
+        proxy_ssl_server_name on;
+        proxy_ssl_name localhost;
+        proxy_ssl_trusted_certificate /etc/kine/ca.crt;
+        proxy_ssl_certificate /etc/kine/client.crt;
+        proxy_ssl_certificate_key /etc/kine/client.key;
+        location = /metrics {
+          limit_except GET { deny all; }
+          proxy_pass http://127.0.0.1:2381;
+        }
+        location = /debug/pprof/profile {
+          limit_except GET { deny all; }
+          proxy_pass https://127.0.0.1:2379;
+        }
+        location = /debug/pprof/heap {
+          limit_except GET { deny all; }
+          proxy_pass https://127.0.0.1:2379;
+        }
+        location = /debug/pprof/goroutine {
+          limit_except GET { deny all; }
+          proxy_pass https://127.0.0.1:2379;
+        }
+        location / { return 404; }
+      }
+    }
+- path: /etc/systemd/system/etcd-metrics.service
+  permissions: "0644"
+  content: |
+    [Unit]
+    Description=Private TLS metrics and profiling endpoint for external etcd
+    Requires=etcd.service
+    After=etcd.service
+
+    [Service]
+    RuntimeDirectory=etcd-metrics
+    ExecStartPre=/usr/sbin/nginx -t -e stderr -c /etc/kine/etcd-metrics-nginx.conf
+    ExecStart=/usr/sbin/nginx -e stderr -c /etc/kine/etcd-metrics-nginx.conf -g "daemon off;"
+    Restart=on-failure
+    RestartSec=5
+    NoNewPrivileges=true
+    ProtectSystem=full
+    ProtectHome=true
+    PrivateTmp=true
+
+    [Install]
+    WantedBy=multi-user.target
+- path: /usr/local/bin/collect-etcd-compactions
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    encoded=$(journalctl --quiet --no-pager --boot --unit etcd _COMM=etcd --output cat |
+      jq -c 'select(.msg | test("compact"; "i")) | {time: .ts, level: .level, message: .msg, revision: .["compact-revision"], took: .took, error: .error}' |
+      gzip -c | base64 | tr -d '\n')
+    if (( ${#encoded} > 3000 )); then
+      echo "Compressed compaction history exceeds the Run Command output budget." >&2
+      exit 1
+    fi
+    printf 'KINE_COMPACTIONS_BEGIN\n%s\nKINE_COMPACTIONS_END\n' "${encoded}"
+- path: /usr/local/bin/collect-etcd-status
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export ETCDCTL_ENDPOINTS=https://127.0.0.1:2379
+    export ETCDCTL_CACERT=/etc/kine/ca.crt
+    export ETCDCTL_CERT=/etc/kine/client.crt
+    export ETCDCTL_KEY=/etc/kine/client.key
+    expected_version=__ETCD_VERSION__
+    status=$(etcdctl --command-timeout=15s endpoint status --write-out=json)
+    printf '%s\n' "${status}"
+    jq -e --arg version "${expected_version#v}" \
+      'length == 1 and .[0].Status.version == $version and .[0].Status.leader > 0 and ((.[0].Status.errors // []) | length == 0)' \
+      <<< "${status}" >/dev/null ||
+      { echo "Unexpected etcd version or unhealthy endpoint status." >&2; exit 1; }
+    alarms=$(etcdctl --command-timeout=15s alarm list --write-out=json)
+    printf '%s\n' "${alarms}"
+    jq -e '(.alarms // []) | length == 0' <<< "${alarms}" >/dev/null ||
+      { echo "etcd has active alarms." >&2; exit 1; }
+    echo ETCD_STATUS_OK
+- path: /opt/install-etcd.sh
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    download=$(mktemp -d /tmp/capz-etcd.XXXXXX)
+    trap 'rm -f "${download}/release.tar.gz" "${download}/etcd" "${download}/etcdctl" "${download}/etcdutl"; rmdir "${download}"' EXIT
+    curl --fail --show-error --silent --location --retry 5 \
+      https://github.com/etcd-io/etcd/releases/download/__ETCD_VERSION__/etcd-__ETCD_VERSION__-linux-amd64.tar.gz \
+      -o "${download}/release.tar.gz"
+    printf '%s  %s\n' '__ETCD_SHA256__' "${download}/release.tar.gz" | sha256sum --check
+    tar -xzf "${download}/release.tar.gz" --no-same-owner --strip-components=1 -C "${download}" \
+      etcd-__ETCD_VERSION__-linux-amd64/etcd etcd-__ETCD_VERSION__-linux-amd64/etcdctl etcd-__ETCD_VERSION__-linux-amd64/etcdutl
+    install -m 0755 "${download}/etcd" "${download}/etcdctl" "${download}/etcdutl" /usr/local/bin/
+    /usr/local/bin/etcd --version
+    # shellcheck source=scripts/kine/mount-datastore-disk.sh
+    source /opt/mount-datastore-disk.sh
+    useradd --system --home-dir "${mount}/etcd" --no-create-home --shell /usr/sbin/nologin etcd
+    install -d -o etcd -g etcd -m 0700 "${mount}/etcd"
+    chown etcd:etcd /etc/kine/server.key
+    systemctl disable --now nginx
+    systemctl daemon-reload
+    systemctl enable --now etcd
+    /usr/local/bin/check-datastore etcd
+    systemctl enable --now etcd-metrics
+    curl --fail --silent --show-error --cacert /etc/kine/ca.crt \
+      https://__METRICS_BIND_ADDRESS__:8080/metrics >/dev/null
+runcmd:
+- [bash, /opt/install-etcd.sh]
