@@ -174,4 +174,5 @@ type CredentialCache interface {
 	GetOrStoreManagedIdentity(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error)
+	GetOrStoreAzureCLI(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error)
 }

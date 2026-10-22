@@ -670,7 +670,7 @@ type UserAssignedIdentity struct {
 }
 
 // IdentityType represents different types of identities.
-// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate;WorkloadIdentity;UserAssignedIdentityCredential
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal;ServicePrincipalCertificate;WorkloadIdentity;UserAssignedIdentityCredential;AzureCLI
 type IdentityType string
 
 const (
@@ -691,6 +691,9 @@ const (
 
 	// UserAssignedIdentityCredential represents a UserAssignedIdentityCredential.
 	UserAssignedIdentityCredential IdentityType = "UserAssignedIdentityCredential"
+
+	// AzureCLI represents authentication via the Azure CLI.
+	AzureCLI IdentityType = "AzureCLI"
 )
 
 // OSDisk defines the operating system disk for a VM.
