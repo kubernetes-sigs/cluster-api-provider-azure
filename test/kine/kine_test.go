@@ -142,8 +142,8 @@ func TestFlavor(t *testing.T) {
 			found["control-plane"] = true
 			config := object.Spec.KubeadmConfigSpec
 			apiServerArgs := config.ClusterConfiguration.APIServer.Args
-			if apiServerArgs["feature-gates"] != "ConcurrentWatchObjectDecode=true" {
-				t.Fatalf("expected concurrent watch object decoding on the Kine API server: %+v", apiServerArgs)
+			if apiServerArgs["feature-gates"] != "ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false" {
+				t.Fatalf("expected concurrent decoding with cache snapshots disabled on the Kine API server: %+v", apiServerArgs)
 			}
 			if apiServerArgs["service-account-issuer"] != "${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}" {
 				t.Fatal("preserve the inherited API-server service-account issuer")

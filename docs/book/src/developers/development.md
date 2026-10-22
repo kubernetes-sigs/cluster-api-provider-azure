@@ -747,8 +747,14 @@ maximum throughput was reached.
 Both Kine flavors enable `ConcurrentWatchObjectDecode=true` on kube-apiserver
 to evaluate concurrent watch-object decoding instead of the default serial path.
 This beta feature preserves event order but does not parallelize watch-cache
-updates. API request-concurrency limits, APF queue limits, and the other feature
-gates remain unchanged.
+updates.
+
+Both flavors also set `ListFromCacheSnapshot=false` to isolate historical
+watch-cache snapshot maintenance. Watch caching remains enabled, but exact-version
+LIST requests and continuation pages fall back to Kine instead of using those
+snapshots. This may increase backend read load and is not a proven fix for
+watch-cache lag. API request-concurrency limits, APF queue limits, and the other
+feature gates remain unchanged.
 
 This is a **large, billable, single-datastore experiment**, not an HA configuration:
 

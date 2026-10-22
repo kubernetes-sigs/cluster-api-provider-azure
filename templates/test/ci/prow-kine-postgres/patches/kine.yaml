@@ -29,7 +29,7 @@ spec:
     clusterConfiguration:
       apiServer:
         extraArgs:
-          feature-gates: ConcurrentWatchObjectDecode=true
+          feature-gates: ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false
       etcd:
         local: null
         external:
