@@ -1029,11 +1029,13 @@ fail the E2E job explicitly. These are Go profiles, not raw process-memory dumps
 they can still expose function names and internal addresses. The helper namespace
 and its namespace-owned RBAC resources are removed during cleanup.
 
-The datastore artifact directory also receives `compaction.log`: compaction
-messages from the selected backend's current boot, rather than only the last
-60 journal lines. Kine retains its summary/error format; etcd records selected
-JSON message, revision, duration and error fields. The collector excludes request
-payloads and uses compression plus
+The datastore artifact directory also receives `compaction.log`: keyspace
+compaction messages from the selected backend's current boot, rather than only
+the last 60 journal lines. Kine retains its summary/error format; etcd records
+selected MVCC JSON message, revision, duration and error fields. Unrelated plain
+Go logs and Raft-log maintenance are excluded. Malformed JSON-looking records
+or unstructured MVCC compaction messages fail collection rather than being
+silently discarded. The collector excludes request payloads and uses compression plus
 framing to detect Azure Run Command's output truncation. Collection fails instead
 of silently accepting a truncated timeline if the compressed response exceeds its
 output budget. Existing short datastore diagnostics are retained separately.

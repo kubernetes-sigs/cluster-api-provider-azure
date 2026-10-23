@@ -142,8 +142,22 @@ write_files:
   content: |
     #!/usr/bin/env bash
     set -euo pipefail
+    # Native etcd also emits plain Go logs; Raft maintenance is not MVCC compaction.
     encoded=$(journalctl --quiet --no-pager --boot --unit etcd _COMM=etcd --output cat |
-      jq -c 'select(.msg | test("compact"; "i")) | {time: .ts, level: .level, message: .msg, revision: .["compact-revision"], took: .took, error: .error}' |
+      jq -Rc '
+        if test("^\\s*\\{") then fromjson
+        elif test("mvcc/|v3compactor/|finished scheduled compaction|compact tree index"; "i") then
+          error("Unstructured MVCC compaction journal entry")
+        else empty end
+        | select((.msg // "") | test("compact"; "i"))
+        | if (.caller | type) != "string" then
+            error("Compaction journal entry is missing its caller")
+          else . end
+        | select(.caller | test("(^|/)(mvcc|v3compactor)/"))
+        | if ((.ts | type) != "string" and (.ts | type) != "number") or (.level | type) != "string" then
+            error("MVCC compaction journal entry has invalid metadata")
+          else . end
+        | {time: .ts, level: .level, message: .msg, revision: (.["compact-revision"] // .revision), took: .took, error: .error}' |
       gzip -c | base64 | tr -d '\n')
     if (( ${#encoded} > 3000 )); then
       echo "Compressed compaction history exceeds the Run Command output budget." >&2

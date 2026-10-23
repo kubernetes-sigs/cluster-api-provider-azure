@@ -379,13 +379,31 @@ etcdctl() {
 
 func TestEtcdCompactionDiagnostics(t *testing.T) {
 	script := etcdGuestScript(t, "/usr/local/bin/collect-etcd-compactions")
+	start := `{"ts":"2026-10-23T03:50:35Z","level":"info","caller":"mvcc/index.go:194","msg":"compact tree index","revision":42}`
+	finish := `{"ts":"2026-10-23T03:50:45Z","level":"info","caller":"mvcc/kvstore_compaction.go:70","msg":"finished scheduled compaction","compact-revision":42,"took":"10s","key":"do-not-export"}`
+	failure := `{"ts":"2026-10-23T03:55:45Z","level":"error","caller":"v3compactor/periodic.go:200","msg":"compaction failed","error":"context canceled"}`
+	noise := "2026/10/23 03:49:01 http2: server: connection closed\n" +
+		strings.Repeat(`{"ts":"2026-10-23T03:49:00Z","level":"info","caller":"etcdserver/server.go:2250","msg":"compacted Raft logs","raft-index":1200000}`+"\n", 200) +
+		`{"ts":"2026-10-23T03:49:01Z","level":"info","caller":"v3rpc/interceptor.go:200","msg":"request completed","request":"compact payload must not be exported"}` + "\n"
+	expected := `{"time":"2026-10-23T03:50:35Z","level":"info","message":"compact tree index","revision":42,"took":null,"error":null}
+{"time":"2026-10-23T03:50:45Z","level":"info","message":"finished scheduled compaction","revision":42,"took":"10s","error":null}
+{"time":"2026-10-23T03:55:45Z","level":"error","message":"compaction failed","revision":null,"took":null,"error":"context canceled"}
+`
+	var oversized strings.Builder
+	for i := range 2000 {
+		oversized.WriteString(strings.ReplaceAll(finish, `"compact-revision":42`, `"compact-revision":`+strconv.Itoa(i)) + "\n")
+	}
 	for _, tc := range []struct {
-		name, journal string
-		ok            bool
+		name, journal, want string
+		ok                  bool
 	}{
-		{"projected-messages", `{"ts":"2026-10-22T00:00:00Z","level":"info","msg":"finished scheduled compaction","compact-revision":42,"took":"1ms","key":"do-not-export"}
-{"ts":"2026-10-22T00:00:01Z","level":"info","msg":"request completed","request":"compact payload must not be exported"}`, true},
-		{"malformed-journal", "not JSON", false},
+		{"mixed-output", start + "\n" + noise + finish + "\n" + failure + "\n", expected, true},
+		{"no-mvcc-events", noise, "", true},
+		{"malformed-json", `{"caller":"mvcc/kvstore_compaction.go:70","msg":`, "", false},
+		{"unstructured-mvcc", "2026/10/23 03:50:45 mvcc/kvstore_compaction.go:70 finished scheduled compaction", "", false},
+		{"missing-metadata", `{"caller":"mvcc/kvstore_compaction.go:70","msg":"finished scheduled compaction","level":"info"}`, "", false},
+		{"oversized-history", oversized.String(), "", false},
+		{"journal-error", finish, "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -396,24 +414,27 @@ func TestEtcdCompactionDiagnostics(t *testing.T) {
 			cmd.Stdin = strings.NewReader(`
 journalctl() {
   [[ "$*" == "--quiet --no-pager --boot --unit etcd _COMM=etcd --output cat" ]] || return 99
+  if [[ "$KINE_TEST_CASE" == journal-error ]]; then
+    echo "journal unavailable" >&2
+    return 7
+  fi
   cat "$KINE_TEST_DIR/journal"
 }
 ` + script)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc.name)
 			output, err := cmd.CombinedOutput()
 			if (err == nil) != tc.ok {
 				t.Fatalf("unexpected compaction collection result: %v\n%s", err, output)
 			}
 			if !tc.ok {
-				if bytes.Contains(output, []byte("KINE_COMPACTIONS_END")) {
-					t.Fatal("malformed journal data must not produce a successful history frame")
+				if len(output) == 0 || bytes.Contains(output, []byte("KINE_COMPACTIONS_END")) {
+					t.Fatal("collection failures must report an error without a successful history frame")
 				}
 				return
 			}
 			history := decodeCompactionHistory(t, string(output), dir)
-			if !strings.Contains(history, `"revision":42`) || strings.Contains(history, "do-not-export") ||
-				strings.Contains(history, "request completed") || strings.Contains(history, "payload") {
-				t.Fatalf("only compaction summary fields should be retained: %s", history)
+			if history != tc.want {
+				t.Fatalf("only complete MVCC compaction summary fields should be retained:\ngot: %s\nwant: %s", history, tc.want)
 			}
 		})
 	}
