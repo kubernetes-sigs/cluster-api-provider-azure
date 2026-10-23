@@ -122,6 +122,21 @@ write_files:
 
     [Install]
     WantedBy=multi-user.target
+- path: /usr/local/bin/check-etcd-metrics
+  permissions: "0700"
+  content: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for ((attempt=1; attempt<=12; attempt++)); do
+      if curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+        --cacert /etc/kine/ca.crt https://__METRICS_BIND_ADDRESS__:8080/metrics >/dev/null; then
+        echo ETCD_METRICS_READY
+        exit 0
+      fi
+      if (( attempt < 12 )); then sleep 1; fi
+    done
+    echo "etcd TLS metrics endpoint did not become ready after 12 attempts." >&2
+    exit 1
 - path: /usr/local/bin/collect-etcd-compactions
   permissions: "0700"
   content: |
@@ -181,7 +196,6 @@ write_files:
     systemctl enable --now etcd
     /usr/local/bin/check-datastore etcd
     systemctl enable --now etcd-metrics
-    curl --fail --silent --show-error --cacert /etc/kine/ca.crt \
-      https://__METRICS_BIND_ADDRESS__:8080/metrics >/dev/null
+    /usr/local/bin/check-etcd-metrics
 runcmd:
 - [bash, /opt/install-etcd.sh]

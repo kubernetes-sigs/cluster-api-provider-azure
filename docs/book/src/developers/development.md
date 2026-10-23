@@ -897,6 +897,8 @@ requests use a VM-local client certificate with server verification. Scrapers an
 profiling Pods receive only the public CA, as for Kine. Etcd CPU/memory metrics
 describe the etcd process, not this diagnostic-only proxy; KV traffic never passes
 through the proxy.
+Bootstrap waits separately for TLS metrics readiness with bounded retries;
+systemd reporting the proxy started does not by itself mean its socket is ready.
 
 For the SQL-backed arm, PostgreSQL is moved onto the dedicated disk before Kine
 starts. Starting tuning uses 25%

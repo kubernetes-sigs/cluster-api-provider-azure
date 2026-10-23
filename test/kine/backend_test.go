@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -169,11 +170,14 @@ capz::kine::certificates
 			for _, required := range []string{
 				"etcd-v3.6.6-linux-amd64.tar.gz", "887afaa4a99f22d802ccdfbe65730a5e79aa5c9ce2c8799c67e9d804c50ecedb",
 				"sha256sum --check", "source /opt/mount-datastore-disk.sh", "systemctl disable --now nginx",
-				"/usr/local/bin/check-datastore etcd",
+				"/usr/local/bin/check-datastore etcd", "/usr/local/bin/check-etcd-metrics",
 			} {
 				if !strings.Contains(installer, required) {
 					t.Errorf("missing native etcd installation invariant: %s", required)
 				}
+			}
+			if strings.Index(installer, "systemctl enable --now etcd-metrics") >= strings.Index(installer, "/usr/local/bin/check-etcd-metrics") {
+				t.Fatal("metrics readiness must be checked after starting the proxy")
 			}
 		})
 	}
@@ -284,6 +288,60 @@ func etcdGuestScript(t *testing.T, path string) string {
 	}
 	t.Fatalf("missing etcd guest script %s", path)
 	return ""
+}
+
+func TestEtcdMetricsReadiness(t *testing.T) {
+	script := strings.ReplaceAll(etcdGuestScript(t, "/usr/local/bin/check-etcd-metrics"),
+		"__METRICS_BIND_ADDRESS__", "10.250.0.4")
+	for _, tc := range []struct {
+		name                  string
+		readyAt, wantAttempts int
+	}{
+		{"already-ready", 1, 1},
+		{"delayed-listener", 3, 3},
+		{"never-ready", 0, 12},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			cmd := exec.CommandContext(t.Context(), "bash", "-s")
+			cmd.Stdin = strings.NewReader(`
+calls=0
+curl() {
+  calls=$((calls + 1))
+  printf '%s\n' "$*" >> "$KINE_TEST_DIR/attempts"
+  if (( KINE_TEST_READY_AT == 0 || calls < KINE_TEST_READY_AT )); then
+    echo "simulated connection refused" >&2
+    return 7
+  fi
+  echo 'etcd_server_has_leader 1'
+}
+sleep() { [[ "$1" == 1 ]]; }
+` + script)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_READY_AT="+strconv.Itoa(tc.readyAt))
+			output, err := cmd.CombinedOutput()
+			wantOK := tc.readyAt > 0
+			if (err == nil) != wantOK || bytes.Contains(output, []byte("ETCD_METRICS_READY")) != wantOK {
+				t.Fatalf("readiness must wait for success and fail on exhaustion: %v\n%s", err, output)
+			}
+			attempts := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "attempts")))), "\n")
+			if len(attempts) != tc.wantAttempts {
+				t.Fatalf("got %d attempts, want %d", len(attempts), tc.wantAttempts)
+			}
+			for _, args := range attempts {
+				for _, required := range []string{"--fail", "--connect-timeout 2", "--max-time 5", "--cacert /etc/kine/ca.crt", "https://10.250.0.4:8080/metrics"} {
+					if !strings.Contains(args, required) {
+						t.Fatalf("readiness must retain bounded, verified TLS requests: %s", args)
+					}
+				}
+				if strings.Contains(args, "--insecure") || strings.Contains(args, " -k") {
+					t.Fatal("readiness must not bypass TLS verification")
+				}
+			}
+			if !wantOK && !bytes.Contains(output, []byte("did not become ready")) {
+				t.Fatal("retry exhaustion must produce an explicit diagnostic")
+			}
+		})
+	}
 }
 
 func TestEtcdStatusDiagnostics(t *testing.T) {
