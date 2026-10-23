@@ -585,7 +585,494 @@ With the following environment variables defined, CAPZ runs `./scripts/ci-build-
 | `REGISTRY`                | Your Registry                                                            |
 | `TEST_K8S`                | `true`                                                                   |
 
+##### Experimental Kine/PostgreSQL conformance
+
+`make test-conformance-kine` wraps the existing conformance runner with an
+experimental external datastore fixture. It creates a dedicated Ubuntu 24.04
+AMD64 Azure VM running **Kine v0.17.2** and **PostgreSQL 16**, then selects the
+`kine-postgres` test flavor. It does not change other flavors or use AKS.
+All Kine/PostgreSQL runs, including the existing
+`pull-cluster-api-provider-azure-conformance-kine-postgres` Prow job, use the
+shared high-I/O infrastructure described below: E112ibs_v5 datastore VM,
+dedicated NVMe Ultra Disk, and larger control-plane/worker VMs.
+The Prow job still runs the complete conformance suite, not ClusterLoader2;
+no test-infra configuration change is needed.
+Kine's downloaded binary is checked against a pinned SHA-256 checksum.
+Ubuntu image and PostgreSQL package patches follow the Ubuntu repositories.
+
+Complete the normal conformance prerequisites above, and install/authenticate
+the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, `jq`, and `gzip`.
+The Azure CLI and CAPZ identities must have permissions in the same subscription
+to create/delete resource groups, VMs and networks, and create VNet peerings in
+both resource groups. The workload cloud-provider identity also needs its usual
+Azure permissions. No roles are granted automatically by this wrapper.
+
+```bash
+export AZURE_SUBSCRIPTION_ID=<subscription-id>
+# Optional: override the fixed high-I/O placement defaults.
+# export AZURE_LOCATION=westus2
+# export KINE_ZONE=2
+# Also configure the usual CAPZ credentials and management-cluster prerequisites.
+export KINE_KUBERNETES_VERSION=v1.35.5
+make test-conformance-kine
+```
+
+Both fixture workloads use `KINE_KUBERNETES_VERSION` (default `v1.35.5`) for the
+cluster and, when running conformance, the matching upstream conformance image.
+This Kine-specific setting takes precedence over the generic
+`KUBERNETES_VERSION`, including the older version pinned in the existing Prow
+jobs; the wrapper logs overrides and the effective version explicitly. To test
+another released version, set `KINE_KUBERNETES_VERSION` to one published in the
+`capi-azurelinux-4-gen2` community image family. Both the control plane and workers
+use that Kubernetes-ready Azure Linux 4 Gen2 image for the same Kubernetes
+version. The separate datastore VM remains Ubuntu for either backend.
+
+The Kine flavors inherit `prow-azl3`, including its shared Azure Linux bootstrap
+component and cloud-controller-manager CA trust paths. The Kine overlay changes
+the workload node images to Azure Linux 4 Gen2 and supplies its node subnet CIDRs
+through `AZURE_LINUX_NODE_CIDRS`; it does not maintain a separate bootstrap script.
+The shared script uses the appropriate certificate packages for Azure Linux 3
+or 4 and configures firewalld when installed, otherwise the Azure Linux 3 iptables
+persistence mechanism. It allows Azure platform probes and control-plane API
+access, plus node, Pod, and Service traffic required by kubelet and Calico.
+It does not flush firewall rules or disable the firewall. The existing Kine
+machine-health checks, monitoring tags, and worker extension are preserved.
+Prerequisites already present in the node image are checked locally with RPM,
+without accessing package repositories. When installation is needed, the script
+makes at most three attempts, clearing repository metadata and waiting five
+seconds between retries. Both control-plane and worker bootstrap stop before
+`kubeadm` if package installation, metadata cleanup, or firewall setup fails.
+
+Unset or empty `AZURE_LOCATION` and `KINE_ZONE` default to `westus2` and `2`.
+The datastore, control plane, and workers share that placement; explicit
+overrides are preserved. The wrapper checks VM capabilities and combined
+vCPU quota before creating resources. Unsupported placement or insufficient
+quota fails the job without silently selecting cheaper infrastructure.
+The wrapper derives `KINE_ZONE_YAML` from `KINE_ZONE` so worker failure domains
+remain strings after template generation and variable substitution.
+
+This command **creates billable resources and runs the full Kubernetes conformance
+suite**. It is an experimental configuration, not a claim that this combination
+has passed conformance. Released Linux/IPv4 Kubernetes images are supported;
+Windows, IPv6/dual-stack, and CI/PR Kubernetes artifact builds are not wired into
+this flavor. The default is one control-plane node and two workers; set
+`CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT=3` to exercise multiple API servers
+against the same datastore. The datastore itself remains single-instance.
+
+The wrapper provisions a fresh `<cluster-name>-kine` resource group containing
+the VM, its OS/data disks, VNet, NSG, and an outbound-only NAT gateway/public IP. There is
+no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`;
+the workload VNet uses `10.0.0.0/16`, with explicit control-plane `10.0.0.0/24`
+and node `10.0.1.0/24` subnets. CAPZ creates the bidirectional peering.
+Only the control-plane subnet `10.0.0.0/24` can reach the datastore's TCP port 2379.
+Performance runs additionally allow the worker subnet `10.0.1.0/24` to scrape
+`https://10.250.0.4:8080/metrics`. This is a private, server-authenticated TLS
+endpoint: Prometheus verifies the server certificate using the fixture's public CA.
+The metrics endpoint does not require a client certificate, so the dedicated NSG
+rule is its client-access boundary. No public listener or new private-key
+distribution is added. Conformance runs keep metrics on loopback and do not add
+the metrics ingress rule.
+
+Performance runs can opt into Go profiling on that same private TLS listener.
+Treat access to that port as diagnostic access, not just access to numeric metrics.
+Profiling is disabled by default, and conformance always leaves it disabled.
+Avoid overlapping addresses if using a peered management cluster.
+PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
+
+Seven-day test certificates provide mTLS between API servers and the datastore.
+The CA signing key is never sent to the VM or management cluster. The VM gets
+server credentials and a client credential for its smoke check; CABPK gets the CA
+certificate and API-server client credentials via the standard external-etcd
+Secrets. Private temporary inputs are deleted when the wrapper exits.
+Azure VM custom data contains test credentials, and normal E2E artifacts can
+contain kubeconfigs/bootstrap data: restrict access and do not publish them
+unredacted. The existing log redactor also removes the direct base64 client key.
+
+Before creating the workload cluster, the wrapper waits for cloud-init and
+executes a Kubernetes-shaped gRPC create transaction followed by a read over mTLS.
+It checks a success marker because Azure Run Command can return HTTP success
+even if the guest script failed. The smoke check logs the `etcdctl` version,
+service state, transaction/read exit statuses, and synthetic key/value results
+before asserting success; it does not log credential contents.
+Kubeadm ignores only `ExternalEtcdVersion`:
+standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
+readiness and conformance still exercise the actual storage path. The flavor
+removes the unused local-etcd configuration and control-plane etcd data disk.
+
+Datastore logs and resource names are written under
+`$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
+`datastore-logs.json` includes the selected backend's service journal, the tail of
+cloud-init output, and `cloud-init status --long` with its exit code. Native etcd
+also produces `etcd-status.json` with endpoint version, revision, database size,
+leader and alarm information; collection errors or active alarms fail explicitly.
+It then deletes the fixture resource group **only after the workload resource
+group is gone and the fixture ownership tag matches this invocation**.
+An Azure query/deletion failure is an error, not evidence that resources are gone.
+If workload cleanup fails or `SKIP_CLEANUP=true`, the fixture is retained to avoid
+destroying a surviving cluster's state. Retained resources continue to incur costs.
+For manual cleanup, delete the workload through CAPI first, then delete the exact
+fixture resource group listed in `resources.txt`:
+
+```bash
+az group delete --subscription <subscription-id> --name <cluster-name>-kine --yes
+```
+
+`CLUSTER_NAME` may be set to a fresh name (2-40 lowercase characters); existing
+workload or fixture groups are rejected. `KINE_VM_SIZE` defaults to
+`Standard_E112ibs_v5` and must remain an AMD64 NVMe/Ultra-capable size.
+Both backends keep their data/WAL on the dedicated
+512-GiB Ultra Disk, provisioned for 400,000 IOPS and 10,000 MB/s by default.
+Each run has its own database;
+there is no state migration, database HA, upgrade/failover testing, or performance
+claim in this scaffold. Those are separate experiments from conformance.
+
+Local checks do not provision Azure resources:
+
+```bash
+bash hack/gen-flavors.sh
+go test ./test/kine -count=1
+```
+
 #### Running custom test suites on CAPZ clusters
+
+##### Shared high-I/O datastore infrastructure and performance controls
+
+`make test-conformance-kine` and `make test-performance-kine` use identical
+high-I/O infrastructure and preflight checks. The latter runs ClusterLoader2's
+Pod write/watch workload **instead of conformance**, reusing the same harness
+for management/workload lifecycle and cleanup. `KINE_PROFILE` selects only the
+workload (`conformance` by default, or `performance`); it does not select a
+different storage tier. The two test flavors inherit the same infrastructure
+template. A green performance run is not a conformance result or proof that a
+maximum throughput was reached.
+
+**Performance now defaults to a single-member external etcd control.**
+`KINE_BACKEND=etcd` selects pinned etcd **v3.6.6**, the server release selected
+by kubeadm v1.35.5. `KINE_BACKEND=kine-postgres` retains Kine v0.17.2 with
+PostgreSQL 16. Conformance defaults to Kine/PostgreSQL; selecting etcd for
+conformance is rejected rather than silently changing the suite's datastore.
+
+The existing `pull-cluster-api-provider-azure-performance-kine-postgres` job name,
+flavor names, resource-group names and `KINE_*` variables are retained for
+compatibility. **The job name alone no longer identifies the backend.** The
+wrapper logs it explicitly, and both `performance-settings.txt` and CL2's
+`settings.txt` record `datastore-backend` and `datastore-version`. No test-infra
+change is needed to run the control with the job's existing workload settings.
+
+Both Kine flavors enable `ConcurrentWatchObjectDecode=true` on kube-apiserver
+to evaluate concurrent watch-object decoding instead of the default serial path.
+This beta feature preserves event order but does not parallelize watch-cache
+updates.
+
+Both flavors also set `ListFromCacheSnapshot=false` to isolate historical
+watch-cache snapshot maintenance. Watch caching remains enabled, but exact-version
+LIST requests and continuation pages fall back to the datastore instead of using those
+snapshots. This may increase backend read load and is not a proven fix for
+watch-cache lag. API request-concurrency limits, APF queue limits, and the other
+feature gates remain unchanged.
+
+This is a **large, billable, single-datastore experiment**, not an HA configuration:
+
+| Setting | Default |
+| --- | --- |
+| Performance backend (`KINE_BACKEND`) | `etcd`; set `kine-postgres` for the SQL-backed arm |
+| Datastore VM (`KINE_VM_SIZE`) | `Standard_E112ibs_v5`: 112 vCPU, 672 GiB |
+| Datastore controller | NVMe, accelerated networking, Gen2 Ubuntu 24.04 |
+| Data disk | One uncached Ultra Disk, containing the selected backend's data and WAL |
+| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
+| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D64as_v5`: 64 vCPU, 256 GiB |
+| Workload node image (both roles) | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
+| Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5` Azure Linux nodes, hosting the selected test workload |
+| Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
+| PostgreSQL connection limit (`KINE_POSTGRES_MAX_CONNECTIONS`) | `1024` |
+| Kine maximum open connections (`KINE_DATASTORE_MAX_OPEN_CONNECTIONS`) | PostgreSQL limit minus 64 (`960` by default) |
+| Kine maximum idle connections (`KINE_DATASTORE_MAX_IDLE_CONNECTIONS`) | The smaller of `128` and the maximum open connections |
+| Etcd backend quota | `34359738368` bytes (32 GiB), explicitly experimental |
+
+For Kine/PostgreSQL, the connection limits' numeric format and relationships are validated before provisioning,
+and the limits are written to one environment file used by both PostgreSQL
+initialization and the Kine service. Overrides must be positive integers; an
+unlimited Kine pool is rejected. Idle connections count toward the open-connection
+limit, not in addition to it. At least 64 PostgreSQL connection slots must
+remain outside Kine's pool budget, including PostgreSQL's reserved slots and
+headroom for administration, health checks, and monitoring. The guest verifies
+the effective PostgreSQL limit and that non-reserved slots exceed Kine's pool cap.
+Requested limits are recorded in `performance-settings.txt`.
+These are aggressive experimental defaults for the large datastore VM, not an
+assertion that more concurrent connections always improve throughput.
+
+The default footprint needs **208 additional regional vCPUs**: 112 in the
+datastore VM family, 64 in the Dasv5 family, and 32 in the Dsv5 worker family.
+Changing the machine counts changes
+these requirements. This excludes any separately provisioned management cluster.
+The control plane and workers are pinned to the selected datastore zone, so these
+results do not model cross-zone HA latency.
+
+The published Azure Linux Gen2 node image does not advertise NVMe support.
+Both workload node SKUs must support SCSI; Gen2 support alone is not sufficient
+for an NVMe-only SKU such as Dsv6. Preflight rejects explicitly incompatible
+disk-controller capabilities.
+
+For either workload, start with the read-only preflight; normal CAPZ credentials
+and Azure CLI login are still required:
+
+```bash
+export AZURE_SUBSCRIPTION_ID=<subscription-id>
+# Optional: override westus2 / zone 2.
+# export AZURE_LOCATION=<region-with-required-skus>
+# export KINE_ZONE=<1-or-2-or-3>
+make preflight-performance-kine
+```
+
+This checks advertised VM/zone availability, subscription restrictions, x64,
+accelerated networking, datastore NVMe/Ultra and Gen2/NVMe image support,
+workload node SKU Gen2 support, and the shared node community image's x64/Gen2
+metadata and requested version availability in the region. It also checks
+available regional and VM-family vCPU quota. Family requirements are summed
+across all roles. Missing capability/quota information is an error.
+Community-gallery lookups use `az rest` with API version `2024-03-03` explicitly
+pinned, avoiding unsupported API versions selected by newer Azure CLI releases.
+It writes the capacity plan and requested settings under
+`$ARTIFACTS/kine-<cluster-name>` without creating Azure resources.
+Passing preflight does **not** reserve hardware or validate every Azure quota
+(including managed-disk/network quotas); Azure allocation can still fail.
+
+If quota is insufficient, deliberately reduce **both** the SKU and disk settings;
+there is no automatic downgrade. For example, an E32bs_v5 experiment could use:
+
+```bash
+export KINE_VM_SIZE=Standard_E32bs_v5
+export KINE_DISK_IOPS=170000
+export KINE_DISK_MBPS=4500
+make preflight-performance-kine
+```
+
+The effective storage ceiling is bounded by both the VM and disk. Preflight does
+not infer NVMe-specific aggregate performance limits from incomplete SKU metadata;
+verify these against the current Azure size documentation when overriding SKUs.
+Requested and provisioned settings are archived, and the run rejects a non-NVMe
+VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
+and throughput. Disk validation failures log the expected and observed SKU, IOPS,
+and throughput. The resolved Ubuntu image version is frozen within each run;
+image/package patch versions can still differ between runs. The workload node
+community image is pinned to the effective Kubernetes version; its metadata,
+version response, and selected reference are also archived by preflight as
+`node-image.json`, `node-image-version.json`, and the `node-image` setting.
+
+After reviewing the capacity plan and cost, select the workload:
+
+```bash
+make test-conformance-kine
+# Native etcd control (the default performance backend):
+make test-performance-kine
+# Kine/PostgreSQL with the same infrastructure and workload settings:
+KINE_BACKEND=kine-postgres make test-performance-kine
+```
+
+Both backends use the same disk-initialization helper. It refuses a
+missing/non-NVMe disk, existing disk signatures, or an already mounted disk;
+it never falls back to the OS disk. The historical mount path
+`/var/lib/kine-postgresql` is retained for both arms, with etcd data/WAL under its
+`etcd` subdirectory. Both datastore services require the mount on subsequent boots.
+
+The etcd arm does not install or run Kine/PostgreSQL. Its release archive and
+`etcdctl`/`etcdutl` binaries are pinned with a checked SHA-256. It retains fsync,
+uses a loopback-only peer listener, and leaves compaction to the unchanged
+API-server configuration: no extra automatic compaction, defragmentation, or
+alarm-disarming loop is added.
+
+The **32-GiB quota exceeds etcd's suggested 8-GiB maximum for normal environments**.
+It is an explicit choice for this isolated, large-VM experiment, not a production
+recommendation. The pinned workload's roughly 10-KiB Pod template can generate
+substantial revision history at 2k QPS; the quota avoids making a small default
+quota the first experimental limit. Database size, quota and alarms remain
+observable, and `NOSPACE` remains a failure. See [etcd system limits](https://etcd.io/docs/v3.6/dev-guide/limit/).
+
+Etcd's native metrics listener shares its client TLS authentication settings.
+To keep datastore client credentials off workers, it listens only on loopback;
+a single-worker nginx proxy exposes the existing private TLS port 8080. The
+proxy permits only GET requests to `/metrics` and the three optional pprof paths.
+The HTTP KV gateway is disabled, other paths are rejected, and upstream profiling
+requests use a VM-local client certificate with server verification. Scrapers and
+profiling Pods receive only the public CA, as for Kine. Etcd CPU/memory metrics
+describe the etcd process, not this diagnostic-only proxy; KV traffic never passes
+through the proxy.
+Bootstrap waits separately for TLS metrics readiness with bounded retries;
+systemd reporting the proxy started does not by itself mean its socket is ready.
+
+For the SQL-backed arm, PostgreSQL is moved onto the dedicated disk before Kine
+starts. Starting tuning uses 25%
+of RAM for shared buffers, a 75% effective-cache estimate, 32-GiB max WAL,
+15-minute checkpoints, WAL compression, and lower autovacuum/analyze scale
+factors. These are starting settings, not a demonstrated optimum.
+`fsync`, `synchronous_commit`, and `full_page_writes` remain enabled.
+
+For performance runs only, ClusterLoader2 is downloaded from a fixed perf-tests revision with a checked
+archive SHA-256 and built with Go **before** Azure resources are created. The
+conformance entry point does not download, build, or invoke ClusterLoader2. The
+workload uses upstream templates/generators with CAPZ-specific measurements and
+larger writer CPU limits. Target Pods remain unscheduled; this measures API
+mutations and watch fan-out, not Pod startup. Creation and deletion surround a
+sustained patch phase; continuous create/delete churn is not yet included.
+
+| Workload variable | Default |
+| --- | --- |
+| `CL2_PODS_BENCHMARK_POD_COUNT` | `10000` |
+| `CL2_PODS_WRITE_REPLICAS` | `10` |
+| `CL2_PODS_PATCH_QPS` | `100` per writer (1,000 aggregate offered QPS) |
+| `CL2_PODS_WATCH_REPLICAS` | `10` |
+| `CL2_PODS_WATCHES_PER_REPLICA` | `1` |
+| `CL2_PODS_BENCHMARK_DURATION` | `60m` |
+
+Increase QPS between runs while keeping population and watch count fixed, then
+vary those separately. Use achieved successful throughput, PATCH p99 latency,
+errors, and generator/API-server CPU to interpret saturation. The upstream
+generator can accumulate in-flight requests under overload; its offered QPS is
+not proof of sustainable throughput. Check Pod restarts and resource saturation.
+The upstream API responsiveness measurement enforces its latency criteria.
+`PodPatchErrorCount` also fails the load phase if Prometheus observes any non-2xx
+PATCH response for the main Pod resource during the measurement window. It uses
+the full-window counter increase, not the rolling-rate average; Pod subresources
+such as `/status` are excluded. A missing request metric fails rather than being
+treated as zero errors. This is a cluster-wide API metric, not a per-generator
+client error count. The profile does not yet enforce an achieved-throughput floor.
+
+Prometheus is explicitly enabled on workers with ephemeral storage, scrapes API
+servers, kubelets, and Kine, and is torn down after the workload. The adapted measurements
+do not require an etcd server or etcd-only metrics. An additional ServiceMonitor
+collects only the write/watch generators' cAdvisor CPU and memory metrics from
+`test-*` namespaces, which the upstream monitor excludes. Other benchmark Pods
+remain excluded, and system-container metrics are not duplicated.
+
+The `LoadGeneratorCPU`, `LoadGeneratorCPUThrottling`, and `LoadGeneratorMemory`
+reports contain average and maximum CPU usage (cores), percentage of CFS periods
+throttled, and memory working set (MiB), respectively, grouped by namespace, Pod,
+and container. CPU throttling is time denied by a CPU quota, not API-server request
+throttling; the period percentage is not a percentage of CPU time lost.
+Idle intervals with zero CFS periods produce a zero throttling ratio. Each query
+requires samples, so a completely missing metric fails the measurement instead of
+producing an empty success report. These measurements do not impose resource-use
+thresholds or guarantee samples from every replica.
+
+Backend-specific diagnostics use metrics exported by the selected pinned binary.
+Kine measurements retain their names and queries:
+
+| Report | Values |
+| --- | --- |
+| `PodPatchResponses` | Successful and failing Pod PATCH rates grouped by HTTP status code, excluding subresources |
+| `KineCPU`, `KineMemory`, `KineGoroutines` | Process CPU cores, RSS/allocated heap/in-use heap in MiB, and goroutine count |
+| `KineGCCollections`, `KineGCPauseTime` | GC collections/sec and accumulated GC pause seconds/sec, not total GC CPU consumption |
+| `KinePoolConnections` | Open, in-use, idle, and maximum open connections in Kine's SQL pool |
+| `KinePoolWaitRate`, `KinePoolWaitTime` | Pool waits/sec and accumulated wait seconds/sec; concurrent waiters can accumulate more than one second per second |
+| `KineSQLRequests`, `KineSQLLatencyP99` | SQL operation rates and rolling p99 instrumented durations, grouped by operation name and error code |
+| `KineCompactions`, `KineInsertConflicts` | Measurement-window compaction counts by result and insert-conflict counts by retry classification |
+
+The etcd control instead emits `EtcdCPU`, `EtcdMemory`, `EtcdGoroutines`,
+`EtcdGCCollections` and `EtcdGCPauseTime`, plus WAL-fsync and backend-commit p99s
+and total/in-use database size and quota. `EtcdScrapeAvailability` and
+`EtcdLeaderAvailability` require healthy samples. Kine SQL/pool queries are not
+run against etcd or replaced with artificial zero results. Common API-server,
+generator, PATCH error and snapshot-retention checks are identical in both arms.
+
+Rates, gauges, and rolling SQL p99s report their average and maximum over the
+measurement window. SQL timings cover Kine's instrumented SQL calls, not complete
+row consumption or end-to-end watch delivery. Idle SQL histogram series are
+excluded rather than reporting NaN quantiles. Event counters that have never been
+used report zero only while the Kine scrape is healthy. Required metrics with no
+samples fail the measurement. `KineScrapeAvailability` also fails if an observed
+scrape was down during the measured window. These are observability gates, not
+new performance thresholds.
+
+Results and workload settings are placed in the E2E artifact directory's
+`clusterloader2` subdirectory. CL2 saves `prometheus_snapshot.tar.gz` before
+tearing down Prometheus, including after normal benchmark failures, so the full
+scraped time series can be examined after Azure resources have been deleted.
+The CAPZ E2E test rejects a missing, empty, or corrupt snapshot; an earlier local
+run's snapshot is removed before a new live run. Abrupt process termination or
+loss of the workload API can still prevent export.
+
+Timed pprof collection is **disabled by default** to avoid perturbing the
+performance workload. Prometheus scraping, snapshot retention, the PATCH error
+gate, and compaction-history collection remain enabled. To opt in, set
+`KINE_COLLECT_PROFILES=true` before provisioning:
+
+```bash
+KINE_COLLECT_PROFILES=true make test-performance-kine
+```
+
+The setting accepts only `true` or `false`, applies to the performance workload,
+and is recorded as `collect-profiles` in `performance-settings.txt`. When disabled,
+no profiling helper or profiling RBAC is created and the datastore's pprof endpoints stay
+disabled; its private TLS metrics endpoint remains available.
+
+When enabled, the CAPZ performance E2E path creates a small, non-root profiling
+helper on a worker before CL2 starts. Its dedicated service account receives only
+additional GET permission for the API server's CPU, heap, and goroutine profiling URLs.
+API-server profiles are fetched from each control-plane node's private address
+with that token and the cluster CA; datastore profiles use the fixture's public CA. No anonymous
+debug access or administrator kubeconfig is installed in the helper.
+
+A CL2 measurement-start marker schedules captures at **4 and 7 minutes after the
+measurement window begins**, not after VM creation or Prometheus setup. Each
+point collects 30-second CPU profiles, allocation-sampled heap profiles without
+forcing GC, and goroutine stack dumps from the selected datastore and every API server. Requests
+are bounded, targets are captured concurrently, and successful files are retained
+even if another capture or the benchmark fails. Profiling adds some diagnostic
+overhead but does not change the offered load, benchmark duration, or tuning.
+The benchmark must run long enough to reach both capture points.
+
+Files live in `clusterloader2/profiles-*/minute-04/` and `minute-07/`. The adjacent
+`captures.json` records the measurement-start time, scheduled/actual request times,
+target identities, file sizes, and errors. CPU and heap responses must parse as
+the requested pprof type; missing, malformed, oversized, or incomplete captures
+fail the E2E job explicitly. These are Go profiles, not raw process-memory dumps;
+they can still expose function names and internal addresses. The helper namespace
+and its namespace-owned RBAC resources are removed during cleanup.
+
+The datastore artifact directory also receives `compaction.log`: keyspace
+compaction messages from the selected backend's current boot, rather than only
+the last 60 journal lines. Kine retains its summary/error format; etcd records
+selected MVCC JSON message, revision, duration and error fields. Unrelated plain
+Go logs and Raft-log maintenance are excluded. Malformed JSON-looking records
+or unstructured MVCC compaction messages fail collection rather than being
+silently discarded. The collector excludes request payloads and uses compression plus
+framing to detect Azure Run Command's output truncation. Collection fails instead
+of silently accepting a truncated timeline if the compressed response exceeds its
+output budget. Existing short datastore diagnostics are retained separately.
+
+The pinned Kine version does not export its internal polling revision, so these
+reports do not directly measure database-to-Kine-to-apiserver revision lag.
+PostgreSQL server/host metrics, generator client errors and latency, restarts/OOMs,
+and watch reconnects or lag remain separate follow-ups, as do raw-disk calibration,
+direct datastore benchmarks and automated rate sweeps.
+This profile alone must not be reported as an established backend ceiling.
+
+To prepare the pinned tool without Azure, or run it against an existing disposable
+cluster:
+
+```bash
+bash scripts/kine/run-clusterloader.sh --prepare-only
+# Select the backend actually provisioned in the existing fixture.
+export KINE_BACKEND=etcd # Or kine-postgres.
+# Supply only its public CA, never a private key.
+export KINE_CA_CERT_B64="$(base64 < /absolute/path/to/kine-ca.crt | tr -d '\n')"
+KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh --dry-run
+KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh
+```
+
+Only the last command mutates the existing cluster. It creates test resources and
+a `monitoring` stack: do not use a production cluster or an existing monitoring
+namespace. Upstream CL2's `--dry-run` still requires a reachable cluster and
+intentionally exits nonzero after dumping the compiled test configuration.
+Live runs require the fixture's private TLS metrics endpoint to be reachable from
+worker Pods. The normal CAPZ Kine wrapper supplies the CA and network rule automatically.
+Timed profiling is orchestrated by the CAPZ E2E path; invoking the standalone CL2
+runner does not create or schedule the profiling helper.
+Treat artifact kubeconfigs/bootstrap data as credentials. The fixture's
+ownership checks and retain-on-workload-cleanup-failure behavior still apply;
+retained Ultra disks and large VMs continue to incur costs.
+
+##### Other custom suites
 
 To run a custom test suite on a CAPZ cluster locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
 

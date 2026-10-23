@@ -1,0 +1,627 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cloud-provider: ${CLOUD_PROVIDER_AZURE_LABEL:=azure}
+    cni: calico
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  failureDomains:
+    "1":
+      controlPlane: ${KINE_ZONE_1}
+    "2":
+      controlPlane: ${KINE_ZONE_2}
+    "3":
+      controlPlane: ${KINE_ZONE_3}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    subnets:
+    - cidrBlocks:
+      - 10.0.0.0/24
+      name: control-plane-subnet
+      role: control-plane
+    - cidrBlocks:
+      - 10.0.1.0/24
+      name: node-subnet
+      role: node
+    vnet:
+      cidrBlocks:
+      - 10.0.0.0/16
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+      peerings:
+      - remoteVnetName: kine-vnet
+        resourceGroup: ${KINE_RESOURCE_GROUP}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          feature-gates: ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false
+          service-account-issuer: ${SERVICE_ACCOUNT_ISSUER:-https://kubernetes.default.svc.cluster.local}
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-provider: external
+          cluster-name: ${CLUSTER_NAME}
+          v: "4"
+      etcd:
+        external:
+          caFile: /etc/kubernetes/pki/etcd/ca.crt
+          certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+          endpoints:
+          - https://10.250.0.4:2379
+          keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
+    diskSetup:
+      filesystems:
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+    files:
+    - content: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        role="$$1"
+        shift
+        case "$${role}" in
+          control-plane|worker) ;;
+          *) echo "Expected control-plane or worker role." >&2; exit 1 ;;
+        esac
+        [[ "$$#" -gt 0 ]] || { echo "Node subnet CIDRs are required." >&2; exit 1; }
+
+        # shellcheck source=/dev/null
+        source /etc/os-release
+        case "$${VERSION_ID}" in
+          3.*) package_manager=tdnf; packages=(ca-certificates ca-certificates-legacy) ;;
+          4.*) package_manager=dnf; packages=(ca-certificates firewalld) ;;
+          *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
+        esac
+        if rpm -q "$${packages[@]}" >/dev/null; then
+          echo "Azure Linux prerequisites are already installed."
+        else
+          for attempt in 1 2 3; do
+            if "$${package_manager}" install -y "$${packages[@]}"; then
+              break
+            fi
+            if [[ "$${attempt}" == 3 ]]; then
+              echo "Failed to install Azure Linux prerequisites after 3 attempts." >&2
+              exit 1
+            fi
+            echo "Azure Linux prerequisite installation failed (attempt $${attempt}/3); clearing repository metadata before retrying." >&2
+            if ! "$${package_manager}" clean metadata; then
+              echo "Failed to clear Azure Linux repository metadata." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+        fi
+        update-ca-trust
+
+        if command -v firewall-cmd >/dev/null 2>&1; then
+          systemctl enable --now firewalld
+          # Node, Pod, and Service traffic includes kubelet and Calico traffic.
+          for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+            firewall-cmd --permanent --zone=trusted --add-source="$${cidr}"
+          done
+          firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="168.63.129.16" accept'
+          if [[ "$${role}" == control-plane ]]; then
+            firewall-cmd --permanent --add-port=6443/tcp
+          fi
+          firewall-cmd --reload
+        else
+          allow_iptables() {
+            iptables -w -C "$$@" 2>/dev/null || iptables -w -I "$$@"
+          }
+          allow_iptables INPUT -i lo -j ACCEPT
+          allow_iptables OUTPUT -o lo -j ACCEPT
+          allow_iptables INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          allow_iptables OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+          allow_iptables INPUT -s 168.63.129.16 -j ACCEPT
+          allow_iptables OUTPUT -d 168.63.129.16 -j ACCEPT
+          for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+            allow_iptables INPUT -s "$${cidr}" -j ACCEPT
+            allow_iptables OUTPUT -d "$${cidr}" -j ACCEPT
+            allow_iptables FORWARD -s "$${cidr}" -j ACCEPT
+            allow_iptables FORWARD -d "$${cidr}" -j ACCEPT
+          done
+          if [[ "$${role}" == control-plane ]]; then
+            allow_iptables INPUT -p tcp --dport 6443 -j ACCEPT
+            allow_iptables OUTPUT -p tcp --dport 2379 -j ACCEPT
+          fi
+          iptables-save > /etc/systemd/scripts/ip4save
+        fi
+      owner: root:root
+      path: /opt/azure-linux-setup.sh
+      permissions: "0744"
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    initConfiguration:
+      nodeRegistration:
+        ignorePreflightErrors:
+        - ExternalEtcdVersion
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    joinConfiguration:
+      nodeRegistration:
+        ignorePreflightErrors:
+        - ExternalEtcdVersion
+        kubeletExtraArgs:
+          cloud-provider: external
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - bash /opt/azure-linux-setup.sh control-plane ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
+      10.1.0.0/24} || exit 1
+    verbosity: 10
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT:=1}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      acceleratedNetworking: true
+      additionalTags:
+        monitoring: virtualmachine
+      identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: azure:///subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT:=2}
+  selector: {}
+  template:
+    metadata:
+      labels:
+        nodepool: pool1
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      failureDomain: ${KINE_ZONE_YAML}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      acceleratedNetworking: true
+      additionalTags:
+        monitoring: virtualmachine
+      identity: UserAssigned
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      userAssignedIdentities:
+      - providerID: azure:///subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${CI_RG:=capz-ci}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${USER_IDENTITY:=cloud-provider-user-identity}
+      vmExtensions:
+      - name: CustomScript
+        protectedSettings:
+          commandToExecute: |
+            #!/bin/sh
+            echo "This script is a no-op used for extension testing purposes ..."
+            touch test_file
+        publisher: Microsoft.Azure.Extensions
+        version: "2.1"
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          role="$$1"
+          shift
+          case "$${role}" in
+            control-plane|worker) ;;
+            *) echo "Expected control-plane or worker role." >&2; exit 1 ;;
+          esac
+          [[ "$$#" -gt 0 ]] || { echo "Node subnet CIDRs are required." >&2; exit 1; }
+
+          # shellcheck source=/dev/null
+          source /etc/os-release
+          case "$${VERSION_ID}" in
+            3.*) package_manager=tdnf; packages=(ca-certificates ca-certificates-legacy) ;;
+            4.*) package_manager=dnf; packages=(ca-certificates firewalld) ;;
+            *) echo "Unsupported Azure Linux version: $${VERSION_ID}" >&2; exit 1 ;;
+          esac
+          if rpm -q "$${packages[@]}" >/dev/null; then
+            echo "Azure Linux prerequisites are already installed."
+          else
+            for attempt in 1 2 3; do
+              if "$${package_manager}" install -y "$${packages[@]}"; then
+                break
+              fi
+              if [[ "$${attempt}" == 3 ]]; then
+                echo "Failed to install Azure Linux prerequisites after 3 attempts." >&2
+                exit 1
+              fi
+              echo "Azure Linux prerequisite installation failed (attempt $${attempt}/3); clearing repository metadata before retrying." >&2
+              if ! "$${package_manager}" clean metadata; then
+                echo "Failed to clear Azure Linux repository metadata." >&2
+                exit 1
+              fi
+              sleep 5
+            done
+          fi
+          update-ca-trust
+
+          if command -v firewall-cmd >/dev/null 2>&1; then
+            systemctl enable --now firewalld
+            # Node, Pod, and Service traffic includes kubelet and Calico traffic.
+            for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+              firewall-cmd --permanent --zone=trusted --add-source="$${cidr}"
+            done
+            firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="168.63.129.16" accept'
+            if [[ "$${role}" == control-plane ]]; then
+              firewall-cmd --permanent --add-port=6443/tcp
+            fi
+            firewall-cmd --reload
+          else
+            allow_iptables() {
+              iptables -w -C "$$@" 2>/dev/null || iptables -w -I "$$@"
+            }
+            allow_iptables INPUT -i lo -j ACCEPT
+            allow_iptables OUTPUT -o lo -j ACCEPT
+            allow_iptables INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            allow_iptables OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            allow_iptables INPUT -s 168.63.129.16 -j ACCEPT
+            allow_iptables OUTPUT -d 168.63.129.16 -j ACCEPT
+            for cidr in "$$@" 192.168.0.0/16 10.96.0.0/12; do
+              allow_iptables INPUT -s "$${cidr}" -j ACCEPT
+              allow_iptables OUTPUT -d "$${cidr}" -j ACCEPT
+              allow_iptables FORWARD -s "$${cidr}" -j ACCEPT
+              allow_iptables FORWARD -d "$${cidr}" -j ACCEPT
+            done
+            if [[ "$${role}" == control-plane ]]; then
+              allow_iptables INPUT -p tcp --dport 6443 -j ACCEPT
+              allow_iptables OUTPUT -p tcp --dport 2379 -j ACCEPT
+            fi
+            iptables-save > /etc/systemd/scripts/ip4save
+          fi
+        owner: root:root
+        path: /opt/azure-linux-setup.sh
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands:
+      - bash /opt/azure-linux-setup.sh worker ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
+        10.1.0.0/24} || exit 1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ${CLUSTER_IDENTITY_TYPE:=WorkloadIdentity}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: calico
+  namespace: default
+spec:
+  chartName: tigera-operator
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  namespace: tigera-operator
+  releaseName: projectcalico
+  repoURL: https://docs.tigera.io/calico/charts
+  valuesTemplate: |
+    installation:
+      cni:
+        type: Calico
+        ipam:
+          type: Calico
+      calicoNetwork:
+        bgp: Disabled
+        windowsDataplane: HNS
+        mtu: 1350
+        ipPools:{{range $i, $cidr := .Cluster.spec.clusterNetwork.pods.cidrBlocks }}
+        - cidr: {{ $cidr }}
+          encapsulation: VXLAN{{end}}
+      typhaDeployment:
+        spec:
+          template:
+            spec:
+              # By default, typha tolerates all NoSchedule taints. This breaks
+              # scale-ins when it continuously gets scheduled onto an
+              # out-of-date Node that is being deleted. Tolerate only the
+              # NoSchedule taints that are expected.
+              tolerations:
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                - effect: NoSchedule
+                  key: node.kubernetes.io/not-ready
+                  operator: Exists
+              affinity:
+                nodeAffinity:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 50
+                    preference:
+                      matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+      registry: capzcicommunity.azurecr.io
+      serviceCIDRs:
+        - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
+    # Image and registry configuration for the tigera/operator pod
+    tigeraOperator:
+      image: tigera/operator
+      registry: capzcicommunity.azurecr.io
+    calicoctl:
+      image: capzcicommunity.azurecr.io/calico/ctl
+    # when kubernetesServiceEndpoint (required for windows) is added
+    # DNS configuration is needed to look up the api server name properly
+    # https://github.com/projectcalico/calico/issues/9536
+    dnsConfig:
+      nameservers:
+        - 127.0.0.53
+      options:
+        - name: edns0
+        - name: trust-ad
+    # Only set kubernetesServiceEndpoint once both parts of the control plane
+    # endpoint are populated. If rendered before infrastructure is ready, the
+    # host/port resolve to empty or "<no value>" and get baked into the
+    # kubernetes-services-endpoint ConfigMap, crash-looping the tigera-operator
+    # with "KUBERNETES_SERVICE_HOST ... must be defined". Omitting the block lets
+    # the operator use in-cluster config.
+    {{- if and .Cluster.spec.controlPlaneEndpoint.host .Cluster.spec.controlPlaneEndpoint.port }}
+    kubernetesServiceEndpoint:
+      host: "{{ .Cluster.spec.controlPlaneEndpoint.host }}"
+      port: "{{ .Cluster.spec.controlPlaneEndpoint.port }}"
+    {{- end }}
+    # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
+    # when it continuously gets scheduled onto an out-of-date Node that is being
+    # deleted. Tolerate only the NoSchedule taints that are expected.
+    tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+  version: ${CALICO_VERSION}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: azuredisk-csi-driver-chart
+  namespace: default
+spec:
+  chartName: azuredisk-csi-driver
+  clusterSelector:
+    matchLabels:
+      azuredisk-csi: "true"
+  namespace: kube-system
+  releaseName: azuredisk-csi-driver-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
+  valuesTemplate: |-
+    controller:
+      replicas: 1
+      runOnControlPlane: true
+    windows:
+      useHostProcessContainers: {{ hasKey .Cluster.metadata.labels "cni-windows" }}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      caCertDir: "/etc/pki/tls/certs"
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      logVerbosity: 4
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: cloud-provider-azure-chart-ci
+  namespace: default
+spec:
+  chartName: cloud-provider-azure
+  clusterSelector:
+    matchLabels:
+      cloud-provider: azure-ci
+  releaseName: cloud-provider-azure-oot
+  repoURL: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
+  valuesTemplate: |
+    infra:
+      clusterName: {{ .Cluster.metadata.name }}
+    cloudControllerManager:
+      caCertDir: "/etc/pki/tls/certs"
+      cloudConfig: ${CLOUD_CONFIG:-"/etc/kubernetes/azure.json"}
+      cloudConfigSecretName: ${CONFIG_SECRET_NAME:-""}
+      clusterCIDR: {{ .Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }}
+      imageName: "${CCM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CCM:-""}"
+      logVerbosity: ${CCM_LOG_VERBOSITY:-4}
+      replicas: ${CCM_COUNT:-1}
+      enableDynamicReloading: ${ENABLE_DYNAMIC_RELOADING:-false}
+    cloudNodeManager:
+      imageName: "${CNM_IMAGE_NAME:-""}"
+      imageRepository: "${IMAGE_REGISTRY:-""}"
+      imageTag: "${IMAGE_TAG_CNM:-""}"
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+  unhealthyConditions:
+  - status: Unknown
+    timeout: 300s
+    type: Ready
+  - status: "False"
+    timeout: 300s
+    type: Ready
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
+---
+apiVersion: v1
+data:
+  tls.crt: ${KINE_CA_CERT_B64}
+kind: Secret
+metadata:
+  name: ${CLUSTER_NAME}-etcd
+  namespace: default
+type: cluster.x-k8s.io/secret
+---
+apiVersion: v1
+data:
+  tls.crt: ${KINE_CLIENT_CERT_B64}
+  tls.key: ${KINE_CLIENT_KEY_B64}
+kind: Secret
+metadata:
+  name: ${CLUSTER_NAME}-apiserver-etcd-client
+  namespace: default
+type: kubernetes.io/tls

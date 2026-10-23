@@ -25,6 +25,7 @@ while IFS='' read -r line; do log_files+=("$line"); done < <(find "${ARTIFACTS:-
 redact_vars=(
     "${AZURE_CLIENT_ID:-}"
     "${AZURE_JSON_B64:-}"
+    "${KINE_CLIENT_KEY_B64:-}"
     "$(echo -n "${AZURE_CLIENT_SECRET:-}" | base64 | tr -d '\n')"
 )
 

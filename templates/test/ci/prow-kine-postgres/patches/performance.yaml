@@ -1,0 +1,55 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  failureDomains:
+    "1":
+      controlPlane: ${KINE_ZONE_1}
+    "2":
+      controlPlane: ${KINE_ZONE_2}
+    "3":
+      controlPlane: ${KINE_ZONE_3}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      acceleratedNetworking: true
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
+      osDisk:
+        managedDisk:
+          storageAccountType: Premium_LRS
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      acceleratedNetworking: true
+      image:
+        computeGallery:
+          gallery: ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019
+          name: capi-azurelinux-4-gen2
+          version: ${KINE_NODE_IMAGE_VERSION}
+      osDisk:
+        managedDisk:
+          storageAccountType: Premium_LRS
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      failureDomain: ${KINE_ZONE_YAML}
