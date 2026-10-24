@@ -39,11 +39,10 @@ type azureClient struct {
 
 // newClient creates a new load balancer client from an authorizer.
 func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClient, error) {
-	opts, err := azure.ARMClientOptions(auth.CloudEnvironment())
+	opts, err := azure.ARMClientOptionsForAuth(auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get load balancer client options")
 	}
-
 	factory, err := armnetwork.NewClientFactory(auth.SubscriptionID(), auth.Token(), opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create armnetwork client factory")
@@ -86,7 +85,7 @@ func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.Resou
 	}
 
 	// Create a new client that knows how to add etag headers to the request.
-	clientOpts, err := azure.ARMClientOptions(ac.auth.CloudEnvironment(), extraPolicies...)
+	clientOpts, err := azure.ARMClientOptionsForAuth(ac.auth, extraPolicies...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create loadbalancer client options")
 	}

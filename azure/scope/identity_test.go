@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -241,7 +242,34 @@ func TestGetTokenCredential(t *testing.T) {
 					// ignore tracing provider
 					return opts.TenantID == fakeTenantID &&
 						opts.ClientID == fakeClientID &&
-						opts.TokenFilePath == GetProjectedTokenPath()
+						opts.TokenFilePath == GetProjectedTokenPath() &&
+						!opts.DisableInstanceDiscovery
+				}))
+			},
+		},
+		{
+			name: "workload identity in air-gapped cloud disables instance discovery",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.WorkloadIdentity,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			},
+			ActiveDirectoryAuthorityHost: "https://login.microsoftonline.ussec.example",
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreWorkloadIdentity(gomock.Cond(func(opts *azidentity.WorkloadIdentityCredentialOptions) bool {
+					return opts.DisableInstanceDiscovery &&
+						opts.ClientOptions.Cloud.ActiveDirectoryAuthorityHost == "https://login.microsoftonline.ussec.example"
 				}))
 			},
 		},
@@ -491,9 +519,11 @@ func TestGetTokenCredential(t *testing.T) {
 
 func TestParseCloudType(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected cloud.Configuration
+		name      string
+		input     string
+		envFile   string
+		expected  cloud.Configuration
+		expectErr bool
 	}{
 		{
 			name:     "when the input is public, expect AzurePublic",
@@ -520,13 +550,34 @@ func TestParseCloudType(t *testing.T) {
 			input:    "PUBLIC", // Test case for uppercased input
 			expected: cloud.AzurePublic,
 		},
+		{
+			name:      "when the input is USSEC without an environment file, expect an error",
+			input:     "USSEC",
+			expectErr: true,
+		},
+		{
+			name:     "when the input is USSEC with a valid environment file, expect the configured authority host",
+			input:    "USSEC",
+			envFile:  validUSSecEnvFile,
+			expected: cloud.Configuration{ActiveDirectoryAuthorityHost: "https://login.example.com/"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			g := NewWithT(t)
-			g.Expect(parseCloudType(tt.input)).To(Equal(tt.expected))
+			if tt.envFile != "" {
+				path := filepath.Join(t.TempDir(), "environment.json")
+				g.Expect(os.WriteFile(path, []byte(tt.envFile), 0o600)).To(Succeed())
+				t.Setenv("AZURE_ENVIRONMENT_FILEPATH", path)
+			}
+			got, err := parseCloudType(tt.input)
+			if tt.expectErr {
+				g.Expect(err).To(HaveOccurred())
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(got).To(Equal(tt.expected))
 		})
 	}
 }
