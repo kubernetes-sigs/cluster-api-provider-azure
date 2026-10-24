@@ -4,18 +4,7 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   networkSpec:
-    subnets:
-    - name: control-plane-subnet
-      role: control-plane
-      cidrBlocks:
-      - 10.0.0.0/24
-    - name: node-subnet
-      role: node
-      cidrBlocks:
-      - 10.0.1.0/24
     vnet:
-      cidrBlocks:
-      - 10.0.0.0/16
       peerings:
       - resourceGroup: ${KINE_RESOURCE_GROUP}
         remoteVnetName: kine-vnet
@@ -27,9 +16,6 @@ metadata:
 spec:
   kubeadmConfigSpec:
     clusterConfiguration:
-      apiServer:
-        extraArgs:
-          feature-gates: ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false
       etcd:
         local: null
         external:
@@ -46,20 +32,3 @@ spec:
       nodeRegistration:
         ignorePreflightErrors:
         - ExternalEtcdVersion
-    diskSetup:
-      partitions: null
-      filesystems:
-      - label: ephemeral0
-        filesystem: ext4
-        device: ephemeral0.1
-        replaceFS: ntfs
-    mounts: null
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-spec:
-  template:
-    spec:
-      dataDisks: null

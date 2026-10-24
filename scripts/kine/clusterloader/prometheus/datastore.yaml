@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Only the public CA is distributed; no client or CA signing key is needed.
+{{if eq .CL2_DATASTORE_JOB "kine"}}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -61,3 +62,41 @@ spec:
   namespaceSelector:
     matchNames:
     - monitoring
+{{else}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: capz-local-etcd-metrics
+  namespace: kube-system
+  labels:
+    k8s-app: capz-local-etcd
+    datastore-job: etcd
+spec:
+  selector:
+    component: etcd
+    tier: control-plane
+  ports:
+  - name: http-metrics
+    port: 2381
+    targetPort: 2381
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: capz-local-etcd-metrics
+  namespace: monitoring
+spec:
+  jobLabel: datastore-job
+  endpoints:
+  - port: http-metrics
+    scheme: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      k8s-app: capz-local-etcd
+  namespaceSelector:
+    matchNames:
+    - kube-system
+{{end}}

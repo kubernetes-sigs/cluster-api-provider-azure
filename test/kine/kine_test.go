@@ -161,9 +161,8 @@ func TestFlavor(t *testing.T) {
 			if len(node.Ignore) != 1 || node.Ignore[0] != "ExternalEtcdVersion" || node.Args["cloud-provider"] != "external" {
 				t.Fatalf("unexpected preflight exception or lost Azure kubelet configuration: %+v", node)
 			}
-			if len(config.Mounts) != 0 || len(config.DiskSetup.Partitions) != 0 ||
-				len(config.DiskSetup.Filesystems) != 1 || config.DiskSetup.Filesystems[0].Label != "ephemeral0" {
-				t.Fatal("remove only the unused etcd disk setup, preserving the ephemeral filesystem")
+			if len(config.Mounts) != 1 || len(config.DiskSetup.Partitions) != 1 || len(config.DiskSetup.Filesystems) != 2 {
+				t.Fatal("both modes must retain the shared control-plane disk setup")
 			}
 		case "AzureCluster":
 			found["network"] = true
@@ -204,8 +203,8 @@ func TestFlavor(t *testing.T) {
 		case "AzureMachineTemplate":
 			if object.Metadata.Name == "${CLUSTER_NAME}-control-plane" {
 				found["machine"] = true
-				if len(object.Spec.Template.Spec.DataDisks) != 0 {
-					t.Fatal("control plane must not allocate an unused etcd data disk")
+				if len(object.Spec.Template.Spec.DataDisks) != 1 {
+					t.Fatal("both modes must allocate the matched control-plane data disk")
 				}
 			}
 			if object.Metadata.Name == "${CLUSTER_NAME}-control-plane" || object.Metadata.Name == "${CLUSTER_NAME}-md-0" {
@@ -265,7 +264,6 @@ capz::kine::certificates
 	}{
 		{"server", "10.250.0.4", x509.ExtKeyUsageServerAuth},
 		{"server", "127.0.0.1", x509.ExtKeyUsageServerAuth},
-		{"server", "localhost", x509.ExtKeyUsageServerAuth},
 		{"client", "", x509.ExtKeyUsageClientAuth},
 	} {
 		block, _ := pem.Decode(readFile(t, filepath.Join(state, tc.name+".crt")))
@@ -430,14 +428,12 @@ func TestProvisionReadiness(t *testing.T) {
 		backend string
 		ready   bool
 	}{
-		{"kine-postgres", true}, {"kine-postgres", false}, {"etcd", true}, {"etcd", false},
+		{"kine-postgres", true}, {"kine-postgres", false},
 	} {
 		t.Run(tc.backend+"/"+map[bool]string{true: "ready", false: "guest-command-failed"}[tc.ready], func(t *testing.T) {
 			dir := t.TempDir()
 			message := "KINE_READY"
-			if tc.backend == "etcd" && tc.ready {
-				message = "ETCD_READY"
-			} else if tc.backend == "kine-postgres" && !tc.ready {
+			if !tc.ready {
 				message = "cloud-init failed"
 			}
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -454,15 +450,14 @@ run_id=test-run
 message=$KINE_TEST_MESSAGE
 KINE_BACKEND=$KINE_TEST_BACKEND
 KINE_PROFILE=conformance
-if [[ "$KINE_BACKEND" == etcd ]]; then KINE_PROFILE=performance; fi
 unset KINE_VM_SIZE KINE_ZONE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
 az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
   case "$1 $2" in
-    "vm show") echo '{"controller":"NVMe","dataDisks":[{"lun":0,"caching":"None"}]}' ;;
-    "disk show") echo '{"sku":{"name":"UltraSSD_LRS"},"zones":["2"],"diskSizeGB":512,"diskIOPSReadWrite":400000,"diskMBpsReadWrite":10000}' ;;
+    "vm show") echo '{"controller":"SCSI","dataDisks":[{"lun":0,"caching":"None"}]}' ;;
+    "disk show") echo '{"sku":{"name":"UltraSSD_LRS"},"zones":["2"],"diskSizeGB":512,"diskIOPSReadWrite":120000,"diskMBpsReadWrite":4000}' ;;
     "vm run-command") printf '{"value":[{"message":"%s"}]}\n' "$message" ;;
   esac
 }
@@ -475,8 +470,8 @@ capz::kine::provision
 				t.Fatalf("readiness=%t: %v\n%s", tc.ready, err, output)
 			}
 			commands := string(readFile(t, filepath.Join(dir, "commands")))
-			if strings.Contains(commands, "--name allow-kine-metrics") != (tc.backend == "etcd") {
-				t.Fatal("only the performance control should enable metrics ingress")
+			if strings.Contains(commands, "--name allow-kine-metrics") {
+				t.Fatal("conformance must keep Kine metrics on loopback")
 			}
 			if !strings.Contains(commands, "/usr/local/bin/check-datastore "+tc.backend) {
 				t.Fatal("readiness must exercise the selected backend")
@@ -499,11 +494,11 @@ capz::kine::provision
 				"--private-ip-address 10.250.0.4",
 				"--nics kine-nic",
 				"--subscription test-subscription --only-show-errors",
-				"--size Standard_E112ibs_v5",
+				"--size Standard_E96bs_v5",
 				"--sku UltraSSD_LRS",
-				"--disk-controller-type NVMe",
-				"--disk-iops-read-write 400000",
-				"--disk-mbps-read-write 10000",
+				"--disk-controller-type SCSI",
+				"--disk-iops-read-write 120000",
+				"--disk-mbps-read-write 4000",
 			} {
 				if !strings.Contains(commands, expected) {
 					t.Errorf("missing provisioning invariant: %s", expected)
@@ -685,7 +680,7 @@ capz::kine::main
 }
 
 func TestRegionSelection(t *testing.T) {
-	for _, state := range []string{"unset", "empty", "explicit", "performance", "machine-overrides", "kubernetes-override"} {
+	for _, state := range []string{"unset", "empty", "explicit", "performance", "performance-kine", "machine-overrides", "kubernetes-override"} {
 		t.Run(state, func(t *testing.T) {
 			dir := t.TempDir()
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
@@ -696,6 +691,7 @@ export WINDOWS=false IP_FAMILY=ipv4 TEST_K8S=false E2E_ARGS=
 export CONFORMANCE_FLAVOR=kine-postgres KUBERNETES_VERSION=v1.35.4
 unset KINE_PROFILE KINE_PREFLIGHT_ONLY KINE_ZONE KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
 unset KINE_KUBERNETES_VERSION KINE_NODE_IMAGE_VERSION
+unset KINE_BACKEND KINE_KUBEADM_ETCD_IMAGE
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE
 case "$KINE_TEST_LOCATION_STATE" in
@@ -704,13 +700,16 @@ case "$KINE_TEST_LOCATION_STATE" in
   explicit) export AZURE_LOCATION=test-region KINE_ZONE=3 ;;
   machine-overrides)
     unset AZURE_LOCATION
-    export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 AZURE_NODE_MACHINE_TYPE=Standard_D8s_v5 ;;
+    export KINE_VM_SIZE=Standard_D16s_v5 AZURE_NODE_MACHINE_TYPE=Standard_D8s_v5 ;;
   kubernetes-override)
     unset AZURE_LOCATION
     export KINE_KUBERNETES_VERSION=v1.35.3 ;;
   performance)
     unset AZURE_LOCATION
     export KINE_PROFILE=performance CONFORMANCE_FLAVOR=kine-postgres-performance ;;
+  performance-kine)
+    unset AZURE_LOCATION
+    export KINE_PROFILE=performance KINE_BACKEND=kine-postgres CONFORMANCE_FLAVOR=kine-postgres-performance ;;
 esac
 capz::kine::performance_preflight() {
   printf 'preflight=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
@@ -724,13 +723,14 @@ az() {
   echo false
 }
 ssh-keygen() { :; }
-capz::kine::certificates() { :; }
+capz::kine::certificates() { [[ "$KINE_BACKEND" == kine-postgres ]]; }
 capz::kine::provision() {
+  [[ "$KINE_BACKEND" == kine-postgres ]] || return 99
   printf 'fixture=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
 }
 bash() {
   if [[ "$1" == "$repo_root/scripts/kine/run-clusterloader.sh" ]]; then
-    [[ "$KINE_TEST_LOCATION_STATE" == performance && "$2" == --prepare-only ]] || return 99
+    [[ "$KINE_TEST_LOCATION_STATE" == performance* && "$2" == --prepare-only ]] || return 99
     printf 'prepare=%s\n' "${AZURE_LOCATION:?}" >> "$KINE_TEST_DIR/regions"
     return 0
   fi
@@ -751,10 +751,14 @@ capz::kine::main
 			}
 			lines := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "regions")))), "\n")
 			prefixes := []string{"preflight="}
-			if state == "performance" {
+			if strings.HasPrefix(state, "performance") {
 				prefixes = append(prefixes, "prepare=")
 			}
-			prefixes = append(prefixes, "azure=", "azure=", "fixture=", "workload=")
+			if state == "performance" {
+				prefixes = append(prefixes, "azure=", "workload=")
+			} else {
+				prefixes = append(prefixes, "azure=", "azure=", "fixture=", "workload=")
+			}
 			if len(lines) != len(prefixes) {
 				t.Fatalf("unexpected preflight/provision/workload sequence: %v", lines)
 			}
@@ -764,10 +768,13 @@ capz::kine::main
 				region, zone = "test-region", "3"
 				zones = []string{"false", "false", "true"}
 			}
-			if state == "performance" {
+			switch state {
+			case "performance":
+				flavor = "kubeadm-etcd-performance"
+			case "performance-kine":
 				flavor = "kine-postgres-performance"
 			}
-			controlPlane, worker := "Standard_D64as_v5", "Standard_D16s_v5"
+			controlPlane, worker := "Standard_E96bs_v5", "Standard_D16s_v5"
 			if state == "machine-overrides" {
 				controlPlane, worker = "Standard_D16s_v5", "Standard_D8s_v5"
 			}
@@ -784,7 +791,7 @@ capz::kine::main
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := "Standard_E112ibs_v5\n400000\n10000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n10.0.0.0/24 10.0.1.0/24\n"
+			want := controlPlane + "\n120000\n4000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n10.0.0.0/24 10.0.1.0/24\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}
@@ -803,8 +810,8 @@ func TestRejectUnsupportedRuns(t *testing.T) {
 		{"ci-artifacts", "E2E_ARGS=-kubetest.use-ci-artifacts", "supports Linux/IPv4"},
 		{"unpinned", "KINE_KUBERNETES_VERSION=stable-1.35", "Pin KINE_KUBERNETES_VERSION"},
 		{"invalid-profiling", "KINE_COLLECT_PROFILES=invalid", "KINE_COLLECT_PROFILES must be true or false"},
-		{"invalid-backend", "KINE_BACKEND=invalid", "KINE_BACKEND must be etcd or kine-postgres"},
-		{"etcd-conformance", "KINE_BACKEND=etcd", "supported only with KINE_PROFILE=performance"},
+		{"invalid-backend", "KINE_BACKEND=invalid", "KINE_BACKEND must be kubeadm-etcd or kine-postgres"},
+		{"retired-external-etcd", "KINE_BACKEND=etcd", "standalone etcd has been removed"},
 		{"wrong-flavor", "CONFORMANCE_FLAVOR=other", "requires CONFORMANCE_FLAVOR"},
 		{"existing-group", "KUBERNETES_VERSION=v1.35.4", "Refusing to reuse resource group"},
 	} {

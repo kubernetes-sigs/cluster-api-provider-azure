@@ -17,8 +17,7 @@
 set -euo pipefail
 case "${1:-}" in
   kine-postgres) service=kine; label=Kine; marker=KINE_READY ;;
-  etcd) service=etcd; label=etcd; marker=ETCD_READY ;;
-  *) echo "Specify the etcd or kine-postgres backend." >&2; exit 1 ;;
+  *) echo "Only the external kine-postgres VM uses this readiness probe." >&2; exit 1 ;;
 esac
 export ETCDCTL_API=3
 export ETCDCTL_ENDPOINTS=https://127.0.0.1:2379

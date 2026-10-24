@@ -59,8 +59,12 @@ cp "${repo_root}/scripts/kine/clusterloader/writer.yaml" "${cache}/workload/modu
 [[ "${1:-}" != --prepare-only ]] || exit 0
 
 : "${KUBECONFIG:?Set the workload cluster kubeconfig}"
-: "${KINE_CA_CERT_B64:?Set the public Kine CA certificate for the private metrics endpoint}"
-export CL2_KINE_CA_CERT_B64="${KINE_CA_CERT_B64}"
+if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+  : "${KINE_CA_CERT_B64:?Set the public Kine CA certificate for the private metrics endpoint}"
+  export CL2_KINE_CA_CERT_B64="${KINE_CA_CERT_B64}"
+else
+  unset CL2_KINE_CA_CERT_B64
+fi
 [[ -f "${KUBECONFIG}" ]] || { echo "Workload kubeconfig does not exist." >&2; exit 1; }
 KUBECONFIG=$(cd "$(dirname "${KUBECONFIG}")" && printf '%s/%s' "$PWD" "$(basename "${KUBECONFIG}")")
 export KUBECONFIG

@@ -55,12 +55,12 @@ func TestRunKinePerformanceProfiling(t *testing.T) {
 		wantErrors                          []string
 	}{
 		{"default-disabled", "", "", "0", true, true, nil},
-		{"explicit-disabled", "etcd", "false", "0", true, true, nil},
+		{"explicit-disabled", "kubeadm-etcd", "false", "0", true, true, nil},
 		{"kine-postgres", "kine-postgres", "false", "0", true, true, nil},
 		{"missing-snapshot", "", "false", "0", false, true, []string{"open Prometheus snapshot"}},
 		{"runner-failure", "", "false", "17", true, true, []string{"exit status 17"}},
 		{"both-failures", "", "false", "17", false, true, []string{"exit status 17", "open Prometheus snapshot"}},
-		{"enabled-validates-ca", "", "true", "0", true, false, []string{"decode public Kine profiling CA"}},
+		{"enabled-validates-ca", "kine-postgres", "true", "0", true, false, []string{"decode public Kine profiling CA"}},
 		{"invalid-setting", "", "invalid", "0", true, false, []string{"invalid KINE_COLLECT_PROFILES"}},
 		{"invalid-backend", "other", "false", "0", true, false, []string{"invalid KINE_BACKEND"}},
 	} {
@@ -101,7 +101,7 @@ exit "$KINE_TEST_EXIT_CODE"
 			if tc.wantRunner {
 				backend := tc.backend
 				if backend == "" {
-					backend = "etcd"
+					backend = "kubeadm-etcd"
 				}
 				if markerErr != nil || string(marker) != "../../scripts/kine/run-clusterloader.sh\ntest.kubeconfig\n"+backend+"\n" {
 					t.Fatalf("CL2 must still run with the workload kubeconfig: %q, %v", marker, markerErr)
@@ -188,6 +188,25 @@ func TestKineProfilerResources(t *testing.T) {
 	}
 }
 
+func TestKineProfileLocalResources(t *testing.T) {
+	client := fake.NewClientset()
+	namespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "local-profiles", UID: "uid"}}
+	if err := createKineProfilerResources(t.Context(), client, namespace, nil); err != nil {
+		t.Fatal(err)
+	}
+	secrets, err := client.CoreV1().Secrets(namespace.Name).List(t.Context(), metav1.ListOptions{})
+	if err != nil || len(secrets.Items) != 0 {
+		t.Fatalf("local profiling must not create datastore credential Secrets: %v", err)
+	}
+	pod, err := client.CoreV1().Pods(namespace.Name).Get(t.Context(), kineProfilerPodName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pod.Spec.Volumes) != 0 || len(pod.Spec.Containers[0].VolumeMounts) != 0 {
+		t.Fatal("local profiling must not mount datastore certificates or host paths")
+	}
+}
+
 func TestKineProfileTargets(t *testing.T) {
 	makeNode := func(name, address string) corev1.Node {
 		return corev1.Node{
@@ -213,9 +232,9 @@ func TestKineProfileTargets(t *testing.T) {
 	if _, err := kineProfileTargets(nil, "kine-postgres"); err == nil {
 		t.Fatal("missing control-plane nodes must be reported")
 	}
-	targets, err = kineProfileTargets([]corev1.Node{makeNode("cp", "10.0.0.4")}, "etcd")
-	if err != nil || targets[0].Name != "etcd" || targets[0].Component != "etcd" || targets[0].URL != "https://10.250.0.4:8080" {
-		t.Fatalf("etcd profiles must use the private allowlisted TLS endpoint: %+v, %v", targets, err)
+	targets, err = kineProfileTargets([]corev1.Node{makeNode("cp", "10.0.0.4")}, "kubeadm-etcd")
+	if err != nil || len(targets) != 1 || targets[0].Component != "apiserver" || targets[0].URL != "https://10.0.0.4:6443" {
+		t.Fatalf("local profiles must not require a standalone datastore or its credentials: %+v, %v", targets, err)
 	}
 	if _, err := kineProfileTargets([]corev1.Node{makeNode("cp", "10.0.0.4")}, "other"); err == nil {
 		t.Fatal("unknown backends must not produce profiling targets")

@@ -64,7 +64,7 @@ func processAzureLinuxTemplate(t *testing.T, data []byte, nodeCIDRs string) []by
 func TestAzureLinuxBootstrapInheritance(t *testing.T) {
 	root := repoRoot(t)
 	var sharedScript string
-	for _, flavor := range []string{"prow-azl3", "prow-ci-version-azl3", "prow-kine-postgres", "prow-kine-postgres-performance"} {
+	for _, flavor := range []string{"prow-azl3", "prow-ci-version-azl3", "prow-kine-postgres", "prow-kine-postgres-performance", "prow-kubeadm-etcd", "prow-kubeadm-etcd-performance"} {
 		t.Run(flavor, func(t *testing.T) {
 			// #nosec G204 -- Template arguments come from the fixed flavor list above.
 			cmd := exec.CommandContext(t.Context(), "./hack/tools/bin/kustomize", "build",

@@ -37,7 +37,7 @@ import (
 func TestPerformancePreflight(t *testing.T) {
 	for _, tc := range []string{
 		"success", "conformance-success", "conformance-quota", "family-quota", "regional-quota", "missing-quota", "restricted-zone",
-		"missing-zone", "no-ultra", "no-nvme", "wrong-architecture", "no-acceleration",
+		"missing-zone", "no-ultra", "no-scsi", "wrong-architecture", "no-acceleration", "missing-io-limits", "excess-io", "mismatched-vms",
 		"invalid-disk", "invalid-zone", "wrong-image", "azure-error",
 		"string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota",
 		"connection-overrides", "invalid-connection-budget", "profiling-enabled", "kine-postgres",
@@ -55,15 +55,14 @@ func TestPerformancePreflight(t *testing.T) {
 			}
 			var skus []map[string]any
 			for _, machine := range []struct{ size, family, cpu string }{
-				{"Standard_E112ibs_v5", "standardEIBSv5Family", "112"},
-				{"Standard_D64as_v5", "standardDASv5Family", "64"},
+				{"Standard_E96bs_v5", "standardEBSv5Family", "96"},
 				{"Standard_D16s_v5", "standardDSv5Family", "16"},
 			} {
 				capabilities := map[string]string{
 					"vCPUs": machine.cpu, "CpuArchitectureType": "x64", "AcceleratedNetworkingEnabled": "True", "DiskControllerTypes": "SCSI,NVMe",
-					"HyperVGenerations": "V1,V2",
+					"HyperVGenerations": "V1,V2", "UncachedDiskIOPS": "120000", "UncachedDiskBytesPerSecond": "4000000000",
 				}
-				if machine.size == "Standard_D64as_v5" {
+				if machine.size == "Standard_E96bs_v5" {
 					delete(capabilities, "DiskControllerTypes")
 					switch tc {
 					case "control-plane-no-gen2":
@@ -72,6 +71,8 @@ func TestPerformancePreflight(t *testing.T) {
 						delete(capabilities, "HyperVGenerations")
 					case "control-plane-nvme-only":
 						capabilities["DiskControllerTypes"] = "NVMe"
+					case "missing-io-limits":
+						delete(capabilities, "UncachedDiskIOPS")
 					}
 				}
 				if machine.size == "Standard_D16s_v5" {
@@ -83,8 +84,8 @@ func TestPerformancePreflight(t *testing.T) {
 					}
 				}
 				switch tc {
-				case "no-nvme":
-					capabilities["DiskControllerTypes"] = "SCSI"
+				case "no-scsi":
+					capabilities["DiskControllerTypes"] = "NVMe"
 				case "wrong-architecture":
 					capabilities["CpuArchitectureType"] = "Arm64"
 				case "no-acceleration":
@@ -123,38 +124,38 @@ func TestPerformancePreflight(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "skus-input.json"), data, 0o600); err != nil {
 				t.Fatal(err)
 			}
-			quota := `[{"name":{"value":"standardEIBSv5Family"},"limit":112,"currentValue":0},
-{"name":{"value":"standardDASv5Family"},"limit":64,"currentValue":0},
+			quota := `[{"name":{"value":"standardEBSv5Family"},"limit":192,"currentValue":0},
 {"name":{"value":"standardDSv5Family"},"limit":32,"currentValue":0},
-{"name":{"value":"cores"},"limit":208,"currentValue":0}]`
+{"name":{"value":"cores"},"limit":224,"currentValue":0}]`
 			switch tc {
-			case "family-quota", "conformance-quota":
-				quota = strings.Replace(quota, `"limit":64`, `"limit":63`, 1)
+			case "family-quota":
+				quota = strings.Replace(quota, `"limit":192`, `"limit":95`, 1)
+			case "conformance-quota":
+				quota = strings.Replace(quota, `"limit":192`, `"limit":191`, 1)
 			case "worker-quota":
 				quota = strings.Replace(quota, `"limit":32`, `"limit":31`, 1)
 			case "shared-family", "shared-family-quota":
-				quota = strings.NewReplacer(`"limit":32`, `"limit":48`, `"limit":208`, `"limit":160`).Replace(quota)
+				quota = strings.Replace(quota, `"limit":32`, `"limit":48`, 1)
 				if tc == "shared-family-quota" {
 					quota = strings.Replace(quota, `"limit":48`, `"limit":47`, 1)
 				}
 			case "regional-quota":
-				quota = strings.Replace(quota, `"limit":208`, `"limit":207`, 1)
+				quota = strings.Replace(quota, `"limit":224`, `"limit":127`, 1)
 			case "missing-quota":
 				quota = `[]`
 			case "string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota":
-				quota = `[{"name":{"value":"standardEIBSv5Family"},"limit":"120","currentValue":"8"},
-{"name":{"value":"standardDASv5Family"},"limit":"72","currentValue":"8"},
+				quota = `[{"name":{"value":"standardEBSv5Family"},"limit":"200","currentValue":"8"},
 {"name":{"value":"standardDSv5Family"},"limit":"40","currentValue":"8"},
-{"name":{"value":"cores"},"limit":"216","currentValue":"8"}]`
+{"name":{"value":"cores"},"limit":"232","currentValue":"8"}]`
 				switch tc {
 				case "mixed-quota":
-					quota = strings.NewReplacer(`"limit":"120"`, `"limit":120`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
+					quota = strings.NewReplacer(`"limit":"200"`, `"limit":200`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
 				case "string-family-quota":
-					quota = strings.Replace(quota, `"limit":"72"`, `"limit":"71"`, 1)
+					quota = strings.Replace(quota, `"limit":"200"`, `"limit":"103"`, 1)
 				case "string-regional-quota":
-					quota = strings.Replace(quota, `"limit":"216"`, `"limit":"215"`, 1)
+					quota = strings.Replace(quota, `"limit":"232"`, `"limit":"135"`, 1)
 				case "invalid-quota":
-					quota = strings.Replace(quota, `"limit":"120"`, `"limit":"invalid"`, 1)
+					quota = strings.Replace(quota, `"limit":"200"`, `"limit":"invalid"`, 1)
 				}
 			}
 			if err := os.WriteFile(filepath.Join(dir, "quota-input.json"), []byte(quota), 0o600); err != nil {
@@ -173,10 +174,13 @@ unset AZURE_CONTROL_PLANE_MACHINE_TYPE AZURE_NODE_MACHINE_TYPE CONFORMANCE_CONTR
 case "$KINE_TEST_CASE" in
   invalid-disk) export KINE_DISK_IOPS=400001 ;;
   invalid-zone) export KINE_ZONE=4 ;;
-  shared-family|shared-family-quota) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D16s_v5 ;;
+  shared-family|shared-family-quota) export KINE_VM_SIZE=Standard_D16s_v5 ;;
+  mismatched-vms) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D64as_v5 ;;
+  excess-io) export KINE_DISK_IOPS=120001 ;;
   kubernetes-override) export KINE_KUBERNETES_VERSION=v1.35.3 ;;
   profiling-enabled) export KINE_COLLECT_PROFILES=true ;;
   kine-postgres) export KINE_BACKEND=kine-postgres ;;
+  wrong-image) export KINE_BACKEND=kine-postgres ;;
   connection-overrides)
     export KINE_BACKEND=kine-postgres KINE_POSTGRES_MAX_CONNECTIONS=512 KINE_DATASTORE_MAX_OPEN_CONNECTIONS=256 KINE_DATASTORE_MAX_IDLE_CONNECTIONS=64 ;;
   invalid-connection-budget) export KINE_BACKEND=kine-postgres KINE_DATASTORE_MAX_OPEN_CONNECTIONS=1024 ;;
@@ -239,9 +243,12 @@ capz::kine::main
 			if (err == nil) != success {
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
-			if (tc == "family-quota" || tc == "conformance-quota" || tc == "string-family-quota") &&
-				!bytes.Contains(output, []byte("Insufficient standardDASv5Family vCPU quota: need 64, available 63")) {
-				t.Fatalf("must check control-plane Dasv5 quota independently of worker quota: %s", output)
+			if (tc == "family-quota" || tc == "string-family-quota") &&
+				!bytes.Contains(output, []byte("Insufficient standardEBSv5Family vCPU quota: need 96, available 95")) {
+				t.Fatalf("local mode must require only its control-plane EBSv5 quota: %s", output)
+			}
+			if tc == "conformance-quota" && !bytes.Contains(output, []byte("need 192, available 191")) {
+				t.Fatalf("Kine mode must include both matched VMs in the EBSv5 quota: %s", output)
 			}
 			if tc == "worker-quota" && !bytes.Contains(output, []byte("Insufficient standardDSv5Family vCPU quota: need 32, available 31")) {
 				t.Fatalf("must check worker Dsv5 quota independently of control-plane quota: %s", output)
@@ -249,11 +256,11 @@ capz::kine::main
 			if tc == "shared-family-quota" && !bytes.Contains(output, []byte("need 48, available 47")) {
 				t.Fatalf("must aggregate control-plane and worker quota when using the same family: %s", output)
 			}
-			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 208, available 207")) {
+			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 128, available 127")) {
 				t.Fatalf("must aggregate regional quota: %s", output)
 			}
 			if (tc == "control-plane-no-gen2" || tc == "control-plane-missing-generation") &&
-				!bytes.Contains(output, []byte("Control-plane SKU Standard_D64as_v5 must support Gen2")) {
+				!bytes.Contains(output, []byte("Control-plane/datastore SKU Standard_E96bs_v5 must support Gen2")) {
 				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
 			}
 			if (tc == "control-plane-gen1" || tc == "control-plane-arm" || tc == "control-plane-missing-properties") &&
@@ -287,32 +294,35 @@ capz::kine::main
 				if err := json.Unmarshal(readFile(t, filepath.Join(dir, "kine-capz-perf-test", "capacity-plan.json")), &plan); err != nil {
 					t.Fatalf("capacity plan must contain numeric quota values: %v", err)
 				}
-				wantQuotas := map[string]int{
-					"standardEIBSv5Family": 112,
-					"standardDASv5Family":  64,
-					"standardDSv5Family":   32,
-					"cores":                208,
+				wantQuotas := map[string]int{"standardEBSv5Family": 96, "standardDSv5Family": 32, "cores": 128}
+				wantAvailable := map[string]int{"standardEBSv5Family": 192, "standardDSv5Family": 32, "cores": 224}
+				useKine := tc == "conformance-success" || tc == "kine-postgres" || tc == "connection-overrides"
+				if useKine {
+					wantQuotas["standardEBSv5Family"], wantQuotas["cores"] = 192, 224
 				}
 				if tc == "shared-family" {
-					delete(wantQuotas, "standardDASv5Family")
+					delete(wantQuotas, "standardEBSv5Family")
 					wantQuotas["standardDSv5Family"] = 48
-					wantQuotas["cores"] = 160
+					wantAvailable["standardDSv5Family"] = 48
+					wantQuotas["cores"] = 48
 				}
 				if len(plan.Quota) != len(wantQuotas) {
 					t.Fatalf("expected %d quotas: %+v", len(wantQuotas), plan.Quota)
 				}
 				for _, quota := range plan.Quota {
-					if required, ok := wantQuotas[quota.Name]; !ok || quota.Required != required || quota.Available != required {
+					if required, ok := wantQuotas[quota.Name]; !ok || quota.Required != required || quota.Available != wantAvailable[quota.Name] {
 						t.Fatalf("unexpected quota plan: %+v", quota)
 					}
 					delete(wantQuotas, quota.Name)
 				}
 				settings := readFile(t, filepath.Join(dir, "kine-capz-perf-test", "performance-settings.txt"))
-				if !bytes.Contains(settings, []byte("Canonical:ubuntu-24_04-lts:server:24.04.20261001")) ||
-					!bytes.Contains(settings, []byte("disk-iops=400000")) {
-					t.Fatalf("missing pinned image or disk settings: %s", settings)
+				if !bytes.Contains(settings, []byte("disk-iops=120000")) || !bytes.Contains(settings, []byte("disk-controller=SCSI")) {
+					t.Fatalf("missing matched disk settings: %s", settings)
 				}
-				if tc == "conformance-success" || tc == "kine-postgres" || tc == "connection-overrides" {
+				if useKine {
+					if !bytes.Contains(settings, []byte("Canonical:ubuntu-24_04-lts:server:24.04.20261001")) {
+						t.Fatal("external Kine must retain its resolved Ubuntu image")
+					}
 					connections := "postgres-max-connections=1024\nkine-max-open-connections=960\nkine-max-idle-connections=128\n"
 					if tc == "connection-overrides" {
 						connections = "postgres-max-connections=512\nkine-max-open-connections=256\nkine-max-idle-connections=64\n"
@@ -321,10 +331,10 @@ capz::kine::main
 						!bytes.Contains(settings, []byte("datastore-backend=kine-postgres\ndatastore-version=v0.17.2\n")) {
 						t.Fatalf("missing Kine connection budget or backend identity: %s", settings)
 					}
-				} else if !bytes.Contains(settings, []byte("datastore-backend=etcd\ndatastore-version=v3.6.6\n")) ||
+				} else if !bytes.Contains(settings, []byte("datastore-backend=kubeadm-etcd\ndatastore-version=kubeadm-managed\n")) ||
 					!bytes.Contains(settings, []byte("etcd-quota-backend-bytes=34359738368\n")) ||
 					bytes.Contains(settings, []byte("postgres-max-connections=")) {
-					t.Fatalf("etcd controls must identify the native backend, not PostgreSQL settings: %s", settings)
+					t.Fatalf("local controls must identify kubeadm rather than an external datastore: %s", settings)
 				}
 				profiles := "false"
 				if tc == "profiling-enabled" {
@@ -342,6 +352,9 @@ capz::kine::main
 					t.Fatalf("must archive the Kubernetes-matched node image reference: %s", settings)
 				}
 				commands := readFile(t, filepath.Join(dir, "commands"))
+				if !useKine && bytes.Contains(commands, []byte("vm image show")) {
+					t.Fatal("local mode must not require a standalone datastore image")
+				}
 				imageURL := "https://management.azure.com/subscriptions/test-subscription/providers/Microsoft.Compute/locations/" + location +
 					"/communityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/images/capi-azurelinux-4-gen2"
 				for _, url := range []string{imageURL + "?api-version=2024-03-03", imageURL + "/versions/" + imageVersion + "?api-version=2024-03-03"} {
@@ -373,7 +386,7 @@ func TestPerformanceProvision(t *testing.T) {
 source ./scripts/ci-kine-conformance.sh
 source ./scripts/kine/performance.sh
 export AZURE_LOCATION=test-region KINE_ZONE=1 KINE_PROFILE=performance
-unset KINE_BACKEND
+export KINE_BACKEND=kine-postgres
 unset KINE_VM_SIZE KINE_DISK_SIZE_GB KINE_DISK_IOPS KINE_DISK_MBPS
 unset KINE_POSTGRES_MAX_CONNECTIONS KINE_DATASTORE_MAX_OPEN_CONNECTIONS KINE_DATASTORE_MAX_IDLE_CONNECTIONS
 capz::kine::performance_defaults
@@ -386,11 +399,11 @@ az() {
   printf '%s\n' "$*" >> "$KINE_TEST_DIR/commands"
   case "$1 $2" in
     "vm show")
-      controller=NVMe
-      [[ "$KINE_TEST_MISMATCH" != controller ]] || controller=SCSI
+      controller=SCSI
+      [[ "$KINE_TEST_MISMATCH" != controller ]] || controller=NVMe
       printf '{"controller":"%s","dataDisks":[{"lun":0,"caching":"None"}]}\n' "$controller" ;;
     "disk show")
-      sku=UltraSSD_LRS iops=400000 mbps=10000
+      sku=UltraSSD_LRS iops=120000 mbps=4000
       case "$KINE_TEST_MISMATCH" in
         disk) iops=100 ;;
         disk-throughput) mbps=100 ;;
@@ -399,7 +412,7 @@ az() {
         disk-api-error) echo "Azure disk lookup failed" >&2; return 17 ;;
       esac
       printf '{"sku":{"name":"%s"},"zones":["1"],"diskSizeGB":512,"diskIOPSReadWrite":%s,"diskMBpsReadWrite":%s}\n' "$sku" "$iops" "$mbps" ;;
-    "vm run-command") echo '{"value":[{"message":"ETCD_READY"}]}' ;;
+    "vm run-command") echo '{"value":[{"message":"KINE_READY"}]}' ;;
   esac
 }
 capz::kine::provision
@@ -411,12 +424,12 @@ capz::kine::provision
 				t.Fatalf("unexpected provision result: %v\n%s", err, output)
 			}
 			observed, diskMismatch := map[string]string{
-				"disk":            `{"sku":"UltraSSD_LRS","iops":100,"mbps":10000}`,
-				"disk-throughput": `{"sku":"UltraSSD_LRS","iops":400000,"mbps":100}`,
-				"disk-sku":        `{"sku":"Premium_LRS","iops":400000,"mbps":10000}`,
-				"null-iops":       `{"sku":"UltraSSD_LRS","iops":null,"mbps":10000}`,
+				"disk":            `{"sku":"UltraSSD_LRS","iops":100,"mbps":4000}`,
+				"disk-throughput": `{"sku":"UltraSSD_LRS","iops":120000,"mbps":100}`,
+				"disk-sku":        `{"sku":"Premium_LRS","iops":120000,"mbps":4000}`,
+				"null-iops":       `{"sku":"UltraSSD_LRS","iops":null,"mbps":4000}`,
 			}[mismatch]
-			if diskMismatch && (!bytes.Contains(output, []byte("Expected: sku=UltraSSD_LRS, iops=400000, mbps=10000")) ||
+			if diskMismatch && (!bytes.Contains(output, []byte("Expected: sku=UltraSSD_LRS, iops=120000, mbps=4000")) ||
 				!bytes.Contains(output, []byte("Observed: "+observed))) {
 				t.Fatalf("disk mismatch must report expected and observed settings: %s", output)
 			}
@@ -455,10 +468,10 @@ capz::kine::provision
 				t.Fatalf("must stop before guest readiness when provisioning validation fails: %s", commands)
 			}
 			for _, required := range []string{
-				"--sku UltraSSD_LRS", "--disk-iops-read-write 400000", "--disk-mbps-read-write 10000",
-				"--disk-controller-type NVMe", "--ultra-ssd-enabled true", "--attach-data-disks kine-data",
+				"--sku UltraSSD_LRS", "--disk-iops-read-write 120000", "--disk-mbps-read-write 4000",
+				"--disk-controller-type SCSI", "--ultra-ssd-enabled true", "--attach-data-disks kine-data",
 				"--data-disk-caching None", "--accelerated-networking true", "--zone 1",
-				"--size Standard_E112ibs_v5", "--storage-sku Premium_LRS",
+				"--size Standard_E96bs_v5", "--storage-sku Premium_LRS",
 			} {
 				if !strings.Contains(commands, required) {
 					t.Errorf("missing %s", required)
@@ -807,7 +820,7 @@ func clusterLoaderMeasurementsForBackend(t *testing.T, action, backend string) [
 	t.Helper()
 	data := readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "clusterloader", "measurements.yaml"))
 	job, prefix := "kine", "Kine"
-	if backend == "etcd" {
+	if backend == "kubeadm-etcd" {
 		job, prefix = "etcd", "Etcd"
 	} else if backend != "kine-postgres" {
 		t.Fatalf("unknown test backend %q", backend)

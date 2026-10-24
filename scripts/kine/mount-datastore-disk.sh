@@ -15,15 +15,15 @@
 # limitations under the License.
 
 set -euo pipefail
-device=/dev/disk/azure/data/by-lun/0
+device=/dev/disk/azure/scsi1/lun0
 mount=/var/lib/kine-postgresql
 for ((attempt=0; attempt<60; attempt++)); do
   [[ -b "${device}" ]] && break
   sleep 2
 done
 [[ -b "${device}" ]] || { echo "Azure data disk LUN 0 is missing; refusing OS-disk fallback." >&2; exit 1; }
-[[ "$(lsblk -dn -o TRAN "${device}")" == nvme ]] ||
-  { echo "Data disk LUN 0 is not NVMe." >&2; exit 1; }
+[[ "$(lsblk -dn -o HCTL "${device}")" =~ ^[0-9]+:[0-9]+:[0-9]+:0$ ]] ||
+  { echo "Data disk is not SCSI LUN 0." >&2; exit 1; }
 if lsblk -nr -o MOUNTPOINT "${device}" | grep -q '[^[:space:]]'; then
   echo "Refusing to initialize an already mounted disk." >&2
   exit 1
@@ -32,7 +32,7 @@ if [[ -n "$(wipefs --noheadings --output TYPE "${device}")" ]]; then
   echo "Refusing to format a disk with existing signatures." >&2
   exit 1
 fi
-mkfs.ext4 -F "${device}"
+mkfs.ext4 -F -E lazy_itable_init=1,lazy_journal_init=1 "${device}"
 install -d "${mount}"
 uuid=$(blkid -s UUID -o value "${device}")
 [[ -n "${uuid}" ]] || { echo "Formatted disk has no UUID." >&2; exit 1; }

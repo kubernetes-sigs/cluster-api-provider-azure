@@ -51,7 +51,11 @@ func testDatastoreMetricsMonitor(t *testing.T, job string) {
 	}
 	ca := []byte("public CA certificate")
 	var rendered bytes.Buffer
-	if err := tmpl.Execute(&rendered, map[string]string{"CL2_KINE_CA_CERT_B64": base64.StdEncoding.EncodeToString(ca), "CL2_DATASTORE_JOB": job}); err != nil {
+	parameters := map[string]string{"CL2_DATASTORE_JOB": job}
+	if job == "kine" {
+		parameters["CL2_KINE_CA_CERT_B64"] = base64.StdEncoding.EncodeToString(ca)
+	}
+	if err := tmpl.Execute(&rendered, parameters); err != nil {
 		t.Fatal(err)
 	}
 	decoder := yamlutil.NewYAMLOrJSONDecoder(&rendered, 4096)
@@ -73,12 +77,19 @@ func testDatastoreMetricsMonitor(t *testing.T, job string) {
 		if err := json.Unmarshal(raw, &object); err != nil {
 			t.Fatal(err)
 		}
-		if found[object.Kind] || object.Metadata.Namespace != "monitoring" {
+		namespace := "monitoring"
+		if job == "etcd" && object.Kind == "Service" {
+			namespace = "kube-system"
+		}
+		if found[object.Kind] || object.Metadata.Namespace != namespace {
 			t.Fatalf("duplicate or incorrectly scoped metrics resource: %+v", object)
 		}
 		found[object.Kind] = true
 		switch object.Kind {
 		case "Secret":
+			if job != "kine" {
+				t.Fatal("local etcd monitoring must not distribute datastore credentials")
+			}
 			var secret corev1.Secret
 			if err := json.Unmarshal(raw, &secret); err != nil {
 				t.Fatal(err)
@@ -91,13 +102,24 @@ func testDatastoreMetricsMonitor(t *testing.T, job string) {
 			if err := json.Unmarshal(raw, &service); err != nil {
 				t.Fatal(err)
 			}
-			if service.Name != job+"-metrics" || service.Labels["k8s-app"] != job ||
-				len(service.Spec.Selector) != 0 || len(service.Spec.Ports) != 1 ||
-				service.Spec.Ports[0].Name != "https-metrics" || service.Spec.Ports[0].Port != 8080 ||
-				len(service.Spec.ExternalIPs) != 0 || service.Spec.Type == corev1.ServiceTypeLoadBalancer {
-				t.Fatal("metrics service must select the single external private endpoint without public exposure")
+			if len(service.Spec.Ports) != 1 || len(service.Spec.ExternalIPs) != 0 || service.Spec.Type == corev1.ServiceTypeLoadBalancer {
+				t.Fatal("metrics service must remain private with one diagnostic port")
+			}
+			if job == "etcd" {
+				if service.Name != "capz-local-etcd-metrics" || service.Labels["datastore-job"] != "etcd" ||
+					len(service.Spec.Selector) != 2 || service.Spec.Selector["component"] != "etcd" ||
+					service.Spec.Selector["tier"] != "control-plane" || service.Spec.Ports[0].Port != 2381 ||
+					service.Spec.Ports[0].Name != "http-metrics" {
+					t.Fatal("local monitoring must select kubeadm's static Pods on their metrics-only port")
+				}
+			} else if service.Name != "kine-metrics" || service.Labels["k8s-app"] != "kine" ||
+				len(service.Spec.Selector) != 0 || service.Spec.Ports[0].Name != "https-metrics" || service.Spec.Ports[0].Port != 8080 {
+				t.Fatal("Kine monitoring must select its single private TLS endpoint")
 			}
 		case "Endpoints":
+			if job != "kine" {
+				t.Fatal("local etcd endpoints must follow the Pod selector, not a hardcoded VM")
+			}
 			var endpoints struct {
 				Subsets []struct {
 					Addresses []struct {
@@ -142,17 +164,26 @@ func testDatastoreMetricsMonitor(t *testing.T, job string) {
 					Selector struct {
 						MatchLabels map[string]string `json:"matchLabels"`
 					} `json:"selector"`
+					NamespaceSelector struct {
+						MatchNames []string `json:"matchNames"`
+					} `json:"namespaceSelector"`
 				} `json:"spec"`
 			}
 			if err := json.Unmarshal(raw, &monitor); err != nil {
 				t.Fatal(err)
 			}
-			if monitor.Spec.JobLabel != "k8s-app" || monitor.Spec.Selector.MatchLabels["k8s-app"] != job ||
-				len(monitor.Spec.Endpoints) != 1 {
-				t.Fatal("monitor must assign the selected datastore job label to exactly one scrape endpoint")
+			if len(monitor.Spec.Endpoints) != 1 {
+				t.Fatal("monitor must have exactly one diagnostic endpoint")
 			}
 			endpoint := monitor.Spec.Endpoints[0]
-			if endpoint.Port != "https-metrics" || endpoint.Scheme != "https" || endpoint.Path != "/metrics" ||
+			if job == "etcd" {
+				if monitor.Spec.JobLabel != "datastore-job" || monitor.Spec.Selector.MatchLabels["k8s-app"] != "capz-local-etcd" ||
+					strings.Join(monitor.Spec.NamespaceSelector.MatchNames, ",") != "kube-system" ||
+					endpoint.Port != "http-metrics" || endpoint.Scheme != "http" || endpoint.Path != "/metrics" {
+					t.Fatal("local etcd monitoring must use the private kube-system metrics Service")
+				}
+			} else if monitor.Spec.JobLabel != "k8s-app" || monitor.Spec.Selector.MatchLabels["k8s-app"] != "kine" ||
+				endpoint.Port != "https-metrics" || endpoint.Scheme != "https" || endpoint.Path != "/metrics" ||
 				endpoint.TLSConfig.ServerName != "10.250.0.4" || endpoint.TLSConfig.InsecureSkipVerify ||
 				endpoint.TLSConfig.CA.Secret.Name != job+"-metrics-ca" || endpoint.TLSConfig.CA.Secret.Key != "ca.crt" {
 				t.Fatal("datastore scraping must verify both the certificate authority and server identity")
@@ -161,7 +192,11 @@ func testDatastoreMetricsMonitor(t *testing.T, job string) {
 			t.Fatalf("unexpected metrics resource: %s", object.Kind)
 		}
 	}
-	if len(found) != 4 {
+	expected := 4
+	if job == "etcd" {
+		expected = 2
+	}
+	if len(found) != expected {
 		t.Fatalf("missing metrics resources: %v", found)
 	}
 }
@@ -242,11 +277,11 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 	for _, tc := range []struct {
 		name, mode, ca, exitCode, backend string
 	}{
-		{"live", "", "public-ca", "0", ""},
+		{"live", "", "", "0", ""},
 		{"kine-postgres", "", "public-ca", "0", "kine-postgres"},
 		{"empty-argument", "empty", "public-ca", "0", ""},
 		{"load-failure", "", "public-ca", "17", ""},
-		{"missing-ca", "", "", "0", ""},
+		{"missing-ca", "", "", "0", "kine-postgres"},
 		{"dry-run", "--dry-run", "public-ca", "0", ""},
 		{"prepare-only", "--prepare-only", "", "0", ""},
 	} {
@@ -263,7 +298,7 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 				filepath.Join("scripts", "kine", "run-clusterloader.sh"):                             script,
 				filepath.Join("scripts", "kine", "backend.sh"):                                       readFile(t, filepath.Join(root, "scripts", "kine", "backend.sh")),
 				filepath.Join("scripts", "kine", "clusterloader", "measurements.yaml"):               []byte("__DATASTORE_PREFIX__ runtime job=__DATASTORE_JOB__\n"),
-				filepath.Join("scripts", "kine", "clusterloader", "measurements-etcd.yaml"):          []byte("etcd measurements\n"),
+				filepath.Join("scripts", "kine", "clusterloader", "measurements-kubeadm-etcd.yaml"):  []byte("etcd measurements\n"),
 				filepath.Join("scripts", "kine", "clusterloader", "measurements-kine-postgres.yaml"): []byte("kine measurements\n"),
 				filepath.Join("scripts", "kine", "clusterloader", "writer.yaml"):                     []byte("writer"),
 				filepath.Join("_artifacts", "perf-tests", string(revision[1]), "source.tar.gz"):      []byte("mock archive"),
@@ -280,7 +315,7 @@ func TestClusterLoaderDiagnosticRunner(t *testing.T) {
 			binary := `#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$@" > "$KINE_TEST_DIR/args"
-printf '%s' "$CL2_KINE_CA_CERT_B64" > "$KINE_TEST_DIR/ca"
+printf '%s' "${CL2_KINE_CA_CERT_B64:-}" > "$KINE_TEST_DIR/ca"
 printf '%s' "$CL2_DATASTORE_JOB" > "$KINE_TEST_DIR/backend-job"
 exit "$KINE_TEST_EXIT"
 `
@@ -317,7 +352,7 @@ exec bash ./scripts/kine/run-clusterloader.sh "${args[@]}"
 			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_MODE="+tc.mode,
 				"KINE_TEST_EXIT="+tc.exitCode, "KINE_TEST_BINARY="+binaryPath,
 				"KINE_CA_CERT_B64="+tc.ca, "KUBECONFIG="+kubeconfig, "CL2_REPORT_DIR="+report,
-				"KINE_PROFILE=performance", "KINE_BACKEND="+tc.backend)
+				"KINE_PROFILE=performance", "KINE_BACKEND="+tc.backend, "KINE_KUBEADM_ETCD_IMAGE=")
 			output, err := cmd.CombinedOutput()
 			if tc.name == "missing-ca" {
 				if err == nil || !bytes.Contains(output, []byte("KINE_CA_CERT_B64")) {
@@ -337,10 +372,14 @@ exec bash ./scripts/kine/run-clusterloader.sh "${args[@]}"
 					!strings.Contains(args, "--prometheus-additional-monitors-path="+filepath.Join(dir, "scripts", "kine", "clusterloader", "prometheus")) {
 					t.Fatal("runner must install metrics monitors and archive Prometheus before teardown")
 				}
-				if string(readFile(t, filepath.Join(dir, "ca"))) != tc.ca {
+				wantCA := ""
+				if tc.backend == "kine-postgres" {
+					wantCA = tc.ca
+				}
+				if string(readFile(t, filepath.Join(dir, "ca"))) != wantCA {
 					t.Fatal("runner must forward the public CA into CL2 template variables")
 				}
-				job, prefix, backend, version := "etcd", "Etcd", "etcd", "v3.6.6"
+				job, prefix, backend, version := "etcd", "Etcd", "kubeadm-etcd", "kubeadm-managed"
 				if tc.backend == "kine-postgres" {
 					job, prefix, backend, version = "kine", "Kine", "kine-postgres", "v0.17.2"
 				}

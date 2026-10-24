@@ -161,7 +161,14 @@ var _ = Describe("Conformance Tests", func() {
 
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 
-		if flavor == "kine-postgres-performance" {
+		if flavor == "kine-postgres" || flavor == "kine-postgres-performance" ||
+			flavor == "kubeadm-etcd" || flavor == "kubeadm-etcd-performance" {
+			By("Matching control-plane disk performance before the workload")
+			Expect(prepareKineControlPlane(ctx, workloadProxy, clusterName, controlPlaneMachineCount, filepath.Join(artifactFolder, "hardware"))).
+				To(Succeed(), "Control-plane hardware must match the requested comparison profile")
+		}
+
+		if flavor == "kine-postgres-performance" || flavor == "kubeadm-etcd-performance" {
 			By("Running ClusterLoader2 performance measurements, not Kubernetes conformance")
 			stopwatch.Reset()
 			Expect(runKinePerformance(ctx, workloadProxy, filepath.Join(artifactFolder, "clusterloader2"))).

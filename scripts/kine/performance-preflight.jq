@@ -27,6 +27,17 @@ def node_sku($name; $role):
   | require(capability("DiskControllerTypes") == null or
       ((capability("DiskControllerTypes") | split(",") | map(gsub(" "; "")) | index("SCSI")) != null);
       "\($role) SKU \($name) is incompatible with the SCSI Azure Linux image");
+def storage_sku($name):
+  node_sku($name; "Control-plane/datastore")
+  | require(any(.locationInfo[]?; .location == $location and
+      any(.zoneDetails[]?; any(.name[]?; . == $zone) and
+        any(.capabilities[]?; .name == "UltraSSDAvailable" and .value == "True")));
+      "Ultra Disk is not advertised for SKU \($name) in zone \($zone)")
+  | require(capability("UncachedDiskIOPS") != null and capability("UncachedDiskBytesPerSecond") != null;
+      "SKU \($name) has no advertised uncached disk performance limits")
+  | require($diskIOPS <= (capability("UncachedDiskIOPS") | tonumber) and
+      $diskMBps * 1000000 <= (capability("UncachedDiskBytesPerSecond") | tonumber);
+      "Requested disk IOPS/MBps exceed the advertised SCSI limits of SKU \($name)");
 def available($name; $required):
   [$quota[0][] | select((.name.value | ascii_downcase) == ($name | ascii_downcase))]
   | require(length == 1; "No quota entry for \($name)")
@@ -36,18 +47,11 @@ def available($name; $required):
             "Insufficient \($name) vCPU quota: need \($required), available \($remaining)")
   | {quota: $name, required: $required, available: $remaining};
 
-sku($datastore) as $db
-| $db
-| require((capability("DiskControllerTypes") // "" | contains("NVMe")); "Datastore SKU must support NVMe")
-| require(any(.locationInfo[]?; .location == $location and
-    any(.zoneDetails[]?; any(.name[]?; . == $zone) and
-      any(.capabilities[]?; .name == "UltraSSDAvailable" and .value == "True")));
-    "Ultra Disk is not advertised for datastore SKU in zone \($zone)")
-| [
-    {role: "datastore", sku: $db, count: 1},
-    {role: "control-plane", sku: node_sku($controlPlane; "Control-plane"), count: $controlPlanes},
+storage_sku($controlPlane) as $cp
+| ([
+    {role: "control-plane", sku: $cp, count: $controlPlanes},
     {role: "worker", sku: node_sku($worker; "Worker"), count: $workers}
-  ]
+  ] + if $useKine then [{role: "datastore", sku: $cp, count: 1}] else [] end)
 | map(. + {family: .sku.family, cpus: ((.sku | capability("vCPUs") | tonumber) * .count)}) as $plan
 | {
     machines: ($plan | map({role, size: .sku.name, count, family, cpus})),

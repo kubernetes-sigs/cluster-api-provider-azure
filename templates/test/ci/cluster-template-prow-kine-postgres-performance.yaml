@@ -48,6 +48,26 @@ spec:
       - 10.0.0.0/24
       name: control-plane-subnet
       role: control-plane
+      securityGroup:
+        securityRules:
+        - action: Allow
+          destination: '*'
+          destinationPorts: "2381"
+          direction: Inbound
+          name: allow-comparison-etcd-metrics
+          priority: 2100
+          protocol: Tcp
+          source: 10.0.1.0/24
+          sourcePorts: '*'
+        - action: Deny
+          destination: '*'
+          destinationPorts: "2381"
+          direction: Inbound
+          name: deny-other-comparison-etcd-metrics
+          priority: 2101
+          protocol: Tcp
+          source: '*'
+          sourcePorts: '*'
     - cidrBlocks:
       - 10.0.1.0/24
       name: node-subnet
@@ -90,10 +110,21 @@ spec:
           keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
     diskSetup:
       filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
       - device: ephemeral0.1
         filesystem: ext4
         label: ephemeral0
         replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
     files:
     - content: |
         #!/usr/bin/env bash
@@ -191,6 +222,11 @@ spec:
         kubeletExtraArgs:
           cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+      - ext4
+      - defaults,noatime
     postKubeadmCommands: []
     preKubeadmCommands:
     - bash /opt/azure-linux-setup.sh control-plane ${AZURE_LINUX_NODE_CIDRS:-10.0.0.0/24
@@ -213,8 +249,17 @@ spec:
   template:
     spec:
       acceleratedNetworking: true
+      additionalCapabilities:
+        ultraSSDEnabled: true
       additionalTags:
         monitoring: virtualmachine
+      dataDisks:
+      - cachingType: None
+        diskSizeGB: ${KINE_DISK_SIZE_GB}
+        lun: 0
+        managedDisk:
+          storageAccountType: UltraSSD_LRS
+        nameSuffix: etcddisk
       identity: UserAssigned
       image:
         computeGallery:
@@ -222,6 +267,7 @@ spec:
           name: capi-azurelinux-4-gen2
           version: ${KINE_NODE_IMAGE_VERSION}
       osDisk:
+        cachingType: ReadWrite
         diskSizeGB: 128
         managedDisk:
           storageAccountType: Premium_LRS

@@ -593,15 +593,16 @@ AMD64 Azure VM running **Kine v0.17.2** and **PostgreSQL 16**, then selects the
 `kine-postgres` test flavor. It does not change other flavors or use AKS.
 All Kine/PostgreSQL runs, including the existing
 `pull-cluster-api-provider-azure-conformance-kine-postgres` Prow job, use the
-shared high-I/O infrastructure described below: E112ibs_v5 datastore VM,
-dedicated NVMe Ultra Disk, and larger control-plane/worker VMs.
+shared SCSI high-I/O profile described below: matched E96bs_v5 control-plane and
+datastore VMs with dedicated Ultra Disks.
 The Prow job still runs the complete conformance suite, not ClusterLoader2;
 no test-infra configuration change is needed.
 Kine's downloaded binary is checked against a pinned SHA-256 checksum.
 Ubuntu image and PostgreSQL package patches follow the Ubuntu repositories.
 
 Complete the normal conformance prerequisites above, and install/authenticate
-the Azure CLI, OpenSSL 1.1.1 or later, `ssh-keygen`, `jq`, and `gzip`.
+the Azure CLI, OpenSSL 1.1.1 or later, and `jq`; external Kine additionally needs
+`ssh-keygen` and `gzip`.
 The Azure CLI and CAPZ identities must have permissions in the same subscription
 to create/delete resource groups, VMs and networks, and create VNet peerings in
 both resource groups. The workload cloud-provider identity also needs its usual
@@ -627,8 +628,8 @@ another released version, set `KINE_KUBERNETES_VERSION` to one published in the
 use that Kubernetes-ready Azure Linux 4 Gen2 image for the same Kubernetes
 version. The separate datastore VM remains Ubuntu for either backend.
 
-The Kine flavors inherit `prow-azl3`, including its shared Azure Linux bootstrap
-component and cloud-controller-manager CA trust paths. The Kine overlay changes
+The comparison flavors inherit `prow-azl3`, including its shared Azure Linux bootstrap
+component and cloud-controller-manager CA trust paths. Their shared overlay changes
 the workload node images to Azure Linux 4 Gen2 and supplies its node subnet CIDRs
 through `AZURE_LINUX_NODE_CIDRS`; it does not maintain a separate bootstrap script.
 The shared script uses the appropriate certificate packages for Azure Linux 3
@@ -664,8 +665,8 @@ the VM, its OS/data disks, VNet, NSG, and an outbound-only NAT gateway/public IP
 no public IP on the VM and no inbound SSH rule. The fixture uses `10.250.0.0/24`;
 the workload VNet uses `10.0.0.0/16`, with explicit control-plane `10.0.0.0/24`
 and node `10.0.1.0/24` subnets. CAPZ creates the bidirectional peering.
-Only the control-plane subnet `10.0.0.0/24` can reach the datastore's TCP port 2379.
-Performance runs additionally allow the worker subnet `10.0.1.0/24` to scrape
+When Kine is enabled, only the control-plane subnet `10.0.0.0/24` can reach the
+external datastore's TCP port 2379. Kine performance runs additionally allow the worker subnet `10.0.1.0/24` to scrape
 `https://10.250.0.4:8080/metrics`. This is a private, server-authenticated TLS
 endpoint: Prometheus verifies the server certificate using the fixture's public CA.
 The metrics endpoint does not require a client certificate, so the dedicated NSG
@@ -673,13 +674,13 @@ rule is its client-access boundary. No public listener or new private-key
 distribution is added. Conformance runs keep metrics on loopback and do not add
 the metrics ingress rule.
 
-Performance runs can opt into Go profiling on that same private TLS listener.
+Kine performance runs can opt into Go profiling on that same private TLS listener.
 Treat access to that port as diagnostic access, not just access to numeric metrics.
 Profiling is disabled by default, and conformance always leaves it disabled.
 Avoid overlapping addresses if using a peered management cluster.
 PostgreSQL uses Unix-socket peer authentication, not a network-facing password.
 
-Seven-day test certificates provide mTLS between API servers and the datastore.
+For external Kine, seven-day test certificates provide mTLS between API servers and the datastore.
 The CA signing key is never sent to the VM or management cluster. The VM gets
 server credentials and a client credential for its smoke check; CABPK gets the CA
 certificate and API-server client credentials via the standard external-etcd
@@ -688,7 +689,7 @@ Azure VM custom data contains test credentials, and normal E2E artifacts can
 contain kubeconfigs/bootstrap data: restrict access and do not publish them
 unredacted. The existing log redactor also removes the direct base64 client key.
 
-Before creating the workload cluster, the wrapper waits for cloud-init and
+Before creating a Kine-backed workload cluster, the wrapper waits for cloud-init and
 executes a Kubernetes-shaped gRPC create transaction followed by a read over mTLS.
 It checks a success marker because Azure Run Command can return HTTP success
 even if the guest script failed. The smoke check logs the `etcdctl` version,
@@ -696,21 +697,21 @@ service state, transaction/read exit statuses, and synthetic key/value results
 before asserting success; it does not log credential contents.
 Kubeadm ignores only `ExternalEtcdVersion`:
 standalone Kine does not serve kubeadm's HTTP `/version` endpoint. API-server
-readiness and conformance still exercise the actual storage path. The flavor
-removes the unused local-etcd configuration and control-plane etcd data disk.
+readiness and conformance still exercise the actual storage path. Kine mode
+removes the local-etcd configuration, but retains the same control-plane data
+disk as local mode so the control-plane VM profile stays identical.
 
 Datastore logs and resource names are written under
 `$ARTIFACTS/kine-<cluster-name>` (default `_artifacts/kine-<cluster-name>`).
-`datastore-logs.json` includes the selected backend's service journal, the tail of
-cloud-init output, and `cloud-init status --long` with its exit code. Native etcd
-also produces `etcd-status.json` with endpoint version, revision, database size,
-leader and alarm information; collection errors or active alarms fail explicitly.
-It then deletes the fixture resource group **only after the workload resource
+In Kine mode, `datastore-logs.json` includes the Kine service journal, the tail of
+cloud-init output, and `cloud-init status --long` with its exit code.
+The wrapper then deletes the external fixture resource group **only after the workload resource
 group is gone and the fixture ownership tag matches this invocation**.
 An Azure query/deletion failure is an error, not evidence that resources are gone.
 If workload cleanup fails or `SKIP_CLEANUP=true`, the fixture is retained to avoid
 destroying a surviving cluster's state. Retained resources continue to incur costs.
-For manual cleanup, delete the workload through CAPI first, then delete the exact
+Local mode has no external fixture resource group or VM to clean up.
+For manual Kine cleanup, delete the workload through CAPI first, then delete the exact
 fixture resource group listed in `resources.txt`:
 
 ```bash
@@ -719,9 +720,10 @@ az group delete --subscription <subscription-id> --name <cluster-name>-kine --ye
 
 `CLUSTER_NAME` may be set to a fresh name (2-40 lowercase characters); existing
 workload or fixture groups are rejected. `KINE_VM_SIZE` defaults to
-`Standard_E112ibs_v5` and must remain an AMD64 NVMe/Ultra-capable size.
+`Standard_E96bs_v5` and sets the shared control-plane/Kine VM size. It must remain
+an AMD64, SCSI/Ultra-capable size.
 Both backends keep their data/WAL on the dedicated
-512-GiB Ultra Disk, provisioned for 400,000 IOPS and 10,000 MB/s by default.
+512-GiB Ultra Disk, configured for 120,000 IOPS and 4,000 MB/s by default.
 Each run has its own database;
 there is no state migration, database HA, upgrade/failover testing, or performance
 claim in this scaffold. Those are separate experiments from conformance.
@@ -746,18 +748,24 @@ different storage tier. The two test flavors inherit the same infrastructure
 template. A green performance run is not a conformance result or proof that a
 maximum throughput was reached.
 
-**Performance now defaults to a single-member external etcd control.**
-`KINE_BACKEND=etcd` selects pinned etcd **v3.6.6**, the server release selected
-by kubeadm v1.35.5. `KINE_BACKEND=kine-postgres` retains Kine v0.17.2 with
-PostgreSQL 16. Conformance defaults to Kine/PostgreSQL; selecting etcd for
-conformance is rejected rather than silently changing the suite's datastore.
+**Performance defaults to kubeadm-managed local etcd.**
+`KINE_BACKEND=kubeadm-etcd` uses the normal etcd static Pods on the control-plane
+nodes. It creates no separate datastore VM, VNet, NAT gateway, proxy, or external
+datastore credentials. Kubeadm chooses the etcd image for the Kubernetes version;
+the running static-Pod image is recorded before the workload.
+`KINE_BACKEND=kine-postgres` enables the external Kine v0.17.2 / PostgreSQL 16 VM.
+Conformance defaults to Kine/PostgreSQL, but accepts either mode explicitly.
+The former `KINE_BACKEND=etcd` standalone-VM mode has been removed and is rejected.
 
 The existing `pull-cluster-api-provider-azure-performance-kine-postgres` job name,
-flavor names, resource-group names and `KINE_*` variables are retained for
-compatibility. **The job name alone no longer identifies the backend.** The
+resource naming and `KINE_*` variables are retained for compatibility. The wrapper
+explicitly maps the legacy job flavor to `kubeadm-etcd-performance` in local mode.
+**The job name alone does not identify the backend.** The
 wrapper logs it explicitly, and both `performance-settings.txt` and CL2's
 `settings.txt` record `datastore-backend` and `datastore-version`. No test-infra
-change is needed to run the control with the job's existing workload settings.
+change is needed to select either mode with the job's existing workload settings.
+Changing this hardware profile resets the comparison: rerun both modes rather
+than comparing new results directly with the earlier 64-vCPU control plane.
 
 Both Kine flavors enable `ConcurrentWatchObjectDecode=true` on kube-apiserver
 to evaluate concurrent watch-object decoding instead of the default serial path.
@@ -771,16 +779,17 @@ snapshots. This may increase backend read load and is not a proven fix for
 watch-cache lag. API request-concurrency limits, APF queue limits, and the other
 feature gates remain unchanged.
 
-This is a **large, billable, single-datastore experiment**, not an HA configuration:
+This is a **large, billable experiment** with one control-plane node by default:
 
 | Setting | Default |
 | --- | --- |
-| Performance backend (`KINE_BACKEND`) | `etcd`; set `kine-postgres` for the SQL-backed arm |
-| Datastore VM (`KINE_VM_SIZE`) | `Standard_E112ibs_v5`: 112 vCPU, 672 GiB |
-| Datastore controller | NVMe, accelerated networking, Gen2 Ubuntu 24.04 |
-| Data disk | One uncached Ultra Disk, containing the selected backend's data and WAL |
-| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `400000` / `10000` |
-| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | One `Standard_D64as_v5`: 64 vCPU, 256 GiB |
+| Performance backend (`KINE_BACKEND`) | `kubeadm-etcd`; set `kine-postgres` to enable the external VM |
+| Shared VM size (`KINE_VM_SIZE`) | `Standard_E96bs_v5`: 96 vCPU, 672 GiB |
+| Disk controller | SCSI, with accelerated networking |
+| Control-plane/Kine OS disk | 128 GiB `Premium_LRS`, `ReadWrite` caching |
+| Data disk | One uncached Ultra Disk on each control-plane VM and, when enabled, the Kine VM |
+| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `120000` / `4000` |
+| Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | Derived from `KINE_VM_SIZE`; a conflicting override is rejected |
 | Workload node image (both roles) | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5` Azure Linux nodes, hosting the selected test workload |
 | Region / zone | `AZURE_LOCATION=westus2`, `KINE_ZONE=2`; explicit overrides preserved |
@@ -801,10 +810,17 @@ Requested limits are recorded in `performance-settings.txt`.
 These are aggressive experimental defaults for the large datastore VM, not an
 assertion that more concurrent connections always improve throughput.
 
-The default footprint needs **208 additional regional vCPUs**: 112 in the
-datastore VM family, 64 in the Dasv5 family, and 32 in the Dsv5 worker family.
-Changing the machine counts changes
-these requirements. This excludes any separately provisioned management cluster.
+Local mode needs **128 regional vCPUs**: 96 EBSv5 control-plane cores plus
+32 Dsv5 worker cores. Kine mode needs **224 regional vCPUs**: 192 EBSv5 cores
+for the two matched VMs plus the same 32 worker cores. The last CI quota snapshot
+allowed only 65 EBSv5 cores; quota must be increased before either default mode
+can run. Comparing both modes needs at least 192 EBSv5 cores, plus appropriate
+regional quota and headroom. The wrapper does not request quota increases.
+Changing machine counts changes these requirements. This excludes management-cluster resources.
+The Kine arm still has an extra VM and disk: this matches control-plane
+configuration, not total resource cost. Increasing the control-plane count also
+gives local etcd more members; that is not the same availability model as the
+single external Kine/PostgreSQL VM.
 The control plane and workers are pinned to the selected datastore zone, so these
 results do not model cross-zone HA latency.
 
@@ -825,9 +841,10 @@ make preflight-performance-kine
 ```
 
 This checks advertised VM/zone availability, subscription restrictions, x64,
-accelerated networking, datastore NVMe/Ultra and Gen2/NVMe image support,
+accelerated networking, SCSI/Ultra support and advertised uncached IOPS/throughput limits,
 workload node SKU Gen2 support, and the shared node community image's x64/Gen2
-metadata and requested version availability in the region. It also checks
+metadata and requested version availability in the region. Only Kine mode looks
+up and validates a separate Ubuntu datastore image. It also checks
 available regional and VM-family vCPU quota. Family requirements are summed
 across all roles. Missing capability/quota information is an error.
 Community-gallery lookups use `az rest` with API version `2024-03-03` explicitly
@@ -837,20 +854,11 @@ It writes the capacity plan and requested settings under
 Passing preflight does **not** reserve hardware or validate every Azure quota
 (including managed-disk/network quotas); Azure allocation can still fail.
 
-If quota is insufficient, deliberately reduce **both** the SKU and disk settings;
-there is no automatic downgrade. For example, an E32bs_v5 experiment could use:
-
-```bash
-export KINE_VM_SIZE=Standard_E32bs_v5
-export KINE_DISK_IOPS=170000
-export KINE_DISK_MBPS=4500
-make preflight-performance-kine
-```
-
-The effective storage ceiling is bounded by both the VM and disk. Preflight does
-not infer NVMe-specific aggregate performance limits from incomplete SKU metadata;
-verify these against the current Azure size documentation when overriding SKUs.
-Requested and provisioned settings are archived, and the run rejects a non-NVMe
+If quota is insufficient, increase quota or deliberately reduce the common SKU
+and disk settings in both modes; there is no automatic downgrade.
+The effective storage ceiling is bounded by both the VM and disk. Preflight
+requires the selected SCSI SKU's advertised limits to cover the requested profile.
+Requested and provisioned settings are archived, and the run rejects a non-SCSI
 VM, unexpected data-disk attachment/caching, or mismatched provisioned disk IOPS
 and throughput. Disk validation failures log the expected and observed SKU, IOPS,
 and throughput. The resolved Ubuntu image version is frozen within each run;
@@ -863,22 +871,30 @@ After reviewing the capacity plan and cost, select the workload:
 
 ```bash
 make test-conformance-kine
-# Native etcd control (the default performance backend):
+# Kubeadm-local etcd (the default performance backend):
 make test-performance-kine
 # Kine/PostgreSQL with the same infrastructure and workload settings:
 KINE_BACKEND=kine-postgres make test-performance-kine
 ```
 
-Both backends use the same disk-initialization helper. It refuses a
-missing/non-NVMe disk, existing disk signatures, or an already mounted disk;
-it never falls back to the OS disk. The historical mount path
-`/var/lib/kine-postgresql` is retained for both arms, with etcd data/WAL under its
-`etcd` subdirectory. Both datastore services require the mount on subsequent boots.
+Control-plane disks retain the inherited Azure Linux/kubeadm bootstrap and
+`/var/lib/etcddisk/etcd` data directory. The optional Kine VM uses its guarded
+SCSI-LUN-0 initializer and `/var/lib/kine-postgresql` mount. Both use ext4 with
+`noatime`. The control-plane data disk is retained even in external-Kine mode.
 
-The etcd arm does not install or run Kine/PostgreSQL. Its release archive and
-`etcdctl`/`etcdutl` binaries are pinned with a checked SHA-256. It retains fsync,
-uses a loopback-only peer listener, and leaves compaction to the unchanged
-API-server configuration: no extra automatic compaction, defragmentation, or
+CAPZ can declare Ultra Disk tier, size and caching, but not per-disk IOPS/MBps.
+After cluster readiness and **before the workload**, the fixture verifies every
+control-plane VM and disk, updates only the owned disks' IOPS/MBps when necessary,
+waits for the Azure operation, and reads the settings back. Subscription, resource
+group, cluster/role ownership tags, size, zone, SCSI controller, uncached LUN 0,
+disk attachment, tier and capacity must match. Ambiguous or mismatched resources
+are rejected before updates; incomplete updates fail before load.
+The identity running the test needs managed-disk read/write permissions.
+Successful settings are archived in `hardware/control-plane-hardware.json`.
+Updates can take time; the setup has a bounded wait and is outside the timed load.
+
+Local mode uses kubeadm's etcd static Pods and normal client/peer TLS configuration.
+It retains fsync; no custom automatic compaction, defragmentation, or
 alarm-disarming loop is added.
 
 The **32-GiB quota exceeds etcd's suggested 8-GiB maximum for normal environments**.
@@ -888,17 +904,12 @@ substantial revision history at 2k QPS; the quota avoids making a small default
 quota the first experimental limit. Database size, quota and alarms remain
 observable, and `NOSPACE` remains a failure. See [etcd system limits](https://etcd.io/docs/v3.6/dev-guide/limit/).
 
-Etcd's native metrics listener shares its client TLS authentication settings.
-To keep datastore client credentials off workers, it listens only on loopback;
-a single-worker nginx proxy exposes the existing private TLS port 8080. The
-proxy permits only GET requests to `/metrics` and the three optional pprof paths.
-The HTTP KV gateway is disabled, other paths are rejected, and upstream profiling
-requests use a VM-local client certificate with server verification. Scrapers and
-profiling Pods receive only the public CA, as for Kine. Etcd CPU/memory metrics
-describe the etcd process, not this diagnostic-only proxy; KV traffic never passes
-through the proxy.
-Bootstrap waits separately for TLS metrics readiness with bounded retries;
-systemd reporting the proxy started does not by itself mean its socket is ready.
+Local etcd exposes its native, read-only HTTP metrics listener on port 2381.
+A ClusterIP Service in `kube-system` selects kubeadm's etcd static Pods, and the
+control-plane NSG permits that port only from the worker subnet. It is not a
+public endpoint or a KV API, and no datastore client credentials are copied to
+workers. There is no nginx proxy or separate etcd VM. Kine mode retains its
+private, server-authenticated TLS metrics endpoint and public-CA-only scraping.
 
 For the SQL-backed arm, PostgreSQL is moved onto the dedicated disk before Kine
 starts. Starting tuning uses 25%
@@ -1002,20 +1013,22 @@ KINE_COLLECT_PROFILES=true make test-performance-kine
 
 The setting accepts only `true` or `false`, applies to the performance workload,
 and is recorded as `collect-profiles` in `performance-settings.txt`. When disabled,
-no profiling helper or profiling RBAC is created and the datastore's pprof endpoints stay
-disabled; its private TLS metrics endpoint remains available.
+no profiling helper or profiling RBAC is created. Metrics remain available.
 
 When enabled, the CAPZ performance E2E path creates a small, non-root profiling
 helper on a worker before CL2 starts. Its dedicated service account receives only
 additional GET permission for the API server's CPU, heap, and goroutine profiling URLs.
 API-server profiles are fetched from each control-plane node's private address
-with that token and the cluster CA; datastore profiles use the fixture's public CA. No anonymous
+with that token and the cluster CA. Kine mode also captures the external Kine
+process using its public CA. Local mode captures **API-server profiles only**;
+it neither enables local-etcd pprof nor copies etcd client credentials to workers. No anonymous
 debug access or administrator kubeconfig is installed in the helper.
 
 A CL2 measurement-start marker schedules captures at **4 and 7 minutes after the
 measurement window begins**, not after VM creation or Prometheus setup. Each
 point collects 30-second CPU profiles, allocation-sampled heap profiles without
-forcing GC, and goroutine stack dumps from the selected datastore and every API server. Requests
+forcing GC, and goroutine stack dumps from every API server and, when enabled,
+the external Kine process. Requests
 are bounded, targets are captured concurrently, and successful files are retained
 even if another capture or the benchmark fails. Profiling adds some diagnostic
 overhead but does not change the offered load, benchmark duration, or tuning.
@@ -1029,16 +1042,14 @@ fail the E2E job explicitly. These are Go profiles, not raw process-memory dumps
 they can still expose function names and internal addresses. The helper namespace
 and its namespace-owned RBAC resources are removed during cleanup.
 
-The datastore artifact directory also receives `compaction.log`: keyspace
-compaction messages from the selected backend's current boot, rather than only
-the last 60 journal lines. Kine retains its summary/error format; etcd records
-selected MVCC JSON message, revision, duration and error fields. Unrelated plain
-Go logs and Raft-log maintenance are excluded. Malformed JSON-looking records
-or unstructured MVCC compaction messages fail collection rather than being
-silently discarded. The collector excludes request payloads and uses compression plus
+In Kine mode the datastore artifact directory also receives `compaction.log`:
+keyspace compaction summaries/errors from the Kine VM's current boot, rather than
+only the last 60 journal lines. The collector excludes request payloads and uses compression plus
 framing to detect Azure Run Command's output truncation. Collection fails instead
 of silently accepting a truncated timeline if the compressed response exceeds its
 output budget. Existing short datastore diagnostics are retained separately.
+Local etcd uses the normal control-plane static-Pod logs and metrics; there is
+no external-VM journal export or post-run Azure Run Command for that mode.
 
 The pinned Kine version does not export its internal polling revision, so these
 reports do not directly measure database-to-Kine-to-apiserver revision lag.
@@ -1053,9 +1064,9 @@ cluster:
 ```bash
 bash scripts/kine/run-clusterloader.sh --prepare-only
 # Select the backend actually provisioned in the existing fixture.
-export KINE_BACKEND=etcd # Or kine-postgres.
-# Supply only its public CA, never a private key.
-export KINE_CA_CERT_B64="$(base64 < /absolute/path/to/kine-ca.crt | tr -d '\n')"
+export KINE_BACKEND=kubeadm-etcd # Or kine-postgres.
+# Only for an external Kine fixture: supply its public CA, never a private key.
+# export KINE_CA_CERT_B64="$(base64 < /absolute/path/to/kine-ca.crt | tr -d '\n')"
 KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh --dry-run
 KUBECONFIG=/absolute/path/to/workload.kubeconfig bash scripts/kine/run-clusterloader.sh
 ```
@@ -1064,8 +1075,9 @@ Only the last command mutates the existing cluster. It creates test resources an
 a `monitoring` stack: do not use a production cluster or an existing monitoring
 namespace. Upstream CL2's `--dry-run` still requires a reachable cluster and
 intentionally exits nonzero after dumping the compiled test configuration.
-Live runs require the fixture's private TLS metrics endpoint to be reachable from
-worker Pods. The normal CAPZ Kine wrapper supplies the CA and network rule automatically.
+Live runs require the selected datastore's private metrics endpoint to be reachable
+from worker Pods. Kine mode supplies the public CA and external NSG rule; local
+mode uses the static-Pod Service and worker-restricted port 2381.
 Timed profiling is orchestrated by the CAPZ E2E path; invoking the standalone CL2
 runner does not create or schedule the profiling helper.
 Treat artifact kubeconfigs/bootstrap data as credentials. The fixture's

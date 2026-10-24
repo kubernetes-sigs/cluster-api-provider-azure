@@ -18,13 +18,11 @@ package kine_test
 
 import (
 	"bytes"
-	"encoding/base64"
-	"os"
+	"errors"
+	"io"
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -36,17 +34,19 @@ func TestDatastoreBackendSelection(t *testing.T) {
 		name, profile, backend, want, errorText string
 	}{
 		{"conformance-default", "", "", "kine-postgres\nv0.17.2\nkine\n", ""},
-		{"performance-default", "performance", "", "etcd\nv3.6.6\netcd\n", ""},
+		{"performance-default", "performance", "", "kubeadm-etcd\nkubeadm-managed\netcd\n", ""},
 		{"performance-kine", "performance", "kine-postgres", "kine-postgres\nv0.17.2\nkine\n", ""},
-		{"explicit-etcd", "performance", "etcd", "etcd\nv3.6.6\netcd\n", ""},
+		{"explicit-local", "performance", "kubeadm-etcd", "kubeadm-etcd\nkubeadm-managed\netcd\n", ""},
+		{"local-conformance", "conformance", "kubeadm-etcd", "kubeadm-etcd\nkubeadm-managed\netcd\n", ""},
 		{"invalid-backend", "performance", "other", "", "KINE_BACKEND must be"},
-		{"etcd-conformance", "conformance", "etcd", "", "supported only with KINE_PROFILE=performance"},
+		{"retired-standalone-etcd", "performance", "etcd", "", "standalone etcd has been removed"},
 		{"invalid-profile", "other", "", "", "Unknown KINE_PROFILE"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
 set -euo pipefail
 source ./scripts/kine/backend.sh
+unset KINE_KUBEADM_ETCD_IMAGE
 capz::kine::backend_defaults
 printf '%s\n' "$KINE_BACKEND" "$KINE_DATASTORE_VERSION" "$KINE_METRICS_JOB"
 `)
@@ -64,120 +64,103 @@ printf '%s\n' "$KINE_BACKEND" "$KINE_DATASTORE_VERSION" "$KINE_METRICS_JOB"
 	}
 }
 
-func TestEtcdBaselineCloudInit(t *testing.T) {
-	for _, profiling := range []string{"false", "true"} {
-		t.Run(profiling, func(t *testing.T) {
-			dir := t.TempDir()
+func TestLocalEtcdRejectsExternalResources(t *testing.T) {
+	for _, operation := range []string{"certificates", "provision"} {
+		t.Run(operation, func(t *testing.T) {
 			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
 source ./scripts/ci-kine-conformance.sh
-repo_root=$PWD
-state_dir=$KINE_TEST_DIR
-KINE_PROFILE=performance
-unset KINE_BACKEND
-KINE_POSTGRES_MAX_CONNECTIONS='unused|invalid'
-KINE_DATASTORE_MAX_OPEN_CONNECTIONS=invalid
-umask 077
-capz::kine::certificates
+KINE_PROFILE=performance KINE_BACKEND=kubeadm-etcd
+az() { echo "unexpected Azure call"; return 99; }
+case "$KINE_TEST_OPERATION" in
+  certificates) capz::kine::certificates ;;
+  provision) capz::kine::provision ;;
+esac
 `)
 			cmd.Dir = repoRoot(t)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_COLLECT_PROFILES="+profiling)
-			if output, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("render default etcd control: %v\n%s", err, output)
+			cmd.Env = append(cmd.Environ(), "KINE_TEST_OPERATION="+operation)
+			output, err := cmd.CombinedOutput()
+			if err == nil || len(output) == 0 || bytes.Contains(output, []byte("unexpected Azure call")) {
+				t.Fatalf("local mode must reject external setup before any side effect: %v\n%s", err, output)
 			}
-			rendered := readFile(t, filepath.Join(dir, "cloud-init.yaml"))
-			if placeholders := regexp.MustCompile(`__[A-Z_]+__`).FindAll(rendered, -1); len(placeholders) != 0 {
-				t.Fatalf("unexpanded etcd configuration placeholders: %q", placeholders)
+		})
+	}
+}
+
+func TestKubeadmLocalFlavor(t *testing.T) {
+	var localMachine map[string]any
+	for _, flavor := range []string{"kubeadm-etcd", "kubeadm-etcd-performance", "kine-postgres"} {
+		t.Run(flavor, func(t *testing.T) {
+			// #nosec G204 -- Flavor names come only from the fixed cases above.
+			cmd := exec.CommandContext(t.Context(), "./hack/tools/bin/kustomize", "build", "--load-restrictor", "LoadRestrictionsNone",
+				"./templates/test/ci/prow-"+flavor)
+			cmd.Dir = repoRoot(t)
+			rendered, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("render comparison flavor: %v\n%s", err, rendered)
 			}
-			var config struct {
-				Packages []string `yaml:"packages"`
-				Files    []struct {
-					Path, Content, Encoding, Permissions string
-				} `yaml:"write_files"`
+			if !bytes.Equal(rendered, readFile(t, filepath.Join(repoRoot(t), "templates/test/ci/cluster-template-prow-"+flavor+".yaml"))) {
+				t.Fatal("generated flavor is stale")
 			}
-			if err := yaml.Unmarshal(rendered, &config); err != nil {
-				t.Fatal(err)
+			local := strings.HasPrefix(flavor, "kubeadm-etcd")
+			if local && (bytes.Contains(rendered, []byte("${KINE_RESOURCE_GROUP}")) || bytes.Contains(rendered, []byte("${KINE_CA_CERT_B64}"))) {
+				t.Fatal("local mode must not reference an external datastore network or credentials")
 			}
-			for _, pkg := range config.Packages {
-				if strings.Contains(pkg, "postgres") || pkg == "etcd-client" {
-					t.Fatal("the native etcd control must not install PostgreSQL or an unpinned etcd client")
+			decoder := yaml.NewDecoder(bytes.NewReader(rendered))
+			foundMachine, foundControlPlane := false, false
+			for {
+				var obj struct {
+					Kind     string                `yaml:"kind"`
+					Metadata struct{ Name string } `yaml:"metadata"`
+					Spec     struct {
+						Template struct{ Spec map[string]any } `yaml:"template"`
+						Kubeadm  struct {
+							Cluster struct {
+								APIServer struct {
+									Args map[string]string `yaml:"extraArgs"`
+								} `yaml:"apiServer"`
+								Etcd struct {
+									Local *struct {
+										DataDir string            `yaml:"dataDir"`
+										Args    map[string]string `yaml:"extraArgs"`
+									} `yaml:"local"`
+									External any `yaml:"external"`
+								} `yaml:"etcd"`
+							} `yaml:"clusterConfiguration"`
+						} `yaml:"kubeadmConfigSpec"`
+					} `yaml:"spec"`
 				}
-			}
-			files := map[string]string{}
-			for _, file := range config.Files {
-				content := []byte(file.Content)
-				if file.Encoding == "b64" {
-					var err error
-					content, err = base64.StdEncoding.DecodeString(file.Content)
-					if err != nil {
-						t.Fatal(err)
+				if err := decoder.Decode(&obj); errors.Is(err, io.EOF) {
+					break
+				} else if err != nil {
+					t.Fatal(err)
+				}
+				if obj.Kind == "AzureMachineTemplate" && obj.Metadata.Name == "${CLUSTER_NAME}-control-plane" {
+					foundMachine = true
+					if localMachine == nil {
+						localMachine = obj.Spec.Template.Spec
+					} else if !reflect.DeepEqual(localMachine, obj.Spec.Template.Spec) {
+						t.Fatal("control-plane hardware must be identical in both datastore modes")
 					}
 				}
-				if strings.HasSuffix(file.Path, ".key") && file.Permissions != "0600" {
-					t.Fatalf("unsafe private-key permissions: %s", file.Path)
-				}
-				if bytes.HasPrefix(content, []byte("#!/usr/bin/env bash")) {
-					check := exec.CommandContext(t.Context(), "bash", "-n")
-					check.Stdin = bytes.NewReader(content)
-					if output, err := check.CombinedOutput(); err != nil {
-						t.Fatalf("invalid guest script %s: %v\n%s", file.Path, err, output)
+				if obj.Kind == "KubeadmControlPlane" {
+					foundControlPlane = true
+					cluster := obj.Spec.Kubeadm.Cluster
+					if cluster.APIServer.Args["feature-gates"] != "ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false" {
+						t.Fatal("both modes must retain the same API-server feature gates")
+					}
+					if local && (cluster.Etcd.External != nil || cluster.Etcd.Local == nil ||
+						cluster.Etcd.Local.DataDir != "/var/lib/etcddisk/etcd" ||
+						cluster.Etcd.Local.Args["quota-backend-bytes"] != "34359738368" ||
+						cluster.Etcd.Local.Args["listen-metrics-urls"] != "http://0.0.0.0:2381") {
+						t.Fatal("local mode must use kubeadm etcd on the dedicated disk with private metrics")
+					}
+					if !local && (cluster.Etcd.Local != nil || cluster.Etcd.External == nil) {
+						t.Fatal("Kine mode must not also run a local etcd member")
 					}
 				}
-				files[file.Path] = string(content)
 			}
-			if _, exists := files["/etc/systemd/system/kine.service"]; exists {
-				t.Fatal("etcd must replace, not accompany, Kine/PostgreSQL")
-			}
-			for path, source := range map[string]string{
-				"/opt/mount-datastore-disk.sh":   "mount-datastore-disk.sh",
-				"/usr/local/bin/check-datastore": "check-datastore.sh",
-			} {
-				if files[path] != string(readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", source))) {
-					t.Fatalf("both backends must use the shared disk/readiness implementation: %s", path)
-				}
-			}
-			service := files["/etc/systemd/system/etcd.service"]
-			for _, required := range []string{
-				"User=etcd", "RequiresMountsFor=/var/lib/kine-postgresql",
-				"ExecStartPre=/usr/bin/mountpoint -q /var/lib/kine-postgresql",
-				"--data-dir=/var/lib/kine-postgresql/etcd",
-				"--listen-client-urls=https://0.0.0.0:2379", "--advertise-client-urls=https://10.250.0.4:2379",
-				"--client-cert-auth=true", "--trusted-ca-file=/etc/kine/ca.crt",
-				"--listen-peer-urls=http://127.0.0.1:2380", "--initial-cluster=capz-etcd=http://127.0.0.1:2380",
-				"--listen-metrics-urls=http://127.0.0.1:2381", "--enable-grpc-gateway=false",
-				"--unsafe-no-fsync=false", "--auto-compaction-retention=0",
-				"--quota-backend-bytes=34359738368", "--enable-pprof=" + profiling,
-			} {
-				if !strings.Contains(service, required) {
-					t.Errorf("missing matched etcd invariant: %s", required)
-				}
-			}
-			proxy := files["/etc/kine/etcd-metrics-nginx.conf"]
-			for _, required := range []string{
-				"listen 10.250.0.4:8080 ssl;", "proxy_ssl_verify on;", "proxy_ssl_name localhost;",
-				"proxy_ssl_trusted_certificate /etc/kine/ca.crt;",
-				"proxy_ssl_certificate /etc/kine/client.crt;", "proxy_ssl_certificate_key /etc/kine/client.key;",
-				"location = /metrics", "location = /debug/pprof/profile", "location = /debug/pprof/heap",
-				"location = /debug/pprof/goroutine", "location / { return 404; }",
-			} {
-				if !strings.Contains(proxy, required) {
-					t.Errorf("missing private metrics/profiling restriction: %s", required)
-				}
-			}
-			if strings.Count(proxy, "location ") != 5 || strings.Count(proxy, "limit_except GET { deny all; }") != 4 {
-				t.Fatal("worker access must expose only the four allowlisted diagnostic paths")
-			}
-			installer := files["/opt/install-etcd.sh"]
-			for _, required := range []string{
-				"etcd-v3.6.6-linux-amd64.tar.gz", "887afaa4a99f22d802ccdfbe65730a5e79aa5c9ce2c8799c67e9d804c50ecedb",
-				"sha256sum --check", "source /opt/mount-datastore-disk.sh", "systemctl disable --now nginx",
-				"/usr/local/bin/check-datastore etcd", "/usr/local/bin/check-etcd-metrics",
-			} {
-				if !strings.Contains(installer, required) {
-					t.Errorf("missing native etcd installation invariant: %s", required)
-				}
-			}
-			if strings.Index(installer, "systemctl enable --now etcd-metrics") >= strings.Index(installer, "/usr/local/bin/check-etcd-metrics") {
-				t.Fatal("metrics readiness must be checked after starting the proxy")
+			if !foundMachine || !foundControlPlane {
+				t.Fatal("missing comparison control-plane resources")
 			}
 		})
 	}
@@ -193,9 +176,9 @@ func TestEtcdMeasurements(t *testing.T) {
 				}
 			}
 			found := map[string]bool{}
-			for _, m := range clusterLoaderMeasurementsForBackend(t, action, "etcd") {
+			for _, m := range clusterLoaderMeasurementsForBackend(t, action, "kubeadm-etcd") {
 				if strings.HasPrefix(m.Identifier, "Kine") {
-					t.Fatalf("native etcd must not require Kine/SQL metrics: %s", m.Identifier)
+					t.Fatalf("local etcd must not require Kine/SQL metrics: %s", m.Identifier)
 				}
 				if !strings.HasPrefix(m.Identifier, "Etcd") {
 					if !reflect.DeepEqual(common[m.Identifier], m) {
@@ -211,7 +194,7 @@ func TestEtcdMeasurements(t *testing.T) {
 				for _, query := range m.Params.Queries {
 					if !query.RequireSamples || !strings.Contains(query.Query, `job="etcd"`) ||
 						strings.Contains(query.Query, "or vector(0)") {
-						t.Fatalf("invalid native etcd query: %s", query.Query)
+						t.Fatalf("invalid local etcd query: %s", query.Query)
 					}
 				}
 			}
@@ -221,220 +204,7 @@ func TestEtcdMeasurements(t *testing.T) {
 				}
 			}
 			if len(common) != 0 {
-				t.Fatalf("etcd omitted common measurements: %v", common)
-			}
-		})
-	}
-}
-
-func TestEtcdCleanupStatus(t *testing.T) {
-	for _, healthy := range []bool{true, false} {
-		t.Run(map[bool]string{true: "healthy", false: "guest-failure"}[healthy], func(t *testing.T) {
-			dir := t.TempDir()
-			if err := os.Mkdir(filepath.Join(dir, "private"), 0o700); err != nil {
-				t.Fatal(err)
-			}
-
-			cmd := exec.CommandContext(t.Context(), "bash", "-c", `
-source ./scripts/ci-kine-conformance.sh
-KINE_PROFILE=performance KINE_BACKEND=etcd
-artifact_dir=$KINE_TEST_DIR
-state_dir="$KINE_TEST_DIR/private"
-KINE_RESOURCE_GROUP=test-etcd
-fixture_started=false
-vm_created=true
-capz::kine::az() {
-  printf '%s\n' "$*" >> "$KINE_TEST_DIR/commands"
-  if [[ "$*" == *collect-etcd-status* && "$KINE_TEST_HEALTHY" == true ]]; then
-    echo '{"value":[{"message":"ETCD_STATUS_OK"}]}'
-  else
-    echo '{"value":[{"message":"diagnostic output"}]}'
-  fi
-}
-capz::kine::collect_compactions() { echo collected > "$KINE_TEST_DIR/compaction-called"; }
-capz::kine::cleanup 0
-`)
-			cmd.Dir = repoRoot(t)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_HEALTHY="+map[bool]string{true: "true", false: "false"}[healthy])
-			output, err := cmd.CombinedOutput()
-			if (err == nil) != healthy {
-				t.Fatalf("guest status failures must not look successful: %v\n%s", err, output)
-			}
-			commands := string(readFile(t, filepath.Join(dir, "commands")))
-			if !strings.Contains(commands, "collect-etcd-status") || !strings.Contains(commands, "-u etcd -u etcd-metrics") {
-				t.Fatal("etcd cleanup must collect native status and the selected services")
-			}
-			if _, err := os.Stat(filepath.Join(dir, "compaction-called")); err != nil {
-				t.Fatal("compaction diagnostics must still be attempted after a status failure")
-			}
-		})
-	}
-}
-
-func etcdGuestScript(t *testing.T, path string) string {
-	t.Helper()
-	var config struct {
-		Files []struct {
-			Path, Content string
-		} `yaml:"write_files"`
-	}
-	if err := yaml.Unmarshal(readFile(t, filepath.Join(repoRoot(t), "scripts", "kine", "cloud-init-etcd.yaml")), &config); err != nil {
-		t.Fatal(err)
-	}
-	for _, file := range config.Files {
-		if file.Path == path {
-			return strings.ReplaceAll(file.Content, "__ETCD_VERSION__", "v3.6.6")
-		}
-	}
-	t.Fatalf("missing etcd guest script %s", path)
-	return ""
-}
-
-func TestEtcdMetricsReadiness(t *testing.T) {
-	script := strings.ReplaceAll(etcdGuestScript(t, "/usr/local/bin/check-etcd-metrics"),
-		"__METRICS_BIND_ADDRESS__", "10.250.0.4")
-	for _, tc := range []struct {
-		name                  string
-		readyAt, wantAttempts int
-	}{
-		{"already-ready", 1, 1},
-		{"delayed-listener", 3, 3},
-		{"never-ready", 0, 12},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			cmd := exec.CommandContext(t.Context(), "bash", "-s")
-			cmd.Stdin = strings.NewReader(`
-calls=0
-curl() {
-  calls=$((calls + 1))
-  printf '%s\n' "$*" >> "$KINE_TEST_DIR/attempts"
-  if (( KINE_TEST_READY_AT == 0 || calls < KINE_TEST_READY_AT )); then
-    echo "simulated connection refused" >&2
-    return 7
-  fi
-  echo 'etcd_server_has_leader 1'
-}
-sleep() { [[ "$1" == 1 ]]; }
-` + script)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_READY_AT="+strconv.Itoa(tc.readyAt))
-			output, err := cmd.CombinedOutput()
-			wantOK := tc.readyAt > 0
-			if (err == nil) != wantOK || bytes.Contains(output, []byte("ETCD_METRICS_READY")) != wantOK {
-				t.Fatalf("readiness must wait for success and fail on exhaustion: %v\n%s", err, output)
-			}
-			attempts := strings.Split(strings.TrimSpace(string(readFile(t, filepath.Join(dir, "attempts")))), "\n")
-			if len(attempts) != tc.wantAttempts {
-				t.Fatalf("got %d attempts, want %d", len(attempts), tc.wantAttempts)
-			}
-			for _, args := range attempts {
-				for _, required := range []string{"--fail", "--connect-timeout 2", "--max-time 5", "--cacert /etc/kine/ca.crt", "https://10.250.0.4:8080/metrics"} {
-					if !strings.Contains(args, required) {
-						t.Fatalf("readiness must retain bounded, verified TLS requests: %s", args)
-					}
-				}
-				if strings.Contains(args, "--insecure") || strings.Contains(args, " -k") {
-					t.Fatal("readiness must not bypass TLS verification")
-				}
-			}
-			if !wantOK && !bytes.Contains(output, []byte("did not become ready")) {
-				t.Fatal("retry exhaustion must produce an explicit diagnostic")
-			}
-		})
-	}
-}
-
-func TestEtcdStatusDiagnostics(t *testing.T) {
-	script := etcdGuestScript(t, "/usr/local/bin/collect-etcd-status")
-	for _, tc := range []struct {
-		name, status, alarms string
-		ok                   bool
-	}{
-		{"healthy", `[{"Status":{"version":"3.6.6","leader":1}}]`, `{}`, true},
-		{"wrong-version", `[{"Status":{"version":"3.5.24","leader":1}}]`, `{}`, false},
-		{"no-leader", `[{"Status":{"version":"3.6.6","leader":0}}]`, `{}`, false},
-		{"server-error", `[{"Status":{"version":"3.6.6","leader":1,"errors":["unhealthy"]}}]`, `{}`, false},
-		{"no-space", `[{"Status":{"version":"3.6.6","leader":1}}]`, `{"alarms":[{"alarm":1}]}`, false},
-		{"missing-response", `[]`, `{}`, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			cmd := exec.CommandContext(t.Context(), "bash", "-s")
-			cmd.Stdin = strings.NewReader(`
-etcdctl() {
-  case "$*" in
-    *"endpoint status"*) printf '%s\n' "$KINE_TEST_STATUS" ;;
-    *"alarm list"*) printf '%s\n' "$KINE_TEST_ALARMS" ;;
-    *) return 99 ;;
-  esac
-}
-` + script)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_STATUS="+tc.status, "KINE_TEST_ALARMS="+tc.alarms)
-			output, err := cmd.CombinedOutput()
-			if (err == nil) != tc.ok || bytes.Contains(output, []byte("\nETCD_STATUS_OK\n")) != tc.ok {
-				t.Fatalf("status and alarms must be checked before declaring success: %v\n%s", err, output)
-			}
-		})
-	}
-}
-
-func TestEtcdCompactionDiagnostics(t *testing.T) {
-	script := etcdGuestScript(t, "/usr/local/bin/collect-etcd-compactions")
-	start := `{"ts":"2026-10-23T03:50:35Z","level":"info","caller":"mvcc/index.go:194","msg":"compact tree index","revision":42}`
-	finish := `{"ts":"2026-10-23T03:50:45Z","level":"info","caller":"mvcc/kvstore_compaction.go:70","msg":"finished scheduled compaction","compact-revision":42,"took":"10s","key":"do-not-export"}`
-	failure := `{"ts":"2026-10-23T03:55:45Z","level":"error","caller":"v3compactor/periodic.go:200","msg":"compaction failed","error":"context canceled"}`
-	noise := "2026/10/23 03:49:01 http2: server: connection closed\n" +
-		strings.Repeat(`{"ts":"2026-10-23T03:49:00Z","level":"info","caller":"etcdserver/server.go:2250","msg":"compacted Raft logs","raft-index":1200000}`+"\n", 200) +
-		`{"ts":"2026-10-23T03:49:01Z","level":"info","caller":"v3rpc/interceptor.go:200","msg":"request completed","request":"compact payload must not be exported"}` + "\n"
-	expected := `{"time":"2026-10-23T03:50:35Z","level":"info","message":"compact tree index","revision":42,"took":null,"error":null}
-{"time":"2026-10-23T03:50:45Z","level":"info","message":"finished scheduled compaction","revision":42,"took":"10s","error":null}
-{"time":"2026-10-23T03:55:45Z","level":"error","message":"compaction failed","revision":null,"took":null,"error":"context canceled"}
-`
-	var oversized strings.Builder
-	for i := range 2000 {
-		oversized.WriteString(strings.ReplaceAll(finish, `"compact-revision":42`, `"compact-revision":`+strconv.Itoa(i)) + "\n")
-	}
-	for _, tc := range []struct {
-		name, journal, want string
-		ok                  bool
-	}{
-		{"mixed-output", start + "\n" + noise + finish + "\n" + failure + "\n", expected, true},
-		{"no-mvcc-events", noise, "", true},
-		{"malformed-json", `{"caller":"mvcc/kvstore_compaction.go:70","msg":`, "", false},
-		{"unstructured-mvcc", "2026/10/23 03:50:45 mvcc/kvstore_compaction.go:70 finished scheduled compaction", "", false},
-		{"missing-metadata", `{"caller":"mvcc/kvstore_compaction.go:70","msg":"finished scheduled compaction","level":"info"}`, "", false},
-		{"oversized-history", oversized.String(), "", false},
-		{"journal-error", finish, "", false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if err := os.WriteFile(filepath.Join(dir, "journal"), []byte(tc.journal), 0o600); err != nil {
-				t.Fatal(err)
-			}
-			cmd := exec.CommandContext(t.Context(), "bash", "-s")
-			cmd.Stdin = strings.NewReader(`
-journalctl() {
-  [[ "$*" == "--quiet --no-pager --boot --unit etcd _COMM=etcd --output cat" ]] || return 99
-  if [[ "$KINE_TEST_CASE" == journal-error ]]; then
-    echo "journal unavailable" >&2
-    return 7
-  fi
-  cat "$KINE_TEST_DIR/journal"
-}
-` + script)
-			cmd.Env = append(cmd.Environ(), "KINE_TEST_DIR="+dir, "KINE_TEST_CASE="+tc.name)
-			output, err := cmd.CombinedOutput()
-			if (err == nil) != tc.ok {
-				t.Fatalf("unexpected compaction collection result: %v\n%s", err, output)
-			}
-			if !tc.ok {
-				if len(output) == 0 || bytes.Contains(output, []byte("KINE_COMPACTIONS_END")) {
-					t.Fatal("collection failures must report an error without a successful history frame")
-				}
-				return
-			}
-			history := decodeCompactionHistory(t, string(output), dir)
-			if history != tc.want {
-				t.Fatalf("only complete MVCC compaction summary fields should be retained:\ngot: %s\nwant: %s", history, tc.want)
+				t.Fatalf("local etcd omitted common measurements: %v", common)
 			}
 		})
 	}

@@ -102,10 +102,10 @@ type kineProfiler struct {
 func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, reportDir string) (retErr error) {
 	backend := os.Getenv("KINE_BACKEND")
 	if backend == "" {
-		backend = "etcd"
+		backend = "kubeadm-etcd"
 	}
-	if backend != "etcd" && backend != "kine-postgres" {
-		return errors.New("invalid KINE_BACKEND: must be etcd or kine-postgres")
+	if backend != "kubeadm-etcd" && backend != "kine-postgres" {
+		return errors.New("invalid KINE_BACKEND: must be kubeadm-etcd or kine-postgres")
 	}
 	Logf("Performance datastore backend: %s", backend)
 	collectProfiles := os.Getenv("KINE_COLLECT_PROFILES")
@@ -115,12 +115,18 @@ func runKinePerformance(ctx context.Context, workload framework.ClusterProxy, re
 	Logf("Kine timed pprof collection enabled: %t", collectProfiles == "true")
 	var profiler *kineProfiler
 	if collectProfiles == "true" {
-		ca, err := base64.StdEncoding.DecodeString(os.Getenv("KINE_CA_CERT_B64"))
-		if err != nil {
-			return fmt.Errorf("decode public Kine profiling CA: %w", err)
-		}
-		if len(ca) == 0 {
-			return errors.New("profiling requires KINE_CA_CERT_B64")
+		var ca []byte
+		var err error
+		if backend == "kine-postgres" {
+			ca, err = base64.StdEncoding.DecodeString(os.Getenv("KINE_CA_CERT_B64"))
+			if err != nil {
+				return fmt.Errorf("decode public Kine profiling CA: %w", err)
+			}
+			if len(ca) == 0 {
+				return errors.New("profiling requires KINE_CA_CERT_B64 for Kine")
+			}
+		} else {
+			Logf("Local-etcd mode collects API-server profiles only; datastore credentials stay on control-plane nodes")
 		}
 		profiler, err = startKineProfiler(ctx, workload.GetClientSet(), workload.GetRESTConfig(), reportDir, ca, backend)
 		if err != nil {
@@ -242,11 +248,17 @@ func createKineProfilerResources(ctx context.Context, client kubernetes.Interfac
 	}, metav1.CreateOptions{}); err != nil {
 		return fmt.Errorf("bind profiling service account: %w", err)
 	}
-	if _, err := client.CoreV1().Secrets(namespace.Name).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "kine-ca"},
-		Data:       map[string][]byte{"ca.crt": ca},
-	}, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("create public profiling CA: %w", err)
+	var volumes []corev1.Volume
+	var mounts []corev1.VolumeMount
+	if len(ca) != 0 {
+		if _, err := client.CoreV1().Secrets(namespace.Name).Create(ctx, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "kine-ca"},
+			Data:       map[string][]byte{"ca.crt": ca},
+		}, metav1.CreateOptions{}); err != nil {
+			return fmt.Errorf("create public profiling CA: %w", err)
+		}
+		volumes = []corev1.Volume{{Name: "kine-ca", VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kine-ca"}}}}
+		mounts = []corev1.VolumeMount{{Name: "kine-ca", MountPath: "/kine-ca", ReadOnly: true}}
 	}
 	if _, err := client.CoreV1().Pods(namespace.Name).Create(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: kineProfilerPodName},
@@ -276,11 +288,9 @@ func createKineProfilerResources(ctx context.Context, client kubernetes.Interfac
 					Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("50m"), corev1.ResourceMemory: resource.MustParse("64Mi")},
 					Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1"), corev1.ResourceMemory: resource.MustParse("128Mi")},
 				},
-				VolumeMounts: []corev1.VolumeMount{{Name: "kine-ca", MountPath: "/kine-ca", ReadOnly: true}},
+				VolumeMounts: mounts,
 			}},
-			Volumes: []corev1.Volume{{
-				Name: "kine-ca", VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kine-ca"}},
-			}},
+			Volumes: volumes,
 		},
 	}, metav1.CreateOptions{}); err != nil {
 		return fmt.Errorf("create private profiling helper: %w", err)
@@ -289,19 +299,17 @@ func createKineProfilerResources(ctx context.Context, client kubernetes.Interfac
 }
 
 func kineProfileTargets(nodes []corev1.Node, backend string) ([]kineProfileTarget, error) {
-	component := ""
+	var targets []kineProfileTarget
 	switch backend {
 	case "kine-postgres":
-		component = "kine"
-	case "etcd":
-		component = "etcd"
+		targets = append(targets, kineProfileTarget{Name: "kine", Component: "kine", URL: "https://10.250.0.4:8080"})
+	case "kubeadm-etcd":
 	default:
 		return nil, fmt.Errorf("unsupported profiling backend %q", backend)
 	}
 	if len(nodes) == 0 {
 		return nil, errors.New("no control-plane nodes available for profiling")
 	}
-	targets := []kineProfileTarget{{Name: component, Component: component, URL: "https://10.250.0.4:8080"}}
 	subnet := netip.MustParsePrefix("10.0.0.0/24")
 	for _, node := range nodes {
 		address := ""
@@ -356,7 +364,7 @@ case "$1" in
     printf 'Authorization: Bearer %s\n' "$token" |
       curl --fail --silent --show-error --max-time 75 --header @- \
         --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt "$2" ;;
-  kine|etcd)
+  kine)
     exec curl --fail --silent --show-error --max-time 75 --cacert /kine-ca/ca.crt "$2" ;;
   *) echo "Unsupported profiling target" >&2; exit 1 ;;
 esac`

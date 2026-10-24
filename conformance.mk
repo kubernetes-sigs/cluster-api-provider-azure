@@ -10,7 +10,7 @@ CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 ##@ Conformance testing:
 
 .PHONY: test-performance-kine preflight-performance-kine
-test-performance-kine: ## Run ClusterLoader2 on the high-I/O fixture (billable; etcd by default; KINE_BACKEND=kine-postgres selects Kine).
+test-performance-kine: ## Run ClusterLoader2 on the shared SCSI profile (billable; kubeadm-etcd by default; KINE_BACKEND=kine-postgres enables Kine).
 	bash ./scripts/ci-kine-performance.sh
 
 preflight-performance-kine: ## Check high-I/O VM quota/capabilities without provisioning.
