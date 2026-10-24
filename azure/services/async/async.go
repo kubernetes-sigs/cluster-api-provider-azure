@@ -123,6 +123,14 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	if err != nil {
+		// Retryable failures from the PUT call or poller (throttling, transient
+		// server-side errors, network faults, or a timeout before a poller was
+		// returned) are surfaced as transient so they are requeued, rather than
+		// reported as a terminal operation failure. Non-retryable failures (e.g.
+		// a failed provisioning state) are returned unwrapped.
+		if azure.IsTransientError(err) {
+			return nil, azure.WithTransientError(errWrapped, GetRetryAfterFromError(err))
+		}
 		return nil, errWrapped
 	}
 

@@ -17,14 +17,21 @@ limitations under the License.
 package scope
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/component-base/featuregate"
@@ -32,6 +39,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -3463,6 +3471,146 @@ func TestMachineScope_GetVirtualMachineScaleSetID(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("MachineScope.GetVirtualMachineScaleSetID() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestMachineScope_UpdatePutStatus(t *testing.T) {
+	provisionErr := errors.New("OSProvisioningTimedOut")
+	transientErr := azure.WithTransientError(errors.New("failed to get existing resource"), time.Minute)
+	notDoneErr := azure.WithTransientError(azure.NewOperationNotDoneError(&infrav1.Future{
+		Type:          infrav1.PutFuture,
+		ResourceGroup: "my-rg",
+		Name:          "my-vm",
+	}), time.Minute)
+	// throttledPutErr mimics what async.CreateOrUpdateResource returns for a 429
+	// that outlived the SDK's retries: a plain-wrapped azcore.ResponseError that is
+	// retryable but not (yet) wrapped as a ReconcileError.
+	throttledPutErr := fmt.Errorf("failed to create or update resource my-rg/my-vm (service: virtualmachine): %w", &azcore.ResponseError{StatusCode: http.StatusTooManyRequests})
+	// timeoutErr mimics a PUT that times out before a poller is available.
+	timeoutErr := fmt.Errorf("failed to create or update resource my-rg/my-vm (service: virtualmachine): %w", context.DeadlineExceeded)
+	// paramsErr mimics a pre-PUT parameter-construction failure from spec.Parameters.
+	paramsErr := errors.New("failed to get desired parameters for resource my-rg/my-vm (service: virtualmachine): failed to generate OS Profile")
+
+	tests := []struct {
+		name         string
+		condition    clusterv1beta1.ConditionType
+		err          error
+		wantStatus   corev1.ConditionStatus
+		wantReason   string
+		wantSeverity clusterv1beta1.ConditionSeverity
+		wantMessage  string
+	}{
+		{
+			name:        "VMRunning succeeded",
+			condition:   infrav1.VMRunningCondition,
+			wantStatus:  corev1.ConditionTrue,
+			wantMessage: "",
+		},
+		{
+			name:         "VMRunning operation not done",
+			condition:    infrav1.VMRunningCondition,
+			err:          notDoneErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.CreatingReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityInfo,
+			wantMessage:  "virtualmachine creating or updating",
+		},
+		{
+			name:         "VMRunning provisioning failed",
+			condition:    infrav1.VMRunningCondition,
+			err:          provisionErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.VMProvisionFailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: OSProvisioningTimedOut",
+		},
+		{
+			name:         "VMRunning pre-PUT parameters failure is a provisioning failure",
+			condition:    infrav1.VMRunningCondition,
+			err:          paramsErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.VMProvisionFailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: " + paramsErr.Error(),
+		},
+		{
+			name:         "VMRunning terminal error",
+			condition:    infrav1.VMRunningCondition,
+			err:          azure.WithTerminalError(provisionErr),
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.VMProvisionFailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: reconcile error that cannot be recovered occurred: OSProvisioningTimedOut. Object will not be requeued",
+		},
+		{
+			name:         "VMRunning transient error keeps generic reason",
+			condition:    infrav1.VMRunningCondition,
+			err:          transientErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: failed to get existing resource. Object will be requeued after 1m0s",
+		},
+		{
+			name:         "VMRunning throttled PUT keeps generic reason",
+			condition:    infrav1.VMRunningCondition,
+			err:          throttledPutErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: " + throttledPutErr.Error(),
+		},
+		{
+			name:         "VMRunning timeout without poller keeps generic reason",
+			condition:    infrav1.VMRunningCondition,
+			err:          timeoutErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: " + timeoutErr.Error(),
+		},
+		{
+			name:         "DisksReady failed keeps generic reason",
+			condition:    infrav1.DisksReadyCondition,
+			err:          provisionErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: OSProvisioningTimedOut",
+		},
+		{
+			name:         "DisksReady transient error keeps generic reason",
+			condition:    infrav1.DisksReadyCondition,
+			err:          transientErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: failed to get existing resource. Object will be requeued after 1m0s",
+		},
+		{
+			name:         "BootstrapSucceeded failed keeps generic reason",
+			condition:    infrav1.BootstrapSucceededCondition,
+			err:          provisionErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: OSProvisioningTimedOut",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			m := &MachineScope{AzureMachine: &infrav1.AzureMachine{}}
+
+			m.UpdatePutStatus(tt.condition, "virtualmachine", tt.err)
+
+			c := v1beta1conditions.Get(m.AzureMachine, tt.condition)
+			g.Expect(c).NotTo(BeNil())
+			g.Expect(c.Status).To(Equal(tt.wantStatus))
+			g.Expect(c.Reason).To(Equal(tt.wantReason))
+			g.Expect(c.Severity).To(Equal(tt.wantSeverity))
+			g.Expect(c.Message).To(Equal(tt.wantMessage))
 		})
 	}
 }
