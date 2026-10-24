@@ -93,15 +93,33 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 
 	tracingProvider := azotel.NewTracingProvider(otel.GetTracerProvider(), nil)
 
+	// Every credential type must target the resolved Azure environment (ARM
+	// endpoint, token audience, and AAD authority). For air-gapped clouds such as
+	// USSec (IL6) these values are discovered at runtime and AAD instance
+	// discovery must be disabled, because the public login.microsoftonline.com
+	// metadata endpoint used to validate the authority is unreachable.
+	clientOpts := azcore.ClientOptions{
+		TracingProvider: tracingProvider,
+		Cloud: cloud.Configuration{
+			ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
+			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+				cloud.ResourceManager: {
+					Audience: tokenAudience,
+					Endpoint: resourceManagerEndpoint,
+				},
+			},
+		},
+	}
+	disableInstanceDiscovery := azure.ShouldDisableInstanceDiscovery(activeDirectoryEndpoint)
+
 	switch p.Identity.Spec.Type {
 	case infrav1.WorkloadIdentity:
 		cred, authErr = p.cache.GetOrStoreWorkloadIdentity(&azidentity.WorkloadIdentityCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-			},
-			TenantID:      p.Identity.Spec.TenantID,
-			ClientID:      p.Identity.Spec.ClientID,
-			TokenFilePath: GetProjectedTokenPath(),
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
+			TenantID:                 p.Identity.Spec.TenantID,
+			ClientID:                 p.Identity.Spec.ClientID,
+			TokenFilePath:            GetProjectedTokenPath(),
 		})
 
 	case infrav1.ManualServicePrincipal:
@@ -113,18 +131,8 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			return nil, errors.Wrap(err, "failed to get client secret")
 		}
 		options := azidentity.ClientSecretCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-				Cloud: cloud.Configuration{
-					ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: tokenAudience,
-							Endpoint: resourceManagerEndpoint,
-						},
-					},
-				},
-			},
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
 		}
 		cred, authErr = p.cache.GetOrStoreClientSecret(p.GetTenantID(), p.Identity.Spec.ClientID, clientSecret, &options)
 
@@ -144,9 +152,8 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			certsContent = []byte(clientSecret)
 		}
 		cred, authErr = p.cache.GetOrStoreClientCert(p.GetTenantID(), p.Identity.Spec.ClientID, certsContent, nil, &azidentity.ClientCertificateCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-			},
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
 		})
 
 	case infrav1.UserAssignedMSI:

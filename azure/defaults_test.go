@@ -164,6 +164,25 @@ func TestARMClientOptionsForAuth(t *testing.T) {
 	}
 }
 
+// TestShouldDisableInstanceDiscovery tests the `ShouldDisableInstanceDiscovery()` helper.
+func TestShouldDisableInstanceDiscovery(t *testing.T) {
+	g := NewWithT(t)
+
+	cases := map[string]bool{
+		"":                                    false,
+		"https://login.microsoftonline.com":   false, // public, no trailing slash
+		"https://login.microsoftonline.com/":  false, // public
+		"https://login.microsoftonline.us/":   false, // government
+		"https://login.chinacloudapi.cn/":     false, // china
+		"https://login.microsoftonline.de/":   false, // germany
+		"https://login.microsoftonline.ussec": true,  // air-gapped / custom
+		"https://login.example.local/":        true,  // custom
+	}
+	for host, want := range cases {
+		g.Expect(ShouldDisableInstanceDiscovery(host)).To(Equal(want), "authority host %q", host)
+	}
+}
+
 // TestPerCallPolicies tests the per-call policies returned by `ARMClientOptions()`.
 func TestPerCallPolicies(t *testing.T) {
 	g := NewWithT(t)

@@ -373,6 +373,28 @@ func ARMClientOptionsForAuth(authorizer Authorizer, extraPolicies ...policy.Poli
 	return opts, nil
 }
 
+// ShouldDisableInstanceDiscovery reports whether Microsoft Entra (AAD) instance
+// discovery must be disabled for the given Active Directory authority host.
+//
+// Instance discovery validates the authority against the public
+// login.microsoftonline.com metadata endpoint, which is unreachable in
+// air-gapped clouds such as USSec (IL6). Built-in, publicly reachable clouds
+// keep discovery enabled; any other (custom) authority, such as the IL6
+// authority discovered at runtime from the environment file, disables it so
+// credential creation does not hang trying to reach the public endpoint.
+func ShouldDisableInstanceDiscovery(authorityHost string) bool {
+	switch strings.TrimRight(authorityHost, "/") {
+	case "",
+		strings.TrimRight(cloud.AzurePublic.ActiveDirectoryAuthorityHost, "/"),
+		strings.TrimRight(cloud.AzureGovernment.ActiveDirectoryAuthorityHost, "/"),
+		strings.TrimRight(cloud.AzureChina.ActiveDirectoryAuthorityHost, "/"),
+		"https://login.microsoftonline.de": // Azure Germany; not built into SDKv2.
+		return false
+	default:
+		return true
+	}
+}
+
 // correlationIDPolicy adds the "x-ms-correlation-request-id" header to requests.
 // It implements the policy.Policy interface.
 type correlationIDPolicy struct{}

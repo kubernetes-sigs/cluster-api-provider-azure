@@ -242,7 +242,34 @@ func TestGetTokenCredential(t *testing.T) {
 					// ignore tracing provider
 					return opts.TenantID == fakeTenantID &&
 						opts.ClientID == fakeClientID &&
-						opts.TokenFilePath == GetProjectedTokenPath()
+						opts.TokenFilePath == GetProjectedTokenPath() &&
+						!opts.DisableInstanceDiscovery
+				}))
+			},
+		},
+		{
+			name: "workload identity in air-gapped cloud disables instance discovery",
+			cluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						IdentityRef: &corev1.ObjectReference{
+							Kind: infrav1.AzureClusterIdentityKind,
+						},
+					},
+				},
+			},
+			identity: &infrav1.AzureClusterIdentity{
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.WorkloadIdentity,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+				},
+			},
+			ActiveDirectoryAuthorityHost: "https://login.microsoftonline.ussec.example",
+			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
+				cache.EXPECT().GetOrStoreWorkloadIdentity(gomock.Cond(func(opts *azidentity.WorkloadIdentityCredentialOptions) bool {
+					return opts.DisableInstanceDiscovery &&
+						opts.ClientOptions.Cloud.ActiveDirectoryAuthorityHost == "https://login.microsoftonline.ussec.example"
 				}))
 			},
 		},
