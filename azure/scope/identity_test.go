@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -491,9 +492,11 @@ func TestGetTokenCredential(t *testing.T) {
 
 func TestParseCloudType(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected cloud.Configuration
+		name      string
+		input     string
+		envFile   string
+		expected  cloud.Configuration
+		expectErr bool
 	}{
 		{
 			name:     "when the input is public, expect AzurePublic",
@@ -520,13 +523,34 @@ func TestParseCloudType(t *testing.T) {
 			input:    "PUBLIC", // Test case for uppercased input
 			expected: cloud.AzurePublic,
 		},
+		{
+			name:      "when the input is USSEC without an environment file, expect an error",
+			input:     "USSEC",
+			expectErr: true,
+		},
+		{
+			name:     "when the input is USSEC with a valid environment file, expect the configured authority host",
+			input:    "USSEC",
+			envFile:  validUSSecEnvFile,
+			expected: cloud.Configuration{ActiveDirectoryAuthorityHost: "https://login.example.com/"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			g := NewWithT(t)
-			g.Expect(parseCloudType(tt.input)).To(Equal(tt.expected))
+			if tt.envFile != "" {
+				path := filepath.Join(t.TempDir(), "environment.json")
+				g.Expect(os.WriteFile(path, []byte(tt.envFile), 0o600)).To(Succeed())
+				t.Setenv("AZURE_ENVIRONMENT_FILEPATH", path)
+			}
+			got, err := parseCloudType(tt.input)
+			if tt.expectErr {
+				g.Expect(err).To(HaveOccurred())
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(got).To(Equal(tt.expected))
 		})
 	}
 }

@@ -159,7 +159,10 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
 
 	case infrav1.UserAssignedIdentityCredential:
-		cloudType := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		cloudType, err := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse cloud type")
+		}
 		clientOptions := azcore.ClientOptions{
 			TracingProvider: tracingProvider,
 			Cloud:           cloudType,
@@ -268,16 +271,24 @@ func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, all
 	return false
 }
 
-func parseCloudType(cloudType string) cloud.Configuration {
+func parseCloudType(cloudType string) (cloud.Configuration, error) {
 	cloudType = strings.ToUpper(cloudType)
 	switch cloudType {
 	case "PUBLIC":
-		return cloud.AzurePublic
+		return cloud.AzurePublic, nil
 	case "CHINA":
-		return cloud.AzureChina
+		return cloud.AzureChina, nil
 	case "USGOVERNMENT":
-		return cloud.AzureGovernment
+		return cloud.AzureGovernment, nil
+	case "USSEC": //nolint:goconst
+		env, err := loadCloudEnvironmentFromFile()
+		if err != nil {
+			return cloud.Configuration{}, errors.Wrap(err, "failed to load cloud environment for USSec")
+		}
+		return cloud.Configuration{
+			ActiveDirectoryAuthorityHost: env.ActiveDirectoryEndpoint,
+		}, nil
 	default:
-		return cloud.AzurePublic
+		return cloud.AzurePublic, nil
 	}
 }
