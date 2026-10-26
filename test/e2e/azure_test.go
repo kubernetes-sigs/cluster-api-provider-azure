@@ -30,6 +30,7 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -706,17 +707,23 @@ var _ = Describe("Workload cluster creation", func() {
 				Log("Skipping Fleet test. Depends on https://github.com/Azure/azure-service-operator/issues/4935")
 			})
 
-			By("Upgrading the Kubernetes version of the cluster", func() {
-				AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
-					return AKSUpgradeSpecInput{
-						Cluster:                    result.Cluster,
-						MachinePools:               result.MachinePools,
-						KubernetesVersionUpgradeTo: kubernetesVersion,
-						WaitForControlPlane:        e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
-						WaitForMachinePools:        e2eConfig.GetIntervals(specName, "wait-machine-pool-upgrade"),
-					}
+			if semver.Compare(semver.MajorMinor(kubernetesVersionUpgradeFrom), "v1.37") < 0 &&
+				semver.Compare(semver.MajorMinor(kubernetesVersion), "v1.37") >= 0 {
+				Logf("Skipping Kubernetes upgrade from %s to %s: Windows Server 2022 node pools do not support Kubernetes 1.37 or later "+
+					"(https://github.com/Azure/AKS/issues/4168)", kubernetesVersionUpgradeFrom, kubernetesVersion)
+			} else {
+				By("Upgrading the Kubernetes version of the cluster", func() {
+					AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
+						return AKSUpgradeSpecInput{
+							Cluster:                    result.Cluster,
+							MachinePools:               result.MachinePools,
+							KubernetesVersionUpgradeTo: kubernetesVersion,
+							WaitForControlPlane:        e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
+							WaitForMachinePools:        e2eConfig.GetIntervals(specName, "wait-machine-pool-upgrade"),
+						}
+					})
 				})
-			})
+			}
 
 			By("modifying the azure cluster-autoscaler settings", func() {
 				AKSAzureClusterAutoscalerSettingsSpec(ctx, func() AKSAzureClusterAutoscalerSettingsSpecInput {
