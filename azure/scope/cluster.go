@@ -1063,7 +1063,7 @@ func (s *ClusterScope) FailureDomains() []*string {
 
 // getPublicIPFailureDomains returns the failure domains to use for public IP addresses.
 // If availability zones are explicitly specified on the load balancer, those zones are used.
-// Otherwise, falls back to the cluster's failure domains.
+// Otherwise, falls back to sending no zone which Azure defaults to zone redundancy.
 //
 // This is important because for public load balancers, zone-redundancy is achieved by setting
 // zones on the public IP address resource, NOT on the load balancer's frontend IP configuration.
@@ -1074,6 +1074,9 @@ func (s *ClusterScope) FailureDomains() []*string {
 func (s *ClusterScope) getPublicIPFailureDomains(lbAvailabilityZones []string) []*string {
 	if len(lbAvailabilityZones) > 0 {
 		return azure.PtrSlice(&lbAvailabilityZones)
+	}
+	if len(s.AzureCluster.Spec.FailureDomains) == 0 {
+		return nil
 	}
 	return s.FailureDomains()
 }

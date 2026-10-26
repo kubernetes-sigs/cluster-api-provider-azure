@@ -906,6 +906,66 @@ func TestPublicIPSpecs(t *testing.T) {
 			},
 		},
 		{
+			name: "Azure cluster with more than three discovered failure domains does not set public IP zones",
+			azureCluster: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Status: infrav1.AzureClusterStatus{
+					FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
+						"1": {},
+						"2": {},
+						"3": {},
+						"4": {},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					ResourceGroup:       "my-rg",
+					ControlPlaneEnabled: true,
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						Location: "eastus2",
+						AdditionalTags: infrav1.Tags{
+							"Name": "my-publicip-ipv6",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+						},
+					},
+					NetworkSpec: infrav1.NetworkSpec{
+						ControlPlaneOutboundLB: &infrav1.LoadBalancerSpec{
+							FrontendIPsCount: ptr.To[int32](1),
+							FrontendIPs: []infrav1.FrontendIP{
+								{
+									Name: "my-frontend-ip",
+									PublicIP: &infrav1.PublicIPSpec{
+										Name: "pip-my-cluster-controlplane-outbound",
+									},
+								},
+							},
+						},
+						APIServerLB: &infrav1.LoadBalancerSpec{
+							LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+								Type: infrav1.Internal,
+							},
+						},
+					},
+				},
+			},
+			expectedPublicIPSpec: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "pip-my-cluster-controlplane-outbound",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "eastus2",
+					FailureDomains: nil,
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+			},
+		},
+		{
 			name: "Azure cluster with public LB and AvailabilityZones uses LB zones instead of failure domains",
 			azureCluster: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
