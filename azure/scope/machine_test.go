@@ -322,7 +322,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
+					FailureDomains: nil,
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
