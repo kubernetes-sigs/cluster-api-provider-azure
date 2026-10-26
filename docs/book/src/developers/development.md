@@ -593,7 +593,7 @@ AMD64 Azure VM running **Kine v0.17.2** and **PostgreSQL 16**, then selects the
 `kine-postgres` test flavor. It does not change other flavors or use AKS.
 All Kine/PostgreSQL runs, including the existing
 `pull-cluster-api-provider-azure-conformance-kine-postgres` Prow job, use the
-shared SCSI high-I/O profile described below: matched E96bs_v5 control-plane and
+shared SCSI high-I/O profile described below: matched D64s_v3 control-plane and
 datastore VMs with dedicated Ultra Disks.
 The Prow job still runs the complete conformance suite, not ClusterLoader2;
 no test-infra configuration change is needed.
@@ -720,10 +720,10 @@ az group delete --subscription <subscription-id> --name <cluster-name>-kine --ye
 
 `CLUSTER_NAME` may be set to a fresh name (2-40 lowercase characters); existing
 workload or fixture groups are rejected. `KINE_VM_SIZE` defaults to
-`Standard_E96bs_v5` and sets the shared control-plane/Kine VM size. It must remain
+`Standard_D64s_v3` and sets the shared control-plane/Kine VM size. It must remain
 an AMD64, SCSI/Ultra-capable size.
 Both backends keep their data/WAL on the dedicated
-512-GiB Ultra Disk, configured for 120,000 IOPS and 4,000 MB/s by default.
+512-GiB Ultra Disk, configured for 80,000 IOPS and 1,200 MB/s by default.
 Each run has its own database;
 there is no state migration, database HA, upgrade/failover testing, or performance
 claim in this scaffold. Those are separate experiments from conformance.
@@ -765,7 +765,7 @@ wrapper logs it explicitly, and both `performance-settings.txt` and CL2's
 `settings.txt` record `datastore-backend` and `datastore-version`. No test-infra
 change is needed to select either mode with the job's existing workload settings.
 Changing this hardware profile resets the comparison: rerun both modes rather
-than comparing new results directly with the earlier 64-vCPU control plane.
+than comparing new results directly with earlier control-plane/datastore profiles.
 
 Both Kine flavors enable `ConcurrentWatchObjectDecode=true` on kube-apiserver
 to evaluate concurrent watch-object decoding instead of the default serial path.
@@ -784,11 +784,11 @@ This is a **large, billable experiment** with one control-plane node by default:
 | Setting | Default |
 | --- | --- |
 | Performance backend (`KINE_BACKEND`) | `kubeadm-etcd`; set `kine-postgres` to enable the external VM |
-| Shared VM size (`KINE_VM_SIZE`) | `Standard_E96bs_v5`: 96 vCPU, 672 GiB |
+| Shared VM size (`KINE_VM_SIZE`) | `Standard_D64s_v3`: 64 vCPU, 256 GiB |
 | Disk controller | SCSI, with accelerated networking |
 | Control-plane/Kine OS disk | 128 GiB `Premium_LRS`, `ReadWrite` caching |
 | Data disk | One uncached Ultra Disk on each control-plane VM and, when enabled, the Kine VM |
-| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `120000` / `4000` |
+| `KINE_DISK_SIZE_GB` / `KINE_DISK_IOPS` / `KINE_DISK_MBPS` | `512` / `80000` / `1200` |
 | Control plane (`AZURE_CONTROL_PLANE_MACHINE_TYPE`) | Derived from `KINE_VM_SIZE`; a conflicting override is rejected |
 | Workload node image (both roles) | CAPZ community gallery `capi-azurelinux-4-gen2`, version matching `KINE_KUBERNETES_VERSION` |
 | Workers (`AZURE_NODE_MACHINE_TYPE`) | Two `Standard_D16s_v5` Azure Linux nodes, hosting the selected test workload |
@@ -810,12 +810,13 @@ Requested limits are recorded in `performance-settings.txt`.
 These are aggressive experimental defaults for the large datastore VM, not an
 assertion that more concurrent connections always improve throughput.
 
-Local mode needs **128 regional vCPUs**: 96 EBSv5 control-plane cores plus
-32 Dsv5 worker cores. Kine mode needs **224 regional vCPUs**: 192 EBSv5 cores
-for the two matched VMs plus the same 32 worker cores. The last CI quota snapshot
-allowed only 65 EBSv5 cores; quota must be increased before either default mode
-can run. Comparing both modes needs at least 192 EBSv5 cores, plus appropriate
-regional quota and headroom. The wrapper does not request quota increases.
+Local mode needs **96 regional vCPUs**: 64 DSv3 control-plane cores plus
+32 DSv5 worker cores. Kine mode needs **160 regional vCPUs**: 128 DSv3 cores
+for the two matched VMs plus the same 32 worker cores. This profile uses DSv3
+quota rather than the constrained EBSv5 family. The latest checked CI quota
+snapshot had 198 DSv3 cores available, sufficient for both modes; preflight still
+rechecks current availability and does not reserve allocation capacity.
+The wrapper does not request quota increases.
 Changing machine counts changes these requirements. This excludes management-cluster resources.
 The Kine arm still has an extra VM and disk: this matches control-plane
 configuration, not total resource cost. Increasing the control-plane count also

@@ -35,10 +35,10 @@ capz::kine::performance_defaults() {
     2) export KINE_ZONE_2=true ;;
     3) export KINE_ZONE_3=true ;;
   esac
-  export KINE_VM_SIZE="${KINE_VM_SIZE:-Standard_E96bs_v5}"
+  export KINE_VM_SIZE="${KINE_VM_SIZE:-Standard_D64s_v3}"
   export KINE_DISK_SIZE_GB="${KINE_DISK_SIZE_GB:-512}"
-  export KINE_DISK_IOPS="${KINE_DISK_IOPS:-120000}"
-  export KINE_DISK_MBPS="${KINE_DISK_MBPS:-4000}"
+  export KINE_DISK_IOPS="${KINE_DISK_IOPS:-80000}"
+  export KINE_DISK_MBPS="${KINE_DISK_MBPS:-1200}"
   if [[ -n "${AZURE_CONTROL_PLANE_MACHINE_TYPE:-}" && "${AZURE_CONTROL_PLANE_MACHINE_TYPE}" != "${KINE_VM_SIZE}" ]]; then
     echo "Control-plane and Kine VM sizes must match; set KINE_VM_SIZE and remove a conflicting AZURE_CONTROL_PLANE_MACHINE_TYPE." >&2
     return 1

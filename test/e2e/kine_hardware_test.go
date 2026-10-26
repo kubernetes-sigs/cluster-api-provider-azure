@@ -65,7 +65,7 @@ func (f *fakeKineHardware) updateDisk(_ context.Context, id *arm.ResourceID, iop
 }
 
 func kineHardwareFixture() (kineHardwareConfig, corev1.Node, *fakeKineHardware) {
-	config := kineHardwareConfig{SubscriptionID: "sub", ClusterName: "test-cluster", Size: "Standard_E96bs_v5", Location: "westus2", Zone: "2", DiskSizeGB: 512, IOPS: 120000, MBps: 4000}
+	config := kineHardwareConfig{SubscriptionID: "sub", ClusterName: "test-cluster", Size: "Standard_D64s_v3", Location: "westus2", Zone: "2", DiskSizeGB: 512, IOPS: 80000, MBps: 1200}
 	vmID := "/subscriptions/sub/resourceGroups/test-cluster/providers/Microsoft.Compute/virtualMachines/cp-1"
 	diskID := "/subscriptions/sub/resourceGroups/test-cluster/providers/Microsoft.Compute/disks/cp-1_etcddisk"
 	node := corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}, Spec: corev1.NodeSpec{ProviderID: "azure://" + vmID}}

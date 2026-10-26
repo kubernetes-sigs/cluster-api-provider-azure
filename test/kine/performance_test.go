@@ -55,14 +55,14 @@ func TestPerformancePreflight(t *testing.T) {
 			}
 			var skus []map[string]any
 			for _, machine := range []struct{ size, family, cpu string }{
-				{"Standard_E96bs_v5", "standardEBSv5Family", "96"},
+				{"Standard_D64s_v3", "standardDSv3Family", "64"},
 				{"Standard_D16s_v5", "standardDSv5Family", "16"},
 			} {
 				capabilities := map[string]string{
 					"vCPUs": machine.cpu, "CpuArchitectureType": "x64", "AcceleratedNetworkingEnabled": "True", "DiskControllerTypes": "SCSI,NVMe",
-					"HyperVGenerations": "V1,V2", "UncachedDiskIOPS": "120000", "UncachedDiskBytesPerSecond": "4000000000",
+					"HyperVGenerations": "V1,V2", "UncachedDiskIOPS": "80000", "UncachedDiskBytesPerSecond": "1200000000",
 				}
-				if machine.size == "Standard_E96bs_v5" {
+				if machine.size == "Standard_D64s_v3" {
 					delete(capabilities, "DiskControllerTypes")
 					switch tc {
 					case "control-plane-no-gen2":
@@ -124,38 +124,38 @@ func TestPerformancePreflight(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "skus-input.json"), data, 0o600); err != nil {
 				t.Fatal(err)
 			}
-			quota := `[{"name":{"value":"standardEBSv5Family"},"limit":192,"currentValue":0},
-{"name":{"value":"standardDSv5Family"},"limit":32,"currentValue":0},
-{"name":{"value":"cores"},"limit":224,"currentValue":0}]`
+			quota := `[{"name":{"value":"standardDSv3Family"},"limit":200,"currentValue":2},
+{"name":{"value":"standardDSv5Family"},"limit":65,"currentValue":0},
+{"name":{"value":"cores"},"limit":676,"currentValue":10}]`
 			switch tc {
 			case "family-quota":
-				quota = strings.Replace(quota, `"limit":192`, `"limit":95`, 1)
+				quota = strings.Replace(quota, `"limit":200`, `"limit":65`, 1)
 			case "conformance-quota":
-				quota = strings.Replace(quota, `"limit":192`, `"limit":191`, 1)
+				quota = strings.Replace(quota, `"limit":200`, `"limit":129`, 1)
 			case "worker-quota":
-				quota = strings.Replace(quota, `"limit":32`, `"limit":31`, 1)
+				quota = strings.Replace(quota, `"limit":65`, `"limit":31`, 1)
 			case "shared-family", "shared-family-quota":
-				quota = strings.Replace(quota, `"limit":32`, `"limit":48`, 1)
+				quota = strings.Replace(quota, `"limit":65`, `"limit":48`, 1)
 				if tc == "shared-family-quota" {
 					quota = strings.Replace(quota, `"limit":48`, `"limit":47`, 1)
 				}
 			case "regional-quota":
-				quota = strings.Replace(quota, `"limit":224`, `"limit":127`, 1)
+				quota = strings.Replace(quota, `"limit":676`, `"limit":105`, 1)
 			case "missing-quota":
 				quota = `[]`
 			case "string-quota", "mixed-quota", "string-family-quota", "string-regional-quota", "invalid-quota":
-				quota = `[{"name":{"value":"standardEBSv5Family"},"limit":"200","currentValue":"8"},
-{"name":{"value":"standardDSv5Family"},"limit":"40","currentValue":"8"},
-{"name":{"value":"cores"},"limit":"232","currentValue":"8"}]`
+				quota = `[{"name":{"value":"standardDSv3Family"},"limit":"206","currentValue":"8"},
+{"name":{"value":"standardDSv5Family"},"limit":"73","currentValue":"8"},
+{"name":{"value":"cores"},"limit":"674","currentValue":"8"}]`
 				switch tc {
 				case "mixed-quota":
-					quota = strings.NewReplacer(`"limit":"200"`, `"limit":200`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
+					quota = strings.NewReplacer(`"limit":"206"`, `"limit":206`, `"currentValue":"8"`, `"currentValue":8`).Replace(quota)
 				case "string-family-quota":
-					quota = strings.Replace(quota, `"limit":"200"`, `"limit":"103"`, 1)
+					quota = strings.Replace(quota, `"limit":"206"`, `"limit":"71"`, 1)
 				case "string-regional-quota":
-					quota = strings.Replace(quota, `"limit":"232"`, `"limit":"135"`, 1)
+					quota = strings.Replace(quota, `"limit":"674"`, `"limit":"103"`, 1)
 				case "invalid-quota":
-					quota = strings.Replace(quota, `"limit":"200"`, `"limit":"invalid"`, 1)
+					quota = strings.Replace(quota, `"limit":"206"`, `"limit":"invalid"`, 1)
 				}
 			}
 			if err := os.WriteFile(filepath.Join(dir, "quota-input.json"), []byte(quota), 0o600); err != nil {
@@ -176,7 +176,7 @@ case "$KINE_TEST_CASE" in
   invalid-zone) export KINE_ZONE=4 ;;
   shared-family|shared-family-quota) export KINE_VM_SIZE=Standard_D16s_v5 ;;
   mismatched-vms) export AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D64as_v5 ;;
-  excess-io) export KINE_DISK_IOPS=120001 ;;
+  excess-io) export KINE_DISK_IOPS=80001 ;;
   kubernetes-override) export KINE_KUBERNETES_VERSION=v1.35.3 ;;
   profiling-enabled) export KINE_COLLECT_PROFILES=true ;;
   kine-postgres) export KINE_BACKEND=kine-postgres ;;
@@ -244,11 +244,11 @@ capz::kine::main
 				t.Fatalf("unexpected result: %v\n%s", err, output)
 			}
 			if (tc == "family-quota" || tc == "string-family-quota") &&
-				!bytes.Contains(output, []byte("Insufficient standardEBSv5Family vCPU quota: need 96, available 95")) {
-				t.Fatalf("local mode must require only its control-plane EBSv5 quota: %s", output)
+				!bytes.Contains(output, []byte("Insufficient standardDSv3Family vCPU quota: need 64, available 63")) {
+				t.Fatalf("local mode must require only its control-plane DSv3 quota: %s", output)
 			}
-			if tc == "conformance-quota" && !bytes.Contains(output, []byte("need 192, available 191")) {
-				t.Fatalf("Kine mode must include both matched VMs in the EBSv5 quota: %s", output)
+			if tc == "conformance-quota" && !bytes.Contains(output, []byte("need 128, available 127")) {
+				t.Fatalf("Kine mode must include both matched VMs in the DSv3 quota: %s", output)
 			}
 			if tc == "worker-quota" && !bytes.Contains(output, []byte("Insufficient standardDSv5Family vCPU quota: need 32, available 31")) {
 				t.Fatalf("must check worker Dsv5 quota independently of control-plane quota: %s", output)
@@ -256,11 +256,11 @@ capz::kine::main
 			if tc == "shared-family-quota" && !bytes.Contains(output, []byte("need 48, available 47")) {
 				t.Fatalf("must aggregate control-plane and worker quota when using the same family: %s", output)
 			}
-			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 128, available 127")) {
+			if (tc == "regional-quota" || tc == "string-regional-quota") && !bytes.Contains(output, []byte("need 96, available 95")) {
 				t.Fatalf("must aggregate regional quota: %s", output)
 			}
 			if (tc == "control-plane-no-gen2" || tc == "control-plane-missing-generation") &&
-				!bytes.Contains(output, []byte("Control-plane/datastore SKU Standard_E96bs_v5 must support Gen2")) {
+				!bytes.Contains(output, []byte("Control-plane/datastore SKU Standard_D64s_v3 must support Gen2")) {
 				t.Fatalf("must reject a control-plane SKU without advertised Gen2 support: %s", output)
 			}
 			if (tc == "control-plane-gen1" || tc == "control-plane-arm" || tc == "control-plane-missing-properties") &&
@@ -294,14 +294,14 @@ capz::kine::main
 				if err := json.Unmarshal(readFile(t, filepath.Join(dir, "kine-capz-perf-test", "capacity-plan.json")), &plan); err != nil {
 					t.Fatalf("capacity plan must contain numeric quota values: %v", err)
 				}
-				wantQuotas := map[string]int{"standardEBSv5Family": 96, "standardDSv5Family": 32, "cores": 128}
-				wantAvailable := map[string]int{"standardEBSv5Family": 192, "standardDSv5Family": 32, "cores": 224}
+				wantQuotas := map[string]int{"standardDSv3Family": 64, "standardDSv5Family": 32, "cores": 96}
+				wantAvailable := map[string]int{"standardDSv3Family": 198, "standardDSv5Family": 65, "cores": 666}
 				useKine := tc == "conformance-success" || tc == "kine-postgres" || tc == "connection-overrides"
 				if useKine {
-					wantQuotas["standardEBSv5Family"], wantQuotas["cores"] = 192, 224
+					wantQuotas["standardDSv3Family"], wantQuotas["cores"] = 128, 160
 				}
 				if tc == "shared-family" {
-					delete(wantQuotas, "standardEBSv5Family")
+					delete(wantQuotas, "standardDSv3Family")
 					wantQuotas["standardDSv5Family"] = 48
 					wantAvailable["standardDSv5Family"] = 48
 					wantQuotas["cores"] = 48
@@ -316,7 +316,7 @@ capz::kine::main
 					delete(wantQuotas, quota.Name)
 				}
 				settings := readFile(t, filepath.Join(dir, "kine-capz-perf-test", "performance-settings.txt"))
-				if !bytes.Contains(settings, []byte("disk-iops=120000")) || !bytes.Contains(settings, []byte("disk-controller=SCSI")) {
+				if !bytes.Contains(settings, []byte("disk-iops=80000")) || !bytes.Contains(settings, []byte("disk-controller=SCSI")) {
 					t.Fatalf("missing matched disk settings: %s", settings)
 				}
 				if useKine {
@@ -403,7 +403,7 @@ az() {
       [[ "$KINE_TEST_MISMATCH" != controller ]] || controller=NVMe
       printf '{"controller":"%s","dataDisks":[{"lun":0,"caching":"None"}]}\n' "$controller" ;;
     "disk show")
-      sku=UltraSSD_LRS iops=120000 mbps=4000
+      sku=UltraSSD_LRS iops=80000 mbps=1200
       case "$KINE_TEST_MISMATCH" in
         disk) iops=100 ;;
         disk-throughput) mbps=100 ;;
@@ -424,12 +424,12 @@ capz::kine::provision
 				t.Fatalf("unexpected provision result: %v\n%s", err, output)
 			}
 			observed, diskMismatch := map[string]string{
-				"disk":            `{"sku":"UltraSSD_LRS","iops":100,"mbps":4000}`,
-				"disk-throughput": `{"sku":"UltraSSD_LRS","iops":120000,"mbps":100}`,
-				"disk-sku":        `{"sku":"Premium_LRS","iops":120000,"mbps":4000}`,
-				"null-iops":       `{"sku":"UltraSSD_LRS","iops":null,"mbps":4000}`,
+				"disk":            `{"sku":"UltraSSD_LRS","iops":100,"mbps":1200}`,
+				"disk-throughput": `{"sku":"UltraSSD_LRS","iops":80000,"mbps":100}`,
+				"disk-sku":        `{"sku":"Premium_LRS","iops":80000,"mbps":1200}`,
+				"null-iops":       `{"sku":"UltraSSD_LRS","iops":null,"mbps":1200}`,
 			}[mismatch]
-			if diskMismatch && (!bytes.Contains(output, []byte("Expected: sku=UltraSSD_LRS, iops=120000, mbps=4000")) ||
+			if diskMismatch && (!bytes.Contains(output, []byte("Expected: sku=UltraSSD_LRS, iops=80000, mbps=1200")) ||
 				!bytes.Contains(output, []byte("Observed: "+observed))) {
 				t.Fatalf("disk mismatch must report expected and observed settings: %s", output)
 			}
@@ -468,10 +468,10 @@ capz::kine::provision
 				t.Fatalf("must stop before guest readiness when provisioning validation fails: %s", commands)
 			}
 			for _, required := range []string{
-				"--sku UltraSSD_LRS", "--disk-iops-read-write 120000", "--disk-mbps-read-write 4000",
+				"--sku UltraSSD_LRS", "--disk-iops-read-write 80000", "--disk-mbps-read-write 1200",
 				"--disk-controller-type SCSI", "--ultra-ssd-enabled true", "--attach-data-disks kine-data",
 				"--data-disk-caching None", "--accelerated-networking true", "--zone 1",
-				"--size Standard_E96bs_v5", "--storage-sku Premium_LRS",
+				"--size Standard_D64s_v3", "--storage-sku Premium_LRS",
 			} {
 				if !strings.Contains(commands, required) {
 					t.Errorf("missing %s", required)

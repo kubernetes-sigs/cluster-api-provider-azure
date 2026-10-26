@@ -457,7 +457,7 @@ az() {
   printf '%s\n' "$*" >> "$state_dir/commands"
   case "$1 $2" in
     "vm show") echo '{"controller":"SCSI","dataDisks":[{"lun":0,"caching":"None"}]}' ;;
-    "disk show") echo '{"sku":{"name":"UltraSSD_LRS"},"zones":["2"],"diskSizeGB":512,"diskIOPSReadWrite":120000,"diskMBpsReadWrite":4000}' ;;
+    "disk show") echo '{"sku":{"name":"UltraSSD_LRS"},"zones":["2"],"diskSizeGB":512,"diskIOPSReadWrite":80000,"diskMBpsReadWrite":1200}' ;;
     "vm run-command") printf '{"value":[{"message":"%s"}]}\n' "$message" ;;
   esac
 }
@@ -494,11 +494,11 @@ capz::kine::provision
 				"--private-ip-address 10.250.0.4",
 				"--nics kine-nic",
 				"--subscription test-subscription --only-show-errors",
-				"--size Standard_E96bs_v5",
+				"--size Standard_D64s_v3",
 				"--sku UltraSSD_LRS",
 				"--disk-controller-type SCSI",
-				"--disk-iops-read-write 120000",
-				"--disk-mbps-read-write 4000",
+				"--disk-iops-read-write 80000",
+				"--disk-mbps-read-write 1200",
 			} {
 				if !strings.Contains(commands, expected) {
 					t.Errorf("missing provisioning invariant: %s", expected)
@@ -774,7 +774,7 @@ capz::kine::main
 			case "performance-kine":
 				flavor = "kine-postgres-performance"
 			}
-			controlPlane, worker := "Standard_E96bs_v5", "Standard_D16s_v5"
+			controlPlane, worker := "Standard_D64s_v3", "Standard_D16s_v5"
 			if state == "machine-overrides" {
 				controlPlane, worker = "Standard_D16s_v5", "Standard_D8s_v5"
 			}
@@ -791,7 +791,7 @@ capz::kine::main
 				}
 			}
 			settings := string(readFile(t, filepath.Join(dir, "settings")))
-			want := controlPlane + "\n120000\n4000\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n10.0.0.0/24 10.0.1.0/24\n"
+			want := controlPlane + "\n80000\n1200\n" + zone + "\n" + controlPlane + "\n" + worker + "\n" + flavor + "\n" + strings.Join(zones, "\n") + "\n\"" + zone + "\"\n" + version + "\n" + strings.TrimPrefix(version, "v") + "\n10.0.0.0/24 10.0.1.0/24\n"
 			if settings != want {
 				t.Fatalf("both workloads must inherit the same high-I/O defaults and preserve placement overrides:\n%s", settings)
 			}
