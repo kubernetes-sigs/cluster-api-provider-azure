@@ -159,7 +159,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	if s.IsAPIServerPrivate() {
 		// Public IP specs for control plane outbound lb
 		if s.ControlPlaneOutboundLB() != nil {
-			failureDomains := s.getPublicIPFailureDomains(s.ControlPlaneOutboundLB().AvailabilityZones)
+			failureDomains := s.getFailureDomains(s.ControlPlaneOutboundLB().AvailabilityZones)
 			for _, ip := range s.ControlPlaneOutboundLB().FrontendIPs {
 				controlPlaneOutboundIPSpecs = append(controlPlaneOutboundIPSpecs, &publicips.PublicIPSpec{
 					Name:             ip.PublicIP.Name,
@@ -176,7 +176,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 		}
 	} else {
 		if s.ControlPlaneEnabled() {
-			failureDomains := s.getPublicIPFailureDomains(s.APIServerLB().AvailabilityZones)
+			failureDomains := s.getFailureDomains(s.APIServerLB().AvailabilityZones)
 			controlPlaneOutboundIPSpecs = []azure.ResourceSpecGetter{
 				&publicips.PublicIPSpec{
 					Name:             s.APIServerPublicIP().Name,
@@ -197,7 +197,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 
 	// Public IP specs for node outbound lb
 	if s.NodeOutboundLB() != nil {
-		failureDomains := s.getPublicIPFailureDomains(s.NodeOutboundLB().AvailabilityZones)
+		failureDomains := s.getFailureDomains(s.NodeOutboundLB().AvailabilityZones)
 		for _, ip := range s.NodeOutboundLB().FrontendIPs {
 			publicIPSpecs = append(publicIPSpecs, &publicips.PublicIPSpec{
 				Name:             ip.PublicIP.Name,
@@ -224,7 +224,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 				IsIPv6:         false, // Public IP is IPv4 by default
 				ClusterName:    s.ClusterName(),
 				Location:       s.Location(),
-				FailureDomains: s.FailureDomains(),
+				FailureDomains: s.getFailureDomains(subnet.NatGateway.Zones),
 				AdditionalTags: s.AdditionalTags(),
 				IPTags:         subnet.NatGateway.NatGatewayIP.IPTags,
 			})
@@ -235,13 +235,15 @@ func (s *ClusterScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	if azureBastion := s.AzureBastion(); azureBastion != nil {
 		// public IP for Azure Bastion.
 		azureBastionPublicIP := &publicips.PublicIPSpec{
-			Name:           azureBastion.PublicIP.Name,
-			ResourceGroup:  s.ResourceGroup(),
-			DNSName:        azureBastion.PublicIP.DNSName,
-			IsIPv6:         false, // Public IP is IPv4 by default
-			ClusterName:    s.ClusterName(),
-			Location:       s.Location(),
-			FailureDomains: s.FailureDomains(),
+			Name:          azureBastion.PublicIP.Name,
+			ResourceGroup: s.ResourceGroup(),
+			DNSName:       azureBastion.PublicIP.DNSName,
+			IsIPv6:        false, // Public IP is IPv4 by default
+			ClusterName:   s.ClusterName(),
+			Location:      s.Location(),
+			// passing nil here as argument since there's no specific zone to check
+			// but the rest of the function can be reused.
+			FailureDomains: s.getFailureDomains(nil),
 			AdditionalTags: s.AdditionalTags(),
 			IPTags:         azureBastion.PublicIP.IPTags,
 		}
@@ -1061,19 +1063,26 @@ func (s *ClusterScope) FailureDomains() []*string {
 	return fds
 }
 
-// getPublicIPFailureDomains returns the failure domains to use for public IP addresses.
-// If availability zones are explicitly specified on the load balancer, those zones are used.
-// Otherwise, falls back to the cluster's failure domains.
+// getFailureDomains returns the failure domains to use for resources.
+// If availability zones are explicitly specified on the zone input, those zones are used.
+// If the zones aren't set, it checks for the failure domains in the spec, if that is empty too
+// then it falls back to sending no zone which Azure defaults to zone redundancy.
 //
 // This is important because for public load balancers, zone-redundancy is achieved by setting
 // zones on the public IP address resource, NOT on the load balancer's frontend IP configuration.
 // Azure returns error "LoadBalancerFrontendIPConfigCannotHaveZoneWhenReferencingPublicIPAddress"
 // if zones are specified on a frontend that references a public IP.
 //
+// Function can also be extended to be reused for bastion machine IP zone selection and the
+// node nat gateway zone selection.
+//
 // See https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer for details.
-func (s *ClusterScope) getPublicIPFailureDomains(lbAvailabilityZones []string) []*string {
-	if len(lbAvailabilityZones) > 0 {
-		return azure.PtrSlice(&lbAvailabilityZones)
+func (s *ClusterScope) getFailureDomains(zones []string) []*string {
+	if len(zones) > 0 {
+		return azure.PtrSlice(&zones)
+	}
+	if len(s.AzureCluster.Spec.FailureDomains) == 0 {
+		return nil
 	}
 	return s.FailureDomains()
 }
