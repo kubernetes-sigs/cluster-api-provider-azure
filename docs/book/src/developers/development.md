@@ -735,6 +735,11 @@ bash hack/gen-flavors.sh
 go test ./test/kine -count=1
 ```
 
+Generated comparison flavors must also be registered in the development Azure
+provider's `files` list in `test/e2e/config/azure-dev.yaml`. That mapping publishes
+them under the names consumed by `clusterctl`; generation alone does not populate
+the E2E provider repository.
+
 #### Running custom test suites on CAPZ clusters
 
 ##### Shared high-I/O datastore infrastructure and performance controls

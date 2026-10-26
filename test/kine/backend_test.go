@@ -86,6 +86,60 @@ esac
 	}
 }
 
+func TestComparisonFlavorsInE2ERepository(t *testing.T) {
+	root := repoRoot(t)
+	var config struct {
+		Providers []struct {
+			Name, Type string
+			Versions   []struct {
+				Name, Value string
+				Files       []struct {
+					SourcePath string `yaml:"sourcePath"`
+					TargetName string `yaml:"targetName"`
+				}
+			}
+		}
+	}
+	if err := yaml.Unmarshal(readFile(t, filepath.Join(root, "test", "e2e", "config", "azure-dev.yaml")), &config); err != nil {
+		t.Fatal(err)
+	}
+	developmentVersions := 0
+	for _, provider := range config.Providers {
+		if provider.Name != "azure" || provider.Type != "InfrastructureProvider" {
+			continue
+		}
+		for _, version := range provider.Versions {
+			if !strings.HasPrefix(version.Value, "${PWD}/") {
+				continue
+			}
+			developmentVersions++
+			for _, flavor := range []string{"kine-postgres", "kine-postgres-performance", "kubeadm-etcd", "kubeadm-etcd-performance"} {
+				target := "cluster-template-" + flavor + ".yaml"
+				source := "${PWD}/templates/test/ci/cluster-template-prow-" + flavor + ".yaml"
+				matches := 0
+				for _, file := range version.Files {
+					if file.TargetName != target {
+						continue
+					}
+					matches++
+					if file.SourcePath != source {
+						t.Errorf("%s maps %s to %q, want %q", version.Name, target, file.SourcePath, source)
+					}
+				}
+				if matches != 1 {
+					t.Errorf("%s must publish %s exactly once, found %d mappings", version.Name, target, matches)
+				}
+				if len(readFile(t, filepath.Join(root, strings.TrimPrefix(source, "${PWD}/")))) == 0 {
+					t.Errorf("registered template source is empty: %s", source)
+				}
+			}
+		}
+	}
+	if developmentVersions == 0 {
+		t.Fatal("no development Azure infrastructure provider repository found")
+	}
+}
+
 func TestKubeadmLocalFlavor(t *testing.T) {
 	var localMachine map[string]any
 	for _, flavor := range []string{"kubeadm-etcd", "kubeadm-etcd-performance", "kine-postgres"} {
