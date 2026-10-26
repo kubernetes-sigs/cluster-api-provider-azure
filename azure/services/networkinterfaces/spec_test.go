@@ -17,13 +17,16 @@ limitations under the License.
 package networkinterfaces
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
+	"github.com/go-logr/logr/funcr"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 )
@@ -830,6 +833,56 @@ func TestParameters(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 			tc.expect(g, result)
+		})
+	}
+}
+
+func TestParametersLogsUnsupportedAcceleratedNetworking(t *testing.T) {
+	// fakeSku has the AcceleratedNetworking capability, so use one without it.
+	unsupportedSku := resourceskus.SKU{
+		Name: ptr.To("Standard_D2_v2"),
+		Kind: ptr.To(string(resourceskus.VirtualMachines)),
+		Capabilities: []*armcompute.ResourceSKUCapabilities{
+			{
+				Name:  ptr.To(resourceskus.AcceleratedNetworking),
+				Value: ptr.To(string(resourceskus.CapabilityUnsupported)),
+			},
+		},
+	}
+
+	testcases := []struct {
+		name        string
+		accelerated *bool
+		expectLog   bool
+	}{
+		{name: "explicitly enabled on unsupported SKU", accelerated: ptr.To(true), expectLog: true},
+		{name: "explicitly disabled on unsupported SKU", accelerated: ptr.To(false), expectLog: false},
+		{name: "unset on unsupported SKU", accelerated: nil, expectLog: false},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			var logged []string
+			logger := funcr.New(func(prefix, args string) {
+				logged = append(logged, args)
+			}, funcr.Options{})
+			ctx := log.IntoContext(t.Context(), logger)
+
+			spec := fakeNonAcceleratedNetworkingNICSpec
+			spec.AcceleratedNetworking = tc.accelerated
+			spec.SKU = &unsupportedSku
+
+			_, err := spec.Parameters(ctx, nil)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			found := false
+			for _, l := range logged {
+				if strings.Contains(l, "accelerated networking is enabled but the VM size does not support it") {
+					found = true
+				}
+			}
+			g.Expect(found).To(Equal(tc.expectLog))
 		})
 	}
 }
