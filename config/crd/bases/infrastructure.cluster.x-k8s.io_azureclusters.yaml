@@ -713,6 +713,14 @@ spec:
                           description: FrontendIP defines a load balancer frontend
                             IP configuration.
                           properties:
+                            ipVersion:
+                              description: |-
+                                IPVersion specifies the IP version for this frontend IP. Valid values are "IPv4" and "IPv6".
+                                Defaults to "IPv4" if not specified.
+                              enum:
+                              - IPv4
+                              - IPv6
+                              type: string
                             name:
                               minLength: 1
                               type: string
@@ -879,6 +887,14 @@ spec:
                           description: FrontendIP defines a load balancer frontend
                             IP configuration.
                           properties:
+                            ipVersion:
+                              description: |-
+                                IPVersion specifies the IP version for this frontend IP. Valid values are "IPv4" and "IPv6".
+                                Defaults to "IPv4" if not specified.
+                              enum:
+                              - IPv4
+                              - IPv6
+                              type: string
                             name:
                               minLength: 1
                               type: string
@@ -1044,6 +1060,14 @@ spec:
                           description: FrontendIP defines a load balancer frontend
                             IP configuration.
                           properties:
+                            ipVersion:
+                              description: |-
+                                IPVersion specifies the IP version for this frontend IP. Valid values are "IPv4" and "IPv6".
+                                Defaults to "IPv4" if not specified.
+                              enum:
+                              - IPv4
+                              - IPv6
+                              type: string
                             name:
                               minLength: 1
                               type: string

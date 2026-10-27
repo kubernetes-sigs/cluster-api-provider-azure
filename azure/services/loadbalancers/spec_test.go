@@ -237,6 +237,27 @@ func TestParameters(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name:     "public API load balancer with IPv6 frontend",
+			spec:     &fakePublicAPILBSpecIPv6,
+			existing: nil,
+			expect: func(g *WithT, result any) {
+				g.Expect(result).To(BeAssignableToTypeOf(armnetwork.LoadBalancer{}))
+				lb := result.(armnetwork.LoadBalancer)
+				g.Expect(lb.Properties.FrontendIPConfigurations).To(HaveLen(1))
+				frontendIP := lb.Properties.FrontendIPConfigurations[0]
+				g.Expect(*frontendIP.Name).To(Equal("my-publiclb-frontEnd-ipv6"))
+				g.Expect(*frontendIP.Properties.PublicIPAddress.ID).To(Equal("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/my-publicip-ipv6"))
+				g.Expect(lb.Properties.BackendAddressPools).To(HaveLen(2))
+				g.Expect(*lb.Properties.BackendAddressPools[0].Name).To(Equal("my-publiclb-backendPool"))
+				g.Expect(*lb.Properties.BackendAddressPools[1].Name).To(Equal("my-publiclb-backendPool-IPv6"))
+				g.Expect(lb.Properties.OutboundRules).To(HaveLen(1))
+				g.Expect(*lb.Properties.OutboundRules[0].Name).To(Equal("OutboundNATAllProtocolsIPv6"))
+				g.Expect(*lb.Properties.OutboundRules[0].Properties.BackendAddressPool.ID).To(
+					ContainSubstring("my-publiclb-backendPool-IPv6"))
+			},
+			expectedError: "",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
