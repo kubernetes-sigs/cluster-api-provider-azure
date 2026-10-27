@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -29,6 +30,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns/mock_privatedns"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -127,13 +129,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -146,8 +148,8 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, notDoneError)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, notDoneError)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, notDoneError)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, notDoneError)
 			},
 		},
 		{
@@ -160,8 +162,8 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, errFake)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, errFake)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, errFake)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, errFake)
 			},
 		},
 		{
@@ -180,11 +182,11 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -203,11 +205,11 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, errFake)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, errFake)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, errFake)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, errFake)
 			},
 		},
 		{
@@ -226,11 +228,11 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, errFake)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, errFake)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, errFake)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, errFake)
 			},
 		},
 		{
@@ -249,11 +251,11 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, notDoneError)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, errFake)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, errFake)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, notDoneError)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, errFake)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, errFake)
 			},
 		},
 		{
@@ -273,10 +275,10 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, nil)
 				s.ClusterName().Return(clusterName)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -295,12 +297,12 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, serviceName).Return(nil, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, ServiceName).Return(nil, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -319,13 +321,13 @@ func TestReconcilePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
 
-				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil, nil)
-				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil, nil)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, serviceName).Return(nil, errFake)
-				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, errFake)
+				z.CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
+				l.CreateOrUpdateResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil, nil)
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeRecord1, ServiceName).Return(nil, errFake)
+				s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, errFake)
 			},
 		},
 	}
@@ -364,6 +366,53 @@ func TestReconcilePrivateDNS(t *testing.T) {
 	}
 }
 
+func TestReconcilePrivateDNSRecordWithoutIP(t *testing.T) {
+	g := NewWithT(t)
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	scopeMock := mock_privatedns.NewMockScope(mockCtrl)
+	zoneReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+	vnetLinkReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
+	recordCreatorMock := mock_async.NewMockCreator[armprivatedns.RecordSetsClientCreateOrUpdateResponse](mockCtrl)
+	recordDeleterMock := mock_async.NewMockDeleter[armprivatedns.RecordSetsClientDeleteResponse](mockCtrl)
+	tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
+
+	recordWithoutIP := RecordSpec{
+		Record:        infrav1.AddressRecord{Hostname: "my-host"},
+		ZoneName:      zoneName,
+		ResourceGroup: resourceGroup,
+	}
+
+	s := scopeMock.EXPECT()
+	s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+	s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1}, []azure.ResourceSpecGetter{recordWithoutIP}).Times(2)
+	s.SubscriptionID().Return("123").Times(2)
+	tagsGetterMock.EXPECT().GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
+	tagsGetterMock.EXPECT().GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
+	zoneReconcilerMock.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
+	vnetLinkReconcilerMock.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
+	s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+	s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+
+	// The real async reconciler builds the record parameters; the record must not be sent to Azure.
+	s.GetLongRunningOperationState("my-host", ServiceName, infrav1.PutFuture).Return(nil)
+	recordCreatorMock.EXPECT().Get(gomockinternal.AContext(), recordWithoutIP).Return(nil, notFoundError)
+	s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, gomock.Any())
+
+	svc := &Service{
+		Scope:              scopeMock,
+		zoneReconciler:     zoneReconcilerMock,
+		vnetLinkReconciler: vnetLinkReconcilerMock,
+		recordReconciler: async.New[armprivatedns.RecordSetsClientCreateOrUpdateResponse,
+			armprivatedns.RecordSetsClientDeleteResponse](scopeMock, recordCreatorMock, recordDeleterMock),
+		TagsGetter: tagsGetterMock,
+	}
+
+	err := svc.Reconcile(t.Context())
+	g.Expect(err).To(MatchError("failed to get desired parameters for resource my-rg/my-host (service: privatedns): record my-host in private DNS zone my-zone has no IP address"))
+}
+
 func TestDeletePrivateDNS(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -389,22 +438,22 @@ func TestDeletePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				zr.DeleteResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				zr.DeleteResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
 			},
 		},
 		{
@@ -441,16 +490,60 @@ func TestDeletePrivateDNS(t *testing.T) {
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				zr.DeleteResource(gomockinternal.AContext(), fakeZone, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, nil)
+				zr.DeleteResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, nil)
+			},
+		},
+		{
+			name:          "deletes managed links but skips unmanaged zone",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
+				s.ClusterName().Return(clusterName)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
+				s.ClusterName().Return(clusterName)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
+
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, nil)
+				s.ClusterName().Return(clusterName)
+			},
+		},
+		{
+			name:          "zone and links are already deleted",
+			expectedError: "",
+			expect: func(s *mock_privatedns.MockScopeMockRecorder, lr, zr *mock_async.MockReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1, fakeLink2}, []azure.ResourceSpecGetter{fakeRecord1}).Times(2)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
+				s.DeleteLongRunningOperationState(fakeLink1.ResourceName(), ServiceName, infrav1.DeleteFuture)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
+				s.DeleteLongRunningOperationState(fakeLink2.ResourceName(), ServiceName, infrav1.DeleteFuture)
+
+				s.SubscriptionID().Return("123")
+				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
+				s.DeleteLongRunningOperationState(fakeZone.ResourceName(), ServiceName, infrav1.DeleteFuture)
 			},
 		},
 		{
@@ -464,14 +557,14 @@ func TestDeletePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(notDoneError)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(notDoneError)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, notDoneError)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, notDoneError)
 			},
 		},
 		{
@@ -485,14 +578,14 @@ func TestDeletePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(errFake)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(errFake)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(notDoneError)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, errFake)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(notDoneError)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, errFake)
 			},
 		},
 		{
@@ -506,23 +599,23 @@ func TestDeletePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				zr.DeleteResource(gomockinternal.AContext(), fakeZone, serviceName).Return(notDoneError)
+				zr.DeleteResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(notDoneError)
 
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, notDoneError)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, notDoneError)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, notDoneError)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, notDoneError)
 			},
 		},
 		{
@@ -536,23 +629,23 @@ func TestDeletePrivateDNS(t *testing.T) {
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink2.ResourceGroupName(), fakeLink2.OwnerResourceName(), fakeLink2.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, serviceName).Return(nil)
+				lr.DeleteResource(gomockinternal.AContext(), fakeLink2, ServiceName).Return(nil)
 
 				s.SubscriptionID().Return("123")
 				tg.GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(managedTags, nil)
 				s.ClusterName().Return(clusterName)
 
-				zr.DeleteResource(gomockinternal.AContext(), fakeZone, serviceName).Return(errFake)
+				zr.DeleteResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(errFake)
 
-				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, nil)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, errFake)
-				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, errFake)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, errFake)
+				s.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, errFake)
 			},
 		},
 	}

@@ -56,6 +56,9 @@ func (s RecordSpec) Parameters(_ context.Context, existing any) (params any, err
 			return nil, errors.Errorf("%T is not an armprivatedns.RecordSet", existing)
 		}
 	}
+	if s.Record.IP == "" {
+		return nil, errors.Errorf("record %s in private DNS zone %s has no IP address", s.Record.Hostname, s.ZoneName)
+	}
 	set := armprivatedns.RecordSet{
 		Properties: &armprivatedns.RecordSetProperties{
 			TTL: ptr.To[int64](300),
