@@ -1,0 +1,38 @@
+# Copyright 2026 The Kubernetes Authors.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kine-load-generators
+  namespace: monitoring
+spec:
+  jobLabel: k8s-app
+  endpoints:
+  - port: https-metrics
+    scheme: https
+    path: /metrics/cadvisor
+    interval: 30s
+    honorLabels: true
+    tlsConfig:
+      insecureSkipVerify: true
+    bearerTokenSecret:
+      name: prometheus-token
+      key: token
+    relabelings:
+    - targetLabel: job
+      replacement: kine-load-generators
+    metricRelabelings:
+    # The upstream monitor drops test-* namespaces; retain only the generators here.
+    - sourceLabels: [namespace, container]
+      regex: 'test-.*;(write|watch)-generator'
+      action: keep
+    - sourceLabels: [__name__]
+      regex: 'container_cpu_(usage_seconds_total|cfs_periods_total|cfs_throttled_periods_total)|container_memory_working_set_bytes'
+      action: keep
+  selector:
+    matchLabels:
+      k8s-app: kubelet
+  namespaceSelector:
+    matchNames:
+    - kube-system
