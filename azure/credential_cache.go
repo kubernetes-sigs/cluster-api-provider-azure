@@ -38,6 +38,7 @@ type credentialFactory interface {
 	newManagedIdentityCredential(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error)
 	newWorkloadIdentityCredential(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error)
 	newUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error)
+	newAzureCLICredential(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error)
 }
 
 // CredentialType represents the auth mechanism in use.
@@ -54,6 +55,8 @@ const (
 	CredentialTypeWorkloadIdentity
 	// CredentialTypeUserAssignedManagedIdentity is for User Assigned Managed Identity Credentials.
 	CredentialTypeUserAssignedManagedIdentity
+	// CredentialTypeAzureCLI is for Azure CLI (az login).
+	CredentialTypeAzureCLI
 )
 
 type credentialCacheKey struct {
@@ -62,6 +65,7 @@ type credentialCacheKey struct {
 	tenantID       string
 	clientID       string
 	secret         string
+	subscriptionID string
 }
 
 // NewCredentialCache creates a new, empty CredentialCache.
@@ -131,6 +135,25 @@ func (c *credentialCache) GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadId
 	)
 }
 
+func (c *credentialCache) GetOrStoreAzureCLI(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error) {
+	tenantID := ""
+	subscriptionID := ""
+	if opts != nil {
+		tenantID = opts.TenantID
+		subscriptionID = opts.Subscription
+	}
+	return c.getOrStore(
+		credentialCacheKey{
+			credentialType: CredentialTypeAzureCLI,
+			tenantID:       tenantID,
+			subscriptionID: subscriptionID,
+		},
+		func() (azcore.TokenCredential, error) {
+			return c.credFactory.newAzureCLICredential(opts)
+		},
+	)
+}
+
 func (c *credentialCache) GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error) {
 	return c.getOrStore(
 		credentialCacheKey{
@@ -181,4 +204,8 @@ func (azureCredentialFactory) newWorkloadIdentityCredential(opts *azidentity.Wor
 
 func (azureCredentialFactory) newUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error) {
 	return dataplane.NewUserAssignedIdentityCredential(ctx, credsPath, dataplane.WithClientOpts(opts), dataplane.WithLogger(logger))
+}
+
+func (azureCredentialFactory) newAzureCLICredential(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error) {
+	return azidentity.NewAzureCLICredential(opts)
 }

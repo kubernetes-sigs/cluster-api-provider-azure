@@ -231,6 +231,18 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+	if newASOSecret == nil {
+		existing := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      aso.GetASOSecretName(cluster.GetName()),
+				Namespace: cluster.GetNamespace(),
+			},
+		}
+		if err := asos.Delete(ctx, existing); err != nil && !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, errors.Wrap(err, "failed to delete unused ASO secret")
+		}
+		return ctrl.Result{}, nil
+	}
 
 	gvk := asoSecretOwner.GetObjectKind().GroupVersionKind()
 	owner := metav1.OwnerReference{
@@ -277,6 +289,10 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	}
 	if err := asos.Get(ctx, key, identity); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve AzureClusterIdentity")
+	}
+
+	if identity.Spec.Type == infrav1.AzureCLI {
+		return nil, nil
 	}
 
 	newASOSecret.Data[asoconfig.AzureTenantID] = []byte(identity.Spec.TenantID)
