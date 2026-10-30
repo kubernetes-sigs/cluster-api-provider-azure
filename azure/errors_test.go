@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -65,6 +66,106 @@ func TestIsContextDeadlineExceededOrCanceled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsContextDeadlineExceededOrCanceledError(tt.err); got != tt.want {
 				t.Errorf("IsContextDeadlineExceededOrCanceled() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsTransientError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "transient ReconcileError",
+			err:  WithTransientError(errors.New("boom"), time.Minute),
+			want: true,
+		},
+		{
+			name: "terminal ReconcileError",
+			err:  WithTerminalError(errors.New("boom")),
+			want: false,
+		},
+		{
+			name: "terminal ReconcileError wrapping a retryable status is not transient",
+			err:  WithTerminalError(&azcore.ResponseError{StatusCode: http.StatusTooManyRequests}),
+			want: false,
+		},
+		{
+			name: "context deadline exceeded",
+			err:  context.DeadlineExceeded,
+			want: true,
+		},
+		{
+			name: "wrapped context deadline exceeded",
+			err:  errors.Wrapf(context.DeadlineExceeded, "failed to create or update resource"),
+			want: true,
+		},
+		{
+			name: "throttling response error (429)",
+			err:  &azcore.ResponseError{StatusCode: http.StatusTooManyRequests},
+			want: true,
+		},
+		{
+			name: "service unavailable response error (503)",
+			err:  &azcore.ResponseError{StatusCode: http.StatusServiceUnavailable},
+			want: true,
+		},
+		{
+			name: "retryable status only on the raw response (StatusCode unset)",
+			err:  &azcore.ResponseError{RawResponse: &http.Response{StatusCode: http.StatusInternalServerError}},
+			want: true,
+		},
+		{
+			name: "non-retryable status only on the raw response (StatusCode unset)",
+			err:  &azcore.ResponseError{RawResponse: &http.Response{StatusCode: http.StatusBadRequest}},
+			want: false,
+		},
+		{
+			name: "wrapped throttling response error",
+			err:  errors.Wrapf(&azcore.ResponseError{StatusCode: http.StatusTooManyRequests}, "failed to create or update resource"),
+			want: true,
+		},
+		{
+			name: "bad request response error (400) is terminal",
+			err:  &azcore.ResponseError{StatusCode: http.StatusBadRequest},
+			want: false,
+		},
+		{
+			// Synthetic classification case: classification is by HTTP status code
+			// only, so a ResponseError with a non-retryable status (200 here) and a
+			// populated ErrorCode is not classified transient.
+			name: "non-retryable status with an ErrorCode is not transient",
+			err:  errors.Wrapf(&azcore.ResponseError{StatusCode: http.StatusOK, ErrorCode: "OSProvisioningTimedOut"}, "wrapped"),
+			want: false,
+		},
+		{
+			name: "not found response error (404) is terminal",
+			err:  &azcore.ResponseError{StatusCode: http.StatusNotFound},
+			want: false,
+		},
+		{
+			name: "network timeout is transient",
+			err:  &net.DNSError{Err: "i/o timeout", Name: "management.azure.com", IsTimeout: true},
+			want: true,
+		},
+		{
+			name: "plain error is terminal",
+			err:  errors.New("OSProvisioningTimedOut"),
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsTransientError(tt.err); got != tt.want {
+				t.Errorf("IsTransientError() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -27,6 +28,20 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+// retryableHTTPStatusCodes are the HTTP status codes that the Azure SDK's default
+// retry policy treats as retryable: request timeout, throttling, and transient
+// server-side failures. CAPZ mirrors that set so an error that outlives the SDK's
+// own retries is still classified as transient and requeued, rather than reported
+// as a terminal operation failure.
+var retryableHTTPStatusCodes = map[int]struct{}{
+	http.StatusRequestTimeout:      {}, // 408
+	http.StatusTooManyRequests:     {}, // 429
+	http.StatusInternalServerError: {}, // 500
+	http.StatusBadGateway:          {}, // 502
+	http.StatusServiceUnavailable:  {}, // 503
+	http.StatusGatewayTimeout:      {}, // 504
+}
 
 // ResourceNotFound parses an error to check if its status code is Not Found (404).
 func ResourceNotFound(err error) bool {
@@ -156,4 +171,51 @@ func IsContextDeadlineExceededOrCanceledError(err error) bool {
 		return false
 	}
 	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
+}
+
+// IsTransientError reports whether err is a transient, retryable failure rather
+// than a terminal one. It returns true for:
+//   - errors already classified as a transient ReconcileError,
+//   - context deadline exceeded or cancellation (e.g. an Azure call that times
+//     out before a poller is available),
+//   - azcore.ResponseErrors carrying a retryable HTTP status code, and
+//   - network faults where no HTTP response was received.
+//
+// An explicit terminal ReconcileError and an Azure response that is not one of
+// the retryable status codes (such as a failed provisioning state) are not
+// transient. This lets callers requeue genuinely retryable failures while still
+// surfacing real failures (e.g. OSProvisioningTimedOut) as terminal.
+func IsTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Respect an explicit transient/terminal classification when one is present.
+	var reconcileErr ReconcileError
+	if errors.As(err, &reconcileErr) {
+		return reconcileErr.IsTransient()
+	}
+
+	// A timeout or cancellation is retryable.
+	if IsContextDeadlineExceededOrCanceledError(err) {
+		return true
+	}
+
+	// An Azure HTTP response is retryable only for known-transient status codes.
+	// Prefer the ResponseError's StatusCode, falling back to the raw response's
+	// (consistent with GetRetryAfterFromError), since the two are populated
+	// differently depending on how the error was constructed.
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) {
+		status := respErr.StatusCode
+		if status == 0 && respErr.RawResponse != nil {
+			status = respErr.RawResponse.StatusCode
+		}
+		_, ok := retryableHTTPStatusCodes[status]
+		return ok
+	}
+
+	// A network-level fault (no HTTP response was received) is retryable.
+	var netErr net.Error
+	return errors.As(err, &netErr)
 }
