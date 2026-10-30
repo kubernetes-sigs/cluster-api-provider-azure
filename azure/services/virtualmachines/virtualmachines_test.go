@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -541,6 +542,85 @@ func TestReconcileVM(t *testing.T) {
 func isTransientReconcileError(err error) bool {
 	var reconcileErr azure.ReconcileError
 	return errors.As(err, &reconcileErr) && reconcileErr.IsTransient()
+}
+
+func TestReconcileVMReapplyRetryAfter(t *testing.T) {
+	fakeFailedVM := armcompute.VirtualMachine{
+		Name: ptr.To("test-vm-name"),
+		Properties: &armcompute.VirtualMachineProperties{
+			ProvisioningState: ptr.To("Failed"),
+		},
+	}
+
+	testcases := []struct {
+		name                 string
+		retryAfter           string
+		expectedRequeueAfter time.Duration
+	}{
+		{
+			name:                 "positive Retry-After is preserved",
+			retryAfter:           "30",
+			expectedRequeueAfter: 30 * time.Second,
+		},
+		{
+			name:                 "Retry-After of zero requeues after the default",
+			retryAfter:           "0",
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:                 "negative Retry-After requeues after the default",
+			retryAfter:           "-5",
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:                 "elapsed Retry-After HTTP-date requeues after the default",
+			retryAfter:           "Mon, 02 Jan 2006 15:04:05 GMT",
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
+
+			throttleErr := &azcore.ResponseError{
+				StatusCode: http.StatusTooManyRequests,
+				RawResponse: &http.Response{
+					StatusCode: http.StatusTooManyRequests,
+					Body:       io.NopCloser(strings.NewReader("")),
+					Header:     http.Header{"Retry-After": []string{tc.retryAfter}},
+				},
+			}
+			s, c := scopeMock.EXPECT(), clientMock.EXPECT()
+			s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+			s.VMSpec().Return(&fakeVMSpec)
+			c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+			s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil).Times(2)
+			c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, throttleErr)
+			s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+			s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+			s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+
+			svc := &Service{
+				Scope:  scopeMock,
+				client: clientMock,
+			}
+
+			err := svc.Reconcile(t.Context())
+			g.Expect(err).To(HaveOccurred())
+			var reconcileErr azure.ReconcileError
+			g.Expect(errors.As(err, &reconcileErr)).To(BeTrue())
+			g.Expect(reconcileErr.IsTransient()).To(BeTrue())
+			g.Expect(reconcileErr.RequeueAfter()).To(BeNumerically(">", 0))
+			g.Expect(reconcileErr.RequeueAfter()).To(Equal(tc.expectedRequeueAfter))
+		})
+	}
 }
 
 func TestDeleteVM(t *testing.T) {

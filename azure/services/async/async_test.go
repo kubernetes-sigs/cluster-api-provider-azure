@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -265,6 +266,132 @@ func TestServiceCreateOrUpdateResource(t *testing.T) {
 func isTransientReconcileError(err error) bool {
 	var reconcileErr azure.ReconcileError
 	return errors.As(err, &reconcileErr) && reconcileErr.IsTransient()
+}
+
+// newRetryAfterError returns a ResponseError with the given status code and
+// Retry-After header value. An empty retryAfter omits the header.
+func newRetryAfterError(statusCode int, retryAfter string) *azcore.ResponseError {
+	header := http.Header{}
+	if retryAfter != "" {
+		header.Set("Retry-After", retryAfter)
+	}
+	return &azcore.ResponseError{
+		StatusCode: statusCode,
+		RawResponse: &http.Response{
+			StatusCode: statusCode,
+			Body:       io.NopCloser(strings.NewReader("")),
+			Header:     header,
+		},
+	}
+}
+
+// elapsedHTTPDate is a Retry-After HTTP-date that is always in the past.
+const elapsedHTTPDate = "Mon, 02 Jan 2006 15:04:05 GMT"
+
+func TestGetRetryAfterFromError(t *testing.T) {
+	testcases := []struct {
+		name     string
+		err      error
+		expected time.Duration
+	}{
+		{
+			name:     "not a ResponseError",
+			err:      errors.New("foo"),
+			expected: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:     "Retry-After in seconds",
+			err:      newRetryAfterError(http.StatusTooManyRequests, "30"),
+			expected: 30 * time.Second,
+		},
+		{
+			name:     "Retry-After of zero falls back to the default",
+			err:      newRetryAfterError(http.StatusTooManyRequests, "0"),
+			expected: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:     "negative Retry-After falls back to the default",
+			err:      newRetryAfterError(http.StatusTooManyRequests, "-5"),
+			expected: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:     "elapsed Retry-After HTTP-date falls back to the default",
+			err:      newRetryAfterError(http.StatusServiceUnavailable, elapsedHTTPDate),
+			expected: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:     "429 without Retry-After",
+			err:      newRetryAfterError(http.StatusTooManyRequests, ""),
+			expected: reconciler.DefaultHTTP429RetryAfter,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			g.Expect(GetRetryAfterFromError(tc.err)).To(Equal(tc.expected))
+		})
+	}
+}
+
+func TestServiceCreateOrUpdateResourceRetryAfter(t *testing.T) {
+	testcases := []struct {
+		name                 string
+		retryAfter           string
+		expectedRequeueAfter time.Duration
+	}{
+		{
+			name:                 "positive Retry-After is preserved",
+			retryAfter:           "30",
+			expectedRequeueAfter: 30 * time.Second,
+		},
+		{
+			name:                 "Retry-After of zero requeues after the default",
+			retryAfter:           "0",
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:                 "negative Retry-After requeues after the default",
+			retryAfter:           "-5",
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+		{
+			name:                 "elapsed Retry-After HTTP-date requeues after the default",
+			retryAfter:           elapsedHTTPDate,
+			expectedRequeueAfter: reconciler.DefaultReconcilerRequeue,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			scopeMock := mock_async.NewMockFutureScope(mockCtrl)
+			creatorMock := mock_async.NewMockCreator[MockCreator](mockCtrl)
+			svc := New[MockCreator, MockDeleter](scopeMock, creatorMock, nil)
+			specMock := mock_azure.NewMockResourceSpecGetter(mockCtrl)
+
+			s, c, r := scopeMock.EXPECT(), creatorMock.EXPECT(), specMock.EXPECT()
+			gomock.InOrder(
+				r.ResourceName().Return(resourceName),
+				r.ResourceGroupName().Return(resourceGroupName),
+				s.GetLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture).Return(validPutFuture),
+				c.CreateOrUpdateAsync(gomockinternal.AContext(), gomock.AssignableToTypeOf(azureResourceGetterType), resumeToken, gomock.Any()).Return(nil, fakePoller[MockCreator](g, http.StatusAccepted), newRetryAfterError(http.StatusTooManyRequests, tc.retryAfter)),
+				s.DeleteLongRunningOperationState(resourceName, serviceName, infrav1.PutFuture),
+			)
+
+			_, err := svc.CreateOrUpdateResource(t.Context(), specMock, serviceName)
+			g.Expect(err).To(HaveOccurred())
+			var reconcileErr azure.ReconcileError
+			g.Expect(errors.As(err, &reconcileErr)).To(BeTrue())
+			g.Expect(reconcileErr.IsTransient()).To(BeTrue())
+			g.Expect(reconcileErr.RequeueAfter()).To(BeNumerically(">", 0))
+			g.Expect(reconcileErr.RequeueAfter()).To(Equal(tc.expectedRequeueAfter))
+		})
+	}
 }
 
 func TestServiceDeleteResource(t *testing.T) {
