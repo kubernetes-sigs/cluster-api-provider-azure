@@ -3491,6 +3491,10 @@ func TestMachineScope_UpdatePutStatus(t *testing.T) {
 	timeoutErr := fmt.Errorf("failed to create or update resource my-rg/my-vm (service: virtualmachine): %w", context.DeadlineExceeded)
 	// paramsErr mimics a pre-PUT parameter-construction failure from spec.Parameters.
 	paramsErr := errors.New("failed to get desired parameters for resource my-rg/my-vm (service: virtualmachine): failed to generate OS Profile")
+	vmDeletedErr := azure.VMDeletedError{ProviderID: "azure:///subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm"}
+	// wrappedVMDeletedErr mimics what async.CreateOrUpdateResource returns when
+	// spec.Parameters reports that a previously provisioned VM was deleted.
+	wrappedVMDeletedErr := fmt.Errorf("failed to get desired parameters for resource my-rg/my-vm (service: virtualmachine): %w", vmDeletedErr)
 
 	tests := []struct {
 		name         string
@@ -3569,6 +3573,24 @@ func TestMachineScope_UpdatePutStatus(t *testing.T) {
 			wantReason:   infrav1.FailedReason,
 			wantSeverity: clusterv1beta1.ConditionSeverityError,
 			wantMessage:  "virtualmachine failed to create or update. err: " + timeoutErr.Error(),
+		},
+		{
+			name:         "VMRunning VM deleted keeps generic reason",
+			condition:    infrav1.VMRunningCondition,
+			err:          vmDeletedErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: " + vmDeletedErr.Error(),
+		},
+		{
+			name:         "VMRunning wrapped VM deleted keeps generic reason",
+			condition:    infrav1.VMRunningCondition,
+			err:          wrappedVMDeletedErr,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "virtualmachine failed to create or update. err: " + wrappedVMDeletedErr.Error(),
 		},
 		{
 			name:         "DisksReady failed keeps generic reason",
