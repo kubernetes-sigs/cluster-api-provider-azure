@@ -251,11 +251,9 @@ spec:
 CAPZ authenticates by running <code class="hjls">az</code> as the OS user of the controller process. There is no separate client ID or secret. Every cluster in an allowed namespace uses that same Azure login. An empty <code class="hjls">allowedNamespaces</code> object allows every namespace.
 </aside>
 
-AzureCLI is an opt-in mode for local installer or controller processes running on a host with an existing `az login` session. It uses the host user's Azure CLI credentials, and clusters referencing this identity share the same principal. Use this mode for local workflows, not for persistent in-cluster production controllers.
-For those controllers, use [Workload Identity](./workload-identity.md) (recommended) or [Service Principal](#service-principal) authentication, consistent with [ASO's authentication guidance](https://azure.github.io/azure-service-operator/guide/authentication/), which recommends Workload Identity for production and limits Azure CLI authentication to local processes.
-The published CAPZ image does not include Azure CLI; that limits where this mode works, but does not enforce this usage boundary.
+AzureCLI is an opt-in mode for a local installer or controller process that already has an `az login` session. Do not use it for a persistent in-cluster production controller. For those controllers, use [Workload Identity](./workload-identity.md) (recommended) or a [Service Principal](#service-principal), consistent with [ASO's authentication guidance](https://azure.github.io/azure-service-operator/guide/authentication/). The published CAPZ image does not include Azure CLI. That limits where this mode works, but does not enforce this usage boundary.
 
-The CAPZ controller host must already have an `az login` session. `clientID` is unused. `tenantID` is required on the identity, but CAPZ does not pass it to `az account get-access-token` when a subscription is set (Azure CLI rejects `--tenant` and `--subscription` together). The subscription is `AzureCluster.spec.subscriptionID` or `AzureManagedControlPlane.spec.subscriptionID`. If that field is empty, CAPZ uses `AZURE_SUBSCRIPTION_ID`. If both are set, the spec value wins.
+The host must already have an `az login` session. `clientID` is unused. `tenantID` is required by the `AzureClusterIdentity` schema. When a subscription is set, CAPZ does not also pass `tenantID` to `az account get-access-token`, because Azure CLI rejects `--tenant` and `--subscription` together. The subscription is `AzureCluster.spec.subscriptionID` or `AzureManagedControlPlane.spec.subscriptionID`. If that field is empty, CAPZ uses `AZURE_SUBSCRIPTION_ID`. If both are empty, CAPZ returns an error and does not create Azure clients.
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -271,31 +269,15 @@ spec:
     - <cluster-namespace>
 ```
 
-### What this identity configures
+This authenticates only CAPZ. Configure ASO separately. CAPZ does not create a per-cluster ASO Secret for this type.
 
-This authenticates only CAPZ. It does not log ASO in with `az`. Configure ASO separately. A default ASO install uses environment or managed identity.
+With no namespace `aso-credential` Secret, CAPZ removes `serviceoperator.azure.com/credential-from` and ASO uses its global credential. CAPZ cannot inspect the global credential's subscription, so it does not verify that it matches the cluster. This is intentional; ASO may target a different subscription than CAPZ.
 
-CAPZ does not create a per-cluster ASO Secret for this type. ASO requires a tenant and client ID in a credential Secret, so a subscription-only Secret cannot be used as `credential-from`.
+If an `aso-credential` Secret exists, ASO prefers it over the global credential and does not fall back when that Secret cannot be loaded. It must contain non-empty `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, and `AZURE_CLIENT_ID`. The subscription must match the cluster spec subscription, or `AZURE_SUBSCRIPTION_ID` when the spec field is empty. CAPZ then removes `credential-from`.
 
-### When CAPZ removes the ASO credential reference
+On either of those successful paths, CAPZ deletes a CAPZ-owned leftover Secret. A user-managed Secret with the same name is left in place.
 
-With no `aso-credential` Secret in the cluster namespace, ASO uses the global credential configured in the ASO process. That credential is independent of CAPZ's AzureCLI login, and CAPZ cannot inspect its subscription. CAPZ removes `serviceoperator.azure.com/credential-from` and deletes a CAPZ-owned leftover Secret in this case. This path intentionally does not check that ASO's subscription matches the cluster; ASO may target a different subscription than CAPZ.
-
-When the namespace `aso-credential` Secret exists, ASO uses it and does not fall back to the global credential. CAPZ removes the annotation only when that Secret's subscription matches the cluster subscription and its tenant ID and client ID are non-empty.
-
-If that Secret is missing required fields, reconciliation returns an error and leaves the current annotation unchanged. When `credential-from` is absent, ASO fails to load the namespace credential and does not fall back to the global credential. When `credential-from` is present, ASO selects its referenced Secret first and returns an error if it cannot load it; it does not fall back to the namespace or global credential.
-
-If the Secret is complete but its subscription differs, reconciliation returns an error. CAPZ leaves `credential-from` in place when it is already present. If CAPZ had already removed it, CAPZ writes it back before returning the error, so ASO selects that per-resource reference instead of the mismatched namespace credential.
-
-CAPZ continues through later services after a subscription mismatch in the `AzureCluster`, `AzureManagedControlPlane`, and `AzureMachine` reconcile passes. This allows each ASO resource those services reach to get the annotation back in the same pass. A different service error still stops the loop.
-
-The per-cluster Secret may already have been deleted. In that case, ASO fails on the missing reference until the namespace subscription matches and CAPZ removes the annotation again. Deleting the namespace Secret uses the global-credential path above.
-
-The same stop-and-leave behavior applies when the identity lookup fails, or when an AzureManagedMachinePool cannot read its Cluster or control plane. Machine reconcilers also refuse the identity when the cluster namespace is no longer in `allowedNamespaces`.
-
-### Deleting a leftover Secret
-
-CAPZ deletes a leftover per-cluster Secret only when both its owned label and its controller owner reference match the current `AzureCluster` or `AzureManagedControlPlane`. A user-managed Secret with the same name is left in place.
+An incomplete Secret stops reconciliation and leaves the current credential reference unchanged. An invalid namespace Secret does not cause ASO to use the global credential. A subscription mismatch returns an error. CAPZ keeps `credential-from` when it is already set, and writes it back when it had been removed. Only that mismatch lets CAPZ continue through the later services in the pass, so the ASO resources they reach can have the annotation restored. Any other service error stops the loop. If the per-cluster Secret was already deleted, ASO returns an error for the restored reference and does not fall back to the namespace `aso-credential` Secret or the global credential.
 
 ## Azure Host Identity
 
