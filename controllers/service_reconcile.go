@@ -26,9 +26,9 @@ import (
 )
 
 // reconcileServices runs services in order. It remembers a namespace credential
-// subscription mismatch and continues, allowing later services to restore
-// credential-from on their ASO resources. If no other error occurs, it returns
-// the mismatch after the pass. Any other error stops the loop.
+// subscription mismatch and continues, allowing later services to skip their
+// ASO resources as well. If no other error occurs, it returns the mismatch
+// after the pass. Any other error stops the loop.
 func reconcileServices(ctx context.Context, services []azure.ServiceReconciler, ownerKind string) error {
 	var mismatch error
 	for _, service := range services {

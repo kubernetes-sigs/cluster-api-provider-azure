@@ -49,6 +49,9 @@ const (
 	// prePauseReconcilePolicyAnnotation is the annotation key for the value of
 	// asoannotations.ReconcilePolicy that was set before pausing.
 	prePauseReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-pause-reconcile-policy"
+	// preSubscriptionMismatchReconcilePolicyAnnotation stores the reconcile policy
+	// to restore after a namespace credential subscription mismatch is resolved.
+	preSubscriptionMismatchReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-subscription-mismatch-policy"
 
 	requeueInterval = 20 * time.Second
 
@@ -108,14 +111,35 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			log.V(4).Info("skipping reconcile for unmanaged resource")
 			return existing, nil
 		}
+	}
 
+	// Validate credentials before inspecting the ASO Ready condition. On a
+	// subscription mismatch, ASO may still be able to reconcile a resource which
+	// has no ARM ID yet. Marking the resource as skipped below prevents that.
+	useSecret, err := r.usePerResourceSecret(ctx)
+	if err != nil {
+		if resourceExists && aso.IsSubscriptionMismatch(err) {
+			if patchErr := r.skipResourceOnSubscriptionMismatch(ctx, existing); patchErr != nil {
+				return zero, patchErr
+			}
+		}
+		return zero, err
+	}
+
+	subscriptionMismatchBlocked := false
+	if resourceExists {
+		_, subscriptionMismatchBlocked = existing.GetAnnotations()[preSubscriptionMismatchReconcilePolicyAnnotation]
+	}
+
+	if resourceExists {
 		// Check if there is an ongoing long running operation.
 		conds := existing.GetConditions()
 		i, readyExists := conds.FindIndexByType(conditions.ConditionTypeReady)
-		if !readyExists {
+		if !readyExists && !subscriptionMismatchBlocked {
 			return zero, azure.WithTransientError(errors.New("ready status unknown"), requeueInterval)
 		}
-		if cond := conds[i]; cond.Status != metav1.ConditionTrue {
+		if readyExists && conds[i].Status != metav1.ConditionTrue {
+			cond := conds[i]
 			switch {
 			case cond.Reason == conditions.ReasonAzureResourceNotFound.Name &&
 				existing.GetAnnotations()[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicySkip):
@@ -184,10 +208,8 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		annotations = make(map[string]string)
 	}
 
-	if prevReconcilePolicy, ok := annotations[prePauseReconcilePolicyAnnotation]; ok {
-		annotations[asoannotations.ReconcilePolicy] = prevReconcilePolicy
-		delete(annotations, prePauseReconcilePolicyAnnotation)
-	}
+	restoreReconcilePolicy(annotations, prePauseReconcilePolicyAnnotation)
+	restoreReconcilePolicy(annotations, preSubscriptionMismatchReconcilePolicyAnnotation)
 	if !resourceExists {
 		// Create the ASO resource with "skip" in case a matching resource
 		// already exists in Azure, in which case CAPZ will assume it is managed
@@ -209,18 +231,8 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	// For AzureCLI identities, the per-resource Secret has only a subscription ID
 	// and cannot authenticate ASO. When validation succeeds, remove credential-from
 	// so ASO selects its global or matching namespace credential.
-	// On a complete namespace credential mismatch, preserve or restore the
-	// per-resource reference so ASO does not select that namespace credential.
-	// Other validation errors leave this resource unchanged.
-	useSecret, err := r.usePerResourceSecret(ctx)
-	if err != nil {
-		if resourceExists && aso.IsSubscriptionMismatch(err) && !hasPerResourceSecretAnnotation(existing) {
-			if patchErr := r.restorePerResourceSecretAnnotation(ctx, existing); patchErr != nil {
-				return zero, patchErr
-			}
-		}
-		return zero, err
-	}
+	// If a namespace credential mismatch previously blocked this resource, its
+	// saved reconcile policy was restored above after validation succeeded.
 	if useSecret {
 		annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(r.clusterName)
 	} else {
@@ -401,27 +413,46 @@ func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
 	return labels[infrav1.OwnedByClusterLabelKey] == clusterName //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
 }
 
-func hasPerResourceSecretAnnotation(obj client.Object) bool {
-	_, ok := obj.GetAnnotations()[asoannotations.PerResourceSecret]
-	return ok
+func restoreReconcilePolicy(annotations map[string]string, storedPolicyAnnotation string) {
+	previousPolicy, ok := annotations[storedPolicyAnnotation]
+	if !ok {
+		return
+	}
+	if previousPolicy == "" {
+		delete(annotations, asoannotations.ReconcilePolicy)
+	} else {
+		annotations[asoannotations.ReconcilePolicy] = previousPolicy
+	}
+	delete(annotations, storedPolicyAnnotation)
 }
 
-func (r *reconciler[T]) restorePerResourceSecretAnnotation(ctx context.Context, existing T) error {
+func (r *reconciler[T]) skipResourceOnSubscriptionMismatch(ctx context.Context, existing T) error {
 	base := existing.DeepCopyObject().(T)
 	annotations := existing.GetAnnotations()
 	if annotations == nil {
-		annotations = make(map[string]string, 1)
+		annotations = make(map[string]string, 2)
 	} else {
-		copied := make(map[string]string, len(annotations)+1)
+		copied := make(map[string]string, len(annotations)+2)
 		for k, v := range annotations {
 			copied[k] = v
 		}
 		annotations = copied
 	}
-	annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(r.clusterName)
+	_, hasSavedPolicy := annotations[preSubscriptionMismatchReconcilePolicyAnnotation]
+	if annotations[asoannotations.ReconcilePolicy] == string(asoannotations.ReconcilePolicySkip) && hasSavedPolicy {
+		return nil
+	}
+	if !hasSavedPolicy {
+		previousPolicy, paused := annotations[prePauseReconcilePolicyAnnotation]
+		if !paused {
+			previousPolicy = annotations[asoannotations.ReconcilePolicy]
+		}
+		annotations[preSubscriptionMismatchReconcilePolicyAnnotation] = previousPolicy
+	}
+	annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicySkip)
 	existing.SetAnnotations(annotations)
 	if err := r.Client.Patch(ctx, existing, client.MergeFrom(base)); err != nil {
-		return errors.Wrap(err, "failed to restore ASO per-resource credential annotation")
+		return errors.Wrap(err, "failed to skip ASO resource after subscription mismatch")
 	}
 	return nil
 }

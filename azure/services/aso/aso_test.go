@@ -1785,7 +1785,7 @@ func TestCreateOrUpdateResource_AzureCLIErrorsLeaveCredentialAnnotation(t *testi
 	}
 }
 
-func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchRestoresCredentialAnnotation(t *testing.T) {
+func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchSkipsASOResource(t *testing.T) {
 	g := NewWithT(t)
 	owner := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "namespace"},
@@ -1806,6 +1806,15 @@ func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchRestoresCredentialAn
 			Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.AzureCLI},
 		},
 		namespacedASOCredential("namespace", "aso-sub"),
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "cluster-aso-secret", Namespace: "namespace"},
+			Data: map[string][]byte{
+				"AZURE_CLIENT_ID":       []byte("user-managed-client"),
+				"AZURE_TENANT_ID":       []byte("user-managed-tenant"),
+				"AZURE_CLIENT_SECRET":   []byte("user-managed-secret"),
+				"AZURE_SUBSCRIPTION_ID": []byte("other-sub"),
+			},
+		},
 	).Build()
 	s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
 
@@ -1855,7 +1864,9 @@ func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchRestoresCredentialAn
 
 	updated := &asoresourcesv1.ResourceGroup{}
 	g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
-	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.PerResourceSecret, "cluster-aso-secret"))
+	g.Expect(updated.Annotations).NotTo(HaveKey(asoannotations.PerResourceSecret))
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicySkip)))
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(preSubscriptionMismatchReconcilePolicyAnnotation, string(asoannotations.ReconcilePolicyManage)))
 }
 
 func TestUsePerResourceSecret(t *testing.T) {
