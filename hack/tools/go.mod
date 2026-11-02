@@ -4,11 +4,11 @@ go 1.26.0
 
 toolchain go1.26.9
 
-require sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260714113117-27f464418c19
+require sigs.k8s.io/cluster-api/hack/tools v0.0.0-20261006144253-63f4677e7da1
 
 require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
