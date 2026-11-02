@@ -34,12 +34,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -3633,6 +3636,167 @@ func TestMachineScope_UpdatePutStatus(t *testing.T) {
 			g.Expect(c.Reason).To(Equal(tt.wantReason))
 			g.Expect(c.Severity).To(Equal(tt.wantSeverity))
 			g.Expect(c.Message).To(Equal(tt.wantMessage))
+		})
+	}
+}
+
+func TestMachineScope_PatchObjectReadySummary(t *testing.T) {
+	const customCondition clusterv1beta1.ConditionType = "CustomReady"
+
+	tests := []struct {
+		name         string
+		setup        func(m *MachineScope)
+		wantReady    bool
+		wantStatus   corev1.ConditionStatus
+		wantReason   string
+		wantSeverity clusterv1beta1.ConditionSeverity
+		wantMessage  string
+	}{
+		{
+			name: "VMRunning provisioning failure takes priority over another error",
+			setup: func(m *MachineScope) {
+				m.SetConditionFalse(infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1beta1.ConditionSeverityError, "vm failed")
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.VMProvisionFailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "vm failed",
+		},
+		{
+			name: "VMRunning provisioning failure takes priority over several other errors",
+			setup: func(m *MachineScope) {
+				m.SetConditionFalse(infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1beta1.ConditionSeverityError, "vm failed")
+				m.SetConditionFalse(infrav1.AvailabilitySetReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "availability set failed")
+				m.SetConditionFalse(infrav1.BootstrapSucceededCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "bootstrap failed")
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+				m.SetConditionFalse(infrav1.NetworkInterfaceReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "nics failed")
+				m.SetConditionFalse(customCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "custom failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.VMProvisionFailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "vm failed",
+		},
+		{
+			name: "VMRunning generic failure does not become VMProvisionFailed",
+			setup: func(m *MachineScope) {
+				m.SetConditionFalse(infrav1.VMRunningCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "vm failed transiently")
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "vm failed transiently",
+		},
+		{
+			name: "VMRunning healthy does not hide another failure",
+			setup: func(m *MachineScope) {
+				v1beta1conditions.MarkTrue(m.AzureMachine, infrav1.VMRunningCondition)
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "disks failed",
+		},
+		{
+			name: "higher severity failure still wins over VMRunning",
+			setup: func(m *MachineScope) {
+				m.SetConditionFalse(infrav1.VMRunningCondition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "vm creating")
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   infrav1.FailedReason,
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "disks failed",
+		},
+		{
+			name: "custom condition failure is included in the summary",
+			setup: func(m *MachineScope) {
+				v1beta1conditions.MarkTrue(m.AzureMachine, infrav1.VMRunningCondition)
+				v1beta1conditions.MarkTrue(m.AzureMachine, infrav1.DisksReadyCondition)
+				m.SetConditionFalse(customCondition, "CustomFailed", clusterv1beta1.ConditionSeverityWarning, "custom failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   "CustomFailed",
+			wantSeverity: clusterv1beta1.ConditionSeverityWarning,
+			wantMessage:  "custom failed",
+		},
+		{
+			name: "without VMRunning, equal severity failures keep alphabetical priority",
+			setup: func(m *MachineScope) {
+				m.SetConditionFalse(infrav1.DisksReadyCondition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "disks failed")
+				m.SetConditionFalse(customCondition, "CustomFailed", clusterv1beta1.ConditionSeverityError, "custom failed")
+			},
+			wantReady:    true,
+			wantStatus:   corev1.ConditionFalse,
+			wantReason:   "CustomFailed",
+			wantSeverity: clusterv1beta1.ConditionSeverityError,
+			wantMessage:  "custom failed",
+		},
+		{
+			name: "all conditions healthy",
+			setup: func(m *MachineScope) {
+				v1beta1conditions.MarkTrue(m.AzureMachine, infrav1.VMRunningCondition)
+				v1beta1conditions.MarkTrue(m.AzureMachine, infrav1.DisksReadyCondition)
+				v1beta1conditions.MarkTrue(m.AzureMachine, customCondition)
+			},
+			wantReady:  true,
+			wantStatus: corev1.ConditionTrue,
+		},
+		{
+			name:      "no conditions",
+			setup:     func(*MachineScope) {},
+			wantReady: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			ctx := t.Context()
+
+			scheme := runtime.NewScheme()
+			g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+			azureMachine := &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-machine", Namespace: "default"},
+			}
+			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(azureMachine).WithStatusSubresource(azureMachine).Build()
+			g.Expect(c.Get(ctx, client.ObjectKeyFromObject(azureMachine), azureMachine)).To(Succeed())
+
+			m, err := NewMachineScope(MachineScopeParams{
+				Client:       c,
+				Machine:      &clusterv1.Machine{},
+				AzureMachine: azureMachine,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			tt.setup(m)
+			wantConditions := len(m.AzureMachine.GetConditions())
+			g.Expect(m.PatchObject(ctx)).To(Succeed())
+
+			persisted := &infrav1.AzureMachine{}
+			g.Expect(c.Get(ctx, client.ObjectKeyFromObject(azureMachine), persisted)).To(Succeed())
+
+			ready := v1beta1conditions.Get(persisted, clusterv1beta1.ReadyCondition)
+			if !tt.wantReady {
+				g.Expect(ready).To(BeNil())
+				g.Expect(persisted.GetConditions()).To(BeEmpty())
+				return
+			}
+			// Ready is added on top of the conditions set by the test; none are dropped.
+			g.Expect(persisted.GetConditions()).To(HaveLen(wantConditions + 1))
+			g.Expect(ready).NotTo(BeNil())
+			g.Expect(ready.Status).To(Equal(tt.wantStatus))
+			g.Expect(ready.Reason).To(Equal(tt.wantReason))
+			g.Expect(ready.Severity).To(Equal(tt.wantSeverity))
+			g.Expect(ready.Message).To(Equal(tt.wantMessage))
 		})
 	}
 }
