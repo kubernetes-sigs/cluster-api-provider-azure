@@ -509,8 +509,9 @@ func TestGetTokenCredential(t *testing.T) {
 			},
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.AzureCLI,
-					TenantID: fakeTenantID,
+					Type:              infrav1.AzureCLI,
+					TenantID:          fakeTenantID,
+					AllowedNamespaces: &infrav1.AllowedNamespaces{},
 				},
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
@@ -533,8 +534,9 @@ func TestGetTokenCredential(t *testing.T) {
 			},
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:     infrav1.AzureCLI,
-					TenantID: fakeTenantID,
+					Type:              infrav1.AzureCLI,
+					TenantID:          fakeTenantID,
+					AllowedNamespaces: &infrav1.AllowedNamespaces{},
 				},
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
@@ -556,7 +558,8 @@ func TestGetTokenCredential(t *testing.T) {
 			},
 			identity: &infrav1.AzureClusterIdentity{
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type: infrav1.AzureCLI,
+					Type:              infrav1.AzureCLI,
+					AllowedNamespaces: &infrav1.AllowedNamespaces{},
 				},
 			},
 			cacheExpect: func(cache *mock_azure.MockCredentialCache) {
@@ -593,6 +596,31 @@ func TestGetTokenCredential(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 		})
 	}
+}
+
+func TestNewAzureCredentialsProviderAzureCLIAllowedNamespaces(t *testing.T) {
+	g := NewWithT(t)
+	scheme := runtime.NewScheme()
+	g.Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	identity := &infrav1.AzureClusterIdentity{
+		ObjectMeta: metav1.ObjectMeta{Name: "cli-identity", Namespace: "identity-ns"},
+		Spec: infrav1.AzureClusterIdentitySpec{
+			Type: infrav1.AzureCLI,
+			AllowedNamespaces: &infrav1.AllowedNamespaces{
+				NamespaceList: []string{"other-ns"},
+			},
+		},
+	}
+	kubeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(identity).Build()
+
+	_, err := NewAzureCredentialsProvider(
+		t.Context(),
+		nil,
+		kubeClient,
+		&corev1.ObjectReference{Name: identity.Name, Namespace: identity.Namespace},
+		"cluster-ns",
+	)
+	g.Expect(err).To(MatchError(ContainSubstring("allowed namespaces")))
 }
 
 func TestAzureCLICredentialOptions(t *testing.T) {

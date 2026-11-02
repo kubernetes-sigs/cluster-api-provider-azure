@@ -76,6 +76,13 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
+	// AzureCLI uses the controller process login. Re-check the allowlist here so
+	// machine and ASO secret reconcilers cannot keep using it after the cluster
+	// namespace is removed from the identity.
+	if identity.Spec.Type == infrav1.AzureCLI && !IsClusterNamespaceAllowed(ctx, kubeClient, identity.Spec.AllowedNamespaces, defaultNamespace) {
+		return nil, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+	}
+
 	return &AzureCredentialsProvider{
 		Client:   kubeClient,
 		Identity: identity,

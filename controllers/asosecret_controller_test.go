@@ -57,6 +57,7 @@ func TestASOSecretReconcile(t *testing.T) {
 	cases := map[string]struct {
 		clusterName string
 		objects     []runtime.Object
+		env         map[string]string
 		err         string
 		event       string
 		asoSecret   *corev1.Secret
@@ -206,10 +207,11 @@ func TestASOSecretReconcile(t *testing.T) {
 				}
 			}),
 		},
-		"should reconcile normally for AzureCluster with an IdentityRef of type AzureCLI": {
+		"should delete leftover ASO secret when AzureCLI has no namespace credential": {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
 				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
 					c.Spec.IdentityRef = &corev1.ObjectReference{
 						Name:      "my-azure-cluster-identity",
 						Namespace: "default",
@@ -218,7 +220,32 @@ func TestASOSecretReconcile(t *testing.T) {
 				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
 					identity.Spec.Type = infrav1.AzureCLI
 					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
+				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+					s.Data = map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("123"),
+					}
+				}),
+				defaultCluster,
+			},
+		},
+		"should reconcile normally for AzureCluster with an IdentityRef of type AzureCLI": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
+				}),
+				getASOCredentialSecret("default", "fooSubscription"),
 				defaultCluster,
 			},
 		},
@@ -226,6 +253,7 @@ func TestASOSecretReconcile(t *testing.T) {
 			clusterName: defaultAzureCluster.Name,
 			objects: []runtime.Object{
 				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
 					c.Spec.IdentityRef = &corev1.ObjectReference{
 						Name:      "my-azure-cluster-identity",
 						Namespace: "default",
@@ -234,7 +262,9 @@ func TestASOSecretReconcile(t *testing.T) {
 				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
 					identity.Spec.Type = infrav1.AzureCLI
 					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
+				getASOCredentialSecret("default", "fooSubscription"),
 				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
 					s.Data = map[string][]byte{
 						"AZURE_SUBSCRIPTION_ID": []byte("123"),
@@ -245,6 +275,162 @@ func TestASOSecretReconcile(t *testing.T) {
 				}),
 				defaultCluster,
 			},
+		},
+		"should keep the ASO secret when AzureCLI subscription differs from ASO": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
+				}),
+				getASOCredentialSecret("default", "fooSubscription"),
+				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+					s.Data = map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("123"),
+						"AZURE_TENANT_ID":       []byte("fooTenant"),
+						"AZURE_CLIENT_ID":       []byte("fooClient"),
+						"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
+					}
+				}),
+				defaultCluster,
+			},
+			err: "does not match",
+			asoSecret: getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("123"),
+					"AZURE_TENANT_ID":       []byte("fooTenant"),
+					"AZURE_CLIENT_ID":       []byte("fooClient"),
+					"AZURE_CLIENT_SECRET":   []byte("fooSecret"),
+				}
+			}),
+		},
+		"should reject AzureCLI when the namespace aso-credential subscription differs": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
+				}),
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "aso-credential",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("other-subscription"),
+						"AZURE_TENANT_ID":       []byte("fooTenant"),
+						"AZURE_CLIENT_ID":       []byte("fooClient"),
+					},
+				},
+				defaultCluster,
+			},
+			err: "does not match",
+		},
+		"should reject AzureCLI when namespace aso-credential is missing client fields": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
+				}),
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "aso-credential",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("fooSubscription"),
+					},
+				},
+				defaultCluster,
+			},
+			err: "does not contain key",
+		},
+		"should not delete a user-managed Secret when AzureCLI has no per-cluster credential": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
+				}),
+				getASOCredentialSecret("default", "fooSubscription"),
+				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+					// The spoofed CAPZ label alone must not authorize deletion.
+					s.OwnerReferences = nil
+					s.Data = map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("user"),
+					}
+				}),
+				defaultCluster,
+			},
+			asoSecret: getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+				s.OwnerReferences = nil
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("user"),
+				}
+			}),
+		},
+		"should not use AzureCLI when the cluster namespace is not allowed": {
+			clusterName: defaultAzureCluster.Name,
+			objects: []runtime.Object{
+				getASOAzureCluster(func(c *infrav1.AzureCluster) {
+					c.Spec.SubscriptionID = "fooSubscription"
+					c.Spec.IdentityRef = &corev1.ObjectReference{
+						Name:      "my-azure-cluster-identity",
+						Namespace: "default",
+					}
+				}),
+				getASOAzureClusterIdentity(func(identity *infrav1.AzureClusterIdentity) {
+					identity.Spec.Type = infrav1.AzureCLI
+					identity.Spec.ClientID = ""
+					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{
+						NamespaceList: []string{"other"},
+					}
+				}),
+				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+					s.Data = map[string][]byte{
+						"AZURE_SUBSCRIPTION_ID": []byte("123"),
+					}
+				}),
+				defaultCluster,
+			},
+			err: "allowed namespaces",
+			asoSecret: getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
+				s.Data = map[string][]byte{
+					"AZURE_SUBSCRIPTION_ID": []byte("123"),
+				}
+			}),
 		},
 		"should reconcile normally for AzureCluster with an IdentityRef of type UserAssignedMSI": {
 			clusterName: defaultAzureCluster.Name,
@@ -354,6 +540,9 @@ func TestASOSecretReconcile(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
 			clientBuilder := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...).Build()
 
 			reconciler := &ASOSecretReconciler{
@@ -536,4 +725,18 @@ func getASOSecret(cluster client.Object, changes ...func(secret *corev1.Secret))
 	}
 
 	return input
+}
+
+func getASOCredentialSecret(namespace, subscription string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aso-credential",
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"AZURE_SUBSCRIPTION_ID": []byte(subscription),
+			"AZURE_TENANT_ID":       []byte("fooTenant"),
+			"AZURE_CLIENT_ID":       []byte("fooClient"),
+		},
+	}
 }

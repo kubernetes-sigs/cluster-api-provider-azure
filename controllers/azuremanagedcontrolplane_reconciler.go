@@ -74,10 +74,8 @@ func (r *azureManagedControlPlaneService) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedControlPlaneService.Reconcile")
 	defer done()
 
-	for _, service := range r.services {
-		if err := service.Reconcile(ctx); err != nil {
-			return errors.Wrapf(err, "failed to reconcile AzureManagedControlPlane service %s", service.Name())
-		}
+	if err := reconcileServices(ctx, r.services, "AzureManagedControlPlane"); err != nil {
+		return err
 	}
 
 	if err := r.reconcileKubeconfig(ctx); err != nil {

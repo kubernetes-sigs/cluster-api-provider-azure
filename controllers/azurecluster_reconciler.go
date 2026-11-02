@@ -127,10 +127,8 @@ func (s *azureClusterService) reconcile(ctx context.Context) error {
 		s.scope.SetControlPlaneSecurityRules()
 	}
 
-	for _, service := range s.services {
-		if err := service.Reconcile(ctx); err != nil {
-			return errors.Wrapf(err, "failed to reconcile AzureCluster service %s", service.Name())
-		}
+	if err := reconcileServices(ctx, s.services, "AzureCluster"); err != nil {
+		return err
 	}
 
 	return nil

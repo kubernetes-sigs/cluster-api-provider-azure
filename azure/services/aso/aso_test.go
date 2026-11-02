@@ -80,6 +80,20 @@ func newOwner() *asoresourcesv1.ResourceGroup {
 	}
 }
 
+func namespacedASOCredential(namespace, subscription string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aso-credential",
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"AZURE_SUBSCRIPTION_ID": []byte(subscription),
+			"AZURE_TENANT_ID":       []byte("tenant"),
+			"AZURE_CLIENT_ID":       []byte("client"),
+		},
+	}
+}
+
 func ownerRefs() []metav1.OwnerReference {
 	s := runtime.NewScheme()
 	if err := asoresourcesv1.AddToScheme(s); err != nil {
@@ -186,10 +200,12 @@ func TestCreateOrUpdateResource(t *testing.T) {
 
 	t.Run("azure cli identity omits per-resource secret annotation", func(t *testing.T) {
 		g := NewGomegaWithT(t)
+		t.Setenv("AZURE_SUBSCRIPTION_ID", "subscription")
 
 		sch := runtime.NewScheme()
 		g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
 		g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+		g.Expect(corev1.AddToScheme(sch)).To(Succeed())
 		identity := &infrav1.AzureClusterIdentity{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "azure-cli-identity",
@@ -216,7 +232,7 @@ func TestCreateOrUpdateResource(t *testing.T) {
 		}
 		c := fakeclient.NewClientBuilder().
 			WithScheme(sch).
-			WithObjects(identity, owner).
+			WithObjects(identity, owner, namespacedASOCredential("namespace", "subscription")).
 			Build()
 		s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
 
@@ -1566,6 +1582,7 @@ func TestClusterIdentityKey(t *testing.T) {
 
 func TestCreateOrUpdateResource_RemovesStalePerResourceSecretAnnotation(t *testing.T) {
 	g := NewGomegaWithT(t)
+	t.Setenv("AZURE_SUBSCRIPTION_ID", "subscription")
 
 	cliIdentity := &infrav1.AzureClusterIdentity{
 		ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "namespace"},
@@ -1583,9 +1600,10 @@ func TestCreateOrUpdateResource_RemovesStalePerResourceSecretAnnotation(t *testi
 	sch := runtime.NewScheme()
 	g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
 	g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+	g.Expect(corev1.AddToScheme(sch)).To(Succeed())
 	c := fakeclient.NewClientBuilder().
 		WithScheme(sch).
-		WithObjects(cliIdentity).
+		WithObjects(cliIdentity, namespacedASOCredential("namespace", "subscription")).
 		Build()
 	s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
 
@@ -1650,6 +1668,196 @@ func TestCreateOrUpdateResource_RemovesStalePerResourceSecretAnnotation(t *testi
 	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.ReconcilePolicy, string(asoannotations.ReconcilePolicyManage)))
 }
 
+func TestCreateOrUpdateResource_AzureCLIErrorsLeaveCredentialAnnotation(t *testing.T) {
+	ready := &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "name",
+			Namespace: "namespace",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: clusterName,
+			},
+			Annotations: map[string]string{
+				asoannotations.ReconcilePolicy:   string(asoannotations.ReconcilePolicyManage),
+				asoannotations.PerResourceSecret: "cluster-aso-secret",
+			},
+		},
+		Status: asoresourcesv1.ResourceGroup_STATUS{
+			Conditions: []conditions.Condition{
+				{
+					Type:     conditions.ConditionTypeReady,
+					Status:   metav1.ConditionTrue,
+					Severity: conditions.ConditionSeverityNone,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		objects        []client.Object
+		env            map[string]string
+		wantErr        string
+		wantAnnotation bool
+	}{
+		{
+			name:           "identity lookup error",
+			wantErr:        "failed to get AzureClusterIdentity",
+			wantAnnotation: true,
+		},
+		{
+			name:    "identity lookup error with no credential annotation",
+			wantErr: "failed to get AzureClusterIdentity",
+		},
+		{
+			name: "subscription mismatch",
+			objects: []client.Object{
+				&infrav1.AzureClusterIdentity{
+					ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "namespace"},
+					Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.AzureCLI},
+				},
+				namespacedASOCredential("namespace", "aso-sub"),
+			},
+			wantErr:        "does not match",
+			wantAnnotation: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+			owner := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "namespace"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "cluster-sub",
+						IdentityRef:    &corev1.ObjectReference{Name: "id", Namespace: "namespace"},
+					},
+				},
+			}
+			sch := runtime.NewScheme()
+			g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+			g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+			g.Expect(corev1.AddToScheme(sch)).To(Succeed())
+			c := fakeclient.NewClientBuilder().WithScheme(sch).WithObjects(tt.objects...).Build()
+			s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
+
+			ownerGVK, err := apiutil.GVKForObject(owner, sch)
+			g.Expect(err).NotTo(HaveOccurred())
+			existing := ready.DeepCopy()
+			if !tt.wantAnnotation {
+				delete(existing.Annotations, asoannotations.PerResourceSecret)
+			}
+			existing.OwnerReferences = []metav1.OwnerReference{{
+				APIVersion:         ownerGVK.GroupVersion().String(),
+				Kind:               ownerGVK.Kind,
+				Name:               owner.GetName(),
+				Controller:         ptr.To(true),
+				BlockOwnerDeletion: ptr.To(true),
+			}}
+
+			mockCtrl := gomock.NewController(t)
+			specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
+			specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+				ObjectMeta: metav1.ObjectMeta{Name: "name"},
+			})
+			specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(
+				func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+					return group, nil
+				},
+			)
+			specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+			ctx := t.Context()
+			g.Expect(c.Create(ctx, existing)).To(Succeed())
+			_, err = s.CreateOrUpdateResource(ctx, specMock, "service")
+			g.Expect(err).To(MatchError(ContainSubstring(tt.wantErr)))
+
+			updated := &asoresourcesv1.ResourceGroup{}
+			g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+			if tt.wantAnnotation {
+				g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.PerResourceSecret, "cluster-aso-secret"))
+			} else {
+				g.Expect(updated.Annotations).NotTo(HaveKey(asoannotations.PerResourceSecret))
+			}
+		})
+	}
+}
+
+func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchRestoresCredentialAnnotation(t *testing.T) {
+	g := NewWithT(t)
+	owner := &infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "namespace"},
+		Spec: infrav1.AzureClusterSpec{
+			AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+				SubscriptionID: "cluster-sub",
+				IdentityRef:    &corev1.ObjectReference{Name: "id", Namespace: "namespace"},
+			},
+		},
+	}
+	sch := runtime.NewScheme()
+	g.Expect(asoresourcesv1.AddToScheme(sch)).To(Succeed())
+	g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
+	g.Expect(corev1.AddToScheme(sch)).To(Succeed())
+	c := fakeclient.NewClientBuilder().WithScheme(sch).WithObjects(
+		&infrav1.AzureClusterIdentity{
+			ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "namespace"},
+			Spec:       infrav1.AzureClusterIdentitySpec{Type: infrav1.AzureCLI},
+		},
+		namespacedASOCredential("namespace", "aso-sub"),
+	).Build()
+	s := New[*asoresourcesv1.ResourceGroup](c, clusterName, owner)
+
+	ownerGVK, err := apiutil.GVKForObject(owner, sch)
+	g.Expect(err).NotTo(HaveOccurred())
+	existing := &asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "name",
+			Namespace: "namespace",
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+			Annotations: map[string]string{
+				asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicyManage),
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         ownerGVK.GroupVersion().String(),
+				Kind:               ownerGVK.Kind,
+				Name:               owner.GetName(),
+				Controller:         ptr.To(true),
+				BlockOwnerDeletion: ptr.To(true),
+			}},
+		},
+		Status: asoresourcesv1.ResourceGroup_STATUS{
+			Conditions: []conditions.Condition{{
+				Type:     conditions.ConditionTypeReady,
+				Status:   metav1.ConditionTrue,
+				Severity: conditions.ConditionSeverityNone,
+			}},
+		},
+	}
+
+	mockCtrl := gomock.NewController(t)
+	specMock := mock_azure.NewMockASOResourceSpecGetter[*asoresourcesv1.ResourceGroup](mockCtrl)
+	specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
+		ObjectMeta: metav1.ObjectMeta{Name: "name"},
+	})
+	specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(
+		func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
+			return group, nil
+		},
+	)
+	specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+
+	ctx := t.Context()
+	g.Expect(c.Create(ctx, existing)).To(Succeed())
+	_, err = s.CreateOrUpdateResource(ctx, specMock, "service")
+	g.Expect(err).To(MatchError(ContainSubstring("does not match")))
+
+	updated := &asoresourcesv1.ResourceGroup{}
+	g.Expect(c.Get(ctx, types.NamespacedName{Name: "name", Namespace: "namespace"}, updated)).To(Succeed())
+	g.Expect(updated.Annotations).To(HaveKeyWithValue(asoannotations.PerResourceSecret, "cluster-aso-secret"))
+}
+
 func TestUsePerResourceSecret(t *testing.T) {
 	identity := &infrav1.AzureClusterIdentity{
 		ObjectMeta: metav1.ObjectMeta{Name: "id", Namespace: "ns"},
@@ -1662,7 +1870,9 @@ func TestUsePerResourceSecret(t *testing.T) {
 		name    string
 		objects []client.Object
 		owner   client.Object
+		env     map[string]string
 		want    bool
+		wantErr string
 	}{
 		{
 			name:  "no identity ref uses per-resource secret",
@@ -1670,7 +1880,7 @@ func TestUsePerResourceSecret(t *testing.T) {
 			want:  true,
 		},
 		{
-			name: "missing identity uses per-resource secret",
+			name: "missing identity returns the lookup error",
 			owner: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
 				Spec: infrav1.AzureClusterSpec{
@@ -1679,7 +1889,7 @@ func TestUsePerResourceSecret(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			wantErr: "failed to get AzureClusterIdentity",
 		},
 		{
 			name:    "service principal uses per-resource secret",
@@ -1696,7 +1906,8 @@ func TestUsePerResourceSecret(t *testing.T) {
 		},
 		{
 			name:    "azure cli omits per-resource secret",
-			objects: []client.Object{cliIdentity},
+			env:     map[string]string{"AZURE_SUBSCRIPTION_ID": "aso-sub"},
+			objects: []client.Object{cliIdentity, namespacedASOCredential("ns", "aso-sub")},
 			owner: &infrav1.AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
 				Spec: infrav1.AzureClusterSpec{
@@ -1708,8 +1919,37 @@ func TestUsePerResourceSecret(t *testing.T) {
 			want: false,
 		},
 		{
-			name:    "azuremanagedcontrolplane azure cli omits per-resource secret",
+			name:    "azure cli omits per-resource secret when ASO has no namespace credential",
 			objects: []client.Object{cliIdentity},
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "aso-sub",
+						IdentityRef:    &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name:    "azure cli subscription mismatch returns an error",
+			objects: []client.Object{cliIdentity, namespacedASOCredential("ns", "aso-sub")},
+			owner: &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
+				Spec: infrav1.AzureClusterSpec{
+					AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+						SubscriptionID: "cluster-sub",
+						IdentityRef:    &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+					},
+				},
+			},
+			wantErr: "does not match",
+		},
+		{
+			name:    "azuremanagedcontrolplane azure cli omits per-resource secret",
+			env:     map[string]string{"AZURE_SUBSCRIPTION_ID": "aso-sub"},
+			objects: []client.Object{cliIdentity, namespacedASOCredential("ns", "aso-sub")},
 			owner: &infrav1.AzureManagedControlPlane{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns"},
 				Spec: infrav1.AzureManagedControlPlaneSpec{
@@ -1722,8 +1962,10 @@ func TestUsePerResourceSecret(t *testing.T) {
 		},
 		{
 			name: "azuremanagedmachinepool azure cli omits per-resource secret",
+			env:  map[string]string{"AZURE_SUBSCRIPTION_ID": "different-env-sub"},
 			objects: []client.Object{
 				cliIdentity,
+				namespacedASOCredential("ns", "aso-sub"),
 				&clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: "ns"},
 					Spec: clusterv1.ClusterSpec{
@@ -1738,7 +1980,8 @@ func TestUsePerResourceSecret(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "cp", Namespace: "ns"},
 					Spec: infrav1.AzureManagedControlPlaneSpec{
 						AzureManagedControlPlaneClassSpec: infrav1.AzureManagedControlPlaneClassSpec{
-							IdentityRef: &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+							IdentityRef:    &corev1.ObjectReference{Name: "id", Namespace: "ns"},
+							SubscriptionID: "aso-sub",
 						},
 					},
 				},
@@ -1760,7 +2003,7 @@ func TestUsePerResourceSecret(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "azuremanagedmachinepool with missing cluster uses per-resource secret",
+			name: "azuremanagedmachinepool with missing cluster returns the lookup error",
 			owner: &infrav1.AzureManagedMachinePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool",
@@ -1768,7 +2011,30 @@ func TestUsePerResourceSecret(t *testing.T) {
 					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
 				},
 			},
-			want: true,
+			wantErr: "failed to get Cluster for AzureManagedMachinePool",
+		},
+		{
+			name: "azuremanagedmachinepool with missing control plane returns the lookup error",
+			objects: []client.Object{
+				&clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: "ns"},
+					Spec: clusterv1.ClusterSpec{
+						ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+							APIGroup: infrav1.GroupVersion.Group,
+							Kind:     infrav1.AzureManagedControlPlaneKind,
+							Name:     "cp",
+						},
+					},
+				},
+			},
+			owner: &infrav1.AzureManagedMachinePool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool",
+					Namespace: "ns",
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: clusterName},
+				},
+			},
+			wantErr: "failed to get AzureManagedControlPlane",
 		},
 		{
 			name: "azuremanagedmachinepool with cluster but no control plane ref uses per-resource secret",
@@ -1822,12 +2088,22 @@ func TestUsePerResourceSecret(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
 			sch := runtime.NewScheme()
 			g.Expect(infrav1.AddToScheme(sch)).To(Succeed())
 			g.Expect(clusterv1.AddToScheme(sch)).To(Succeed())
+			g.Expect(corev1.AddToScheme(sch)).To(Succeed())
 			c := fakeclient.NewClientBuilder().WithScheme(sch).WithObjects(tt.objects...).Build()
 			s := New[*asoresourcesv1.ResourceGroup](c, clusterName, tt.owner).(*reconciler[*asoresourcesv1.ResourceGroup])
-			g.Expect(s.usePerResourceSecret(t.Context())).To(Equal(tt.want))
+			got, err := s.usePerResourceSecret(t.Context())
+			if tt.wantErr != "" {
+				g.Expect(err).To(MatchError(ContainSubstring(tt.wantErr)))
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(got).To(Equal(tt.want))
 		})
 	}
 }

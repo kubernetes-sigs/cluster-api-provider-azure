@@ -231,19 +231,6 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if newASOSecret == nil {
-		existing := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      aso.GetASOSecretName(cluster.GetName()),
-				Namespace: cluster.GetNamespace(),
-			},
-		}
-		if err := asos.Delete(ctx, existing); err != nil && !apierrors.IsNotFound(err) {
-			return reconcile.Result{}, errors.Wrap(err, "failed to delete unused ASO secret")
-		}
-		return ctrl.Result{}, nil
-	}
-
 	gvk := asoSecretOwner.GetObjectKind().GroupVersionKind()
 	owner := metav1.OwnerReference{
 		APIVersion: gvk.GroupVersion().String(),
@@ -251,6 +238,30 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		Name:       asoSecretOwner.GetName(),
 		UID:        asoSecretOwner.GetUID(),
 		Controller: ptr.To(true),
+	}
+	if newASOSecret == nil {
+		existing := &corev1.Secret{}
+		key := client.ObjectKey{
+			Name:      aso.GetASOSecretName(cluster.GetName()),
+			Namespace: cluster.GetNamespace(),
+		}
+		if err := asos.Get(ctx, key, existing); err != nil {
+			if apierrors.IsNotFound(err) {
+				return ctrl.Result{}, nil
+			}
+			return reconcile.Result{}, errors.Wrap(err, "failed to get unused ASO secret")
+		}
+		// A user-managed Secret can collide with the deterministic name or carry
+		// the ownership label. Require both the CAPZ label and the current owner's
+		// controller reference before deleting it.
+		if existing.Labels[cluster.GetName()] != string(infrav1.ResourceLifecycleOwned) || !hasASOSecretOwner(existing, owner) {
+			log.Info("skipping delete of ASO secret that is not owned by CAPZ", "secret", key)
+			return ctrl.Result{}, nil
+		}
+		if err := asos.Delete(ctx, existing); err != nil && !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, errors.Wrap(err, "failed to delete unused ASO secret")
+		}
+		return ctrl.Result{}, nil
 	}
 
 	newASOSecret.OwnerReferences = []metav1.OwnerReference{owner}
@@ -261,6 +272,19 @@ func (asos *ASOSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func hasASOSecretOwner(secret *corev1.Secret, expected metav1.OwnerReference) bool {
+	for _, owner := range secret.OwnerReferences {
+		if owner.APIVersion == expected.APIVersion &&
+			owner.Kind == expected.Kind &&
+			owner.Name == expected.Name &&
+			owner.UID == expected.UID &&
+			owner.Controller != nil && *owner.Controller {
+			return true
+		}
+	}
+	return false
 }
 
 func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Context, clusterIdentity *corev1.ObjectReference, cluster *clusterv1.Cluster, azureClient scope.AzureClients) (*corev1.Secret, error) {
@@ -292,6 +316,13 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	}
 
 	if identity.Spec.Type == infrav1.AzureCLI {
+		// AzureCLI credentials belong to CAPZ, not ASO. ASO then uses its global
+		// credential, or a namespace aso-credential when that Secret exists and
+		// targets the cluster subscription. Return before deleting a leftover
+		// secret when that namespace credential is incomplete or differs.
+		if err := aso.ValidateAzureCLISubscription(ctx, asos.Client, cluster.GetNamespace(), azureClient.SubscriptionID()); err != nil {
+			return nil, err
+		}
 		return nil, nil
 	}
 
