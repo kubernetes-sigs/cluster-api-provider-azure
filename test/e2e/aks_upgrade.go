@@ -21,6 +21,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
@@ -49,6 +50,9 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 	Expect(err).NotTo(HaveOccurred())
 
 	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(getSubscriptionID(Default), cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	agentPoolsClient, err := armcontainerservice.NewAgentPoolsClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	mgmtClient := bootstrapClusterProxy.GetClient()
@@ -82,4 +86,25 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 		WaitForMachinePoolToBeUpgraded: input.WaitForMachinePools,
 		MachinePools:                   input.MachinePools,
 	})
+
+	By("Waiting for the Azure agent pool upgrades to complete")
+	for _, machinePool := range input.MachinePools {
+		infraMachinePool := &infrav1.AzureManagedMachinePool{}
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKey{
+				Namespace: machinePool.Namespace,
+				Name:      machinePool.Spec.Template.Spec.InfrastructureRef.Name,
+			}, infraMachinePool)).To(Succeed(), "failed to get the infrastructure resource for MachinePool %s/%s", machinePool.Namespace, machinePool.Name)
+
+			agentPoolName := ptr.Deref(infraMachinePool.Spec.Name, "")
+			g.Expect(agentPoolName).NotTo(BeEmpty(), "AzureManagedMachinePool %s/%s has no Azure agent pool name", infraMachinePool.Namespace, infraMachinePool.Name)
+			resp, err := agentPoolsClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, agentPoolName, nil)
+			g.Expect(err).NotTo(HaveOccurred(), "failed to get Azure agent pool %q", agentPoolName)
+			g.Expect(resp.Properties).NotTo(BeNil(), "Azure agent pool %q has no properties", agentPoolName)
+			g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")),
+				"Azure agent pool %q has current orchestrator version %q", agentPoolName, ptr.Deref(resp.Properties.CurrentOrchestratorVersion, ""))
+			g.Expect(resp.Properties.CurrentOrchestratorVersion).To(Equal(ptr.To(strings.TrimPrefix(input.KubernetesVersionUpgradeTo, "v"))),
+				"Azure agent pool %q has provisioning state %q", agentPoolName, ptr.Deref(resp.Properties.ProvisioningState, ""))
+		}, input.WaitForMachinePools...).Should(Succeed(), "agent pool upgrade did not complete for MachinePool %s/%s", machinePool.Namespace, machinePool.Name)
+	}
 }
