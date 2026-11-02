@@ -222,7 +222,16 @@ func (s *Service) reapplyVM(ctx context.Context, spec azure.ResourceSpecGetter) 
 	s.Scope.DeleteLongRunningOperationState(resourceName, reapplyServiceName, infrav1.PutFuture)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to reapply VM %s/%s", rgName, resourceName)
+		errWrapped := errors.Wrapf(err, "failed to reapply VM %s/%s", rgName, resourceName)
+		// Mirror async.CreateOrUpdateResource: retryable failures from ReapplyAsync
+		// (throttling, transient server-side errors, network faults, or a timeout
+		// before a poller was returned) are surfaced as transient so they are requeued,
+		// rather than reported as a terminal VM provisioning failure. Non-retryable
+		// failures (e.g. a failed provisioning state) are returned unwrapped.
+		if azure.IsTransientError(err) {
+			return nil, azure.WithTransientError(errWrapped, async.GetRetryAfterFromError(err))
+		}
+		return nil, errWrapped
 	}
 
 	// Fetch the VM after reapply to return the updated resource.
