@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
-	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -29,13 +29,13 @@ import (
 func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 	cases := []struct {
 		name   string
-		pool   *asocontainerservicehub.ManagedClustersAgentPool
-		expect func(*GomegaWithT, asocontainerservicehub.ManagedClusterAgentPoolProfile)
+		pool   *asocontainerservicev1hub.ManagedClustersAgentPool
+		expect func(*GomegaWithT, asocontainerservicev1hub.ManagedClusterAgentPoolProfile)
 	}{
 		{
 			name: "Should set all values correctly",
-			pool: &asocontainerservicehub.ManagedClustersAgentPool{
-				Spec: asocontainerservicehub.ManagedClustersAgentPool_Spec{
+			pool: &asocontainerservicev1hub.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1hub.ManagedClustersAgentPool_Spec{
 					AzureName:           "agentpool1",
 					VmSize:              ptr.To("Standard_D2s_v3"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),
@@ -65,8 +65,8 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 				},
 			},
 
-			expect: func(g *GomegaWithT, result asocontainerservicehub.ManagedClusterAgentPoolProfile) {
-				g.Expect(result).To(Equal(asocontainerservicehub.ManagedClusterAgentPoolProfile{
+			expect: func(g *GomegaWithT, result asocontainerservicev1hub.ManagedClusterAgentPoolProfile) {
+				g.Expect(result).To(Equal(asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
 					Name:                ptr.To("agentpool1"),
 					VmSize:              ptr.To("Standard_D2s_v3"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),

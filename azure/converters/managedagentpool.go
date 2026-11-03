@@ -23,14 +23,14 @@ import (
 	// then updated to the user-defined value. If the field is immutable, this
 	// update will fail. The linter should catch if there are missing fields,
 	// but verify that check is actually working.
-	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	"k8s.io/utils/ptr"
 )
 
 // AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
-func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicehub.ManagedClustersAgentPool) asocontainerservicehub.ManagedClusterAgentPoolProfile {
+func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1hub.ManagedClustersAgentPool) asocontainerservicev1hub.ManagedClusterAgentPoolProfile {
 	properties := pool.Spec
-	agentPool := asocontainerservicehub.ManagedClusterAgentPoolProfile{
+	agentPool := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
 		AvailabilityZones:                 properties.AvailabilityZones,
 		CapacityReservationGroupReference: properties.CapacityReservationGroupReference,
 		Count:                             properties.Count,

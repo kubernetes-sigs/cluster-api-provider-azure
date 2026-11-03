@@ -20,8 +20,8 @@ import (
 	"context"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
-	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -183,7 +183,7 @@ func (s *AgentPoolSpec) ResourceRef() genruntime.MetaObject {
 // If the auto upgrade channel is set to patch, stable or rapid, clusters can be upgraded to a higher version by AKS.
 // If auto upgrade is triggered, the existing Kubernetes version will be higher than the user's desired Kubernetes version.
 // CAPZ should honour the upgrade and it should not downgrade to the lower desired version.
-func (s *AgentPoolSpec) getManagedMachinePoolVersion(existing *asocontainerservicehub.ManagedClustersAgentPool) *string {
+func (s *AgentPoolSpec) getManagedMachinePoolVersion(existing *asocontainerservicev1hub.ManagedClustersAgentPool) *string {
 	if existing == nil || existing.Spec.OrchestratorVersion == nil {
 		return s.Version
 	}
@@ -200,9 +200,9 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 	defer done()
 
 	// If existing is preview, convert to stable then back to preview at the end of the function.
-	var existing *asocontainerservicehub.ManagedClustersAgentPool
+	var existing *asocontainerservicev1hub.ManagedClustersAgentPool
 	if existingObj != nil {
-		hub := &asocontainerservicehub.ManagedClustersAgentPool{}
+		hub := &asocontainerservicev1hub.ManagedClustersAgentPool{}
 		if err := existingObj.(conversion.Convertible).ConvertTo(hub); err != nil {
 			return nil, err
 		}
@@ -211,7 +211,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 
 	agentPool := existing
 	if agentPool == nil {
-		agentPool = &asocontainerservicehub.ManagedClustersAgentPool{}
+		agentPool = &asocontainerservicev1hub.ManagedClustersAgentPool{}
 	}
 
 	agentPool.Spec.AzureName = s.AzureName
@@ -244,7 +244,7 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 	}
 
 	if s.KubeletConfig != nil {
-		agentPool.Spec.KubeletConfig = &asocontainerservicehub.KubeletConfig{
+		agentPool.Spec.KubeletConfig = &asocontainerservicev1hub.KubeletConfig{
 			CpuManagerPolicy:      s.KubeletConfig.CPUManagerPolicy,
 			CpuCfsQuota:           s.KubeletConfig.CPUCfsQuota,
 			CpuCfsQuotaPeriod:     s.KubeletConfig.CPUCfsQuotaPeriod,
@@ -280,13 +280,13 @@ func (s *AgentPoolSpec) Parameters(ctx context.Context, existingObj genruntime.M
 	}
 
 	if s.LinuxOSConfig != nil {
-		agentPool.Spec.LinuxOSConfig = &asocontainerservicehub.LinuxOSConfig{
+		agentPool.Spec.LinuxOSConfig = &asocontainerservicev1hub.LinuxOSConfig{
 			SwapFileSizeMB:             s.LinuxOSConfig.SwapFileSizeMB,
 			TransparentHugePageEnabled: (*string)(s.LinuxOSConfig.TransparentHugePageEnabled),
 			TransparentHugePageDefrag:  (*string)(s.LinuxOSConfig.TransparentHugePageDefrag),
 		}
 		if s.LinuxOSConfig.Sysctls != nil {
-			agentPool.Spec.LinuxOSConfig.Sysctls = &asocontainerservicehub.SysctlConfig{
+			agentPool.Spec.LinuxOSConfig.Sysctls = &asocontainerservicev1hub.SysctlConfig{
 				FsAioMaxNr:                     s.LinuxOSConfig.Sysctls.FsAioMaxNr,
 				FsFileMax:                      s.LinuxOSConfig.Sysctls.FsFileMax,
 				FsInotifyMaxUserWatches:        s.LinuxOSConfig.Sysctls.FsInotifyMaxUserWatches,

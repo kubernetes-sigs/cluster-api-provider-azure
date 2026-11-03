@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -86,7 +86,7 @@ func postCreateOrUpdateResourceHook(ctx context.Context, scope ManagedClusterSco
 		return err
 	}
 
-	managedCluster := &asocontainerservicehub.ManagedCluster{}
+	managedCluster := &asocontainerservicev1hub.ManagedCluster{}
 	if err := obj.(conversion.Convertible).ConvertTo(managedCluster); err != nil {
 		return err
 	}
