@@ -1762,12 +1762,8 @@ func TestCreateOrUpdateResource_AzureCLIErrorsLeaveCredentialAnnotation(t *testi
 			specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 				ObjectMeta: metav1.ObjectMeta{Name: "name"},
 			})
-			specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(
-				func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
-					return group, nil
-				},
-			)
-			specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+			specMock.EXPECT().Parameters(gomock.Any(), gomock.Any()).Times(0)
+			specMock.EXPECT().WasManaged(gomock.Any()).Times(0)
 
 			ctx := t.Context()
 			g.Expect(c.Create(ctx, existing)).To(Succeed())
@@ -1850,12 +1846,8 @@ func TestCreateOrUpdateResource_AzureCLISubscriptionMismatchSkipsASOResource(t *
 	specMock.EXPECT().ResourceRef().Return(&asoresourcesv1.ResourceGroup{
 		ObjectMeta: metav1.ObjectMeta{Name: "name"},
 	})
-	specMock.EXPECT().Parameters(gomockinternal.AContext(), gomock.Not(gomock.Nil())).DoAndReturn(
-		func(_ context.Context, group *asoresourcesv1.ResourceGroup) (*asoresourcesv1.ResourceGroup, error) {
-			return group, nil
-		},
-	)
-	specMock.EXPECT().WasManaged(gomock.Any()).Return(false)
+	specMock.EXPECT().Parameters(gomock.Any(), gomock.Any()).Times(0)
+	specMock.EXPECT().WasManaged(gomock.Any()).Times(0)
 
 	ctx := t.Context()
 	g.Expect(c.Create(ctx, existing)).To(Succeed())
