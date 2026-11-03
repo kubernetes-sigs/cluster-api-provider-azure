@@ -21,14 +21,20 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
+	asoconditions "github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -48,86 +54,143 @@ func AKSAzureClusterAutoscalerSettingsSpec(ctx context.Context, inputGetter func
 	containerserviceClient, err := armcontainerservice.NewManagedClustersClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
-	var expectedAksExpander armcontainerservice.Expander
-	var newExpanderValue infrav1.Expander
-	var amcpInitialAutoScalerProfile = &infrav1.AutoScalerProfile{}
-	amcp := &infrav1.AzureManagedControlPlane{}
+	controlPlane, err := getAKSControlPlane(ctx, mgmtClient, input.Cluster)
+	Expect(err).NotTo(HaveOccurred())
+	resourceGroup, clusterName, err := getAKSClusterNames(ctx, mgmtClient, controlPlane)
+	Expect(err).NotTo(HaveOccurred())
+	initialProfile, err := getAKSAutoScalerProfile(controlPlane)
+	Expect(err).NotTo(HaveOccurred())
+
+	var initialChildProfile *asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile
+	var newExpander armcontainerservice.Expander
 	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
+		managedCluster, err := getAKSManagedCluster(ctx, mgmtClient, controlPlane)
 		g.Expect(err).NotTo(HaveOccurred())
-		amcpInitialAutoScalerProfile = amcp.Spec.AutoScalerProfile
-
-		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name, nil)
+		g.Expect(aksManagedClusterReady(managedCluster)).To(BeTrue())
+		aks, err := containerserviceClient.Get(ctx, resourceGroup, clusterName, nil)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(aks.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
-		aksInitialAutoScalerProfile := aks.Properties.AutoScalerProfile
-
-		// Conditional is based off of the actual AKS settings not the AzureManagedControlPlane
-		if aksInitialAutoScalerProfile == nil {
-			expectedAksExpander = armcontainerservice.ExpanderLeastWaste
-			newExpanderValue = infrav1.ExpanderLeastWaste
-		} else if aksInitialAutoScalerProfile.Expander == ptr.To(armcontainerservice.ExpanderLeastWaste) {
-			expectedAksExpander = armcontainerservice.ExpanderMostPods
-			newExpanderValue = infrav1.ExpanderMostPods
-		}
-
-		amcp.Spec.AutoScalerProfile = nil
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(mgmtClient.Update(ctx, amcp)).To(Succeed())
-	}, input.WaitIntervals...).Should(Succeed())
-	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(amcp.Spec.AutoScalerProfile).To(BeNil())
+		g.Expect(aks.Properties).NotTo(BeNil())
+		g.Expect(aks.Properties.ProvisioningState).To(HaveValue(Equal("Succeeded")))
+		initialChildProfile = managedCluster.Spec.AutoScalerProfile.DeepCopy()
+		newExpander = nextAKSExpander(aks.Properties.AutoScalerProfile)
 	}, input.WaitIntervals...).Should(Succeed())
 
-	// Now set to the new value
-	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
-		g.Expect(err).NotTo(HaveOccurred())
-		amcp.Spec.AutoScalerProfile = &infrav1.AutoScalerProfile{
-			Expander: (*infrav1.Expander)(ptr.To(string(newExpanderValue))),
-		}
-		g.Expect(mgmtClient.Update(ctx, amcp)).To(Succeed())
-	}, input.WaitIntervals...).Should(Succeed())
+	updateProfile := func(profile map[string]interface{}) {
+		GinkgoHelper()
+		Eventually(func(g Gomega) {
+			g.Expect(mgmtClient.Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane)).To(Succeed())
+			g.Expect(setAKSAutoScalerProfile(controlPlane, profile)).To(Succeed())
+			g.Expect(mgmtClient.Update(ctx, controlPlane)).To(Succeed())
+		}, input.WaitIntervals...).Should(Succeed())
+	}
+	waitForProfile := func(checkProfile func(Gomega, *asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile)) {
+		GinkgoHelper()
+		Eventually(func(g Gomega) {
+			managedCluster, err := getAKSManagedCluster(ctx, mgmtClient, controlPlane)
+			g.Expect(err).NotTo(HaveOccurred())
+			checkProfile(g, managedCluster.Spec.AutoScalerProfile)
+			g.Expect(aksManagedClusterReady(managedCluster)).To(BeTrue(), "waiting for the current ASO ManagedCluster generation")
+			aks, err := containerserviceClient.Get(ctx, resourceGroup, clusterName, nil)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(aks.Properties).NotTo(BeNil())
+			g.Expect(aks.Properties.ProvisioningState).To(HaveValue(Equal("Succeeded")))
+		}, input.WaitIntervals...).Should(Succeed())
+	}
+
+	defer func() {
+		By("Restoring the original cluster-autoscaler profile")
+		updateProfile(initialProfile)
+		waitForProfile(func(g Gomega, profile *asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile) {
+			g.Expect(profile).To(Equal(initialChildProfile))
+		})
+	}()
+
+	By("Clearing the cluster-autoscaler profile")
+	updateProfile(nil)
+	waitForProfile(func(g Gomega, profile *asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile) {
+		g.Expect(profile).To(BeNil())
+	})
+
+	By("Updating the cluster-autoscaler expander")
+	updateProfile(map[string]interface{}{"expander": string(newExpander)})
+	waitForProfile(func(g Gomega, profile *asocontainerservicev1.ManagedClusterProperties_AutoScalerProfile) {
+		g.Expect(profile).NotTo(BeNil())
+		g.Expect(profile.Expander).To(HaveValue(BeEquivalentTo(newExpander)))
+	})
+
 	By("Verifying the cluster-autoscaler settings have changed")
 	Eventually(func(g Gomega) {
-		// Check that the autoscaler settings have been sync'd to AKS
-		aks, err := containerserviceClient.Get(ctx, amcp.Spec.ResourceGroupName, amcp.Name, nil)
+		aks, err := containerserviceClient.Get(ctx, resourceGroup, clusterName, nil)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(aks.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
+		g.Expect(aks.Properties).NotTo(BeNil())
+		g.Expect(aks.Properties.ProvisioningState).To(HaveValue(Equal("Succeeded")))
 		g.Expect(aks.Properties.AutoScalerProfile).NotTo(BeNil())
-		g.Expect(aks.Properties.AutoScalerProfile.Expander).To(Equal(&expectedAksExpander))
+		g.Expect(aks.Properties.AutoScalerProfile.Expander).To(HaveValue(Equal(newExpander)))
 	}, input.WaitIntervals...).Should(Succeed())
+}
 
-	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
-		g.Expect(err).NotTo(HaveOccurred())
-		amcp.Spec.AutoScalerProfile = amcpInitialAutoScalerProfile
-		g.Expect(mgmtClient.Update(ctx, amcp)).To(Succeed())
-	}, input.WaitIntervals...).Should(Succeed())
-	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, types.NamespacedName{
-			Namespace: input.Cluster.Namespace,
-			Name:      input.Cluster.Spec.ControlPlaneRef.Name,
-		}, amcp)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(amcp.Spec.AutoScalerProfile).To(Equal(amcpInitialAutoScalerProfile))
-	}, input.WaitIntervals...).Should(Succeed())
+func nextAKSExpander(profile *armcontainerservice.ManagedClusterPropertiesAutoScalerProfile) armcontainerservice.Expander {
+	if profile != nil && ptr.Deref(profile.Expander, "") == armcontainerservice.ExpanderLeastWaste {
+		return armcontainerservice.ExpanderMostPods
+	}
+	return armcontainerservice.ExpanderLeastWaste
+}
+
+func getAKSAutoScalerProfile(controlPlane client.Object) (map[string]interface{}, error) {
+	switch cp := controlPlane.(type) {
+	case *infrav1.AzureManagedControlPlane:
+		if cp.Spec.AutoScalerProfile == nil {
+			return nil, nil
+		}
+		return runtime.DefaultUnstructuredConverter.ToUnstructured(cp.Spec.AutoScalerProfile)
+	case *infrav1.AzureASOManagedControlPlane:
+		resource, _, err := findAKSResource(cp.Spec.Resources, "ManagedCluster")
+		if err != nil {
+			return nil, err
+		}
+		profile, _, err := unstructured.NestedMap(resource.Object, "spec", "autoScalerProfile")
+		return profile, err
+	default:
+		return nil, fmt.Errorf("unsupported AKS control plane %T", controlPlane)
+	}
+}
+
+func setAKSAutoScalerProfile(controlPlane client.Object, profile map[string]interface{}) error {
+	switch cp := controlPlane.(type) {
+	case *infrav1.AzureManagedControlPlane:
+		if profile == nil {
+			cp.Spec.AutoScalerProfile = nil
+			return nil
+		}
+		updated := &infrav1.AutoScalerProfile{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(profile, updated); err != nil {
+			return err
+		}
+		cp.Spec.AutoScalerProfile = updated
+		return nil
+	case *infrav1.AzureASOManagedControlPlane:
+		resource, index, err := findAKSResource(cp.Spec.Resources, "ManagedCluster")
+		if err != nil {
+			return err
+		}
+		if profile == nil {
+			unstructured.RemoveNestedField(resource.Object, "spec", "autoScalerProfile")
+		} else if err := unstructured.SetNestedMap(resource.Object, profile, "spec", "autoScalerProfile"); err != nil {
+			return err
+		}
+		raw, err := resource.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		cp.Spec.Resources[index] = runtime.RawExtension{Raw: raw}
+		return nil
+	default:
+		return fmt.Errorf("unsupported AKS control plane %T", controlPlane)
+	}
+}
+
+func aksManagedClusterReady(managedCluster *asocontainerservicev1.ManagedCluster) bool {
+	conditions := managedCluster.GetConditions()
+	index, found := conditions.FindIndexByType(asoconditions.ConditionTypeReady)
+	return found && conditions[index].Status == metav1.ConditionTrue && conditions[index].ObservedGeneration == managedCluster.Generation
 }
