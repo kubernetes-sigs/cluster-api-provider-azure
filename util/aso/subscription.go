@@ -21,6 +21,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"os"
+	"strings"
 
 	asoconfig "github.com/Azure/azure-service-operator/v2/pkg/common/config"
 	"github.com/pkg/errors"
@@ -75,7 +76,7 @@ func ValidateAzureCLISubscription(ctx context.Context, c client.Client, namespac
 	if clusterSubscription == "" {
 		clusterSubscription = os.Getenv("AZURE_SUBSCRIPTION_ID")
 	}
-	if clusterSubscription != asoSubscription {
+	if !strings.EqualFold(clusterSubscription, asoSubscription) {
 		return &SubscriptionMismatchError{
 			ClusterSubscription: clusterSubscription,
 			ASOSubscription:     asoSubscription,

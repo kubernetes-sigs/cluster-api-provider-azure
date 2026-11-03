@@ -66,6 +66,11 @@ func TestValidateAzureCLISubscription(t *testing.T) {
 			specSub: "secret-sub",
 		},
 		{
+			name:    "namespace credential subscription matches regardless of case",
+			objects: []runtime.Object{namespaceCredential},
+			specSub: "SECRET-SUB",
+		},
+		{
 			name:    "namespace credential subscription differs",
 			objects: []runtime.Object{namespaceCredential},
 			specSub: "cluster-sub",
