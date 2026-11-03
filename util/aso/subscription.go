@@ -18,7 +18,6 @@ package aso
 
 import (
 	"context"
-	stderrors "errors"
 	"fmt"
 	"os"
 	"strings"
@@ -41,12 +40,6 @@ type SubscriptionMismatchError struct {
 // Error returns the subscription mismatch description.
 func (e *SubscriptionMismatchError) Error() string {
 	return fmt.Sprintf("AzureCLI cluster subscription %q does not match the subscription %q ASO would use", e.ClusterSubscription, e.ASOSubscription)
-}
-
-// IsSubscriptionMismatch reports whether err is a SubscriptionMismatchError.
-func IsSubscriptionMismatch(err error) bool {
-	var mismatch *SubscriptionMismatchError
-	return stderrors.As(err, &mismatch)
 }
 
 // asoNamespacedCredentialSecret is the namespace-scoped credential ASO prefers

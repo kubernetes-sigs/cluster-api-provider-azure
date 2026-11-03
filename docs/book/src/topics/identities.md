@@ -277,7 +277,7 @@ If an `aso-credential` Secret exists, ASO prefers it over the global credential 
 
 On either of those successful paths, CAPZ deletes a CAPZ-owned leftover Secret. A user-managed Secret with the same name is left in place.
 
-An incomplete Secret stops CAPZ reconciliation and leaves the current credential reference unchanged. An invalid namespace Secret does not cause ASO to use the global credential. On a subscription mismatch, CAPZ returns an error and sets `serviceoperator.azure.com/reconcile-policy: skip` on each existing managed ASO resource it reaches, saving the prior policy so it can restore it after the mismatch is resolved. CAPZ continues through the later services for this mismatch so their existing ASO resources are skipped too. This prevents ASO from reconciling with either the mismatched namespace credential or a colliding per-resource Secret. Other service errors still stop the loop. If the namespace Secret is removed, CAPZ resumes the documented global-credential path; CAPZ cannot verify that global credential's subscription.
+An incomplete Secret stops CAPZ reconciliation and leaves the ASO resource's `credential-from` annotation unchanged. An invalid namespace Secret does not cause ASO to use the global credential. On a subscription mismatch, CAPZ returns an error before changing the ASO resource's `credential-from` or `reconcile-policy` annotations. Ensure the namespace credential and cluster use the same subscription before retrying. If the namespace Secret is removed, CAPZ resumes the documented global-credential path; CAPZ cannot verify that global credential's subscription.
 
 ## Azure Host Identity
 

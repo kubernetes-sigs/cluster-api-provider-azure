@@ -125,8 +125,10 @@ func (s *azureMachineService) reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed defaulting subnet name")
 	}
 
-	if err := reconcileServices(ctx, s.services, "AzureMachine"); err != nil {
-		return err
+	for _, service := range s.services {
+		if err := service.Reconcile(ctx); err != nil {
+			return errors.Wrapf(err, "failed to reconcile AzureMachine service %s", service.Name())
+		}
 	}
 
 	return nil

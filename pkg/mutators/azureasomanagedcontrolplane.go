@@ -31,7 +31,7 @@ import (
 	// then updated to the user-defined value. If the field is immutable, this
 	// update will fail. The linter should catch if there are missing fields,
 	// but verify that check is actually working.
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
+	asocontainerservicehub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -47,7 +47,7 @@ import (
 
 var (
 	// ErrNoManagedClusterDefined describes an AzureASOManagedControlPlane without a ManagedCluster.
-	ErrNoManagedClusterDefined = fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicev1hub.GroupVersion.Group)
+	ErrNoManagedClusterDefined = fmt.Errorf("no %s ManagedCluster defined in AzureASOManagedControlPlane spec.resources", asocontainerservicehub.GroupVersion.Group)
 
 	// ErrNoAzureASOManagedMachinePools means no AzureASOManagedMachinePools exist for an AzureASOManagedControlPlane.
 	ErrNoAzureASOManagedMachinePools = errors.New("no AzureASOManagedMachinePools found for AzureASOManagedControlPlane")
@@ -62,7 +62,7 @@ func SetManagedClusterDefaults(ctrlClient client.Client, asoManagedControlPlane 
 		var managedCluster *unstructured.Unstructured
 		var managedClusterPath string
 		for i, u := range us {
-			if u.GroupVersionKind().Group == asocontainerservicev1hub.GroupVersion.Group &&
+			if u.GroupVersionKind().Group == asocontainerservicehub.GroupVersion.Group &&
 				u.GroupVersionKind().Kind == "ManagedCluster" {
 				managedCluster = u
 				managedClusterPath = fmt.Sprintf("spec.resources[%d]", i)
@@ -286,7 +286,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 		}
 
 		for _, u := range resources {
-			if u.GroupVersionKind().Group != asocontainerservicev1hub.GroupVersion.Group ||
+			if u.GroupVersionKind().Group != asocontainerservicehub.GroupVersion.Group ||
 				u.GroupVersionKind().Kind != "ManagedClustersAgentPool" {
 				continue
 			}
@@ -309,7 +309,7 @@ func agentPoolsFromManagedMachinePools(ctx context.Context, ctrlClient client.Cl
 }
 
 func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, agentPools []conversion.Convertible) error {
-	hubMC := &asocontainerservicev1hub.ManagedCluster{}
+	hubMC := &asocontainerservicehub.ManagedCluster{}
 	err := managedCluster.ConvertTo(hubMC)
 	if err != nil {
 		return err
@@ -317,13 +317,13 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 	hubMC.Spec.AgentPoolProfiles = nil
 
 	for _, agentPool := range agentPools {
-		hubPool := &asocontainerservicev1hub.ManagedClustersAgentPool{}
+		hubPool := &asocontainerservicehub.ManagedClustersAgentPool{}
 		err := agentPool.ConvertTo(hubPool)
 		if err != nil {
 			return err
 		}
 
-		profile := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+		profile := asocontainerservicehub.ManagedClusterAgentPoolProfile{
 			AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
 			CapacityReservationGroupReference: hubPool.Spec.CapacityReservationGroupReference,
 			Count:                             hubPool.Spec.Count,
