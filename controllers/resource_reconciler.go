@@ -87,8 +87,9 @@ func NewResourceReconciler(c client.Client, owner ResourceReconcilerOwner, watch
 }
 
 // WithChildrenFirst configures the ResourceReconciler to delete child resources
-// before their dependencies, using ASO owner references and ARM IDs in resource
-// specifications to determine the hierarchy.
+// before their dependencies, using ASO owner references, ARM IDs, and
+// Kubernetes resource references in resource specifications to determine the
+// hierarchy.
 func WithChildrenFirst() ResourceReconcilerOption {
 	return func(r *ResourceReconciler) {
 		r.childrenFirst = true
@@ -260,8 +261,8 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 }
 
 // resourcesForOrdering loads the full ASO objects for resources being deleted.
-// Their specs contain ARM IDs for dependencies that are not represented by
-// Kubernetes owner references, such as a PrivateEndpoint's subnet.
+// Their specs contain ARM IDs and Kubernetes resource references for
+// dependencies that are not represented by owner references.
 func (r *ResourceReconciler) resourcesForOrdering(ctx context.Context, resources []*metav1.PartialObjectMetadata) (map[types.UID]*unstructured.Unstructured, error) {
 	objects := make(map[types.UID]*unstructured.Unstructured, len(resources))
 	for _, resource := range resources {
