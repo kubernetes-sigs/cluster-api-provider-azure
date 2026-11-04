@@ -432,8 +432,15 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 	}
 
 	dependencies := make(map[types.UID]sets.Set[types.UID], len(resources))
+	resourcesByReference := make(map[resourceReferenceKey]types.UID, len(resources))
 	for _, resource := range resources {
 		dependencies[resource.UID] = sets.New[types.UID]()
+		gvk := resource.GroupVersionKind()
+		resourcesByReference[resourceReferenceKey{
+			group: gvk.Group,
+			kind:  gvk.Kind,
+			name:  resource.Name,
+		}] = resource.UID
 		for i := range resource.OwnerReferences {
 			ref := &resource.OwnerReferences[i]
 			if ref.Controller != nil && *ref.Controller {
@@ -476,6 +483,11 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 				}
 			}
 			if bestMatch != "" {
+				dependencies[uid].Insert(dependency)
+			}
+		})
+		visitKubernetesResourceReferences(spec, func(reference resourceReferenceKey) {
+			if dependency, found := resourcesByReference[reference]; found && dependency != uid {
 				dependencies[uid].Insert(dependency)
 			}
 		})
@@ -535,6 +547,32 @@ func visitARMIDs(value any, visit func(string)) {
 	case map[string]any:
 		for _, element := range value {
 			visitARMIDs(element, visit)
+		}
+	}
+}
+
+type resourceReferenceKey struct {
+	group string
+	kind  string
+	name  string
+}
+
+func visitKubernetesResourceReferences(value any, visit func(resourceReferenceKey)) {
+	switch value := value.(type) {
+	case []any:
+		for _, element := range value {
+			visitKubernetesResourceReferences(element, visit)
+		}
+	case map[string]any:
+		group, groupFound := value["group"].(string)
+		kind, kindFound := value["kind"].(string)
+		name, nameFound := value["name"].(string)
+		armID, _ := value["armId"].(string)
+		if groupFound && kindFound && nameFound && group != "" && kind != "" && name != "" && armID == "" {
+			visit(resourceReferenceKey{group: group, kind: kind, name: name})
+		}
+		for _, element := range value {
+			visitKubernetesResourceReferences(element, visit)
 		}
 	}
 }

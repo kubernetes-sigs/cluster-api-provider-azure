@@ -556,6 +556,71 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(remainingNames).To(ConsistOf("vnet", "rg"))
 	})
 
+	t.Run("delete resources in Kubernetes reference order", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				UID:       "owner-uid",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{
+						asoresourcesv1.GroupVersion.WithKind("ResourceGroup"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetworksSubnet"),
+						asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"),
+					}),
+				},
+			},
+		}
+		resourceGroup := &asoresourcesv1.ResourceGroup{
+			TypeMeta: rgTypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       owner.Namespace,
+				Name:            "rg",
+				UID:             "rg-uid",
+				OwnerReferences: controlledBy(g, s, owner),
+			},
+		}
+		resourceGroupOwner := metav1.OwnerReference{UID: "rg-uid"}
+		vnet := &unstructured.Unstructured{Object: map[string]any{}}
+		vnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"))
+		vnet.SetNamespace(owner.Namespace)
+		vnet.SetName("vnet")
+		vnet.SetUID("vnet-uid")
+		vnet.SetOwnerReferences(append(controlledBy(g, s, owner), resourceGroupOwner))
+
+		subnet := &unstructured.Unstructured{Object: map[string]any{}}
+		subnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetworksSubnet"))
+		subnet.SetNamespace(owner.Namespace)
+		subnet.SetName("subnet")
+		subnet.SetUID("subnet-uid")
+		subnet.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "vnet-uid"}))
+
+		privateEndpoint := &unstructured.Unstructured{Object: map[string]any{}}
+		privateEndpoint.SetGroupVersionKind(asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"))
+		privateEndpoint.SetNamespace(owner.Namespace)
+		privateEndpoint.SetName("private-endpoint")
+		privateEndpoint.SetUID("private-endpoint-uid")
+		privateEndpoint.SetOwnerReferences(append(controlledBy(g, s, owner), resourceGroupOwner))
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, asonetworkv120201101.GroupVersion.Group, "spec", "subnet", "reference", "group")).To(Succeed())
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, "VirtualNetworksSubnet", "spec", "subnet", "reference", "kind")).To(Succeed())
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, "subnet", "spec", "subnet", "reference", "name")).To(Succeed())
+
+		clientWithDeleteOrder := &recordingDeleteClient{Client: fakeClientBuilder().WithObjects(resourceGroup, vnet, subnet, privateEndpoint).Build()}
+		r := NewResourceReconciler(clientWithDeleteOrder, owner, nil, nil, WithChildrenFirst())
+
+		g.Expect(r.Delete(ctx)).To(Succeed())
+		g.Expect(clientWithDeleteOrder.deleted).To(Equal([]string{"PrivateEndpoint/private-endpoint"}))
+		for _, object := range []*unstructured.Unstructured{vnet, subnet} {
+			remaining := object.DeepCopy()
+			g.Expect(r.Get(ctx, client.ObjectKeyFromObject(object), remaining)).To(Succeed())
+		}
+		remainingResourceGroup := &asoresourcesv1.ResourceGroup{}
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(resourceGroup), remainingResourceGroup)).To(Succeed())
+		g.Expect(owner.Status.Resources).To(HaveLen(3))
+	})
+
 	t.Run("done deleting", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
