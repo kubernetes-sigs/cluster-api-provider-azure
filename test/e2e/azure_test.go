@@ -904,7 +904,11 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating an AKS cluster with the ASO API [Managed Kubernetes]", func() {
 		It("with a single control plane node and 1 node", func() {
 			clusterName = getClusterName(clusterNamePrefix, "asoapi")
+			kubernetesVersionUpgradeFrom, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersionUpgradeFrom)
+			Byf("Upgrading from k8s version %s", kubernetesVersionUpgradeFrom)
+			Expect(err).NotTo(HaveOccurred())
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, AKSKubernetesVersion)
+			Byf("Upgrading to k8s version %s", kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
@@ -912,7 +916,7 @@ var _ = Describe("Workload cluster creation", func() {
 				withFlavor("aks-aso"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(kubernetesVersion),
+				withKubernetesVersion(kubernetesVersionUpgradeFrom),
 				withWorkerMachineCount(1),
 				withMachinePoolInterval(specName, "wait-worker-nodes"),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
@@ -920,6 +924,33 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
 				}),
 			), result)
+
+			if semver.Compare(semver.MajorMinor(kubernetesVersionUpgradeFrom), "v1.37") < 0 &&
+				semver.Compare(semver.MajorMinor(kubernetesVersion), "v1.37") >= 0 {
+				Logf("Skipping Kubernetes upgrade from %s to %s: Windows Server 2022 node pools do not support Kubernetes 1.37 or later "+
+					"(https://github.com/Azure/AKS/issues/4168)", kubernetesVersionUpgradeFrom, kubernetesVersion)
+			} else {
+				By("Upgrading the Kubernetes version of the cluster", func() {
+					AKSUpgradeSpec(ctx, func() AKSUpgradeSpecInput {
+						return AKSUpgradeSpecInput{
+							Cluster:                    result.Cluster,
+							MachinePools:               result.MachinePools,
+							KubernetesVersionUpgradeTo: kubernetesVersion,
+							WaitForControlPlane:        e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
+							WaitForMachinePools:        e2eConfig.GetIntervals(specName, "wait-machine-pool-upgrade"),
+						}
+					})
+				})
+			}
+
+			By("modifying the azure cluster-autoscaler settings", func() {
+				AKSAzureClusterAutoscalerSettingsSpec(ctx, func() AKSAzureClusterAutoscalerSettingsSpecInput {
+					return AKSAzureClusterAutoscalerSettingsSpecInput{
+						Cluster:       result.Cluster,
+						WaitIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+					}
+				})
+			})
 
 			By("Exercising machine pools", func() {
 				AKSMachinePoolSpec(ctx, func() AKSMachinePoolSpecInput {
