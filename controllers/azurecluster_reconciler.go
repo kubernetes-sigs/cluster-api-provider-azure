@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
@@ -176,7 +175,7 @@ func (s *azureClusterService) delete(ctx context.Context) error {
 				return errors.Wrap(err, "failed to get private DNS service")
 			}
 			if err := privateDNSSvc.Delete(ctx); err != nil {
-				return errors.Wrap(err, "failed to delete private DNS zone")
+				return errors.Wrap(err, "failed to delete private DNS")
 			}
 		}
 
@@ -226,14 +225,11 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 // isPrivateDNSZoneOutsideResourceGroups returns true if the private DNS zone is in a resource group
 // other than the cluster and vnet resource groups.
 func (s *azureClusterService) isPrivateDNSZoneOutsideResourceGroups() bool {
-	if !s.scope.IsAPIServerPrivate() || s.scope.PrivateDNSZoneMode() == infrav1.PrivateDNSZoneModeNone {
+	zoneSpec, _, _ := s.scope.PrivateDNSSpec()
+	if zoneSpec == nil {
 		return false
 	}
-	zoneResourceGroup := s.scope.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneResourceGroup
-	if zoneResourceGroup == "" {
-		// The zone defaults to the cluster resource group.
-		return false
-	}
+	zoneResourceGroup := zoneSpec.ResourceGroupName()
 	return !strings.EqualFold(zoneResourceGroup, s.scope.ResourceGroup()) &&
 		!strings.EqualFold(zoneResourceGroup, s.scope.Vnet().ResourceGroup)
 }

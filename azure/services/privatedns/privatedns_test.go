@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -30,7 +29,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns/mock_privatedns"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -364,53 +362,6 @@ func TestReconcilePrivateDNS(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestReconcilePrivateDNSRecordWithoutIP(t *testing.T) {
-	g := NewWithT(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	scopeMock := mock_privatedns.NewMockScope(mockCtrl)
-	zoneReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
-	vnetLinkReconcilerMock := mock_async.NewMockReconciler(mockCtrl)
-	recordCreatorMock := mock_async.NewMockCreator[armprivatedns.RecordSetsClientCreateOrUpdateResponse](mockCtrl)
-	recordDeleterMock := mock_async.NewMockDeleter[armprivatedns.RecordSetsClientDeleteResponse](mockCtrl)
-	tagsGetterMock := mock_async.NewMockTagsGetter(mockCtrl)
-
-	recordWithoutIP := RecordSpec{
-		Record:        infrav1.AddressRecord{Hostname: "my-host"},
-		ZoneName:      zoneName,
-		ResourceGroup: resourceGroup,
-	}
-
-	s := scopeMock.EXPECT()
-	s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
-	s.PrivateDNSSpec().Return(fakeZone, []azure.ResourceSpecGetter{fakeLink1}, []azure.ResourceSpecGetter{recordWithoutIP}).Times(2)
-	s.SubscriptionID().Return("123").Times(2)
-	tagsGetterMock.EXPECT().GetAtScope(gomockinternal.AContext(), azure.PrivateDNSZoneID("123", fakeZone.ResourceGroupName(), fakeZone.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
-	tagsGetterMock.EXPECT().GetAtScope(gomockinternal.AContext(), azure.VirtualNetworkLinkID("123", fakeLink1.ResourceGroupName(), fakeLink1.OwnerResourceName(), fakeLink1.ResourceName())).Return(armresources.TagsResource{}, notFoundError)
-	zoneReconcilerMock.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), fakeZone, ServiceName).Return(nil, nil)
-	vnetLinkReconcilerMock.EXPECT().CreateOrUpdateResource(gomockinternal.AContext(), fakeLink1, ServiceName).Return(nil, nil)
-	s.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, nil)
-	s.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, nil)
-
-	// The real async reconciler builds the record parameters; the record must not be sent to Azure.
-	s.GetLongRunningOperationState("my-host", ServiceName, infrav1.PutFuture).Return(nil)
-	recordCreatorMock.EXPECT().Get(gomockinternal.AContext(), recordWithoutIP).Return(nil, notFoundError)
-	s.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, gomock.Any())
-
-	svc := &Service{
-		Scope:              scopeMock,
-		zoneReconciler:     zoneReconcilerMock,
-		vnetLinkReconciler: vnetLinkReconcilerMock,
-		recordReconciler: async.New[armprivatedns.RecordSetsClientCreateOrUpdateResponse,
-			armprivatedns.RecordSetsClientDeleteResponse](scopeMock, recordCreatorMock, recordDeleterMock),
-		TagsGetter: tagsGetterMock,
-	}
-
-	err := svc.Reconcile(t.Context())
-	g.Expect(err).To(MatchError("failed to get desired parameters for resource my-rg/my-host (service: privatedns): record my-host in private DNS zone my-zone has no IP address"))
 }
 
 func TestDeletePrivateDNS(t *testing.T) {

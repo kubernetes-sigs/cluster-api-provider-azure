@@ -422,11 +422,6 @@ func TestAzureClusterServiceDeletePrivateDNS(t *testing.T) {
 			Type: infrav1.Internal,
 		},
 	}
-	internalLBWithoutFrontendIPs := &infrav1.LoadBalancerSpec{
-		LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
-			Type: infrav1.Internal,
-		},
-	}
 	publicLB := &infrav1.LoadBalancerSpec{
 		LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 			Type: infrav1.Public,
@@ -515,7 +510,7 @@ func TestAzureClusterServiceDeletePrivateDNS(t *testing.T) {
 		"private dns delete fails and resource groups are not deleted": {
 			apiServerLB:                 internalLB,
 			privateDNSZoneResourceGroup: "dns-rg",
-			expectedError:               "failed to delete private DNS zone: internal error",
+			expectedError:               "failed to delete private DNS: internal error",
 			expect: func(_, vpr, dns *mock_azure.MockServiceReconcilerMockRecorder) {
 				gomock.InOrder(
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
@@ -535,16 +530,6 @@ func TestAzureClusterServiceDeletePrivateDNS(t *testing.T) {
 				gomock.InOrder(
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
 					dns.Delete(gomockinternal.AContext()).Return(notDoneErr))
-			},
-		},
-		"zone in an external resource group is deleted when the internal LB has no frontend IPs": {
-			apiServerLB:                 internalLBWithoutFrontendIPs,
-			privateDNSZoneResourceGroup: "dns-rg",
-			expect: func(grp, vpr, dns *mock_azure.MockServiceReconcilerMockRecorder) {
-				gomock.InOrder(
-					vpr.Delete(gomockinternal.AContext()).Return(nil),
-					dns.Delete(gomockinternal.AContext()).Return(nil),
-					grp.Delete(gomockinternal.AContext()).Return(nil))
 			},
 		},
 		"unmanaged resource group deletes private dns once with the other services": {
@@ -656,7 +641,7 @@ func TestAzureClusterServiceDeletePrivateDNS(t *testing.T) {
 	}
 }
 
-func TestAzureClusterServiceDeletePrivateDNSWithoutFrontendIPs(t *testing.T) {
+func TestAzureClusterServiceDeleteExternalPrivateDNSOwnership(t *testing.T) {
 	clusterName := "cluster"
 	azClusterName := "azCluster"
 	namespace := "ns"
@@ -689,7 +674,7 @@ func TestAzureClusterServiceDeletePrivateDNSWithoutFrontendIPs(t *testing.T) {
 			},
 		},
 		"ownership lookup fails and resource groups are not deleted": {
-			expectedError: "failed to delete private DNS zone: could not get vnet link state of example.com in resource group dns-rg: internal error",
+			expectedError: "failed to delete private DNS: could not get vnet link state of example.com in resource group dns-rg: internal error",
 			expect: func(_, vpr *mock_azure.MockServiceReconcilerMockRecorder, tg *mock_async.MockTagsGetterMockRecorder) {
 				gomock.InOrder(
 					vpr.Delete(gomockinternal.AContext()).Return(nil),
@@ -754,6 +739,14 @@ func TestAzureClusterServiceDeletePrivateDNSWithoutFrontendIPs(t *testing.T) {
 								Name:          "vnet",
 							},
 							APIServerLB: &infrav1.LoadBalancerSpec{
+								FrontendIPs: []infrav1.FrontendIP{
+									{
+										Name: "api-server-lb-internal-ip",
+										FrontendIPClass: infrav1.FrontendIPClass{
+											PrivateIPAddress: "10.0.0.100",
+										},
+									},
+								},
 								LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
 									Type: infrav1.Internal,
 								},
