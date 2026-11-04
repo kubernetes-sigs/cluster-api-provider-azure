@@ -18,7 +18,6 @@ package aso
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -28,19 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// SubscriptionMismatchError means a namespace aso-credential Secret selects a
-// different subscription than the cluster. ASO would use that Secret when
-// credential-from is absent.
-type SubscriptionMismatchError struct {
-	ClusterSubscription string
-	ASOSubscription     string
-}
-
-// Error returns the subscription mismatch description.
-func (e *SubscriptionMismatchError) Error() string {
-	return fmt.Sprintf("AzureCLI cluster subscription %q does not match the subscription %q ASO would use", e.ClusterSubscription, e.ASOSubscription)
-}
 
 // asoNamespacedCredentialSecret is the namespace-scoped credential ASO prefers
 // over its global credential. It matches identity.NamespacedSecretName in ASO.
@@ -70,10 +56,7 @@ func ValidateAzureCLISubscription(ctx context.Context, c client.Client, namespac
 		clusterSubscription = os.Getenv("AZURE_SUBSCRIPTION_ID")
 	}
 	if !strings.EqualFold(clusterSubscription, asoSubscription) {
-		return &SubscriptionMismatchError{
-			ClusterSubscription: clusterSubscription,
-			ASOSubscription:     asoSubscription,
-		}
+		return errors.Errorf("AzureCLI cluster subscription %q does not match the subscription %q ASO would use", clusterSubscription, asoSubscription)
 	}
 	return nil
 }

@@ -49,7 +49,8 @@ const (
 	// prePauseReconcilePolicyAnnotation is the annotation key for the value of
 	// asoannotations.ReconcilePolicy that was set before pausing.
 	prePauseReconcilePolicyAnnotation = "sigs.k8s.io/cluster-api-provider-azure-pre-pause-reconcile-policy"
-	requeueInterval                   = 20 * time.Second
+
+	requeueInterval = 20 * time.Second
 
 	createOrUpdateFutureType = "ASOCreateOrUpdate"
 	deleteFutureType         = "ASODelete"
@@ -193,13 +194,7 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 	}
 
 	if prevReconcilePolicy, ok := annotations[prePauseReconcilePolicyAnnotation]; ok {
-		// Pause stores an empty value when the resource had no reconcile policy.
-		// Restore that by removing the annotation instead of leaving it set to "".
-		if prevReconcilePolicy == "" {
-			delete(annotations, asoannotations.ReconcilePolicy)
-		} else {
-			annotations[asoannotations.ReconcilePolicy] = prevReconcilePolicy
-		}
+		annotations[asoannotations.ReconcilePolicy] = prevReconcilePolicy
 		delete(annotations, prePauseReconcilePolicyAnnotation)
 	}
 	if !resourceExists {

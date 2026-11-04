@@ -1003,7 +1003,9 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				wantPolicyValue:     string(asoannotations.ReconcilePolicyManage),
 			},
 			{
-				name: "removes the policy when none was set before pausing",
+				name:                "restores an empty previous policy",
+				wantReconcilePolicy: true,
+				wantPolicyValue:     "",
 			},
 		}
 
