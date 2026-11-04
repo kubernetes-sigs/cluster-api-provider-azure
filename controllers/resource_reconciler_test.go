@@ -17,8 +17,11 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
+	asonetworkv120201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
+	asonetworkv120220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
@@ -296,6 +299,8 @@ func TestResourceReconcilerPause(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
+		asonetworkv120220701.AddToScheme,
+		asonetworkv120201101.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -409,6 +414,8 @@ func TestResourceReconcilerDelete(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
+		asonetworkv120220701.AddToScheme,
+		asonetworkv120201101.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -482,6 +489,73 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Status.Resources[0].Ready).To(BeFalse())
 	})
 
+	t.Run("delete resources in ARM reference order", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				UID:       "owner-uid",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{
+						asoresourcesv1.GroupVersion.WithKind("ResourceGroup"),
+						asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"),
+					}),
+				},
+			},
+		}
+		resourceGroup := &asoresourcesv1.ResourceGroup{
+			TypeMeta: rgTypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       owner.Namespace,
+				Name:            "rg",
+				UID:             "rg-uid",
+				OwnerReferences: controlledBy(g, s, owner),
+			},
+		}
+		vnetID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet"
+
+		vnet := &unstructured.Unstructured{Object: map[string]any{}}
+		vnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"))
+		vnet.SetNamespace(owner.Namespace)
+		vnet.SetName("vnet")
+		vnet.SetUID("vnet-uid")
+		vnet.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "rg-uid"}))
+		g.Expect(unstructured.SetNestedField(vnet.Object, vnetID, "status", "id")).To(Succeed())
+
+		privateEndpoint := &unstructured.Unstructured{Object: map[string]any{}}
+		privateEndpoint.SetGroupVersionKind(asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"))
+		privateEndpoint.SetNamespace(owner.Namespace)
+		privateEndpoint.SetName("private-endpoint")
+		privateEndpoint.SetUID("private-endpoint-uid")
+		privateEndpoint.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "rg-uid"}))
+		// A PrivateEndpoint is owned by a ResourceGroup in ASO, but depends on
+		// a subnet embedded in a VirtualNetwork's ARM resource ID.
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, vnetID+"/subnets/subnet", "spec", "subnet", "reference", "armId")).To(Succeed())
+
+		clientWithDeleteOrder := &recordingDeleteClient{Client: fakeClientBuilder().WithObjects(resourceGroup, vnet, privateEndpoint).Build()}
+		r := NewResourceReconciler(clientWithDeleteOrder, owner, nil, nil, WithChildrenFirst())
+		ownedKinds, err := parseOwnedKinds(owner.Annotations[ownedKindsAnnotation])
+		g.Expect(err).NotTo(HaveOccurred())
+		ownedObjects, err := r.ownedObjs(ctx, ownedKinds)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(ownedObjects).To(HaveLen(3))
+		objectsForOrdering, err := r.resourcesForOrdering(ctx, ownedObjects)
+		g.Expect(err).NotTo(HaveOccurred())
+		deferred := deferShallowerResources(ownedObjects, objectsForOrdering)
+		g.Expect(deferred.Has("vnet-uid")).To(BeTrue())
+		g.Expect(deferred.Has("rg-uid")).To(BeTrue())
+
+		g.Expect(r.Delete(ctx)).To(Succeed())
+		g.Expect(clientWithDeleteOrder.deleted).To(Equal([]string{"PrivateEndpoint/private-endpoint"}))
+		remainingVNet := vnet.DeepCopy()
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(vnet), remainingVNet)).To(Succeed())
+		g.Expect(owner.Status.Resources).To(HaveLen(2))
+		remainingNames := []string{owner.Status.Resources[0].Resource.Name, owner.Status.Resources[1].Resource.Name}
+		g.Expect(remainingNames).To(ConsistOf("vnet", "rg"))
+	})
+
 	t.Run("done deleting", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -504,6 +578,16 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Annotations).NotTo(HaveKey(ownedKindsAnnotation))
 		g.Expect(owner.Status.Resources).To(BeEmpty())
 	})
+}
+
+type recordingDeleteClient struct {
+	client.Client
+	deleted []string
+}
+
+func (c *recordingDeleteClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+	c.deleted = append(c.deleted, obj.GetObjectKind().GroupVersionKind().Kind+"/"+obj.GetName())
+	return c.Client.Delete(ctx, obj, opts...)
 }
 
 func TestReadyStatus(t *testing.T) {
@@ -789,7 +873,7 @@ func TestDeferShallowerResources(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
-			deferred := deferShallowerResources(tc.resources)
+			deferred := deferShallowerResources(tc.resources, nil)
 			var deferredNames []string
 			for _, r := range tc.resources {
 				if deferred.Has(r.UID) {
