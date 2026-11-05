@@ -26,14 +26,15 @@ import (
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -51,9 +52,10 @@ const (
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
 type ResourceReconciler struct {
 	client.Client
-	resources []*unstructured.Unstructured
-	owner     resourceStatusObject
-	watcher   watcher
+	resources     []*unstructured.Unstructured
+	owner         resourceStatusObject
+	watcher       watcher
+	childrenFirst bool
 }
 
 type watcher interface {
@@ -63,6 +65,34 @@ type watcher interface {
 type resourceStatusObject interface {
 	client.Object
 	SetResourceStatuses([]infrav1.ResourceStatus)
+}
+
+// NewResourceReconciler creates a new ResourceReconciler.
+func NewResourceReconciler(c client.Client, resources []*unstructured.Unstructured, owner resourceStatusObject, opts ...func(*ResourceReconciler)) *ResourceReconciler {
+	r := &ResourceReconciler{
+		Client:    c,
+		resources: resources,
+		owner:     owner,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
+// WithChildrenFirst configures the ResourceReconciler to delete child resources
+// before their parents, using ASO owner references to determine the hierarchy.
+func WithChildrenFirst() func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.childrenFirst = true
+	}
+}
+
+// WithWatcher sets the watcher for the ResourceReconciler.
+func WithWatcher(w watcher) func(*ResourceReconciler) {
+	return func(r *ResourceReconciler) {
+		r.watcher = w
+	}
 }
 
 // Reconcile creates or updates the specified resources.
@@ -148,11 +178,19 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 			return fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
-		toWatch := meta.AsPartialObjectMetadata(spec)
-		toWatch.APIVersion = spec.GetAPIVersion()
-		toWatch.Kind = spec.GetKind()
-		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return fmt.Errorf("failed to watch resource: %w", err)
+		// Set up dynamic watch if watcher is configured
+		// This is optional - if no watcher is provided, reconciliation will still work
+		// but won't get automatic updates when ASO resources change
+		if r.watcher != nil {
+			toWatch := &unstructured.Unstructured{}
+			toWatch.SetAPIVersion(spec.GetAPIVersion())
+			toWatch.SetKind(spec.GetKind())
+			// Watch for generation changes (spec updates) and ASO Ready condition changes (status updates).
+			// Using Unstructured instead of PartialObjectMetadata so the predicate can inspect status.conditions.
+			watchPredicate := predicate.Or(predicate.GenerationChangedPredicate{}, ASOReadyChangedPredicate{})
+			if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner), watchPredicate); err != nil {
+				return fmt.Errorf("failed to watch resource: %w", err)
+			}
 		}
 
 		gvk := spec.GroupVersionKind()
@@ -172,7 +210,24 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 		})
 	}
 
+	var deferred sets.Set[types.UID]
+	if r.childrenFirst {
+		deferred = deferShallowerResources(toBeDeletedResources)
+	}
 	for _, obj := range toBeDeletedResources {
+		if deferred.Has(obj.UID) {
+			gvk := obj.GroupVersionKind()
+			newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
+				Resource: infrav1.StatusResource{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+					Name:    obj.Name,
+				},
+				Ready: false,
+			})
+			continue
+		}
 		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
 			return fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
@@ -352,6 +407,57 @@ func statusResource(resource *unstructured.Unstructured) infrav1.StatusResource 
 	}
 }
 
+// deferShallowerResources returns the set of UIDs that should NOT be deleted
+// this cycle. It computes the depth of each resource (hops to root via
+// non-controller owner references) and only allows the deepest level to
+// proceed. This ensures leaf resources (e.g. Subnet) are deleted before
+// shallower ones (e.g. NSG), respecting implicit Azure-level dependencies.
+func deferShallowerResources(resources []*metav1.PartialObjectMetadata) sets.Set[types.UID] {
+	pending := make(map[types.UID]*metav1.PartialObjectMetadata, len(resources))
+	for _, obj := range resources {
+		pending[obj.UID] = obj
+	}
+
+	depth := make(map[types.UID]int, len(resources))
+	var computeDepth func(types.UID) int
+	computeDepth = func(uid types.UID) int {
+		if d, ok := depth[uid]; ok {
+			return d
+		}
+		depth[uid] = 0 // guard against cycles
+		obj := pending[uid]
+		maxParentDepth := -1
+		for i := range obj.OwnerReferences {
+			ref := &obj.OwnerReferences[i]
+			if ref.Controller != nil && *ref.Controller {
+				continue
+			}
+			if _, inSet := pending[ref.UID]; inSet {
+				if pd := computeDepth(ref.UID); pd > maxParentDepth {
+					maxParentDepth = pd
+				}
+			}
+		}
+		depth[uid] = maxParentDepth + 1
+		return depth[uid]
+	}
+
+	maxDepth := 0
+	for uid := range pending {
+		if d := computeDepth(uid); d > maxDepth {
+			maxDepth = d
+		}
+	}
+
+	deferred := sets.New[types.UID]()
+	for uid, d := range depth {
+		if d < maxDepth {
+			deferred.Insert(uid)
+		}
+	}
+	return deferred
+}
+
 func metadataRefersToResource(metadata *metav1.PartialObjectMetadata) func(*unstructured.Unstructured) bool {
 	return func(u *unstructured.Unstructured) bool {
 		// Version is not a stable property of a particular resource. The API version of an ASO resource may
@@ -385,4 +491,57 @@ func getOwnedKindsValue(ownedKinds []schema.GroupVersionKind) string {
 		fields = append(fields, strings.Join([]string{gvk.Kind, gvk.Version, gvk.Group}, "."))
 	}
 	return strings.Join(fields, ownedKindsSep)
+}
+
+// ASOReadyChangedPredicate triggers reconciliation when the ASO Ready condition status changes.
+// This allows the owner controller to react promptly when ASO finishes provisioning a resource,
+// without triggering on every status update (e.g., annotation or label changes).
+type ASOReadyChangedPredicate struct {
+	predicate.Funcs
+}
+
+// Update returns true when the ASO Ready condition status changes between old and new objects.
+func (ASOReadyChangedPredicate) Update(e event.UpdateEvent) bool {
+	if e.ObjectOld == nil || e.ObjectNew == nil {
+		return false
+	}
+	oldReady := getASOReadyStatus(e.ObjectOld)
+	newReady := getASOReadyStatus(e.ObjectNew)
+	changed := oldReady != newReady
+	if changed {
+		log := klog.Background()
+		log.V(4).Info("ASOReadyChangedPredicate: Ready condition changed",
+			"resource", klog.KObj(e.ObjectNew),
+			"kind", e.ObjectNew.GetObjectKind().GroupVersionKind().Kind,
+			"oldReady", oldReady,
+			"newReady", newReady,
+		)
+	}
+	return changed
+}
+
+// getASOReadyStatus extracts the Ready condition status string from an ASO resource.
+// Returns empty string if no Ready condition is found.
+func getASOReadyStatus(obj client.Object) string {
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return ""
+	}
+	statusConditions, found, err := unstructured.NestedSlice(u.Object, "status", "conditions")
+	if err != nil || !found {
+		return ""
+	}
+	for _, el := range statusConditions {
+		condition, ok := el.(map[string]any)
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(condition, "type")
+		if condType != conditions.ConditionTypeReady {
+			continue
+		}
+		status, _, _ := unstructured.NestedString(condition, "status")
+		return status
+	}
+	return ""
 }

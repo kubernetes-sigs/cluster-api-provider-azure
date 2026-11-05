@@ -31,7 +31,7 @@ import (
 	// then updated to the user-defined value. If the field is immutable, this
 	// update will fail. The linter should catch if there are missing fields,
 	// but verify that check is actually working.
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -324,6 +324,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 		}
 
 		profile := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+			ArtifactStreamingProfile:          hubPool.Spec.ArtifactStreamingProfile,
 			AvailabilityZones:                 hubPool.Spec.AvailabilityZones,
 			CapacityReservationGroupReference: hubPool.Spec.CapacityReservationGroupReference,
 			Count:                             hubPool.Spec.Count,
@@ -340,6 +341,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			KubeletConfig:                     hubPool.Spec.KubeletConfig,
 			KubeletDiskType:                   hubPool.Spec.KubeletDiskType,
 			LinuxOSConfig:                     hubPool.Spec.LinuxOSConfig,
+			LocalDNSProfile:                   hubPool.Spec.LocalDNSProfile,
 			MaxCount:                          hubPool.Spec.MaxCount,
 			MessageOfTheDay:                   hubPool.Spec.MessageOfTheDay,
 			MaxPods:                           hubPool.Spec.MaxPods,
@@ -347,6 +349,7 @@ func setAgentPoolProfilesFromAgentPools(managedCluster conversion.Convertible, a
 			Mode:                              hubPool.Spec.Mode,
 			Name:                              azure.AliasOrNil[string](&hubPool.Spec.AzureName),
 			NetworkProfile:                    hubPool.Spec.NetworkProfile,
+			NodeImageVersion:                  hubPool.Spec.NodeImageVersion,
 			NodeLabels:                        hubPool.Spec.NodeLabels,
 			NodePublicIPPrefixReference:       hubPool.Spec.NodePublicIPPrefixReference,
 			NodeTaints:                        hubPool.Spec.NodeTaints,

@@ -59,6 +59,11 @@ const (
 	// alpha: v1.18
 	APIServerILB featuregate.Feature = "APIServerILB"
 
+	// ARO is the feature gate for enabling the ARO support.
+	// owner: @marek-veber
+	// alpha: v1.19
+	ARO featuregate.Feature = "ARO"
+
 	// SkipMachinePoolModelReconciliation is a CAPZ feature gate to skip automatic reconciliation
 	// of AzureMachinePool instances to match the latest VMSS model. When enabled, instances
 	// with stale models will persist until the pool is explicitly scaled. This is useful for
@@ -84,5 +89,6 @@ var defaultCAPZFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	EdgeZone:                           {Default: false, PreRelease: featuregate.Alpha},
 	ASOAPI:                             {Default: true, PreRelease: featuregate.GA},
 	APIServerILB:                       {Default: false, PreRelease: featuregate.Alpha},
+	ARO:                                {Default: false, PreRelease: featuregate.Alpha},
 	SkipMachinePoolModelReconciliation: {Default: false, PreRelease: featuregate.Alpha},
 }
