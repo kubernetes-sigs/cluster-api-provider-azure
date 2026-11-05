@@ -128,7 +128,7 @@ spec:
               clientID:
                 description: |-
                   ClientID is the service principal or user-assigned MSI client ID.
-                  Required for all types except AzureCLI (enforced by webhook).
+                  All identity types except AzureCLI require this property; the value may be empty.
                 type: string
               clientSecret:
                 description: ClientSecret is a secret reference which should contain
@@ -183,6 +183,10 @@ spec:
             - tenantID
             - type
             type: object
+            x-kubernetes-validations:
+            - fieldPath: .clientID
+              message: clientID must be present when type is not AzureCLI
+              rule: self.type == 'AzureCLI' || has(self.clientID)
           status:
             description: AzureClusterIdentityStatus defines the observed state of
               AzureClusterIdentity.

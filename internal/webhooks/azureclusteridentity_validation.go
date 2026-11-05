@@ -35,9 +35,6 @@ func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Wa
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential", c.Spec.UserAssignedIdentityCredentialsPath)))
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential ", c.Spec.UserAssignedIdentityCredentialsCloudType)))
 	}
-	if c.Spec.Type != infrav1.AzureCLI && c.Spec.ClientID == "" {
-		allErrs = append(allErrs, field.Required(field.NewPath("spec", "clientID"), "must be set when type is not AzureCLI"))
-	}
 	if c.Spec.Type == infrav1.AzureCLI {
 		if c.Spec.ClientSecret.Name != "" {
 			allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "clientSecret"), "cannot be set when type is AzureCLI"))
