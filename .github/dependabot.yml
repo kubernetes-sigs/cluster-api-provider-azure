@@ -55,10 +55,10 @@ updates:
     - "kind/cleanup"
     - "release-note-none"
 
-# Go - root directory, release-1.27 branch
+# Go - root directory, release-1.28 branch
 - directory: "/"
   package-ecosystem: "gomod"
-  target-branch: "release-1.27"
+  target-branch: "release-1.28"
   open-pull-requests-limit: 5
   schedule:
     interval: "weekly"
@@ -66,7 +66,7 @@ updates:
     # Use America/New_York Standard Time (UTC -05:00)
     timezone: "America/New_York"
   commit-message:
-    prefix: "[release-1.27] dependabot"
+    prefix: "[release-1.28] dependabot"
     include: scope
   ignore:
     # Ignore controller-runtime as its upgraded manually.
@@ -88,13 +88,13 @@ updates:
     - "kind/cleanup"
     - "release-note-none"
 
-# Go - root directory, release-1.26 branch
+# Go - root directory, release-1.27 branch
 # Release branches only get Go updates for the root module, since that's what the
 # weekly security scan checks. Updates are grouped into a single PR to limit churn
 # on a stable branch. Keep this list in sync with the weekly security scan matrix.
 - directory: "/"
   package-ecosystem: "gomod"
-  target-branch: "release-1.26"
+  target-branch: "release-1.27"
   open-pull-requests-limit: 5
   schedule:
     interval: "weekly"
@@ -102,7 +102,7 @@ updates:
     # Use America/New_York Standard Time (UTC -05:00)
     timezone: "America/New_York"
   commit-message:
-    prefix: "[release-1.26] dependabot"
+    prefix: "[release-1.27] dependabot"
     include: scope
   ignore:
     # Ignore controller-runtime as its upgraded manually.
