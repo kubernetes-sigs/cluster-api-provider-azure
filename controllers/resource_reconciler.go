@@ -179,11 +179,13 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 			return fmt.Errorf("failed to set owner reference: %w", err)
 		}
 
-		toWatch := meta.AsPartialObjectMetadata(spec)
-		toWatch.APIVersion = spec.GetAPIVersion()
-		toWatch.Kind = spec.GetKind()
-		if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
-			return fmt.Errorf("failed to watch resource: %w", err)
+		if r.watcher != nil {
+			toWatch := meta.AsPartialObjectMetadata(spec)
+			toWatch.APIVersion = spec.GetAPIVersion()
+			toWatch.Kind = spec.GetKind()
+			if err := r.watcher.Watch(log, toWatch, handler.EnqueueRequestForOwner(r.Client.Scheme(), r.Client.RESTMapper(), r.owner)); err != nil {
+				return fmt.Errorf("failed to watch resource: %w", err)
+			}
 		}
 
 		gvk := spec.GroupVersionKind()
