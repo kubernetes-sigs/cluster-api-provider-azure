@@ -47,7 +47,7 @@ type CredentialsProvider interface {
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
-	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error)
+	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, subscriptionID string) (azcore.TokenCredential, error)
 	Type() infrav1.IdentityType
 }
 
@@ -76,6 +76,13 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
+	// AzureCLI uses the controller process login. Re-check the allowlist here so
+	// machine and ASO secret reconcilers cannot keep using it after the cluster
+	// namespace is removed from the identity.
+	if identity.Spec.Type == infrav1.AzureCLI && !IsClusterNamespaceAllowed(ctx, kubeClient, identity.Spec.AllowedNamespaces, defaultNamespace) {
+		return nil, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+	}
+
 	return &AzureCredentialsProvider{
 		Client:   kubeClient,
 		Identity: identity,
@@ -84,7 +91,7 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 }
 
 // GetTokenCredential returns an Azure TokenCredential based on the provided azure identity.
-func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error) {
+func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, subscriptionID string) (azcore.TokenCredential, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "azure.scope.AzureCredentialsProvider.GetTokenCredential")
 	defer done()
 
@@ -164,6 +171,9 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			ID: azidentity.ClientID(p.Identity.Spec.ClientID),
 		}
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
+
+	case infrav1.AzureCLI:
+		cred, authErr = p.cache.GetOrStoreAzureCLI(azureCLICredentialOptions(subscriptionID, p.Identity.Spec.TenantID))
 
 	case infrav1.UserAssignedIdentityCredential:
 		cloudType, err := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
@@ -276,6 +286,19 @@ func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, all
 	}
 
 	return false
+}
+
+// azureCLICredentialOptions sets Subscription or TenantID, never both.
+// az account get-access-token rejects --tenant and --subscription together.
+func azureCLICredentialOptions(subscriptionID, tenantID string) *azidentity.AzureCLICredentialOptions {
+	switch {
+	case subscriptionID != "":
+		return &azidentity.AzureCLICredentialOptions{Subscription: subscriptionID}
+	case tenantID != "":
+		return &azidentity.AzureCLICredentialOptions{TenantID: tenantID}
+	default:
+		return &azidentity.AzureCLICredentialOptions{}
+	}
 }
 
 func parseCloudType(cloudType string) (cloud.Configuration, error) {

@@ -41,9 +41,10 @@ type AllowedNamespaces struct {
 }
 
 // AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity.
+// +kubebuilder:validation:XValidation:rule="self.type == 'AzureCLI' || has(self.clientID)",message="clientID must be present when type is not AzureCLI",fieldPath=".clientID"
 type AzureClusterIdentitySpec struct {
 	// Type is the type of Azure Identity used.
-	// ServicePrincipal, ServicePrincipalCertificate, UserAssignedMSI, ManualServicePrincipal, UserAssignedIdentityCredential, or WorkloadIdentity.
+	// ServicePrincipal, ServicePrincipalCertificate, UserAssignedMSI, ManualServicePrincipal, UserAssignedIdentityCredential, WorkloadIdentity, or AzureCLI.
 	Type IdentityType `json:"type"`
 	// ResourceID is the Azure resource ID for the User Assigned MSI resource.
 	// Only applicable when type is UserAssignedMSI.
@@ -52,9 +53,10 @@ type AzureClusterIdentitySpec struct {
 	//
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
-	// ClientID is the service principal client ID.
-	// Both User Assigned MSI and SP can use this field.
-	ClientID string `json:"clientID"`
+	// ClientID is the service principal or user-assigned MSI client ID.
+	// All identity types except AzureCLI require this property; the value may be empty.
+	// +optional
+	ClientID string `json:"clientID"` // Keep omitempty off so typed clients preserve an explicitly empty value.
 	// ClientSecret is a secret reference which should contain either a Service Principal password or certificate secret.
 	// +optional
 	ClientSecret corev1.SecretReference `json:"clientSecret,omitempty"`
