@@ -543,7 +543,8 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(ownedObjects).To(HaveLen(3))
 		objectsForOrdering, err := r.resourcesForOrdering(ctx, ownedObjects)
 		g.Expect(err).NotTo(HaveOccurred())
-		deferred := deferShallowerResources(ownedObjects, objectsForOrdering)
+		deferred, err := deferShallowerResources(ownedObjects, objectsForOrdering)
+		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(deferred.Has("vnet-uid")).To(BeTrue())
 		g.Expect(deferred.Has("rg-uid")).To(BeTrue())
 
@@ -938,7 +939,8 @@ func TestDeferShallowerResources(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
-			deferred := deferShallowerResources(tc.resources, nil)
+			deferred, err := deferShallowerResources(tc.resources, nil)
+			g.Expect(err).NotTo(HaveOccurred())
 			var deferredNames []string
 			for _, r := range tc.resources {
 				if deferred.Has(r.UID) {

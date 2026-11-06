@@ -211,7 +211,10 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to get resources for deletion ordering: %w", err)
 		}
-		deferred = deferShallowerResources(toBeDeletedResources, resourcesForOrdering)
+		deferred, err = deferShallowerResources(toBeDeletedResources, resourcesForOrdering)
+		if err != nil {
+			return fmt.Errorf("failed to determine resource deletion order: %w", err)
+		}
 	}
 	for _, obj := range toBeDeletedResources {
 		if deferred.Has(obj.UID) {
@@ -428,7 +431,7 @@ func statusResource(resource *unstructured.Unstructured) infrav1.StatusResource 
 // deferShallowerResources returns the set of UIDs that should NOT be deleted
 // this cycle. It computes the depth of each resource from owner references and
 // ARM IDs referenced by its spec, then allows only the deepest level to proceed.
-func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects map[types.UID]*unstructured.Unstructured) sets.Set[types.UID] {
+func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects map[types.UID]*unstructured.Unstructured) (sets.Set[types.UID], error) {
 	pending := make(map[types.UID]*metav1.PartialObjectMetadata, len(resources))
 	for _, obj := range resources {
 		pending[obj.UID] = obj
@@ -461,7 +464,10 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 	resourceIDs := make(map[string]types.UID, len(objects))
 	for uid, object := range objects {
 		id, found, err := unstructured.NestedString(object.Object, "status", "id")
-		if err == nil && found && id != "" {
+		if err != nil {
+			return nil, fmt.Errorf("failed to read status.id of %s/%s: %w", object.GetKind(), object.GetName(), err)
+		}
+		if found && id != "" {
 			if id = normalizeARMID(id); id != "" {
 				resourceIDs[id] = uid
 			}
@@ -469,7 +475,10 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 	}
 	for uid, object := range objects {
 		spec, found, err := unstructured.NestedFieldNoCopy(object.Object, "spec")
-		if err != nil || !found {
+		if err != nil {
+			return nil, fmt.Errorf("failed to read spec of %s/%s: %w", object.GetKind(), object.GetName(), err)
+		}
+		if !found {
 			continue
 		}
 		visitARMIDs(spec, func(id string) {
@@ -526,7 +535,7 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 			deferred.Insert(uid)
 		}
 	}
-	return deferred
+	return deferred, nil
 }
 
 func normalizeARMID(id string) string {
