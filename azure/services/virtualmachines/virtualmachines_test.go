@@ -365,6 +365,30 @@ func TestReconcileVM(t *testing.T) {
 				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
 				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, &azcore.ResponseError{StatusCode: http.StatusBadRequest})
 				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.SetVMState(infrav1.Failed)
+				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
+				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
+			},
+		},
+		{
+			// Azure rejects recovery of a VM whose OS provisioning failure is terminal.
+			// The observed Failed state must still be published to status.vmState so
+			// that the VM can be identified and replaced.
+			name:          "reapply vm fails with a non-recoverable provisioning error publishes Failed vm state",
+			expectedError: "failed to reapply VM.*OSProvisioningTimedOut",
+			wantTransient: ptr.To(false),
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, mnic *mock_async.MockGetterMockRecorder, mpip *mock_async.MockGetterMockRecorder, r *mock_async.MockReconcilerMockRecorder, c *mock_virtualmachines.MockClientMockRecorder) {
+				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
+				s.VMSpec().Return(&fakeVMSpec)
+				c.Get(gomockinternal.AContext(), &fakeVMSpec).Return(fakeFailedVM, nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				s.GetLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture).Return(nil)
+				c.ReapplyAsync(gomockinternal.AContext(), &fakeVMSpec, "").Return(nil, &azcore.ResponseError{
+					StatusCode: http.StatusOK,
+					ErrorCode:  "OSProvisioningTimedOut",
+				})
+				s.DeleteLongRunningOperationState(fakeVMSpec.Name, reapplyServiceName, infrav1.PutFuture)
+				s.SetVMState(infrav1.Failed)
 				s.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, gomock.Any())
 				s.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, gomock.Any())
 			},
