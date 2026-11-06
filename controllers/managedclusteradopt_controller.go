@@ -19,16 +19,22 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -38,7 +44,37 @@ import (
 const (
 	adoptAnnotation      = "sigs.k8s.io/cluster-api-provider-azure-adopt"
 	adoptAnnotationValue = "true"
+
+	asoCRDPollInterval = 10 * time.Second
 )
+
+// setupWhenKindServed calls setup once the API server serves the kind of obj. ASO installs its CRDs at runtime,
+// so they may not exist yet when the manager starts. A controller watching such a kind with For() would fail
+// its initial cache sync and stop the manager.
+func setupWhenKindServed(mgr ctrl.Manager, obj client.Object, setup func() error) error {
+	gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
+	if err != nil {
+		return err
+	}
+	return mgr.Add(waitForKind(mgr.GetRESTMapper(), gvk, asoCRDPollInterval, setup))
+}
+
+func waitForKind(mapper meta.RESTMapper, gvk schema.GroupVersionKind, interval time.Duration, setup func() error) manager.RunnableFunc {
+	return func(ctx context.Context) error {
+		log := ctrl.LoggerFrom(ctx).WithValues("kind", gvk.String())
+		err := wait.PollUntilContextCancel(ctx, interval, true, func(context.Context) (bool, error) {
+			_, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+			if err != nil {
+				log.Info("waiting for the kind to be served before starting its controller", "reason", err.Error())
+			}
+			return err == nil, nil
+		})
+		if err != nil {
+			return nil //nolint:nilerr // The condition never fails, so this only happens when the manager is stopping.
+		}
+		return setup()
+	}
+}
 
 // ManagedClusterAdoptReconciler adopts ASO ManagedCluster resources into a CAPI Cluster.
 type ManagedClusterAdoptReconciler struct {
@@ -46,22 +82,22 @@ type ManagedClusterAdoptReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// The controller starts once the ManagedCluster CRD is installed.
 func (r *ManagedClusterAdoptReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
-	_, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
-		For(&asocontainerservicev1.ManagedCluster{}).
-		WithEventFilter(predicate.Funcs{
-			UpdateFunc: func(ev event.UpdateEvent) bool {
-				return ev.ObjectOld.GetAnnotations()[adoptAnnotation] != ev.ObjectNew.GetAnnotations()[adoptAnnotation]
-			},
-			DeleteFunc: func(_ event.DeleteEvent) bool { return false },
-		}).
-		Build(r)
-	if err != nil {
+	managedCluster := &asocontainerservicev1.ManagedCluster{}
+	return setupWhenKindServed(mgr, managedCluster, func() error {
+		_, err := ctrl.NewControllerManagedBy(mgr).
+			WithOptions(options).
+			For(managedCluster).
+			WithEventFilter(predicate.Funcs{
+				UpdateFunc: func(ev event.UpdateEvent) bool {
+					return ev.ObjectOld.GetAnnotations()[adoptAnnotation] != ev.ObjectNew.GetAnnotations()[adoptAnnotation]
+				},
+				DeleteFunc: func(_ event.DeleteEvent) bool { return false },
+			}).
+			Build(r)
 		return err
-	}
-
-	return nil
+	})
 }
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=create
