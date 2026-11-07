@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
 - ../../../flavors/aks-aso
+- patches/aks-gpu-pool.yaml
 
 patches:
 - patch: |-
@@ -43,6 +44,16 @@ patches:
       value: "${AZURE_AKS_NODE_MACHINE_TYPE:=Standard_D2s_v3}"
   target:
     kind: AzureASOManagedMachinePool
+- patch: |-
+    - op: test
+      path: /spec/resources/0/kind
+      value: ManagedClustersAgentPool
+    - op: replace
+      path: /spec/resources/0/spec/vmSize
+      value: "${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NC6s_v3}"
+  target:
+    kind: AzureASOManagedMachinePool
+    name: ".*-gpupool"
 
 sortOptions:
   order: fifo
