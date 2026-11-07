@@ -138,6 +138,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				"vmIsFailed", vmIsFailed,
 				"hasActiveReapplyFuture", hasActiveReapplyFuture)
 			result, err = s.reapplyVM(ctx, vmSpec)
+			// If recovery of a Failed VM fails non-transiently (e.g. Azure reports the OS
+			// provisioning failure as non-recoverable), publish the observed Failed state so
+			// consumers of status.vmState (e.g. remediation tooling) can replace the VM.
+			// In-progress and transient failures are not published, so that CAPZ can still
+			// retry recovery; a successful reapply updates the state below from the refreshed VM.
+			if err != nil && vmIsFailed && !azure.IsOperationNotDoneError(err) && !azure.IsTransientError(err) {
+				s.Scope.SetVMState(infrav1.Failed)
+			}
 			s.Scope.UpdatePutStatus(infrav1.VMRunningCondition, serviceName, err)
 			s.Scope.UpdatePutStatus(infrav1.DisksReadyCondition, serviceName, err)
 		} else {
