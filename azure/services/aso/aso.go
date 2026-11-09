@@ -378,8 +378,10 @@ func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Sche
 }
 
 func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
-	return labels[infrav1.OwnedByClusterLabelKey] == clusterName //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+	return labels[legacyOwnedByClusterLabelKey] == clusterName
 }
+
+const legacyOwnedByClusterLabelKey = infrav1.NameAzureProviderPrefix + string(infrav1.ResourceLifecycleOwned)
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.
 func (r *reconciler[T]) PauseResource(ctx context.Context, resource T, serviceName string) error {
