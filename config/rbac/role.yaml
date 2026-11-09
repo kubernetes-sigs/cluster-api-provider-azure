@@ -429,3 +429,50 @@ rules:
   - get
   - list
   - watch
+
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - aromachinepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - aromachinepools/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - aromachinepools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclustersnodepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclustersnodepools/status
+  verbs:
+  - get
+  - list
+  - watch
