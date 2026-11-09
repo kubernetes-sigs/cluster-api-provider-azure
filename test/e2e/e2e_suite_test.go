@@ -157,7 +157,35 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 
 	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
+	setASOImageInLocalRepository(repositoryFolder, os.Getenv("ASO_IMAGE"))
 	return clusterctlConfig
+}
+
+func setASOImageInLocalRepository(repositoryFolder, image string) {
+	if image == "" {
+		return
+	}
+
+	componentManifests, err := filepath.Glob(filepath.Join(repositoryFolder, "infrastructure-azure", "*", "components.yaml"))
+	Expect(err).NotTo(HaveOccurred(), "failed to find local infrastructure-azure component manifests")
+	Expect(componentManifests).NotTo(BeEmpty(), "no local infrastructure-azure component manifests found")
+
+	const defaultASOImage = "mcr.microsoft.com/k8s/azureserviceoperator:v2.22.0"
+	defaultASOContainer := []byte(defaultASOImage + "\n        imagePullPolicy: Always")
+	configuredASOContainer := []byte(image + "\n        imagePullPolicy: Always")
+	imageWasSet := false
+	for _, manifestPath := range componentManifests {
+		manifest, err := os.ReadFile(manifestPath)
+		Expect(err).NotTo(HaveOccurred(), "failed to read local provider manifest %q", manifestPath)
+		if !bytes.Contains(manifest, []byte(defaultASOImage)) {
+			continue
+		}
+		Expect(bytes.Contains(manifest, defaultASOContainer)).To(BeTrue(), "ASO manager image %q in %q is not followed by the expected imagePullPolicy", defaultASOImage, manifestPath)
+		manifest = bytes.ReplaceAll(manifest, defaultASOContainer, configuredASOContainer)
+		Expect(os.WriteFile(manifestPath, manifest, 0o600)).To(Succeed(), "failed to set ASO image in %q", manifestPath)
+		imageWasSet = true
+	}
+	Expect(imageWasSet).To(BeTrue(), "ASO_IMAGE was set but the default ASO image %q was not found in the local provider manifests", defaultASOImage)
 }
 
 func setupBootstrapCluster(config *clusterctl.E2EConfig, useExistingCluster bool) (bootstrap.ClusterProvider, framework.ClusterProxy) {
