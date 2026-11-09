@@ -688,6 +688,21 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			setupLog.Error(err, "unable to create controller", "controller", "AROControlPlane")
 			os.Exit(1)
 		}
+		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if workloadClusterCache == nil {
+				workloadClusterCache = newWorkloadClusterCache(ctx, mgr)
+			}
+			if err := infrav1controllersexp.NewAROMachinePoolReconciler(
+				mgr.GetClient(),
+				mgr.GetEventRecorderFor("aromachinepoolmachine-reconciler"),
+				timeouts,
+				watchFilterValue,
+				workloadClusterCache,
+			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: aroControlPlaneCache}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
+				os.Exit(1)
+			}
+		}
 	}
 }
 
