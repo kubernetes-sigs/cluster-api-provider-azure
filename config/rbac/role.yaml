@@ -328,3 +328,104 @@ rules:
   - get
   - list
   - watch
+
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - arocontrolplanes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - authorization.azure.com
+  resources:
+  - roleassignments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - authorization.azure.com
+  resources:
+  - roleassignments/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keyvault.azure.com
+  resources:
+  - vaults
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - managedidentity.azure.com
+  resources:
+  - userassignedidentities
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - managedidentity.azure.com
+  resources:
+  - userassignedidentities/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclusters
+  - hcpopenshiftclustersexternalauths
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - redhatopenshift.azure.com
+  resources:
+  - hcpopenshiftclusters/status
+  - hcpopenshiftclustersexternalauths/status
+  verbs:
+  - get
+  - list
+  - watch

@@ -678,6 +678,26 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AROCluster")
 			os.Exit(1)
 		}
+
+		aroControlPlaneCache, err := coalescing.NewRequestCache(debouncingTimer)
+		if err != nil {
+			setupLog.Error(err, "failed to build aroControlPlaneCache ReconcileCache")
+		}
+
+		if err := (&infrav1controllersexp.AROControlPlaneReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+			CredentialCache:  credCache,
+			Timeouts:         timeouts,
+		}).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: aroControlPlaneCache}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if err := cplanev1beta2exp.SetupAROControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROControlPlane")
+			os.Exit(1)
+		}
 	}
 
 }
