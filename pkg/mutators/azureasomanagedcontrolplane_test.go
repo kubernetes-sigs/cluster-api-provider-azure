@@ -24,6 +24,7 @@ import (
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asocontainerservicev1preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
+	asocontainerservicev1latest "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
@@ -822,6 +823,42 @@ func TestSetAgentPoolProfilesFromAgentPools(t *testing.T) {
 				Name:                     ptr.To("pool1"),
 				MinCount:                 ptr.To(2),
 				NodeInitializationTaints: []string{"preview-only-taint"},
+			},
+		}
+
+		err := setAgentPoolProfilesFromAgentPools(mc, pools)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cmp.Diff(expected, mc.Spec.AgentPoolProfiles)).To(BeEmpty())
+	})
+
+	t.Run("latest copies new agent pool profile fields", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		mc := &asocontainerservicev1latest.ManagedCluster{}
+		pools := []conversion.Convertible{
+			&asocontainerservicev1latest.ManagedClustersAgentPool{
+				Spec: asocontainerservicev1latest.ManagedClustersAgentPool_Spec{
+					AzureName: "pool0",
+					ArtifactStreamingProfile: &asocontainerservicev1latest.AgentPoolArtifactStreamingProfile{
+						Enabled: ptr.To(true),
+					},
+					LocalDNSProfile: &asocontainerservicev1latest.LocalDNSProfile{
+						Mode: ptr.To(asocontainerservicev1latest.LocalDNSProfile_Mode_Required),
+					},
+					NodeImageVersion: ptr.To("AKSUbuntu-2026.11.01"),
+				},
+			},
+		}
+		expected := []asocontainerservicev1latest.ManagedClusterAgentPoolProfile{
+			{
+				Name: ptr.To("pool0"),
+				ArtifactStreamingProfile: &asocontainerservicev1latest.AgentPoolArtifactStreamingProfile{
+					Enabled: ptr.To(true),
+				},
+				LocalDNSProfile: &asocontainerservicev1latest.LocalDNSProfile{
+					Mode: ptr.To(asocontainerservicev1latest.LocalDNSProfile_Mode_Required),
+				},
+				NodeImageVersion: ptr.To("AKSUbuntu-2026.11.01"),
 			},
 		}
 
