@@ -24,13 +24,18 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
+	asoauthorizationv1api20220401 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
 	asocontainerservicev1api20250301 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250301"
 	asocontainerservicev1api20250801 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
 	asocontainerservicev1api20251002preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v20251002preview"
+	asokeyvaultv1 "github.com/Azure/azure-service-operator/v2/api/keyvault/v1api20230701"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
+	asomanagedidentityv1api20230131 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
+	asoredhatopenshiftv2026 "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v20260901preview"
+	asoredhatopenshiftv1hub "github.com/Azure/azure-service-operator/v2/api/redhatopenshift/v20260901preview/storage"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +61,9 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	cplanev1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1beta2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/asomigration"
@@ -78,9 +85,16 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1.AddToScheme(scheme)
 	_ = infrav1exp.AddToScheme(scheme)
+	_ = cplanev1beta2exp.AddToScheme(scheme)
+	_ = infrav1beta2exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
+	_ = asoauthorizationv1api20220401.AddToScheme(scheme)
+	_ = asokeyvaultv1.AddToScheme(scheme)
+	_ = asomanagedidentityv1api20230131.AddToScheme(scheme)
+	_ = asoredhatopenshiftv2026.AddToScheme(scheme)
+	_ = asoredhatopenshiftv1hub.AddToScheme(scheme)
 	_ = asocontainerservicev1api20250801.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
@@ -429,7 +443,6 @@ func newWorkloadClusterCache(ctx context.Context, mgr manager.Manager) clusterca
 	}
 	return workloadClusterCache
 }
-
 
 func registerControllers(ctx context.Context, mgr manager.Manager) {
 	credCache := azure.NewCredentialCache()

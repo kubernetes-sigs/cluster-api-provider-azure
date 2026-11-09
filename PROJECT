@@ -65,3 +65,13 @@ resources:
   - group: infrastructure
     version: v1beta1
     kind: AzureMachinePoolMachine
+
+  - group: infrastructure
+    version: v1beta2
+    kind: AROCluster
+  - group: infrastructure
+    version: v1beta2
+    kind: AROMachinePool
+  - group: controlplane
+    version: v1beta2
+    kind: AROControlPlane
