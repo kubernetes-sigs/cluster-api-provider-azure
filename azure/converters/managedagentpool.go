@@ -17,13 +17,10 @@ limitations under the License.
 package converters
 
 import (
-	// NOTE: when the hub API version is updated, verify the
-	// ManagedClusterAgentPoolProfile below has every field defined. If a field
-	// isn't defined, the agent pool will be created with a zero/null value, and
-	// then updated to the user-defined value. If the field is immutable, this
-	// update will fail. The linter should catch if there are missing fields,
-	// but verify that check is actually working.
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
+	// Keep this conversion aligned with the ASO hub profile. exhaustruct is
+	// configured for this type, and the converter test covers fields added by
+	// newer ASO APIs.
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"k8s.io/utils/ptr"
 )
 
@@ -31,6 +28,7 @@ import (
 func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1hub.ManagedClustersAgentPool) asocontainerservicev1hub.ManagedClusterAgentPoolProfile {
 	properties := pool.Spec
 	agentPool := asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+		ArtifactStreamingProfile:          properties.ArtifactStreamingProfile,
 		AvailabilityZones:                 properties.AvailabilityZones,
 		CapacityReservationGroupReference: properties.CapacityReservationGroupReference,
 		Count:                             properties.Count,
@@ -47,6 +45,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1hub.Ma
 		KubeletConfig:                     properties.KubeletConfig,
 		KubeletDiskType:                   properties.KubeletDiskType,
 		LinuxOSConfig:                     properties.LinuxOSConfig,
+		LocalDNSProfile:                   properties.LocalDNSProfile,
 		MaxCount:                          properties.MaxCount,
 		MessageOfTheDay:                   properties.MessageOfTheDay,
 		MaxPods:                           properties.MaxPods,
@@ -54,6 +53,7 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool *asocontainerservicev1hub.Ma
 		Mode:                              properties.Mode,
 		Name:                              ptr.To(pool.AzureName()),
 		NetworkProfile:                    properties.NetworkProfile,
+		NodeImageVersion:                  properties.NodeImageVersion,
 		NodeLabels:                        properties.NodeLabels,
 		NodePublicIPPrefixReference:       properties.NodePublicIPPrefixReference,
 		NodeTaints:                        properties.NodeTaints,
