@@ -245,7 +245,7 @@ func TestASOSecretReconcile(t *testing.T) {
 					identity.Spec.ClientID = ""
 					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
-				getASOCredentialSecret("default", "fooSubscription"),
+				getASOCredentialSecret(),
 				defaultCluster,
 			},
 		},
@@ -264,7 +264,7 @@ func TestASOSecretReconcile(t *testing.T) {
 					identity.Spec.ClientID = ""
 					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
-				getASOCredentialSecret("default", "fooSubscription"),
+				getASOCredentialSecret(),
 				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
 					s.Data = map[string][]byte{
 						"AZURE_SUBSCRIPTION_ID": []byte("123"),
@@ -290,7 +290,7 @@ func TestASOSecretReconcile(t *testing.T) {
 					identity.Spec.ClientID = ""
 					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
-				getASOCredentialSecret("default", "fooSubscription"),
+				getASOCredentialSecret(),
 				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
 					s.Data = map[string][]byte{
 						"AZURE_SUBSCRIPTION_ID": []byte("123"),
@@ -384,7 +384,7 @@ func TestASOSecretReconcile(t *testing.T) {
 					identity.Spec.ClientID = ""
 					identity.Spec.AllowedNamespaces = &infrav1.AllowedNamespaces{}
 				}),
-				getASOCredentialSecret("default", "fooSubscription"),
+				getASOCredentialSecret(),
 				getASOSecret(defaultAzureCluster, func(s *corev1.Secret) {
 					// The spoofed CAPZ label alone must not authorize deletion.
 					s.OwnerReferences = nil
@@ -727,14 +727,14 @@ func getASOSecret(cluster client.Object, changes ...func(secret *corev1.Secret))
 	return input
 }
 
-func getASOCredentialSecret(namespace, subscription string) *corev1.Secret {
+func getASOCredentialSecret() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "aso-credential",
-			Namespace: namespace,
+			Namespace: "default",
 		},
 		Data: map[string][]byte{
-			"AZURE_SUBSCRIPTION_ID": []byte(subscription),
+			"AZURE_SUBSCRIPTION_ID": []byte("fooSubscription"),
 			"AZURE_TENANT_ID":       []byte("fooTenant"),
 			"AZURE_CLIENT_ID":       []byte("fooClient"),
 		},
