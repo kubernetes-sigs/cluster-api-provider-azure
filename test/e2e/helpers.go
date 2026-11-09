@@ -823,7 +823,11 @@ func resolveKubetestRepoListPath(version string, path string) (string, error) {
 // that has an existing capi offer image available. For example, if the version is "stable-1.22", the function will set it to the latest 1.22 version that has a published reference image.
 func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	ctx := context.TODO()
-	linuxVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName)
+	galleryLocation := os.Getenv("CAPZ_GALLERY_LOCATION")
+	if galleryLocation == "" {
+		galleryLocation = os.Getenv(AzureLocation)
+	}
+	linuxVersions := getVersionsInCommunityGallery(ctx, galleryLocation, azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName)
 
 	var versions semver.Versions
 
@@ -832,7 +836,7 @@ func resolveKubernetesVersions(config *clusterctl.E2EConfig) {
 	windowsRequired := testWindows == "true"
 
 	if windowsRequired {
-		windowsVersions := getVersionsInCommunityGallery(ctx, os.Getenv(AzureLocation), azure.DefaultPublicGalleryName, azure.DefaultWindowsGalleryImageName)
+		windowsVersions := getVersionsInCommunityGallery(ctx, galleryLocation, azure.DefaultPublicGalleryName, azure.DefaultWindowsGalleryImageName)
 		for k, v := range linuxVersions {
 			if _, ok := windowsVersions[k]; ok {
 				versions = append(versions, v)
