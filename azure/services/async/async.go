@@ -123,6 +123,14 @@ func (s *Service[C, D]) CreateOrUpdateResource(ctx context.Context, spec azure.R
 	s.Scope.DeleteLongRunningOperationState(resourceName, serviceName, futureType)
 
 	if err != nil {
+		// Retryable failures from the PUT call or poller (throttling, transient
+		// server-side errors, network faults, or a timeout before a poller was
+		// returned) are surfaced as transient so they are requeued, rather than
+		// reported as a terminal operation failure. Non-retryable failures (e.g.
+		// a failed provisioning state) are returned unwrapped.
+		if azure.IsTransientError(err) {
+			return nil, azure.WithTransientError(errWrapped, GetRetryAfterFromError(err))
+		}
 		return nil, errWrapped
 	}
 
@@ -183,6 +191,7 @@ func requeueTime(timeouts azure.AsyncReconciler) time.Duration {
 
 // GetRetryAfterFromError returns the time.Duration from the http.Response in the azcore.ResponseError.
 // If there is no Response object, or if there is no meaningful Retry-After header data, it returns a default.
+// The returned duration is always positive, since a zero RequeueAfter would drop the requeue.
 func GetRetryAfterFromError(err error) time.Duration {
 	// In case we aren't able to introspect Retry-After from the error type, we'll return this default
 	ret := reconciler.DefaultReconcilerRequeue
@@ -203,6 +212,11 @@ func GetRetryAfterFromError(err error) time.Duration {
 		} else if responseError.RawResponse.StatusCode == http.StatusTooManyRequests {
 			ret = reconciler.DefaultHTTP429RetryAfter
 		}
+	}
+	// Retry-After: 0, a negative value, or an HTTP-date in the past would otherwise
+	// yield a nonpositive delay.
+	if ret <= 0 {
+		ret = reconciler.DefaultReconcilerRequeue
 	}
 	return ret
 }

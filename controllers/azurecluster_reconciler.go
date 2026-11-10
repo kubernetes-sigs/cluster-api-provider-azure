@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -120,6 +121,9 @@ func (s *azureClusterService) reconcile(ctx context.Context) error {
 	}
 	if s.scope.ControlPlaneEnabled() {
 		apiinternal.SetDefaultAzureClusterBackendPoolName(s.scope.AzureCluster)
+		if err := s.scope.ValidateAPIServerDNSName(); err != nil {
+			return err
+		}
 		s.scope.SetDNSName()
 		s.scope.SetControlPlaneSecurityRules()
 	}
@@ -167,6 +171,17 @@ func (s *azureClusterService) delete(ctx context.Context) error {
 			return errors.Wrap(err, "failed to delete peerings")
 		}
 
+		// The private DNS zone can live in a resource group that is not deleted with the cluster.
+		if s.isPrivateDNSZoneOutsideResourceGroups() {
+			privateDNSSvc, err := s.getService(privatedns.ServiceName)
+			if err != nil {
+				return errors.Wrap(err, "failed to get private DNS service")
+			}
+			if err := privateDNSSvc.Delete(ctx); err != nil {
+				return errors.Wrap(err, "failed to delete private DNS")
+			}
+		}
+
 		groupSvc, err := s.getService(groups.ServiceName)
 		if err != nil {
 			return errors.Wrap(err, "failed to get group service")
@@ -208,6 +223,18 @@ func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) 
 	}
 
 	return nil
+}
+
+// isPrivateDNSZoneOutsideResourceGroups returns true if the private DNS zone is in a resource group
+// other than the cluster and vnet resource groups.
+func (s *azureClusterService) isPrivateDNSZoneOutsideResourceGroups() bool {
+	zoneSpec, _, _ := s.scope.PrivateDNSSpec()
+	if zoneSpec == nil {
+		return false
+	}
+	zoneResourceGroup := zoneSpec.ResourceGroupName()
+	return !strings.EqualFold(zoneResourceGroup, s.scope.ResourceGroup()) &&
+		!strings.EqualFold(zoneResourceGroup, s.scope.Vnet().ResourceGroup)
 }
 
 func (s *azureClusterService) getService(name string) (azure.ServiceReconciler, error) {

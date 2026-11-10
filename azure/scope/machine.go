@@ -807,7 +807,18 @@ func (m *MachineScope) UpdatePutStatus(condition clusterv1beta1.ConditionType, s
 	case azure.IsOperationNotDoneError(err):
 		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.CreatingReason, clusterv1beta1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
-		v1beta1conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+		reason := infrav1.FailedReason
+		// VMProvisionFailed marks a non-transient failure to realize the VM. It covers
+		// both failures building or validating the VM parameters before the Azure PUT
+		// and non-retryable failures returned during provisioning. Transient,
+		// retryable errors (throttling, network faults, timeouts, or anything classified
+		// as a transient ReconcileError) keep the generic Failed reason and are retried.
+		// A VM deleted outside of CAPZ was already provisioned, so it is not a
+		// provisioning failure either and keeps the generic Failed reason.
+		if condition == infrav1.VMRunningCondition && !azure.IsTransientError(err) && !errors.As(err, &azure.VMDeletedError{}) {
+			reason = infrav1.VMProvisionFailedReason
+		}
+		v1beta1conditions.MarkFalse(m.AzureMachine, condition, reason, clusterv1beta1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
 	}
 }
 

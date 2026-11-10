@@ -244,6 +244,41 @@ spec:
     - <cluster-namespace>
 ```
 
+## Azure CLI
+
+<aside class="note warning">
+<h1> Warning </h1>
+CAPZ authenticates by running <code class="hjls">az</code> as the OS user of the controller process. There is no separate client ID or secret. Every cluster in an allowed namespace uses that same Azure login. An empty <code class="hjls">allowedNamespaces</code> object allows every namespace.
+</aside>
+
+AzureCLI is an opt-in mode for a local installer or controller process that already has an `az login` session. Do not use it for a persistent in-cluster production controller. For those controllers, use [Workload Identity](./workload-identity.md) (recommended) or a [Service Principal](#service-principal), consistent with [ASO's authentication guidance](https://azure.github.io/azure-service-operator/guide/authentication/). The published CAPZ image does not include Azure CLI. That limits where this mode works, but does not enforce this usage boundary.
+
+The host must already have an `az login` session. The `clientID` property is unused for `AzureCLI` and may be omitted. Every other identity type must include the property, although the API accepts an empty string. `tenantID` is required by the `AzureClusterIdentity` schema. When a subscription is set, CAPZ does not also pass `tenantID` to `az account get-access-token`, because Azure CLI rejects `--tenant` and `--subscription` together. The subscription is `AzureCluster.spec.subscriptionID` or `AzureManagedControlPlane.spec.subscriptionID`. If that field is empty, CAPZ uses `AZURE_SUBSCRIPTION_ID`. If both are empty, CAPZ returns an error and does not create Azure clients.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  name: example-identity
+  namespace: default
+spec:
+  type: AzureCLI
+  tenantID: <azure-tenant-id>
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
+
+This authenticates only CAPZ. Configure ASO separately. CAPZ does not create a per-cluster ASO Secret for this type.
+
+With no namespace `aso-credential` Secret, CAPZ removes `serviceoperator.azure.com/credential-from` and ASO uses its global credential. CAPZ cannot inspect the global credential's subscription, so it does not verify that it matches the cluster. This is intentional; ASO may target a different subscription than CAPZ.
+
+If an `aso-credential` Secret exists, ASO prefers it over the global credential and does not fall back when that Secret cannot be loaded. It must contain non-empty `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, and `AZURE_CLIENT_ID`. The subscription must match the cluster spec subscription, or `AZURE_SUBSCRIPTION_ID` when the spec field is empty. CAPZ then removes `credential-from`.
+
+On either of those successful paths, CAPZ deletes a CAPZ-owned leftover Secret. A user-managed Secret with the same name is left in place.
+
+An incomplete Secret stops CAPZ reconciliation and leaves the ASO resource's `credential-from` annotation unchanged. An invalid namespace Secret does not cause ASO to use the global credential. On a subscription mismatch, CAPZ returns an error before changing the ASO resource's `credential-from` or `reconcile-policy` annotations. Ensure the namespace credential and cluster use the same subscription before retrying. If the namespace Secret is removed, CAPZ resumes the documented global-credential path; CAPZ cannot verify that global credential's subscription.
+
 ## Azure Host Identity
 
 The identity assigned to the Azure host which in the control plane provides the identity to Azure Cloud Provider, and can be used on all nodes to provide access to Azure services during cloud-init, etc.

@@ -21,6 +21,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
@@ -29,7 +30,6 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -51,22 +51,31 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(getSubscriptionID(Default), cred, nil)
 	Expect(err).NotTo(HaveOccurred())
 
+	agentPoolsClient, err := armcontainerservice.NewAgentPoolsClient(getSubscriptionID(Default), cred, nil)
+	Expect(err).NotTo(HaveOccurred())
+
 	mgmtClient := bootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
 	By("Upgrading the control plane")
-	var infraControlPlane = &infrav1.AzureManagedControlPlane{}
+	var resourceGroup, clusterName string
 	Eventually(func(g Gomega) {
-		err = mgmtClient.Get(ctx, client.ObjectKey{Namespace: input.Cluster.Namespace, Name: input.Cluster.Spec.ControlPlaneRef.Name}, infraControlPlane)
+		infraControlPlane, err := getAKSControlPlane(ctx, mgmtClient, input.Cluster)
 		g.Expect(err).NotTo(HaveOccurred())
-		infraControlPlane.Spec.Version = input.KubernetesVersionUpgradeTo
+		resourceGroup, clusterName, err = getAKSClusterNames(ctx, mgmtClient, infraControlPlane)
+		g.Expect(err).NotTo(HaveOccurred())
+		switch cp := infraControlPlane.(type) {
+		case *infrav1.AzureManagedControlPlane:
+			cp.Spec.Version = input.KubernetesVersionUpgradeTo
+		case *infrav1.AzureASOManagedControlPlane:
+			cp.Spec.Version = input.KubernetesVersionUpgradeTo
+		}
 		g.Expect(mgmtClient.Update(ctx, infraControlPlane)).To(Succeed())
-	}, inputGetter().WaitForControlPlane...).Should(Succeed())
+	}, input.WaitForControlPlane...).Should(Succeed())
 
 	Eventually(func(g Gomega) {
-		resp, err := managedClustersClient.Get(ctx, infraControlPlane.Spec.ResourceGroupName, infraControlPlane.Name, nil)
+		resp, err := managedClustersClient.Get(ctx, resourceGroup, clusterName, nil)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")))
 		aksCluster := resp.ManagedCluster
 		g.Expect(aksCluster.Properties).NotTo(BeNil())
 		g.Expect(aksCluster.Properties.KubernetesVersion).NotTo(BeNil())
@@ -82,4 +91,19 @@ func AKSUpgradeSpec(ctx context.Context, inputGetter func() AKSUpgradeSpecInput)
 		WaitForMachinePoolToBeUpgraded: input.WaitForMachinePools,
 		MachinePools:                   input.MachinePools,
 	})
+
+	By("Waiting for the Azure agent pool upgrades to complete")
+	for _, machinePool := range input.MachinePools {
+		Eventually(func(g Gomega) {
+			agentPoolName, err := getAKSAgentPoolName(ctx, mgmtClient, machinePool)
+			g.Expect(err).NotTo(HaveOccurred())
+			resp, err := agentPoolsClient.Get(ctx, resourceGroup, clusterName, agentPoolName, nil)
+			g.Expect(err).NotTo(HaveOccurred(), "failed to get Azure agent pool %q", agentPoolName)
+			g.Expect(resp.Properties).NotTo(BeNil(), "Azure agent pool %q has no properties", agentPoolName)
+			g.Expect(resp.Properties.ProvisioningState).To(Equal(ptr.To("Succeeded")),
+				"Azure agent pool %q has current orchestrator version %q", agentPoolName, ptr.Deref(resp.Properties.CurrentOrchestratorVersion, ""))
+			g.Expect(resp.Properties.CurrentOrchestratorVersion).To(Equal(ptr.To(strings.TrimPrefix(input.KubernetesVersionUpgradeTo, "v"))),
+				"Azure agent pool %q has provisioning state %q", agentPoolName, ptr.Deref(resp.Properties.ProvisioningState, ""))
+		}, input.WaitForMachinePools...).Should(Succeed(), "agent pool upgrade did not complete for MachinePool %s/%s", machinePool.Namespace, machinePool.Name)
+	}
 }

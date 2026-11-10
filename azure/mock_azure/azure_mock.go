@@ -31,6 +31,7 @@ import (
 	time "time"
 
 	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	cloud "github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	azidentity "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	genruntime "github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	logr "github.com/go-logr/logr"
@@ -261,6 +262,20 @@ func (m *MockAuthorizer) ClientSecret() string {
 func (mr *MockAuthorizerMockRecorder) ClientSecret() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockAuthorizer)(nil).ClientSecret))
+}
+
+// CloudConfiguration mocks base method.
+func (m *MockAuthorizer) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockAuthorizerMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockAuthorizer)(nil).CloudConfiguration))
 }
 
 // CloudEnvironment mocks base method.
@@ -671,6 +686,20 @@ func (m *MockClusterDescriber) ClientSecret() string {
 func (mr *MockClusterDescriberMockRecorder) ClientSecret() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockClusterDescriber)(nil).ClientSecret))
+}
+
+// CloudConfiguration mocks base method.
+func (m *MockClusterDescriber) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockClusterDescriberMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockClusterDescriber)(nil).CloudConfiguration))
 }
 
 // CloudEnvironment mocks base method.
@@ -1209,6 +1238,20 @@ func (m *MockClusterScoper) ClientSecret() string {
 func (mr *MockClusterScoperMockRecorder) ClientSecret() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockClusterScoper)(nil).ClientSecret))
+}
+
+// CloudConfiguration mocks base method.
+func (m *MockClusterScoper) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockClusterScoperMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockClusterScoper)(nil).CloudConfiguration))
 }
 
 // CloudEnvironment mocks base method.
@@ -1825,6 +1868,20 @@ func (mr *MockManagedClusterScoperMockRecorder) ClientSecret() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockManagedClusterScoper)(nil).ClientSecret))
 }
 
+// CloudConfiguration mocks base method.
+func (m *MockManagedClusterScoper) CloudConfiguration() cloud.Configuration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudConfiguration")
+	ret0, _ := ret[0].(cloud.Configuration)
+	return ret0
+}
+
+// CloudConfiguration indicates an expected call of CloudConfiguration.
+func (mr *MockManagedClusterScoperMockRecorder) CloudConfiguration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudConfiguration", reflect.TypeOf((*MockManagedClusterScoper)(nil).CloudConfiguration))
+}
+
 // CloudEnvironment mocks base method.
 func (m *MockManagedClusterScoper) CloudEnvironment() string {
 	m.ctrl.T.Helper()
@@ -2328,6 +2385,21 @@ func NewMockCredentialCache(ctrl *gomock.Controller) *MockCredentialCache {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockCredentialCache) EXPECT() *MockCredentialCacheMockRecorder {
 	return m.recorder
+}
+
+// GetOrStoreAzureCLI mocks base method.
+func (m *MockCredentialCache) GetOrStoreAzureCLI(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrStoreAzureCLI", opts)
+	ret0, _ := ret[0].(azcore.TokenCredential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrStoreAzureCLI indicates an expected call of GetOrStoreAzureCLI.
+func (mr *MockCredentialCacheMockRecorder) GetOrStoreAzureCLI(opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrStoreAzureCLI", reflect.TypeOf((*MockCredentialCache)(nil).GetOrStoreAzureCLI), opts)
 }
 
 // GetOrStoreClientCert mocks base method.

@@ -53,7 +53,7 @@ func (s *Service) reconcileLinks(ctx context.Context, links []azure.ResourceSpec
 
 		// we consider VnetLinks as managed if at least of the links is managed.
 		managed = true
-		if _, err := s.vnetLinkReconciler.CreateOrUpdateResource(ctx, linkSpec, serviceName); err != nil {
+		if _, err := s.vnetLinkReconciler.CreateOrUpdateResource(ctx, linkSpec, ServiceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}
@@ -78,7 +78,7 @@ func (s *Service) deleteLinks(ctx context.Context, links []azure.ResourceSpecGet
 		if err != nil {
 			if azure.ResourceNotFound(err) {
 				// already deleted or doesn't exist, cleanup status and return.
-				s.Scope.DeleteLongRunningOperationState(linkSpec.ResourceName(), serviceName, infrav1.DeleteFuture)
+				s.Scope.DeleteLongRunningOperationState(linkSpec.ResourceName(), ServiceName, infrav1.DeleteFuture)
 				continue
 			}
 			return managed, errors.Wrapf(err, "could not get vnet link state of %s in resource group %s",
@@ -94,7 +94,7 @@ func (s *Service) deleteLinks(ctx context.Context, links []azure.ResourceSpecGet
 		// if we reach here, it means that this vnet link is managed by capz.
 		managed = true
 
-		if err := s.vnetLinkReconciler.DeleteResource(ctx, linkSpec, serviceName); err != nil {
+		if err := s.vnetLinkReconciler.DeleteResource(ctx, linkSpec, ServiceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}

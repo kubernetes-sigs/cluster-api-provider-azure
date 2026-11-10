@@ -44,7 +44,7 @@ func (s *Service) reconcileZone(ctx context.Context, zoneSpec azure.ResourceSpec
 		return managed, nil
 	}
 
-	_, err = s.zoneReconciler.CreateOrUpdateResource(ctx, zoneSpec, serviceName)
+	_, err = s.zoneReconciler.CreateOrUpdateResource(ctx, zoneSpec, ServiceName)
 	return managed, err
 }
 
@@ -57,7 +57,7 @@ func (s *Service) deleteZone(ctx context.Context, zoneSpec azure.ResourceSpecGet
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted or doesn't exist, cleanup status and return.
-			s.Scope.DeleteLongRunningOperationState(zoneSpec.ResourceName(), serviceName, infrav1.DeleteFuture)
+			s.Scope.DeleteLongRunningOperationState(zoneSpec.ResourceName(), ServiceName, infrav1.DeleteFuture)
 			return managed, nil
 		}
 		return managed, errors.Wrapf(err, "could not get private DNS zone state of %s in resource group %s", zoneSpec.ResourceName(), zoneSpec.ResourceGroupName())
@@ -72,6 +72,6 @@ func (s *Service) deleteZone(ctx context.Context, zoneSpec azure.ResourceSpecGet
 	managed = true
 
 	// Delete the private DNS zone, which also deletes all records
-	err = s.zoneReconciler.DeleteResource(ctx, zoneSpec, serviceName)
+	err = s.zoneReconciler.DeleteResource(ctx, zoneSpec, ServiceName)
 	return managed, err
 }

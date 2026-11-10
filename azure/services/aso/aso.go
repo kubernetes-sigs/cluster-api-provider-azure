@@ -28,6 +28,7 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -107,7 +108,16 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 			log.V(4).Info("skipping reconcile for unmanaged resource")
 			return existing, nil
 		}
+	}
 
+	// Validate credentials before inspecting the ASO Ready condition or changing
+	// the ASO resource's credential selection and reconcile policy.
+	useSecret, err := r.usePerResourceSecret(ctx)
+	if err != nil {
+		return zero, err
+	}
+
+	if resourceExists {
 		// Check if there is an ongoing long running operation.
 		conds := existing.GetConditions()
 		i, readyExists := conds.FindIndexByType(conditions.ConditionTypeReady)
@@ -203,9 +213,16 @@ func (r *reconciler[T]) CreateOrUpdateResource(ctx context.Context, spec azure.A
 		annotations[asoannotations.ReconcilePolicy] = string(asoannotations.ReconcilePolicyManage)
 	}
 
-	// Set the secret name annotation in order to leverage the ASO resource credential scope as defined in
+	// Set credential-from according to ASO's resource credential scope:
 	// https://azure.github.io/azure-service-operator/guide/authentication/credential-scope/#resource-scope.
-	annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(r.clusterName)
+	// For AzureCLI identities, the per-resource Secret has only a subscription ID
+	// and cannot authenticate ASO. When validation succeeds, remove credential-from
+	// so ASO selects its global or matching namespace credential.
+	if useSecret {
+		annotations[asoannotations.PerResourceSecret] = aso.GetASOSecretName(r.clusterName)
+	} else {
+		delete(annotations, asoannotations.PerResourceSecret)
+	}
 
 	if len(labels) == 0 {
 		labels = nil
@@ -379,6 +396,94 @@ func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Sche
 
 func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
 	return labels[infrav1.OwnedByClusterLabelKey] == clusterName //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+}
+
+func (r *reconciler[T]) usePerResourceSecret(ctx context.Context) (bool, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.usePerResourceSecret")
+	defer done()
+
+	name, namespace, ok, subscription, err := r.identityKeyAndSubscription(ctx)
+	if err != nil {
+		// Leave the resource's credential selection unchanged and retry.
+		return false, err
+	}
+	if !ok {
+		// No identity ref, including an AzureManagedMachinePool whose Cluster has no
+		// control-plane reference. Keep the historical per-resource secret.
+		return true, nil
+	}
+	identity := &infrav1.AzureClusterIdentity{}
+	if err := r.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, identity); err != nil {
+		// Leave the resource's credential selection unchanged and retry.
+		return false, errors.Wrap(err, "failed to get AzureClusterIdentity")
+	}
+	if identity.Spec.Type != infrav1.AzureCLI {
+		return true, nil
+	}
+	if err := aso.ValidateAzureCLISubscription(ctx, r.Client, r.owner.GetNamespace(), subscription); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func (r *reconciler[T]) identityKeyAndSubscription(ctx context.Context) (name, namespace string, ok bool, subscription string, err error) {
+	switch owner := r.owner.(type) {
+	case *infrav1.AzureCluster:
+		name, namespace, ok = clusterIdentityKey(owner)
+		return name, namespace, ok, owner.Spec.SubscriptionID, nil
+	case *infrav1.AzureManagedControlPlane:
+		name, namespace, ok = clusterIdentityKey(owner)
+		return name, namespace, ok, owner.Spec.SubscriptionID, nil
+	case *infrav1.AzureManagedMachinePool:
+		return r.identityKeyAndSubscriptionFromMachinePool(ctx, owner)
+	default:
+		return "", "", false, "", nil
+	}
+}
+
+func (r *reconciler[T]) identityKeyAndSubscriptionFromMachinePool(ctx context.Context, pool *infrav1.AzureManagedMachinePool) (name, namespace string, ok bool, subscription string, err error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.identityKeyAndSubscriptionFromMachinePool")
+	defer done()
+
+	clusterName := pool.Labels[clusterv1.ClusterNameLabel]
+	if clusterName == "" {
+		return "", "", false, "", nil
+	}
+	cluster := &clusterv1.Cluster{}
+	if err := r.Get(ctx, client.ObjectKey{Name: clusterName, Namespace: pool.GetNamespace()}, cluster); err != nil {
+		return "", "", false, "", errors.Wrap(err, "failed to get Cluster for AzureManagedMachinePool")
+	}
+	if !cluster.Spec.ControlPlaneRef.IsDefined() {
+		return "", "", false, "", nil
+	}
+	cp := &infrav1.AzureManagedControlPlane{}
+	if err := r.Get(ctx, client.ObjectKey{Name: cluster.Spec.ControlPlaneRef.Name, Namespace: pool.GetNamespace()}, cp); err != nil {
+		return "", "", false, "", errors.Wrap(err, "failed to get AzureManagedControlPlane")
+	}
+	name, namespace, ok = identityRefKey(cp.Spec.IdentityRef, cp.GetNamespace())
+	return name, namespace, ok, cp.Spec.SubscriptionID, nil
+}
+
+func identityRefKey(ref *corev1.ObjectReference, defaultNamespace string) (name, namespace string, ok bool) {
+	if ref == nil {
+		return "", "", false
+	}
+	ns := ref.Namespace
+	if ns == "" {
+		ns = defaultNamespace
+	}
+	return ref.Name, ns, true
+}
+
+func clusterIdentityKey(owner client.Object) (name, namespace string, ok bool) {
+	switch o := owner.(type) {
+	case *infrav1.AzureCluster:
+		return identityRefKey(o.Spec.IdentityRef, o.GetNamespace())
+	case *infrav1.AzureManagedControlPlane:
+		return identityRefKey(o.Spec.IdentityRef, o.GetNamespace())
+	default:
+		return "", "", false
+	}
 }
 
 // PauseResource pauses an ASO resource by updating its `reconcile-policy` to `skip`.

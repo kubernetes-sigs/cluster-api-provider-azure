@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/go-logr/logr"
@@ -51,6 +52,7 @@ type ServiceReconciler interface {
 // Authorizer is an interface which can get details such as subscription ID, base URI, and token
 // for authorizing to an Azure service.
 type Authorizer interface {
+	CloudConfiguration() cloud.Configuration
 	SubscriptionID() string
 	ClientID() string
 	ClientSecret() string
@@ -174,4 +176,5 @@ type CredentialCache interface {
 	GetOrStoreManagedIdentity(opts *azidentity.ManagedIdentityCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreWorkloadIdentity(opts *azidentity.WorkloadIdentityCredentialOptions) (azcore.TokenCredential, error)
 	GetOrStoreUserAssignedManagedIdentityCredentials(ctx context.Context, credsPath string, opts azcore.ClientOptions, logger *logr.Logger) (azcore.TokenCredential, error)
+	GetOrStoreAzureCLI(opts *azidentity.AzureCLICredentialOptions) (azcore.TokenCredential, error)
 }

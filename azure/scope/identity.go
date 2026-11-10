@@ -47,7 +47,7 @@ type CredentialsProvider interface {
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
-	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error)
+	GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, subscriptionID string) (azcore.TokenCredential, error)
 	Type() infrav1.IdentityType
 }
 
@@ -76,6 +76,13 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
+	// AzureCLI uses the controller process login. Re-check the allowlist here so
+	// machine and ASO secret reconcilers cannot keep using it after the cluster
+	// namespace is removed from the identity.
+	if identity.Spec.Type == infrav1.AzureCLI && !IsClusterNamespaceAllowed(ctx, kubeClient, identity.Spec.AllowedNamespaces, defaultNamespace) {
+		return nil, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+	}
+
 	return &AzureCredentialsProvider{
 		Client:   kubeClient,
 		Identity: identity,
@@ -84,7 +91,7 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 }
 
 // GetTokenCredential returns an Azure TokenCredential based on the provided azure identity.
-func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience string) (azcore.TokenCredential, error) {
+func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint, tokenAudience, subscriptionID string) (azcore.TokenCredential, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "azure.scope.AzureCredentialsProvider.GetTokenCredential")
 	defer done()
 
@@ -93,15 +100,33 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 
 	tracingProvider := azotel.NewTracingProvider(otel.GetTracerProvider(), nil)
 
+	// Every credential type must target the resolved Azure environment (ARM
+	// endpoint, token audience, and AAD authority). For air-gapped clouds such as
+	// USSec (IL6) these values are discovered at runtime and AAD instance
+	// discovery must be disabled, because the public login.microsoftonline.com
+	// metadata endpoint used to validate the authority is unreachable.
+	clientOpts := azcore.ClientOptions{
+		TracingProvider: tracingProvider,
+		Cloud: cloud.Configuration{
+			ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
+			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+				cloud.ResourceManager: {
+					Audience: tokenAudience,
+					Endpoint: resourceManagerEndpoint,
+				},
+			},
+		},
+	}
+	disableInstanceDiscovery := azure.ShouldDisableInstanceDiscovery(activeDirectoryEndpoint)
+
 	switch p.Identity.Spec.Type {
 	case infrav1.WorkloadIdentity:
 		cred, authErr = p.cache.GetOrStoreWorkloadIdentity(&azidentity.WorkloadIdentityCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-			},
-			TenantID:      p.Identity.Spec.TenantID,
-			ClientID:      p.Identity.Spec.ClientID,
-			TokenFilePath: GetProjectedTokenPath(),
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
+			TenantID:                 p.Identity.Spec.TenantID,
+			ClientID:                 p.Identity.Spec.ClientID,
+			TokenFilePath:            GetProjectedTokenPath(),
 		})
 
 	case infrav1.ManualServicePrincipal:
@@ -113,18 +138,8 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			return nil, errors.Wrap(err, "failed to get client secret")
 		}
 		options := azidentity.ClientSecretCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-				Cloud: cloud.Configuration{
-					ActiveDirectoryAuthorityHost: activeDirectoryEndpoint,
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: tokenAudience,
-							Endpoint: resourceManagerEndpoint,
-						},
-					},
-				},
-			},
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
 		}
 		cred, authErr = p.cache.GetOrStoreClientSecret(p.GetTenantID(), p.Identity.Spec.ClientID, clientSecret, &options)
 
@@ -144,9 +159,8 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 			certsContent = []byte(clientSecret)
 		}
 		cred, authErr = p.cache.GetOrStoreClientCert(p.GetTenantID(), p.Identity.Spec.ClientID, certsContent, nil, &azidentity.ClientCertificateCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				TracingProvider: tracingProvider,
-			},
+			ClientOptions:            clientOpts,
+			DisableInstanceDiscovery: disableInstanceDiscovery,
 		})
 
 	case infrav1.UserAssignedMSI:
@@ -158,8 +172,14 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 		}
 		cred, authErr = p.cache.GetOrStoreManagedIdentity(&options)
 
+	case infrav1.AzureCLI:
+		cred, authErr = p.cache.GetOrStoreAzureCLI(azureCLICredentialOptions(subscriptionID, p.Identity.Spec.TenantID))
+
 	case infrav1.UserAssignedIdentityCredential:
-		cloudType := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		cloudType, err := parseCloudType(p.Identity.Spec.UserAssignedIdentityCredentialsCloudType)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse cloud type")
+		}
 		clientOptions := azcore.ClientOptions{
 			TracingProvider: tracingProvider,
 			Cloud:           cloudType,
@@ -268,16 +288,37 @@ func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, all
 	return false
 }
 
-func parseCloudType(cloudType string) cloud.Configuration {
+// azureCLICredentialOptions sets Subscription or TenantID, never both.
+// az account get-access-token rejects --tenant and --subscription together.
+func azureCLICredentialOptions(subscriptionID, tenantID string) *azidentity.AzureCLICredentialOptions {
+	switch {
+	case subscriptionID != "":
+		return &azidentity.AzureCLICredentialOptions{Subscription: subscriptionID}
+	case tenantID != "":
+		return &azidentity.AzureCLICredentialOptions{TenantID: tenantID}
+	default:
+		return &azidentity.AzureCLICredentialOptions{}
+	}
+}
+
+func parseCloudType(cloudType string) (cloud.Configuration, error) {
 	cloudType = strings.ToUpper(cloudType)
 	switch cloudType {
 	case "PUBLIC":
-		return cloud.AzurePublic
+		return cloud.AzurePublic, nil
 	case "CHINA":
-		return cloud.AzureChina
+		return cloud.AzureChina, nil
 	case "USGOVERNMENT":
-		return cloud.AzureGovernment
+		return cloud.AzureGovernment, nil
+	case "USSEC": //nolint:goconst
+		env, err := loadCloudEnvironmentFromFile()
+		if err != nil {
+			return cloud.Configuration{}, errors.Wrap(err, "failed to load cloud environment for USSec")
+		}
+		return cloud.Configuration{
+			ActiveDirectoryAuthorityHost: env.ActiveDirectoryEndpoint,
+		}, nil
 	default:
-		return cloud.AzurePublic
+		return cloud.AzurePublic, nil
 	}
 }

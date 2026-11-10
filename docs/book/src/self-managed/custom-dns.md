@@ -1,6 +1,10 @@
 # Custom Private DNS Zone Name
 
-It is possible to set the DNS zone name to a custom value by setting `PrivateDNSZoneName` in the `NetworkSpec`. By default the DNS zone name is `${CLUSTER_NAME}.capz.io`.
+It is possible to set the DNS zone name to a custom value by setting `privateDNSZoneName` in the `NetworkSpec`. By default the DNS zone name is `${CLUSTER_NAME}.capz.io`.
+
+You can also choose which resource group hosts the private DNS zone by setting `privateDNSZoneResourceGroup` in the `NetworkSpec`. If this field is omitted, CAPZ uses the cluster's resource group. This is useful when you want the private DNS zone in a different resource group from the rest of the cluster's resources (for example, a shared DNS resource group used by multiple clusters).
+
+`privateDNSZoneResourceGroup` can only be set when `privateDNSZoneName` is also provided, and it cannot be changed after the cluster is created. The resource group must already exist, and the cluster identity needs permissions on it.
 
 *This feature is enabled only if the `apiServerLB.type` is `Internal`*
 
@@ -14,6 +18,7 @@ spec:
   location: southcentralus
   networkSpec:
     privateDNSZoneName: "kubernetes.myzone.com"
+    privateDNSZoneResourceGroup: "my-dns-rg"
     vnet:
       name: my-vnet
       cidrBlocks:

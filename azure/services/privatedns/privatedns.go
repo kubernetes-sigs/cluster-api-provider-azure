@@ -30,7 +30,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-const serviceName = "privatedns"
+// ServiceName is the name of this service.
+const ServiceName = "privatedns"
 
 // Scope defines the scope interface for a private dns service.
 type Scope interface {
@@ -81,7 +82,7 @@ func New(scope Scope) (*Service, error) {
 
 // Name returns the service name.
 func (s *Service) Name() string {
-	return serviceName
+	return ServiceName
 }
 
 // Reconcile creates or updates the private zone, links it to the vnet, and creates DNS records.
@@ -99,7 +100,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	managed, err := s.reconcileZone(ctx, zoneSpec)
 	if managed {
-		s.Scope.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, err)
+		s.Scope.UpdatePutStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, err)
 	}
 	if err != nil {
 		return err
@@ -107,14 +108,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	managed, err = s.reconcileLinks(ctx, links)
 	if managed {
-		s.Scope.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, err)
+		s.Scope.UpdatePutStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, err)
 	}
 	if err != nil {
 		return err
 	}
 
 	err = s.reconcileRecords(ctx, records)
-	s.Scope.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, err)
+	s.Scope.UpdatePutStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, err)
 	return err
 }
 
@@ -133,7 +134,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	managed, err := s.deleteLinks(ctx, links)
 	if managed {
-		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, serviceName, err)
+		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSLinkReadyCondition, ServiceName, err)
 	}
 	if err != nil {
 		return err
@@ -141,8 +142,8 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	managed, err = s.deleteZone(ctx, zoneSpec)
 	if managed {
-		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, serviceName, err)
-		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, serviceName, err)
+		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSZoneReadyCondition, ServiceName, err)
+		s.Scope.UpdateDeleteStatus(infrav1.PrivateDNSRecordReadyCondition, ServiceName, err)
 	}
 
 	return err
