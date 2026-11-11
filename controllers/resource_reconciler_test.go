@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -651,6 +652,7 @@ type recordingDeleteClient struct {
 	deleted []string
 }
 
+// Delete records the deleted object's kind and name before forwarding the request.
 func (c *recordingDeleteClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleted = append(c.deleted, obj.GetObjectKind().GroupVersionKind().Kind+"/"+obj.GetName())
 	return c.Client.Delete(ctx, obj, opts...)
@@ -869,6 +871,29 @@ func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []meta
 
 func TestDeferShallowerResources(t *testing.T) {
 	boolPtr := func(b bool) *bool { return &b }
+	partialResource := func(uid, name string, ownerReferences ...metav1.OwnerReference) *metav1.PartialObjectMetadata {
+		return &metav1.PartialObjectMetadata{
+			ObjectMeta: metav1.ObjectMeta{
+				UID:             k8stypes.UID(uid),
+				Name:            name,
+				OwnerReferences: ownerReferences,
+			},
+		}
+	}
+	resourceObject := func(name, kind string, status, spec any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "example.azure.com/v1",
+			"kind":       kind,
+			"metadata":   map[string]any{"name": name},
+			"status":     status,
+			"spec":       spec,
+		}}
+	}
+	withID := func(name, kind, id string, spec any) *unstructured.Unstructured {
+		return resourceObject(name, kind, map[string]any{"id": id}, spec)
+	}
+	vnetID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet"
+	subnetID := vnetID + "/subnets/subnet"
 
 	rg := &metav1.PartialObjectMetadata{
 		ObjectMeta: metav1.ObjectMeta{UID: "rg-uid", Name: "rg"},
@@ -907,7 +932,10 @@ func TestDeferShallowerResources(t *testing.T) {
 	tests := []struct {
 		name             string
 		resources        []*metav1.PartialObjectMetadata
+		objects          map[k8stypes.UID]*unstructured.Unstructured
 		expectedDeferred []string
+		expectedError    string
+		checkCycle       bool
 	}{
 		{
 			name:             "all levels present: only deepest (subnet) proceeds",
@@ -934,13 +962,75 @@ func TestDeferShallowerResources(t *testing.T) {
 			resources:        nil,
 			expectedDeferred: []string{},
 		},
+		{
+			name:          "wrong-typed status.id returns an error",
+			resources:     []*metav1.PartialObjectMetadata{partialResource("bad-uid", "bad")},
+			objects:       map[k8stypes.UID]*unstructured.Unstructured{"bad-uid": resourceObject("bad", "VirtualNetwork", map[string]any{"id": 123}, nil)},
+			expectedError: "failed to read status.id",
+		},
+		{
+			name: "ARM references use the longest matching resource ID",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("vnet-uid", "vnet"),
+				partialResource("subnet-uid", "subnet"),
+				partialResource("consumer-uid", "consumer"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"vnet-uid":     withID("vnet", "VirtualNetwork", vnetID, nil),
+				"subnet-uid":   withID("subnet", "VirtualNetworksSubnet", subnetID, map[string]any{"virtualNetworkID": vnetID}),
+				"consumer-uid": withID("consumer", "PrivateEndpoint", "", map[string]any{"subnetID": subnetID}),
+			},
+			expectedDeferred: []string{"vnet", "subnet"},
+		},
+		{
+			name: "ARM ID matching ignores case and trailing slashes",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("vnet-uid", "vnet"),
+				partialResource("consumer-uid", "consumer"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"vnet-uid":     withID("vnet", "VirtualNetwork", " /SUBSCRIPTIONS/SUB/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/VIRTUALNETWORKS/VNET/ ", nil),
+				"consumer-uid": withID("consumer", "PrivateEndpoint", "", map[string]any{"subnetID": "/subscriptions/sub/resourcegroups/rg/providers/microsoft.network/virtualnetworks/vnet/subnets/subnet/"}),
+			},
+			expectedDeferred: []string{"vnet"},
+		},
+		{
+			name: "self-references are ignored",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("root-uid", "root"),
+				partialResource("self-uid", "self"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"root-uid": withID("root", "VirtualNetwork", "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/root", nil),
+				"self-uid": withID("self", "VirtualNetwork", "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/self", map[string]any{"selfID": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/self/subnets/subnet"}),
+			},
+			expectedDeferred: []string{},
+		},
+		{
+			name: "dependency cycles defer some resources but leave one deletable",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}),
+				partialResource("right-uid", "right", metav1.OwnerReference{UID: "left-uid"}),
+			},
+			checkCycle: true,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
-			deferred, err := deferShallowerResources(tc.resources, nil)
+			deferred, err := deferShallowerResources(tc.resources, tc.objects)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
+				return
+			}
 			g.Expect(err).NotTo(HaveOccurred())
+			if tc.checkCycle {
+				g.Expect(deferred).ToNot(BeEmpty())
+				g.Expect(len(deferred)).To(BeNumerically("<", len(tc.resources)))
+				return
+			}
 			var deferredNames []string
 			for _, r := range tc.resources {
 				if deferred.Has(r.UID) {

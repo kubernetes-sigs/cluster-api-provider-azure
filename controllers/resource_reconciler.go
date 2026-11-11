@@ -60,12 +60,14 @@ type ResourceReconciler struct {
 
 // ResourceWatcher watches ASO resources managed by a ResourceReconciler.
 type ResourceWatcher interface {
+	// Watch registers an event watch for an ASO resource managed by a reconciler.
 	Watch(log logr.Logger, obj client.Object, handler handler.EventHandler, p ...predicate.Predicate) error
 }
 
 // ResourceReconcilerOwner is the CAPZ resource whose status records managed ASO resources.
 type ResourceReconcilerOwner interface {
 	client.Object
+	// SetResourceStatuses records the current statuses of the owner's managed ASO resources.
 	SetResourceStatuses([]infrav1.ResourceStatus)
 }
 
@@ -538,14 +540,17 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 	return deferred, nil
 }
 
+// normalizeARMID canonicalizes an ARM resource ID for dependency matching.
 func normalizeARMID(id string) string {
 	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(id)), "/")
 }
 
+// isARMIDParent reports whether referenceID identifies resourceID or one of its descendants.
 func isARMIDParent(resourceID, referenceID string) bool {
 	return referenceID == resourceID || strings.HasPrefix(referenceID, resourceID+"/")
 }
 
+// visitARMIDs calls visit for each ARM resource ID found recursively in value.
 func visitARMIDs(value any, visit func(string)) {
 	switch value := value.(type) {
 	case string:
@@ -563,12 +568,14 @@ func visitARMIDs(value any, visit func(string)) {
 	}
 }
 
+// resourceReferenceKey identifies a referenced resource by its API group, kind, and name.
 type resourceReferenceKey struct {
 	group string
 	kind  string
 	name  string
 }
 
+// visitKubernetesResourceReferences calls visit for each Kubernetes resource reference found in value.
 func visitKubernetesResourceReferences(value any, visit func(resourceReferenceKey)) {
 	switch value := value.(type) {
 	case []any:
