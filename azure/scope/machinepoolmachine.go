@@ -443,9 +443,9 @@ func (s *MachinePoolMachineScope) hasLatestModelApplied(ctx context.Context) (bo
 			// cannot express it via image.ID), but the observed instance image
 			// may carry plan data populated by the SDK converter. Strip the
 			// plan from the observed copy so the comparison stays correct.
-			instanceImageCopy := s.instance.Image
+			instanceImageCopy := s.instance.Image.DeepCopy()
 			instanceImageCopy.ComputeGallery.Plan = nil
-			return reflect.DeepEqual(instanceImageCopy, newImage), nil
+			return reflect.DeepEqual(*instanceImageCopy, newImage), nil
 		}
 	}
 

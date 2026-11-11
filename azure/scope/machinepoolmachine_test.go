@@ -604,6 +604,7 @@ func TestMachinePoolMachineScope_hasLatestModelApplied(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			g := NewWithT(t)
+			originalImage := *c.instanceImage.DeepCopy()
 			s := &MachinePoolMachineScope{
 				instance: &azure.VMSSVM{
 					Image: c.instanceImage,
@@ -622,6 +623,7 @@ func TestMachinePoolMachineScope_hasLatestModelApplied(t *testing.T) {
 			result, err := s.hasLatestModelApplied(t.Context())
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(result).To(Equal(c.expected))
+			g.Expect(s.instance.Image).To(Equal(originalImage), "observed instance image must not be mutated")
 		})
 	}
 }
