@@ -30,7 +30,7 @@ import (
 
 // asoNamespacedCredentialSecret is the namespace-scoped credential ASO prefers
 // over its global credential. It matches identity.NamespacedSecretName in ASO.
-const asoNamespacedCredentialSecret = "aso-credential"
+const asoNamespacedCredentialSecret = "aso-credential" //nolint:gosec // Secret name, not a credential.
 
 // ValidateAzureCLISubscription returns an error when a namespace aso-credential
 // Secret would select a different subscription than the cluster once the

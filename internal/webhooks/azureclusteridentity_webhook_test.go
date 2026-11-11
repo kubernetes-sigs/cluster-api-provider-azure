@@ -167,7 +167,7 @@ func TestAzureClusterIdentity_ClientIDValidation(t *testing.T) {
 	if !ok {
 		t.Fatal("failed to get test file path")
 	}
-	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "../.."))
+	repoRoot := filepath.Join(filepath.Dir(testFile), "..", "..")
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join(
 			repoRoot,
