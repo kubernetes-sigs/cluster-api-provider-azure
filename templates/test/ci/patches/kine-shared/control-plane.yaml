@@ -1,0 +1,20 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          feature-gates: ConcurrentWatchObjectDecode=true,ListFromCacheSnapshot=false
+      etcd:
+        local:
+          extraArgs:
+            quota-backend-bytes: "34359738368"
+            listen-metrics-urls: http://0.0.0.0:2381
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+      - ext4
+      - defaults,noatime

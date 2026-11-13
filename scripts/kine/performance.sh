@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+# Copyright 2026 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# shellcheck source=scripts/kine/connections.sh
+source "$(dirname "${BASH_SOURCE[0]}")/connections.sh"
+# shellcheck source=scripts/kine/backend.sh
+source "$(dirname "${BASH_SOURCE[0]}")/backend.sh"
+
+capz::kine::performance_defaults() {
+  capz::kine::backend_defaults
+  if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+    capz::kine::connection_defaults
+  fi
+  export AZURE_LOCATION="${AZURE_LOCATION:-westus2}"
+  export KINE_ZONE="${KINE_ZONE:-2}"
+  [[ "${KINE_ZONE}" =~ ^[123]$ ]] || { echo "KINE_ZONE must be 1, 2, or 3." >&2; return 1; }
+  # Kustomize strips template quotes; substitute a YAML string literal instead.
+  export KINE_ZONE_YAML="\"${KINE_ZONE}\""
+  export KINE_ZONE_1=false KINE_ZONE_2=false KINE_ZONE_3=false
+  case "${KINE_ZONE}" in
+    1) export KINE_ZONE_1=true ;;
+    2) export KINE_ZONE_2=true ;;
+    3) export KINE_ZONE_3=true ;;
+  esac
+  export KINE_VM_SIZE="${KINE_VM_SIZE:-Standard_D64s_v3}"
+  export KINE_DISK_SIZE_GB="${KINE_DISK_SIZE_GB:-512}"
+  export KINE_DISK_IOPS="${KINE_DISK_IOPS:-80000}"
+  export KINE_DISK_MBPS="${KINE_DISK_MBPS:-1200}"
+  if [[ -n "${AZURE_CONTROL_PLANE_MACHINE_TYPE:-}" && "${AZURE_CONTROL_PLANE_MACHINE_TYPE}" != "${KINE_VM_SIZE}" ]]; then
+    echo "Control-plane and Kine VM sizes must match; set KINE_VM_SIZE and remove a conflicting AZURE_CONTROL_PLANE_MACHINE_TYPE." >&2
+    return 1
+  fi
+  export AZURE_CONTROL_PLANE_MACHINE_TYPE="${KINE_VM_SIZE}"
+  export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-Standard_D16s_v5}"
+  # Match the subnets explicitly set by the Kine template overlay.
+  export AZURE_LINUX_NODE_CIDRS="10.0.0.0/24 10.0.1.0/24"
+  export CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT="${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT:-1}"
+  export CONFORMANCE_WORKER_MACHINE_COUNT="${CONFORMANCE_WORKER_MACHINE_COUNT:-2}"
+  local value
+  for value in "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}" \
+    "${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT}" "${CONFORMANCE_WORKER_MACHINE_COUNT}"; do
+    if [[ ! "${value}" =~ ^[1-9][0-9]{0,6}$ ]]; then
+      echo "Disk settings and machine counts must be positive integers (at most 7 digits)." >&2
+      return 1
+    fi
+  done
+  if (( KINE_DISK_SIZE_GB < 4 || KINE_DISK_SIZE_GB > 65536 ||
+        KINE_DISK_IOPS < 100 || KINE_DISK_IOPS > 400000 || KINE_DISK_IOPS > KINE_DISK_SIZE_GB * 1000 ||
+        KINE_DISK_MBPS > 10000 || KINE_DISK_MBPS * 4 > KINE_DISK_IOPS )); then
+    echo "Requested disk capacity/IOPS/MBps exceeds Ultra Disk limits." >&2
+    return 1
+  fi
+}
+
+capz::kine::performance_preflight() {
+  : "${artifact_dir:?Set the fixture artifact directory}" "${repo_root:?Set the repository root}"
+  capz::kine::az vm list-skus --location "${AZURE_LOCATION}" --resource-type virtualMachines --all \
+    --output json > "${artifact_dir}/vm-skus.json"
+  capz::kine::az vm list-usage --location "${AZURE_LOCATION}" \
+    --output json > "${artifact_dir}/quota.json"
+  local use_kine=false
+  if [[ "${KINE_BACKEND}" == kine-postgres ]]; then use_kine=true; fi
+  jq -n --arg location "${AZURE_LOCATION}" --arg zone "${KINE_ZONE}" \
+    --arg controlPlane "${AZURE_CONTROL_PLANE_MACHINE_TYPE}" --argjson useKine "${use_kine}" \
+    --arg worker "${AZURE_NODE_MACHINE_TYPE}" \
+    --argjson controlPlanes "${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT}" \
+    --argjson workers "${CONFORMANCE_WORKER_MACHINE_COUNT}" \
+    --argjson diskIOPS "${KINE_DISK_IOPS}" --argjson diskMBps "${KINE_DISK_MBPS}" \
+    --slurpfile skus "${artifact_dir}/vm-skus.json" --slurpfile quota "${artifact_dir}/quota.json" \
+    -f "${repo_root}/scripts/kine/performance-preflight.jq" > "${artifact_dir}/capacity-plan.json"
+  cat "${artifact_dir}/capacity-plan.json"
+  if [[ "${use_kine}" == true ]]; then
+    local image="${KINE_VM_IMAGE:-Canonical:ubuntu-24_04-lts:server:latest}" version
+    capz::kine::az vm image show --location "${AZURE_LOCATION}" \
+      --urn "${image}" \
+      --output json > "${artifact_dir}/image.json"
+    jq -e '.architecture == "x64" and .hyperVGeneration == "V2" and
+      ([.features[]? | select(.name == "DiskControllerTypes") | .value] |
+        length == 0 or any(.[]; split(",") | map(gsub(" "; "")) | index("SCSI") != null))' \
+      "${artifact_dir}/image.json" >/dev/null ||
+      { echo "Kine VM image must support x64/Gen2/SCSI." >&2; return 1; }
+    version=$(jq -er '.name | if test("^[0-9]+\\.[0-9]+\\.[0-9]+$") then . else error("Invalid datastore image version") end' "${artifact_dir}/image.json")
+    KINE_VM_IMAGE="${image%:*}:${version}"
+    export KINE_VM_IMAGE
+  fi
+  local gallery=ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019 node_image=capi-azurelinux-4-gen2
+  # Pin the REST API: Azure CLI 2.91 selects an unsupported community-gallery API version.
+  local gallery_api_version=2024-03-03
+  local gallery_image_url="https://management.azure.com/subscriptions/${AZURE_SUBSCRIPTION_ID}/providers/Microsoft.Compute/locations/${AZURE_LOCATION}/communityGalleries/${gallery}/images/${node_image}"
+  capz::kine::az rest --method get \
+    --url "${gallery_image_url}?api-version=${gallery_api_version}" \
+    --output json > "${artifact_dir}/node-image.json"
+  jq -e '.properties.architecture == "x64" and .properties.hyperVGeneration == "V2"' \
+    "${artifact_dir}/node-image.json" >/dev/null ||
+    { echo "Node community image must support x64/Gen2." >&2; return 1; }
+  capz::kine::az rest --method get \
+    --url "${gallery_image_url}/versions/${KINE_NODE_IMAGE_VERSION}?api-version=${gallery_api_version}" \
+    --output json > "${artifact_dir}/node-image-version.json"
+  jq -e --arg version "${KINE_NODE_IMAGE_VERSION}" '.name == $version' \
+    "${artifact_dir}/node-image-version.json" >/dev/null ||
+    { echo "Node community image version does not match ${KUBERNETES_VERSION}." >&2; return 1; }
+  {
+    printf 'datastore-backend=%s\ndatastore-version=%s\n' "${KINE_BACKEND}" "${KINE_DATASTORE_VERSION}"
+    printf 'location=%s\nzone=%s\ncontrol-plane-vm-size=%s\ndisk-controller=SCSI\ndisk-size-gib=%s\ndisk-iops=%s\ndisk-mbps=%s\n' \
+      "${AZURE_LOCATION}" "${KINE_ZONE}" "${KINE_VM_SIZE}" "${KINE_DISK_SIZE_GB}" "${KINE_DISK_IOPS}" "${KINE_DISK_MBPS}"
+    if [[ "${KINE_BACKEND}" == kine-postgres ]]; then
+      printf 'datastore-topology=external-kine\nimage=%s\n' "${KINE_VM_IMAGE}"
+      printf 'postgres-version=16\npostgres-max-connections=%s\nkine-max-open-connections=%s\nkine-max-idle-connections=%s\n' \
+        "${KINE_POSTGRES_MAX_CONNECTIONS}" "${KINE_DATASTORE_MAX_OPEN_CONNECTIONS}" "${KINE_DATASTORE_MAX_IDLE_CONNECTIONS}"
+    else
+      printf 'datastore-topology=kubeadm-local\netcd-members=%s\netcd-quota-backend-bytes=%s\netcd-fsync=true\n' \
+        "${CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT}" "${KINE_ETCD_QUOTA_BYTES}"
+    fi
+    printf 'kubernetes-version=%s\nnode-image=/CommunityGalleries/%s/Images/%s/Versions/%s\n' \
+      "${KUBERNETES_VERSION}" "${gallery}" "${node_image}" "${KINE_NODE_IMAGE_VERSION}"
+    printf 'collect-profiles=%s\n' "${KINE_COLLECT_PROFILES:-false}"
+  } > "${artifact_dir}/performance-settings.txt"
+  echo "VM quota/capability preflight passed; allocation capacity and disk quotas are not reserved."
+}
