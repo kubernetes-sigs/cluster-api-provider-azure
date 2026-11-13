@@ -17,8 +17,11 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
+	asonetworkv120201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
+	asonetworkv120220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
@@ -31,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -296,6 +300,8 @@ func TestResourceReconcilerPause(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
+		asonetworkv120220701.AddToScheme,
+		asonetworkv120201101.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -409,6 +415,8 @@ func TestResourceReconcilerDelete(t *testing.T) {
 	sb := runtime.NewSchemeBuilder(
 		infrav1.AddToScheme,
 		asoresourcesv1.AddToScheme,
+		asonetworkv120220701.AddToScheme,
+		asonetworkv120201101.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -482,6 +490,139 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Status.Resources[0].Ready).To(BeFalse())
 	})
 
+	t.Run("delete resources in ARM reference order", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				UID:       "owner-uid",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{
+						asoresourcesv1.GroupVersion.WithKind("ResourceGroup"),
+						asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"),
+					}),
+				},
+			},
+		}
+		resourceGroup := &asoresourcesv1.ResourceGroup{
+			TypeMeta: rgTypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       owner.Namespace,
+				Name:            "rg",
+				UID:             "rg-uid",
+				OwnerReferences: controlledBy(g, s, owner),
+			},
+		}
+		vnetID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet"
+
+		vnet := &unstructured.Unstructured{Object: map[string]any{}}
+		vnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"))
+		vnet.SetNamespace(owner.Namespace)
+		vnet.SetName("vnet")
+		vnet.SetUID("vnet-uid")
+		vnet.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "rg-uid"}))
+		g.Expect(unstructured.SetNestedField(vnet.Object, vnetID, "status", "id")).To(Succeed())
+
+		privateEndpoint := &unstructured.Unstructured{Object: map[string]any{}}
+		privateEndpoint.SetGroupVersionKind(asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"))
+		privateEndpoint.SetNamespace(owner.Namespace)
+		privateEndpoint.SetName("private-endpoint")
+		privateEndpoint.SetUID("private-endpoint-uid")
+		privateEndpoint.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "rg-uid"}))
+		// A PrivateEndpoint is owned by a ResourceGroup in ASO, but depends on
+		// a subnet embedded in a VirtualNetwork's ARM resource ID.
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, vnetID+"/subnets/subnet", "spec", "subnet", "reference", "armId")).To(Succeed())
+
+		clientWithDeleteOrder := &recordingDeleteClient{Client: fakeClientBuilder().WithObjects(resourceGroup, vnet, privateEndpoint).Build()}
+		r := NewResourceReconciler(clientWithDeleteOrder, owner, nil, nil, WithChildrenFirst())
+		ownedKinds, err := parseOwnedKinds(owner.Annotations[ownedKindsAnnotation])
+		g.Expect(err).NotTo(HaveOccurred())
+		ownedObjects, err := r.ownedObjs(ctx, ownedKinds)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(ownedObjects).To(HaveLen(3))
+		objectsForOrdering, err := r.resourcesForOrdering(ctx, ownedObjects)
+		g.Expect(err).NotTo(HaveOccurred())
+		deferred, err := deferShallowerResources(ownedObjects, objectsForOrdering)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(deferred.Has("vnet-uid")).To(BeTrue())
+		g.Expect(deferred.Has("rg-uid")).To(BeTrue())
+
+		g.Expect(r.Delete(ctx)).To(Succeed())
+		g.Expect(clientWithDeleteOrder.deleted).To(Equal([]string{"PrivateEndpoint/private-endpoint"}))
+		remainingVNet := vnet.DeepCopy()
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(vnet), remainingVNet)).To(Succeed())
+		g.Expect(owner.Status.Resources).To(HaveLen(2))
+		remainingNames := []string{owner.Status.Resources[0].Resource.Name, owner.Status.Resources[1].Resource.Name}
+		g.Expect(remainingNames).To(ConsistOf("vnet", "rg"))
+	})
+
+	t.Run("delete resources in Kubernetes reference order", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				UID:       "owner-uid",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{
+						asoresourcesv1.GroupVersion.WithKind("ResourceGroup"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"),
+						asonetworkv120201101.GroupVersion.WithKind("VirtualNetworksSubnet"),
+						asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"),
+					}),
+				},
+			},
+		}
+		resourceGroup := &asoresourcesv1.ResourceGroup{
+			TypeMeta: rgTypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       owner.Namespace,
+				Name:            "rg",
+				UID:             "rg-uid",
+				OwnerReferences: controlledBy(g, s, owner),
+			},
+		}
+		resourceGroupOwner := metav1.OwnerReference{UID: "rg-uid"}
+		vnet := &unstructured.Unstructured{Object: map[string]any{}}
+		vnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetwork"))
+		vnet.SetNamespace(owner.Namespace)
+		vnet.SetName("vnet")
+		vnet.SetUID("vnet-uid")
+		vnet.SetOwnerReferences(append(controlledBy(g, s, owner), resourceGroupOwner))
+
+		subnet := &unstructured.Unstructured{Object: map[string]any{}}
+		subnet.SetGroupVersionKind(asonetworkv120201101.GroupVersion.WithKind("VirtualNetworksSubnet"))
+		subnet.SetNamespace(owner.Namespace)
+		subnet.SetName("subnet")
+		subnet.SetUID("subnet-uid")
+		subnet.SetOwnerReferences(append(controlledBy(g, s, owner), metav1.OwnerReference{UID: "vnet-uid"}))
+
+		privateEndpoint := &unstructured.Unstructured{Object: map[string]any{}}
+		privateEndpoint.SetGroupVersionKind(asonetworkv120220701.GroupVersion.WithKind("PrivateEndpoint"))
+		privateEndpoint.SetNamespace(owner.Namespace)
+		privateEndpoint.SetName("private-endpoint")
+		privateEndpoint.SetUID("private-endpoint-uid")
+		privateEndpoint.SetOwnerReferences(append(controlledBy(g, s, owner), resourceGroupOwner))
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, asonetworkv120201101.GroupVersion.Group, "spec", "subnet", "reference", "group")).To(Succeed())
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, "VirtualNetworksSubnet", "spec", "subnet", "reference", "kind")).To(Succeed())
+		g.Expect(unstructured.SetNestedField(privateEndpoint.Object, "subnet", "spec", "subnet", "reference", "name")).To(Succeed())
+
+		clientWithDeleteOrder := &recordingDeleteClient{Client: fakeClientBuilder().WithObjects(resourceGroup, vnet, subnet, privateEndpoint).Build()}
+		r := NewResourceReconciler(clientWithDeleteOrder, owner, nil, nil, WithChildrenFirst())
+
+		g.Expect(r.Delete(ctx)).To(Succeed())
+		g.Expect(clientWithDeleteOrder.deleted).To(Equal([]string{"PrivateEndpoint/private-endpoint"}))
+		for _, object := range []*unstructured.Unstructured{vnet, subnet} {
+			remaining := object.DeepCopy()
+			g.Expect(r.Get(ctx, client.ObjectKeyFromObject(object), remaining)).To(Succeed())
+		}
+		remainingResourceGroup := &asoresourcesv1.ResourceGroup{}
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(resourceGroup), remainingResourceGroup)).To(Succeed())
+		g.Expect(owner.Status.Resources).To(HaveLen(3))
+	})
+
 	t.Run("done deleting", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -504,6 +645,17 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Annotations).NotTo(HaveKey(ownedKindsAnnotation))
 		g.Expect(owner.Status.Resources).To(BeEmpty())
 	})
+}
+
+type recordingDeleteClient struct {
+	client.Client
+	deleted []string
+}
+
+// Delete records the deleted object's kind and name before forwarding the request.
+func (c *recordingDeleteClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+	c.deleted = append(c.deleted, obj.GetObjectKind().GroupVersionKind().Kind+"/"+obj.GetName())
+	return c.Client.Delete(ctx, obj, opts...)
 }
 
 func TestReadyStatus(t *testing.T) {
@@ -714,6 +866,183 @@ func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []meta
 	g.Expect(err).NotTo(HaveOccurred())
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(owner, ownerGVK),
+	}
+}
+
+func TestDeferShallowerResources(t *testing.T) {
+	boolPtr := func(b bool) *bool { return &b }
+	partialResource := func(uid, name string, ownerReferences ...metav1.OwnerReference) *metav1.PartialObjectMetadata {
+		return &metav1.PartialObjectMetadata{
+			ObjectMeta: metav1.ObjectMeta{
+				UID:             k8stypes.UID(uid),
+				Name:            name,
+				OwnerReferences: ownerReferences,
+			},
+		}
+	}
+	resourceObject := func(name, kind string, status, spec any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "example.azure.com/v1",
+			"kind":       kind,
+			"metadata":   map[string]any{"name": name},
+			"status":     status,
+			"spec":       spec,
+		}}
+	}
+	withID := func(name, kind, id string, spec any) *unstructured.Unstructured {
+		return resourceObject(name, kind, map[string]any{"id": id}, spec)
+	}
+	vnetID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet"
+	subnetID := vnetID + "/subnets/subnet"
+
+	rg := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{UID: "rg-uid", Name: "rg"},
+	}
+	vnet := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "vnet-uid",
+			Name: "vnet",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "rg-uid"},
+			},
+		},
+	}
+	nsg := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "nsg-uid",
+			Name: "nsg",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "rg-uid"},
+			},
+		},
+	}
+	subnet := &metav1.PartialObjectMetadata{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  "subnet-uid",
+			Name: "subnet",
+			OwnerReferences: []metav1.OwnerReference{
+				{UID: "controller-uid", Controller: boolPtr(true)},
+				{UID: "vnet-uid"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name             string
+		resources        []*metav1.PartialObjectMetadata
+		objects          map[k8stypes.UID]*unstructured.Unstructured
+		expectedDeferred []string
+		expectedError    string
+		checkCycle       bool
+	}{
+		{
+			name:             "all levels present: only deepest (subnet) proceeds",
+			resources:        []*metav1.PartialObjectMetadata{rg, vnet, nsg, subnet},
+			expectedDeferred: []string{"rg", "vnet", "nsg"},
+		},
+		{
+			name:             "without subnet: nsg and vnet are deepest, rg deferred",
+			resources:        []*metav1.PartialObjectMetadata{rg, vnet, nsg},
+			expectedDeferred: []string{"rg"},
+		},
+		{
+			name:             "only roots: nothing deferred",
+			resources:        []*metav1.PartialObjectMetadata{rg},
+			expectedDeferred: []string{},
+		},
+		{
+			name:             "siblings only (no hierarchy): nothing deferred",
+			resources:        []*metav1.PartialObjectMetadata{vnet, nsg},
+			expectedDeferred: []string{},
+		},
+		{
+			name:             "empty input: nothing deferred",
+			resources:        nil,
+			expectedDeferred: []string{},
+		},
+		{
+			name:          "wrong-typed status.id returns an error",
+			resources:     []*metav1.PartialObjectMetadata{partialResource("bad-uid", "bad")},
+			objects:       map[k8stypes.UID]*unstructured.Unstructured{"bad-uid": resourceObject("bad", "VirtualNetwork", map[string]any{"id": 123}, nil)},
+			expectedError: "failed to read status.id",
+		},
+		{
+			name: "ARM references use the longest matching resource ID",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("vnet-uid", "vnet"),
+				partialResource("subnet-uid", "subnet"),
+				partialResource("consumer-uid", "consumer"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"vnet-uid":     withID("vnet", "VirtualNetwork", vnetID, nil),
+				"subnet-uid":   withID("subnet", "VirtualNetworksSubnet", subnetID, map[string]any{"virtualNetworkID": vnetID}),
+				"consumer-uid": withID("consumer", "PrivateEndpoint", "", map[string]any{"subnetID": subnetID}),
+			},
+			expectedDeferred: []string{"vnet", "subnet"},
+		},
+		{
+			name: "ARM ID matching ignores case and trailing slashes",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("vnet-uid", "vnet"),
+				partialResource("consumer-uid", "consumer"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"vnet-uid":     withID("vnet", "VirtualNetwork", " /SUBSCRIPTIONS/SUB/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/VIRTUALNETWORKS/VNET/ ", nil),
+				"consumer-uid": withID("consumer", "PrivateEndpoint", "", map[string]any{"subnetID": "/subscriptions/sub/resourcegroups/rg/providers/microsoft.network/virtualnetworks/vnet/subnets/subnet/"}),
+			},
+			expectedDeferred: []string{"vnet"},
+		},
+		{
+			name: "self-references are ignored",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("root-uid", "root"),
+				partialResource("self-uid", "self"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"root-uid": withID("root", "VirtualNetwork", "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/root", nil),
+				"self-uid": withID("self", "VirtualNetwork", "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/self", map[string]any{"selfID": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/self/subnets/subnet"}),
+			},
+			expectedDeferred: []string{},
+		},
+		{
+			name: "dependency cycles defer some resources but leave one deletable",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}),
+				partialResource("right-uid", "right", metav1.OwnerReference{UID: "left-uid"}),
+			},
+			checkCycle: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			deferred, err := deferShallowerResources(tc.resources, tc.objects)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+			if tc.checkCycle {
+				g.Expect(deferred).ToNot(BeEmpty())
+				g.Expect(len(deferred)).To(BeNumerically("<", len(tc.resources)))
+				return
+			}
+			var deferredNames []string
+			for _, r := range tc.resources {
+				if deferred.Has(r.UID) {
+					deferredNames = append(deferredNames, r.Name)
+				}
+			}
+			if len(tc.expectedDeferred) == 0 {
+				g.Expect(deferredNames).To(BeEmpty())
+			} else {
+				g.Expect(deferredNames).To(ConsistOf(tc.expectedDeferred))
+			}
+		})
 	}
 }
 
