@@ -547,7 +547,7 @@ func calculateBootstrapDataHash(bootstrapData string) (string, error) {
 	h := sha256.New()
 	n, err := io.WriteString(h, bootstrapData)
 	if err != nil || n == 0 {
-		return "", fmt.Errorf("unable to write custom data (bytes written: %q): %w", n, err)
+		return "", fmt.Errorf("unable to write custom data (bytes written: %d): %w", n, err)
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
