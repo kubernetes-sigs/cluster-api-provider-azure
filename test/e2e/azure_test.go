@@ -44,6 +44,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/internal/flatcar"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -351,13 +352,20 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a Flatcar sysext cluster [OPTIONAL]", func() {
 		It("With Flatcar control-plane and worker nodes", func() {
+			requestedVersion := e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)
+			resolveCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			defer cancel()
+			kubernetesVersion, err := flatcar.Resolve(resolveCtx, requestedVersion)
+			Expect(err).NotTo(HaveOccurred())
+			Logf("Resolved Flatcar Kubernetes version %s to %s", requestedVersion, kubernetesVersion)
+
 			clusterName = getClusterName(clusterNamePrefix, "flatcar-sysext")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("flatcar-sysext"),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
-				withKubernetesVersion(e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)),
+				withKubernetesVersion(kubernetesVersion),
 				withControlPlaneMachineCount(1),
 				withWorkerMachineCount(1),
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
