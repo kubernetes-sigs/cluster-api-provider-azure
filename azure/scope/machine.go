@@ -211,6 +211,11 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 func (m *MachineScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 	var specs []azure.ResourceSpecGetter
 	if m.AzureMachine.Spec.AllocatePublicIP {
+		failureDomains := m.FailureDomains()
+		if m.AzureMachine.Spec.FailureDomain == nil || *m.AzureMachine.Spec.FailureDomain == "" {
+			failureDomains = nil
+		}
+
 		specs = append(specs, &publicips.PublicIPSpec{
 			Name:             azure.GenerateNodePublicIPName(m.Name()),
 			ResourceGroup:    m.NodeResourceGroup(),
@@ -219,7 +224,7 @@ func (m *MachineScope) PublicIPSpecs() []azure.ResourceSpecGetter {
 			IsIPv6:           false, // Set to default value
 			Location:         m.Location(),
 			ExtendedLocation: m.ExtendedLocation(),
-			FailureDomains:   m.FailureDomains(),
+			FailureDomains:   failureDomains,
 			AdditionalTags:   m.ClusterScoper.AdditionalTags(),
 		})
 	}
