@@ -1,0 +1,42 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "${CLUSTER_NAME}-gpupool"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: "${CLUSTER_NAME}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureASOManagedMachinePool
+        name: "${CLUSTER_NAME}-gpupool"
+      version: "${KUBERNETES_VERSION}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureASOManagedMachinePool
+metadata:
+  name: "${CLUSTER_NAME}-gpupool"
+spec:
+  resources:
+  - apiVersion: "containerservice.azure.com/v1api20240901"
+    kind: ManagedClustersAgentPool
+    metadata:
+      name: ${CLUSTER_NAME}-gpupool
+      annotations:
+        serviceoperator.azure.com/credential-from: ${ASO_CREDENTIAL_SECRET_NAME}
+    spec:
+      azureName: gpupool
+      owner:
+        name: ${CLUSTER_NAME}
+      mode: User
+      type: VirtualMachineScaleSets
+      vmSize: "${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NC6s_v3}"
+      tags:
+        EnableManagedGPUExperience: "true"
+      nodeTaints:
+      - "sku=gpu:NoSchedule"
