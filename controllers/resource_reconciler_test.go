@@ -23,6 +23,7 @@ import (
 	asonetworkv120201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv120220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
+	asostoragev1api20230101 "github.com/Azure/azure-service-operator/v2/api/storage/v1api20230101"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
@@ -417,6 +418,7 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		asoresourcesv1.AddToScheme,
 		asonetworkv120220701.AddToScheme,
 		asonetworkv120201101.AddToScheme,
+		asostoragev1api20230101.AddToScheme,
 	)
 	NewGomegaWithT(t).Expect(sb.AddToScheme(s)).To(Succeed())
 
@@ -556,6 +558,74 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(owner.Status.Resources).To(HaveLen(2))
 		remainingNames := []string{owner.Status.Resources[0].Resource.Name, owner.Status.Resources[1].Resource.Name}
 		g.Expect(remainingNames).To(ConsistOf("vnet", "rg"))
+	})
+
+	t.Run("unsupported child delete does not defer its parent", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		owner := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				UID:       "owner-uid",
+				Annotations: map[string]string{
+					ownedKindsAnnotation: getOwnedKindsValue([]schema.GroupVersionKind{
+						asostoragev1api20230101.GroupVersion.WithKind("StorageAccount"),
+						asostoragev1api20230101.GroupVersion.WithKind("StorageAccountsBlobService"),
+					}),
+				},
+			},
+		}
+		account := &asostoragev1api20230101.StorageAccount{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: asostoragev1api20230101.GroupVersion.Identifier(),
+				Kind:       "StorageAccount",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       owner.Namespace,
+				Name:            "account",
+				UID:             "account-uid",
+				OwnerReferences: controlledBy(g, s, owner),
+				Finalizers:      []string{"ASO finalizer"},
+			},
+		}
+		blobService := &asostoragev1api20230101.StorageAccountsBlobService{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: asostoragev1api20230101.GroupVersion.Identifier(),
+				Kind:       "StorageAccountsBlobService",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: owner.Namespace,
+				Name:      "blob-service",
+				UID:       "blob-service-uid",
+				OwnerReferences: append(
+					controlledBy(g, s, owner),
+					metav1.OwnerReference{UID: account.UID},
+				),
+				Finalizers: []string{"ASO finalizer"},
+			},
+			Status: asostoragev1api20230101.StorageAccountsBlobService_STATUS{
+				Conditions: conditions.Conditions{{
+					Type:   conditions.ConditionTypeReady,
+					Status: metav1.ConditionFalse,
+					Reason: conditions.ReasonDeletionNotSupported.Name,
+				}},
+			},
+		}
+
+		clientWithDeleteOrder := &recordingDeleteClient{Client: fakeClientBuilder().WithObjects(account, blobService).Build()}
+		r := NewResourceReconciler(clientWithDeleteOrder, owner, nil, nil, WithChildrenFirst())
+
+		g.Expect(isDeletionNotSupported(&unstructured.Unstructured{Object: map[string]any{
+			"status": map[string]any{"conditions": []any{
+				map[string]any{
+					"type":   conditions.ConditionTypeReady,
+					"reason": conditions.ReasonDeletionNotSupported.Name,
+				},
+			}},
+		}})).To(BeTrue())
+		g.Expect(r.Delete(ctx)).To(Succeed())
+		g.Expect(clientWithDeleteOrder.deleted).To(ConsistOf("StorageAccount/account", "StorageAccountsBlobService/blob-service"))
+		g.Expect(owner.Status.Resources).To(HaveLen(2))
 	})
 
 	t.Run("delete resources in Kubernetes reference order", func(t *testing.T) {

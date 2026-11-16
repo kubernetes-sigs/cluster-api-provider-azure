@@ -439,6 +439,13 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 		pending[obj.UID] = obj
 	}
 
+	deleteUnsupported := sets.New[types.UID]()
+	for _, resource := range resources {
+		if object, found := objects[resource.UID]; found && isDeletionNotSupported(object) {
+			deleteUnsupported.Insert(resource.UID)
+		}
+	}
+
 	dependencies := make(map[types.UID]sets.Set[types.UID], len(resources))
 	resourcesByReference := make(map[resourceReferenceKey]types.UID, len(resources))
 	for _, resource := range resources {
@@ -449,6 +456,12 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 			kind:  gvk.Kind,
 			name:  resource.Name,
 		}] = resource.UID
+		// ASO resources that do not support Azure DELETE remain pending until
+		// their parent is removed. Do not let their owner references keep the
+		// parent deferred, but continue to include them in the deletion pass.
+		if deleteUnsupported.Has(resource.UID) {
+			continue
+		}
 		for i := range resource.OwnerReferences {
 			ref := &resource.OwnerReferences[i]
 			if ref.Controller != nil && *ref.Controller {
@@ -476,6 +489,9 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 		}
 	}
 	for uid, object := range objects {
+		if deleteUnsupported.Has(uid) {
+			continue
+		}
 		spec, found, err := unstructured.NestedFieldNoCopy(object.Object, "spec")
 		if err != nil {
 			return nil, fmt.Errorf("failed to read spec of %s/%s: %w", object.GetKind(), object.GetName(), err)
@@ -538,6 +554,32 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 		}
 	}
 	return deferred, nil
+}
+
+// isDeletionNotSupported reports whether ASO has marked the Ready condition
+// with its reason for resource types that do not support Azure DELETE.
+func isDeletionNotSupported(resource *unstructured.Unstructured) bool {
+	statusConditions, found, err := unstructured.NestedSlice(resource.Object, "status", "conditions")
+	if err != nil || !found {
+		return false
+	}
+
+	for _, value := range statusConditions {
+		condition, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		conditionType, found, err := unstructured.NestedString(condition, "type")
+		if err != nil || !found || conditionType != conditions.ConditionTypeReady {
+			continue
+		}
+		reason, found, err := unstructured.NestedString(condition, "reason")
+		if err == nil && found && reason == conditions.ReasonDeletionNotSupported.Name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // normalizeARMID canonicalizes an ARM resource ID for dependency matching.
