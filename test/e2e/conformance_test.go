@@ -84,7 +84,9 @@ var _ = Describe("Conformance Tests", func() {
 
 	It(specName, func() {
 		experiment := gmeasure.NewExperiment(specName)
-		AddReportEntry(experiment.Name, experiment)
+		// Defer so the report entry is emitted after the measurements are recorded; with `ginkgo -v` an
+		// entry added up front is printed immediately, while the experiment is still empty.
+		defer AddReportEntry(experiment.Name, experiment)
 
 		var err error
 
