@@ -18,6 +18,7 @@ package securitygroups
 
 import (
 	"context"
+	"maps"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/pkg/errors"
@@ -93,16 +94,26 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	for _, resourceSpec := range specs {
 		nsgSpec := resourceSpec.(*NSGSpec)
-		currentAnnotation := make(map[string]string)
+		currentAnnotation := make(map[string]any)
+		maps.Copy(currentAnnotation, nsgSpec.LastAppliedSecurityRules)
+		desiredAnnotation := make(map[string]any)
+		for _, rule := range nsgSpec.SecurityRules {
+			currentAnnotation[rule.Name] = rule.Description
+			desiredAnnotation[rule.Name] = rule.Description
+		}
 
-		if _, err := s.CreateOrUpdateResource(ctx, nsgSpec, serviceName); err != nil {
+		hadFuture := s.Scope.GetLongRunningOperationState(nsgSpec.Name, serviceName, infrav1.PutFuture) != nil
+		_, err := s.CreateOrUpdateResource(ctx, nsgSpec, serviceName)
+		if err == nil && hadFuture {
+			// A resumed PUT completes an earlier spec; evaluate the current rules.
+			_, err = s.CreateOrUpdateResource(ctx, nsgSpec, serviceName)
+		}
+		if err != nil {
 			if !azure.IsOperationNotDoneError(err) || resErr == nil {
 				resErr = err
 			}
-		}
-
-		for _, rule := range nsgSpec.SecurityRules {
-			currentAnnotation[rule.Name] = rule.Description
+		} else {
+			currentAnnotation = desiredAnnotation
 		}
 
 		if len(currentAnnotation) > 0 {
