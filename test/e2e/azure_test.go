@@ -44,6 +44,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/internal/rke2"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -1091,6 +1092,18 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating RKE2 clusters using clusterclass [OPTIONAL]", func() {
 		It("with 3 control plane node and one linux worker node", func() {
+			requestedVersion := e2eConfig.MustGetVariable(capi_e2e.KubernetesVersion)
+			location := e2eConfig.MustGetVariable(AzureLocation)
+			resolveCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			defer cancel()
+			imageVersions, err := listVersionsInCommunityGallery(resolveCtx, location, azure.DefaultPublicGalleryName, azure.DefaultLinuxGalleryImageName)
+			Expect(err).NotTo(HaveOccurred())
+			kubernetesVersion, err := rke2.Resolve(resolveCtx, requestedVersion, imageVersions)
+			Expect(err).NotTo(HaveOccurred())
+			Logf("Resolved RKE2 Kubernetes version %s to %s, release %s+rke2r1, gallery image %s/%s version %s in %s",
+				requestedVersion, kubernetesVersion, kubernetesVersion, azure.DefaultPublicGalleryName,
+				azure.DefaultLinuxGalleryImageName, strings.TrimPrefix(kubernetesVersion, "v"), location)
+
 			// Use ci-rke2 as the clusterclass name so test infra can find the clusterclass template
 			Expect(os.Setenv("CLUSTER_CLASS_NAME", "ci-rke2")).To(Succeed())
 
@@ -1157,6 +1170,7 @@ spec:
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withFlavor("topology-rke2"),
+				withKubernetesVersion(kubernetesVersion),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(3),
