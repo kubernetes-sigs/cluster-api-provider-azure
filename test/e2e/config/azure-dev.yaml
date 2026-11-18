@@ -21,7 +21,7 @@ images:
     loadBehavior: tryLoad
   - name: registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.14.4
     loadBehavior: tryLoad
-  - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.2
+  - name: registry.k8s.io/cluster-api-helm/cluster-api-helm-controller:v0.6.6
     loadBehavior: tryLoad
 
 providers:
@@ -281,8 +281,8 @@ providers:
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
-    - name: v0.6.2
-      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.2/addon-components.yaml
+    - name: v0.6.6
+      value: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/download/v0.6.6/addon-components.yaml
       type: url
       contract: v1beta1
       files:
@@ -336,7 +336,7 @@ variables:
   OLD_PROVIDER_UPGRADE_VERSION: "v1.27.1"
   LATEST_PROVIDER_UPGRADE_VERSION: "v1.28.0"
   OLD_CAAPH_UPGRADE_VERSION: "v0.5.3"
-  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.2"
+  LATEST_CAAPH_UPGRADE_VERSION: "v0.6.6"
   CI_RG: "${CI_RG:-capz-ci}"
   USER_IDENTITY: "${USER_IDENTITY:-cloud-provider-user-identity}"
   EXP_APISERVER_ILB: "true"
