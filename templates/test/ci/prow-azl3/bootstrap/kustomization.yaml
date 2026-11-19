@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+- path: ../patches/controller-manager.yaml
+  target:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    version: v1beta1
+- path: ../patches/kubeadm-config-template-azl3.yaml
+  target:
+    group: bootstrap.cluster.x-k8s.io
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    version: v1beta1
+- path: ../patches/cloud-provider-azure-cacertdir.yaml
+- path: ../patches/cloud-provider-azure-ci-cacertdir.yaml
+replacements:
+- source:
+    group: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    fieldPath: spec.kubeadmConfigSpec.files.[path=/opt/azure-linux-setup.sh].content
+  targets:
+  - select:
+      group: bootstrap.cluster.x-k8s.io
+      kind: KubeadmConfigTemplate
+      name: ${CLUSTER_NAME}-md-0
+    fieldPaths:
+    - spec.template.spec.files.[path=/opt/azure-linux-setup.sh].content
