@@ -59,6 +59,8 @@ type AzureASOManagedControlPlaneReconciler struct {
 	client.Client
 	WatchFilterValue string
 	CredentialCache  ASOCredentialCache
+	// ResourceReconcilerOptions configure ASO resource reconciliation for this controller.
+	ResourceReconcilerOptions []ResourceReconcilerOption
 
 	newResourceReconciler func(*infrav1.AzureASOManagedControlPlane, []*unstructured.Unstructured) resourceReconciler
 }
@@ -102,12 +104,7 @@ func (r *AzureASOManagedControlPlaneReconciler) SetupWithManager(ctx context.Con
 	}
 
 	r.newResourceReconciler = func(asoManagedCluster *infrav1.AzureASOManagedControlPlane, resources []*unstructured.Unstructured) resourceReconciler {
-		return &ResourceReconciler{
-			Client:    r.Client,
-			resources: resources,
-			owner:     asoManagedCluster,
-			watcher:   externalTracker,
-		}
+		return NewResourceReconciler(r.Client, asoManagedCluster, externalTracker, resources, r.ResourceReconcilerOptions...)
 	}
 
 	return nil

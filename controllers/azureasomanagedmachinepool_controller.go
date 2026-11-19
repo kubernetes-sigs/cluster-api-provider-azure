@@ -51,6 +51,8 @@ type AzureASOManagedMachinePoolReconciler struct {
 	client.Client
 	WatchFilterValue string
 	Tracker          ClusterTracker
+	// ResourceReconcilerOptions configure ASO resource reconciliation for this controller.
+	ResourceReconcilerOptions []ResourceReconcilerOption
 
 	newResourceReconciler func(*infrav1.AzureASOManagedMachinePool, []*unstructured.Unstructured) resourceReconciler
 }
@@ -110,12 +112,7 @@ func (r *AzureASOManagedMachinePoolReconciler) SetupWithManager(ctx context.Cont
 	}
 
 	r.newResourceReconciler = func(asoManagedCluster *infrav1.AzureASOManagedMachinePool, resources []*unstructured.Unstructured) resourceReconciler {
-		return &ResourceReconciler{
-			Client:    r.Client,
-			resources: resources,
-			owner:     asoManagedCluster,
-			watcher:   externalTracker,
-		}
+		return NewResourceReconciler(r.Client, asoManagedCluster, externalTracker, resources, r.ResourceReconcilerOptions...)
 	}
 
 	return nil
