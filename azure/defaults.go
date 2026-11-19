@@ -48,6 +48,8 @@ const (
 	GermanCloudName = "AzureGermanCloud"
 	// USSecCloudName is the name of the Azure US Government Secret cloud (IL6).
 	USSecCloudName = "AzureUSSecCloud"
+	// USNatCloudName is the name of the Azure US Government Top Secret cloud (IL7).
+	USNatCloudName = "AzureUSNatCloud"
 )
 
 const (
@@ -331,8 +333,8 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 		opts.Cloud = cloud.AzureChina
 	case USGovernmentCloudName:
 		opts.Cloud = cloud.AzureGovernment
-	case USSecCloudName:
-		// USSec cloud.Configuration is populated at runtime from the environment
+	case USSecCloudName, USNatCloudName:
+		// USSec and USNat cloud.Configuration is populated at runtime from the environment
 		// file. The caller must set opts.Cloud from Authorizer.CloudConfiguration().
 	case "":
 		// No cloud name provided, so leave at defaults.
@@ -354,9 +356,10 @@ func ARMClientOptions(azureEnvironment string, extraPolicies ...policy.Policy) (
 // ARMClientOptionsForAuth returns ARM client options for CAPZ SDK v2 requests,
 // applying the cloud configuration resolved by the Authorizer.
 //
-// For air-gapped clouds such as USSec (IL6) the cloud.Configuration (ARM
-// endpoint and token audience) is discovered at runtime from the environment
-// file and carried on the Authorizer rather than being known at compile time.
+// For air-gapped clouds such as USSec (IL6) and USNat (IL7) the
+// cloud.Configuration (ARM endpoint and token audience) is discovered at
+// runtime from the environment file and carried on the Authorizer rather than
+// being known at compile time.
 // Applying it here guarantees every client targets the air-gapped endpoint
 // instead of public Azure, so individual callers cannot forget to set it.
 func ARMClientOptionsForAuth(authorizer Authorizer, extraPolicies ...policy.Policy) (*arm.ClientOptions, error) {
@@ -367,7 +370,8 @@ func ARMClientOptionsForAuth(authorizer Authorizer, extraPolicies ...policy.Poli
 	if err != nil {
 		return nil, err
 	}
-	if authorizer.CloudEnvironment() == USSecCloudName {
+	switch authorizer.CloudEnvironment() {
+	case USSecCloudName, USNatCloudName:
 		opts.Cloud = authorizer.CloudConfiguration()
 	}
 	return opts, nil
@@ -378,10 +382,11 @@ func ARMClientOptionsForAuth(authorizer Authorizer, extraPolicies ...policy.Poli
 //
 // Instance discovery validates the authority against the public
 // login.microsoftonline.com metadata endpoint, which is unreachable in
-// air-gapped clouds such as USSec (IL6). Built-in, publicly reachable clouds
-// keep discovery enabled; any other (custom) authority, such as the IL6
-// authority discovered at runtime from the environment file, disables it so
-// credential creation does not hang trying to reach the public endpoint.
+// air-gapped clouds such as USSec (IL6) and USNat (IL7). Built-in, publicly
+// reachable clouds keep discovery enabled; any other (custom) authority, such
+// as the IL6 or IL7 authority discovered at runtime from the environment file,
+// disables it so credential creation does not hang trying to reach the public
+// endpoint.
 func ShouldDisableInstanceDiscovery(authorityHost string) bool {
 	switch strings.TrimRight(authorityHost, "/") {
 	case "",

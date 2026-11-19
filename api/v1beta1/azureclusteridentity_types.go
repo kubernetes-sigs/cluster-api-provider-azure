@@ -69,7 +69,7 @@ type AzureClusterIdentitySpec struct {
 	// +optional
 	UserAssignedIdentityCredentialsPath string `json:"userAssignedIdentityCredentialsPath,omitempty"`
 	// UserAssignedIdentityCredentialsCloudType is used with UserAssignedIdentityCredentialsPath to specify the Cloud
-	// type. Can only be one of the following values: public, china, usgovernment, or ussec
+	// type. Can only be one of the following values: public, china, usgovernment, ussec, or usnat
 	// If a value is not specified, defaults to public
 	// +optional
 	UserAssignedIdentityCredentialsCloudType string `json:"userAssignedIdentityCredentialsCloudType,omitempty"`

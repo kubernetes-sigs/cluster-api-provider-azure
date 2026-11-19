@@ -958,12 +958,13 @@ func (s *ClusterScope) GenerateLegacyFQDN() (ip string, domain string) {
 // DNS name before one is generated via GenerateFQDN/GenerateLegacyFQDN.
 //
 // The DNS name is built from the resource manager VM DNS suffix. For air-gapped
-// clouds such as USSec (IL6) that suffix is discovered at runtime from the
-// environment file; when it is missing, GenerateFQDN would produce an unusable
-// hostname (e.g. one with a trailing dot and no domain), so return an error
-// instead of silently generating it. Clusters with a private API server do not
-// need a public DNS name and are therefore exempt, as are clusters whose public
-// API server DNS name was supplied explicitly (CAPZ does not generate one).
+// clouds such as USSec (IL6) and USNat (IL7) that suffix is discovered at
+// runtime from the environment file; when it is missing, GenerateFQDN would
+// produce an unusable hostname (e.g. one with a trailing dot and no domain), so
+// return an error instead of silently generating it. Clusters with a private
+// API server do not need a public DNS name and are therefore exempt, as are
+// clusters whose public API server DNS name was supplied explicitly (CAPZ does
+// not generate one).
 func (s *ClusterScope) ValidateAPIServerDNSName() error {
 	if !s.ControlPlaneEnabled() || s.IsAPIServerPrivate() {
 		return nil

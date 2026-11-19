@@ -49,6 +49,7 @@ type AzureClusterClassSpec struct {
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
 	// - USSecCloud: "AzureUSSecCloud"
+	// - USNatCloud: "AzureUSNatCloud"
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
@@ -60,7 +61,7 @@ type AzureClusterClassSpec struct {
 	//
 	// See the [ASO docs] for more details.
 	//
-	// When set to "AzureUSSecCloud", the AZURE_ENVIRONMENT_FILEPATH environment
+	// When set to "AzureUSSecCloud" or "AzureUSNatCloud", the AZURE_ENVIRONMENT_FILEPATH environment
 	// variable must be set on the controller, pointing to a JSON file containing
 	// the dynamically-discovered cloud endpoints for the air-gapped environment.
 	//
@@ -191,6 +192,7 @@ type AzureManagedControlPlaneClassSpec struct {
 	// - PublicCloud: "AzurePublicCloud"
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
 	// - USSecCloud: "AzureUSSecCloud"
+	// - USNatCloud: "AzureUSNatCloud"
 	//
 	// Note that values other than the default must also be accompanied by corresponding changes to the
 	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
@@ -202,7 +204,7 @@ type AzureManagedControlPlaneClassSpec struct {
 	//
 	// See the [ASO docs] for more details.
 	//
-	// When set to "AzureUSSecCloud", the AZURE_ENVIRONMENT_FILEPATH environment
+	// When set to "AzureUSSecCloud" or "AzureUSNatCloud", the AZURE_ENVIRONMENT_FILEPATH environment
 	// variable must be set on the controller, pointing to a JSON file containing
 	// the dynamically-discovered cloud endpoints for the air-gapped environment.
 	//

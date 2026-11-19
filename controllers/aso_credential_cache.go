@@ -121,9 +121,9 @@ func (c *asoCredentialCache) clientOptsForASOResource(ctx context.Context, obj c
 func (c *asoCredentialCache) authTokenForScopedASOSecret(secret *corev1.Secret, clientOpts azcore.ClientOptions) (azcore.TokenCredential, error) {
 	d := secret.Data
 
-	// Air-gapped clouds (e.g. USSec/IL6) resolve a custom AAD authority; disable
-	// instance discovery for those since the public metadata endpoint used to
-	// validate the authority is unreachable.
+	// Air-gapped clouds (e.g. USSec/IL6, USNat/IL7) resolve a custom AAD
+	// authority; disable instance discovery for those since the public metadata
+	// endpoint used to validate the authority is unreachable.
 	disableInstanceDiscovery := azure.ShouldDisableInstanceDiscovery(clientOpts.Cloud.ActiveDirectoryAuthorityHost)
 
 	if _, hasSecret := d[config.AzureClientSecret]; hasSecret {

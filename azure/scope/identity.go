@@ -102,9 +102,10 @@ func (p *AzureCredentialsProvider) GetTokenCredential(ctx context.Context, resou
 
 	// Every credential type must target the resolved Azure environment (ARM
 	// endpoint, token audience, and AAD authority). For air-gapped clouds such as
-	// USSec (IL6) these values are discovered at runtime and AAD instance
-	// discovery must be disabled, because the public login.microsoftonline.com
-	// metadata endpoint used to validate the authority is unreachable.
+	// USSec (IL6) and USNat (IL7) these values are discovered at runtime and AAD
+	// instance discovery must be disabled, because the public
+	// login.microsoftonline.com metadata endpoint used to validate the authority
+	// is unreachable.
 	clientOpts := azcore.ClientOptions{
 		TracingProvider: tracingProvider,
 		Cloud: cloud.Configuration{
@@ -310,10 +311,10 @@ func parseCloudType(cloudType string) (cloud.Configuration, error) {
 		return cloud.AzureChina, nil
 	case "USGOVERNMENT":
 		return cloud.AzureGovernment, nil
-	case "USSEC": //nolint:goconst
+	case "USSEC", "USNAT": //nolint:goconst
 		env, err := loadCloudEnvironmentFromFile()
 		if err != nil {
-			return cloud.Configuration{}, errors.Wrap(err, "failed to load cloud environment for USSec")
+			return cloud.Configuration{}, errors.Wrapf(err, "failed to load cloud environment for cloud type %q", cloudType)
 		}
 		return cloud.Configuration{
 			ActiveDirectoryAuthorityHost: env.ActiveDirectoryEndpoint,
