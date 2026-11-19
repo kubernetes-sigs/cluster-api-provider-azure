@@ -63,8 +63,13 @@ func TestARMClientOptions(t *testing.T) {
 			expectedCloud: cloud.AzureGovernment,
 		},
 		{
-			name:          "should accept Azure US Government Secret cloud",
+			name:          "should accept Azure US Government Secret cloud (IL6)",
 			cloudName:     USSecCloudName,
+			expectedCloud: cloud.Configuration{},
+		},
+		{
+			name:          "should accept Azure US Government Top Secret cloud (IL7)",
+			cloudName:     USNatCloudName,
 			expectedCloud: cloud.Configuration{},
 		},
 		{
@@ -93,8 +98,8 @@ func TestARMClientOptions(t *testing.T) {
 
 // TestARMClientOptionsForAuth tests that ARMClientOptionsForAuth applies the
 // cloud configuration resolved by the Authorizer, in particular that air-gapped
-// USSec (IL6) clients target the endpoint and audience discovered at runtime
-// instead of public Azure.
+// USSec (IL6) and USNat (IL7) clients target the endpoint and audience
+// discovered at runtime instead of public Azure.
 func TestARMClientOptionsForAuth(t *testing.T) {
 	ussecConfig := cloud.Configuration{
 		ActiveDirectoryAuthorityHost: "https://login.example.com/",
@@ -102,6 +107,15 @@ func TestARMClientOptionsForAuth(t *testing.T) {
 			cloud.ResourceManager: {
 				Audience: "https://management.example.com/",
 				Endpoint: "https://management.example.com/",
+			},
+		},
+	}
+	usnatConfig := cloud.Configuration{
+		ActiveDirectoryAuthorityHost: "https://login.example.net/",
+		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+			cloud.ResourceManager: {
+				Audience: "https://audience.example.net/",
+				Endpoint: "https://management.example.net/",
 			},
 		},
 	}
@@ -129,6 +143,12 @@ func TestARMClientOptionsForAuth(t *testing.T) {
 			cloudName:     USSecCloudName,
 			cloudConfig:   ussecConfig,
 			expectedCloud: ussecConfig,
+		},
+		{
+			name:          "USNat cloud uses the Authorizer's resolved configuration",
+			cloudName:     USNatCloudName,
+			cloudConfig:   usnatConfig,
+			expectedCloud: usnatConfig,
 		},
 		{
 			name:        "unrecognized cloud returns an error",
