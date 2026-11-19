@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
@@ -658,7 +659,7 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachineScope) PatchObject(ctx context.Context) error {
-	v1beta1conditions.SetSummary(m.AzureMachine)
+	v1beta1conditions.SetSummary(m.AzureMachine, v1beta1conditions.WithConditions(readySummaryConditions(m.AzureMachine)...))
 
 	return m.patchHelper.Patch(
 		ctx,
@@ -669,6 +670,25 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 			infrav1.AvailabilitySetReadyCondition,
 			infrav1.NetworkInterfaceReadyCondition,
 		}})
+}
+
+// readySummaryConditions returns the condition types to summarize into Ready:
+// VMRunning first, followed by every other condition on the AzureMachine.
+// WithConditions both limits the summary to the listed types and uses their
+// order to pick Ready's reason and message among conditions with the same
+// status and severity, so the list must include every existing condition.
+// Without an order, ties are broken alphabetically and, for example, a generic
+// DisksReady failure would hide a VMProvisionFailed reason on VMRunning.
+func readySummaryConditions(azureMachine *infrav1.AzureMachine) []clusterv1beta1.ConditionType {
+	others := make([]clusterv1beta1.ConditionType, 0, len(azureMachine.GetConditions()))
+	for _, c := range azureMachine.GetConditions() {
+		if c.Type != clusterv1beta1.ReadyCondition && c.Type != infrav1.VMRunningCondition {
+			others = append(others, c.Type)
+		}
+	}
+	// Keep the alphabetical tie-break CAPI applies when no order is given.
+	slices.Sort(others)
+	return append([]clusterv1beta1.ConditionType{infrav1.VMRunningCondition}, others...)
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
