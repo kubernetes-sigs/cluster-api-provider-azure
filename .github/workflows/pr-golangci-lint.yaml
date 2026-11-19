@@ -34,4 +34,5 @@ jobs:
         with:
           # update the version when updating golangci-lint
           version: v2.7.0
+          install-mode: goinstall
           working-directory: ${{matrix.working-directory}}
