@@ -223,6 +223,84 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
 	})
 
+	t.Run("requeues while the resource reconciler holds stale resources back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedClusterKind,
+				},
+			},
+		}
+		asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+				Finalizers: []string{
+					infrav1.AzureASOManagedControlPlaneFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
+			},
+			Spec: infrav1.AzureASOManagedControlPlaneSpec{
+				AzureASOManagedControlPlaneTemplateResourceSpec: infrav1.AzureASOManagedControlPlaneTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: mcJSON(g, &asocontainerservicev1.ManagedCluster{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mc",
+								},
+							}),
+						},
+					},
+				},
+			},
+			Status: infrav1.AzureASOManagedControlPlaneStatus{
+				Ready: true,
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedControlPlane).
+			Build()
+		r := &AzureASOManagedControlPlaneReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					requeueAfter: time.Minute,
+					owner:        asoManagedControlPlane,
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						asoManagedControlPlane.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Ready: true},
+							{Ready: false},
+							{Ready: true},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(asoManagedControlPlane.Status.Ready).To(BeFalse())
+	})
+
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -677,6 +755,44 @@ func TestAzureASOManagedControlPlaneReconcile(t *testing.T) {
 
 		err = c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	})
+
+	t.Run("requeues while the resource reconciler holds deletes back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedControlPlane := &infrav1.AzureASOManagedControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amcp",
+				Namespace: "ns",
+				Finalizers: []string{
+					infrav1.AzureASOManagedControlPlaneFinalizer,
+				},
+				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedControlPlane).
+			Build()
+		r := &AzureASOManagedControlPlaneReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedControlPlane *infrav1.AzureASOManagedControlPlane, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					requeueAfter: time.Minute,
+					deleteFunc: func(_ context.Context, _ client.Object) error {
+						asoManagedControlPlane.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Resource: infrav1.StatusResource{Name: "deferred"}},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedControlPlane)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedControlPlane), asoManagedControlPlane)).To(Succeed())
+		g.Expect(asoManagedControlPlane.GetFinalizers()).To(ContainElement(infrav1.AzureASOManagedControlPlaneFinalizer))
 	})
 }
 

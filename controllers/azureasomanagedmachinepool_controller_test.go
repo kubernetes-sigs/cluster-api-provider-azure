@@ -283,6 +283,93 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		g.Expect(asoManagedMachinePool.Status.Ready).To(BeFalse())
 	})
 
+	t.Run("requeues while the resource reconciler holds stale resources back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+				},
+			},
+		}
+		asoManagedMachinePool := &infrav1.AzureASOManagedMachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ammp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "MachinePool",
+						Name:       "mp",
+					},
+				},
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
+			},
+			Spec: infrav1.AzureASOManagedMachinePoolSpec{
+				AzureASOManagedMachinePoolTemplateResourceSpec: infrav1.AzureASOManagedMachinePoolTemplateResourceSpec{
+					Resources: []runtime.RawExtension{
+						{
+							Raw: apJSON(g, &asocontainerservicev1.ManagedClustersAgentPool{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "ap",
+								},
+							}),
+						},
+					},
+				},
+			},
+			Status: infrav1.AzureASOManagedMachinePoolStatus{
+				Ready: true,
+			},
+		}
+		machinePool := &clusterv1.MachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mp",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: "cluster",
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedMachinePool, machinePool, cluster).
+			Build()
+		r := &AzureASOManagedMachinePoolReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedMachinePool *infrav1.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					requeueAfter: time.Minute,
+					owner:        asoManagedMachinePool,
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						asoManagedMachinePool.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Ready: true},
+							{Ready: false},
+							{Ready: true},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.Status.Ready).To(BeFalse())
+	})
+
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -654,6 +741,72 @@ func TestAzureASOManagedMachinePoolReconcile(t *testing.T) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
+	t.Run("requeues while the resource reconciler holds deletes back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+				},
+			},
+		}
+		asoManagedMachinePool := &infrav1.AzureASOManagedMachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ammp",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "MachinePool",
+						Name:       "mp",
+					},
+				},
+				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+			},
+		}
+		machinePool := &clusterv1.MachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mp",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: "cluster",
+				},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedMachinePool, machinePool, cluster).
+			Build()
+		r := &AzureASOManagedMachinePoolReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedMachinePool *infrav1.AzureASOManagedMachinePool, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					requeueAfter: time.Minute,
+					deleteFunc: func(_ context.Context, _ client.Object) error {
+						asoManagedMachinePool.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Resource: infrav1.StatusResource{Name: "deferred"}},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedMachinePool)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedMachinePool), asoManagedMachinePool)).To(Succeed())
+		g.Expect(asoManagedMachinePool.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
 	})
 }
 

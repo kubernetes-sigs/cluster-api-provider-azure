@@ -233,7 +233,8 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileNormal(ctx context.Conte
 	}
 	for _, status := range asoManagedMachinePool.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{}, nil
+			// Stale resources that are waiting their turn to be deleted are reported as not ready.
+			return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 		}
 	}
 
@@ -334,7 +335,7 @@ func (r *AzureASOManagedMachinePoolReconciler) reconcileDelete(ctx context.Conte
 			return ctrl.Result{}, fmt.Errorf("failed to reconcile resources: %w", err)
 		}
 		if len(asoManagedMachinePool.Status.Resources) > 0 {
-			return ctrl.Result{}, nil
+			return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 		}
 	}
 

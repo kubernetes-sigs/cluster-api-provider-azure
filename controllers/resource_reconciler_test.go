@@ -19,12 +19,14 @@ package controllers
 import (
 	"context"
 	"testing"
+	"time"
 
 	asonetworkv120201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv120220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	asostoragev1api20230101 "github.com/Azure/azure-service-operator/v2/api/storage/v1api20230101"
 	asoannotations "github.com/Azure/azure-service-operator/v2/pkg/common/annotations"
+	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/gomega"
@@ -546,8 +548,9 @@ func TestResourceReconcilerDelete(t *testing.T) {
 		g.Expect(ownedObjects).To(HaveLen(3))
 		objectsForOrdering, err := r.resourcesForOrdering(ctx, ownedObjects)
 		g.Expect(err).NotTo(HaveOccurred())
-		deferred, err := deferShallowerResources(ownedObjects, objectsForOrdering)
+		deferred, cycles, err := deferShallowerResources(ownedObjects, objectsForOrdering)
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(cycles).To(BeEmpty())
 		g.Expect(deferred.Has("vnet-uid")).To(BeTrue())
 		g.Expect(deferred.Has("rg-uid")).To(BeTrue())
 
@@ -939,6 +942,112 @@ func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []meta
 	}
 }
 
+// While resources are held back, RequeueAfter is the only thing that brings the
+// next reconcile around: Delete registers no watches, and after a restart
+// nothing else is watching the resources being deleted.
+func TestResourceReconcilerDeleteLifecycle_RequeueWhileDeferred(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resourceGroup, vnet, privateEndpoint := armIDChain()
+	l := newDeleteLifecycle(t, []ResourceReconcilerOption{WithChildrenFirst()}, resourceGroup, vnet, privateEndpoint)
+
+	// Every reconcile uses a new ResourceReconciler with no watcher, as it
+	// would after a restart.
+	reconcileDelete := func() (deleted []string, requeueAfter time.Duration) {
+		l.restart()
+		r := NewResourceReconciler(l.client, l.owner, nil, nil, l.options...)
+		g.Expect(r.Delete(l.t.Context())).To(Succeed())
+		return l.client.deleted, r.RequeueAfter()
+	}
+
+	deleted, requeueAfter := reconcileDelete()
+	g.Expect(deleted).To(ConsistOf("PrivateEndpoint/private-endpoint"))
+	g.Expect(requeueAfter).To(Equal(deferredDeleteRequeueAfter))
+
+	l.finishDeleting(privateEndpoint)
+	deleted, requeueAfter = reconcileDelete()
+	g.Expect(deleted).To(ConsistOf("VirtualNetwork/vnet"))
+	g.Expect(requeueAfter).To(Equal(deferredDeleteRequeueAfter))
+
+	// Nothing is held back behind the last level, so it is left to the
+	// caller's watches or resync as it is without WithChildrenFirst.
+	l.finishDeleting(vnet)
+	deleted, requeueAfter = reconcileDelete()
+	g.Expect(deleted).To(ConsistOf("ResourceGroup/rg"))
+	g.Expect(requeueAfter).To(BeZero())
+
+	l.finishDeleting(resourceGroup)
+	deleted, requeueAfter = reconcileDelete()
+	g.Expect(deleted).To(BeEmpty())
+	g.Expect(requeueAfter).To(BeZero())
+	g.Expect(l.owner.Status.Resources).To(BeEmpty())
+}
+
+// Without WithChildrenFirst nothing is held back, so no requeue is requested.
+func TestResourceReconcilerDeleteLifecycle_NoRequeueWhenChildrenFirstDisabled(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resourceGroup, vnet, privateEndpoint := armIDChain()
+	l := newDeleteLifecycle(t, nil, resourceGroup, vnet, privateEndpoint)
+
+	r := NewResourceReconciler(l.client, l.owner, nil, nil, l.options...)
+	g.Expect(r.Delete(l.t.Context())).To(Succeed())
+	g.Expect(l.owner.Status.Resources).To(HaveLen(3))
+	g.Expect(r.RequeueAfter()).To(BeZero())
+}
+
+// A NatGateway lists its PublicIPAddresses and each PublicIPAddress names its
+// NatGateway, so neither is the child. Azure refuses to delete one while the
+// other still refers to it, which means deleting them one at a time can never
+// finish.
+func TestResourceReconcilerDeleteLifecycle_DependencyCycle(t *testing.T) {
+	g := NewGomegaWithT(t)
+	resourceGroup := &asoresourcesv1.ResourceGroup{ObjectMeta: asoObjectMeta("rg")}
+	natGateway := &asonetworkv120220701.NatGateway{
+		ObjectMeta: asoObjectMeta("nat-gateway", resourceGroup),
+		Spec: asonetworkv120220701.NatGateway_Spec{
+			PublicIpAddresses: []asonetworkv120220701.SubResource{{
+				Reference: &genruntime.ResourceReference{
+					Group: asonetworkv120201101.GroupVersion.Group,
+					Kind:  "PublicIPAddress",
+					Name:  "public-ip",
+				},
+			}},
+		},
+	}
+	publicIP := &asonetworkv120201101.PublicIPAddress{
+		ObjectMeta: asoObjectMeta("public-ip", resourceGroup),
+		Spec: asonetworkv120201101.PublicIPAddress_Spec{
+			NatGateway: &asonetworkv120201101.NatGatewaySpec_PublicIPAddress_SubResourceEmbedded{
+				Reference: &genruntime.ResourceReference{
+					Group: asonetworkv120220701.GroupVersion.Group,
+					Kind:  "NatGateway",
+					Name:  "nat-gateway",
+				},
+			},
+		},
+	}
+	l := newDeleteLifecycle(t, []ResourceReconcilerOption{WithChildrenFirst()}, resourceGroup, natGateway, publicIP)
+
+	rounds := l.reconcileDeleteUntilDone(5, func(int) {
+		_, natGatewayExists := l.get(natGateway)
+		_, publicIPExists := l.get(publicIP)
+		switch {
+		case natGatewayExists && publicIPExists:
+			// ASO can only finish once both halves of the cycle are going away.
+			if l.isDeleting(natGateway) && l.isDeleting(publicIP) {
+				l.finishDeleting(natGateway, publicIP)
+			}
+		case !natGatewayExists && !publicIPExists:
+			if l.isDeleting(resourceGroup) {
+				l.finishDeleting(resourceGroup)
+			}
+		}
+	})
+
+	g.Expect(rounds).To(HaveLen(2))
+	g.Expect(rounds[0]).To(ConsistOf("NatGateway/nat-gateway", "PublicIPAddress/public-ip"))
+	g.Expect(rounds[1]).To(ConsistOf("ResourceGroup/rg"))
+}
+
 func TestDeferShallowerResources(t *testing.T) {
 	boolPtr := func(b bool) *bool { return &b }
 	partialResource := func(uid, name string, ownerReferences ...metav1.OwnerReference) *metav1.PartialObjectMetadata {
@@ -1004,8 +1113,8 @@ func TestDeferShallowerResources(t *testing.T) {
 		resources        []*metav1.PartialObjectMetadata
 		objects          map[k8stypes.UID]*unstructured.Unstructured
 		expectedDeferred []string
+		expectedCycles   [][]string
 		expectedError    string
-		checkCycle       bool
 	}{
 		{
 			name:             "all levels present: only deepest (subnet) proceeds",
@@ -1077,29 +1186,86 @@ func TestDeferShallowerResources(t *testing.T) {
 			expectedDeferred: []string{},
 		},
 		{
-			name: "dependency cycles defer some resources but leave one deletable",
+			name: "dependency cycle: its resources proceed together",
 			resources: []*metav1.PartialObjectMetadata{
-				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}),
 				partialResource("right-uid", "right", metav1.OwnerReference{UID: "left-uid"}),
+				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}),
 			},
-			checkCycle: true,
+			expectedDeferred: []string{},
+			expectedCycles:   [][]string{{"left", "right"}},
+		},
+		{
+			name: "dependency cycle through owner references and ARM IDs",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("c-uid", "c", metav1.OwnerReference{UID: "a-uid"}),
+				partialResource("b-uid", "b"),
+				partialResource("a-uid", "a"),
+			},
+			objects: map[k8stypes.UID]*unstructured.Unstructured{
+				"a-uid": withID("a", "A", "/a", map[string]any{"bID": "/b"}),
+				"b-uid": withID("b", "B", "/b", map[string]any{"cID": "/c"}),
+				"c-uid": withID("c", "C", "/c", nil),
+			},
+			expectedDeferred: []string{},
+			expectedCycles:   [][]string{{"a", "b", "c"}},
+		},
+		{
+			name: "dependency cycle: waits for its dependents and holds back its dependencies",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("root-uid", "root"),
+				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}, metav1.OwnerReference{UID: "root-uid"}),
+				partialResource("right-uid", "right", metav1.OwnerReference{UID: "left-uid"}),
+				partialResource("child-uid", "child", metav1.OwnerReference{UID: "right-uid"}),
+			},
+			expectedDeferred: []string{"root", "left", "right"},
+			expectedCycles:   [][]string{{"left", "right"}},
+		},
+		{
+			name: "dependency cycle: deepest level",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("root-uid", "root"),
+				partialResource("left-uid", "left", metav1.OwnerReference{UID: "right-uid"}, metav1.OwnerReference{UID: "root-uid"}),
+				partialResource("right-uid", "right", metav1.OwnerReference{UID: "left-uid"}),
+				partialResource("sibling-uid", "sibling", metav1.OwnerReference{UID: "root-uid"}),
+			},
+			expectedDeferred: []string{"root"},
+			expectedCycles:   [][]string{{"left", "right"}},
+		},
+		{
+			name: "separate dependency cycles are reported in name order",
+			resources: []*metav1.PartialObjectMetadata{
+				partialResource("z-uid", "z", metav1.OwnerReference{UID: "y-uid"}),
+				partialResource("y-uid", "y", metav1.OwnerReference{UID: "z-uid"}),
+				partialResource("b-uid", "b", metav1.OwnerReference{UID: "a-uid"}, metav1.OwnerReference{UID: "y-uid"}),
+				partialResource("a-uid", "a", metav1.OwnerReference{UID: "b-uid"}),
+			},
+			expectedDeferred: []string{"y", "z"},
+			expectedCycles:   [][]string{{"a", "b"}, {"y", "z"}},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewGomegaWithT(t)
-			deferred, err := deferShallowerResources(tc.resources, tc.objects)
+			deferred, cycles, err := deferShallowerResources(tc.resources, tc.objects)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
 				return
 			}
 			g.Expect(err).NotTo(HaveOccurred())
-			if tc.checkCycle {
-				g.Expect(deferred).ToNot(BeEmpty())
-				g.Expect(len(deferred)).To(BeNumerically("<", len(tc.resources)))
-				return
+			var cycleNames [][]string
+			for _, cycle := range cycles {
+				var names []string
+				for _, resource := range cycle {
+					names = append(names, resource.Name)
+				}
+				cycleNames = append(cycleNames, names)
+			}
+			if len(tc.expectedCycles) == 0 {
+				g.Expect(cycleNames).To(BeEmpty())
+			} else {
+				g.Expect(cycleNames).To(Equal(tc.expectedCycles))
 			}
 			var deferredNames []string
 			for _, r := range tc.resources {

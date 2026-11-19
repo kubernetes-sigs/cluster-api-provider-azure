@@ -43,6 +43,11 @@ type fakeResourceReconciler struct {
 	reconcileFunc func(context.Context, client.Object) error
 	pauseFunc     func(context.Context, client.Object) error
 	deleteFunc    func(context.Context, client.Object) error
+	requeueAfter  time.Duration
+}
+
+func (r *fakeResourceReconciler) RequeueAfter() time.Duration {
+	return r.requeueAfter
 }
 
 func (r *fakeResourceReconciler) Reconcile(ctx context.Context) error {
@@ -229,6 +234,71 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 		g.Expect(asoManagedCluster.Status.Ready).To(BeFalse())
 	})
 
+	t.Run("requeues while the resource reconciler holds stale resources back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster",
+				Namespace: "ns",
+			},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: infrav1.GroupVersion.Group,
+					Kind:     infrav1.AzureASOManagedControlPlaneKind,
+				},
+			},
+		}
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: cluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.Identifier(),
+						Kind:       "Cluster",
+						Name:       cluster.Name,
+					},
+				},
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+				Annotations: map[string]string{
+					clusterctlv1.BlockMoveAnnotation: "true",
+				},
+			},
+			Status: infrav1.AzureASOManagedClusterStatus{
+				Ready: true,
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(cluster, asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedCluster *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					requeueAfter: time.Minute,
+					owner:        asoManagedCluster,
+					reconcileFunc: func(ctx context.Context, o client.Object) error {
+						asoManagedCluster.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Ready: true},
+							{Ready: false},
+							{Ready: true},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(r.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
+		g.Expect(asoManagedCluster.Status.Ready).To(BeFalse())
+	})
+
 	t.Run("successfully reconciles normally", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
@@ -387,6 +457,45 @@ func TestAzureASOManagedClusterReconcile(t *testing.T) {
 
 		err = c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)
 		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
+	})
+
+	t.Run("requeues while the resource reconciler holds deletes back", func(t *testing.T) {
+		g := NewGomegaWithT(t)
+
+		asoManagedCluster := &infrav1.AzureASOManagedCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "amc",
+				Namespace: "ns",
+				Finalizers: []string{
+					clusterv1.ClusterFinalizer,
+				},
+				DeletionTimestamp: &metav1.Time{Time: time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC)},
+			},
+		}
+		c := fakeClientBuilder().
+			WithObjects(asoManagedCluster).
+			Build()
+		r := &AzureASOManagedClusterReconciler{
+			Client: c,
+			newResourceReconciler: func(asoManagedCluster *infrav1.AzureASOManagedCluster, _ []*unstructured.Unstructured) resourceReconciler {
+				return &fakeResourceReconciler{
+					owner:        asoManagedCluster,
+					requeueAfter: time.Minute,
+					deleteFunc: func(_ context.Context, _ client.Object) error {
+						asoManagedCluster.SetResourceStatuses([]infrav1.ResourceStatus{
+							{Resource: infrav1.StatusResource{Name: "deferred"}},
+						})
+						return nil
+					},
+				}
+			},
+		}
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(asoManagedCluster)})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+
+		g.Expect(c.Get(ctx, client.ObjectKeyFromObject(asoManagedCluster), asoManagedCluster)).To(Succeed())
 		g.Expect(asoManagedCluster.GetFinalizers()).To(ContainElement(clusterv1.ClusterFinalizer))
 	})
 

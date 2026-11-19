@@ -17,11 +17,13 @@ limitations under the License.
 package controllers
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
@@ -47,6 +49,10 @@ import (
 const (
 	ownedKindsAnnotation = "sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds"
 	ownedKindsSep        = ";"
+
+	// deferredDeleteRequeueAfter is how soon to reconcile again while
+	// WithChildrenFirst is holding resources back from deletion.
+	deferredDeleteRequeueAfter = 15 * time.Second
 )
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
@@ -56,6 +62,8 @@ type ResourceReconciler struct {
 	owner         ResourceReconcilerOwner
 	watcher       ResourceWatcher
 	childrenFirst bool
+	// requeueAfter is set by the most recent Reconcile or Delete. See RequeueAfter.
+	requeueAfter time.Duration
 }
 
 // ResourceWatcher watches ASO resources managed by a ResourceReconciler.
@@ -92,6 +100,20 @@ func NewResourceReconciler(c client.Client, owner ResourceReconcilerOwner, watch
 // before their dependencies, using ASO owner references, ARM IDs, and
 // Kubernetes resource references in resource specifications to determine the
 // hierarchy.
+//
+// Deletion then takes several reconciles. Each one deletes only the deepest
+// level of the hierarchy that still exists, and the next level is not deleted
+// until a later reconcile finds that level gone. Nothing in a ResourceReconciler
+// triggers that later reconcile: Delete registers no watches, and the watches
+// registered by Reconcile do not survive a restart. Callers must therefore
+// keep reconciling until deletion finishes, by requeuing after RequeueAfter
+// when it is not zero, or by relying on a periodic resync. This matters most
+// for a ResourceReconciler created with a nil watcher.
+//
+// Depth is compared across every resource being deleted, not within each
+// chain of dependencies, so a resource also waits for deeper resources that it
+// has no relationship with. Resources that depend on each other in a cycle
+// count as a single level and are deleted together.
 func WithChildrenFirst() ResourceReconcilerOption {
 	return func(r *ResourceReconciler) {
 		r.childrenFirst = true
@@ -116,6 +138,15 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 	// being deleted.
 	r.resources = nil
 	return r.reconcile(ctx)
+}
+
+// RequeueAfter returns how soon the owner should be reconciled again after the
+// most recent Reconcile or Delete. It is nonzero only while WithChildrenFirst
+// is holding resources back from deletion, because no event is guaranteed to
+// trigger a reconcile once the resources ahead of them are gone. Zero means
+// that no requeue is needed on this account.
+func (r *ResourceReconciler) RequeueAfter() time.Duration {
+	return r.requeueAfter
 }
 
 // Pause pauses reconciliation of the specified resources.
@@ -208,14 +239,22 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 	}
 
 	var deferred sets.Set[types.UID]
+	r.requeueAfter = 0
 	if r.childrenFirst {
 		resourcesForOrdering, err := r.resourcesForOrdering(ctx, toBeDeletedResources)
 		if err != nil {
 			return fmt.Errorf("failed to get resources for deletion ordering: %w", err)
 		}
-		deferred, err = deferShallowerResources(toBeDeletedResources, resourcesForOrdering)
+		var cycles [][]*metav1.PartialObjectMetadata
+		deferred, cycles, err = deferShallowerResources(toBeDeletedResources, resourcesForOrdering)
 		if err != nil {
 			return fmt.Errorf("failed to determine resource deletion order: %w", err)
+		}
+		for _, cycle := range cycles {
+			log.V(2).Info("resources depend on each other in a cycle and will be deleted together", "resources", resourceNames(cycle))
+		}
+		if deferred.Len() > 0 {
+			r.requeueAfter = deferredDeleteRequeueAfter
 		}
 	}
 	for _, obj := range toBeDeletedResources {
@@ -431,9 +470,16 @@ func statusResource(resource *unstructured.Unstructured) infrav1.StatusResource 
 }
 
 // deferShallowerResources returns the set of UIDs that should NOT be deleted
-// this cycle. It computes the depth of each resource from owner references and
-// ARM IDs referenced by its spec, then allows only the deepest level to proceed.
-func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects map[types.UID]*unstructured.Unstructured) (sets.Set[types.UID], error) {
+// in this reconcile. It computes the depth of each resource from owner references and
+// from the ARM IDs and Kubernetes resources referenced by its spec, then
+// allows only the deepest level to proceed. Depth is compared across all of
+// the resources, including ones with no dependency on each other.
+//
+// It also returns each group of resources that depend on each other in a
+// cycle. A cycle is treated as a single level and its resources are never
+// deferred relative to each other. The cycles, and the resources within each
+// one, are ordered by API group, kind, and name.
+func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects map[types.UID]*unstructured.Unstructured) (sets.Set[types.UID], [][]*metav1.PartialObjectMetadata, error) {
 	pending := make(map[types.UID]*metav1.PartialObjectMetadata, len(resources))
 	for _, obj := range resources {
 		pending[obj.UID] = obj
@@ -480,7 +526,7 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 	for uid, object := range objects {
 		id, found, err := unstructured.NestedString(object.Object, "status", "id")
 		if err != nil {
-			return nil, fmt.Errorf("failed to read status.id of %s/%s: %w", object.GetKind(), object.GetName(), err)
+			return nil, nil, fmt.Errorf("failed to read status.id of %s/%s: %w", object.GetKind(), object.GetName(), err)
 		}
 		if found && id != "" {
 			if id = normalizeARMID(id); id != "" {
@@ -494,7 +540,7 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 		}
 		spec, found, err := unstructured.NestedFieldNoCopy(object.Object, "spec")
 		if err != nil {
-			return nil, fmt.Errorf("failed to read spec of %s/%s: %w", object.GetKind(), object.GetName(), err)
+			return nil, nil, fmt.Errorf("failed to read spec of %s/%s: %w", object.GetKind(), object.GetName(), err)
 		}
 		if !found {
 			continue
@@ -523,29 +569,47 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 		})
 	}
 
+	// Resources that depend on each other, directly or through other
+	// resources, have no child-first order. Every resource in such a cycle
+	// gets the same depth, so they are deleted together as they would be
+	// without WithChildrenFirst and ASO is left to order them. A cycle's
+	// depth, and so the result, does not depend on where the traversal starts.
+	uids := make([]types.UID, 0, len(resources))
+	for _, resource := range resources {
+		uids = append(uids, resource.UID)
+	}
 	depth := make(map[types.UID]int, len(resources))
-	var computeDepth func(types.UID) int
-	computeDepth = func(uid types.UID) int {
-		if d, ok := depth[uid]; ok {
-			return d
-		}
-		depth[uid] = 0 // guard against cycles
-		maxParentDepth := -1
-		for dependency := range dependencies[uid] {
-			if pd := computeDepth(dependency); pd > maxParentDepth {
-				maxParentDepth = pd
+	maxDepth := 0
+	var cycles [][]*metav1.PartialObjectMetadata
+	// Each component comes after the components it depends on, so the depth
+	// of every dependency outside the component is already known.
+	for _, component := range stronglyConnectedComponents(uids, dependencies) {
+		members := sets.New(component...)
+		componentDepth := 0
+		for _, uid := range component {
+			for dependency := range dependencies[uid] {
+				if !members.Has(dependency) {
+					componentDepth = max(componentDepth, depth[dependency]+1)
+				}
 			}
 		}
-		depth[uid] = maxParentDepth + 1
-		return depth[uid]
-	}
+		for _, uid := range component {
+			depth[uid] = componentDepth
+		}
+		maxDepth = max(maxDepth, componentDepth)
 
-	maxDepth := 0
-	for uid := range pending {
-		if d := computeDepth(uid); d > maxDepth {
-			maxDepth = d
+		if len(component) > 1 {
+			cycle := make([]*metav1.PartialObjectMetadata, 0, len(component))
+			for _, uid := range component {
+				cycle = append(cycle, pending[uid])
+			}
+			slices.SortFunc(cycle, compareResources)
+			cycles = append(cycles, cycle)
 		}
 	}
+	slices.SortFunc(cycles, func(a, b []*metav1.PartialObjectMetadata) int {
+		return compareResources(a[0], b[0])
+	})
 
 	deferred := sets.New[types.UID]()
 	for uid, d := range depth {
@@ -553,7 +617,84 @@ func deferShallowerResources(resources []*metav1.PartialObjectMetadata, objects 
 			deferred.Insert(uid)
 		}
 	}
-	return deferred, nil
+	return deferred, cycles, nil
+}
+
+// stronglyConnectedComponents partitions uids so that resources which depend
+// on each other, directly or through other resources, are in the same
+// component. A resource in no dependency cycle is a component by itself. Every
+// component is returned after the components it depends on. This is Tarjan's
+// algorithm.
+func stronglyConnectedComponents(uids []types.UID, dependencies map[types.UID]sets.Set[types.UID]) [][]types.UID {
+	var (
+		components [][]types.UID
+		stack      []types.UID
+		nextIndex  int
+	)
+	index := make(map[types.UID]int, len(uids))
+	lowLink := make(map[types.UID]int, len(uids))
+	onStack := sets.New[types.UID]()
+
+	var visit func(types.UID)
+	visit = func(uid types.UID) {
+		index[uid] = nextIndex
+		lowLink[uid] = nextIndex
+		nextIndex++
+		stack = append(stack, uid)
+		onStack.Insert(uid)
+
+		for dependency := range dependencies[uid] {
+			if _, visited := index[dependency]; !visited {
+				visit(dependency)
+				lowLink[uid] = min(lowLink[uid], lowLink[dependency])
+			} else if onStack.Has(dependency) {
+				lowLink[uid] = min(lowLink[uid], index[dependency])
+			}
+		}
+
+		// uid is the first resource of its component that was visited, and
+		// the rest of the component is above it on the stack.
+		if lowLink[uid] != index[uid] {
+			return
+		}
+		var component []types.UID
+		for {
+			member := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			onStack.Delete(member)
+			component = append(component, member)
+			if member == uid {
+				break
+			}
+		}
+		components = append(components, component)
+	}
+
+	for _, uid := range uids {
+		if _, visited := index[uid]; !visited {
+			visit(uid)
+		}
+	}
+	return components
+}
+
+// compareResources orders resources by API group, kind, and name.
+func compareResources(a, b *metav1.PartialObjectMetadata) int {
+	aGroupKind, bGroupKind := a.GroupVersionKind().GroupKind(), b.GroupVersionKind().GroupKind()
+	return cmp.Or(
+		strings.Compare(aGroupKind.Group, bGroupKind.Group),
+		strings.Compare(aGroupKind.Kind, bGroupKind.Kind),
+		strings.Compare(a.Name, b.Name),
+	)
+}
+
+// resourceNames describes resources as Kind.group/name for logging.
+func resourceNames(resources []*metav1.PartialObjectMetadata) []string {
+	names := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		names = append(names, resource.GroupVersionKind().GroupKind().String()+"/"+resource.Name)
+	}
+	return names
 }
 
 // isDeletionNotSupported reports whether ASO has marked the Ready condition

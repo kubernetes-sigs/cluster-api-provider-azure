@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -69,6 +70,10 @@ type resourceReconciler interface {
 	// Delete begins deleting the specified resources and updates the object's status to reflect the state of
 	// the specified resources.
 	Delete(context.Context) error
+
+	// RequeueAfter returns how soon to reconcile again after the most recent Reconcile or Delete, when
+	// that left work which no watch is guaranteed to pick up. Zero means no requeue is needed.
+	RequeueAfter() time.Duration
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -254,7 +259,8 @@ func (r *AzureASOManagedClusterReconciler) reconcileNormal(ctx context.Context, 
 	}
 	for _, status := range asoManagedCluster.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{}, nil
+			// Stale resources that are waiting their turn to be deleted are reported as not ready.
+			return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 		}
 	}
 
@@ -312,5 +318,5 @@ func (r *AzureASOManagedClusterReconciler) reconcileDelete(ctx context.Context, 
 		controllerutil.RemoveFinalizer(asoManagedCluster, clusterv1.ClusterFinalizer)
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 }

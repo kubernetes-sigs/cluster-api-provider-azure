@@ -232,7 +232,8 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileNormal(ctx context.Cont
 	}
 	for _, status := range asoManagedControlPlane.Status.Resources {
 		if !status.Ready {
-			return ctrl.Result{}, nil
+			// Stale resources that are waiting their turn to be deleted are reported as not ready.
+			return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 		}
 	}
 
@@ -392,7 +393,7 @@ func (r *AzureASOManagedControlPlaneReconciler) reconcileDelete(ctx context.Cont
 		controllerutil.RemoveFinalizer(asoManagedControlPlane, infrav1.AzureASOManagedControlPlaneFinalizer)
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: resourceReconciler.RequeueAfter()}, nil
 }
 
 func getControlPlaneEndpoint(managedCluster *asocontainerservicev1.ManagedCluster) clusterv1beta1.APIEndpoint {
