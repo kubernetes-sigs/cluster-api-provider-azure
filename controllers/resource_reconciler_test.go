@@ -942,10 +942,10 @@ func controlledBy(g *GomegaWithT, s *runtime.Scheme, owner client.Object) []meta
 	}
 }
 
-// While resources are held back, RequeueAfter is the only thing that brings the
-// next reconcile around: Delete registers no watches, and after a restart
+// Until the deletion is finished, RequeueAfter is the only thing that brings
+// the next reconcile around: Delete registers no watches, and after a restart
 // nothing else is watching the resources being deleted.
-func TestResourceReconcilerDeleteLifecycle_RequeueWhileDeferred(t *testing.T) {
+func TestResourceReconcilerDeleteLifecycle_RequeueUntilDone(t *testing.T) {
 	g := NewGomegaWithT(t)
 	resourceGroup, vnet, privateEndpoint := armIDChain()
 	l := newDeleteLifecycle(t, []ResourceReconcilerOption{WithChildrenFirst()}, resourceGroup, vnet, privateEndpoint)
@@ -961,19 +961,19 @@ func TestResourceReconcilerDeleteLifecycle_RequeueWhileDeferred(t *testing.T) {
 
 	deleted, requeueAfter := reconcileDelete()
 	g.Expect(deleted).To(ConsistOf("PrivateEndpoint/private-endpoint"))
-	g.Expect(requeueAfter).To(Equal(deferredDeleteRequeueAfter))
+	g.Expect(requeueAfter).To(Equal(childrenFirstRequeueAfter))
 
 	l.finishDeleting(privateEndpoint)
 	deleted, requeueAfter = reconcileDelete()
 	g.Expect(deleted).To(ConsistOf("VirtualNetwork/vnet"))
-	g.Expect(requeueAfter).To(Equal(deferredDeleteRequeueAfter))
+	g.Expect(requeueAfter).To(Equal(childrenFirstRequeueAfter))
 
-	// Nothing is held back behind the last level, so it is left to the
-	// caller's watches or resync as it is without WithChildrenFirst.
+	// Nothing is held back behind the last level, but the owner still has to
+	// be reconciled once more after ASO finishes deleting it.
 	l.finishDeleting(vnet)
 	deleted, requeueAfter = reconcileDelete()
 	g.Expect(deleted).To(ConsistOf("ResourceGroup/rg"))
-	g.Expect(requeueAfter).To(BeZero())
+	g.Expect(requeueAfter).To(Equal(childrenFirstRequeueAfter))
 
 	l.finishDeleting(resourceGroup)
 	deleted, requeueAfter = reconcileDelete()

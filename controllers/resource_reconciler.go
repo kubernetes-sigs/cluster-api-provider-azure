@@ -50,9 +50,9 @@ const (
 	ownedKindsAnnotation = "sigs.k8s.io/cluster-api-provider-azure-owned-aso-kinds"
 	ownedKindsSep        = ";"
 
-	// deferredDeleteRequeueAfter is how soon to reconcile again while
-	// WithChildrenFirst is holding resources back from deletion.
-	deferredDeleteRequeueAfter = 15 * time.Second
+	// childrenFirstRequeueAfter is how soon to reconcile again while a
+	// WithChildrenFirst deletion is still in progress.
+	childrenFirstRequeueAfter = 15 * time.Second
 )
 
 // ResourceReconciler reconciles a set of arbitrary ASO resources.
@@ -141,10 +141,10 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 }
 
 // RequeueAfter returns how soon the owner should be reconciled again after the
-// most recent Reconcile or Delete. It is nonzero only while WithChildrenFirst
-// is holding resources back from deletion, because no event is guaranteed to
-// trigger a reconcile once the resources ahead of them are gone. Zero means
-// that no requeue is needed on this account.
+// most recent Reconcile or Delete. It is nonzero only with WithChildrenFirst,
+// while resources are held back from deletion or are still being deleted by
+// ASO, because no event is guaranteed to trigger a reconcile once they are
+// gone. Zero means that no requeue is needed on this account.
 func (r *ResourceReconciler) RequeueAfter() time.Duration {
 	return r.requeueAfter
 }
@@ -253,10 +253,10 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 		for _, cycle := range cycles {
 			log.V(2).Info("resources depend on each other in a cycle and will be deleted together", "resources", resourceNames(cycle))
 		}
-		if deferred.Len() > 0 {
-			r.requeueAfter = deferredDeleteRequeueAfter
-		}
 	}
+	// pendingDeletes records whether any resource is held back or is still
+	// waiting for ASO to finish deleting it.
+	pendingDeletes := false
 	for _, obj := range toBeDeletedResources {
 		if deferred.Has(obj.UID) {
 			gvk := obj.GroupVersionKind()
@@ -269,15 +269,20 @@ func (r *ResourceReconciler) reconcile(ctx context.Context) error {
 				},
 				Ready: false,
 			})
+			pendingDeletes = true
 			continue
 		}
 		newStatus, err := r.deleteResource(ctx, obj)
 		if err != nil {
-			return fmt.Errorf("failed to delete %s %s/%s", obj.GroupVersionKind(), obj.Namespace, obj.Name)
+			return fmt.Errorf("failed to delete %s %s/%s: %w", obj.GroupVersionKind(), obj.Namespace, obj.Name, err)
 		}
 		if newStatus != nil {
 			newResourceStatuses = append(newResourceStatuses, *newStatus)
+			pendingDeletes = true
 		}
+	}
+	if r.childrenFirst && pendingDeletes {
+		r.requeueAfter = childrenFirstRequeueAfter
 	}
 
 	newOwnedKinds := []schema.GroupVersionKind{}
