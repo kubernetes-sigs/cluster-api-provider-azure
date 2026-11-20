@@ -395,8 +395,10 @@ func isOwnedBy(resource client.Object, owner client.Object, scheme *runtime.Sche
 }
 
 func hasLegacyOwnedByLabel(labels map[string]string, clusterName string) bool {
-	return labels[infrav1.OwnedByClusterLabelKey] == clusterName //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+	return labels[legacyOwnedByClusterLabelKey] == clusterName
 }
+
+const legacyOwnedByClusterLabelKey = infrav1.NameAzureProviderPrefix + string(infrav1.ResourceLifecycleOwned)
 
 func (r *reconciler[T]) usePerResourceSecret(ctx context.Context) (bool, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "services.aso.usePerResourceSecret")
