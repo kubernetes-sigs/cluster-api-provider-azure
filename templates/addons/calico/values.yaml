@@ -11,12 +11,6 @@ installation:
       encapsulation: VXLAN
     windowsDataplane: HNS
   registry: capzcicommunity.azurecr.io
-  # Image and registry configuration for the tigera/operator pod.
-  tigeraOperator:
-    image: tigera/operator
-    registry: capzcicommunity.azurecr.io
-  calicoctl:
-    image: capzcicommunity.azurecr.io/calico/ctl
   serviceCIDRs: 
     - 10.96.0.0/12 # must match cluster service CIDR (this is the default)
 # By default, tigera tolerates all NoSchedule taints. This breaks upgrades
@@ -31,3 +25,9 @@ tolerations:
   - effect: NoSchedule
     key: node.kubernetes.io/not-ready
     operator: Exists
+# Image and registry configuration for the tigera/operator pod.
+tigeraOperator:
+  image: tigera/operator
+  registry: capzcicommunity.azurecr.io
+calicoctl:
+  image: capzcicommunity.azurecr.io/calico/ctl
