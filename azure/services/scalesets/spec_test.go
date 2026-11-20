@@ -820,3 +820,120 @@ func mustCalculateBootstrapDataHash(bootstrapData string) string {
 	}
 	return hash
 }
+
+func TestScaleSetParametersExistingImagePlan(t *testing.T) {
+	const galleryID = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/1.0.0"
+	plan := &armcompute.Plan{
+		Publisher: ptr.To("publisher"),
+		Product:   ptr.To("product"),
+		Name:      ptr.To("sku"),
+	}
+	computeGalleryImage := func(withPlan bool) *infrav1.Image {
+		image := &infrav1.Image{
+			ComputeGallery: &infrav1.AzureComputeGalleryImage{
+				Gallery:        "gallery",
+				Name:           "image",
+				Version:        "1.0.0",
+				SubscriptionID: ptr.To("sub"),
+				ResourceGroup:  ptr.To("rg"),
+			},
+		}
+		if withPlan {
+			image.ComputeGallery.Plan = &infrav1.ImagePlan{Publisher: "publisher", Offer: "product", SKU: "sku"}
+		}
+		return image
+	}
+
+	differentPlanImage := computeGalleryImage(true)
+	differentPlanImage.ComputeGallery.Plan.SKU = "different-sku"
+
+	testcases := []struct {
+		name           string
+		specImage      *infrav1.Image
+		existingID     string
+		instanceID     string
+		expectedUpdate bool
+		modelChanged   bool
+	}{
+		{
+			name:       "raw gallery ID with plan on existing vmss is not a model change",
+			specImage:  &infrav1.Image{ID: ptr.To(galleryID)},
+			existingID: galleryID,
+		},
+		{
+			name:       "compute gallery image with plan matching existing vmss is not a model change",
+			specImage:  computeGalleryImage(true),
+			existingID: galleryID,
+		},
+		{
+			name:           "raw gallery ID with a different version requires a model update and surge",
+			specImage:      &infrav1.Image{ID: ptr.To(galleryID)},
+			existingID:     "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/2.0.0",
+			expectedUpdate: true,
+			modelChanged:   true,
+		},
+		{
+			name:           "compute gallery image with a different plan requires a model update and surge",
+			specImage:      differentPlanImage,
+			existingID:     galleryID,
+			expectedUpdate: true,
+			modelChanged:   true,
+		},
+		{
+			name:           "raw gallery ID with an outdated instance still requires surge",
+			specImage:      &infrav1.Image{ID: ptr.To(galleryID)},
+			existingID:     galleryID,
+			instanceID:     "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Compute/galleries/gallery/images/image/versions/2.0.0",
+			expectedUpdate: true,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			spec := newDefaultVMSSSpec()
+			spec.VMImage = tc.specImage
+			spec.MaxSurge = 1
+			for i := range spec.VMSSInstances {
+				spec.VMSSInstances[i].Plan = plan
+				spec.VMSSInstances[i].Properties.StorageProfile.ImageReference = &armcompute.ImageReference{ID: ptr.To(tc.existingID)}
+			}
+			if tc.instanceID != "" {
+				spec.VMSSInstances[0].Properties.StorageProfile.ImageReference.ID = ptr.To(tc.instanceID)
+			}
+
+			existing := newDefaultExistingVMSS()
+			existing.Plan = plan
+			existing.Properties.VirtualMachineProfile.StorageProfile.ImageReference = &armcompute.ImageReference{ID: ptr.To(tc.existingID)}
+
+			param, err := spec.Parameters(t.Context(), existing)
+			g.Expect(err).NotTo(HaveOccurred())
+			if tc.expectedUpdate {
+				result, ok := param.(armcompute.VirtualMachineScaleSet)
+				g.Expect(ok).To(BeTrue())
+				g.Expect(result.SKU.Capacity).To(Equal(ptr.To[int64](3)))
+				if tc.modelChanged {
+					g.Expect(result.Properties.VirtualMachineProfile).NotTo(BeNil())
+				} else {
+					g.Expect(result.Properties.VirtualMachineProfile).To(BeNil())
+				}
+			} else {
+				g.Expect(param).To(BeNil())
+			}
+			g.Expect(existing.Plan).To(Equal(&armcompute.Plan{
+				Publisher: ptr.To("publisher"),
+				Product:   ptr.To("product"),
+				Name:      ptr.To("sku"),
+			}), "observed plan must not be mutated")
+		})
+	}
+
+	t.Run("compute gallery plan is generated for the desired vmss", func(t *testing.T) {
+		g := NewWithT(t)
+		spec := newDefaultVMSSSpec()
+		spec.VMImage = computeGalleryImage(true)
+		g.Expect(spec.generateImagePlan(t.Context())).To(Equal(plan))
+
+		spec.VMImage = computeGalleryImage(false)
+		g.Expect(spec.generateImagePlan(t.Context())).To(BeNil())
+	})
+}
