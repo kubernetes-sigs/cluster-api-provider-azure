@@ -52,8 +52,6 @@ var errInvalidControlPlaneKind = errors.New("AzureASOManagedCluster cannot be us
 type AzureASOManagedClusterReconciler struct {
 	client.Client
 	WatchFilterValue string
-	// ResourceReconcilerOptions configure ASO resource reconciliation for this controller.
-	ResourceReconcilerOptions []ResourceReconcilerOption
 
 	newResourceReconciler func(*infrav1.AzureASOManagedCluster, []*unstructured.Unstructured) resourceReconciler
 }
@@ -127,7 +125,12 @@ func (r *AzureASOManagedClusterReconciler) SetupWithManager(ctx context.Context,
 	}
 
 	r.newResourceReconciler = func(asoManagedCluster *infrav1.AzureASOManagedCluster, resources []*unstructured.Unstructured) resourceReconciler {
-		return NewResourceReconciler(r.Client, asoManagedCluster, externalTracker, resources, r.ResourceReconcilerOptions...)
+		return &ResourceReconciler{
+			Client:    r.Client,
+			resources: resources,
+			owner:     asoManagedCluster,
+			watcher:   externalTracker,
+		}
 	}
 
 	return nil
