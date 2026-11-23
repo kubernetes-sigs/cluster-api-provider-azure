@@ -163,10 +163,10 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) error 
 	case azure.USGovernmentCloudName:
 		cloudConfig = cloud.AzureGovernment
 		c.ResourceManagerVMDNSSuffix = "cloudapp.usgovcloudapi.net"
-	case azure.USSecCloudName:
+	case azure.USSecCloudName, azure.USNatCloudName:
 		env, err := loadCloudEnvironmentFromFile()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load cloud environment for %q: %w", environmentName, err)
 		}
 		cloudConfig = cloud.Configuration{
 			ActiveDirectoryAuthorityHost: env.ActiveDirectoryEndpoint,
@@ -201,7 +201,7 @@ func setValue(value *string, key string) {
 }
 
 // cloudEnvironmentFile represents the JSON structure of the Azure environment
-// file used for air-gapped clouds (USSec, Stack). This format matches the
+// file used for air-gapped clouds (USSec, USNat, Stack). This format matches the
 // Environment struct in cloud-provider-azure/pkg/azclient/cloud.go.
 type cloudEnvironmentFile struct {
 	Name                       string `json:"name"`
@@ -216,15 +216,14 @@ type cloudEnvironmentFile struct {
 
 // loadCloudEnvironmentFromFile reads the Azure environment JSON file specified
 // by the AZURE_ENVIRONMENT_FILEPATH environment variable. This is the same
-// mechanism used by cloud-provider-azure for Azure Stack and USSec clouds.
+// mechanism used by cloud-provider-azure for Azure Stack, USSec, and USNat clouds.
 // The file is produced by an external process (the installer or an
 // administrator) that discovers endpoints from the ARM metadata service
 // within the air-gapped network.
 func loadCloudEnvironmentFromFile() (*cloudEnvironmentFile, error) {
 	envFilePath, ok := os.LookupEnv("AZURE_ENVIRONMENT_FILEPATH")
 	if !ok || envFilePath == "" {
-		return nil, fmt.Errorf(
-			"AZURE_ENVIRONMENT_FILEPATH environment variable must be set when using cloud environment %q", azure.USSecCloudName)
+		return nil, fmt.Errorf("AZURE_ENVIRONMENT_FILEPATH environment variable must be set")
 	}
 	// The path is deliberately operator-provided via AZURE_ENVIRONMENT_FILEPATH;
 	// this is the documented mechanism for supplying air-gapped cloud endpoints.

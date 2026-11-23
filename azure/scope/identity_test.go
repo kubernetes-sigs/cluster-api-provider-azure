@@ -676,6 +676,17 @@ func TestParseCloudType(t *testing.T) {
 			envFile:  validUSSecEnvFile,
 			expected: cloud.Configuration{ActiveDirectoryAuthorityHost: "https://login.example.com/"},
 		},
+		{
+			name:      "when the input is USNAT without an environment file, expect an error",
+			input:     "USNAT",
+			expectErr: true,
+		},
+		{
+			name:     "when the input is USNAT with a valid environment file, expect the configured authority host",
+			input:    "USNAT",
+			envFile:  validUSNatEnvFile,
+			expected: cloud.Configuration{ActiveDirectoryAuthorityHost: "https://login.example.net/"},
+		},
 	}
 
 	for _, tt := range tests {

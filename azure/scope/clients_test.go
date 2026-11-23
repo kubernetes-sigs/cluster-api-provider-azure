@@ -38,6 +38,19 @@ const validUSSecEnvFile = `{
 	"resourceManagerVMDNSSuffix": "cloudapp.example.com"
 }`
 
+// validUSNatEnvFile is a sample Azure environment file for the USNat (IL7)
+// cloud. The endpoints use example.net placeholders rather than real IL7
+// domains so the fixture is safe to commit. They are deliberately different
+// from the USSec fixture, and the token audience differs from the resource
+// manager endpoint, so a test fails if a value is read from the wrong field.
+const validUSNatEnvFile = `{
+	"name": "AzureUSNatCloud",
+	"resourceManagerEndpoint": "https://management.example.net/",
+	"activeDirectoryEndpoint": "https://login.example.net/",
+	"tokenAudience": "https://audience.example.net/",
+	"resourceManagerVMDNSSuffix": "cloudapp.example.net"
+}`
+
 // writeEnvFile writes contents to a temporary environment file and points
 // AZURE_ENVIRONMENT_FILEPATH at it for the duration of the test.
 func writeEnvFile(t *testing.T, g *WithT, contents string) {
@@ -64,6 +77,14 @@ func TestLoadCloudEnvironmentFromFile(t *testing.T) {
 			expectedRM:  "https://management.example.com/",
 			expectedAD:  "https://login.example.com/",
 			expectedAud: "https://management.example.com/",
+		},
+		{
+			name:        "valid USNat environment file loads all endpoints",
+			contents:    validUSNatEnvFile,
+			setEnv:      true,
+			expectedRM:  "https://management.example.net/",
+			expectedAD:  "https://login.example.net/",
+			expectedAud: "https://audience.example.net/",
 		},
 		{
 			name:      "unset environment variable returns an error",
@@ -158,5 +179,30 @@ func TestGetSettingsFromEnvironmentUSSecMissingFile(t *testing.T) {
 	t.Setenv("AZURE_ENVIRONMENT_FILEPATH", "")
 
 	c := &AzureClients{}
-	g.Expect(c.getSettingsFromEnvironment(azure.USSecCloudName)).NotTo(Succeed())
+	g.Expect(c.getSettingsFromEnvironment(azure.USSecCloudName)).To(MatchError(ContainSubstring(azure.USSecCloudName)))
+}
+
+func TestGetSettingsFromEnvironmentUSNat(t *testing.T) {
+	g := NewWithT(t)
+	writeEnvFile(t, g, validUSNatEnvFile)
+
+	c := &AzureClients{}
+	g.Expect(c.getSettingsFromEnvironment(azure.USNatCloudName)).To(Succeed())
+
+	g.Expect(c.CloudEnvironment()).To(Equal(azure.USNatCloudName))
+	g.Expect(c.ResourceManagerEndpoint).To(Equal("https://management.example.net/"))
+	g.Expect(c.ResourceManagerVMDNSSuffix).To(Equal("cloudapp.example.net"))
+
+	cfg := c.CloudConfiguration()
+	g.Expect(cfg.ActiveDirectoryAuthorityHost).To(Equal("https://login.example.net/"))
+	g.Expect(cfg.Services[cloud.ResourceManager].Endpoint).To(Equal("https://management.example.net/"))
+	g.Expect(cfg.Services[cloud.ResourceManager].Audience).To(Equal("https://audience.example.net/"))
+}
+
+func TestGetSettingsFromEnvironmentUSNatMissingFile(t *testing.T) {
+	g := NewWithT(t)
+	t.Setenv("AZURE_ENVIRONMENT_FILEPATH", "")
+
+	c := &AzureClients{}
+	g.Expect(c.getSettingsFromEnvironment(azure.USNatCloudName)).To(MatchError(ContainSubstring(azure.USNatCloudName)))
 }
