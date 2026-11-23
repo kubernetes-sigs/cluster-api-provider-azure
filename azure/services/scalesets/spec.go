@@ -119,7 +119,17 @@ func (s *ScaleSetSpec) existingParameters(ctx context.Context, existing any) (pa
 	vmss.Properties.VirtualMachineProfile.NetworkProfile = nil
 	vmss.ID = existingVMSS.ID
 
-	hasModelChanges := hasModelModifyingDifferences(&existingInfraVMSS, vmss)
+	// A compute gallery image specified by raw ID cannot express a plan, but Azure may return one for the
+	// existing VMSS. Ignore it only for desired-model comparison, preserving the observed model for instance checks.
+	existingModel := existingInfraVMSS
+	if s.VMImage != nil && s.VMImage.ID != nil && existingInfraVMSS.Image.ComputeGallery != nil &&
+		converters.IDImageRefToImage(*s.VMImage.ID).ComputeGallery != nil {
+		image := existingInfraVMSS.Image.DeepCopy()
+		image.ComputeGallery.Plan = nil
+		existingModel.Image = *image
+	}
+
+	hasModelChanges := hasModelModifyingDifferences(&existingModel, vmss)
 	isFlex := s.OrchestrationMode == infrav1.FlexibleOrchestrationMode
 	updated := true
 	if !isFlex {
