@@ -168,6 +168,7 @@ linters:
             - sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1$
             - sigs.k8s.io/cluster-api-provider-azure/internal/exp/webhooks$
             - sigs.k8s.io/cluster-api/api/core/v1beta1$
+            - sigs.k8s.io/cluster-api/api/core/v1beta2$
     nolintlint:
       require-specific: true
       allow-unused: false
