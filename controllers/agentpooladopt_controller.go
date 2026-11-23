@@ -41,22 +41,22 @@ type AgentPoolAdoptReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// The controller starts once the ManagedClustersAgentPool CRD is installed.
 func (r *AgentPoolAdoptReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
-	_, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
-		For(&asocontainerservicev1.ManagedClustersAgentPool{}).
-		WithEventFilter(predicate.Funcs{
-			UpdateFunc: func(ev event.UpdateEvent) bool {
-				return ev.ObjectOld.GetAnnotations()[adoptAnnotation] != ev.ObjectNew.GetAnnotations()[adoptAnnotation]
-			},
-			DeleteFunc: func(_ event.DeleteEvent) bool { return false },
-		}).
-		Build(r)
-	if err != nil {
+	agentPool := &asocontainerservicev1.ManagedClustersAgentPool{}
+	return setupWhenKindServed(mgr, agentPool, func() error {
+		_, err := ctrl.NewControllerManagedBy(mgr).
+			WithOptions(options).
+			For(agentPool).
+			WithEventFilter(predicate.Funcs{
+				UpdateFunc: func(ev event.UpdateEvent) bool {
+					return ev.ObjectOld.GetAnnotations()[adoptAnnotation] != ev.ObjectNew.GetAnnotations()[adoptAnnotation]
+				},
+				DeleteFunc: func(_ event.DeleteEvent) bool { return false },
+			}).
+			Build(r)
 		return err
-	}
-
-	return nil
+	})
 }
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools,verbs=create
