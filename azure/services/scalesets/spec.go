@@ -52,6 +52,7 @@ type ScaleSetSpec struct {
 	VNetResourceGroup            string
 	PublicLBName                 string
 	PublicLBAddressPoolName      string
+	PublicLBAddressPoolNameIPv6  string
 	AcceleratedNetworking        *bool
 	TerminateNotificationTimeout *int
 	Identity                     infrav1.VMIdentity
@@ -391,6 +392,16 @@ func (s *ScaleSetSpec) getVirtualMachineScaleSetNetworkConfiguration() *[]armcom
 		}
 		if i == 0 {
 			ipconfigs[0].Properties.LoadBalancerBackendAddressPools = azure.PtrSlice(&backendAddressPools)
+			if s.IPv6Enabled {
+				var backendAddressPoolsIPv6 []armcompute.SubResource
+				if s.PublicLBName != "" && s.PublicLBAddressPoolNameIPv6 != "" {
+					backendAddressPoolsIPv6 = append(backendAddressPoolsIPv6,
+						armcompute.SubResource{
+							ID: ptr.To(azure.AddressPoolID(s.SubscriptionID, s.ResourceGroup, s.PublicLBName, s.PublicLBAddressPoolNameIPv6)),
+						})
+				}
+				ipconfigs[len(ipconfigs)-1].Properties.LoadBalancerBackendAddressPools = azure.PtrSlice(&backendAddressPoolsIPv6)
+			}
 			nicConfig.Properties.Primary = ptr.To(true)
 		}
 		nicConfig.Properties.IPConfigurations = azure.PtrSlice(&ipconfigs)
