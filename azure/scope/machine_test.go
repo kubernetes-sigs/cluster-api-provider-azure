@@ -330,7 +330,139 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					IsIPv6:         false,
 					ClusterName:    "my-cluster",
 					Location:       "centralIndia",
-					FailureDomains: []*string{ptr.To("failure-domain-id-1"), ptr.To("failure-domain-id-2"), ptr.To("failure-domain-id-3")},
+					FailureDomains: nil,
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name: "does not set zones when machine has no configured failure domain and cluster has 4 discovered zones",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						AllocatePublicIP: true,
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+						Status: infrav1.AzureClusterStatus{
+							FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
+								"1": {},
+								"2": {},
+								"3": {},
+								"4": {},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								SubscriptionID: "123",
+								Location:       "centralIndia",
+								AdditionalTags: infrav1.Tags{
+									"Name": "my-publicip-ipv6",
+									"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+								},
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
+									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+										Type: infrav1.Internal,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "pip-machine-name",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: nil,
+					AdditionalTags: infrav1.Tags{
+						"Name": "my-publicip-ipv6",
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+					},
+				},
+			},
+		},
+		{
+			name: "sets zones from Status.FailureDomains when machine has a configured failure domain",
+			machineScope: MachineScope{
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-name",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						AllocatePublicIP: true,
+						FailureDomain:    ptr.To("2"),
+					},
+				},
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cluster",
+						},
+						Status: infrav1.AzureClusterStatus{
+							FailureDomains: map[string]clusterv1beta1.FailureDomainSpec{
+								"1": {},
+								"2": {},
+								"3": {},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "my-rg",
+							AzureClusterClassSpec: infrav1.AzureClusterClassSpec{
+								SubscriptionID: "123",
+								Location:       "centralIndia",
+								AdditionalTags: infrav1.Tags{
+									"Name": "my-publicip-ipv6",
+									"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
+								},
+							},
+							NetworkSpec: infrav1.NetworkSpec{
+								APIServerLB: &infrav1.LoadBalancerSpec{
+									LoadBalancerClassSpec: infrav1.LoadBalancerClassSpec{
+										Type: infrav1.Internal,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []azure.ResourceSpecGetter{
+				&publicips.PublicIPSpec{
+					Name:           "pip-machine-name",
+					ResourceGroup:  "my-rg",
+					DNSName:        "",
+					IsIPv6:         false,
+					ClusterName:    "my-cluster",
+					Location:       "centralIndia",
+					FailureDomains: []*string{ptr.To("1"), ptr.To("2"), ptr.To("3")},
 					AdditionalTags: infrav1.Tags{
 						"Name": "my-publicip-ipv6",
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": "owned",
