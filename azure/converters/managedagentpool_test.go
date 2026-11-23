@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	asocontainerservicev1 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801"
-	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20250801/storage"
+	asocontainerservicev1hub "github.com/Azure/azure-service-operator/v2/api/containerservice/v20260501/storage"
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -33,10 +33,13 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 		expect func(*GomegaWithT, asocontainerservicev1hub.ManagedClusterAgentPoolProfile)
 	}{
 		{
-			name: "Should set all values correctly",
+			name: "copies the agent pool fields, including explicit node image version",
 			pool: &asocontainerservicev1hub.ManagedClustersAgentPool{
 				Spec: asocontainerservicev1hub.ManagedClustersAgentPool_Spec{
-					AzureName:           "agentpool1",
+					AzureName: "agentpool1",
+					ArtifactStreamingProfile: &asocontainerservicev1hub.AgentPoolArtifactStreamingProfile{
+						Enabled: ptr.To(true),
+					},
 					VmSize:              ptr.To("Standard_D2s_v3"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),
 					OsDiskSizeGB:        ptr.To(100),
@@ -52,8 +55,12 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					MinCount:          ptr.To(2),
 					NodeTaints:        []string{"key1=value1:NoSchedule"},
 					AvailabilityZones: []string{"zone1"},
-					MaxPods:           ptr.To(60),
-					OsDiskType:        ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					LocalDNSProfile: &asocontainerservicev1hub.LocalDNSProfile{
+						Mode: ptr.To("Required"),
+					},
+					MaxPods:          ptr.To(60),
+					NodeImageVersion: ptr.To("AKSUbuntu-2026.11.01"),
+					OsDiskType:       ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 					NodeLabels: map[string]string{
 						"custom": "default",
 					},
@@ -67,6 +74,9 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 
 			expect: func(g *GomegaWithT, result asocontainerservicev1hub.ManagedClusterAgentPoolProfile) {
 				g.Expect(result).To(Equal(asocontainerservicev1hub.ManagedClusterAgentPoolProfile{
+					ArtifactStreamingProfile: &asocontainerservicev1hub.AgentPoolArtifactStreamingProfile{
+						Enabled: ptr.To(true),
+					},
 					Name:                ptr.To("agentpool1"),
 					VmSize:              ptr.To("Standard_D2s_v3"),
 					OsType:              ptr.To(string(asocontainerservicev1.OSType_Linux)),
@@ -83,8 +93,12 @@ func Test_AgentPoolToManagedClusterAgentPoolProfile(t *testing.T) {
 					MinCount:          ptr.To(2),
 					NodeTaints:        []string{"key1=value1:NoSchedule"},
 					AvailabilityZones: []string{"zone1"},
-					MaxPods:           ptr.To(60),
-					OsDiskType:        ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
+					LocalDNSProfile: &asocontainerservicev1hub.LocalDNSProfile{
+						Mode: ptr.To("Required"),
+					},
+					MaxPods:          ptr.To(60),
+					NodeImageVersion: ptr.To("AKSUbuntu-2026.11.01"),
+					OsDiskType:       ptr.To(string(asocontainerservicev1.OSDiskType_Managed)),
 					NodeLabels: map[string]string{
 						"custom": "default",
 					},
