@@ -645,8 +645,8 @@ func TestCreateOrUpdateResource(t *testing.T) {
 				Name:      "name",
 				Namespace: "namespace",
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel:     clusterName,
-					infrav1.OwnedByClusterLabelKey: clusterName, //nolint:staticcheck // Referencing this deprecated value is required for backwards compatibility.
+					clusterv1.ClusterNameLabel:   clusterName,
+					legacyOwnedByClusterLabelKey: clusterName,
 				},
 				Annotations: map[string]string{
 					asoannotations.ReconcilePolicy: string(asoannotations.ReconcilePolicySkip),
