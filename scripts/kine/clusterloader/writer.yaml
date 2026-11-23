@@ -1,0 +1,36 @@
+# Copyright 2026 The Kubernetes Authors.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Name}}
+  labels:
+    group: benchmark-write
+spec:
+  replicas: {{.Replicas}}
+  selector:
+    matchLabels:
+      name: {{.Name}}
+  template:
+    metadata:
+      labels:
+        name: {{.Name}}
+        group: benchmark-write
+    spec:
+      containers:
+      - name: write-generator
+        image: gcr.io/k8s-staging-perf-tests/perf-tests-util/request-benchmark:v0.0.18
+        args:
+        - patch
+        - --namespace={{.Namespace}}
+        - --pod-count={{.PodCount}}
+        - --pod-name-prefix=bench-pod-
+        - --qps={{.Qps}}
+        resources:
+          requests:
+            cpu: "1"
+            memory: 256Mi
+          limits:
+            cpu: "2"
+            memory: 1Gi

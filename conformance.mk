@@ -9,6 +9,17 @@ CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 
 ##@ Conformance testing:
 
+.PHONY: test-performance-kine preflight-performance-kine
+test-performance-kine: ## Run ClusterLoader2 on the shared SCSI profile (billable; kubeadm-etcd by default; KINE_BACKEND=kine-postgres enables Kine).
+	bash ./scripts/ci-kine-performance.sh
+
+preflight-performance-kine: ## Check high-I/O VM quota/capabilities without provisioning.
+	bash ./scripts/ci-kine-performance.sh --preflight-only
+
+.PHONY: test-conformance-kine
+test-conformance-kine: ## Provision an experimental Kine/PostgreSQL Azure VM and run Kubernetes conformance.
+	bash ./scripts/ci-kine-conformance.sh
+
 .PHONY: test-conformance
 test-conformance: ## Run conformance test on workload cluster.
 ifeq ($(MANAGER_IMAGE),)
