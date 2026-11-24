@@ -308,6 +308,13 @@ variables:
   CNI: "${PWD}/templates/addons/calico.yaml"
   ADDONS_PATH: "${PWD}/templates/addons"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
+  # KubeRay compatibility test ([KubeRay-Compat]) defaults. Prow jobs override these per version pair.
+  KUBERAY_COMPAT_AKS_KUBERNETES_VERSION: "stable-1.36"
+  KUBERAY_COMPAT_KUBERAY_VERSION: "1.7.0"
+  KUBERAY_COMPAT_RAY_IMAGE: "rayproject/ray:2.58.0"
+  KUBERAY_COMPAT_NODE_MACHINE_TYPE: "Standard_D4s_v3"
+  KUBERAY_COMPAT_SUITES: "" # Comma-separated subset of scripts/kuberay-compat.sh suites; empty runs all
+  KUBERAY_COMPAT_SCRIPT: "${PWD}/scripts/kuberay-compat.sh"
   EXP_AKS_RESOURCE_HEALTH: "true"
   EXP_MACHINE_POOL: "true"
   EXP_CLUSTER_RESOURCE_SET: "true"

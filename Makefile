@@ -128,6 +128,10 @@ GINKGO_VER := $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
+GOTESTSUM_VER := v1.13.0
+GOTESTSUM_BIN := gotestsum
+GOTESTSUM := $(TOOLS_BIN_DIR)/$(GOTESTSUM_BIN)-$(GOTESTSUM_VER)
+
 KUBECTL_VER := v1.35.4
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
@@ -881,6 +885,7 @@ kpromo: $(KPROMO) ## Build a local copy of kpromo.
 release-notes: $(RELEASE_NOTES) ## Build a local copy of release notes.
 goapi-diff: $(GO_APIDIFF) ## Build a local copy of go api-diff.
 ginkgo: $(GINKGO) ## Build a local copy of ginkgo.
+gotestsum: $(GOTESTSUM) ## Build a local copy of gotestsum.
 kubectl: $(KUBECTL) ## Build a local copy of kubectl.
 helm: $(HELM) ## Build a local copy of helm.
 yq: $(YQ) ## Build a local copy of yq.
@@ -930,6 +935,9 @@ $(GO_APIDIFF): ## Build go-apidiff from tools folder.
 
 $(GINKGO): ## Build ginkgo from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/v2/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
+
+$(GOTESTSUM): ## Build gotestsum from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) gotest.tools/gotestsum $(GOTESTSUM_BIN) $(GOTESTSUM_VER)
 
 $(KUBECTL): ## Build kubectl from tools folder.
 	mkdir -p $(TOOLS_BIN_DIR)

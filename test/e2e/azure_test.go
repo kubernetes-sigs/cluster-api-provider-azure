@@ -1633,6 +1633,53 @@ spec:
 		})
 	})
 
+	// KubeRay compatibility tests run the upstream KubeRay e2e suites for one KubeRay version on one
+	// AKS Kubernetes version, both set by the KUBERAY_COMPAT_* e2e config variables.
+	Context("Creating an AKS cluster for KubeRay compatibility tests [KubeRay] [KubeRay-Compat]", func() {
+		It("Runs the upstream KubeRay e2e suites", func() {
+			clusterName = getClusterName(clusterNamePrefix, "kuberay-compat")
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig, KubeRayCompatAKSKubernetesVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			// The template reads the node size from AZURE_AKS_NODE_MACHINE_TYPE; restore it afterwards so
+			// later specs in this process keep their defaults.
+			if original, ok := os.LookupEnv("AZURE_AKS_NODE_MACHINE_TYPE"); ok {
+				DeferCleanup(os.Setenv, "AZURE_AKS_NODE_MACHINE_TYPE", original)
+			} else {
+				DeferCleanup(os.Unsetenv, "AZURE_AKS_NODE_MACHINE_TYPE")
+			}
+			Expect(os.Setenv("AZURE_AKS_NODE_MACHINE_TYPE", e2eConfig.MustGetVariable(KubeRayCompatNodeMachineType))).To(Succeed())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withFlavor("aks-aso-kuberay"),
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withKubernetesVersion(kubernetesVersion),
+				withWorkerMachineCount(2),
+				withMachinePoolInterval(specName, "wait-worker-nodes"),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForAKSControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForAKSControlPlaneReady,
+				}),
+			), result)
+
+			By("Running the KubeRay compatibility spec", func() {
+				KubeRayCompatSpec(ctx, func() KubeRayCompatSpecInput {
+					return KubeRayCompatSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						E2EConfig:             e2eConfig,
+						ArtifactFolder:        artifactFolder,
+					}
+				})
+			})
+
+			By("PASSED!")
+		})
+	})
+
 	// KubeRay tests on a self-managed VM-based cluster.
 	Context("Creating a self-managed cluster and deploying KubeRay [KubeRay]", func() {
 		It("Creates a RayCluster and verifies it becomes ready", func() {
