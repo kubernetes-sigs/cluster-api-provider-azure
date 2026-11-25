@@ -1,0 +1,49 @@
+Raise the Ray head CPU limit in the upstream e2e tests from 500m to 1.
+
+Applied by scripts/kuberay-compat.sh to the kuberay v1.7.0 checkout before running the suites.
+
+With the default kubelet cpuCfsQuota=true, a 500m limit throttles the head during startup.
+On slower cores (e.g. Standard_D4s_v3) the head exits with "Module MetricsHead failed to
+start. Timeout after 30.0 seconds." and crash-loops, failing most rayjob, mtls and
+rayservice tests. The request stays 300m and KubeRay still generates --num-cpus=1, so only
+the throttling ceiling changes. Drop this patch once upstream raises the limit.
+
+diff --git a/ray-operator/test/e2erayservice/testdata/locust-cluster.burst.yaml b/ray-operator/test/e2erayservice/testdata/locust-cluster.burst.yaml
+index a6d1b03..225c3b0 100644
+--- a/ray-operator/test/e2erayservice/testdata/locust-cluster.burst.yaml
++++ b/ray-operator/test/e2erayservice/testdata/locust-cluster.burst.yaml
+@@ -15,7 +15,7 @@ spec:
+                 cpu: "300m"
+                 memory: "1G"
+               limits:
+-                cpu: "500m"
++                cpu: "1"
+                 memory: "2G"
+             ports:
+               - containerPort: 6379
+diff --git a/ray-operator/test/e2erayservice/testdata/locust-cluster.const-rate.yaml b/ray-operator/test/e2erayservice/testdata/locust-cluster.const-rate.yaml
+index a837a9c..c13801f 100644
+--- a/ray-operator/test/e2erayservice/testdata/locust-cluster.const-rate.yaml
++++ b/ray-operator/test/e2erayservice/testdata/locust-cluster.const-rate.yaml
+@@ -15,7 +15,7 @@ spec:
+                 cpu: "300m"
+                 memory: "1G"
+               limits:
+-                cpu: "500m"
++                cpu: "1"
+                 memory: "2G"
+             ports:
+               - containerPort: 6379
+diff --git a/ray-operator/test/support/support.go b/ray-operator/test/support/support.go
+index 47e68ee..4b47873 100644
+--- a/ray-operator/test/support/support.go
++++ b/ray-operator/test/support/support.go
+@@ -150,7 +150,7 @@ func HeadPodTemplateApplyConfiguration() *corev1ac.PodTemplateSpecApplyConfigura
+ 						corev1.ResourceMemory: resource.MustParse("1G"),
+ 					}).
+ 					WithLimits(corev1.ResourceList{
+-						corev1.ResourceCPU:    resource.MustParse("500m"),
++						corev1.ResourceCPU:    resource.MustParse("1"),
+ 						corev1.ResourceMemory: resource.MustParse("2G"),
+ 					}))))
+ }

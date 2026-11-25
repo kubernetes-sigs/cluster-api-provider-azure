@@ -25,6 +25,10 @@
 # also be run directly against an existing cluster:
 #   KUBECONFIG=<path> KUBERAY_COMPAT_KUBERAY_VERSION=1.7.0 \
 #   KUBERAY_COMPAT_RAY_IMAGE=rayproject/ray:2.58.0 ./scripts/kuberay-compat.sh
+#
+# Patches in scripts/kuberay-compat-patches/v<version>/ are applied to the upstream checkout
+# before the suites run; each patch header explains why it's needed. Set
+# KUBERAY_COMPAT_APPLY_PATCHES=false to run the unmodified upstream tests.
 
 set -o errexit
 set -o nounset
@@ -40,6 +44,8 @@ ARTIFACTS="${ARTIFACTS:-${REPO_ROOT}/_artifacts}"
 LOG_DIR="${KUBERAY_COMPAT_LOG_DIR:-${ARTIFACTS}/kuberay-compat}"
 KUBERAY_REPO="${KUBERAY_COMPAT_REPO:-https://github.com/kuberay-project/kuberay.git}"
 KUBERAY_HELM_REPO="${KUBERAY_COMPAT_HELM_REPO:-https://ray-project.github.io/kuberay-helm/}"
+APPLY_PATCHES="${KUBERAY_COMPAT_APPLY_PATCHES:-true}"
+PATCH_DIR="${REPO_ROOT}/scripts/kuberay-compat-patches/v${KUBERAY_VERSION}"
 OPERATOR_NAMESPACE="default"
 
 # name|go test timeout|go test args, mirroring the jobs in .buildkite/test-e2e.yml at v1.7.x.
@@ -87,11 +93,39 @@ collect_logs() {
 }
 trap collect_logs EXIT
 
+# Upstream tests delete their test-ns-* namespaces in t.Cleanup, which doesn't run when a suite
+# hits its go test timeout or panics. Save what was left behind, then delete it so crash-looping
+# Ray pods don't take capacity from the next suite.
+cleanup_test_namespaces() {
+  local dir=$1 leftovers ns
+  leftovers=$(kubectl get namespaces -o jsonpath='{range .items[?(@.status.phase=="Active")]}{.metadata.name}{"\n"}{end}' | grep '^test-ns-' || true)
+  [[ -z "${leftovers}" ]] && return 0
+  for ns in ${leftovers}; do
+    echo "Deleting leftover namespace ${ns}"
+    {
+      kubectl get rayclusters,rayjobs,rayservices,pods --namespace "${ns}" -o wide
+      kubectl describe pods --namespace "${ns}"
+      kubectl get events --namespace "${ns}" --sort-by=.lastTimestamp
+    } > "${dir}/leftover-${ns}.txt" 2>&1 || true
+  done
+  # shellcheck disable=SC2086 # leftovers holds one namespace name per line
+  kubectl delete namespace ${leftovers} --timeout=10m || echo "Warning: leftover namespaces were not fully deleted"
+}
+
 echo "KubeRay ${KUBERAY_VERSION}, Ray image ${RAY_IMAGE:-<upstream default>}, suites: $(printf '%s\n' "${selected[@]}" | cut -d'|' -f1 | paste -sd, -)"
 kubectl version
 
 git clone --quiet --depth 1 --branch "v${KUBERAY_VERSION}" "${KUBERAY_REPO}" "${WORK_DIR}/kuberay"
 SRC="${WORK_DIR}/kuberay/ray-operator"
+
+if [[ "${APPLY_PATCHES}" == "true" && -d "${PATCH_DIR}" ]]; then
+  for patch in "${PATCH_DIR}"/*.patch; do
+    [[ -e "${patch}" ]] || continue
+    echo "Applying ${patch#"${REPO_ROOT}/"} to the upstream tests"
+    git -C "${WORK_DIR}/kuberay" apply --verbose "${patch}"
+  done
+  git -C "${WORK_DIR}/kuberay" diff > "${LOG_DIR}/upstream-patches.diff"
+fi
 
 # Upstream installs cert-manager before the operator for the mTLS job.
 if suite_selected mtls; then
@@ -157,6 +191,7 @@ for entry in "${selected[@]}"; do
       -- -count=1 -timeout "${timeout}" ${args}); then
     failed+=("${name}")
   fi
+  cleanup_test_namespaces "${suite_log_dir}"
 done
 
 if [[ ${#failed[@]} -gt 0 ]]; then
